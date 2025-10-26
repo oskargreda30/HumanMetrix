@@ -1,0 +1,20 @@
+1. Test Structure (Progressive Difficulty)
+Here’s a clean outline you can use:
+Level	Skill Tested	Example Task	Evaluation Focus
+1. Basic Clarity	Write a clear, specific prompt	“Ask the AI to give advice on staying healthy — write a prompt that ensures the response is specific and practical.”	Clarity, relevance
+2. Structured Output	Design prompts with format constraints	“Write a prompt that makes the AI respond in a 3-step list, each step 1 sentence long.”	Structure, constraint handling
+3. Context Awareness	Include context in your prompt	“You work for a small café. Write a prompt asking the AI for 3 creative ways to attract more morning customers.”	Context adaptation
+4. Iterative Refinement	Improve a poor prompt	Given: “Tell me about marketing.” → “Improve this so it gives a detailed, practical marketing plan for a local bakery.”	Iteration, clarity
+5. Error Debugging	Diagnose why an AI output went wrong	Show AI output (too generic, off-topic) → “What was wrong with the prompt, and how would you fix it?”	Diagnostic reasoning
+6. Multi-step Reasoning	Design prompts for reasoning or creativity	“Write a prompt that makes the AI explain how to decide between buying vs renting a house — include comparison, pros/cons, and final recommendation.”	Logical structuring
+7. Meta-Prompting (optional advanced)	Instruct AI to generate good prompts itself	“Write a prompt that teaches an AI how to write better prompts for teachers.”	Meta reasoning, creativity
+________________________________________
+🧮 2. Scoring Rubric (AI-Assessed)
+You can have an AI model automatically score responses on these criteria:
+Category	Description	Weight
+Clarity	Is the task clear, unambiguous, and concise?	25%
+Structure	Does the prompt enforce desired output format (lists, tables, steps)?	20%
+Context Relevance	Does the prompt include useful background info or constraints?	20%
+Creativity / Flexibility	Is it original or thoughtful, not boilerplate?	20%
+Iterative Improvement	Does the candidate effectively refine bad prompts or debug AI responses?	15%
+You can normalize the total to a score out of 100.
