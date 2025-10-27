@@ -20,30 +20,30 @@ export default function Footer() {
   };
 
   return (
-    <footer className="border-t bg-muted/30">
+    <footer className="border-t border-cyan-400/20 bg-[#0a1628]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Column */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg font-mono">HM</span>
+              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                <span className="text-white font-bold text-lg font-mono">HM</span>
               </div>
-              <span className="font-semibold text-xl">HumanMetrix</span>
+              <span className="font-semibold text-xl text-white">HumanMetrix</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-blue-100/60">
               Professional AI assessments for the modern workforce
             </p>
           </div>
 
           {/* Company Links */}
           <div>
-            <h3 className="font-semibold mb-4">Company</h3>
+            <h3 className="font-semibold mb-4 text-white">Company</h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <a className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {link.label}
                     </a>
                   </Link>
@@ -54,12 +54,12 @@ export default function Footer() {
 
           {/* Assessment Links */}
           <div>
-            <h3 className="font-semibold mb-4">Assessments</h3>
+            <h3 className="font-semibold mb-4 text-white">Assessments</h3>
             <ul className="space-y-3">
               {footerLinks.assessments.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <a className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {link.label}
                     </a>
                   </Link>
@@ -70,11 +70,11 @@ export default function Footer() {
 
           {/* Contact Column */}
           <div>
-            <h3 className="font-semibold mb-4">Contact</h3>
+            <h3 className="font-semibold mb-4 text-white">Contact</h3>
             <div className="space-y-3">
               <a
                 href="mailto:humanmetrix.sales@gmail.com"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
                 data-testid="link-email"
               >
                 <Mail className="h-4 w-4" />
@@ -84,8 +84,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-12 pt-8 border-t border-cyan-400/20 text-center">
+          <p className="text-sm text-blue-100/60">
             © {new Date().getFullYear()} HumanMetrix. All rights reserved.
           </p>
         </div>

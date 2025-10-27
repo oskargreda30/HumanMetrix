@@ -25,11 +25,11 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="py-24 bg-[#0a1628]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-semibold mb-4">How It Works</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4 text-white">How It Works</h2>
+          <p className="text-lg text-blue-100/70 max-w-2xl mx-auto">
             Get started with professional AI assessments in four simple steps
           </p>
         </div>
@@ -39,21 +39,21 @@ export default function HowItWorks() {
             <div key={index} className="relative">
               {/* Connector line */}
               {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-border -z-10" />
+                <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-cyan-400/20 -z-10" />
               )}
 
               <div className="text-center space-y-4">
-                <div className="mx-auto h-24 w-24 rounded-2xl bg-primary/10 flex items-center justify-center relative">
-                  <step.icon className="h-10 w-10 text-primary" />
-                  <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                <div className="mx-auto h-24 w-24 rounded-2xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center relative">
+                  <step.icon className="h-10 w-10 text-cyan-400" />
+                  <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-cyan-500 text-white flex items-center justify-center text-sm font-bold">
                     {index + 1}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2" data-testid={`text-step-${index + 1}-title`}>
+                  <h3 className="text-xl font-semibold mb-2 text-white" data-testid={`text-step-${index + 1}-title`}>
                     {step.title}
                   </h3>
-                  <p className="text-muted-foreground" data-testid={`text-step-${index + 1}-description`}>
+                  <p className="text-blue-100/60" data-testid={`text-step-${index + 1}-description`}>
                     {step.description}
                   </p>
                 </div>
