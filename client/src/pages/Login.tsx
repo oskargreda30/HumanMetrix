@@ -40,6 +40,22 @@ export default function Login() {
           </div>
 
           <Card className="p-6">
+            {/* Development Test Login */}
+            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
+                <strong>Development Mode:</strong> Quick test login for testing the candidate experience
+              </p>
+              <a href="/api/test-login">
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 border-yellow-300 dark:border-yellow-700"
+                  data-testid="button-test-login"
+                >
+                  🧪 Test Login (Bypass Auth)
+                </Button>
+              </a>
+            </div>
+
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>

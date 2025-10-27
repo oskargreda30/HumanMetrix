@@ -125,6 +125,44 @@ export async function setupAuth(app: Express) {
       );
     });
   });
+
+  // Development-only test login
+  if (process.env.NODE_ENV === 'development') {
+    app.get("/api/test-login", async (req, res) => {
+      try {
+        // Create a test user
+        const testUserId = 'test-user-123';
+        await storage.upsertUser({
+          id: testUserId,
+          email: 'test@humanmetrix.dev',
+          firstName: 'Test',
+          lastName: 'User',
+          profileImageUrl: null,
+        });
+
+        // Create a mock session
+        const mockUser = {
+          claims: {
+            sub: testUserId,
+            email: 'test@humanmetrix.dev',
+            first_name: 'Test',
+            last_name: 'User',
+          },
+        };
+
+        req.login(mockUser, (err) => {
+          if (err) {
+            console.error('Test login error:', err);
+            return res.status(500).json({ error: 'Failed to create test session' });
+          }
+          res.redirect('/dashboard');
+        });
+      } catch (error) {
+        console.error('Test login error:', error);
+        res.status(500).json({ error: 'Test login failed' });
+      }
+    });
+  }
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
