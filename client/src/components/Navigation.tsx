@@ -25,14 +25,12 @@ export default function Navigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/">
-            <a className="flex items-center space-x-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg font-mono">HM</span>
-                </div>
-                <span className="font-semibold text-xl hidden sm:inline-block">HumanMetrix</span>
+            <div className="flex items-center space-x-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home">
+              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg font-mono">HM</span>
               </div>
-            </a>
+              <span className="font-semibold text-xl hidden sm:inline-block">HumanMetrix</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -54,29 +52,25 @@ export default function Navigation() {
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
             <Link href="/login">
-              <a data-testid="link-login">
-                <Button variant="ghost" data-testid="button-login">
-                  Login
-                </Button>
-              </a>
+              <Button variant="ghost" data-testid="button-login">
+                Login
+              </Button>
             </Link>
             <Link href="/assessments">
-              <a data-testid="link-get-started">
-                <Button data-testid="button-get-started">Get Started</Button>
-              </a>
+              <Button data-testid="button-get-started">Get Started</Button>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             className="md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
           >
-            <Button variant="ghost" size="icon">
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </button>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
 
@@ -99,18 +93,14 @@ export default function Navigation() {
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t">
               <Link href="/login">
-                <a onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full" data-testid="button-mobile-login">
-                    Login
-                  </Button>
-                </a>
+                <Button variant="ghost" className="w-full" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-login">
+                  Login
+                </Button>
               </Link>
               <Link href="/assessments">
-                <a onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full" data-testid="button-mobile-get-started">
-                    Get Started
-                  </Button>
-                </a>
+                <Button className="w-full" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-get-started">
+                  Get Started
+                </Button>
               </Link>
             </div>
           </nav>
