@@ -3,10 +3,11 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE } from "@shared/schema";
+import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { sendInvitationEmail } from "./email";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -322,6 +323,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Create invitation and send email
+  app.post("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+
+      const validatedData = insertInvitationSchema.parse({
+        ...req.body,
+        sentBy: userId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      });
+
+      const invitation = await storage.createInvitation(validatedData);
+      
+      // Send email
+      try {
+        const inviterName = user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}`
+          : user.email || 'HumanMetrix Admin';
+        await sendInvitationEmail(invitation, inviterName);
+      } catch (emailError) {
+        console.error("Error sending invitation email:", emailError);
+        // Continue even if email fails - user can still use the token
+      }
+
+      res.json(invitation);
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+      res.status(500).json({ message: "Failed to create invitation" });
+    }
+  });
+
+  // Admin: Get all invitations
+  app.get("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const invitations = await storage.getAllInvitations();
+      res.json(invitations);
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
   // Admin: Get all results
   app.get("/api/admin/results", isAuthenticated, async (req: any, res) => {
     try {
@@ -329,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Forbidden" });
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
       const results = await storage.getAllResults();
@@ -372,7 +427,7 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
 }
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
-  const skills = {
+  const skills: Record<string, number> = {
     'AI Literacy': 0,
     'Technical Fluency': 0,
     'Domain Fluency': 0,
@@ -386,7 +441,8 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
 
   // Simplified scoring - in production, use the full mapping from the assessment file
   Object.values(answers).forEach((answer) => {
-    const randomSkill = Object.keys(skills)[Math.floor(Math.random() * Object.keys(skills).length)];
+    const skillNames = Object.keys(skills);
+    const randomSkill = skillNames[Math.floor(Math.random() * skillNames.length)];
     skills[randomSkill] += 4;
   });
 

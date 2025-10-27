@@ -13,6 +13,8 @@ import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import Dashboard from "@/pages/Dashboard";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
+import AdminInvitations from "@/pages/AdminInvitations";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/assessment/:purchaseItemId" component={Assessment} />
       <Route path="/results/:id" component={Results} />
+      <Route path="/admin/invitations" component={AdminInvitations} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

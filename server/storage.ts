@@ -214,7 +214,10 @@ export class DatabaseStorage implements IStorage {
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
     const [created] = await db
       .insert(invitations)
-      .values(invitation)
+      .values({
+        ...invitation,
+        assessmentTypes: invitation.assessmentTypes as any,
+      })
       .returning();
     return created;
   }
