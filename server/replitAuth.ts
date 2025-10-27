@@ -130,6 +130,8 @@ export async function setupAuth(app: Express) {
   if (process.env.NODE_ENV === 'development') {
     app.get("/api/test-login", async (req, res) => {
       try {
+        console.log('[TEST LOGIN] Starting test login...');
+        
         // Create a test user
         const testUserId = 'test-user-123';
         await storage.upsertUser({
@@ -139,26 +141,33 @@ export async function setupAuth(app: Express) {
           lastName: 'User',
           profileImageUrl: null,
         });
+        
+        console.log('[TEST LOGIN] Test user created/updated');
 
-        // Create a mock session
+        // Create a mock session with proper structure matching real auth
         const mockUser = {
           claims: {
             sub: testUserId,
             email: 'test@humanmetrix.dev',
             first_name: 'Test',
             last_name: 'User',
+            exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days from now
           },
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
         };
 
         req.login(mockUser, (err) => {
           if (err) {
-            console.error('Test login error:', err);
+            console.error('[TEST LOGIN] Login error:', err);
             return res.status(500).json({ error: 'Failed to create test session' });
           }
+          console.log('[TEST LOGIN] Session created successfully, redirecting...');
           res.redirect('/dashboard');
         });
       } catch (error) {
-        console.error('Test login error:', error);
+        console.error('[TEST LOGIN] Unexpected error:', error);
         res.status(500).json({ error: 'Test login failed' });
       }
     });
