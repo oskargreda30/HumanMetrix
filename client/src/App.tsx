@@ -8,6 +8,11 @@ import About from "@/pages/About";
 import Assessments from "@/pages/Assessments";
 import ForEmployers from "@/pages/ForEmployers";
 import Login from "@/pages/Login";
+import Checkout from "@/pages/Checkout";
+import CheckoutSuccess from "@/pages/CheckoutSuccess";
+import Dashboard from "@/pages/Dashboard";
+import Assessment from "@/pages/Assessment";
+import Results from "@/pages/Results";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +23,11 @@ function Router() {
       <Route path="/assessments" component={Assessments} />
       <Route path="/for-employers" component={ForEmployers} />
       <Route path="/login" component={Login} />
+      <Route path="/checkout" component={Checkout} />
+      <Route path="/checkout/success" component={CheckoutSuccess} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/assessment/:purchaseItemId" component={Assessment} />
+      <Route path="/results/:id" component={Results} />
       <Route component={NotFound} />
     </Switch>
   );

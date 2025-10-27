@@ -1,14 +1,17 @@
 import {
   users,
-  purchasedAssessments,
+  purchases,
+  purchaseItems,
   assessmentResults,
   invitations,
   promptArchitectureEvaluations,
   aiqRationales,
   type User,
   type UpsertUser,
-  type PurchasedAssessment,
-  type InsertPurchasedAssessment,
+  type Purchase,
+  type InsertPurchase,
+  type PurchaseItem,
+  type InsertPurchaseItem,
   type AssessmentResult,
   type InsertAssessmentResult,
   type Invitation,
@@ -19,7 +22,7 @@ import {
   type InsertAiqRationale,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -27,26 +30,37 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Purchase operations
-  createPurchase(purchase: InsertPurchasedAssessment): Promise<PurchasedAssessment>;
-  getPurchase(id: string): Promise<PurchasedAssessment | undefined>;
-  getPurchasesByUser(userId: string): Promise<PurchasedAssessment[]>;
-  updatePurchaseStatus(id: string, status: string): Promise<void>;
+  createPurchase(purchase: InsertPurchase): Promise<Purchase>;
+  getPurchase(id: string): Promise<Purchase | undefined>;
+  getPurchaseByStripeSession(sessionId: string): Promise<Purchase | undefined>;
+  getPurchasesByUser(userId: string): Promise<Purchase[]>;
+  updatePurchaseStatus(id: string, status: string, completedAt?: Date): Promise<void>;
+  updatePurchaseStripeSession(id: string, stripeSessionId: string): Promise<void>;
+  
+  // Purchase item operations
+  createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
+  getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]>;
+  updatePurchaseItemStatus(id: string, status: string): Promise<void>;
   
   // Assessment result operations
   createAssessmentResult(result: InsertAssessmentResult): Promise<AssessmentResult>;
   getAssessmentResult(id: string): Promise<AssessmentResult | undefined>;
   getResultsByUser(userId: string): Promise<AssessmentResult[]>;
-  getResultsByPurchase(purchaseId: string): Promise<AssessmentResult[]>;
+  getResultByPurchaseItem(purchaseItemId: string): Promise<AssessmentResult | undefined>;
+  updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void>;
+  updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void>;
   
   // Invitation operations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   getInvitation(id: string): Promise<Invitation | undefined>;
+  getInvitationByToken(token: string): Promise<Invitation | undefined>;
   getInvitationsBySender(senderId: string): Promise<Invitation[]>;
   updateInvitationStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   
   // Prompt architecture evaluation operations
   createPromptEvaluation(evaluation: InsertPromptArchitectureEvaluation): Promise<PromptArchitectureEvaluation>;
   getEvaluationsByResult(resultId: string): Promise<PromptArchitectureEvaluation[]>;
+  updatePromptEvaluationStatus(id: string, status: string, evaluationScores?: any, totalScore?: number, feedback?: string, evaluatedAt?: Date): Promise<void>;
   
   // AIQ rationale operations
   createAiqRationale(rationale: InsertAiqRationale): Promise<AiqRationale>;
@@ -80,34 +94,73 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Purchase operations
-  async createPurchase(purchase: InsertPurchasedAssessment): Promise<PurchasedAssessment> {
+  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     const [result] = await db
-      .insert(purchasedAssessments)
+      .insert(purchases)
       .values(purchase)
       .returning();
     return result;
   }
 
-  async getPurchase(id: string): Promise<PurchasedAssessment | undefined> {
+  async getPurchase(id: string): Promise<Purchase | undefined> {
     const [purchase] = await db
       .select()
-      .from(purchasedAssessments)
-      .where(eq(purchasedAssessments.id, id));
+      .from(purchases)
+      .where(eq(purchases.id, id));
     return purchase;
   }
 
-  async getPurchasesByUser(userId: string): Promise<PurchasedAssessment[]> {
-    return await db
+  async getPurchaseByStripeSession(sessionId: string): Promise<Purchase | undefined> {
+    const [purchase] = await db
       .select()
-      .from(purchasedAssessments)
-      .where(eq(purchasedAssessments.userId, userId));
+      .from(purchases)
+      .where(eq(purchases.stripeSessionId, sessionId));
+    return purchase;
   }
 
-  async updatePurchaseStatus(id: string, status: string): Promise<void> {
+  async getPurchasesByUser(userId: string): Promise<Purchase[]> {
+    return await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.userId, userId))
+      .orderBy(desc(purchases.createdAt));
+  }
+
+  async updatePurchaseStatus(id: string, status: string, completedAt?: Date): Promise<void> {
     await db
-      .update(purchasedAssessments)
+      .update(purchases)
+      .set({ status, completedAt })
+      .where(eq(purchases.id, id));
+  }
+
+  async updatePurchaseStripeSession(id: string, stripeSessionId: string): Promise<void> {
+    await db
+      .update(purchases)
+      .set({ stripeSessionId })
+      .where(eq(purchases.id, id));
+  }
+
+  // Purchase item operations
+  async createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem> {
+    const [result] = await db
+      .insert(purchaseItems)
+      .values(item)
+      .returning();
+    return result;
+  }
+
+  async getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]> {
+    return await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+  }
+
+  async updatePurchaseItemStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(purchaseItems)
       .set({ status })
-      .where(eq(purchasedAssessments.id, id));
+      .where(eq(purchaseItems.id, id));
   }
 
   // Assessment result operations
@@ -131,14 +184,30 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(assessmentResults)
-      .where(eq(assessmentResults.userId, userId));
+      .where(eq(assessmentResults.userId, userId))
+      .orderBy(desc(assessmentResults.startedAt));
   }
 
-  async getResultsByPurchase(purchaseId: string): Promise<AssessmentResult[]> {
-    return await db
+  async getResultByPurchaseItem(purchaseItemId: string): Promise<AssessmentResult | undefined> {
+    const [result] = await db
       .select()
       .from(assessmentResults)
-      .where(eq(assessmentResults.purchaseId, purchaseId));
+      .where(eq(assessmentResults.purchaseItemId, purchaseItemId));
+    return result;
+  }
+
+  async updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void> {
+    await db
+      .update(assessmentResults)
+      .set({ status, completedAt })
+      .where(eq(assessmentResults.id, id));
+  }
+
+  async updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void> {
+    await db
+      .update(assessmentResults)
+      .set({ scores, totalScore, percentile })
+      .where(eq(assessmentResults.id, id));
   }
 
   // Invitation operations
@@ -158,11 +227,20 @@ export class DatabaseStorage implements IStorage {
     return invitation;
   }
 
+  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    return invitation;
+  }
+
   async getInvitationsBySender(senderId: string): Promise<Invitation[]> {
     return await db
       .select()
       .from(invitations)
-      .where(eq(invitations.sentBy, senderId));
+      .where(eq(invitations.sentBy, senderId))
+      .orderBy(desc(invitations.sentAt));
   }
 
   async updateInvitationStatus(id: string, status: string, completedAt?: Date): Promise<void> {
@@ -188,6 +266,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(promptArchitectureEvaluations.resultId, resultId));
   }
 
+  async updatePromptEvaluationStatus(id: string, status: string, evaluationScores?: any, totalScore?: number, feedback?: string, evaluatedAt?: Date): Promise<void> {
+    await db
+      .update(promptArchitectureEvaluations)
+      .set({ status, evaluationScores, totalScore, feedback, evaluatedAt })
+      .where(eq(promptArchitectureEvaluations.id, id));
+  }
+
   // AIQ rationale operations
   async createAiqRationale(rationale: InsertAiqRationale): Promise<AiqRationale> {
     const [created] = await db
@@ -206,11 +291,17 @@ export class DatabaseStorage implements IStorage {
 
   // Admin operations
   async getAllResults(): Promise<AssessmentResult[]> {
-    return await db.select().from(assessmentResults);
+    return await db
+      .select()
+      .from(assessmentResults)
+      .orderBy(desc(assessmentResults.startedAt));
   }
 
   async getAllInvitations(): Promise<Invitation[]> {
-    return await db.select().from(invitations);
+    return await db
+      .select()
+      .from(invitations)
+      .orderBy(desc(invitations.sentAt));
   }
 }
 

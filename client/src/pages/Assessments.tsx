@@ -3,8 +3,12 @@ import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Brain, Sparkles, Code2, Shield, Network, Languages } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, Network, Languages, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const assessments = [
   {
@@ -71,6 +75,8 @@ const assessments = [
 
 export default function Assessments() {
   const [selectedAssessments, setSelectedAssessments] = useState<string[]>([]);
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const toggleAssessment = (id: string) => {
     setSelectedAssessments((prev) =>
@@ -87,9 +93,42 @@ export default function Assessments() {
   }, 0);
   const total = selectedAssessments.length > 0 ? baseFee + assessmentTotal : 0;
 
+  const checkoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/create-checkout-session", "POST", {
+        assessmentTypes: selectedAssessments,
+      });
+    },
+    onSuccess: (data: any) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create checkout session. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCheckout = () => {
-    console.log("Proceeding to checkout with:", selectedAssessments);
-    // TODO: Implement checkout flow
+    if (!isAuthenticated) {
+      window.location.href = "/api/login";
+      return;
+    }
+
+    if (selectedAssessments.length === 0) {
+      toast({
+        title: "No assessments selected",
+        description: "Please select at least one assessment to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    checkoutMutation.mutate();
   };
 
   return (
@@ -179,9 +218,17 @@ export default function Assessments() {
                         className="w-full"
                         size="lg"
                         onClick={handleCheckout}
+                        disabled={checkoutMutation.isPending}
                         data-testid="button-checkout"
                       >
-                        Proceed to Checkout
+                        {checkoutMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating checkout...
+                          </>
+                        ) : (
+                          "Proceed to Checkout"
+                        )}
                       </Button>
 
                       <div className="mt-4 text-xs text-muted-foreground text-center">

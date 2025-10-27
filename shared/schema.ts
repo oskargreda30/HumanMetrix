@@ -29,60 +29,87 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-export const purchasedAssessments = pgTable("purchased_assessments", {
+// Purchases - one row per purchase transaction
+export const purchases = pgTable("purchases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  assessmentIds: jsonb("assessment_ids").notNull().$type<string[]>(),
-  stripeSessionId: text("stripe_session_id"),
+  stripeSessionId: text("stripe_session_id").unique(),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalAmount: integer("total_amount").notNull(),
   baseFee: integer("base_fee").notNull().default(1500),
   status: text("status").notNull().default("pending"),
-  purchasedAt: timestamp("purchased_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
 });
 
-export const insertPurchasedAssessmentSchema = createInsertSchema(purchasedAssessments).omit({
+export const insertPurchaseSchema = createInsertSchema(purchases).omit({
   id: true,
-  purchasedAt: true,
+  createdAt: true,
 });
 
-export type InsertPurchasedAssessment = z.infer<typeof insertPurchasedAssessmentSchema>;
-export type PurchasedAssessment = typeof purchasedAssessments.$inferSelect;
+export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
+export type Purchase = typeof purchases.$inferSelect;
 
+// Purchase Items - tracks individual assessments in a purchase
+export const purchaseItems = pgTable("purchase_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  purchaseId: varchar("purchase_id").notNull().references(() => purchases.id, { onDelete: "cascade" }),
+  assessmentType: text("assessment_type").notNull(),
+  price: integer("price").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPurchaseItem = z.infer<typeof insertPurchaseItemSchema>;
+export type PurchaseItem = typeof purchaseItems.$inferSelect;
+
+// Assessment Results
 export const assessmentResults = pgTable("assessment_results", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  purchaseId: varchar("purchase_id").references(() => purchasedAssessments.id, { onDelete: "set null" }),
+  purchaseItemId: varchar("purchase_item_id").references(() => purchaseItems.id, { onDelete: "set null" }),
+  invitationId: varchar("invitation_id").references(() => invitations.id, { onDelete: "set null" }),
   assessmentType: text("assessment_type").notNull(),
   answers: jsonb("answers").notNull().$type<Record<string, any>>(),
   scores: jsonb("scores").notNull().$type<Record<string, number>>(),
   totalScore: integer("total_score"),
   percentile: integer("percentile"),
-  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  status: text("status").notNull().default("in_progress"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
 });
 
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults).omit({
   id: true,
-  completedAt: true,
+  startedAt: true,
 });
 
 export type InsertAssessmentResult = z.infer<typeof insertAssessmentResultSchema>;
 export type AssessmentResult = typeof assessmentResults.$inferSelect;
 
+// Invitations with secure tokens
 export const invitations = pgTable("invitations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar("token").notNull().unique().default(sql`encode(gen_random_bytes(32), 'hex')`),
   candidateEmail: text("candidate_email").notNull(),
   candidateName: text("candidate_name").notNull(),
-  assessmentIds: jsonb("assessment_ids").notNull().$type<string[]>(),
+  assessmentTypes: jsonb("assessment_types").notNull().$type<string[]>(),
   message: text("message"),
   sentBy: varchar("sent_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("sent"),
+  expiresAt: timestamp("expires_at").notNull(),
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 });
 
 export const insertInvitationSchema = createInsertSchema(invitations).omit({
   id: true,
+  token: true,
   sentAt: true,
   status: true,
   completedAt: true,
@@ -91,46 +118,67 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 
+// Prompt Architecture Evaluations
 export const promptArchitectureEvaluations = pgTable("prompt_architecture_evaluations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   resultId: varchar("result_id").notNull().references(() => assessmentResults.id, { onDelete: "cascade" }),
   level: integer("level").notNull(),
   userPrompt: text("user_prompt").notNull(),
-  aiResponse: text("ai_response").notNull(),
-  evaluationScores: jsonb("evaluation_scores").notNull().$type<{
+  aiResponse: text("ai_response"),
+  evaluationScores: jsonb("evaluation_scores").$type<{
     clarity: number;
     structure: number;
     contextRelevance: number;
     creativity: number;
     iterativeImprovement: number;
   }>(),
-  totalScore: integer("total_score").notNull(),
+  totalScore: integer("total_score"),
   feedback: text("feedback"),
-  evaluatedAt: timestamp("evaluated_at").defaultNow().notNull(),
+  status: text("status").notNull().default("pending"),
+  evaluatedAt: timestamp("evaluated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertPromptArchitectureEvaluationSchema = createInsertSchema(promptArchitectureEvaluations).omit({
   id: true,
-  evaluatedAt: true,
+  createdAt: true,
 });
 
 export type InsertPromptArchitectureEvaluation = z.infer<typeof insertPromptArchitectureEvaluationSchema>;
 export type PromptArchitectureEvaluation = typeof promptArchitectureEvaluations.$inferSelect;
 
+// AIQ Rationales
 export const aiqRationales = pgTable("aiq_rationales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   resultId: varchar("result_id").notNull().references(() => assessmentResults.id, { onDelete: "cascade" }),
   questionNumber: integer("question_number").notNull(),
   selectedAnswer: text("selected_answer").notNull(),
   rationale: text("rationale").notNull(),
-  rationalScore: integer("rational_score"),
-  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  rationaleScore: integer("rationale_score"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertAiqRationaleSchema = createInsertSchema(aiqRationales).omit({
   id: true,
-  submittedAt: true,
+  createdAt: true,
 });
 
 export type InsertAiqRationale = z.infer<typeof insertAiqRationaleSchema>;
 export type AiqRationale = typeof aiqRationales.$inferSelect;
+
+// Assessment type constants
+export const ASSESSMENT_TYPES = {
+  FIT: "fit",
+  AI_READINESS: "ai-readiness",
+  PROMPT_ARCHITECTURE: "prompt-architecture",
+  AIQ: "aiq",
+} as const;
+
+export const ASSESSMENT_PRICES = {
+  [ASSESSMENT_TYPES.FIT]: 350,
+  [ASSESSMENT_TYPES.AI_READINESS]: 450,
+  [ASSESSMENT_TYPES.PROMPT_ARCHITECTURE]: 500,
+  [ASSESSMENT_TYPES.AIQ]: 400,
+} as const;
+
+export const BASE_FEE = 1500; // £15.00 in pence
