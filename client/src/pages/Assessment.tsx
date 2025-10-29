@@ -15,6 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FIT_QUESTIONS } from "../data/fit-questions";
 import { AI_READINESS_QUESTIONS } from "../data/ai-readiness-questions";
 import { AIQ_QUESTIONS } from "../data/aiq-questions";
+import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Assessment() {
   const { purchaseItemId } = useParams<{ purchaseItemId: string }>();
@@ -45,6 +47,17 @@ export default function Assessment() {
         return AI_READINESS_QUESTIONS;
       case "aiq":
         return AIQ_QUESTIONS;
+      case "prompt-architecture":
+        // Convert levels to question format
+        return PROMPT_ARCHITECTURE_LEVELS.map(level => ({
+          id: `level-${level.level}`,
+          text: level.scenario,
+          level: level.level,
+          title: level.title,
+          description: level.description,
+          taskInstructions: level.taskInstructions,
+          type: 'text-input' as const
+        }));
       default:
         return [];
     }
@@ -52,6 +65,7 @@ export default function Assessment() {
 
   const questions = getQuestions();
   const currentQ = questions[currentQuestion];
+  const isPromptArchitecture = assessment?.assessmentType === 'prompt-architecture';
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -171,6 +185,10 @@ export default function Assessment() {
     setAnswers({ ...answers, [currentQ.id]: value });
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAnswers({ ...answers, [currentQ.id]: e.target.value });
+  };
+
   const handleNext = () => {
     if (!answers[currentQ.id]) {
       toast({
@@ -252,28 +270,71 @@ export default function Assessment() {
 
           {/* Question */}
           <Card className="p-8 mb-6">
-            <h2 className="text-xl font-semibold mb-6">{currentQ.text}</h2>
-            <RadioGroup
-              value={answers[currentQ.id] || ""}
-              onValueChange={handleAnswerChange}
-            >
-              {currentQ.options.map((option: any) => (
-                <div key={option.value} className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2">
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`${currentQ.id}-${option.value}`}
-                    data-testid={`radio-${currentQ.id}-${option.value}`}
-                  />
-                  <Label
-                    htmlFor={`${currentQ.id}-${option.value}`}
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="font-medium mb-1">{option.value}.</div>
-                    <div className="text-muted-foreground">{option.text}</div>
-                  </Label>
+            {isPromptArchitecture ? (
+              // Prompt Architecture text input
+              <div>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-2xl font-bold">Level {(currentQ as any).level}</h2>
+                    <span className="text-sm text-muted-foreground">{(currentQ as any).title}</span>
+                  </div>
+                  <p className="text-muted-foreground mb-4">{(currentQ as any).description}</p>
                 </div>
-              ))}
-            </RadioGroup>
+                
+                <div className="mb-6 p-4 bg-muted rounded-lg">
+                  <h3 className="font-semibold mb-2">Scenario:</h3>
+                  <p className="text-sm">{currentQ.text}</p>
+                </div>
+                
+                <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-lg">
+                  <h3 className="font-semibold mb-2">Task:</h3>
+                  <p className="text-sm">{(currentQ as any).taskInstructions}</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor={`prompt-${currentQ.id}`} className="text-base font-semibold mb-2 block">
+                    Your Prompt:
+                  </Label>
+                  <Textarea
+                    id={`prompt-${currentQ.id}`}
+                    placeholder="Write your prompt here... Be specific, clear, and creative!"
+                    value={answers[currentQ.id] || ""}
+                    onChange={handleTextChange}
+                    className="min-h-[200px] text-base"
+                    data-testid={`input-prompt-${currentQ.id}`}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Your prompt will be evaluated by GPT-4o on clarity, structure, context relevance, creativity, and iterative improvement.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              // Multiple choice questions (FIT, AI Readiness, AIQ)
+              <div>
+                <h2 className="text-xl font-semibold mb-6">{currentQ.text}</h2>
+                <RadioGroup
+                  value={answers[currentQ.id] || ""}
+                  onValueChange={handleAnswerChange}
+                >
+                  {(currentQ as any).options?.map((option: any) => (
+                    <div key={option.value} className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`${currentQ.id}-${option.value}`}
+                        data-testid={`radio-${currentQ.id}-${option.value}`}
+                      />
+                      <Label
+                        htmlFor={`${currentQ.id}-${option.value}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="font-medium mb-1">{option.value}.</div>
+                        <div className="text-muted-foreground">{option.text}</div>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+            )}
           </Card>
 
           {/* Navigation */}
