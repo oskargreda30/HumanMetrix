@@ -1,162 +1,38 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import Stripe from "stripe";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sendInvitationEmail } from "./email";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-11-20.acacia",
-});
-
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Replit Auth
+  // Setup simple auth
   await setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const user = req.user;
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin,
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
-  // Stripe Checkout
-  app.post("/api/create-checkout-session", isAuthenticated, async (req: any, res) => {
-    try {
-      const { assessmentTypes } = req.body;
-      const userId = req.user.claims.sub;
-
-      if (!assessmentTypes || !Array.isArray(assessmentTypes) || assessmentTypes.length === 0) {
-        return res.status(400).json({ message: "Assessment types required" });
-      }
-
-      // Calculate total
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-        {
-          price_data: {
-            currency: 'gbp',
-            product_data: {
-              name: 'Base Computation Fee',
-            },
-            unit_amount: BASE_FEE,
-          },
-          quantity: 1,
-        },
-      ];
-
-      assessmentTypes.forEach((type: string) => {
-        const price = ASSESSMENT_PRICES[type as keyof typeof ASSESSMENT_PRICES];
-        if (price) {
-          lineItems.push({
-            price_data: {
-              currency: 'gbp',
-              product_data: {
-                name: `${type.toUpperCase()} Assessment`,
-              },
-              unit_amount: price,
-            },
-            quantity: 1,
-          });
-        }
-      });
-
-      const totalAmount = BASE_FEE + assessmentTypes.reduce((sum: number, type: string) => {
-        return sum + (ASSESSMENT_PRICES[type as keyof typeof ASSESSMENT_PRICES] || 0);
-      }, 0);
-
-      // Create purchase record
-      const purchase = await storage.createPurchase({
-        userId,
-        totalAmount,
-        baseFee: BASE_FEE,
-        status: 'pending',
-        stripeSessionId: null,
-        stripePaymentIntentId: null,
-        completedAt: null,
-      });
-
-      // Create purchase items
-      for (const type of assessmentTypes) {
-        await storage.createPurchaseItem({
-          purchaseId: purchase.id,
-          assessmentType: type,
-          price: ASSESSMENT_PRICES[type as keyof typeof ASSESSMENT_PRICES],
-          status: 'pending',
-        });
-      }
-
-      // Create Stripe session
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: `${req.protocol}://${req.get('host')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.protocol}://${req.get('host')}/assessments`,
-        metadata: {
-          purchaseId: purchase.id,
-          userId,
-        },
-      });
-
-      // Update purchase with session ID
-      await storage.updatePurchaseStripeSession(purchase.id, session.id);
-
-      res.json({ sessionId: session.id, url: session.url });
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error);
-      res.status(500).json({ message: "Error creating checkout session: " + error.message });
-    }
-  });
-
-  // Stripe webhook
-  app.post("/api/webhook/stripe", async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    let event: Stripe.Event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig!,
-        process.env.STRIPE_WEBHOOK_SECRET || ''
-      );
-    } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const purchaseId = session.metadata?.purchaseId;
-
-      if (purchaseId) {
-        await storage.updatePurchaseStatus(purchaseId, 'completed', new Date());
-        const items = await storage.getPurchaseItems(purchaseId);
-        for (const item of items) {
-          await storage.updatePurchaseItemStatus(item.id, 'ready');
-        }
-      }
-    }
-
-    res.json({ received: true });
-  });
-
-  // Get user's purchases
+  // Get user's purchases (kept for potential future use)
   app.get("/api/purchases", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const purchases = await storage.getPurchasesByUser(userId);
       res.json(purchases);
     } catch (error) {
@@ -168,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available assessments for user
   app.get("/api/available-assessments", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const purchases = await storage.getPurchasesByUser(userId);
       
       const availableAssessments: any[] = [];
@@ -199,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assessments/start", isAuthenticated, async (req: any, res) => {
     try {
       const { purchaseItemId } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Fetch purchase item
       const [item] = await db.select().from(purchaseItems).where(eq(purchaseItems.id, purchaseItemId)).limit(1);
@@ -254,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { answers } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       const result = await storage.getAssessmentResult(id);
       if (!result || result.userId !== userId) {
@@ -296,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's results
   app.get("/api/results", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const results = await storage.getResultsByUser(userId);
       res.json(results);
     } catch (error) {
@@ -309,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/results/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const result = await storage.getAssessmentResult(id);
       
       if (!result || result.userId !== userId) {
@@ -326,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin: Create invitation and send email
   app.post("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {
@@ -362,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin: Get all invitations
   app.get("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {
@@ -380,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin: Get all results
   app.get("/api/admin/results", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {

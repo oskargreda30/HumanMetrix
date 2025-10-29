@@ -25,8 +25,10 @@ import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Purchase operations
@@ -72,12 +74,25 @@ export interface IStorage {
   
   // Test/development operations
   createTestPurchaseWithAllAssessments(userId: string): Promise<void>;
+  
+  // Free assessment operations
+  createFreeAssessmentsForUser(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
 
@@ -352,6 +367,50 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log('[TEST LOGIN] Created test purchase with all 4 assessments');
+  }
+
+  // Free assessment operations
+  async createFreeAssessmentsForUser(userId: string): Promise<void> {
+    // Check if user already has assessments
+    const existingPurchases = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.userId, userId));
+    
+    if (existingPurchases.length > 0) {
+      console.log('[FREE ASSESSMENTS] User already has assessments, skipping');
+      return;
+    }
+
+    // Import assessment types
+    const { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE } = await import("@shared/schema");
+
+    // Create a free "purchase" (no payment required)
+    const [purchase] = await db
+      .insert(purchases)
+      .values({
+        userId,
+        stripeSessionId: null,
+        stripePaymentIntentId: null,
+        totalAmount: 0, // Free!
+        baseFee: 0,
+        status: 'completed',
+        completedAt: new Date(),
+      })
+      .returning();
+
+    // Create purchase items for all 4 assessment types
+    const assessmentTypes = Object.values(ASSESSMENT_TYPES);
+    for (const assessmentType of assessmentTypes) {
+      await db.insert(purchaseItems).values({
+        purchaseId: purchase.id,
+        assessmentType,
+        price: 0, // Free!
+        status: 'ready',
+      });
+    }
+
+    console.log('[FREE ASSESSMENTS] Created free assessments for user');
   }
 }
 
