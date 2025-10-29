@@ -6,6 +6,7 @@ export default function Footer() {
     company: [
       { label: "About Us", href: "/about" },
       { label: "How It Works", href: "/#how-it-works" },
+      { label: "Terms & Conditions", href: "/terms" },
     ],
     assessments: [
       { label: "FIT Assessment", href: "/assessments#fit" },

@@ -24,29 +24,27 @@ export default function Navigation() {
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/">
-            <div className="flex items-center space-x-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home">
-              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white font-bold text-lg font-mono">HM</span>
-              </div>
-              <span className="font-semibold text-xl hidden sm:inline-block text-white">HumanMetrix</span>
+          <Link href="/" className="flex items-center space-x-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home">
+            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+              <span className="text-white font-bold text-lg font-mono">HM</span>
             </div>
+            <span className="font-semibold text-xl hidden sm:inline-block text-white">HumanMetrix</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <a
-                  className={`text-sm font-medium transition-colors ${
-                    isActive(link.href) 
-                      ? "text-cyan-300" 
-                      : "text-blue-100/70 hover:text-cyan-300"
-                  }`}
-                  data-testid={`link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {link.label}
-                </a>
+              <Link 
+                key={link.href} 
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${
+                  isActive(link.href) 
+                    ? "text-cyan-300" 
+                    : "text-blue-100/70 hover:text-cyan-300"
+                }`}
+                data-testid={`link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {link.label}
               </Link>
             ))}
           </nav>
@@ -90,16 +88,16 @@ export default function Navigation() {
         <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]">
           <nav className="flex flex-col gap-4 p-4">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <a
-                  className={`text-sm font-medium transition-colors ${
-                    isActive(link.href) ? "text-cyan-300" : "text-blue-100/70"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  data-testid={`link-mobile-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {link.label}
-                </a>
+              <Link 
+                key={link.href} 
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${
+                  isActive(link.href) ? "text-cyan-300" : "text-blue-100/70"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid={`link-mobile-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {link.label}
               </Link>
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-cyan-400/20">

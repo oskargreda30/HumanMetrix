@@ -11,6 +11,8 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
+import Purchase from "@/pages/Purchase";
+import Terms from "@/pages/Terms";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/not-found";
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/assessment/:purchaseItemId" component={Assessment} />
       <Route path="/results/:id" component={Results} />
+      <Route path="/purchase" component={Purchase} />
+      <Route path="/terms" component={Terms} />
       <Route path="/admin/invitations" component={AdminInvitations} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route component={NotFound} />
