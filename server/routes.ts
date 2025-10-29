@@ -492,21 +492,29 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
 }
 
 function calculateAIQScores(answers: Record<string, string>): Record<string, number> {
+  // Correct answers based on AIQ assessment
   const correctAnswers: Record<string, string> = {
-    '1': 'A',
-    '2': 'A',
-    '3': 'C',
-    '4': 'B',
+    '1': 'A', // Data Privacy: Delete combined dataset
+    '2': 'A', // Bias: Re-engineer to remove biased features
+    '3': 'C', // Transparency: Deploy XAI technique
+    '4': 'B', // Safety: Hard-code emergency vehicle priority
   };
 
   let score = 0;
+  let correctCount = 0;
+  
   Object.entries(answers).forEach(([question, answer]) => {
     if (correctAnswers[question] === answer) {
       score += 25;
+      correctCount++;
     }
   });
 
-  return { 'Algorithmic Integrity': score };
+  // 70% or above is pass (3 or 4 correct = pass)
+  // Below 70% is needs improvement (0-2 correct = needs improvement)
+  return { 
+    'Algorithmic Integrity': score
+  };
 }
 
 // Evaluate a single prompt using OpenAI GPT-5

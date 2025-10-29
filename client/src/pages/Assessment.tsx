@@ -10,13 +10,21 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FIT_QUESTIONS } from "../data/fit-questions";
 import { AI_READINESS_QUESTIONS } from "../data/ai-readiness-questions";
 import { AIQ_QUESTIONS } from "../data/aiq-questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Assessment() {
   const { purchaseItemId } = useParams<{ purchaseItemId: string }>();
@@ -28,6 +36,7 @@ export default function Assessment() {
   const [resultId, setResultId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
   const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
@@ -122,10 +131,9 @@ export default function Assessment() {
   useEffect(() => {
     if (!isAuthenticated) {
       window.location.href = "/api/login";
-    } else if (assessment && !resultId) {
-      startMutation.mutate();
     }
-  }, [isAuthenticated, assessment, resultId]);
+    // Don't auto-start - wait for user to click "Begin" in instructions dialog
+  }, [isAuthenticated]);
 
   // Timer effect
   useEffect(() => {
@@ -181,7 +189,68 @@ export default function Assessment() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (loadingAssessments || !assessment || !resultId || questions.length === 0) {
+  // Get instructions for each assessment type
+  const getInstructions = () => {
+    if (!assessment) return { title: "", description: "", tips: [] };
+    
+    switch (assessment.assessmentType) {
+      case "fit":
+        return {
+          title: "FIT Assessment - 15 Questions",
+          description: "This assessment measures 6 core behavioral skills essential for professional success: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.",
+          tips: [
+            "Choose the option that best represents how you typically behave or think",
+            "There are no right or wrong answers - be honest and authentic",
+            "Don't overthink each question - go with your first instinct",
+            "You have 20 minutes to complete all 15 questions",
+          ]
+        };
+      case "ai-readiness":
+        return {
+          title: "AI Readiness Assessment - 21 Questions",
+          description: "This assessment evaluates 9 skills critical for working effectively with AI: AI Literacy, Technical Fluency, Domain Fluency, Critical Thinking, Adaptive & Collaborative Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.",
+          tips: [
+            "Select the response that most closely reflects your current capabilities",
+            "There are no right or wrong answers - be truthful about your experience",
+            "Consider your real-world experience with AI tools and technologies",
+            "You have 20 minutes to complete all 21 questions",
+          ]
+        };
+      case "prompt-architecture":
+        return {
+          title: "Prompt Architecture Assessment - 7 Levels",
+          description: "This assessment tests your ability to design effective prompts for AI systems across 7 progressive difficulty levels. Each prompt is evaluated by GPT-4o on Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.",
+          tips: [
+            "Write clear, specific prompts that address the given scenario",
+            "Include relevant context and constraints in your prompts",
+            "Think about structure and how to guide the AI effectively",
+            "You have 20 minutes to complete all 7 levels",
+          ]
+        };
+      case "aiq":
+        return {
+          title: "Algorithmic Integrity Quotient (AIQ) - 4 Questions",
+          description: "This assessment tests your understanding of AI ethics, bias, fairness, transparency, and responsible deployment. You'll analyze real-world scenarios and make ethically sound decisions. A score of 70% or above is considered a pass.",
+          tips: [
+            "Read each scenario carefully and consider all ethical implications",
+            "Choose the option that prioritizes ethics, safety, and fairness",
+            "There are correct answers based on established AI ethics principles",
+            "You have 20 minutes to complete all 4 questions",
+          ]
+        };
+      default:
+        return { title: "", description: "", tips: [] };
+    }
+  };
+
+  const instructions = getInstructions();
+
+  const handleBeginAssessment = () => {
+    setShowInstructions(false);
+    startMutation.mutate();
+  };
+
+  if (loadingAssessments || !assessment || questions.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -235,6 +304,54 @@ export default function Assessment() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
+      
+      {/* Instructions Dialog */}
+      <Dialog open={showInstructions && !resultId} onOpenChange={() => {}}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-instructions">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{instructions.title}</DialogTitle>
+            <DialogDescription className="text-base pt-4">
+              {instructions.description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold mb-2">Instructions:</h4>
+                <ul className="space-y-2">
+                  {instructions.tips.map((tip, index) => (
+                    <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={handleBeginAssessment} 
+              disabled={startMutation.isPending}
+              className="w-full sm:w-auto"
+              data-testid="button-begin-assessment"
+            >
+              {startMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                "Begin Assessment"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
           {/* Header */}
