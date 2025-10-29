@@ -131,8 +131,7 @@ export default function Purchase() {
                 {assessments.map((assessment) => (
                   <Card 
                     key={assessment.id} 
-                    className="p-6 hover-elevate cursor-pointer"
-                    onClick={() => handleToggle(assessment.id)}
+                    className="p-6 hover-elevate"
                     data-testid={`card-assessment-${assessment.id}`}
                   >
                     <div className="flex items-start gap-4">
@@ -143,7 +142,7 @@ export default function Purchase() {
                         className="mt-1"
                         data-testid={`checkbox-${assessment.id}`}
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => handleToggle(assessment.id)}>
                         <Label 
                           htmlFor={assessment.id}
                           className="text-lg font-semibold cursor-pointer"

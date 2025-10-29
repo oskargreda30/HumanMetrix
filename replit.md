@@ -42,8 +42,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - About page
    - Assessments selection page
    - For Employers page
+   - Purchase page at /purchase (checkbox selection, automatic total calculation)
+   - Terms & Conditions page at /terms (comprehensive legal coverage)
    - Login page (placeholder)
    - All reusable components (Navigation, HeroSection, AssessmentCard, etc.)
+   - Navigation component fixed (removed nested anchor tags, resolved React warnings)
 
 2. **Database Schema**
    - `users` table (Replit Auth compatible)
@@ -61,8 +64,15 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - Protected routes ready
    - Database storage layer with all CRUD operations
 
+4. **Assessment Experience**
+   - Instruction dialogs for all assessments that gate start
+   - Timer only starts after user clicks "Begin Assessment"
+   - Server-side timer validation
+   - All 4 assessment types fully functional (FIT, AI Readiness, Prompt Architecture, AIQ)
+   - Results page with comprehensive score analysis and employer-ready insights
+
 ### 🚧 In Progress
-- Stripe payment integration
+- Stripe payment integration (Purchase page UI complete, backend integration pending)
 
 ### ⏳ Pending
 - Assessment-taking interface for all 4 assessments
