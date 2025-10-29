@@ -7,6 +7,21 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +42,19 @@ export default function Results() {
 
   const scores = (result as any).scores || {};
   const totalScore = (result as any).totalScore || 0;
+
+  // Transform scores for radar chart
+  const radarData = Object.entries(scores).map(([skill, score]) => ({
+    skill: skill.replace(/([A-Z])/g, ' $1').trim(), // Add spaces before capital letters
+    score: score as number,
+    fullMark: 100,
+  }));
+
+  // Transform scores for bar chart
+  const barData = Object.entries(scores).map(([skill, score]) => ({
+    skill: skill.length > 20 ? skill.substring(0, 17) + '...' : skill,
+    score: score as number,
+  }));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -69,6 +97,71 @@ export default function Results() {
               <p className="text-muted-foreground">out of 100</p>
             </div>
           </Card>
+
+          {/* Visualizations */}
+          {Object.keys(scores).length > 0 && (
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              {/* Radar Chart */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6 text-center">Skills Radar</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis 
+                      dataKey="skill" 
+                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 100]}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.6}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </Card>
+
+              {/* Bar Chart */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={barData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="skill" 
+                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    />
+                    <Bar 
+                      dataKey="score" 
+                      fill="hsl(var(--primary))"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+          )}
 
           {/* Skill Breakdown */}
           <div className="mb-8">
