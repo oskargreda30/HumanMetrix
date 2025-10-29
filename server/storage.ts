@@ -347,7 +347,7 @@ export class DatabaseStorage implements IStorage {
         purchaseId: purchase.id,
         assessmentType,
         price: ASSESSMENT_PRICES[assessmentType as keyof typeof ASSESSMENT_PRICES],
-        status: 'pending', // Ready to be taken
+        status: 'ready', // Ready to be taken
       });
     }
 
