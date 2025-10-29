@@ -354,149 +354,154 @@ export default function Assessment() {
 
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">
-                  {assessment.assessmentType.toUpperCase()} Assessment
-                </h1>
-                <p className="text-muted-foreground">
-                  Question {currentQuestion + 1} of {questions.length}
-                </p>
-              </div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                timeRemaining <= 300 ? 'bg-destructive/10 text-destructive' : 'bg-muted'
-              }`}>
-                <Clock className="h-5 w-5" />
-                <span className="text-lg font-semibold" data-testid="timer-display">
-                  {formatTime(timeRemaining)}
-                </span>
-              </div>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Time Warning */}
-          {timeRemaining <= 300 && timeRemaining > 0 && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Time Running Out!</AlertTitle>
-              <AlertDescription>
-                You have less than 5 minutes remaining. Please complete your assessment soon.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Question */}
-          <Card className="p-8 mb-6">
-            {isPromptArchitecture ? (
-              // Prompt Architecture text input
-              <div>
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-2xl font-bold">Level {(currentQ as any).level}</h2>
-                    <span className="text-sm text-muted-foreground">{(currentQ as any).title}</span>
+          {/* Only show content after instructions dialog is dismissed and assessment started */}
+          {!showInstructions && resultId && (
+            <>
+              {/* Header */}
+              <div className="mb-8">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h1 className="text-3xl font-bold mb-2">
+                      {assessment.assessmentType.toUpperCase()} Assessment
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Question {currentQuestion + 1} of {questions.length}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground mb-4">{(currentQ as any).description}</p>
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                    timeRemaining <= 300 ? 'bg-destructive/10 text-destructive' : 'bg-muted'
+                  }`}>
+                    <Clock className="h-5 w-5" />
+                    <span className="text-lg font-semibold" data-testid="timer-display">
+                      {formatTime(timeRemaining)}
+                    </span>
+                  </div>
                 </div>
-                
-                <div className="mb-6 p-4 bg-muted rounded-lg">
-                  <h3 className="font-semibold mb-2">Scenario:</h3>
-                  <p className="text-sm">{currentQ.text}</p>
-                </div>
-                
-                <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-lg">
-                  <h3 className="font-semibold mb-2">Task:</h3>
-                  <p className="text-sm">{(currentQ as any).taskInstructions}</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor={`prompt-${currentQ.id}`} className="text-base font-semibold mb-2 block">
-                    Your Prompt:
-                  </Label>
-                  <Textarea
-                    id={`prompt-${currentQ.id}`}
-                    placeholder="Write your prompt here... Be specific, clear, and creative!"
-                    value={answers[currentQ.id] || ""}
-                    onChange={handleTextChange}
-                    className="min-h-[200px] text-base"
-                    data-testid={`input-prompt-${currentQ.id}`}
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${progress}%` }}
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Your prompt will be evaluated by GPT-4o on clarity, structure, context relevance, creativity, and iterative improvement.
-                  </p>
                 </div>
               </div>
-            ) : (
-              // Multiple choice questions (FIT, AI Readiness, AIQ)
-              <div>
-                <h2 className="text-xl font-semibold mb-6">{currentQ.text}</h2>
-                <RadioGroup
-                  value={answers[currentQ.id] || ""}
-                  onValueChange={handleAnswerChange}
-                >
-                  {(currentQ as any).options?.map((option: any) => (
-                    <div key={option.value} className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2">
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`${currentQ.id}-${option.value}`}
-                        data-testid={`radio-${currentQ.id}-${option.value}`}
-                      />
-                      <Label
-                        htmlFor={`${currentQ.id}-${option.value}`}
-                        className="flex-1 cursor-pointer"
-                      >
-                        <div className="font-medium mb-1">{option.value}.</div>
-                        <div className="text-muted-foreground">{option.text}</div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            )}
-          </Card>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentQuestion === 0}
-              data-testid="button-previous"
-            >
-              Previous
-            </Button>
-            
-            {currentQuestion === questions.length - 1 ? (
-              <Button
-                onClick={handleSubmit}
-                disabled={submitMutation.isPending}
-                data-testid="button-submit-assessment"
-              >
-                {submitMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
+              {/* Time Warning */}
+              {timeRemaining <= 300 && timeRemaining > 0 && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Time Running Out!</AlertTitle>
+                  <AlertDescription>
+                    You have less than 5 minutes remaining. Please complete your assessment soon.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Question */}
+              <Card className="p-8 mb-6">
+                {isPromptArchitecture ? (
+                  // Prompt Architecture text input
+                  <div>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-2xl font-bold">Level {(currentQ as any).level}</h2>
+                        <span className="text-sm text-muted-foreground">{(currentQ as any).title}</span>
+                      </div>
+                      <p className="text-muted-foreground mb-4">{(currentQ as any).description}</p>
+                    </div>
+                    
+                    <div className="mb-6 p-4 bg-muted rounded-lg">
+                      <h3 className="font-semibold mb-2">Scenario:</h3>
+                      <p className="text-sm">{currentQ.text}</p>
+                    </div>
+                    
+                    <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-lg">
+                      <h3 className="font-semibold mb-2">Task:</h3>
+                      <p className="text-sm">{(currentQ as any).taskInstructions}</p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`prompt-${currentQ.id}`} className="text-base font-semibold mb-2 block">
+                        Your Prompt:
+                      </Label>
+                      <Textarea
+                        id={`prompt-${currentQ.id}`}
+                        placeholder="Write your prompt here... Be specific, clear, and creative!"
+                        value={answers[currentQ.id] || ""}
+                        onChange={handleTextChange}
+                        className="min-h-[200px] text-base"
+                        data-testid={`input-prompt-${currentQ.id}`}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Your prompt will be evaluated by GPT-4o on clarity, structure, context relevance, creativity, and iterative improvement.
+                      </p>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Submit Assessment
-                  </>
+                  // Multiple choice questions (FIT, AI Readiness, AIQ)
+                  <div>
+                    <h2 className="text-xl font-semibold mb-6">{currentQ.text}</h2>
+                    <RadioGroup
+                      value={answers[currentQ.id] || ""}
+                      onValueChange={handleAnswerChange}
+                    >
+                      {(currentQ as any).options?.map((option: any) => (
+                        <div key={option.value} className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2">
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`${currentQ.id}-${option.value}`}
+                            data-testid={`radio-${currentQ.id}-${option.value}`}
+                          />
+                          <Label
+                            htmlFor={`${currentQ.id}-${option.value}`}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <div className="font-medium mb-1">{option.value}.</div>
+                            <div className="text-muted-foreground">{option.text}</div>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 )}
-              </Button>
-            ) : (
-              <Button onClick={handleNext} data-testid="button-next">
-                Next
-              </Button>
-            )}
-          </div>
+              </Card>
+
+              {/* Navigation */}
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentQuestion === 0}
+                  data-testid="button-previous"
+                >
+                  Previous
+                </Button>
+                
+                {currentQuestion === questions.length - 1 ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitMutation.isPending}
+                    data-testid="button-submit-assessment"
+                  >
+                    {submitMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Submit Assessment
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button onClick={handleNext} data-testid="button-next">
+                    Next
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </main>
       <Footer />
