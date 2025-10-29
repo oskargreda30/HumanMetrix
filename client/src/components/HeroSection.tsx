@@ -38,29 +38,25 @@ export default function HeroSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/assessments">
-                <a data-testid="link-hero-get-started">
-                  <Button 
-                    size="lg" 
-                    className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
-                    data-testid="button-hero-get-started"
-                  >
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </a>
+              <Link href="/assessments" data-testid="link-hero-get-started">
+                <Button 
+                  size="lg" 
+                  className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
+                  data-testid="button-hero-get-started"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </Link>
-              <Link href="/about">
-                <a data-testid="link-hero-learn-more">
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm" 
-                    data-testid="button-hero-learn-more"
-                  >
-                    Learn More
-                  </Button>
-                </a>
+              <Link href="/about" data-testid="link-hero-learn-more">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm" 
+                  data-testid="button-hero-learn-more"
+                >
+                  Learn More
+                </Button>
               </Link>
             </div>
 
