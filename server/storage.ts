@@ -69,6 +69,9 @@ export interface IStorage {
   // Admin operations
   getAllResults(): Promise<AssessmentResult[]>;
   getAllInvitations(): Promise<Invitation[]>;
+  
+  // Test/development operations
+  createTestPurchaseWithAllAssessments(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -305,6 +308,50 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitations)
       .orderBy(desc(invitations.sentAt));
+  }
+
+  // Test/development operations
+  async createTestPurchaseWithAllAssessments(userId: string): Promise<void> {
+    // Check if test purchase already exists
+    const existingPurchases = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.userId, userId));
+    
+    if (existingPurchases.length > 0) {
+      console.log('[TEST LOGIN] Test purchase already exists, skipping creation');
+      return;
+    }
+
+    // Import assessment types and prices
+    const { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE } = await import("@shared/schema");
+
+    // Create a completed purchase
+    const [purchase] = await db
+      .insert(purchases)
+      .values({
+        userId,
+        stripeSessionId: 'test-session-123',
+        stripePaymentIntentId: 'test-payment-intent-123',
+        totalAmount: BASE_FEE + Object.values(ASSESSMENT_PRICES).reduce((a, b) => a + b, 0),
+        baseFee: BASE_FEE,
+        status: 'completed',
+        completedAt: new Date(),
+      })
+      .returning();
+
+    // Create purchase items for all 4 assessment types
+    const assessmentTypes = Object.values(ASSESSMENT_TYPES);
+    for (const assessmentType of assessmentTypes) {
+      await db.insert(purchaseItems).values({
+        purchaseId: purchase.id,
+        assessmentType,
+        price: ASSESSMENT_PRICES[assessmentType as keyof typeof ASSESSMENT_PRICES],
+        status: 'pending', // Ready to be taken
+      });
+    }
+
+    console.log('[TEST LOGIN] Created test purchase with all 4 assessments');
   }
 }
 

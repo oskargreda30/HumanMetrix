@@ -144,6 +144,10 @@ export async function setupAuth(app: Express) {
         
         console.log('[TEST LOGIN] Test user created/updated');
 
+        // Create test purchase with all assessments (if not already exists)
+        await storage.createTestPurchaseWithAllAssessments(testUserId);
+        console.log('[TEST LOGIN] Test assessments created');
+
         // Create a mock session with proper structure matching real auth
         const mockUser = {
           claims: {
