@@ -26,7 +26,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await apiRequest("/api/login", "POST", {
+      await apiRequest("POST", "/api/login", {
         email: loginEmail,
         password: loginPassword,
       });
@@ -53,7 +53,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await apiRequest("/api/signup", "POST", {
+      await apiRequest("POST", "/api/signup", {
         email: signupEmail,
         password: signupPassword,
         firstName: signupFirstName,

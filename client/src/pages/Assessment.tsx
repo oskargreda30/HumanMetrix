@@ -51,7 +51,7 @@ export default function Assessment() {
 
   const startMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/assessments/start", "POST", { purchaseItemId });
+      return await apiRequest("POST", "/api/assessments/start", { purchaseItemId });
     },
     onSuccess: (data: any) => {
       setResultId(data.id);
@@ -67,7 +67,7 @@ export default function Assessment() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/assessments/${resultId}/submit`, "POST", { answers });
+      return await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/results"] });
