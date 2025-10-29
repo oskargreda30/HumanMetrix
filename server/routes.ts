@@ -167,24 +167,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate scores based on assessment type
       let scores: Record<string, number> = {};
-      let totalScore = 0;
+      let totalScore: number | null = 0;
       let evaluations: any[] = [];
 
       if (result.assessmentType === ASSESSMENT_TYPES.FIT) {
         scores = calculateFITScores(answers);
-        totalScore = Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.keys(scores).length);
+        totalScore = null; // No total score for FIT - just individual skills
       } else if (result.assessmentType === ASSESSMENT_TYPES.AI_READINESS) {
         scores = calculateAIReadinessScores(answers);
-        totalScore = Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.keys(scores).length);
+        totalScore = null; // No total score for AI Readiness - just individual skills
       } else if (result.assessmentType === ASSESSMENT_TYPES.AIQ) {
         scores = calculateAIQScores(answers);
         totalScore = Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.keys(scores).length);
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
         // For Prompt Architecture, use OpenAI GPT evaluation
-        const promptEvalResult = await calculatePromptArchitectureScores(answers);
-        scores = promptEvalResult.scores;
-        totalScore = promptEvalResult.totalScore;
-        evaluations = promptEvalResult.evaluations;
+        try {
+          const promptEvalResult = await calculatePromptArchitectureScores(answers);
+          scores = promptEvalResult.scores;
+          totalScore = promptEvalResult.totalScore;
+          evaluations = promptEvalResult.evaluations;
+        } catch (error: any) {
+          // Handle OpenAI API errors gracefully
+          if (error.message?.includes('quota') || error.message?.includes('429')) {
+            return res.status(402).json({ 
+              message: "OpenAI API quota exceeded. Please add credits to your OpenAI account to use Prompt Architecture assessment.",
+              error: "quota_exceeded"
+            });
+          }
+          throw error;
+        }
       }
 
       await db.update(assessmentResults)

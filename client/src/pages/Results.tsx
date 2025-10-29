@@ -41,7 +41,8 @@ export default function Results() {
   }
 
   const scores = (result as any).scores || {};
-  const totalScore = (result as any).totalScore || 0;
+  const totalScore = (result as any).totalScore;
+  const hasTotalScore = totalScore !== null && totalScore !== undefined;
 
   // Transform scores for radar chart
   const radarData = Object.entries(scores).map(([skill, score]) => ({
@@ -85,18 +86,20 @@ export default function Results() {
             </p>
           </div>
 
-          {/* Overall Score */}
-          <Card className="p-8 mb-8">
-            <div className="text-center">
-              <h2 className="text-lg font-medium text-muted-foreground mb-2">
-                Overall Score
-              </h2>
-              <div className="text-6xl font-bold text-primary mb-2">
-                {totalScore}
+          {/* Overall Score - only show for assessments with total scores */}
+          {hasTotalScore && (
+            <Card className="p-8 mb-8">
+              <div className="text-center">
+                <h2 className="text-lg font-medium text-muted-foreground mb-2">
+                  Overall Score
+                </h2>
+                <div className="text-6xl font-bold text-primary mb-2">
+                  {totalScore}
+                </div>
+                <p className="text-muted-foreground">out of 100</p>
               </div>
-              <p className="text-muted-foreground">out of 100</p>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Visualizations */}
           {Object.keys(scores).length > 0 && (

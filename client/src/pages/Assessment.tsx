@@ -91,6 +91,10 @@ export default function Assessment() {
   const submitMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return await response.json();
     },
     onSuccess: () => {
@@ -102,10 +106,14 @@ export default function Assessment() {
       });
       setLocation("/dashboard");
     },
-    onError: () => {
+    onError: (error: any) => {
+      const message = error?.error === 'quota_exceeded' 
+        ? "OpenAI API quota exceeded. Please add credits to your OpenAI account to complete this assessment."
+        : "Failed to submit assessment";
+      
       toast({
         title: "Error",
-        description: "Failed to submit assessment",
+        description: message,
         variant: "destructive",
       });
     },
