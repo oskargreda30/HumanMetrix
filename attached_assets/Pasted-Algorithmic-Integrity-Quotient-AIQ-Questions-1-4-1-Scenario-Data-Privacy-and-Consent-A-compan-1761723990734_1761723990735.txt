@@ -1,0 +1,37 @@
+Algorithmic Integrity Quotient (AIQ)
+Questions 1-4
+1. Scenario: Data Privacy and Consent
+A company develops an AI model for predicting retail trends using anonymized customer purchase data. An analysis reveals that by combining the purchase history with public demographic data, it is possible to re-identify up to 15% of the customers. The AI's accuracy is highest when this combined, non-anonymized data is used.
+What is the most ethically responsible course of action?
+•	A. Immediately delete the combined dataset and retrain the model only on the initially anonymized data.
+•	B. Continue using the combined data but require all internal users to sign an NDA before accessing the model output.
+•	C. Keep the combined dataset, but implement a complex technical safeguard to prevent anyone from viewing the raw customer IDs.
+•	D. Use the combined data and disclose the 15% re-identification possibility in the next public terms and conditions update.
+2. Scenario: Algorithmic Bias and Fairness
+An AI-powered résumé screening tool, designed to filter candidates for a prestigious scholarship, shows a significantly higher rejection rate (20% higher) for candidates who attended vocational schools compared to those who attended traditional universities. The overall scholarship objective is to find high-potential students regardless of background.
+What is the most appropriate action to address this bias?
+•	A. Re-engineer the model to exclude the 'school name' feature and any proxy features (e.g., specific GPA scales common to vocational schools).
+•	B. Implement a post-screening human review that automatically flags and overrides any rejection of a vocational school candidate.
+•	C. Publish a report stating the tool's performance and notify vocational schools that they should encourage students to standardize their résumé formatting.
+•	D. Accept the outcome, arguing that the model is merely reflecting the historical hiring bias found in its training data.
+3. Scenario: Transparency and Explainability
+A company uses a complex deep learning model (a 'black box') to automate approval decisions for small business loans. A governing regulation requires that any rejected applicant must be provided with a specific, written reason for the decision that can be understood by the average business owner.
+What is the best way to achieve regulatory compliance and ethical transparency?
+•	A. Replace the black-box model entirely with a simpler, rules-based system (e.g., a decision tree) that can easily generate explanations.
+•	B. Hire a team of loan officers to manually review every rejection and generate a human-written explanation based on their professional judgment.
+•	C. Deploy an Explainable AI (XAI) technique (like SHAP or LIME) alongside the model to generate feature importance scores, which are then translated into simple, narrative reasons.
+•	D. Tell rejected applicants the model is proprietary and offer them a generic list of the top five common reasons for loan rejection.
+4. Scenario: Responsible Deployment and Safety
+A city plans to deploy an AI-driven traffic management system that dramatically reduces congestion but occasionally forces emergency vehicles to wait longer at certain intersections to maintain overall traffic flow efficiency. 
+Which action best prioritizes safety and ethical responsibility before deployment?
+•	A. Deploy the system immediately and assess the economic benefits of reduced congestion, monitoring emergency vehicle response times afterward.
+•	B. Redesign the system's core objective function to include hard-coded, non-negotiable weight for emergency vehicle priority at all intersections.
+•	C. Issue a press release detailing the small potential for delay for emergency vehicles, placing the responsibility on their dispatchers, to redirect emergency vehicles when needed. 
+•	D. Limit the system's use to non-peak hours only until the AI can learn better patterns for emergency vehicle prioritization.
+________________________________________
+🔑 Answer Key and Justification
+Q No.	Correct Answer	Rationale
+1	A	The risk of re-identification, even if only 15%, violates fundamental privacy principles (like the spirit of consent). Prioritizing risk mitigation by removing the data is the most responsible action.
+2	A	To truly address the bias, the algorithm must be fixed at its source. Removing the biased feature (school name) and any related proxy features is the direct way to achieve background-agnostic fairness.
+3	C	Explainable AI (XAI) techniques are designed specifically to provide the necessary, model-specific justification (e.g., feature importance) needed to translate a 'black box' decision into a human-understandable, compliant reason.
+4	B	For safety-critical systems, safety must be engineered as a non-negotiable constraint. Hard-coding priority for emergency vehicles ensures public safety overrides the general traffic efficiency goal.
