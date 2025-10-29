@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FIT_QUESTIONS } from "../data/fit-questions";
 import { AI_READINESS_QUESTIONS } from "../data/ai-readiness-questions";
 import { AIQ_QUESTIONS } from "../data/aiq-questions";
@@ -23,6 +24,9 @@ export default function Assessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -56,6 +60,10 @@ export default function Assessment() {
     },
     onSuccess: (data: any) => {
       setResultId(data.id);
+      // Set remaining time from server (prevents bypass by refreshing)
+      if (data.timeRemaining !== undefined) {
+        setTimeRemaining(data.timeRemaining);
+      }
     },
     onError: () => {
       toast({
@@ -96,6 +104,60 @@ export default function Assessment() {
       startMutation.mutate();
     }
   }, [isAuthenticated, assessment, resultId]);
+
+  // Timer effect
+  useEffect(() => {
+    if (!resultId) return;
+
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        const newTime = prev - 1;
+        
+        // Show warning at 5 minutes
+        if (newTime === 300 && !showTimeWarning) {
+          setShowTimeWarning(true);
+          toast({
+            title: "5 Minutes Remaining",
+            description: "You have 5 minutes left to complete this assessment",
+            variant: "destructive",
+          });
+        }
+        
+        // Auto-submit when time runs out
+        if (newTime <= 0) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          
+          // Auto-submit with current answers
+          toast({
+            title: "Time's Up!",
+            description: "Assessment will be auto-submitted with current answers",
+            variant: "destructive",
+          });
+          
+          // Submit even if incomplete
+          submitMutation.mutate();
+          return 0;
+        }
+        
+        return newTime;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [resultId, showTimeWarning, submitMutation]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   if (loadingAssessments || !assessment || !resultId || questions.length === 0) {
     return (
@@ -151,19 +213,42 @@ export default function Assessment() {
         <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">
-              {assessment.assessmentType.toUpperCase()} Assessment
-            </h1>
-            <p className="text-muted-foreground">
-              Question {currentQuestion + 1} of {questions.length}
-            </p>
-            <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">
+                  {assessment.assessmentType.toUpperCase()} Assessment
+                </h1>
+                <p className="text-muted-foreground">
+                  Question {currentQuestion + 1} of {questions.length}
+                </p>
+              </div>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                timeRemaining <= 300 ? 'bg-destructive/10 text-destructive' : 'bg-muted'
+              }`}>
+                <Clock className="h-5 w-5" />
+                <span className="text-lg font-semibold" data-testid="timer-display">
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
+
+          {/* Time Warning */}
+          {timeRemaining <= 300 && timeRemaining > 0 && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Time Running Out!</AlertTitle>
+              <AlertDescription>
+                You have less than 5 minutes remaining. Please complete your assessment soon.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Question */}
           <Card className="p-8 mb-6">

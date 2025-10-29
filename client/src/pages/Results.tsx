@@ -1,11 +1,12 @@
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,16 @@ export default function Results() {
       <Navigation />
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Link href="/dashboard">
+              <Button variant="ghost" data-testid="button-back-to-dashboard">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
+
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-3xl font-bold">
