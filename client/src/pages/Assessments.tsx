@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Brain, Sparkles, Code2, Shield, Network, Languages } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { useState } from "react";
+import CheckoutModal from "@/components/CheckoutModal";
 
 const assessments = [
   {
@@ -65,9 +67,16 @@ const assessments = [
 
 export default function Assessments() {
   const { isAuthenticated } = useAuth();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
 
   const availableAssessments = assessments.filter((a) => a.status === "available");
   const comingSoon = assessments.filter((a) => a.status === "coming-soon");
+
+  const handlePurchaseClick = (assessmentId: string) => {
+    setSelectedAssessmentId(assessmentId);
+    setCheckoutOpen(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
@@ -79,17 +88,11 @@ export default function Assessments() {
               AI Assessment Platform
             </h1>
             <p className="text-xl text-blue-100/70 mb-6">
-              All assessments are 100% free. Sign up to get started.
+              Professional assessments starting at just £0.01 per test
             </p>
-            {!isAuthenticated && (
-              <div className="flex gap-4 justify-center">
-                <Link href="/login">
-                  <Button size="lg" data-testid="button-get-started">
-                    Get Started Free
-                  </Button>
-                </Link>
-              </div>
-            )}
+            <p className="text-sm text-cyan-400 mb-6">
+              £0.02 base fee + £0.01 per assessment
+            </p>
             {isAuthenticated && (
               <div className="flex gap-4 justify-center">
                 <Link href="/dashboard">
@@ -107,12 +110,14 @@ export default function Assessments() {
               {availableAssessments.map((assessment) => (
                 <AssessmentCard
                   key={assessment.id}
+                  id={assessment.id}
                   title={assessment.title}
                   description={assessment.description}
                   questionCount={assessment.questionCount}
                   duration={assessment.duration}
                   icon={assessment.icon}
-                  free={true}
+                  price="£0.01"
+                  onSelect={() => handlePurchaseClick(assessment.id)}
                 />
               ))}
             </div>
@@ -137,6 +142,12 @@ export default function Assessments() {
         </div>
       </main>
       <Footer />
+      
+      <CheckoutModal
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        preselectedAssessmentId={selectedAssessmentId}
+      />
     </div>
   );
 }

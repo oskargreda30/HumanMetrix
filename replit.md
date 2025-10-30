@@ -67,9 +67,17 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - Protected routes
    - Password reset functionality (tokens expire in 24 hours)
    - Welcome emails with temporary passwords for invited users
-   - All assessments are 100% free with automatic access on signup
+   - Auto-account creation after Stripe payment
 
-4. **Assessment Experience**
+4. **Stripe Payment Integration**
+   - Guest checkout flow (no login required to purchase)
+   - Checkout modal on /assessments page
+   - Real-time price calculation
+   - Secure payment processing via Stripe
+   - Post-payment account creation with email credentials
+   - Success page at /purchase/success with account creation confirmation
+
+5. **Assessment Experience**
    - Instruction dialogs for all assessments that gate start
    - Timer only starts after user clicks "Begin Assessment"
    - Server-side timer validation
@@ -77,7 +85,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - Results page with comprehensive score analysis and employer-ready insights
 
 ### 🚧 In Progress
-- Testing Stripe payment integration (integrated, pending testing)
+- None
 
 ### ⏳ Pending
 - Assessment-taking interface for all 4 assessments
@@ -130,12 +138,29 @@ Located in `attached_assets/`:
 
 ## User Journey
 
-### For Individual Users
-1. Browse landing page and assessments
-2. Sign up with email/password (all assessments are 100% free!)
-3. Complete assessments
-4. View results with detailed breakdowns
-5. Download PDF report
+### New Purchase-First Flow (Primary)
+1. Browse /assessments page and view available assessments (£0.01 each)
+2. Click "Purchase" button on any assessment
+3. Checkout modal opens with:
+   - All 4 assessments available for selection
+   - Real-time total calculation (£0.02 base + £0.01 per assessment)
+   - Form fields for name and email
+4. Fill in details and click "Proceed to Payment"
+5. Redirected to Stripe checkout page
+6. Complete payment with credit/debit card
+7. After successful payment:
+   - Account automatically created
+   - Temporary password generated and emailed
+   - Welcome email sent with login credentials
+8. Check email for credentials
+9. Log in at /login with received credentials
+10. Access dashboard and take purchased assessments
+
+### For Existing Users
+1. Log in at /login
+2. Go to dashboard
+3. Take available assessments
+4. View results
 
 ### For Employers
 1. Admin logs in with email/password

@@ -22,6 +22,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
 
+  // Process payment success and create user account
+  app.post("/api/process-payment-success", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+
+      // Retrieve the checkout session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (!session || session.payment_status !== "paid") {
+        return res.status(400).json({ message: "Payment not completed" });
+      }
+
+      const metadata = session.metadata;
+      
+      if (!metadata || metadata.isGuestCheckout !== "true") {
+        return res.json({ success: true, message: "Payment processed" });
+      }
+
+      const { customerEmail, firstName, lastName, assessmentIds } = metadata;
+      
+      if (!customerEmail || !firstName || !lastName) {
+        return res.status(400).json({ message: "Missing customer information" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(customerEmail);
+      
+      if (existingUser) {
+        // User already exists, just grant access to assessments
+        const purchase = await storage.createPurchase({
+          userId: existingUser.id,
+          stripeSessionId: session.id,
+          stripePaymentIntentId: session.payment_intent as string || null,
+          totalAmount: session.amount_total || 0,
+          baseFee: 2,
+          status: "completed",
+          completedAt: new Date(),
+        });
+
+        const assessmentList = JSON.parse(assessmentIds);
+        for (const assessmentId of assessmentList) {
+          await storage.createPurchaseItem({
+            purchaseId: purchase.id,
+            assessmentType: assessmentId,
+            price: 1,
+            status: "active",
+          });
+        }
+        
+        return res.json({
+          success: true,
+          email: customerEmail,
+          message: "Assessments added to existing account",
+        });
+      }
+
+      // Generate temporary password
+      const bcrypt = await import("bcryptjs");
+      const { sendWelcomeEmailWithPassword } = await import("./email");
+      const crypto = await import("crypto");
+      
+      const words = [
+        "ocean", "mountain", "forest", "river", "cloud",
+        "storm", "dawn", "sunset", "moon", "star",
+        "wind", "rain", "snow", "fire", "earth",
+        "sky", "wave", "thunder", "lightning", "rainbow"
+      ];
+      
+      const word1 = words[crypto.randomInt(0, words.length)];
+      const word2 = words[crypto.randomInt(0, words.length)];
+      const word3 = words[crypto.randomInt(0, words.length)];
+      const digits = crypto.randomInt(10, 100).toString();
+      
+      const temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Create user account
+      await storage.createUser({
+        email: customerEmail,
+        passwordHash,
+        firstName,
+        lastName,
+        profileImageUrl: null,
+      });
+      
+      const newUser = await storage.getUserByEmail(customerEmail);
+      if (!newUser) {
+        throw new Error("Failed to create user account");
+      }
+
+      // Create purchase record and grant assessment access
+      const purchase = await storage.createPurchase({
+        userId: newUser.id,
+        stripeSessionId: session.id,
+        stripePaymentIntentId: session.payment_intent as string || null,
+        totalAmount: session.amount_total || 0,
+        baseFee: 2,
+        status: "completed",
+        completedAt: new Date(),
+      });
+
+      const assessmentList = JSON.parse(assessmentIds);
+      for (const assessmentId of assessmentList) {
+        await storage.createPurchaseItem({
+          purchaseId: purchase.id,
+          assessmentType: assessmentId,
+          price: 1,
+          status: "active",
+        });
+      }
+      
+      // Send welcome email with credentials
+      await sendWelcomeEmailWithPassword(
+        customerEmail,
+        `${firstName} ${lastName}`,
+        temporaryPassword
+      );
+
+      res.json({
+        success: true,
+        email: customerEmail,
+        message: "Account created and credentials sent",
+      });
+    } catch (error: any) {
+      console.error("Error processing payment success:", error);
+      res.status(500).json({ message: "Failed to process payment: " + error.message });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -36,6 +169,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Stripe checkout session for guest (before signup)
+  app.post("/api/create-checkout-session-guest", async (req, res) => {
+    try {
+      const { assessmentIds, customerEmail, customerName, firstName, lastName } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      if (!customerEmail || !customerName || !firstName || !lastName) {
+        return res.status(400).json({ message: "Customer details required" });
+      }
+
+      // Assessment pricing (£0.01 each in pence)
+      const assessmentPrices: Record<string, number> = {
+        "fit": 1,
+        "ai-readiness": 1,
+        "prompt-architecture": 1,
+        "aiq": 1,
+      };
+
+      const baseFee = 2; // £0.02 in pence
+
+      // Create line items for Stripe
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+        {
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: "Base Computation Fee",
+              description: "One-time platform access fee",
+            },
+            unit_amount: baseFee,
+          },
+          quantity: 1,
+        },
+      ];
+
+      // Add assessment line items
+      const assessmentNames: Record<string, string> = {
+        "fit": "FIT Assessment (15Q)",
+        "ai-readiness": "AI Readiness Assessment (21Q)",
+        "prompt-architecture": "Prompt Architecture Assessment (7 Levels)",
+        "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
+      };
+
+      for (const assessmentId of assessmentIds) {
+        if (!assessmentPrices[assessmentId]) {
+          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+        }
+        
+        lineItems.push({
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: assessmentNames[assessmentId] || assessmentId,
+            },
+            unit_amount: assessmentPrices[assessmentId],
+          },
+          quantity: 1,
+        });
+      }
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer_email: customerEmail,
+        line_items: lineItems,
+        mode: "payment",
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/assessments`,
+        metadata: {
+          customerEmail,
+          customerName,
+          firstName,
+          lastName,
+          assessmentIds: JSON.stringify(assessmentIds),
+          isGuestCheckout: "true",
+        },
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating guest checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
     }
   });
 

@@ -77,10 +77,7 @@ export default function AssessmentCard({
               <span className="text-2xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
             )}
             {!free && price && (
-              <>
-                <span className="text-2xl font-bold font-mono text-white" data-testid="text-price">{price}</span>
-                {!isComingSoon && <span className="text-sm text-blue-100/50 ml-1">+ £15 base</span>}
-              </>
+              <span className="text-2xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
             )}
           </div>
           {isComingSoon ? (
@@ -90,9 +87,9 @@ export default function AssessmentCard({
               <Button
                 onClick={onSelect}
                 disabled={!isAvailable}
-                data-testid="button-select-assessment"
+                data-testid="button-purchase-assessment"
               >
-                {status === "completed" ? "View Results" : "Select"}
+                {status === "completed" ? "View Results" : "Purchase"}
               </Button>
             )
           )}
