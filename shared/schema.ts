@@ -169,6 +169,125 @@ export const insertAiqRationaleSchema = createInsertSchema(aiqRationales).omit({
 export type InsertAiqRationale = z.infer<typeof insertAiqRationaleSchema>;
 export type AiqRationale = typeof aiqRationales.$inferSelect;
 
+// Job Roles - predefined and custom roles for candidate matching
+export const jobRoles = pgTable("job_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  competencies: jsonb("competencies").notNull().$type<{
+    skillName: string;
+    importance: number; // 1-5 scale
+    minimumScore: number; // 0-100
+  }[]>(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertJobRoleSchema = createInsertSchema(jobRoles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertJobRole = z.infer<typeof insertJobRoleSchema>;
+export type JobRole = typeof jobRoles.$inferSelect;
+
+// Candidate Tags - for organizing and categorizing candidates
+export const candidateTags = pgTable("candidate_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tag: text("tag").notNull(),
+  color: varchar("color", { length: 7 }), // hex color
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCandidateTagSchema = createInsertSchema(candidateTags).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCandidateTag = z.infer<typeof insertCandidateTagSchema>;
+export type CandidateTag = typeof candidateTags.$inferSelect;
+
+// Candidate Notes - admin notes about candidates
+export const candidateNotes = pgTable("candidate_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  note: text("note").notNull(),
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCandidateNoteSchema = createInsertSchema(candidateNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCandidateNote = z.infer<typeof insertCandidateNoteSchema>;
+export type CandidateNote = typeof candidateNotes.$inferSelect;
+
+// Cached Role Alignments - store OpenAI analysis results
+export const cachedRoleAlignments = pgTable("cached_role_alignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobRoleId: varchar("job_role_id").notNull().references(() => jobRoles.id, { onDelete: "cascade" }),
+  overallFit: integer("overall_fit").notNull(), // 0-100 percentage
+  skillAlignments: jsonb("skill_alignments").notNull().$type<{
+    skillName: string;
+    candidateScore: number;
+    requiredScore: number;
+    gap: number;
+    alignment: string; // "excellent", "good", "fair", "poor"
+  }[]>(),
+  strengths: jsonb("strengths").notNull().$type<string[]>(),
+  gaps: jsonb("gaps").notNull().$type<string[]>(),
+  recommendations: text("recommendations").notNull(),
+  riskFlags: jsonb("risk_flags").$type<string[]>(),
+  promptHash: text("prompt_hash").notNull(), // to invalidate cache when prompt changes
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // cache TTL
+});
+
+export const insertCachedRoleAlignmentSchema = createInsertSchema(cachedRoleAlignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCachedRoleAlignment = z.infer<typeof insertCachedRoleAlignmentSchema>;
+export type CachedRoleAlignment = typeof cachedRoleAlignments.$inferSelect;
+
+// Report Exports - track generated PDF reports and share links
+export const reportExports = pgTable("report_exports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reportType: text("report_type").notNull(), // "individual", "comparison", "role-alignment"
+  userIds: jsonb("user_ids").notNull().$type<string[]>(), // candidates in report
+  jobRoleId: varchar("job_role_id").references(() => jobRoles.id, { onDelete: "set null" }),
+  shareToken: varchar("share_token").unique().default(sql`encode(gen_random_bytes(32), 'hex')`),
+  expiresAt: timestamp("expires_at"),
+  accessCount: integer("access_count").notNull().default(0),
+  pdfUrl: text("pdf_url"), // if stored externally
+  pdfData: text("pdf_data"), // base64 encoded if stored in DB
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastAccessedAt: timestamp("last_accessed_at"),
+});
+
+export const insertReportExportSchema = createInsertSchema(reportExports).omit({
+  id: true,
+  shareToken: true,
+  createdAt: true,
+  accessCount: true,
+  lastAccessedAt: true,
+});
+
+export type InsertReportExport = z.infer<typeof insertReportExportSchema>;
+export type ReportExport = typeof reportExports.$inferSelect;
+
 // Assessment type constants
 export const ASSESSMENT_TYPES = {
   FIT: "fit",
