@@ -29,10 +29,10 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 - **Frontend**: React + TypeScript, Wouter (routing), TanStack Query, Shadcn UI, Tailwind CSS
 - **Backend**: Express + TypeScript
 - **Database**: PostgreSQL (Neon) via Drizzle ORM
-- **Authentication**: Replit Auth (OpenID Connect)
-- **Payments**: Stripe
+- **Authentication**: Email/Password (bcryptjs) with session-based auth
+- **Payments**: Stripe (optional - all assessments are free)
 - **AI**: OpenAI API (GPT-5 for Prompt Architecture evaluation)
-- **Email**: Nodemailer with Gmail
+- **Email**: Nodemailer with Gmail (for password reset and invitations)
 
 ## Current Implementation Status
 
@@ -44,13 +44,15 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - For Employers page
    - Purchase page at /purchase (checkbox selection, automatic total calculation)
    - Terms & Conditions page at /terms (comprehensive legal coverage)
-   - Login page (placeholder)
+   - Login page with email/password authentication and forgot password link
+   - Forgot Password page at /forgot-password
+   - Reset Password page at /reset-password/:token
    - All reusable components (Navigation, HeroSection, AssessmentCard, etc.)
    - Navigation component fixed (removed nested anchor tags, resolved React warnings)
 
 2. **Database Schema**
-   - `users` table (Replit Auth compatible)
-   - `sessions` table (for auth)
+   - `users` table with passwordHash, resetToken, resetTokenExpiry fields
+   - `sessions` table (PostgreSQL session storage)
    - `purchased_assessments` table (tracks purchases)
    - `assessment_results` table (stores completed assessments)
    - `invitations` table (employer invitations)
@@ -58,11 +60,14 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - `aiq_rationales` table (follow-up rationale responses)
 
 3. **Authentication System**
-   - Replit Auth integration (OpenID Connect)
-   - Server-side auth middleware (`replitAuth.ts`)
+   - Email/password authentication with bcryptjs
+   - Session-based authentication (PostgreSQL storage)
+   - Server-side auth middleware in `auth.ts`
    - Frontend `useAuth` hook
-   - Protected routes ready
-   - Database storage layer with all CRUD operations
+   - Protected routes
+   - Password reset functionality (tokens expire in 24 hours)
+   - Welcome emails with temporary passwords for invited users
+   - All assessments are 100% free with automatic access on signup
 
 4. **Assessment Experience**
    - Instruction dialogs for all assessments that gate start
@@ -116,28 +121,35 @@ Located in `attached_assets/`:
 - `DATABASE_URL` - PostgreSQL connection string
 - `SESSION_SECRET` - Session encryption key
 - `OPENAI_API_KEY` - For GPT-5 evaluations
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- `VITE_STRIPE_PUBLIC_KEY` - Stripe publishable key (frontend)
-- `REPLIT_DOMAINS` - Auto-configured by Replit
+- `GMAIL_USER` - Gmail address for sending emails
+- `GMAIL_APP_PASSWORD` - Gmail app password for SMTP
+- `STRIPE_SECRET_KEY` - Stripe secret key (optional)
+- `VITE_STRIPE_PUBLIC_KEY` - Stripe publishable key (optional, frontend)
+- `REPLIT_DOMAINS` - Auto-configured by Replit (used for email links)
 - `REPL_ID` - Auto-configured by Replit
 
 ## User Journey
 
 ### For Individual Users
 1. Browse landing page and assessments
-2. Select assessments to take
-3. Checkout with Stripe (£15 base + assessment fees)
-4. Complete assessments
-5. View results with detailed breakdowns
-6. Download PDF report
+2. Sign up with email/password (all assessments are 100% free!)
+3. Complete assessments
+4. View results with detailed breakdowns
+5. Download PDF report
 
 ### For Employers
-1. Admin logs in
+1. Admin logs in with email/password
 2. Sends invitation to candidate via email
-3. Candidate receives link to take specific assessments
-4. Candidate completes assessments
+3. Candidate receives email with account credentials (temporary password)
+4. Candidate logs in and takes assessments (all free)
 5. Admin views results in dashboard
 6. Results can be exported as PDF
+
+### Password Reset Flow
+1. User clicks "Forgot password?" on login page
+2. Enters email and receives reset link (valid for 1 hour)
+3. Clicks link in email to set new password
+4. Redirected to login page
 
 ## Next Steps
 1. Complete Stripe checkout integration
