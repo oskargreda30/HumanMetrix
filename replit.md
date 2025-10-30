@@ -21,9 +21,9 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - Includes follow-up rationale questions for each answer
 
 ## Pricing
-- Base computation fee: £15 (one-time)
-- Assessment fees: £3.50 - £5.00 per test
-- Example: All 4 assessments = £32 total
+- Base computation fee: £0.02 (one-time)
+- Assessment fees: £0.01 per test
+- Example: All 4 assessments = £0.06 total (£0.02 base + 4 × £0.01)
 
 ## Tech Stack
 - **Frontend**: React + TypeScript, Wouter (routing), TanStack Query, Shadcn UI, Tailwind CSS
@@ -77,7 +77,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - Results page with comprehensive score analysis and employer-ready insights
 
 ### 🚧 In Progress
-- Stripe payment integration (Purchase page UI complete, backend integration pending)
+- Testing Stripe payment integration (integrated, pending testing)
 
 ### ⏳ Pending
 - Assessment-taking interface for all 4 assessments
