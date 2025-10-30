@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
 import Purchase from "@/pages/Purchase";
+import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import Terms from "@/pages/Terms";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/assessment/:purchaseItemId" component={Assessment} />
       <Route path="/results/:id" component={Results} />
       <Route path="/purchase" component={Purchase} />
+      <Route path="/purchase/success" component={PurchaseSuccess} />
       <Route path="/terms" component={Terms} />
       <Route path="/admin/invitations" component={AdminInvitations} />
       <Route path="/admin/dashboard" component={AdminDashboard} />

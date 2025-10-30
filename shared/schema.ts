@@ -39,7 +39,7 @@ export const purchases = pgTable("purchases", {
   stripeSessionId: text("stripe_session_id").unique(),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalAmount: integer("total_amount").notNull(),
-  baseFee: integer("base_fee").notNull().default(1500),
+  baseFee: integer("base_fee").notNull().default(2),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),

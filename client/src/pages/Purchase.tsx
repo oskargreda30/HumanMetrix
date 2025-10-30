@@ -24,7 +24,7 @@ const assessments: Assessment[] = [
     id: "fit",
     name: "FIT Assessment",
     description: "Measures 6 core behavioral skills including High Agency, Resilience, and Empathy & Ethics",
-    price: 3.50,
+    price: 0.01,
     questions: 15,
     skills: 6
   },
@@ -32,7 +32,7 @@ const assessments: Assessment[] = [
     id: "ai-readiness",
     name: "AI Readiness Assessment",
     description: "Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration",
-    price: 4.50,
+    price: 0.01,
     questions: 21,
     skills: 9
   },
@@ -40,19 +40,19 @@ const assessments: Assessment[] = [
     id: "prompt-architecture",
     name: "Prompt Architecture Assessment",
     description: "7 progressive levels testing prompt design skills, evaluated by GPT-4o",
-    price: 5.00,
+    price: 0.01,
     questions: 7
   },
   {
     id: "aiq",
     name: "Algorithmic Integrity Quotient (AIQ)",
     description: "Tests understanding of AI ethics, bias, fairness, transparency, and responsible deployment",
-    price: 4.00,
+    price: 0.01,
     questions: 4
   }
 ];
 
-const BASE_FEE = 15.00;
+const BASE_FEE = 0.02;
 
 export default function Purchase() {
   const { toast } = useToast();
@@ -97,11 +97,39 @@ export default function Purchase() {
     }
 
     setIsProcessing(true);
-    toast({
-      title: "Payment system coming soon",
-      description: "Stripe checkout integration is currently under development."
-    });
-    setIsProcessing(false);
+    
+    try {
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          assessmentIds: Array.from(selectedAssessments),
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create checkout session");
+      }
+
+      const { url } = await response.json();
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Checkout Error",
+        description: error.message || "Failed to initiate checkout. Please try again.",
+        variant: "destructive"
+      });
+      setIsProcessing(false);
+    }
   };
 
   return (

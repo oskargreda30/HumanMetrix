@@ -8,9 +8,14 @@ import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sendInvitationEmail } from "./email";
 import OpenAI from "openai";
+import Stripe from "stripe";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-11-20.acacia",
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -31,6 +36,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Stripe checkout session
+  app.post("/api/create-checkout-session", isAuthenticated, async (req: any, res) => {
+    try {
+      const { assessmentIds } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Assessment pricing (£0.01 each in pence)
+      const assessmentPrices: Record<string, number> = {
+        "fit": 1,
+        "ai-readiness": 1,
+        "prompt-architecture": 1,
+        "aiq": 1,
+      };
+
+      const baseFee = 2; // £0.02 in pence
+
+      // Create line items for Stripe
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+        {
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: "Base Computation Fee",
+              description: "One-time platform access fee",
+            },
+            unit_amount: baseFee,
+          },
+          quantity: 1,
+        },
+      ];
+
+      // Add assessment line items
+      const assessmentNames: Record<string, string> = {
+        "fit": "FIT Assessment (15Q)",
+        "ai-readiness": "AI Readiness Assessment (21Q)",
+        "prompt-architecture": "Prompt Architecture Assessment (7 Levels)",
+        "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
+      };
+
+      for (const assessmentId of assessmentIds) {
+        if (!assessmentPrices[assessmentId]) {
+          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+        }
+        
+        lineItems.push({
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: assessmentNames[assessmentId] || assessmentId,
+            },
+            unit_amount: assessmentPrices[assessmentId],
+          },
+          quantity: 1,
+        });
+      }
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer_email: user.email,
+        line_items: lineItems,
+        mode: "payment",
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase`,
+        metadata: {
+          userId: userId,
+          assessmentIds: JSON.stringify(assessmentIds),
+        },
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
     }
   });
 
