@@ -263,18 +263,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const invitation = await storage.createInvitation(validatedData);
       
-      // Send email
+      // Create user account with temporary password
+      let temporaryPassword = '';
       try {
-        const inviterName = user.firstName && user.lastName 
-          ? `${user.firstName} ${user.lastName}`
-          : user.email || 'HumanMetrix Admin';
-        await sendInvitationEmail(invitation, inviterName);
+        const bcrypt = await import("bcryptjs");
+        const { sendWelcomeEmailWithPassword } = await import("./email");
+        const crypto = await import("crypto");
+        
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(validatedData.candidateEmail);
+        
+        if (!existingUser) {
+          // Generate temporary password using crypto for randomness
+          const words = [
+            "ocean", "mountain", "forest", "river", "cloud",
+            "storm", "dawn", "sunset", "moon", "star",
+            "wind", "rain", "snow", "fire", "earth",
+            "sky", "wave", "thunder", "lightning", "rainbow"
+          ];
+          
+          const word1 = words[crypto.randomInt(0, words.length)];
+          const word2 = words[crypto.randomInt(0, words.length)];
+          const word3 = words[crypto.randomInt(0, words.length)];
+          const digits = crypto.randomInt(10, 100).toString();
+          
+          temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
+          const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+          
+          // Extract first and last name from candidateName
+          const nameParts = validatedData.candidateName.split(' ');
+          const firstName = nameParts[0] || validatedData.candidateName;
+          const lastName = nameParts.slice(1).join(' ') || null;
+          
+          // Create user account
+          await storage.createUser({
+            email: validatedData.candidateEmail,
+            passwordHash,
+            firstName,
+            lastName,
+            profileImageUrl: null,
+          });
+          
+          // Grant free access to all assessments
+          const newUser = await storage.getUserByEmail(validatedData.candidateEmail);
+          if (newUser) {
+            await storage.createFreeAssessmentsForUser(newUser.id);
+          }
+          
+          // Send welcome email with credentials
+          await sendWelcomeEmailWithPassword(
+            validatedData.candidateEmail,
+            validatedData.candidateName,
+            temporaryPassword
+          );
+        }
       } catch (emailError) {
-        console.error("Error sending invitation email:", emailError);
-        // Continue even if email fails - user can still use the token
+        console.error("Error creating user or sending email:", emailError);
+        // Continue even if email fails - admin can manually share credentials
       }
 
-      res.json(invitation);
+      res.json({
+        ...invitation,
+        // Only include temporary password in response if it was generated
+        ...(temporaryPassword ? { temporaryPassword } : {})
+      });
     } catch (error) {
       console.error("Error creating invitation:", error);
       res.status(500).json({ message: "Failed to create invitation" });
