@@ -58,6 +58,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - `invitations` table (employer invitations)
    - `prompt_architecture_evaluations` table (GPT-5 evaluations)
    - `aiq_rationales` table (follow-up rationale responses)
+   - `job_roles` table (predefined and custom role definitions with competencies)
+   - `candidate_tags` table (admin tags for candidate organization)
+   - `candidate_notes` table (admin notes for candidates)
+   - `cached_role_alignments` table (AI-powered role fit analysis cache)
+   - `report_exports` table (PDF export tracking)
 
 3. **Authentication System**
    - Email/password authentication with bcryptjs
@@ -84,18 +89,45 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - All 4 assessment types fully functional (FIT, AI Readiness, Prompt Architecture, AIQ)
    - Results page with comprehensive score analysis and employer-ready insights
 
+6. **Comprehensive Admin Dashboard** (/admin)
+   - **Overview Tab**: Real-time stats (total candidates, assessments, completion rates), recent assessment results feed
+   - **Candidates Tab**: 
+     - Searchable/filterable candidate list with assessment summaries
+     - Tag management system for candidate organization
+     - Notes system for admin annotations
+     - Detailed candidate modal with full assessment history
+   - **Compare Tab**:
+     - Multi-select comparison (2-3 candidates)
+     - Radar chart visualization of skills across candidates
+     - Side-by-side assessment score comparison table
+     - Average score calculations
+   - **Role Fit Tab**:
+     - AI-powered role alignment analysis using OpenAI GPT-4o
+     - 5 predefined job roles (Software Engineer, Product Manager, Data Analyst, Customer Success Manager, AI/ML Engineer)
+     - Overall fit score (0-100%)
+     - Skill-by-skill alignment analysis
+     - Strengths and development areas identification
+     - Practical hiring recommendations
+     - 7-day result caching to minimize API costs
+
+7. **Admin API Endpoints**
+   - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
+   - POST `/api/admin/candidates/tags` - Add tags to candidates
+   - POST `/api/admin/candidates/notes` - Add notes to candidates
+   - GET `/api/admin/compare` - Multi-candidate comparison analytics
+   - GET `/api/admin/roles` - Job role definitions
+   - POST `/api/admin/roles` - Create custom job roles
+   - POST `/api/admin/role-alignment` - Trigger AI role fit analysis
+   - GET `/api/admin/role-alignment` - Retrieve cached alignment results
+
 ### 🚧 In Progress
 - None
 
 ### ⏳ Pending
-- Assessment-taking interface for all 4 assessments
-- OpenAI GPT-5 integration for Prompt Architecture evaluation
-- Scoring engines for each assessment type
-- Results dashboard with visualizations
-- PDF export functionality
-- Admin invitation system (Gmail/Nodemailer)
-- Admin dashboard for viewing all results
-- Email notifications for completion
+- PDF export functionality for individual candidate reports
+- Email notifications for assessment completion
+- Advanced analytics and trends reporting
+- Bulk candidate actions
 
 ## Database Schema Details
 
