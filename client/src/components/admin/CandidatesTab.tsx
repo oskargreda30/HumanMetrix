@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Plus, FileText, Tag, StickyNote } from "lucide-react";
+import { Loader2, Search, Plus, FileText, Tag, StickyNote, TrendingUp, TrendingDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
+import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
 
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,19 +150,63 @@ export default function CandidatesTab() {
                             Assessment Results ({candidate.results?.length || 0})
                           </h3>
                           {candidate.results && candidate.results.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                               {candidate.results.map((result: any) => (
-                                <div key={result.id} className="p-3 bg-muted rounded-lg">
+                                <div key={result.id} className="space-y-3">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-medium">{result.assessmentType}</span>
+                                    <span className="font-medium">{formatAssessmentType(result.assessmentType)}</span>
                                     <Badge variant={result.status === 'completed' ? 'default' : 'secondary'}>
                                       {result.status}
                                     </Badge>
                                   </div>
-                                  {result.totalScore !== null && (
-                                    <p className="text-lg font-bold text-primary mt-1">
-                                      {result.totalScore}%
-                                    </p>
+                                  
+                                  {result.status === 'completed' && isSkillBasedAssessment(result.assessmentType) && result.scores ? (
+                                    <div className="space-y-3">
+                                      <SkillRadarChart 
+                                        data={transformToRadarData(result.scores, result.assessmentType)}
+                                        height={250}
+                                        showCard={false}
+                                      />
+                                      
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 bg-muted/50 rounded-lg">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="h-4 w-4 text-green-600" />
+                                            <p className="text-xs font-medium text-muted-foreground">Top Strengths</p>
+                                          </div>
+                                          {getTopSkills(result.scores, result.assessmentType, 2).map((skill) => (
+                                            <div key={skill.name} className="flex items-center justify-between text-sm mt-1">
+                                              <span>{skill.name}</span>
+                                              <Badge variant="outline" className="font-mono text-xs">{skill.score}</Badge>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        
+                                        <div className="p-3 bg-muted/50 rounded-lg">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <TrendingDown className="h-4 w-4 text-amber-600" />
+                                            <p className="text-xs font-medium text-muted-foreground">Growth Areas</p>
+                                          </div>
+                                          {getGrowthAreas(result.scores, result.assessmentType, 2).map((skill) => (
+                                            <div key={skill.name} className="flex items-center justify-between text-sm mt-1">
+                                              <span>{skill.name}</span>
+                                              <Badge variant="outline" className="font-mono text-xs">{skill.score}</Badge>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="text-center p-2 bg-primary/5 rounded-lg">
+                                        <p className="text-xs text-muted-foreground">Average Score</p>
+                                        <p className="text-xl font-bold text-primary">{calculateAverageScore(result.scores)}/100</p>
+                                      </div>
+                                    </div>
+                                  ) : result.totalScore !== null && (
+                                    <div className="text-center p-3 bg-muted rounded-lg">
+                                      <p className="text-lg font-bold text-primary">
+                                        {result.totalScore}%
+                                      </p>
+                                    </div>
                                   )}
                                 </div>
                               ))}
@@ -271,16 +317,24 @@ export default function CandidatesTab() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Avg Score</p>
+                    <p className="text-muted-foreground">Top Skill</p>
                     <p className="font-semibold">
-                      {candidate.results && candidate.results.length > 0
-                        ? Math.round(
-                            candidate.results
-                              .filter((r: any) => r.totalScore !== null)
-                              .reduce((sum: number, r: any) => sum + (r.totalScore || 0), 0) /
-                              candidate.results.filter((r: any) => r.totalScore !== null).length || 0
-                          ) + '%'
-                        : 'N/A'}
+                      {(() => {
+                        const completedResults = candidate.results?.filter((r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores);
+                        if (!completedResults || completedResults.length === 0) return 'N/A';
+                        
+                        const allSkills: Array<{name: string, score: number}> = [];
+                        completedResults.forEach((r: any) => {
+                          const topSkills = getTopSkills(r.scores, r.assessmentType, 1);
+                          if (topSkills.length > 0) {
+                            allSkills.push({name: topSkills[0].name, score: topSkills[0].score});
+                          }
+                        });
+                        
+                        if (allSkills.length === 0) return 'N/A';
+                        allSkills.sort((a, b) => b.score - a.score);
+                        return `${allSkills[0].name} (${allSkills[0].score})`;
+                      })()}
                     </p>
                   </div>
                   <div>
