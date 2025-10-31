@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
+import { exportCandidatePDF } from "@/lib/pdfExport";
 
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +47,42 @@ export default function CandidatesTab() {
       toast({ title: "Note added successfully" });
     },
   });
+
+  const handleExportCandidatePDF = async (candidate: any) => {
+    if (!candidate) return;
+    
+    try {
+      // Collect all skills from completed assessments
+      const completedResults = candidate.results?.filter(
+        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+      );
+      
+      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
+      completedResults?.forEach((result: any) => {
+        const radarData = transformToRadarData(result.scores, result.assessmentType);
+        radarData.forEach((skill: any) => {
+          allSkills.push({
+            name: skill.skill,
+            score: skill.score,
+            assessment: formatAssessmentType(result.assessmentType)
+          });
+        });
+      });
+      
+      await exportCandidatePDF(candidate, allSkills);
+      toast({
+        title: "PDF exported successfully",
+        description: "The candidate report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredCandidates = candidates?.filter((c) => {
     if (!searchQuery) return true;
@@ -283,6 +320,14 @@ export default function CandidatesTab() {
                       </div>
 
                       <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => handleExportCandidatePDF(selectedCandidate)}
+                          data-testid="button-export-candidate"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Export PDF
+                        </Button>
                         <Button variant="outline" onClick={() => setSelectedCandidate(null)}>
                           Close
                         </Button>
