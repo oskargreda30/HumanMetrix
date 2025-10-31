@@ -680,6 +680,343 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get all candidates with results, tags, notes
+  app.get("/api/admin/candidates", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const candidates = await storage.getCandidatesWithResults();
+      res.json(candidates);
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
+      res.status(500).json({ message: "Failed to fetch candidates" });
+    }
+  });
+
+  // Admin: Add tag to candidate
+  app.post("/api/admin/candidates/tags", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, tag } = req.body;
+      if (!userId || !tag) {
+        return res.status(400).json({ message: "User ID and tag are required" });
+      }
+
+      const createdTag = await storage.createCandidateTag({
+        userId,
+        tag,
+        color: null,
+        createdBy: adminId,
+      });
+
+      res.json(createdTag);
+    } catch (error) {
+      console.error("Error adding tag:", error);
+      res.status(500).json({ message: "Failed to add tag" });
+    }
+  });
+
+  // Admin: Add note to candidate
+  app.post("/api/admin/candidates/notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, note } = req.body;
+      if (!userId || !note) {
+        return res.status(400).json({ message: "User ID and note are required" });
+      }
+
+      const createdNote = await storage.createCandidateNote({
+        userId,
+        note,
+        createdBy: adminId,
+      });
+
+      res.json(createdNote);
+    } catch (error) {
+      console.error("Error adding note:", error);
+      res.status(500).json({ message: "Failed to add note" });
+    }
+  });
+
+  // Admin: Get comparison data for multiple candidates
+  app.get("/api/admin/compare", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const userIds = Array.isArray(req.query.userIds)
+        ? req.query.userIds as string[]
+        : [req.query.userIds as string];
+
+      if (!userIds || userIds.length < 2) {
+        return res.status(400).json({ message: "At least 2 user IDs required" });
+      }
+
+      // Get results for all selected candidates
+      const candidatesResults = await Promise.all(
+        userIds.map((id) => storage.getResultsByUser(id))
+      );
+
+      // Build radar chart data
+      const assessmentTypes = ['fit', 'ai-readiness', 'prompt-architecture', 'aiq'];
+      const radarData: any[] = [];
+      
+      // Aggregate skills across all assessments for radar chart
+      const skillsMap = new Map<string, number[]>();
+      
+      candidatesResults.forEach((results, candidateIndex) => {
+        results.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              if (!skillsMap.has(skill)) {
+                skillsMap.set(skill, new Array(userIds.length).fill(0));
+              }
+              const scores = skillsMap.get(skill)!;
+              scores[candidateIndex] = score as number;
+            });
+          }
+        });
+      });
+
+      skillsMap.forEach((scores, skill) => {
+        const dataPoint: any = { skill };
+        scores.forEach((score, index) => {
+          dataPoint[`candidate${index}`] = score;
+        });
+        radarData.push(dataPoint);
+      });
+
+      // Build assessment comparison table
+      const assessmentComparison = assessmentTypes.map((assessmentType) => {
+        const scores = candidatesResults.map((results) => {
+          const result = results.find((r) => r.assessmentType === assessmentType);
+          return result?.totalScore ?? null;
+        });
+        return { assessmentType, scores };
+      });
+
+      // Calculate average scores
+      const averageScores = candidatesResults.map((results) => {
+        const completedResults = results.filter((r) => r.totalScore !== null);
+        if (completedResults.length === 0) return 0;
+        const sum = completedResults.reduce((acc, r) => acc + (r.totalScore || 0), 0);
+        return Math.round(sum / completedResults.length);
+      });
+
+      res.json({
+        radarData,
+        assessmentComparison,
+        averageScores,
+      });
+    } catch (error) {
+      console.error("Error fetching comparison data:", error);
+      res.status(500).json({ message: "Failed to fetch comparison data" });
+    }
+  });
+
+  // Admin: Get all job roles
+  app.get("/api/admin/roles", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const roles = await storage.getAllJobRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Admin: Create job role
+  app.post("/api/admin/roles", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { name, description, competencies } = req.body;
+      
+      const role = await storage.createJobRole({
+        name,
+        description,
+        competencies,
+        isCustom: true,
+        createdBy: adminId,
+      });
+
+      res.json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  // Admin: Trigger AI role alignment analysis
+  app.post("/api/admin/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, jobRoleId } = req.body;
+      
+      if (!userId || !jobRoleId) {
+        return res.status(400).json({ message: "User ID and job role ID are required" });
+      }
+
+      // Get candidate results
+      const results = await storage.getResultsByUser(userId);
+      const completedResults = results.filter((r) => r.status === 'completed');
+      
+      if (completedResults.length === 0) {
+        return res.status(400).json({ message: "Candidate has no completed assessments" });
+      }
+
+      // Get job role
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Aggregate candidate skills from all assessments
+      const candidateSkills = new Map<string, number>();
+      completedResults.forEach((result) => {
+        if (result.scores && typeof result.scores === 'object') {
+          Object.entries(result.scores).forEach(([skill, score]) => {
+            const currentScore = candidateSkills.get(skill) || 0;
+            candidateSkills.set(skill, Math.max(currentScore, score as number));
+          });
+        }
+      });
+
+      // Use OpenAI to analyze role fit
+      const OpenAI = await import('openai');
+      const openai = new OpenAI.default({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      const prompt = `You are an expert HR consultant analyzing candidate-role fit.
+
+CANDIDATE SKILLS:
+${Array.from(candidateSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n')}
+
+JOB ROLE: ${role.name}
+${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
+REQUIRED COMPETENCIES:
+${role.competencies.map((c: any) => `- ${c.skillName}: Importance ${c.importance}/5, Minimum Score ${c.minimumScore}/100`).join('\n')}
+
+Analyze how well this candidate fits this role. Provide:
+1. Overall fit score (0-100)
+2. Skill-by-skill alignment (excellent/good/fair/poor for each required competency)
+3. Top 3-5 strengths specific to this role
+4. Top 3-5 development areas/gaps
+5. Practical recommendations for hiring manager
+6. Any risk flags or concerns
+
+Format your response as JSON with this structure:
+{
+  "overallFit": number,
+  "skillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}],
+  "strengths": [string],
+  "gaps": [string],
+  "recommendations": string,
+  "riskFlags": [string]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
+
+      const analysis = JSON.parse(completion.choices[0].message.content || "{}");
+
+      // Cache the result
+      const crypto = await import('crypto');
+      const promptHash = crypto.createHash('md5').update(prompt).digest('hex');
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      await storage.createRoleAlignment({
+        userId,
+        jobRoleId,
+        overallFit: analysis.overallFit,
+        skillAlignments: analysis.skillAlignments,
+        strengths: analysis.strengths,
+        gaps: analysis.gaps,
+        recommendations: analysis.recommendations,
+        riskFlags: analysis.riskFlags || [],
+        promptHash,
+        expiresAt,
+      });
+
+      res.json(analysis);
+    } catch (error: any) {
+      console.error("Error analyzing role fit:", error);
+      res.status(500).json({ message: "Failed to analyze role fit: " + error.message });
+    }
+  });
+
+  // Admin: Get cached role alignment
+  app.get("/api/admin/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, jobRoleId } = req.query;
+      
+      if (!userId || !jobRoleId) {
+        return res.status(400).json({ message: "User ID and job role ID are required" });
+      }
+
+      const alignment = await storage.getRoleAlignment(userId as string, jobRoleId as string);
+      
+      if (!alignment) {
+        return res.status(404).json({ message: "No cached alignment found" });
+      }
+
+      res.json(alignment);
+    } catch (error) {
+      console.error("Error fetching role alignment:", error);
+      res.status(500).json({ message: "Failed to fetch role alignment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
