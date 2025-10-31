@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   RadarChart,
@@ -14,6 +14,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { exportComparisonPDF } from "@/lib/pdfExport";
+import { useToast } from "@/hooks/use-toast";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -23,6 +25,7 @@ const CHART_COLORS = [
 
 export default function CompareTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/candidates'],
@@ -58,6 +61,29 @@ export default function CompareTab() {
   const selectedCandidateData = candidates?.filter((c) =>
     selectedCandidates.includes(c.user.id)
   );
+
+  const handleExportPDF = async () => {
+    if (!comparison || !selectedCandidateData) return;
+    
+    try {
+      await exportComparisonPDF({
+        candidates: selectedCandidateData,
+        skillComparison: comparison.skillComparison,
+        averageScores: comparison.averageScores,
+      });
+      toast({
+        title: "PDF exported successfully",
+        description: "Your comparison report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -223,7 +249,11 @@ export default function CompareTab() {
 
                 {/* Export Button */}
                 <div className="flex justify-end">
-                  <Button data-testid="button-export-comparison">
+                  <Button 
+                    onClick={handleExportPDF}
+                    data-testid="button-export-comparison"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
                     Export as PDF
                   </Button>
                 </div>

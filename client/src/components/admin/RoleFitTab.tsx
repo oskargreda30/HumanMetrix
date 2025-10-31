@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { exportRoleFitPDF } from "@/lib/pdfExport";
 
 export default function RoleFitTab() {
   const [selectedCandidate, setSelectedCandidate] = useState("");
@@ -67,6 +68,29 @@ export default function RoleFitTab() {
 
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
+
+  const handleExportPDF = async () => {
+    if (!alignment || !selectedCandidateData || !selectedRoleData) return;
+    
+    try {
+      await exportRoleFitPDF({
+        candidate: selectedCandidateData,
+        role: selectedRoleData,
+        alignment: alignment,
+      });
+      toast({
+        title: "PDF exported successfully",
+        description: "Your role fit analysis has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -290,7 +314,11 @@ export default function RoleFitTab() {
             <Button variant="outline" onClick={() => analyzeRoleFitMutation.mutate()}>
               Refresh Analysis
             </Button>
-            <Button data-testid="button-export-role-fit">
+            <Button 
+              onClick={handleExportPDF}
+              data-testid="button-export-role-fit"
+            >
+              <Download className="h-4 w-4 mr-2" />
               Export as PDF
             </Button>
           </div>
