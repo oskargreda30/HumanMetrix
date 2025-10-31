@@ -15,6 +15,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))", 
+  "hsl(var(--chart-3))",
+];
+
 export default function CompareTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
 
@@ -28,9 +34,14 @@ export default function CompareTab() {
     averageScores: Array<number>;
     hasSkillData: boolean;
   }>({
-    queryKey: selectedCandidates.length >= 2 
-      ? ['/api/admin/compare', { userIds: selectedCandidates }]
-      : undefined as any,
+    queryKey: ['compare', selectedCandidates],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      selectedCandidates.forEach(id => params.append('userIds', id));
+      const response = await fetch(`/api/admin/compare?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch comparison');
+      return response.json();
+    },
     enabled: selectedCandidates.length >= 2,
   });
 

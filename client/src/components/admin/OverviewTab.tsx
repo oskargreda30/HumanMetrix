@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Users, FileText, TrendingUp, Calendar } from "lucide-react";
+import { Loader2, Users, FileText, TrendingUp, Mail, CheckCircle, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { isSkillBasedAssessment, getTopSkills, formatAssessmentType } from "@/lib/assessmentSkills";
 
@@ -13,12 +13,20 @@ export default function OverviewTab() {
     queryKey: ['/api/admin/candidates'],
   });
 
+  const { data: invitations } = useQuery<any[]>({
+    queryKey: ['/api/admin/invitations'],
+  });
+
   const completedResults = results?.filter((r) => r.status === 'completed') || [];
   const inProgressResults = results?.filter((r) => r.status === 'in_progress') || [];
+  
+  const candidatesWithCompletedAssessments = candidates?.filter((c) => 
+    c.assessments?.some((a: any) => a.status === 'completed')
+  ).length || 0;
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
@@ -28,6 +36,31 @@ export default function OverviewTab() {
             <div className="text-2xl font-bold" data-testid="text-total-candidates">
               {candidates?.length || 0}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Invitations Sent</CardTitle>
+            <Mail className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-invitations-sent">
+              {invitations?.length || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Assessments</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-completed-candidates">
+              {candidatesWithCompletedAssessments}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">candidates</p>
           </CardContent>
         </Card>
 
@@ -118,7 +151,7 @@ export default function OverviewTab() {
                       ) : result.totalScore !== null && result.totalScore !== undefined ? (
                         <div>
                           <div className="text-2xl font-bold text-primary" data-testid={`text-total-score-${result.id}`}>
-                            {result.totalScore}%
+                            {result.totalScore}/100
                           </div>
                           {result.percentile && (
                             <p className="text-sm text-muted-foreground">

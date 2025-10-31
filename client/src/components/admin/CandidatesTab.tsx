@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Plus, FileText, Tag, StickyNote, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -23,29 +23,11 @@ import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAr
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
-  const [newTag, setNewTag] = useState("");
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/candidates'],
-  });
-
-  const addTagMutation = useMutation({
-    mutationFn: async ({ userId, tag }: { userId: string; tag: string }) => {
-      const res = await fetch('/api/admin/candidates/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, tag }),
-      });
-      if (!res.ok) throw new Error('Failed to add tag');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/candidates'] });
-      setNewTag("");
-      toast({ title: "Tag added successfully" });
-    },
   });
 
   const addNoteMutation = useMutation({
@@ -71,8 +53,7 @@ export default function CandidatesTab() {
     return (
       c.user.email?.toLowerCase().includes(query) ||
       c.user.firstName?.toLowerCase().includes(query) ||
-      c.user.lastName?.toLowerCase().includes(query) ||
-      c.tags?.some((t: any) => t.tag.toLowerCase().includes(query))
+      c.user.lastName?.toLowerCase().includes(query)
     );
   });
 
@@ -82,7 +63,7 @@ export default function CandidatesTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search candidates by name, email, or tag..."
+            placeholder="Search candidates by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -108,17 +89,6 @@ export default function CandidatesTab() {
                         : 'No Name'}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">{candidate.user.email}</p>
-                    
-                    {candidate.tags && candidate.tags.length > 0 && (
-                      <div className="flex gap-2 mt-2 flex-wrap">
-                        {candidate.tags.map((tag: any) => (
-                          <Badge key={tag.id} variant="secondary">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag.tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   
                   <Dialog>
@@ -216,39 +186,56 @@ export default function CandidatesTab() {
                           )}
                         </div>
 
-                        {/* Tags */}
+                        {/* Biggest Areas to Improve */}
                         <div>
                           <h3 className="font-semibold mb-3 flex items-center gap-2">
-                            <Tag className="h-4 w-4" />
-                            Tags
+                            <AlertTriangle className="h-4 w-4" />
+                            Biggest Areas to Improve
                           </h3>
-                          <div className="flex gap-2 flex-wrap mb-3">
-                            {candidate.tags?.map((tag: any) => (
-                              <Badge key={tag.id} variant="secondary">{tag.tag}</Badge>
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Add a tag..."
-                              value={newTag}
-                              onChange={(e) => setNewTag(e.target.value)}
-                              data-testid="input-new-tag"
-                            />
-                            <Button
-                              onClick={() => {
-                                if (newTag.trim() && selectedCandidate) {
-                                  addTagMutation.mutate({
-                                    userId: selectedCandidate.user.id,
-                                    tag: newTag.trim(),
-                                  });
-                                }
-                              }}
-                              disabled={!newTag.trim() || addTagMutation.isPending}
-                              data-testid="button-add-tag"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {(() => {
+                            const completedResults = candidate.results?.filter(
+                              (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+                            );
+                            
+                            if (!completedResults || completedResults.length === 0) {
+                              return <p className="text-sm text-muted-foreground">No completed assessments to analyze</p>;
+                            }
+
+                            // Collect all growth areas across all assessments
+                            const allGrowthAreas: Array<{name: string, score: number, assessment: string}> = [];
+                            completedResults.forEach((result: any) => {
+                              const growthAreas = getGrowthAreas(result.scores, result.assessmentType, 3);
+                              growthAreas.forEach(area => {
+                                allGrowthAreas.push({
+                                  name: area.name,
+                                  score: area.score,
+                                  assessment: formatAssessmentType(result.assessmentType)
+                                });
+                              });
+                            });
+
+                            // Sort by lowest score and take top 5
+                            allGrowthAreas.sort((a, b) => a.score - b.score);
+                            const topGrowthAreas = allGrowthAreas.slice(0, 5);
+
+                            return (
+                              <div className="space-y-2">
+                                {topGrowthAreas.map((area, index) => (
+                                  <div key={index} className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-sm">{area.name}</p>
+                                        <p className="text-xs text-muted-foreground">{area.assessment}</p>
+                                      </div>
+                                      <Badge variant="outline" className="font-mono text-xs">
+                                        {area.score}/100
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Notes */}
@@ -338,8 +325,21 @@ export default function CandidatesTab() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Tags</p>
-                    <p className="font-semibold">{candidate.tags?.length || 0}</p>
+                    <p className="text-muted-foreground">Areas to Improve</p>
+                    <p className="font-semibold">
+                      {(() => {
+                        const completedResults = candidate.results?.filter((r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores);
+                        if (!completedResults || completedResults.length === 0) return 0;
+                        
+                        const allGrowthAreas: Array<{name: string, score: number}> = [];
+                        completedResults.forEach((r: any) => {
+                          const growthAreas = getGrowthAreas(r.scores, r.assessmentType, 3);
+                          allGrowthAreas.push(...growthAreas);
+                        });
+                        
+                        return allGrowthAreas.length > 0 ? Math.min(5, allGrowthAreas.length) : 0;
+                      })()}
+                    </p>
                   </div>
                 </div>
               </CardContent>
