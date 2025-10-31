@@ -1063,7 +1063,17 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     'Interpersonal Agility': ['1-D', '2-D', '5-D', '6-C', '9-C', '11-D', '12-D', '14-D', '15-D'],
   };
 
-  const scores: Record<string, number> = {
+  // Maximum possible scores for each skill (number of correct answers × 20 points)
+  const maxScores: Record<string, number> = {
+    'High Agency': 8 * 20, // 160
+    'Intellectual Curiosity': 9 * 20, // 180
+    'Resilience': 9 * 20, // 180
+    'Empathy & Ethics': 11 * 20, // 220
+    'Growth Mindset': 9 * 20, // 180
+    'Interpersonal Agility': 9 * 20, // 180
+  };
+
+  const rawScores: Record<string, number> = {
     'High Agency': 0, 
     'Intellectual Curiosity': 0, 
     'Resilience': 0, 
@@ -1072,16 +1082,27 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     'Interpersonal Agility': 0,
   };
 
+  // Calculate raw scores
   Object.entries(answers).forEach(([question, answer]) => {
     const key = `${question}-${answer}`;
     Object.entries(skills).forEach(([skill, correctAnswers]) => {
       if (correctAnswers.includes(key)) {
-        scores[skill] += 20;
+        rawScores[skill] += 20;
       }
     });
   });
 
-  return scores;
+  // Normalize to 0-100 scale with division-by-zero guard
+  const normalizedScores: Record<string, number> = {};
+  Object.entries(rawScores).forEach(([skill, score]) => {
+    if (maxScores[skill] > 0) {
+      normalizedScores[skill] = Math.round((score / maxScores[skill]) * 100);
+    } else {
+      normalizedScores[skill] = 0;
+    }
+  });
+
+  return normalizedScores;
 }
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
@@ -1207,7 +1228,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     "21-E": { "Cross-functional Collaboration": 4 },
   };
 
-  // Calculate scores based on answers
+  // Calculate raw scores based on answers
   Object.entries(answers).forEach(([questionId, answer]) => {
     const key = `${questionId}-${answer}`;
     const skillPoints = scoringMatrix[key];
@@ -1219,7 +1240,70 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  return skills;
+  // Calculate maximum possible scores for each skill
+  // Group scoring matrix by question number
+  const questionScores: Record<number, Record<string, Record<string, number>>> = {};
+  
+  Object.entries(scoringMatrix).forEach(([key, skillPoints]) => {
+    const [questionNum] = key.split('-');
+    const q = parseInt(questionNum);
+    
+    if (!questionScores[q]) {
+      questionScores[q] = {};
+    }
+    questionScores[q][key] = skillPoints;
+  });
+
+  // For each question, find the maximum points each skill can get
+  const maxScores: Record<string, number> = {
+    'AI Literacy/Prompting': 0,
+    'Technical Fluency': 0,
+    'Domain Fluency': 0,
+    'Critical Thinking': 0,
+    'Adaptive Learning': 0,
+    'Responsible AI': 0,
+    'Domain Expertise': 0,
+    'Creative Innovation': 0,
+    'Cross-functional Collaboration': 0,
+  };
+
+  Object.values(questionScores).forEach((options) => {
+    const questionMaxScores: Record<string, number> = {
+      'AI Literacy/Prompting': 0,
+      'Technical Fluency': 0,
+      'Domain Fluency': 0,
+      'Critical Thinking': 0,
+      'Adaptive Learning': 0,
+      'Responsible AI': 0,
+      'Domain Expertise': 0,
+      'Creative Innovation': 0,
+      'Cross-functional Collaboration': 0,
+    };
+
+    // For each option in this question, track max points per skill
+    Object.values(options).forEach((skillPoints) => {
+      Object.entries(skillPoints).forEach(([skill, points]) => {
+        questionMaxScores[skill] = Math.max(questionMaxScores[skill], points);
+      });
+    });
+
+    // Add the best possible score for each skill from this question
+    Object.entries(questionMaxScores).forEach(([skill, points]) => {
+      maxScores[skill] += points;
+    });
+  });
+
+  // Normalize to 0-100 scale with division-by-zero guard
+  const normalizedScores: Record<string, number> = {};
+  Object.entries(skills).forEach(([skill, score]) => {
+    if (maxScores[skill] > 0) {
+      normalizedScores[skill] = Math.round((score / maxScores[skill]) * 100);
+    } else {
+      normalizedScores[skill] = 0;
+    }
+  });
+
+  return normalizedScores;
 }
 
 function calculateAIQScores(answers: Record<string, string>): Record<string, number> {
