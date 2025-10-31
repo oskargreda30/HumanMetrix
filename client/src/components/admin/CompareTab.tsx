@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3 } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   RadarChart,
@@ -22,7 +22,12 @@ export default function CompareTab() {
     queryKey: ['/api/admin/candidates'],
   });
 
-  const { data: comparison, isLoading: isComparing } = useQuery({
+  const { data: comparison, isLoading: isComparing } = useQuery<{
+    radarData: Array<any>;
+    skillComparison: Array<{ skillName: string; scores: Array<number | null> }>;
+    averageScores: Array<number>;
+    hasSkillData: boolean;
+  }>({
     queryKey: selectedCandidates.length >= 2 
       ? ['/api/admin/compare', { userIds: selectedCandidates }]
       : undefined as any,
@@ -115,6 +120,15 @@ export default function CompareTab() {
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : comparison && !comparison.hasSkillData ? (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">No Skill-Based Assessments</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  The selected candidates have not completed any skill-based assessments (FIT, AI Readiness, or AIQ). 
+                  Skill comparisons require at least one candidate to have completed a skill-based assessment.
+                </p>
+              </div>
             ) : (
               <div className="space-y-8">
                 {/* Skills Radar Chart */}
@@ -142,14 +156,14 @@ export default function CompareTab() {
                   </div>
                 )}
 
-                {/* Side-by-side Table */}
+                {/* Skill-by-Skill Comparison Table */}
                 <div>
-                  <h3 className="font-semibold mb-4">Detailed Scores</h3>
+                  <h3 className="font-semibold mb-4">Skill-by-Skill Comparison</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left p-3 font-medium">Assessment</th>
+                          <th className="text-left p-3 font-medium">Skill</th>
                           {selectedCandidateData?.map((candidate: any) => (
                             <th key={candidate.user.id} className="text-left p-3 font-medium">
                               {candidate.user.firstName || candidate.user.lastName
@@ -160,34 +174,34 @@ export default function CompareTab() {
                         </tr>
                       </thead>
                       <tbody>
-                        {comparison?.assessmentComparison?.map((row: any) => (
-                          <tr key={row.assessmentType} className="border-b">
-                            <td className="p-3 font-medium">{row.assessmentType}</td>
-                            {row.scores.map((score: any, index: number) => (
+                        {comparison?.skillComparison?.map((row: any) => (
+                          <tr key={row.skillName} className="border-b">
+                            <td className="p-3 font-medium">{row.skillName}</td>
+                            {row.scores.map((score: number | null, index: number) => (
                               <td key={index} className="p-3">
                                 {score !== null ? (
                                   <div className="flex items-center gap-2">
-                                    <span className="text-lg font-semibold">{score}%</span>
+                                    <span className="text-lg font-semibold">{score}/100</span>
                                     <Badge
                                       variant={
                                         score >= 80 ? 'default' : score >= 60 ? 'secondary' : 'outline'
                                       }
                                     >
-                                      {score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Fair'}
+                                      {score >= 80 ? 'Strong' : score >= 60 ? 'Good' : 'Developing'}
                                     </Badge>
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground">Not taken</span>
+                                  <span className="text-muted-foreground">N/A</span>
                                 )}
                               </td>
                             ))}
                           </tr>
                         ))}
-                        <tr className="border-t-2 font-semibold">
-                          <td className="p-3">Average Score</td>
+                        <tr className="border-t-2 font-semibold bg-muted/30">
+                          <td className="p-3">Average Skill Score</td>
                           {comparison?.averageScores?.map((avg: number, index: number) => (
                             <td key={index} className="p-3">
-                              <span className="text-lg text-primary">{avg}%</span>
+                              <span className="text-lg text-primary">{avg}/100</span>
                             </td>
                           ))}
                         </tr>

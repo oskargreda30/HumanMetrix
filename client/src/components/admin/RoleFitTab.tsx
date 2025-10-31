@@ -45,17 +45,21 @@ export default function RoleFitTab() {
           jobRoleId: selectedRole,
         }),
       });
-      if (!res.ok) throw new Error('Failed to analyze role fit');
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: 'Failed to analyze role fit' }));
+        throw new Error(error.message || 'Failed to analyze role fit');
+      }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/role-alignment', { userId: selectedCandidate, jobRoleId: selectedRole }] });
+    onSuccess: (data) => {
+      // Directly set the query data for immediate display
+      queryClient.setQueryData(['/api/admin/role-alignment', { userId: selectedCandidate, jobRoleId: selectedRole }], data);
       toast({ title: "Role fit analysis completed" });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Analysis failed",
-        description: "Failed to analyze role fit. Please try again.",
+        description: error.message || "Failed to analyze role fit. Please try again.",
         variant: "destructive",
       });
     },

@@ -778,15 +778,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userIds.map((id) => storage.getResultsByUser(id))
       );
 
+      // Filter to only skill-based assessments (exclude prompt_architecture which uses percentage scoring)
+      const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness', 'aiq'];
+      
       // Build radar chart data
-      const assessmentTypes = ['fit', 'ai-readiness', 'prompt-architecture', 'aiq'];
       const radarData: any[] = [];
       
-      // Aggregate skills across all assessments for radar chart
+      // Normalize assessment type for comparison (handle both hyphens and underscores)
+      const normalizeAssessmentType = (type: string) => 
+        type.toLowerCase().replace(/[\s-]+/g, '_');
+      
+      // Aggregate skills across all skill-based assessments for radar chart
       const skillsMap = new Map<string, number[]>();
       
       candidatesResults.forEach((results, candidateIndex) => {
-        results.forEach((result) => {
+        // Only process skill-based assessments
+        const skillBasedResults = results.filter((r) => {
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        skillBasedResults.forEach((result) => {
           if (result.scores && typeof result.scores === 'object') {
             Object.entries(result.scores).forEach(([skill, score]) => {
               if (!skillsMap.has(skill)) {
@@ -807,27 +819,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         radarData.push(dataPoint);
       });
 
-      // Build assessment comparison table
-      const assessmentComparison = assessmentTypes.map((assessmentType) => {
-        const scores = candidatesResults.map((results) => {
-          const result = results.find((r) => r.assessmentType === assessmentType);
-          return result?.totalScore ?? null;
+      // Build skill-based comparison table  
+      const skillComparison: any[] = [];
+      skillsMap.forEach((scores, skillName) => {
+        skillComparison.push({
+          skillName,
+          scores: scores.map(score => score ?? null), // Use ?? to preserve 0 scores
         });
-        return { assessmentType, scores };
       });
 
-      // Calculate average scores
+      // Calculate average skill scores for each candidate (only from skill-based assessments)
       const averageScores = candidatesResults.map((results) => {
-        const completedResults = results.filter((r) => r.totalScore !== null);
-        if (completedResults.length === 0) return 0;
-        const sum = completedResults.reduce((acc, r) => acc + (r.totalScore || 0), 0);
-        return Math.round(sum / completedResults.length);
+        const skillBasedResults = results.filter((r) => {
+          if (r.status !== 'completed' || !r.scores) return false;
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        if (skillBasedResults.length === 0) return 0;
+        
+        let totalSum = 0;
+        let skillCount = 0;
+        skillBasedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            const skillValues = Object.values(result.scores);
+            totalSum += skillValues.reduce((sum, val) => sum + (val as number), 0);
+            skillCount += skillValues.length;
+          }
+        });
+        
+        return skillCount > 0 ? Math.round(totalSum / skillCount) : 0;
       });
+      
+      // Check if we have any skill data to compare
+      const hasSkillData = skillComparison.length > 0;
 
       res.json({
         radarData,
-        assessmentComparison,
+        skillComparison,
         averageScores,
+        hasSkillData,
       });
     } catch (error) {
       console.error("Error fetching comparison data:", error);
