@@ -67,15 +67,13 @@ export default function ForEmployersSection() {
 
             <div className="pt-4 text-center">
               <Link href="/for-employers">
-                <a data-testid="link-employer-learn-more">
-                  <Button 
-                    size="lg" 
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
-                    data-testid="button-employer-learn-more"
-                  >
-                    Learn More About Enterprise Solutions
-                  </Button>
-                </a>
+                <Button 
+                  size="lg" 
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                  data-testid="button-employer-learn-more"
+                >
+                  Learn More About Enterprise Solutions
+                </Button>
               </Link>
             </div>
           </div>
