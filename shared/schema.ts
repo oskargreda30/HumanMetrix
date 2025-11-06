@@ -82,6 +82,7 @@ export const assessmentResults = pgTable("assessment_results", {
   scores: jsonb("scores").notNull().$type<Record<string, number>>(),
   totalScore: integer("total_score"),
   percentile: integer("percentile"),
+  evaluations: jsonb("evaluations").$type<any[]>(),
   status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),

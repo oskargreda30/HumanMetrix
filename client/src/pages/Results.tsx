@@ -22,6 +22,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { PromptArchitectureResults } from "@/components/PromptArchitectureResults";
 
 // Helper function to generate comprehensive analysis
 function generateAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number) {
@@ -194,9 +195,48 @@ export default function Results() {
   const totalScore = (result as any).totalScore;
   const hasTotalScore = totalScore !== null && totalScore !== undefined;
   const assessmentType = (result as any).assessmentType;
+  const evaluations = (result as any).evaluations || [];
   
   // Generate comprehensive analysis
   const analysis = generateAnalysis(assessmentType, scores, totalScore);
+
+  // For Prompt Architecture, show dedicated component
+  if (assessmentType === "prompt-architecture" && evaluations.length > 0) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <main className="flex-grow py-16">
+          <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+            {/* Back Button */}
+            <div className="mb-6">
+              <Link href="/dashboard">
+                <Button variant="ghost" data-testid="button-back-to-dashboard">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">
+                Prompt Architecture Assessment Results
+              </h1>
+              <p className="text-muted-foreground">
+                Completed on {new Date((result as any).completedAt).toLocaleDateString()}
+              </p>
+            </div>
+
+            <PromptArchitectureResults 
+              scores={scores}
+              totalScore={totalScore}
+              evaluations={evaluations}
+            />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // Transform scores for radar chart
   const radarData = Object.entries(scores).map(([skill, score]) => ({

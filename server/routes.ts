@@ -514,6 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           answers,
           scores,
           totalScore,
+          evaluations: Array.isArray(evaluations) && evaluations.length > 0 ? evaluations : null,
           status: 'completed',
           completedAt: new Date(),
         })
