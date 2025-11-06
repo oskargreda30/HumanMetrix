@@ -17,6 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
@@ -24,12 +31,36 @@ import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdf
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
-  const { toast } = useToast();
+  const { toast} = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/candidates'],
   });
+
+  const { data: roles } = useQuery<any[]>({
+    queryKey: ['/api/admin/roles'],
+  });
+
+  const { data: roleAlignment } = useQuery({
+    queryKey: ['/api/admin/role-alignment', { 
+      userId: selectedCandidate?.user?.id || '', 
+      jobRoleId: selectedRole || '' 
+    }],
+    enabled: !!selectedCandidate && !!selectedRole && selectedRole !== "__none__",
+  });
+
+  // Handle dialog open/close and reset state
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setSelectedCandidate(null);
+      setSelectedRole(undefined);
+      setNewNote("");
+    }
+  };
 
   const addNoteMutation = useMutation({
     mutationFn: async ({ userId, note }: { userId: string; note: string }) => {
@@ -98,7 +129,31 @@ export default function CandidatesTab() {
         if (aiChart) radarChartImages.aiReadiness = aiChart;
       }
       
-      await exportEnhancedCandidatePDF(candidate, allSkills, platformAverages, radarChartImages);
+      // Validate platform averages
+      if (!platformAverages || 
+          typeof platformAverages.totalCandidates !== 'number' ||
+          typeof platformAverages.avgScoreAcrossCandidates !== 'number' ||
+          !platformAverages.skillAverages) {
+        throw new Error('Platform averages data is incomplete');
+      }
+
+      // Get role data if selected and validate
+      const selectedRoleData = selectedRole && selectedRole !== "__none__" 
+        ? roles?.find((r: any) => r.id === selectedRole) 
+        : null;
+      
+      // Validate role alignment if provided - only use if query is actually enabled
+      const roleComparisonData = (selectedRole && selectedRole !== "__none__" && selectedRoleData && roleAlignment?.overallFit !== undefined) 
+        ? { role: selectedRoleData, alignment: roleAlignment } 
+        : undefined;
+      
+      await exportEnhancedCandidatePDF(
+        candidate, 
+        allSkills, 
+        platformAverages, 
+        radarChartImages,
+        roleComparisonData
+      );
       
       toast({
         title: "PDF exported successfully",
@@ -158,12 +213,15 @@ export default function CandidatesTab() {
                     <p className="text-sm text-muted-foreground mt-1">{candidate.user.email}</p>
                   </div>
                   
-                  <Dialog>
+                  <Dialog open={dialogOpen && selectedCandidate?.user?.id === candidate.user.id} onOpenChange={handleDialogChange}>
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedCandidate(candidate)}
+                        onClick={() => {
+                          setSelectedCandidate(candidate);
+                          setDialogOpen(true);
+                        }}
                         data-testid={`button-view-details-${candidate.user.id}`}
                       >
                         View Details
@@ -349,6 +407,44 @@ export default function CandidatesTab() {
                         </div>
                       </div>
 
+                      {/* Job Role Comparison (Optional) */}
+                      <div className="mt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold text-sm">Job Role Comparison (Optional)</h4>
+                          {roleAlignment && (
+                            <Badge variant="default">
+                              {roleAlignment.overallFit}% Match
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground">
+                            Select a role to include comparison in PDF export
+                          </label>
+                          <Select 
+                            value={selectedRole || "__none__"} 
+                            onValueChange={(value) => setSelectedRole(value === "__none__" ? undefined : value)}
+                          >
+                            <SelectTrigger data-testid="select-comparison-role">
+                              <SelectValue placeholder="None - export without role comparison" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">None</SelectItem>
+                              {roles?.map((role: any) => (
+                                <SelectItem key={role.id} value={role.id}>
+                                  {role.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {roleAlignment && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              ✓ Role fit analysis will be included at the bottom of the PDF
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
                       <DialogFooter>
                         <Button 
                           variant="outline" 
@@ -358,7 +454,7 @@ export default function CandidatesTab() {
                           <Download className="h-4 w-4 mr-2" />
                           Export PDF
                         </Button>
-                        <Button variant="outline" onClick={() => setSelectedCandidate(null)}>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>
                           Close
                         </Button>
                       </DialogFooter>

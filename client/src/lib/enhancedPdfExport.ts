@@ -92,11 +92,32 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   return { label: 'Needs Development', color: [239, 68, 68] };
 }
 
+interface RoleComparisonData {
+  role: {
+    name: string;
+    description?: string;
+  };
+  alignment: {
+    overallFit: number;
+    skillAlignments: Array<{
+      skillName: string;
+      candidateScore: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+    }>;
+    strengths: string[];
+    developmentAreas: string[];
+    recommendations: string[];
+  };
+}
+
 export async function exportEnhancedCandidatePDF(
   candidate: CandidateData,
   skills: SkillData[],
   platformAverages: PlatformAverages,
-  radarChartImages?: { fit?: string; aiReadiness?: string }
+  radarChartImages?: { fit?: string; aiReadiness?: string },
+  roleComparison?: RoleComparisonData
 ) {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -455,6 +476,208 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
+  // ========== OPTIONAL PAGE: JOB ROLE COMPARISON ==========
+  if (roleComparison) {
+    pdf.addPage();
+    addHeader(pdf, pageWidth);
+    
+    yPos = 35;
+    yPos = addSectionHeader(pdf, `JOB ROLE FIT ANALYSIS: ${roleComparison.role.name.toUpperCase()}`, yPos, pageWidth);
+    yPos += 10;
+    
+    // Overall fit score with large visual
+    pdf.setFillColor(249, 250, 251);
+    pdf.setDrawColor(229, 231, 235);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 45, 3, 3, 'FD');
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('Overall Role Fit Score', pageWidth / 2, yPos + 12, { align: 'center' });
+    
+    const fitColor = roleComparison.alignment.overallFit >= 80 
+      ? [34, 197, 94] 
+      : roleComparison.alignment.overallFit >= 60 
+      ? [59, 130, 246]
+      : [249, 115, 22];
+    
+    pdf.setFontSize(32);
+    pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
+    pdf.text(`${roleComparison.alignment.overallFit}%`, pageWidth / 2, yPos + 28, { align: 'center' });
+    
+    pdf.setFontSize(10);
+    pdf.setTextColor(107, 114, 128);
+    const fitLabel = roleComparison.alignment.overallFit >= 80 
+      ? 'Excellent Match' 
+      : roleComparison.alignment.overallFit >= 60 
+      ? 'Good Potential'
+      : 'Needs Development';
+    pdf.text(fitLabel, pageWidth / 2, yPos + 38, { align: 'center' });
+    
+    yPos += 55;
+    pdf.setTextColor(0, 0, 0);
+    
+    // Skill alignments
+    yPos = addSectionHeader(pdf, 'SKILL-BY-SKILL ALIGNMENT', yPos, pageWidth);
+    yPos += 5;
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Skill', 25, yPos);
+    pdf.text('Your Score', 100, yPos);
+    pdf.text('Required', 130, yPos);
+    pdf.text('Gap', 160, yPos);
+    pdf.text('Status', pageWidth - 25, yPos, { align: 'right' });
+    yPos += 2;
+    
+    pdf.setDrawColor(229, 231, 235);
+    pdf.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    
+    roleComparison.alignment.skillAlignments?.forEach((skill, index) => {
+      if (yPos > pageHeight - 40) {
+        pdf.addPage();
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      if (index % 2 === 0) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(20, yPos - 3, pageWidth - 40, 8, 'F');
+      }
+      
+      pdf.setTextColor(17, 24, 39);
+      const skillName = skill.skillName.length > 25 ? skill.skillName.substring(0, 22) + '...' : skill.skillName;
+      pdf.text(skillName, 25, yPos + 2);
+      pdf.text(`${skill.candidateScore}`, 100, yPos + 2);
+      pdf.text(`${skill.requiredScore}`, 130, yPos + 2);
+      
+      const gapColor = skill.gap <= 0 ? [34, 197, 94] : [239, 68, 68];
+      pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
+      const gapText = skill.gap > 0 ? `-${skill.gap}` : `+${Math.abs(skill.gap)}`;
+      pdf.text(gapText, 160, yPos + 2);
+      
+      const statusColor = skill.alignment === 'excellent' 
+        ? [34, 197, 94] 
+        : skill.alignment === 'good' 
+        ? [59, 130, 246]
+        : [249, 115, 22];
+      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.text(skill.alignment.toUpperCase(), pageWidth - 25, yPos + 2, { align: 'right' });
+      
+      yPos += 8;
+    });
+    
+    pdf.setTextColor(0, 0, 0);
+    yPos += 5;
+    
+    // Strengths and development areas
+    if (yPos > pageHeight - 100) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    yPos = addSectionHeader(pdf, 'KEY STRENGTHS FOR THIS ROLE', yPos, pageWidth);
+    yPos += 5;
+    
+    roleComparison.alignment.strengths?.slice(0, 5).forEach((strength, index) => {
+      if (yPos > pageHeight - 40) {
+        pdf.addPage();
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(25, yPos, pageWidth - 50, 10, 2, 2, 'FD');
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(34, 197, 94);
+      pdf.text('✓', 30, yPos + 6);
+      
+      pdf.setTextColor(17, 24, 39);
+      const lines = pdf.splitTextToSize(strength, pageWidth - 70);
+      pdf.text(lines[0], 38, yPos + 6);
+      
+      yPos += 12;
+    });
+    
+    yPos += 5;
+    yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS FOR THIS ROLE', yPos, pageWidth);
+    yPos += 5;
+    
+    roleComparison.alignment.developmentAreas?.slice(0, 5).forEach((area, index) => {
+      if (yPos > pageHeight - 40) {
+        pdf.addPage();
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(25, yPos, pageWidth - 50, 10, 2, 2, 'FD');
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(249, 115, 22);
+      pdf.text('!', 30, yPos + 6);
+      
+      pdf.setTextColor(17, 24, 39);
+      const lines = pdf.splitTextToSize(area, pageWidth - 70);
+      pdf.text(lines[0], 38, yPos + 6);
+      
+      yPos += 12;
+    });
+    
+    // Recommendations
+    if (roleComparison.alignment.recommendations && roleComparison.alignment.recommendations.length > 0) {
+      yPos += 5;
+      
+      if (yPos > pageHeight - 80) {
+        pdf.addPage();
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATIONS', yPos, pageWidth);
+      yPos += 5;
+      
+      roleComparison.alignment.recommendations.forEach((rec, index) => {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+        }
+        
+        pdf.setFillColor(249, 250, 251);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.roundedRect(25, yPos, pageWidth - 50, 12, 2, 2, 'FD');
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(59, 130, 246);
+        pdf.text(`${index + 1}.`, 30, yPos + 7);
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(17, 24, 39);
+        const lines = pdf.splitTextToSize(rec, pageWidth - 75);
+        lines.forEach((line: string, lineIndex: number) => {
+          pdf.text(line, 38, yPos + 7 + (lineIndex * 4));
+        });
+        
+        yPos += 14;
+      });
+    }
+  }
+  
+  pdf.setTextColor(0, 0, 0);
+  
   // Add footers to all pages
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -465,7 +688,8 @@ export async function exportEnhancedCandidatePDF(
   // Save
   const timestamp = new Date().toISOString().split('T')[0];
   const safeCandidateName = candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-  pdf.save(`humanmetrix-report-${safeCandidateName}-${timestamp}.pdf`);
+  const roleLabel = roleComparison ? `-${roleComparison.role.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}` : '';
+  pdf.save(`humanmetrix-report-${safeCandidateName}${roleLabel}-${timestamp}.pdf`);
 }
 
 // Capture radar chart from DOM
