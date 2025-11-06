@@ -20,20 +20,20 @@ interface RoleFitData {
   candidate: CandidateData;
   role: {
     name: string;
-    description: string;
+    description?: string;
   };
   alignment: {
     overallFit: number;
-    skillAlignment: Array<{
+    skillAlignments: Array<{
       skillName: string;
       candidateScore: number;
-      minimumRequired: number;
-      importance: number;
+      requiredScore: number;
       gap: number;
+      alignment: string;
     }>;
-    strengths: string;
-    developmentAreas: string;
-    recommendations: string;
+    strengths: string[];
+    developmentAreas: string[];
+    recommendations: string[];
   };
 }
 
@@ -197,12 +197,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFont('helvetica', 'normal');
   pdf.text(data.role.name, 20, yPosition);
   yPosition += 6;
-  pdf.setFontSize(9);
-  pdf.setTextColor(100, 100, 100);
-  const description = pdf.splitTextToSize(data.role.description, pageWidth - 40);
-  pdf.text(description, 20, yPosition);
-  yPosition += description.length * 5 + 8;
-  pdf.setTextColor(0, 0, 0);
+  
+  if (data.role.description) {
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 100, 100);
+    const description = pdf.splitTextToSize(data.role.description, pageWidth - 40);
+    pdf.text(description, 20, yPosition);
+    yPosition += description.length * 5 + 8;
+    pdf.setTextColor(0, 0, 0);
+  } else {
+    yPosition += 8;
+  }
 
   // Overall Fit Score
   pdf.setFontSize(14);
@@ -237,7 +242,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPosition += 5;
 
   pdf.setFont('helvetica', 'normal');
-  data.alignment.skillAlignment.forEach((skill, index) => {
+  data.alignment.skillAlignments.forEach((skill, index) => {
     if (yPosition > pageHeight - 40) {
       pdf.addPage();
       yPosition = 20;
@@ -246,10 +251,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const skillName = skill.skillName.length > 30 ? skill.skillName.substring(0, 27) + '...' : skill.skillName;
     pdf.text(skillName, 20, yPosition);
     pdf.text(`${skill.candidateScore}/100`, 100, yPosition);
-    pdf.text(`${skill.minimumRequired}/100`, 130, yPosition);
+    pdf.text(`${skill.requiredScore}/100`, 130, yPosition);
     
-    const gapText = skill.gap > 0 ? `+${skill.gap}` : `${skill.gap}`;
-    const gapColor = skill.gap >= 0 ? [34, 197, 94] : [239, 68, 68];
+    // Gap is negative when candidate score is below required
+    const gapText = skill.gap > 0 ? `-${skill.gap}` : `+${Math.abs(skill.gap)}`;
+    const gapColor = skill.gap <= 0 ? [34, 197, 94] : [239, 68, 68];
     pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
     pdf.text(gapText, 160, yPosition);
     pdf.setTextColor(0, 0, 0);
@@ -278,9 +284,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
 
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const strengths = pdf.splitTextToSize(data.alignment.strengths, pageWidth - 40);
-  pdf.text(strengths, 20, yPosition);
-  yPosition += strengths.length * 5 + 8;
+  data.alignment.strengths.forEach((strength, index) => {
+    if (yPosition > pageHeight - 20) {
+      pdf.addPage();
+      yPosition = 20;
+    }
+    const strengthLines = pdf.splitTextToSize(`• ${strength}`, pageWidth - 45);
+    pdf.text(strengthLines, 25, yPosition);
+    yPosition += strengthLines.length * 5 + 2;
+  });
+  yPosition += 6;
 
   if (yPosition > pageHeight - 50) {
     pdf.addPage();
@@ -295,9 +308,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
 
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const devAreas = pdf.splitTextToSize(data.alignment.developmentAreas, pageWidth - 40);
-  pdf.text(devAreas, 20, yPosition);
-  yPosition += devAreas.length * 5 + 8;
+  data.alignment.developmentAreas.forEach((area, index) => {
+    if (yPosition > pageHeight - 20) {
+      pdf.addPage();
+      yPosition = 20;
+    }
+    const areaLines = pdf.splitTextToSize(`• ${area}`, pageWidth - 45);
+    pdf.text(areaLines, 25, yPosition);
+    yPosition += areaLines.length * 5 + 2;
+  });
+  yPosition += 6;
 
   if (yPosition > pageHeight - 50) {
     pdf.addPage();
@@ -312,8 +332,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
 
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const recommendations = pdf.splitTextToSize(data.alignment.recommendations, pageWidth - 40);
-  pdf.text(recommendations, 20, yPosition);
+  data.alignment.recommendations.forEach((rec, index) => {
+    if (yPosition > pageHeight - 20) {
+      pdf.addPage();
+      yPosition = 20;
+    }
+    const recNumber = `${index + 1}. `;
+    const recLines = pdf.splitTextToSize(`${recNumber}${rec}`, pageWidth - 45);
+    pdf.text(recLines, 25, yPosition);
+    yPosition += recLines.length * 5 + 2;
+  });
 
   // Footer
   const totalPages = pdf.getNumberOfPages();
