@@ -44,7 +44,19 @@ export default function CandidatesTab() {
     queryKey: ['/api/admin/roles'],
   });
 
-  const { data: roleAlignment } = useQuery({
+  const { data: roleAlignment } = useQuery<{
+    overallFit: number;
+    skillAlignments: Array<{
+      skillName: string;
+      candidateScore: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+    }>;
+    strengths: string[];
+    gaps: string[];
+    recommendations: string;
+  }>({
     queryKey: ['/api/admin/role-alignment', { 
       userId: selectedCandidate?.user?.id || '', 
       jobRoleId: selectedRole || '' 
@@ -129,6 +141,22 @@ export default function CandidatesTab() {
         if (aiChart) radarChartImages.aiReadiness = aiChart;
       }
       
+      // Fetch Prompt Architecture evaluation data
+      const promptArchitectureResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'prompt_architecture' && r.status === 'completed'
+      );
+      let promptArchitectureData: any[] = [];
+      if (promptArchitectureResult) {
+        try {
+          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchitectureResult.id}`);
+          if (promptEvalRes.ok) {
+            promptArchitectureData = await promptEvalRes.json();
+          }
+        } catch (error) {
+          console.error('Error fetching prompt architecture data:', error);
+        }
+      }
+      
       // Validate platform averages
       if (!platformAverages || 
           typeof platformAverages.totalCandidates !== 'number' ||
@@ -152,7 +180,8 @@ export default function CandidatesTab() {
         allSkills, 
         platformAverages, 
         radarChartImages,
-        roleComparisonData
+        roleComparisonData,
+        promptArchitectureData
       );
       
       toast({
