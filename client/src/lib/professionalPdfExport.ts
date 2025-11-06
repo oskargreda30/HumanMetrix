@@ -214,8 +214,6 @@ export async function exportProfessionalCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  addFooter(pdf, 1, 1, pageWidth, pageHeight);
-  
   // ========== PAGE 2: SKILLS OVERVIEW ==========
   pdf.addPage();
   addHeader(pdf, pageWidth);
@@ -298,8 +296,6 @@ export async function exportProfessionalCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  addFooter(pdf, 2, 1, pageWidth, pageHeight);
-  
   // ========== PAGE 3: DETAILED BREAKDOWN ==========
   pdf.addPage();
   addHeader(pdf, pageWidth);
@@ -320,7 +316,6 @@ export async function exportProfessionalCandidatePDF(
   Object.entries(skillsByAssessment).forEach(([assessment, assessmentSkills]) => {
     // Check if we need a new page
     if (yPos > pageHeight - 60) {
-      addFooter(pdf, pdf.getNumberOfPages(), 1, pageWidth, pageHeight);
       pdf.addPage();
       addHeader(pdf, pageWidth);
       yPos = 35;
@@ -351,7 +346,6 @@ export async function exportProfessionalCandidatePDF(
       const perf = getPerformanceLevel(skill.score);
       
       if (yPos > pageHeight - 30) {
-        addFooter(pdf, pdf.getNumberOfPages(), 1, pageWidth, pageHeight);
         pdf.addPage();
         addHeader(pdf, pageWidth);
         yPos = 35;
@@ -381,8 +375,6 @@ export async function exportProfessionalCandidatePDF(
     pdf.setTextColor(0, 0, 0);
   });
   
-  addFooter(pdf, 3, 1, pageWidth, pageHeight);
-  
   // ========== PAGE 4: RECOMMENDATIONS (if provided) ==========
   if (roleRecommendations) {
     pdf.addPage();
@@ -399,7 +391,6 @@ export async function exportProfessionalCandidatePDF(
     const lines = pdf.splitTextToSize(roleRecommendations, pageWidth - 50);
     lines.forEach((line: string) => {
       if (yPos > pageHeight - 30) {
-        addFooter(pdf, pdf.getNumberOfPages(), 1, pageWidth, pageHeight);
         pdf.addPage();
         addHeader(pdf, pageWidth);
         yPos = 35;
@@ -409,10 +400,9 @@ export async function exportProfessionalCandidatePDF(
     });
     
     pdf.setTextColor(0, 0, 0);
-    addFooter(pdf, 4, 1, pageWidth, pageHeight);
   }
   
-  // Update page numbers
+  // Add footers to all pages with correct page numbers
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);

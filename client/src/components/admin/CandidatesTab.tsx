@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
-import { exportCandidatePDF } from "@/lib/pdfExport";
+import { exportProfessionalCandidatePDF } from "@/lib/professionalPdfExport";
 
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,10 +69,10 @@ export default function CandidatesTab() {
         });
       });
       
-      await exportCandidatePDF(candidate, allSkills);
+      await exportProfessionalCandidatePDF(candidate, allSkills);
       toast({
         title: "PDF exported successfully",
-        description: "The candidate report has been downloaded.",
+        description: "Professional candidate report has been downloaded.",
       });
     } catch (error) {
       console.error("Error exporting PDF:", error);
