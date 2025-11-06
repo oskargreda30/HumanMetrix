@@ -107,31 +107,13 @@ export const AI_READINESS_SKILLS: SkillDefinition[] = [
   },
 ];
 
-// AIQ: 4 ethical reasoning areas
+// AIQ: Algorithmic Integrity Quotient (single comprehensive score)
 export const AIQ_SKILLS: SkillDefinition[] = [
   {
-    key: 'Fairness',
-    displayName: 'Fairness',
-    description: 'Ensures equitable outcomes',
+    key: 'Algorithmic Integrity',
+    displayName: 'Algorithmic Integrity',
+    description: 'Comprehensive understanding of AI ethics, bias, fairness, transparency, and responsible deployment',
     color: 'hsl(var(--chart-1))',
-  },
-  {
-    key: 'Transparency',
-    displayName: 'Transparency',
-    description: 'Promotes explainability and accountability',
-    color: 'hsl(var(--chart-2))',
-  },
-  {
-    key: 'Privacy',
-    displayName: 'Privacy',
-    description: 'Protects user data and consent',
-    color: 'hsl(var(--chart-3))',
-  },
-  {
-    key: 'Responsible Deployment',
-    displayName: 'Responsible Deployment',
-    description: 'Considers societal impact',
-    color: 'hsl(var(--chart-4))',
   },
 ];
 
