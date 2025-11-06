@@ -85,7 +85,7 @@ export default function CandidatesTab() {
         r.assessmentType === 'fit' && r.status === 'completed'
       );
       const aiReadinessResult = candidate.results?.find((r: any) => 
-        r.assessmentType === 'ai-readiness' && r.status === 'completed'
+        r.assessmentType === 'ai_readiness' && r.status === 'completed'
       );
 
       if (fitResult) {
@@ -438,7 +438,7 @@ export default function CandidatesTab() {
               r.assessmentType === 'fit' && r.status === 'completed'
             );
             const aiReadinessResult = selectedCandidate.results?.find((r: any) => 
-              r.assessmentType === 'ai-readiness' && r.status === 'completed'
+              r.assessmentType === 'ai_readiness' && r.status === 'completed'
             );
 
             return (
