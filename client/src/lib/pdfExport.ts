@@ -32,8 +32,8 @@ interface RoleFitData {
       alignment: string;
     }>;
     strengths: string[];
-    developmentAreas: string[];
-    recommendations: string[];
+    gaps: string[];
+    recommendations: string;
   };
 }
 
@@ -308,7 +308,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
 
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  data.alignment.developmentAreas.forEach((area, index) => {
+  data.alignment.gaps.forEach((area, index) => {
     if (yPosition > pageHeight - 20) {
       pdf.addPage();
       yPosition = 20;
@@ -332,16 +332,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
 
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  data.alignment.recommendations.forEach((rec, index) => {
-    if (yPosition > pageHeight - 20) {
-      pdf.addPage();
-      yPosition = 20;
-    }
-    const recNumber = `${index + 1}. `;
-    const recLines = pdf.splitTextToSize(`${recNumber}${rec}`, pageWidth - 45);
-    pdf.text(recLines, 25, yPosition);
-    yPosition += recLines.length * 5 + 2;
-  });
+  const recLines = pdf.splitTextToSize(data.alignment.recommendations, pageWidth - 40);
+  pdf.text(recLines, 20, yPosition);
+  yPosition += recLines.length * 5;
 
   // Footer
   const totalPages = pdf.getNumberOfPages();
