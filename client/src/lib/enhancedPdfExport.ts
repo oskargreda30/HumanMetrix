@@ -241,8 +241,40 @@ export async function exportEnhancedCandidatePDF(
   yPos = addSectionHeader(pdf, 'SKILLS VISUALIZATION', yPos, pageWidth);
   yPos += 5;
   
+  // Helper to add individual scores
+  const addIndividualScores = (skillsList: SkillData[], yPosition: number): number => {
+    let currentY = yPosition;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Individual Skill Scores:', 20, currentY);
+    currentY += 6;
+    
+    const colWidth = (pageWidth - 40) / 3;
+    skillsList.forEach((skill, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const xPos = 20 + (col * colWidth);
+      const yPosRow = currentY + (row * 6);
+      
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(`${skill.name}:`, xPos, yPosRow);
+      
+      const perf = getPerformanceLevel(skill.score);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+      pdf.text(`${skill.score}`, xPos + colWidth - 15, yPosRow);
+    });
+    
+    return currentY + (Math.ceil(skillsList.length / 3) * 6) + 5;
+  };
+  
   // FIT Assessment Radar Chart
-  if (radarChartImages?.fit) {
+  const fitSkills = skills.filter(s => s.assessment === 'FIT Assessment');
+  if (radarChartImages?.fit && fitSkills.length > 0) {
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
@@ -256,8 +288,27 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      pdf.addImage(radarChartImages.fit, 'PNG', 20, yPos, pageWidth - 40, 70);
-      yPos += 75;
+      // Get actual image dimensions and maintain aspect ratio
+      const imgProps = pdf.getImageProperties(radarChartImages.fit);
+      const maxWidth = pageWidth - 40; // Max width with margins
+      const maxHeight = 90; // Max height to fit on page
+      
+      // Calculate dimensions maintaining aspect ratio
+      let chartWidth = maxWidth;
+      let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
+      
+      if (chartHeight > maxHeight) {
+        chartHeight = maxHeight;
+        chartWidth = (imgProps.width / imgProps.height) * chartHeight;
+      }
+      
+      const chartX = (pageWidth - chartWidth) / 2; // Center the chart
+      pdf.addImage(radarChartImages.fit, 'PNG', chartX, yPos, chartWidth, chartHeight);
+      yPos += chartHeight + 5;
+      
+      // Add individual scores
+      yPos = addIndividualScores(fitSkills, yPos);
+      yPos += 5;
     } catch (error) {
       console.error('Error adding FIT chart:', error);
       yPos += 10;
@@ -265,8 +316,9 @@ export async function exportEnhancedCandidatePDF(
   }
   
   // AI Readiness Radar Chart
-  if (radarChartImages?.aiReadiness) {
-    if (yPos > pageHeight - 100) {
+  const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness Assessment');
+  if (radarChartImages?.aiReadiness && aiReadinessSkills.length > 0) {
+    if (yPos > pageHeight - 120) {
       pdf.addPage();
       addHeader(pdf, pageWidth);
       yPos = 35;
@@ -289,8 +341,27 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      pdf.addImage(radarChartImages.aiReadiness, 'PNG', 20, yPos, pageWidth - 40, 70);
-      yPos += 75;
+      // Get actual image dimensions and maintain aspect ratio
+      const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
+      const maxWidth = pageWidth - 40; // Max width with margins
+      const maxHeight = 90; // Max height to fit on page
+      
+      // Calculate dimensions maintaining aspect ratio
+      let chartWidth = maxWidth;
+      let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
+      
+      if (chartHeight > maxHeight) {
+        chartHeight = maxHeight;
+        chartWidth = (imgProps.width / imgProps.height) * chartHeight;
+      }
+      
+      const chartX = (pageWidth - chartWidth) / 2; // Center the chart
+      pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, yPos, chartWidth, chartHeight);
+      yPos += chartHeight + 5;
+      
+      // Add individual scores
+      yPos = addIndividualScores(aiReadinessSkills, yPos);
+      yPos += 5;
     } catch (error) {
       console.error('Error adding AI Readiness chart:', error);
       yPos += 10;
