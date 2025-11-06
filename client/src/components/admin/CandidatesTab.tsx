@@ -131,6 +131,9 @@ export default function CandidatesTab() {
         r.assessmentType === 'ai_readiness' && r.status === 'completed'
       );
 
+      // Wait for charts to fully render
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       if (fitResult) {
         const fitChart = await captureRadarChart('pdf-fit-chart');
         if (fitChart) radarChartImages.fit = fitChart;
