@@ -417,10 +417,10 @@ export class DatabaseStorage implements IStorage {
     invitations: Invitation[];
   }>> {
     // Get all users who have taken at least one assessment or been invited
+    // NOTE: Temporarily including admins for testing purposes
     const allUsers = await db
       .select()
-      .from(users)
-      .where(eq(users.isAdmin, false)); // Exclude admins
+      .from(users); // Include all users (including admins for testing)
 
     const candidatesData = await Promise.all(
       allUsers.map(async (user) => {
