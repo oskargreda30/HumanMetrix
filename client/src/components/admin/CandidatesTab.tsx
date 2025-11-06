@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
-import { exportProfessionalCandidatePDF } from "@/lib/professionalPdfExport";
+import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,7 +69,37 @@ export default function CandidatesTab() {
         });
       });
       
-      await exportProfessionalCandidatePDF(candidate, allSkills);
+      toast({
+        title: "Generating PDF...",
+        description: "Please wait while we create your professional report.",
+      });
+
+      // Fetch platform averages
+      const averagesRes = await fetch('/api/admin/platform-averages');
+      const platformAverages = await averagesRes.json();
+
+      // Capture radar charts for FIT and AI Readiness
+      let radarChartImages: { fit?: string; aiReadiness?: string } = {};
+      
+      const fitResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'fit' && r.status === 'completed'
+      );
+      const aiReadinessResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'ai-readiness' && r.status === 'completed'
+      );
+
+      if (fitResult) {
+        const fitChart = await captureRadarChart('pdf-fit-chart');
+        if (fitChart) radarChartImages.fit = fitChart;
+      }
+
+      if (aiReadinessResult) {
+        const aiChart = await captureRadarChart('pdf-ai-readiness-chart');
+        if (aiChart) radarChartImages.aiReadiness = aiChart;
+      }
+      
+      await exportEnhancedCandidatePDF(candidate, allSkills, platformAverages, radarChartImages);
+      
       toast({
         title: "PDF exported successfully",
         description: "Professional candidate report has been downloaded.",
@@ -398,6 +428,41 @@ export default function CandidatesTab() {
             <p className="text-muted-foreground">No candidates found</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Hidden radar charts for PDF export */}
+      {selectedCandidate && (
+        <div style={{ position: 'absolute', left: '-9999px', width: '600px', height: '400px' }}>
+          {(() => {
+            const fitResult = selectedCandidate.results?.find((r: any) => 
+              r.assessmentType === 'fit' && r.status === 'completed'
+            );
+            const aiReadinessResult = selectedCandidate.results?.find((r: any) => 
+              r.assessmentType === 'ai-readiness' && r.status === 'completed'
+            );
+
+            return (
+              <>
+                {fitResult && (
+                  <div id="pdf-fit-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
+                    <SkillRadarChart 
+                      data={transformToRadarData(fitResult.scores, 'fit')}
+                      title="FIT Assessment"
+                    />
+                  </div>
+                )}
+                {aiReadinessResult && (
+                  <div id="pdf-ai-readiness-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
+                    <SkillRadarChart 
+                      data={transformToRadarData(aiReadinessResult.scores, 'ai-readiness')}
+                      title="AI Readiness"
+                    />
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
       )}
     </div>
   );

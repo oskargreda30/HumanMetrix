@@ -699,6 +699,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get platform averages for benchmarking
+  app.get("/api/admin/platform-averages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const candidates = await storage.getCandidatesWithResults();
+      
+      // Calculate platform-wide averages
+      const allSkills: Record<string, number[]> = {};
+      let totalScores: number[] = [];
+      
+      candidates.forEach((candidate: any) => {
+        const completedResults = candidate.results?.filter(
+          (r: any) => r.status === 'completed' && r.scores
+        ) || [];
+        
+        let candidateScores: number[] = [];
+        
+        completedResults.forEach((result: any) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skillName, score]) => {
+              if (typeof score === 'number') {
+                if (!allSkills[skillName]) {
+                  allSkills[skillName] = [];
+                }
+                allSkills[skillName].push(score);
+                candidateScores.push(score);
+              }
+            });
+          }
+        });
+        
+        if (candidateScores.length > 0) {
+          const avg = candidateScores.reduce((a, b) => a + b, 0) / candidateScores.length;
+          totalScores.push(avg);
+        }
+      });
+      
+      // Calculate skill averages
+      const skillAverages: Record<string, number> = {};
+      Object.entries(allSkills).forEach(([skillName, scores]) => {
+        if (scores.length > 0) {
+          skillAverages[skillName] = Math.round(
+            scores.reduce((a, b) => a + b, 0) / scores.length
+          );
+        }
+      });
+      
+      // Calculate overall platform average
+      const avgScoreAcrossCandidates = totalScores.length > 0
+        ? Math.round(totalScores.reduce((a, b) => a + b, 0) / totalScores.length)
+        : 0;
+      
+      res.json({
+        totalCandidates: candidates.length,
+        avgScoreAcrossCandidates,
+        skillAverages,
+      });
+    } catch (error) {
+      console.error("Error fetching platform averages:", error);
+      res.status(500).json({ message: "Failed to fetch platform averages" });
+    }
+  });
+
   // Admin: Add tag to candidate
   app.post("/api/admin/candidates/tags", isAuthenticated, async (req: any, res) => {
     try {
