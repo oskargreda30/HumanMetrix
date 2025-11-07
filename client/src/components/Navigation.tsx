@@ -1,12 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navigation() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const { toast } = useToast();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -19,6 +25,28 @@ export default function Navigation() {
     if (href === "/") return location === "/";
     return location.startsWith(href);
   };
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("/api/logout", "POST");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+      navigate("/");
+    },
+    onError: () => {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0a1628]/80">
@@ -53,23 +81,52 @@ export default function Navigation() {
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-2">
             <BasketSheet />
-            <Link href="/login">
-              <Button 
-                variant="ghost" 
-                className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
-                data-testid="button-login"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/assessments">
-              <Button 
-                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
-                data-testid="button-get-started"
-              >
-                Get Started
-              </Button>
-            </Link>
+            {!isLoading && (
+              isAuthenticated ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button 
+                      variant="ghost" 
+                      className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                      data-testid="button-dashboard"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending}
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button 
+                      variant="ghost" 
+                      className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                      data-testid="button-login"
+                    >
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/assessments">
+                    <Button 
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                      data-testid="button-get-started"
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button and Basket */}
@@ -105,25 +162,58 @@ export default function Navigation() {
               </Link>
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-cyan-400/20">
-              <Link href="/login">
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
-                  onClick={() => setMobileMenuOpen(false)} 
-                  data-testid="button-mobile-login"
-                >
-                  Login
-                </Button>
-              </Link>
-              <Link href="/assessments">
-                <Button 
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
-                  onClick={() => setMobileMenuOpen(false)} 
-                  data-testid="button-mobile-get-started"
-                >
-                  Get Started
-                </Button>
-              </Link>
+              {!isLoading && (
+                isAuthenticated ? (
+                  <>
+                    <Link href="/dashboard">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
+                        onClick={() => setMobileMenuOpen(false)} 
+                        data-testid="button-mobile-dashboard"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logoutMutation.mutate();
+                      }}
+                      disabled={logoutMutation.isPending}
+                      data-testid="button-mobile-logout"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
+                        onClick={() => setMobileMenuOpen(false)} 
+                        data-testid="button-mobile-login"
+                      >
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/assessments">
+                      <Button 
+                        className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
+                        onClick={() => setMobileMenuOpen(false)} 
+                        data-testid="button-mobile-get-started"
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )
+              )}
             </div>
           </nav>
         </div>
