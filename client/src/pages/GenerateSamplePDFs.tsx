@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
+import { transformToRadarData } from "@/lib/assessmentSkills";
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 
@@ -76,41 +77,31 @@ const sarahChenData = {
   ]
 };
 
-// Transform to skills array (matching CandidatesTab logic)
+// Transform to skills array (matching CandidatesTab logic EXACTLY)
 function getSkills(candidate: typeof sarahChenData) {
   const allSkills: Array<{name: string, score: number, assessment: string}> = [];
   
-  const fitResult = candidate.results.find(r => r.assessmentType === "fit");
-  if (fitResult?.scores) {
-    Object.entries(fitResult.scores).forEach(([skill, score]) => {
-      allSkills.push({ name: skill, score: score as number, assessment: "FIT Assessment" });
-    });
-  }
+  const completedResults = candidate.results.filter(r => r.status === "completed");
   
-  const aiResult = candidate.results.find(r => r.assessmentType === "ai_readiness");
-  if (aiResult?.scores) {
-    Object.entries(aiResult.scores).forEach(([skill, score]) => {
-      allSkills.push({ name: skill, score: score as number, assessment: "AI Readiness" });
+  completedResults.forEach((result) => {
+    const assessmentType = result.assessmentType;
+    
+    // Skip non-skill based assessments
+    if (assessmentType === "prompt_architecture" || assessmentType === "aiq") {
+      return;
+    }
+    
+    // Use transformToRadarData to get properly formatted skills
+    const radarData = transformToRadarData(result.scores as Record<string, number>, assessmentType);
+    
+    radarData.forEach((skillData) => {
+      allSkills.push({
+        name: skillData.skill,
+        score: skillData.score,
+        assessment: assessmentType === "fit" ? "FIT Assessment" : "AI Readiness"
+      });
     });
-  }
-  
-  const promptResult = candidate.results.find(r => r.assessmentType === "prompt_architecture");
-  if (promptResult?.scores?.overall) {
-    allSkills.push({ 
-      name: "Prompt Architecture", 
-      score: promptResult.scores.overall as number, 
-      assessment: "Prompt Architecture" 
-    });
-  }
-  
-  const aiqResult = candidate.results.find(r => r.assessmentType === "aiq");
-  if (aiqResult?.scores?.aiq) {
-    allSkills.push({ 
-      name: "AIQ", 
-      score: aiqResult.scores.aiq as number, 
-      assessment: "AIQ" 
-    });
-  }
+  });
   
   return allSkills;
 }
