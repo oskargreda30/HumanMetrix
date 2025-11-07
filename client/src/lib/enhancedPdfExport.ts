@@ -255,7 +255,7 @@ export async function exportEnhancedCandidatePDF(
   
   yPos = 35;
   yPos = addSectionHeader(pdf, 'UNDERSTANDING THE ASSESSMENTS', yPos, pageWidth);
-  yPos += 8;
+  yPos += 5;
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
@@ -267,7 +267,7 @@ export async function exportEnhancedCandidatePDF(
   introText.forEach((line: string, index: number) => {
     pdf.text(line, 20, yPos + (index * 4));
   });
-  yPos += introText.length * 4 + 10;
+  yPos += introText.length * 4 + 5;
   
   // Helper function to add assessment explanation box
   const addAssessmentBox = (
@@ -333,7 +333,7 @@ export async function exportEnhancedCandidatePDF(
       textY += 4;
     });
     
-    return currentY + boxHeight + 8;
+    return currentY + boxHeight + 5;
   };
   
   // FIT Assessment Explanation
@@ -372,9 +372,9 @@ export async function exportEnhancedCandidatePDF(
   // AIQ Assessment Explanation
   yPos = addAssessmentBox(
     'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (4 Questions)',
-    [239, 68, 68],
-    [254, 226, 226],
-    [239, 68, 68],
+    [34, 197, 94],
+    [220, 252, 231],
+    [34, 197, 94],
     'Understanding of AI ethics, bias detection, fairness, transparency, and responsible deployment. Tests decision-making in scenarios involving algorithmic systems and their societal impact.',
     'Critical for reducing AI deployment risks and ensuring compliance. High scorers identify bias early, implement fair AI systems, and make ethically sound decisions that protect brand reputation and avoid regulatory issues.',
     yPos
@@ -463,7 +463,7 @@ export async function exportEnhancedCandidatePDF(
   }
   
   // AI Readiness Radar Chart
-  const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness Assessment');
+  const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness');
   if (radarChartImages?.aiReadiness && aiReadinessSkills.length > 0) {
     if (yPos > pageHeight - 120) {
       pdf.addPage();
@@ -513,6 +513,77 @@ export async function exportEnhancedCandidatePDF(
       console.error('Error adding AI Readiness chart:', error);
       yPos += 10;
     }
+  }
+  
+  // AIQ Assessment - Single Score Display
+  const aiqResult = candidate.results?.find((r: any) => 
+    r.assessmentType === 'aiq' && r.status === 'completed'
+  );
+  
+  if (aiqResult && aiqResult.totalScore !== null && aiqResult.totalScore !== undefined) {
+    if (yPos > pageHeight - 100) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text('Algorithmic Integrity Quotient (AIQ)', 20, yPos);
+    yPos += 7;
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
+    yPos += 10;
+    
+    // Large score display
+    pdf.setFillColor(220, 252, 231);
+    pdf.setDrawColor(34, 197, 94);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 50, 3, 3, 'FD');
+    
+    pdf.setFontSize(48);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 25, { align: 'center' });
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('/ 100', pageWidth / 2 + 15, yPos + 25);
+    
+    pdf.setFontSize(9);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 40, { align: 'center' });
+    
+    yPos += 60;
+    
+    // Performance interpretation
+    const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
+    let interpretation = '';
+    if (aiqResult.totalScore >= 75) {
+      interpretation = 'Demonstrates strong understanding of AI ethics and responsible deployment. Can be trusted to make sound decisions regarding algorithmic systems and identify potential risks early.';
+    } else if (aiqResult.totalScore >= 50) {
+      interpretation = 'Shows foundational knowledge of AI ethics. May benefit from additional training in bias detection, fairness principles, and responsible AI practices.';
+    } else {
+      interpretation = 'Requires significant development in AI ethics and responsible deployment practices. Additional training and guidance strongly recommended before working with AI systems.';
+    }
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
+    pdf.text(`Performance Level: ${aiqPerf.label}`, 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const aiqInterpretation = pdf.splitTextToSize(interpretation, pageWidth - 40);
+    aiqInterpretation.forEach((line: string, index: number) => {
+      pdf.text(line, 20, yPos + (index * 4));
+    });
+    yPos += aiqInterpretation.length * 4 + 10;
   }
   
   pdf.setTextColor(0, 0, 0);
@@ -641,8 +712,8 @@ export async function exportEnhancedCandidatePDF(
   
   // Per-skill comparison - separated by assessment
   const fitSkillsData = skills.filter(s => s.assessment === 'FIT Assessment');
-  const aiReadinessSkillsData = skills.filter(s => s.assessment === 'AI Readiness Assessment');
-  const aiqSkillsData = skills.filter(s => s.assessment === 'AIQ Assessment');
+  const aiReadinessSkillsData = skills.filter(s => s.assessment === 'AI Readiness');
+  const aiqSkillsData = skills.filter(s => s.assessment === 'AIQ');
   const promptSkillsData = skills.filter(s => s.assessment === 'Prompt Architecture');
   
   const renderSkillComparisonTable = (skillsList: SkillData[], title: string) => {
@@ -711,8 +782,8 @@ export async function exportEnhancedCandidatePDF(
   };
   
   renderSkillComparisonTable(fitSkillsData, 'FIT Assessment - Behavioral Skills');
-  renderSkillComparisonTable(aiReadinessSkillsData, 'AI Readiness Assessment');
-  renderSkillComparisonTable(aiqSkillsData, 'Algorithmic Integrity Quotient (AIQ)');
+  renderSkillComparisonTable(aiReadinessSkillsData, 'AI Readiness');
+  renderSkillComparisonTable(aiqSkillsData, 'AIQ');
   
   // ========== PROMPT ARCHITECTURE ASSESSMENT ==========
   if (promptArchitectureData && promptArchitectureData.length > 0) {
