@@ -35,9 +35,25 @@ export default function HeroSection() {
                 Professional AI assessments designed for recruitment and career development. 
                 Evaluate FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity with enterprise-grade precision.
               </p>
-              <p className="text-base md:text-lg text-blue-100/70 leading-relaxed max-w-3xl mx-auto">
-                Get comprehensive insights through three report formats: Individual Assessment Reports for personal development, Candidate Comparison Reports to evaluate multiple candidates side-by-side, and Role Fit Analysis Reports to match candidates with specific positions.
-              </p>
+              <div className="text-left max-w-2xl mx-auto space-y-2">
+                <p className="text-base md:text-lg text-blue-100/70 font-medium mb-3">
+                  Get comprehensive insights through three report formats:
+                </p>
+                <ul className="space-y-2 text-sm md:text-base text-blue-100/70">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <span><strong className="text-blue-100">Individual Assessment Reports</strong> for personal development</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <span><strong className="text-blue-100">Candidate Comparison Reports</strong> to evaluate multiple candidates side-by-side</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <span><strong className="text-blue-100">Role Fit Analysis Reports</strong> to match candidates with specific positions</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
