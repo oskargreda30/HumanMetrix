@@ -489,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalScore = null; // No total score for AI Readiness - just individual skills
       } else if (result.assessmentType === ASSESSMENT_TYPES.AIQ) {
         scores = calculateAIQScores(answers);
-        totalScore = Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.keys(scores).length);
+        totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
         // For Prompt Architecture, use OpenAI GPT evaluation
         try {
