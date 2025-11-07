@@ -114,38 +114,38 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - Practical hiring recommendations
      - 7-day result caching to minimize API costs
 
-7. **Enhanced PDF Export System**
-   - **PDF Section Order** (November 2025 Update):
-     1. Cover page with candidate info
-     2. UNDERSTANDING THE ASSESSMENTS - Assessment explanations for hiring managers
-     3. SKILLS VISUALIZATION - All assessments in sequence (FIT → AI Readiness → Prompt Architecture → AIQ)
-     4. PLATFORM BENCHMARKING - Candidate vs platform comparisons
-     5. OVERALL ASSESSMENT SUMMARY
-     6. ASSESSMENT BREAKDOWN - Detailed skill analysis
-     7. RECOMMENDATIONS - Candidate-focused only (employer recommendations removed)
-   - **Assessment Explanations Page**: Optimized page explaining all 4 assessment types for non-technical hiring managers (all fit on one page with reduced text size)
-     - FIT Assessment: Behavioral skills and workplace adaptability impact (blue theme)
-     - AI Readiness: AI competencies and productivity multiplication potential (purple theme)
-     - Prompt Architecture: Prompt engineering expertise and AI output quality correlation (amber theme)
-     - AIQ: AI ethics understanding and risk reduction capability (blue theme)
-   - **Radar Charts Optimization**: Both FIT and AI Readiness radar charts with individual scores fit on one page (maxHeight reduced from 90 to 55)
-   - **Skills Visualization Section**: Sequential presentation of all assessments
-     - FIT Assessment: Radar chart + individual skill scores
-     - AI Readiness: Radar chart + individual skill scores
-     - Prompt Architecture: Progressive levels 1-7 with dimension scores
-     - AIQ: Single score + performance level interpretation
-   - **Platform Benchmarking**: Dedicated section comparing candidate to platform averages
-     - Overall performance comparison card
-     - Skill-by-skill comparison tables (separated by assessment type)
-   - **Recommendations Section**: Candidate-focused only
-     - Strengths to leverage
-     - Development areas
-     - Training and mentoring paths
-     - NO employer recommendations (removed November 2025)
-   - **Dynamic Layout Engine**: Automatic pagination with content-aware page breaks
-   - **Visual Organization**: Color-coded sections matching assessment branding
-   - **Complete Coverage**: All assessment data presented in logical, employer-friendly sequence
-   - **Hiring Manager Focus**: Business-focused language explaining what each score means for workplace performance
+7. **Enhanced PDF Export System** (Redesigned November 2025 - Condensed to 3 Pages)
+   - **Maximum 3 Pages**: Completely redesigned for concise, client-ready format
+   - **Professional Design**: Subtle backgrounds, gradients, modern color scheme, compact spacing
+   - **Font Sizes**: Reduced throughout (8-9pt headers, 7pt body, 6pt labels) for space efficiency
+   
+   - **Page 1: Cover & Overview**
+     - Compact cover with candidate profile
+     - Overall performance score prominently displayed
+     - Key metrics grid (skills assessed, top skill, top score)
+     - Assessment summary with all 4 assessments and mini progress bars
+     - Key insights: top 3 strengths and 2 development areas
+   
+   - **Page 2: Detailed Assessment Results**
+     - FIT Assessment: Compact radar chart (42mm height) + 2-column skill scores
+     - AI Readiness: Compact radar chart (42mm height) + 2-column skill scores
+     - **Prompt Architecture SIMPLIFIED**: Overall score + legend + compact grid showing L1-L7 scores only (NO dimension breakdown per level)
+     - AIQ: Simple score display with performance level
+     - Platform benchmark (if data available): Single line showing vs platform average
+   
+   - **Page 3: Summary & Recommendations**
+     - Role fit analysis (if provided): Overall alignment % + top 2 strengths/gaps in ultra-compact format
+     - Overall assessment interpretation with performance level
+     - Performance by assessment with brief text interpretations
+     - Recommendations: Strengths to leverage, development focus, next steps
+     - Footer disclaimer about assessment usage
+   
+   - **Key Improvements**:
+     - Reduced from 9 pages to 3 pages maximum
+     - Prompt Architecture shows only essential data (level scores + legend, not full dimension details)
+     - All content retained but dramatically condensed
+     - Professional, client-ready appearance
+     - Suitable for candidate self-download or admin export
 
 8. **Admin API Endpoints**
    - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
