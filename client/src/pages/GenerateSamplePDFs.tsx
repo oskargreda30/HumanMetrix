@@ -174,21 +174,27 @@ export default function GenerateSamplePDFs() {
 
   const generateSarahChenPDF = async () => {
     setGenerating(true);
-    setStatus("Generating Sarah Chen individual report...");
+    setStatus("Generating individual-sample.pdf...");
     
     try {
       const skills = getSkills(sarahChenData);
       
+      // Generate PDF using exact same function as admin dashboard
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Import and call the same helper functions from enhancedPdfExport
+      // This ensures we use the EXACT same export logic
       await exportEnhancedCandidatePDF(
         sarahChenData as any,
         skills,
         platformAverages,
-        undefined, // no radar chart images for now
+        undefined, // no radar chart images
         undefined, // no role comparison for individual report
         promptArchitectureData as any
       );
       
-      setStatus("✅ Sarah Chen report generated successfully!");
+      setStatus("✅ individual-sample.pdf generated! Save to client/public/sample-reports/");
     } catch (error) {
       console.error("Error generating PDF:", error);
       setStatus(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -199,11 +205,12 @@ export default function GenerateSamplePDFs() {
 
   const generateRoleFitPDF = async () => {
     setGenerating(true);
-    setStatus("Generating Sarah Chen role fit report...");
+    setStatus("Generating rolefit-sample.pdf...");
     
     try {
       const skills = getSkills(sarahChenData);
       
+      // Generate PDF using exact same function as admin dashboard  
       await exportEnhancedCandidatePDF(
         sarahChenData as any,
         skills,
@@ -213,7 +220,7 @@ export default function GenerateSamplePDFs() {
         promptArchitectureData as any
       );
       
-      setStatus("✅ Role fit report generated successfully!");
+      setStatus("✅ rolefit-sample.pdf generated! Save to client/public/sample-reports/");
     } catch (error) {
       console.error("Error generating PDF:", error);
       setStatus(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -275,11 +282,20 @@ export default function GenerateSamplePDFs() {
           <div className="pt-4 border-t">
             <h3 className="font-semibold mb-2">Instructions:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Click a button to generate a PDF using the same export function as admin dashboard</li>
-              <li>The PDF will download automatically to your downloads folder</li>
-              <li>Copy the generated PDFs to <code className="bg-muted px-1 rounded">client/public/sample-reports/</code></li>
-              <li>Rename them appropriately (individual-sample.pdf, rolefit-sample.pdf)</li>
+              <li>Click a button to generate a PDF (uses EXACT same function as admin dashboard)</li>
+              <li>The PDF will download to your browser's download folder</li>
+              <li>Rename the downloaded file:
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>Individual Report → <code className="bg-muted px-1 rounded">individual-sample.pdf</code></li>
+                  <li>Role Fit Report → <code className="bg-muted px-1 rounded">rolefit-sample.pdf</code></li>
+                </ul>
+              </li>
+              <li>Move renamed PDFs to <code className="bg-muted px-1 rounded">client/public/sample-reports/</code></li>
+              <li>Test by visiting home page "View Sample Reports" section</li>
             </ol>
+            <p className="text-sm text-muted-foreground mt-3">
+              See <code className="bg-muted px-1 rounded">SAMPLE_PDFS_README.md</code> for full documentation
+            </p>
           </div>
         </div>
       </Card>
