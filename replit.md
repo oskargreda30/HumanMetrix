@@ -64,12 +64,15 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - `cached_role_alignments` table (AI-powered role fit analysis cache)
    - `report_exports` table (PDF export tracking)
 
-3. **Authentication System**
+3. **Authentication System** (Updated November 2025)
    - Email/password authentication with bcryptjs
    - Session-based authentication (PostgreSQL storage)
    - Server-side auth middleware in `auth.ts`
    - Frontend `useAuth` hook
-   - Protected routes
+   - **Route-level protection** via ProtectedRoute component
+   - Protected routes: /dashboard, /assessment/:id, /results/:id, /admin/*
+   - Redirects to /login (not /api/login) when unauthenticated
+   - Admin routes require `requireAdmin` check
    - Password reset functionality (tokens expire in 24 hours)
    - Welcome emails with temporary passwords for invited users
    - Auto-account creation after Stripe payment
@@ -153,6 +156,20 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - POST `/api/admin/roles` - Create custom job roles
    - POST `/api/admin/role-alignment` - Trigger AI role fit analysis
    - GET `/api/admin/role-alignment` - Retrieve cached alignment results
+
+9. **Sample PDF Generation System** (November 2025)
+   - Admin utility page at `/admin/generate-samples`
+   - Uses EXACT same `exportEnhancedCandidatePDF` function as admin dashboard
+   - Zero code duplication - shares PDF export logic
+   - Generates Sarah Chen sample reports with realistic assessment data
+   - Downloads PDFs directly to browser (client-side jsPDF)
+   - Admin can regenerate samples anytime if export function changes
+
+10. **Branding Updates** (November 2025)
+   - New HM monogram logo with transparent background
+   - No text - just cyan/blue gradient HM symbol
+   - Professional tech aesthetic matching platform design
+   - Integrated across all pages via Navigation component
 
 ### 🚧 In Progress
 - None
