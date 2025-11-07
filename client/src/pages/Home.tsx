@@ -1,6 +1,7 @@
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
+import SampleReportsSection from "@/components/SampleReportsSection";
 import ForEmployersSection from "@/components/ForEmployersSection";
 import ResultsPreview from "@/components/ResultsPreview";
 import PricingSection from "@/components/PricingSection";
@@ -14,6 +15,7 @@ export default function Home() {
       <main className="flex-grow">
         <HeroSection />
         <HowItWorks />
+        <SampleReportsSection />
         <ForEmployersSection />
         <ResultsPreview />
         <PricingSection />

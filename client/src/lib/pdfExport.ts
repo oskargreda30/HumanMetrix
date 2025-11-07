@@ -51,6 +51,45 @@ interface RoleFitData {
   };
 }
 
+// Helper to add subtle background pattern to page
+function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
+  // Add light gradient background
+  pdf.setFillColor(249, 250, 251);
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  // Add subtle decorative dots in corners
+  pdf.setFillColor(243, 244, 246);
+  
+  // Top left corner dots
+  const dotSize = 0.5;
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      pdf.circle(5 + (i * 3), 30 + (j * 3), dotSize, 'F');
+    }
+  }
+  
+  // Top right corner dots
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      pdf.circle(pageWidth - 15 + (i * 3), 30 + (j * 3), dotSize, 'F');
+    }
+  }
+  
+  // Bottom left corner dots
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      pdf.circle(5 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
+    }
+  }
+  
+  // Bottom right corner dots
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      pdf.circle(pageWidth - 15 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
+    }
+  }
+}
+
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(17, 24, 39);
@@ -134,6 +173,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   let yPos = 30;
   
   // ========== PAGE 1: COVER PAGE ==========
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   // Title Section with blue background
@@ -201,6 +241,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // ========== PAGE 2: ASSESSMENT OVERVIEW ==========
   pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   yPos = 35;
@@ -358,6 +399,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     : 'Candidate';
   
   // ========== PAGE 1: COVER PAGE ==========
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   // Title Section with blue background
@@ -431,6 +473,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== PAGE 2: OVERALL FIT SCORE ==========
   pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   yPos = 35;

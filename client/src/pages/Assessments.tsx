@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Brain, Sparkles, Code2, Shield, Network, Languages } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
-import { useState } from "react";
-import CheckoutModal from "@/components/CheckoutModal";
 
 const assessments = [
   {
@@ -67,16 +65,9 @@ const assessments = [
 
 export default function Assessments() {
   const { isAuthenticated } = useAuth();
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
 
   const availableAssessments = assessments.filter((a) => a.status === "available");
   const comingSoon = assessments.filter((a) => a.status === "coming-soon");
-
-  const handlePurchaseClick = (assessmentId: string) => {
-    setSelectedAssessmentId(assessmentId);
-    setCheckoutOpen(true);
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
@@ -117,7 +108,6 @@ export default function Assessments() {
                   duration={assessment.duration}
                   icon={assessment.icon}
                   price="£0.01"
-                  onSelect={() => handlePurchaseClick(assessment.id)}
                 />
               ))}
             </div>
@@ -142,12 +132,6 @@ export default function Assessments() {
         </div>
       </main>
       <Footer />
-      
-      <CheckoutModal
-        open={checkoutOpen}
-        onOpenChange={setCheckoutOpen}
-        preselectedAssessmentId={selectedAssessmentId}
-      />
     </div>
   );
 }

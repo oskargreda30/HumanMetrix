@@ -1,8 +1,10 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import ContactFormDialog from "@/components/ContactFormDialog";
 import { 
   Users, 
   TrendingUp, 
@@ -67,9 +69,22 @@ const useCases = [
 ];
 
 export default function ForEmployers() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
+
+  const openDialog = (intent: 'demo' | 'sales') => {
+    setDialogIntent(intent);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
+      <ContactFormDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen} 
+        intent={dialogIntent}
+      />
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -87,7 +102,11 @@ export default function ForEmployers() {
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" data-testid="button-request-demo">
+              <Button 
+                size="lg" 
+                onClick={() => openDialog('demo')}
+                data-testid="button-request-demo"
+              >
                 Request Demo
               </Button>
               <Link href="/assessments">
@@ -171,23 +190,27 @@ export default function ForEmployers() {
                 <div className="grid md:grid-cols-3 gap-8 mb-8">
                   <div className="text-center">
                     <Clock className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold font-mono text-primary mb-2">20-30 min</div>
+                    <div className="text-2xl font-bold text-primary mb-2">20-30 min</div>
                     <div className="text-sm text-muted-foreground">Per assessment</div>
                   </div>
                   <div className="text-center">
                     <Users className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold font-mono text-primary mb-2">Unlimited</div>
+                    <div className="text-2xl font-bold text-primary mb-2">Unlimited</div>
                     <div className="text-sm text-muted-foreground">Candidates</div>
                   </div>
                   <div className="text-center">
                     <Zap className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold font-mono text-primary mb-2">Instant</div>
+                    <div className="text-2xl font-bold text-primary mb-2">Instant</div>
                     <div className="text-sm text-muted-foreground">Results</div>
                   </div>
                 </div>
 
                 <div className="text-center">
-                  <Button size="lg" data-testid="button-contact-sales">
+                  <Button 
+                    size="lg" 
+                    onClick={() => openDialog('sales')}
+                    data-testid="button-contact-sales"
+                  >
                     Contact Sales for Enterprise Pricing
                   </Button>
                   <p className="text-xs text-muted-foreground mt-4">

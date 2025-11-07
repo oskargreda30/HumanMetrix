@@ -35,6 +35,9 @@ export default function HeroSection() {
                 Professional AI assessments designed for recruitment and career development. 
                 Evaluate FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity with enterprise-grade precision.
               </p>
+              <p className="text-base md:text-lg text-blue-100/70 leading-relaxed max-w-3xl mx-auto">
+                Get comprehensive insights through three report formats: Individual Assessment Reports for personal development, Candidate Comparison Reports to evaluate multiple candidates side-by-side, and Role Fit Analysis Reports to match candidates with specific positions.
+              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -44,31 +47,43 @@ export default function HeroSection() {
                   className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
                   data-testid="button-hero-get-started"
                 >
-                  Get Started
+                  Types of Assessments
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="/about" data-testid="link-hero-learn-more">
+              <Link href="#sample-reports" data-testid="link-hero-sample-reports">
                 <Button 
                   size="lg" 
                   variant="outline" 
                   className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm" 
-                  data-testid="button-hero-learn-more"
+                  data-testid="button-hero-sample-reports"
                 >
-                  Learn More
+                  Sample Reports
                 </Button>
               </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-6 pt-4 justify-center">
+            <div className="grid sm:grid-cols-3 gap-6 pt-4 max-w-4xl mx-auto">
               {[
-                "Trusted by 1,000+ professionals",
-                "Enterprise-grade security",
-                "CV-ready results"
+                {
+                  title: "Instant PDF Results",
+                  subtitle: "Download your comprehensive reports immediately after completion"
+                },
+                {
+                  title: "CV-Ready Reports",
+                  subtitle: "Professional PDFs ready to attach to job applications"
+                },
+                {
+                  title: "Secure Data Storage",
+                  subtitle: "Your assessment data is safely encrypted and stored"
+                }
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 justify-center">
+                <div key={i} className="flex flex-col items-center gap-2 text-center">
                   <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
-                  <span className="text-sm text-blue-100/70">{item}</span>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-blue-100">{item.title}</div>
+                    <div className="text-xs text-blue-100/60">{item.subtitle}</div>
+                  </div>
                 </div>
               ))}
             </div>

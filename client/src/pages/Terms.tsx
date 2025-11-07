@@ -1,9 +1,27 @@
+import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function Terms() {
+  useEffect(() => {
+    document.title = "Terms & Conditions | HumanMetrix - AI Assessment Platform";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute(
+        "content",
+        "Read the complete Terms & Conditions for HumanMetrix AI Assessment Platform. Understand your rights, usage guidelines, and our commitments to data protection and privacy."
+      );
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = "description";
+      meta.content = "Read the complete Terms & Conditions for HumanMetrix AI Assessment Platform. Understand your rights, usage guidelines, and our commitments to data protection and privacy.";
+      document.head.appendChild(meta);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
@@ -12,7 +30,7 @@ export default function Terms() {
         <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
           <div className="mb-12">
             <h1 className="text-4xl font-bold mb-4">Terms & Conditions</h1>
-            <p className="text-muted-foreground">Last updated: October 29, 2025</p>
+            <p className="text-muted-foreground">Last updated: November 7, 2025</p>
           </div>
 
           <Card className="p-8">

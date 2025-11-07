@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, FileText, CheckCircle2, Lock } from "lucide-react";
+import { Clock, FileText, CheckCircle2, Lock, Check, ShoppingCart, X } from "lucide-react";
 import { type LucideIcon } from "lucide-react";
+import { useBasket } from "@/contexts/BasketContext";
 
 export interface AssessmentCardProps {
   id?: string;
@@ -19,6 +21,7 @@ export interface AssessmentCardProps {
 }
 
 export default function AssessmentCard({
+  id,
   title,
   description,
   questionCount,
@@ -30,8 +33,35 @@ export default function AssessmentCard({
   free = false,
   comingSoon = false,
 }: AssessmentCardProps) {
+  const { addToBasket, removeFromBasket, isInBasket } = useBasket();
+  const [justAdded, setJustAdded] = useState(false);
   const isAvailable = status === "available" || status === "completed";
   const isComingSoon = status === "coming-soon" || comingSoon;
+  const inBasket = id ? isInBasket(id) : false;
+
+  useEffect(() => {
+    if (justAdded) {
+      const timer = setTimeout(() => setJustAdded(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [justAdded]);
+
+  const handleAddToBasket = () => {
+    if (!id || !price) return;
+    
+    const priceValue = parseFloat(price.replace('£', ''));
+    addToBasket({
+      id,
+      name: title,
+      price: priceValue,
+    });
+    setJustAdded(true);
+  };
+
+  const handleRemoveFromBasket = () => {
+    if (!id) return;
+    removeFromBasket(id);
+  };
 
   return (
     <Card className="p-6 hover-elevate transition-all h-full flex flex-col bg-[#1a2744]/50 border-cyan-400/20">
@@ -82,16 +112,57 @@ export default function AssessmentCard({
           </div>
           {isComingSoon ? (
             <Badge variant="secondary" data-testid="badge-coming-soon">Coming Soon</Badge>
-          ) : (
+          ) : status === "completed" ? (
             onSelect && (
               <Button
                 onClick={onSelect}
-                disabled={!isAvailable}
                 data-testid="button-purchase-assessment"
               >
-                {status === "completed" ? "View Results" : "Purchase"}
+                View Results
               </Button>
             )
+          ) : (
+            <div className="flex gap-2">
+              {inBasket ? (
+                <>
+                  <Badge 
+                    variant="default" 
+                    className="flex items-center gap-1"
+                    data-testid="badge-in-basket"
+                  >
+                    <Check className="h-3 w-3" />
+                    Added
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveFromBasket}
+                    disabled={!isAvailable}
+                    data-testid="button-remove-from-basket"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleAddToBasket}
+                  disabled={!isAvailable || !id}
+                  data-testid="button-add-to-basket"
+                >
+                  {justAdded ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Added!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Basket
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>

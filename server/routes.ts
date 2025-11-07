@@ -6,9 +6,10 @@ import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, insertInvitationSchema }
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { sendInvitationEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail } from "./email";
 import OpenAI from "openai";
 import Stripe from "stripe";
+import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -18,9 +19,73 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
 });
 
+// Rate limiting for contact form (in-memory)
+const contactFormRateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+const contactFormSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  company: z.string().min(2),
+  message: z.string().min(10),
+  intent: z.enum(['demo', 'sales']),
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
+
+  // Contact form endpoint with rate limiting
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      // Check rate limit
+      const rateLimitData = contactFormRateLimiter.get(ip);
+      if (rateLimitData) {
+        if (now < rateLimitData.resetTime) {
+          if (rateLimitData.count >= 5) {
+            return res.status(429).json({ 
+              message: "Too many requests. Please try again later." 
+            });
+          }
+          rateLimitData.count += 1;
+        } else {
+          contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+        }
+      } else {
+        contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+      }
+
+      // Validate request body
+      const validatedData = contactFormSchema.parse(req.body);
+
+      // Send email
+      await sendContactFormEmail(
+        validatedData.name,
+        validatedData.email,
+        validatedData.company,
+        validatedData.message,
+        validatedData.intent
+      );
+
+      res.json({ 
+        success: true, 
+        message: "Message sent successfully" 
+      });
+    } catch (error: any) {
+      console.error("Contact form error:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Invalid form data" 
+        });
+      }
+      res.status(500).json({ 
+        message: "Failed to send message. Please try again later." 
+      });
+    }
+  });
 
   // Process payment success and create user account
   app.post("/api/process-payment-success", async (req, res) => {

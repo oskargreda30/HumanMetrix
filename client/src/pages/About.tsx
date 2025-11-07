@@ -47,7 +47,7 @@ export default function About() {
         {/* Mission Section */}
         <section className="py-24">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
-            <div className="space-y-8">
+            <div className="space-y-12">
               <div>
                 <h2 className="text-3xl font-semibold mb-4">Our Mission</h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
@@ -98,8 +98,8 @@ export default function About() {
         {/* Values Section */}
         <section className="py-24 bg-muted/30">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-4">Our Values</h2>
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl font-semibold">Our Values</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 The principles that guide everything we do
               </p>
@@ -107,7 +107,7 @@ export default function About() {
 
             <div className="grid md:grid-cols-2 gap-8">
               {values.map((value, index) => (
-                <div key={index} className="space-y-4">
+                <div key={index} className="space-y-4 p-6">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <value.icon className="h-6 w-6 text-primary" />
@@ -125,8 +125,8 @@ export default function About() {
 
         {/* Team Section */}
         <section className="py-24">
-          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-semibold mb-4">Built by Assessment Experts</h2>
+          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center space-y-6">
+            <h2 className="text-3xl font-semibold">Built by Assessment Experts</h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
               Our team combines expertise in organizational psychology, AI research, and enterprise software 
               to create assessments that are scientifically rigorous, technologically advanced, and practically useful. 

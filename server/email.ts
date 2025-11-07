@@ -279,3 +279,120 @@ Log in at: ${loginUrl}
 
   await emailTransporter.sendMail(mailOptions);
 }
+
+export async function sendContactFormEmail(
+  name: string,
+  email: string,
+  company: string,
+  message: string,
+  intent: 'demo' | 'sales'
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Contact form email not sent - email not configured`);
+    return;
+  }
+
+  const intentLabel = intent === 'demo' ? 'Demo Request' : 'Sales Inquiry';
+  const salesEmail = 'humanmetrix.sales@gmail.com';
+
+  const mailOptions = {
+    from: `"HumanMetrix Contact Form" <${process.env.GMAIL_USER}>`,
+    to: salesEmail,
+    replyTo: email,
+    subject: `${intentLabel} from ${name} - ${company}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .field { margin-bottom: 20px; }
+            .label { font-weight: 600; color: #374151; margin-bottom: 5px; }
+            .value { color: #1f2937; }
+            .message-box { background: #f9fafb; border-left: 4px solid #06b6d4; padding: 15px; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .badge { display: inline-block; background: #06b6d4; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">New ${intentLabel}</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">HumanMetrix Contact Form</p>
+            </div>
+            <div class="content">
+              <div class="badge">${intentLabel.toUpperCase()}</div>
+              
+              <div class="field">
+                <div class="label">Name:</div>
+                <div class="value">${name}</div>
+              </div>
+              
+              <div class="field">
+                <div class="label">Email:</div>
+                <div class="value"><a href="mailto:${email}" style="color: #06b6d4; text-decoration: none;">${email}</a></div>
+              </div>
+              
+              <div class="field">
+                <div class="label">Company:</div>
+                <div class="value">${company}</div>
+              </div>
+              
+              <div class="field">
+                <div class="label">Message:</div>
+                <div class="message-box">${message.replace(/\n/g, '<br>')}</div>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Submitted on ${new Date().toLocaleDateString('en-GB', { 
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+              <p style="margin-top: 10px;">
+                Reply directly to this email to respond to ${name}
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+New ${intentLabel} - HumanMetrix
+
+${intentLabel}: ${intentLabel.toUpperCase()}
+
+Name: ${name}
+Email: ${email}
+Company: ${company}
+
+Message:
+${message}
+
+Submitted on ${new Date().toLocaleDateString('en-GB', { 
+  day: 'numeric', 
+  month: 'long', 
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})}
+
+Reply directly to this email to respond to ${name}
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  await emailTransporter.sendMail(mailOptions);
+}

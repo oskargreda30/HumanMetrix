@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { ShoppingCart, CreditCard, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { BasketItem } from "@/contexts/BasketContext";
 
 const assessments = [
   {
@@ -48,12 +49,14 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedAssessmentId?: string | null;
+  basketItems?: BasketItem[];
 }
 
 export default function CheckoutModal({
   open,
   onOpenChange,
   preselectedAssessmentId,
+  basketItems,
 }: CheckoutModalProps) {
   const { toast } = useToast();
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
@@ -63,10 +66,12 @@ export default function CheckoutModal({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (preselectedAssessmentId && open) {
+    if (basketItems && basketItems.length > 0 && open) {
+      setSelectedAssessments(new Set(basketItems.map(item => item.id)));
+    } else if (preselectedAssessmentId && open) {
       setSelectedAssessments(new Set([preselectedAssessmentId]));
     }
-  }, [preselectedAssessmentId, open]);
+  }, [preselectedAssessmentId, basketItems, open]);
 
   const handleToggle = (id: string) => {
     const newSelected = new Set(selectedAssessments);
