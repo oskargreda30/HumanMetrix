@@ -398,6 +398,160 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
+  // ========== ASSESSMENT SUMMARY ==========
+  // Check if we need a new page
+  if (yPos > pageHeight - 80) {
+    pdf.addPage();
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  }
+  
+  yPos = addSectionHeader(pdf, 'ASSESSMENT SUMMARY', yPos, pageWidth);
+  yPos += 5;
+  
+  const fitResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'fit' && r.status === 'completed');
+  const aiReadinessResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'ai_readiness' && r.status === 'completed');
+  const promptArchResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+  const aiqResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'aiq' && r.status === 'completed');
+  
+  // FIT Assessment Summary
+  if (fitResultSummary) {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    const fitAvg = Math.round(Object.values(fitResultSummary.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(fitResultSummary.scores).length);
+    const fitPerf = getPerformanceLevel(fitAvg);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('FIT Assessment (Behavioral Skills)', 25, yPos);
+    
+    pdf.setTextColor(fitPerf.color[0], fitPerf.color[1], fitPerf.color[2]);
+    pdf.text(`${fitAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
+    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const fitSummary = fitAvg >= 70 
+      ? `${candidateName} demonstrates strong behavioral competencies essential for workplace success, including adaptability, curiosity, and interpersonal skills.`
+      : `${candidateName} shows foundational behavioral skills with opportunities for growth in workplace adaptability and interpersonal effectiveness.`;
+    const fitLines = pdf.splitTextToSize(fitSummary, pageWidth - 50);
+    fitLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 30, yPos + (idx * 4));
+    });
+    yPos += fitLines.length * 4 + 8;
+  }
+  
+  // AI Readiness Summary
+  if (aiReadinessResultSummary) {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    const aiAvg = Math.round(Object.values(aiReadinessResultSummary.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(aiReadinessResultSummary.scores).length);
+    const aiPerf = getPerformanceLevel(aiAvg);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(139, 92, 246);
+    pdf.text('AI Readiness', 25, yPos);
+    
+    pdf.setTextColor(aiPerf.color[0], aiPerf.color[1], aiPerf.color[2]);
+    pdf.text(`${aiAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
+    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const aiSummary = aiAvg >= 70 
+      ? `${candidateName} exhibits strong AI literacy and is well-positioned to leverage AI tools for productivity multiplication in their role.`
+      : `${candidateName} has foundational AI awareness but would benefit from additional training to fully leverage AI capabilities.`;
+    const aiLines = pdf.splitTextToSize(aiSummary, pageWidth - 50);
+    aiLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 30, yPos + (idx * 4));
+    });
+    yPos += aiLines.length * 4 + 8;
+  }
+  
+  // Prompt Architecture Summary
+  if (promptArchResultSummary && promptArchitectureData && promptArchitectureData.length > 0) {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    const promptAvg = Math.round(
+      promptArchitectureData.reduce((sum, p) => sum + (p.totalScore || 0), 0) / promptArchitectureData.length
+    );
+    const promptPerf = getPerformanceLevel(promptAvg);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('Prompt Architecture', 25, yPos);
+    
+    pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
+    pdf.text(`${promptAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
+    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const promptSummary = promptAvg >= 70 
+      ? `${candidateName} demonstrates strong prompt engineering skills, capable of designing effective AI interactions that maximize output quality.`
+      : `${candidateName} shows basic prompt engineering ability with room for development in designing sophisticated AI prompts.`;
+    const promptLines = pdf.splitTextToSize(promptSummary, pageWidth - 50);
+    promptLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 30, yPos + (idx * 4));
+    });
+    yPos += promptLines.length * 4 + 8;
+  }
+  
+  // AIQ Summary
+  if (aiqResultSummary) {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    const aiqScore = aiqResultSummary.totalScore;
+    const aiqPerf = getPerformanceLevel(aiqScore);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Algorithmic Integrity Quotient (AIQ)', 25, yPos);
+    
+    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
+    pdf.text(`${aiqScore}/100`, pageWidth - 25, yPos, { align: 'right' });
+    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const aiqSummary = aiqScore >= 75 
+      ? `${candidateName} demonstrates strong ethical understanding of AI systems and can be trusted to make responsible decisions regarding algorithmic deployment.`
+      : aiqScore >= 50
+      ? `${candidateName} shows foundational AI ethics knowledge but should receive additional training in responsible AI practices before deploying systems.`
+      : `${candidateName} requires significant development in AI ethics. Close supervision and comprehensive training strongly recommended.`;
+    const aiqLines = pdf.splitTextToSize(aiqSummary, pageWidth - 50);
+    aiqLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 30, yPos + (idx * 4));
+    });
+    yPos += aiqLines.length * 4 + 10;
+  }
+  
+  pdf.setTextColor(0, 0, 0);
+  
   // ========== PAGE 3: RADAR CHARTS ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -578,8 +732,8 @@ export async function exportEnhancedCandidatePDF(
     // Individual level results - simplified to show only total scores
     const levelsPerRow = 3;
     const cellWidth = (pageWidth - 50) / levelsPerRow;
-    const cellHeight = 30;
-    const rowSpacing = 35;
+    const cellHeight = 20;
+    const rowSpacing = 25;
     
     let rowsOnCurrentPage = 0;
     
@@ -607,20 +761,20 @@ export async function exportEnhancedCandidatePDF(
       pdf.setDrawColor(229, 231, 235);
       pdf.roundedRect(xPos, cellY, cellWidth - 5, cellHeight, 2, 2, 'FD');
       
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(59, 130, 246);
-      pdf.text(`Level ${prompt.level}`, xPos + 5, cellY + 8);
+      pdf.text(`Level ${prompt.level}`, xPos + 5, cellY + 6);
       
       if (prompt.totalScore !== undefined) {
         const perf = getPerformanceLevel(prompt.totalScore);
-        pdf.setFontSize(16);
+        pdf.setFontSize(12);
         pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`${prompt.totalScore}`, xPos + (cellWidth - 5) / 2, cellY + 22, { align: 'center' });
+        pdf.text(`${prompt.totalScore}`, xPos + (cellWidth - 5) / 2, cellY + 15, { align: 'center' });
         
-        pdf.setFontSize(7);
+        pdf.setFontSize(6);
         pdf.setTextColor(107, 114, 128);
-        pdf.text('/100', xPos + (cellWidth - 5) / 2 + 8, cellY + 22);
+        pdf.text('/100', xPos + (cellWidth - 5) / 2 + 6, cellY + 15);
       }
       
       pdf.setTextColor(0, 0, 0);
@@ -661,44 +815,40 @@ export async function exportEnhancedCandidatePDF(
   );
   
   if (aiqResult && aiqResult.totalScore !== null && aiqResult.totalScore !== undefined) {
-    if (yPos > pageHeight - 100) {
+    if (yPos > pageHeight - 80) {
       pdf.addPage();
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
     
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Algorithmic Integrity Quotient (AIQ)', 20, yPos);
-    yPos += 7;
+    yPos = addSectionHeader(pdf, 'ALGORITHMIC INTEGRITY QUOTIENT (AIQ)', yPos, pageWidth);
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
-    yPos += 10;
+    yPos += 8;
     
     // Score display - smaller and blue
     pdf.setFillColor(239, 246, 255);
     pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
+    pdf.roundedRect(20, yPos, pageWidth - 40, 25, 3, 3, 'FD');
     
-    pdf.setFontSize(32);
+    pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
-    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 18, { align: 'center' });
+    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 13, { align: 'center' });
     
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('/ 100', pageWidth / 2 + 12, yPos + 18);
+    pdf.text('/ 100', pageWidth / 2 + 10, yPos + 13);
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 28, { align: 'center' });
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 20, { align: 'center' });
     
-    yPos += 45;
+    yPos += 33;
     
     // Performance interpretation
     const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
@@ -923,155 +1073,12 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  // ========== COMPREHENSIVE CONCLUSION ==========
-  pdf.addPage();
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'OVERALL ASSESSMENT SUMMARY', yPos, pageWidth);
-  yPos += 10;
-  
-  // Overall score display (using avgScore and performance calculated earlier)
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
-  
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Overall Performance Across All Assessments', 25, yPos + 10);
-  
-  pdf.setFontSize(24);
-  pdf.setTextColor(performance.color[0], performance.color[1], performance.color[2]);
-  pdf.text(`${avgScore}/100`, pageWidth - 25, yPos + 20, { align: 'right' });
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(75, 85, 99);
-  pdf.text(`${performance.label}`, pageWidth - 25, yPos + 28, { align: 'right' });
-  
-  yPos += 45;
-  pdf.setTextColor(0, 0, 0);
-  
-  // Assessment-by-assessment summary
-  yPos = addSectionHeader(pdf, 'ASSESSMENT BREAKDOWN', yPos, pageWidth);
-  yPos += 5;
-  
-  const fitResult = candidate.results?.find((r: any) => r.assessmentType === 'fit' && r.status === 'completed');
-  const aiReadinessResult = candidate.results?.find((r: any) => r.assessmentType === 'ai_readiness' && r.status === 'completed');
-  const promptArchResult = candidate.results?.find((r: any) => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
-  const aiqResultConclusion = candidate.results?.find((r: any) => r.assessmentType === 'aiq' && r.status === 'completed');
-  
-  // FIT Assessment Summary
-  if (fitResult) {
-    const fitAvg = Math.round(Object.values(fitResult.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(fitResult.scores).length);
-    const fitPerf = getPerformanceLevel(fitAvg);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('FIT Assessment (Behavioral Skills)', 25, yPos);
-    
-    pdf.setTextColor(fitPerf.color[0], fitPerf.color[1], fitPerf.color[2]);
-    pdf.text(`${fitAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 5;
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const fitSummary = fitAvg >= 70 
-      ? `${candidateName} demonstrates strong behavioral competencies essential for workplace success, including adaptability, curiosity, and interpersonal skills.`
-      : `${candidateName} shows foundational behavioral skills with opportunities for growth in workplace adaptability and interpersonal effectiveness.`;
-    const fitLines = pdf.splitTextToSize(fitSummary, pageWidth - 50);
-    fitLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += fitLines.length * 4 + 8;
-  }
-  
-  // AI Readiness Summary
-  if (aiReadinessResult) {
-    const aiAvg = Math.round(Object.values(aiReadinessResult.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(aiReadinessResult.scores).length);
-    const aiPerf = getPerformanceLevel(aiAvg);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(139, 92, 246);
-    pdf.text('AI Readiness', 25, yPos);
-    
-    pdf.setTextColor(aiPerf.color[0], aiPerf.color[1], aiPerf.color[2]);
-    pdf.text(`${aiAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 5;
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const aiSummary = aiAvg >= 70 
-      ? `${candidateName} exhibits strong AI literacy and is well-positioned to leverage AI tools for productivity multiplication in their role.`
-      : `${candidateName} has foundational AI awareness but would benefit from additional training to fully leverage AI capabilities.`;
-    const aiLines = pdf.splitTextToSize(aiSummary, pageWidth - 50);
-    aiLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += aiLines.length * 4 + 8;
-  }
-  
-  // Prompt Architecture Summary
-  if (promptArchResult && promptArchitectureData && promptArchitectureData.length > 0) {
-    const promptAvg = Math.round(
-      promptArchitectureData.reduce((sum, p) => sum + (p.totalScore || 0), 0) / promptArchitectureData.length
-    );
-    const promptPerf = getPerformanceLevel(promptAvg);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
-    pdf.text('Prompt Architecture', 25, yPos);
-    
-    pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
-    pdf.text(`${promptAvg}/100`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 5;
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const promptSummary = promptAvg >= 70 
-      ? `${candidateName} demonstrates strong prompt engineering skills, capable of designing effective AI interactions that maximize output quality.`
-      : `${candidateName} shows basic prompt engineering ability with room for development in designing sophisticated AI prompts.`;
-    const promptLines = pdf.splitTextToSize(promptSummary, pageWidth - 50);
-    promptLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += promptLines.length * 4 + 8;
-  }
-  
-  // AIQ Summary
-  if (aiqResultConclusion) {
-    const aiqScore = aiqResultConclusion.totalScore;
-    const aiqPerf = getPerformanceLevel(aiqScore);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Algorithmic Integrity Quotient (AIQ)', 25, yPos);
-    
-    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
-    pdf.text(`${aiqScore}/100`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 5;
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const aiqSummary = aiqScore >= 75 
-      ? `${candidateName} demonstrates strong ethical understanding of AI systems and can be trusted to make responsible decisions regarding algorithmic deployment.`
-      : aiqScore >= 50
-      ? `${candidateName} shows foundational AI ethics knowledge but should receive additional training in responsible AI practices before deploying systems.`
-      : `${candidateName} requires significant development in AI ethics. Close supervision and comprehensive training strongly recommended.`;
-    const aiqLines = pdf.splitTextToSize(aiqSummary, pageWidth - 50);
-    aiqLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += aiqLines.length * 4 + 10;
+  // ========== RECOMMENDATIONS SECTION ==========
+  // Check if we need a new page
+  if (yPos > pageHeight - 80) {
+    pdf.addPage();
+    addHeader(pdf, pageWidth);
+    yPos = 35;
   }
   
   // Recommendations Section
