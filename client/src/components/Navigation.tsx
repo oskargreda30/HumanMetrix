@@ -31,8 +31,9 @@ export default function Navigation() {
       const res = await apiRequest("POST", "/api/logout");
       return res;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: async () => {
+      queryClient.setQueryData(["/api/auth/user"], null);
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
