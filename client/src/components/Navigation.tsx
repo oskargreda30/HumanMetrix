@@ -28,7 +28,7 @@ export default function Navigation() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("/api/logout", "POST");
+      const res = await apiRequest("POST", "/api/logout");
       return res;
     },
     onSuccess: () => {
