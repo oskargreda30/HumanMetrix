@@ -529,7 +529,7 @@ export async function exportEnhancedCandidatePDF(
     
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Algorithmic Integrity Quotient (AIQ)', 20, yPos);
     yPos += 7;
     
@@ -539,26 +539,26 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
     yPos += 10;
     
-    // Large score display
-    pdf.setFillColor(220, 252, 231);
-    pdf.setDrawColor(34, 197, 94);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 50, 3, 3, 'FD');
+    // Score display - smaller and blue
+    pdf.setFillColor(239, 246, 255);
+    pdf.setDrawColor(59, 130, 246);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
     
-    pdf.setFontSize(48);
+    pdf.setFontSize(32);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
-    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 25, { align: 'center' });
+    pdf.setTextColor(59, 130, 246);
+    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 18, { align: 'center' });
     
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('/ 100', pageWidth / 2 + 15, yPos + 25);
+    pdf.text('/ 100', pageWidth / 2 + 12, yPos + 18);
     
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 40, { align: 'center' });
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 28, { align: 'center' });
     
-    yPos += 60;
+    yPos += 45;
     
     // Performance interpretation
     const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
