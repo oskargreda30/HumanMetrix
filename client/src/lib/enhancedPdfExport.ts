@@ -575,107 +575,84 @@ export async function exportEnhancedCandidatePDF(
     
     pdf.setTextColor(0, 0, 0);
     
-    // Individual level results
+    // Individual level results - simplified to show only total scores
+    const levelsPerRow = 3;
+    const cellWidth = (pageWidth - 50) / levelsPerRow;
+    const cellHeight = 30;
+    const rowSpacing = 35;
+    
+    let rowsOnCurrentPage = 0;
+    
     promptArchitectureData.forEach((prompt, index) => {
-      if (yPos > pageHeight - 80) {
-        pdf.addPage();
-        addHeader(pdf, pageWidth);
-        yPos = 35;
+      const col = index % levelsPerRow;
+      
+      // Check if we're starting a new row
+      if (col === 0) {
+        const nextRowY = yPos + (rowsOnCurrentPage * rowSpacing);
+        // Check if this row will fit on the current page
+        if (nextRowY + cellHeight > pageHeight - 25) {
+          // Start a new page
+          pdf.addPage();
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+          rowsOnCurrentPage = 0;
+        }
       }
       
-      // Level header
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(20, yPos, pageWidth - 40, 8, 'F');
+      const xPos = 20 + (col * cellWidth);
+      const cellY = yPos + (rowsOnCurrentPage * rowSpacing);
       
-      pdf.setFontSize(10);
+      // Level box
+      pdf.setFillColor(249, 250, 251);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(xPos, cellY, cellWidth - 5, cellHeight, 2, 2, 'FD');
+      
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(59, 130, 246);
-      pdf.text(`Level ${prompt.level}`, 25, yPos + 5);
+      pdf.text(`Level ${prompt.level}`, xPos + 5, cellY + 8);
       
       if (prompt.totalScore !== undefined) {
         const perf = getPerformanceLevel(prompt.totalScore);
+        pdf.setFontSize(16);
         pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`Score: ${prompt.totalScore}/100`, pageWidth - 25, yPos + 5, { align: 'right' });
+        pdf.text(`${prompt.totalScore}`, xPos + (cellWidth - 5) / 2, cellY + 22, { align: 'center' });
+        
+        pdf.setFontSize(7);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text('/100', xPos + (cellWidth - 5) / 2 + 8, cellY + 22);
       }
       
-      yPos += 12;
       pdf.setTextColor(0, 0, 0);
       
-      // Evaluation scores breakdown
-      if (prompt.evaluationScores) {
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(75, 85, 99);
-        pdf.text('Dimension Scores:', 25, yPos);
-        yPos += 5;
-        
-        const dimensions = [
-          { label: 'Clarity', score: prompt.evaluationScores.clarity, weight: '25%' },
-          { label: 'Structure', score: prompt.evaluationScores.structure, weight: '20%' },
-          { label: 'Context Relevance', score: prompt.evaluationScores.contextRelevance, weight: '20%' },
-          { label: 'Creativity', score: prompt.evaluationScores.creativity, weight: '20%' },
-          { label: 'Iterative Improvement', score: prompt.evaluationScores.iterativeImprovement, weight: '15%' },
-        ];
-        
-        pdf.setFont('helvetica', 'normal');
-        dimensions.forEach((dim) => {
-          if (yPos > pageHeight - 30) {
-            pdf.addPage();
-            addHeader(pdf, pageWidth);
-            yPos = 35;
-          }
-          
-          const dimPerf = getPerformanceLevel(dim.score);
-          pdf.setTextColor(55, 65, 81);
-          pdf.text(`${dim.label} (${dim.weight}):`, 30, yPos);
-          
-          pdf.setTextColor(dimPerf.color[0], dimPerf.color[1], dimPerf.color[2]);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`${dim.score}`, 100, yPos);
-          pdf.setFont('helvetica', 'normal');
-          
-          // Mini progress bar
-          const barWidth = 50;
-          const barX = 110;
-          pdf.setDrawColor(229, 231, 235);
-          pdf.setFillColor(243, 244, 246);
-          pdf.rect(barX, yPos - 2, barWidth, 3, 'F');
-          pdf.setFillColor(dimPerf.color[0], dimPerf.color[1], dimPerf.color[2]);
-          pdf.rect(barX, yPos - 2, (barWidth * dim.score) / 100, 3, 'F');
-          
-          yPos += 5;
-        });
-        
-        yPos += 3;
+      // Increment row counter when we finish a row (last column)
+      if (col === levelsPerRow - 1 || index === promptArchitectureData.length - 1) {
+        rowsOnCurrentPage++;
       }
-      
-      // Feedback
-      if (prompt.feedback) {
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(75, 85, 99);
-        pdf.text('AI Feedback:', 25, yPos);
-        yPos += 4;
-        
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        const feedbackLines = pdf.splitTextToSize(prompt.feedback, pageWidth - 60);
-        feedbackLines.forEach((line: string) => {
-          if (yPos > pageHeight - 30) {
-            pdf.addPage();
-            addHeader(pdf, pageWidth);
-            yPos = 35;
-          }
-          pdf.text(line, 30, yPos);
-          yPos += 4;
-        });
-        
-        yPos += 5;
-      }
-      
-      yPos += 5;
-      pdf.setTextColor(0, 0, 0);
     });
+    
+    // Move past all level boxes
+    yPos += (rowsOnCurrentPage * rowSpacing) + 10;
+    
+    // Add legend underneath
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Assessed Dimensions:', 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Clarity (20%) • Structure (20%) • Context Relevance (20%) • Creativity (20%) • Iterative Improvement (20%)', 20, yPos);
+    yPos += 10;
+    
+    pdf.setTextColor(0, 0, 0);
   }
   
   // ========== AIQ ASSESSMENT ==========
@@ -750,126 +727,6 @@ export async function exportEnhancedCandidatePDF(
   }
   
   pdf.setTextColor(0, 0, 0);
-  
-  // ========== PLATFORM BENCHMARKING ==========
-  pdf.addPage();
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'PLATFORM BENCHMARKING', yPos, pageWidth);
-  yPos += 10;
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  pdf.text(`Based on ${platformAverages.totalCandidates} candidates assessed on the HumanMetrix platform`, 20, yPos);
-  yPos += 10;
-  
-  // Comparison metrics
-  const candidateAvg = avgScore;
-  const platformAvg = platformAverages.avgScoreAcrossCandidates;
-  const difference = candidateAvg - platformAvg;
-  
-  // Overall comparison card
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
-  
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Overall Performance Comparison', 25, yPos + 10);
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(75, 85, 99);
-  pdf.text(`Candidate Average: ${candidateAvg}/100`, 25, yPos + 20);
-  pdf.text(`Platform Average: ${platformAvg}/100`, 25, yPos + 27);
-  
-  const diffColor = difference >= 0 ? [34, 197, 94] : [239, 68, 68];
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(diffColor[0], diffColor[1], diffColor[2]);
-  const diffText = difference >= 0 ? `+${difference} points above average` : `${difference} points below average`;
-  pdf.text(diffText, pageWidth - 25, yPos + 23, { align: 'right' });
-  
-  yPos += 45;
-  pdf.setTextColor(0, 0, 0);
-  
-  // Per-skill comparison - separated by assessment
-  const fitSkillsData = skills.filter(s => s.assessment === 'FIT Assessment');
-  const aiReadinessSkillsData = skills.filter(s => s.assessment === 'AI Readiness');
-  const aiqSkillsData = skills.filter(s => s.assessment === 'AIQ');
-  const promptSkillsData = skills.filter(s => s.assessment === 'Prompt Architecture');
-  
-  const renderSkillComparisonTable = (skillsList: SkillData[], title: string) => {
-    if (skillsList.length === 0) return;
-    
-    if (yPos > pageHeight - 50) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(title, 20, yPos);
-    yPos += 7;
-    
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Skill', 25, yPos);
-    pdf.text('Your Score', 100, yPos);
-    pdf.text('Platform Avg', 135, yPos);
-    pdf.text('Difference', pageWidth - 25, yPos, { align: 'right' });
-    yPos += 2;
-    
-    pdf.setDrawColor(229, 231, 235);
-    pdf.line(20, yPos, pageWidth - 20, yPos);
-    yPos += 5;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
-    
-    skillsList.forEach((skill, index) => {
-      if (yPos > pageHeight - 30) {
-        pdf.addPage();
-        addHeader(pdf, pageWidth);
-        yPos = 35;
-      }
-      
-      const platformSkillAvg = platformAverages.skillAverages[skill.name] || platformAvg;
-      const skillDiff = skill.score - platformSkillAvg;
-      
-      if (index % 2 === 0) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(20, yPos - 3, pageWidth - 40, 8, 'F');
-      }
-      
-      pdf.setTextColor(17, 24, 39);
-      const skillName = skill.name.length > 30 ? skill.name.substring(0, 27) + '...' : skill.name;
-      pdf.text(skillName, 25, yPos + 2);
-      
-      pdf.text(`${skill.score}`, 100, yPos + 2);
-      pdf.text(`${Math.round(platformSkillAvg)}`, 135, yPos + 2);
-      
-      const skillDiffColor = skillDiff >= 0 ? [34, 197, 94] : [239, 68, 68];
-      pdf.setTextColor(skillDiffColor[0], skillDiffColor[1], skillDiffColor[2]);
-      const skillDiffText = skillDiff >= 0 ? `+${Math.round(skillDiff)}` : `${Math.round(skillDiff)}`;
-      pdf.text(skillDiffText, pageWidth - 25, yPos + 2, { align: 'right' });
-      
-      yPos += 8;
-    });
-    
-    yPos += 5;
-    pdf.setTextColor(0, 0, 0);
-  };
-  
-  renderSkillComparisonTable(fitSkillsData, 'FIT Assessment - Behavioral Skills');
-  renderSkillComparisonTable(aiReadinessSkillsData, 'AI Readiness');
-  renderSkillComparisonTable(aiqSkillsData, 'AIQ');
-  renderSkillComparisonTable(promptSkillsData, 'Prompt Architecture');
   
   // ========== OPTIONAL PAGE: JOB ROLE COMPARISON ==========
   if (roleComparison) {
