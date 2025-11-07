@@ -630,7 +630,7 @@ export async function exportEnhancedCandidatePDF(
   
   // Development Areas - CONSISTENT LAYOUT (same as strengths)
   yPos += 5;
-  const bottomSkills = [...skills].sort((a, b) => a.score - b.score).slice(0, 5);
+  const bottomSkills = [...skills].filter(s => s.score > 0).sort((a, b) => a.score - b.score).slice(0, 5);
   
   yPos = addSectionHeader(pdf, 'DEVELOPMENT OPPORTUNITIES', yPos, pageWidth);
   yPos += 5;
