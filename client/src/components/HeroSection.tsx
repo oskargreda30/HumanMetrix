@@ -15,52 +15,51 @@ export default function HeroSection() {
       {/* Navy overlay with gradient for blending */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/95 via-[#1a2744]/90 to-[#0a1628]/95" />
       
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-24">
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 md:py-24">
         <div className="max-w-4xl mx-auto text-center">
           {/* Content */}
-          <div className="space-y-8">
-            <div className="space-y-4">
+          <div className="space-y-6 md:space-y-8">
+            <div className="space-y-3 md:space-y-4">
               <div className="inline-block">
-                <span className="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
+                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
                 </span>
               </div>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
                 Measure What Matters in the{" "}
                 <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                   AI Era
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2">
                 Professional AI assessments designed for recruitment and career development. 
                 Evaluate FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity with enterprise-grade precision.
               </p>
               <div className="text-left max-w-2xl mx-auto space-y-2">
-                <p className="text-base md:text-lg text-blue-100/70 font-medium mb-3">
+                <p className="text-sm md:text-base text-blue-100/70 font-medium mb-2">
                   Get comprehensive insights through three report formats:
                 </p>
-                <ul className="space-y-2 text-sm md:text-base text-blue-100/70">
+                <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-blue-100/70">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                     <span><strong className="text-blue-100">Individual Assessment Reports</strong> for personal development</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                     <span><strong className="text-blue-100">Candidate Comparison Reports</strong> to evaluate multiple candidates side-by-side</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                     <span><strong className="text-blue-100">Role Fit Analysis Reports</strong> to match candidates with specific positions</span>
                   </li>
                 </ul>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center px-2">
               <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
-                  size="lg" 
-                  className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
+                  className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto" 
                   data-testid="button-hero-get-started"
                 >
                   Types of Assessments
@@ -69,9 +68,8 @@ export default function HeroSection() {
               </Link>
               <Link href="#sample-reports" data-testid="link-hero-sample-reports">
                 <Button 
-                  size="lg" 
                   variant="outline" 
-                  className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm" 
+                  className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm w-full sm:w-auto" 
                   data-testid="button-hero-sample-reports"
                 >
                   Sample Reports
@@ -79,26 +77,26 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-6 pt-4 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 max-w-4xl mx-auto">
               {[
                 {
                   title: "Instant PDF Results",
-                  subtitle: "Download your comprehensive reports immediately after completion"
+                  subtitle: "Download reports immediately"
                 },
                 {
                   title: "CV-Ready Reports",
-                  subtitle: "Professional PDFs ready to attach to job applications"
+                  subtitle: "Professional PDFs for job applications"
                 },
                 {
                   title: "Secure Data Storage",
-                  subtitle: "Your assessment data is safely encrypted and stored"
+                  subtitle: "Safely encrypted and stored"
                 }
               ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center gap-2 text-center">
-                  <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-blue-100">{item.title}</div>
-                    <div className="text-xs text-blue-100/60">{item.subtitle}</div>
+                <div key={i} className="flex flex-col items-center gap-1.5 text-center px-2">
+                  <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0" />
+                  <div className="space-y-0.5">
+                    <div className="text-xs md:text-sm font-medium text-blue-100">{item.title}</div>
+                    <div className="text-xs text-blue-100/60 leading-tight">{item.subtitle}</div>
                   </div>
                 </div>
               ))}
