@@ -118,21 +118,25 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - **PDF Section Order** (November 2025 Update):
      1. Cover page with candidate info
      2. UNDERSTANDING THE ASSESSMENTS - Assessment explanations for hiring managers
-     3. SKILLS VISUALIZATION - All assessments in sequence (FIT → AI Readiness → Prompt Architecture → AIQ)
-     4. OVERALL ASSESSMENT SUMMARY
-     5. ASSESSMENT BREAKDOWN - Detailed skill analysis
-     6. RECOMMENDATIONS - Candidate-focused only (employer recommendations removed)
+     3. ASSESSMENT SUMMARY - Quick overview of all assessment scores with candidate-specific insights
+     4. SKILLS VISUALIZATION - All assessments in sequence (FIT → AI Readiness → Prompt Architecture → AIQ)
+     5. RECOMMENDATIONS - Candidate-focused only (employer recommendations removed)
    - **Assessment Explanations Page**: Optimized page explaining all 4 assessment types for non-technical hiring managers (all fit on one page with reduced text size)
      - FIT Assessment: Behavioral skills and workplace adaptability impact (blue theme)
      - AI Readiness: AI competencies and productivity multiplication potential (purple theme)
      - Prompt Architecture: Prompt engineering expertise and AI output quality correlation (amber theme)
      - AIQ: AI ethics understanding and risk reduction capability (blue theme)
+   - **Assessment Summary Section**: NEW - Positioned on Page 2 after Understanding the Assessments
+     - Quick reference showing scores for all 4 assessments
+     - Brief candidate-specific insights for each assessment
+     - Removed "Overall Assessment Summary" section (no longer showing combined score)
    - **Radar Charts Optimization**: Both FIT and AI Readiness radar charts with individual scores fit on one page (maxHeight reduced from 90 to 55)
    - **Skills Visualization Section**: Sequential presentation of all assessments
      - FIT Assessment: Radar chart + individual skill scores
      - AI Readiness: Radar chart + individual skill scores
-     - Prompt Architecture: Simplified grid layout showing total score per level (3 columns) with legend of assessed dimensions underneath - NO detailed dimension breakdown
-     - AIQ: Single score + performance level interpretation
+     - Prompt Architecture: COMPACT grid layout (smaller boxes: 20px height, 25px spacing) showing total score per level (3 columns) with legend of assessed dimensions underneath - NO detailed dimension breakdown
+     - AIQ: STANDARDIZED header style (uses addSectionHeader), REDUCED score box size (25px height, smaller fonts), single score + performance level interpretation
+     - Prompt Architecture + AIQ fit together on one page
    - **Recommendations Section**: Candidate-focused only
      - Strengths to leverage
      - Development areas
@@ -142,7 +146,9 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - **Visual Organization**: Color-coded sections matching assessment branding
    - **Complete Coverage**: All assessment data presented in logical, employer-friendly sequence
    - **Hiring Manager Focus**: Business-focused language explaining what each score means for workplace performance
-   - **Platform Benchmarking**: REMOVED - No longer included in PDF exports
+   - **REMOVED Sections**:
+     - Platform Benchmarking (no longer comparing to platform averages)
+     - Overall Assessment Summary (no longer showing combined score across all assessments)
 
 8. **Admin API Endpoints**
    - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
