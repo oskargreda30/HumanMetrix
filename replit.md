@@ -96,6 +96,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - Tag management system for candidate organization
      - Notes system for admin annotations
      - Detailed candidate modal with full assessment history
+     - Professional PDF export with comprehensive assessment explanations
    - **Compare Tab**:
      - Multi-select comparison (2-3 candidates)
      - Radar chart visualization of skills across candidates
@@ -110,7 +111,18 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - Practical hiring recommendations
      - 7-day result caching to minimize API costs
 
-7. **Admin API Endpoints**
+7. **Enhanced PDF Export System**
+   - **Assessment Explanations Page**: Dedicated page explaining all 4 assessment types for non-technical hiring managers
+     - FIT Assessment: Behavioral skills and workplace adaptability impact
+     - AI Readiness: AI competencies and productivity multiplication potential
+     - Prompt Architecture: Prompt engineering expertise and AI output quality correlation
+     - AIQ: AI ethics understanding and risk reduction capability
+   - **Dynamic Layout Engine**: Automatic pagination with content-aware page breaks
+   - **Visual Organization**: Color-coded sections matching assessment branding
+   - **Complete Coverage**: Radar charts, skill comparisons (separated by assessment type), Prompt Architecture evaluations, platform benchmarks, role fit analysis (optional)
+   - **Hiring Manager Focus**: Business-focused language explaining what each score means for workplace performance
+
+8. **Admin API Endpoints**
    - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
    - POST `/api/admin/candidates/tags` - Add tags to candidates
    - POST `/api/admin/candidates/notes` - Add notes to candidates

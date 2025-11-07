@@ -249,15 +249,146 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  // ========== PAGE 2: RADAR CHARTS ==========
+  // ========== PAGE 2: UNDERSTANDING THE ASSESSMENTS ==========
+  pdf.addPage();
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  yPos = addSectionHeader(pdf, 'UNDERSTANDING THE ASSESSMENTS', yPos, pageWidth);
+  yPos += 8;
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(75, 85, 99);
+  const introText = pdf.splitTextToSize(
+    'This report evaluates the candidate across four critical dimensions of AI-era workplace performance. Each assessment measures specific competencies that predict success in modern, AI-augmented work environments.',
+    pageWidth - 40
+  );
+  introText.forEach((line: string, index: number) => {
+    pdf.text(line, 20, yPos + (index * 4));
+  });
+  yPos += introText.length * 4 + 10;
+  
+  // Helper function to add assessment explanation box
+  const addAssessmentBox = (
+    title: string,
+    titleColor: [number, number, number],
+    bgColor: [number, number, number],
+    borderColor: [number, number, number],
+    whatItMeasures: string,
+    workplaceImpact: string,
+    currentY: number
+  ): number => {
+    // Calculate required height first
+    pdf.setFontSize(9);
+    const measuresText = pdf.splitTextToSize(whatItMeasures, pageWidth - 50);
+    const impactText = pdf.splitTextToSize(workplaceImpact, pageWidth - 50);
+    const boxHeight = 13 + 6 + (measuresText.length * 4) + 2 + 6 + (impactText.length * 4) + 5;
+    
+    // Check if we need a new page
+    if (currentY + boxHeight > pageHeight - 30) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      currentY = 35;
+    }
+    
+    const startY = currentY;
+    
+    // Draw box
+    pdf.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+    pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    pdf.roundedRect(20, startY, pageWidth - 40, boxHeight, 2, 2, 'FD');
+    
+    // Render content
+    let textY = startY + 7;
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+    pdf.text(title, 25, textY);
+    textY += 6;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('What It Measures:', 25, textY);
+    textY += 6;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    measuresText.forEach((line: string) => {
+      pdf.text(line, 25, textY);
+      textY += 4;
+    });
+    textY += 2;
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('Workplace Impact:', 25, textY);
+    textY += 6;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    impactText.forEach((line: string) => {
+      pdf.text(line, 25, textY);
+      textY += 4;
+    });
+    
+    return currentY + boxHeight + 8;
+  };
+  
+  // FIT Assessment Explanation
+  yPos = addAssessmentBox(
+    'FIT ASSESSMENT (15 Questions)',
+    [59, 130, 246],
+    [239, 246, 255],
+    [59, 130, 246],
+    'Six core behavioral skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.',
+    'Predicts adaptability, initiative, collaboration quality, and resilience under pressure. High scorers drive innovation, navigate ambiguity effectively, and build strong team dynamics.',
+    yPos
+  );
+  
+  // AI Readiness Assessment Explanation
+  yPos = addAssessmentBox(
+    'AI READINESS ASSESSMENT (21 Questions)',
+    [147, 51, 234],
+    [243, 232, 255],
+    [147, 51, 234],
+    'Nine AI-specific competencies including AI Literacy, Prompting Effectiveness, Technical Fluency, Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.',
+    'Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions, and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.',
+    yPos
+  );
+  
+  // Prompt Architecture Assessment Explanation
+  yPos = addAssessmentBox(
+    'PROMPT ARCHITECTURE ASSESSMENT (7 Levels)',
+    [245, 158, 11],
+    [254, 243, 199],
+    [245, 158, 11],
+    'Prompt engineering expertise across five dimensions: Clarity (25%), Structure (20%), Context Relevance (20%), Creativity (20%), and Iterative Improvement (15%). Progressive difficulty levels test real-world prompting skills.',
+    'Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.',
+    yPos
+  );
+  
+  // AIQ Assessment Explanation
+  yPos = addAssessmentBox(
+    'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (4 Questions)',
+    [239, 68, 68],
+    [254, 226, 226],
+    [239, 68, 68],
+    'Understanding of AI ethics, bias detection, fairness, transparency, and responsible deployment. Tests decision-making in scenarios involving algorithmic systems and their societal impact.',
+    'Critical for reducing AI deployment risks and ensuring compliance. High scorers identify bias early, implement fair AI systems, and make ethically sound decisions that protect brand reputation and avoid regulatory issues.',
+    yPos
+  );
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== PAGE 3: RADAR CHARTS ==========
   pdf.addPage();
   addHeader(pdf, pageWidth);
   
   yPos = 35;
   yPos = addSectionHeader(pdf, 'SKILLS VISUALIZATION', yPos, pageWidth);
   yPos += 5;
-  
-  // Helper to add individual scores
   const addIndividualScores = (skillsList: SkillData[], yPosition: number): number => {
     let currentY = yPosition;
     
