@@ -279,11 +279,11 @@ export async function exportEnhancedCandidatePDF(
     workplaceImpact: string,
     currentY: number
   ): number => {
-    // Calculate required height first
-    pdf.setFontSize(9);
+    // Calculate required height first with smaller text
+    pdf.setFontSize(8);
     const measuresText = pdf.splitTextToSize(whatItMeasures, pageWidth - 50);
     const impactText = pdf.splitTextToSize(workplaceImpact, pageWidth - 50);
-    const boxHeight = 13 + 6 + (measuresText.length * 4) + 2 + 6 + (impactText.length * 4) + 5;
+    const boxHeight = 11 + 5 + (measuresText.length * 3.5) + 2 + 5 + (impactText.length * 3.5) + 4;
     
     // Check if we need a new page
     if (currentY + boxHeight > pageHeight - 30) {
@@ -300,40 +300,40 @@ export async function exportEnhancedCandidatePDF(
     pdf.roundedRect(20, startY, pageWidth - 40, boxHeight, 2, 2, 'FD');
     
     // Render content
-    let textY = startY + 7;
-    pdf.setFontSize(10);
+    let textY = startY + 6;
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
     pdf.text(title, 25, textY);
-    textY += 6;
+    textY += 5;
     
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text('What It Measures:', 25, textY);
-    textY += 6;
+    textY += 5;
     
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     measuresText.forEach((line: string) => {
       pdf.text(line, 25, textY);
-      textY += 4;
+      textY += 3.5;
     });
     textY += 2;
     
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text('Workplace Impact:', 25, textY);
-    textY += 6;
+    textY += 5;
     
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     impactText.forEach((line: string) => {
       pdf.text(line, 25, textY);
-      textY += 4;
+      textY += 3.5;
     });
     
-    return currentY + boxHeight + 5;
+    return currentY + boxHeight + 4;
   };
   
   // FIT Assessment Explanation
@@ -372,9 +372,9 @@ export async function exportEnhancedCandidatePDF(
   // AIQ Assessment Explanation
   yPos = addAssessmentBox(
     'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (4 Questions)',
-    [34, 197, 94],
-    [220, 252, 231],
-    [34, 197, 94],
+    [59, 130, 246],
+    [239, 246, 255],
+    [59, 130, 246],
     'Understanding of AI ethics, bias detection, fairness, transparency, and responsible deployment. Tests decision-making in scenarios involving algorithmic systems and their societal impact.',
     'Critical for reducing AI deployment risks and ensuring compliance. High scorers identify bias early, implement fair AI systems, and make ethically sound decisions that protect brand reputation and avoid regulatory issues.',
     yPos
