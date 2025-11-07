@@ -2,9 +2,12 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Code2, Shield, Network, Languages } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, Network, Languages, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { useBasket } from "@/contexts/BasketContext";
+import { useState } from "react";
+import CheckoutModal from "@/components/CheckoutModal";
 
 const assessments = [
   {
@@ -65,9 +68,12 @@ const assessments = [
 
 export default function Assessments() {
   const { isAuthenticated } = useAuth();
+  const { getBasketCount } = useBasket();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const availableAssessments = assessments.filter((a) => a.status === "available");
   const comingSoon = assessments.filter((a) => a.status === "coming-soon");
+  const basketCount = getBasketCount();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
@@ -84,11 +90,24 @@ export default function Assessments() {
             <p className="text-sm text-cyan-400 mb-6">
               £0.02 base fee + £0.01 per assessment
             </p>
-            {isAuthenticated && (
+            {isAuthenticated ? (
               <div className="flex gap-4 justify-center">
                 <Link href="/dashboard">
                   <Button size="lg" data-testid="button-go-to-dashboard">
                     Go to Dashboard
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex gap-4 justify-center">
+                <Link href="/login">
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10"
+                    data-testid="button-login-to-dashboard"
+                  >
+                    Login to Access Dashboard
                   </Button>
                 </Link>
               </div>
@@ -111,6 +130,24 @@ export default function Assessments() {
                 />
               ))}
             </div>
+            
+            {/* Checkout Button */}
+            <div className="mt-8 flex justify-center">
+              <Button 
+                size="lg"
+                onClick={() => setCheckoutOpen(true)}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2"
+                data-testid="button-view-basket-checkout"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                View Basket & Checkout
+                {basketCount > 0 && (
+                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                    {basketCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -132,6 +169,12 @@ export default function Assessments() {
         </div>
       </main>
       <Footer />
+      
+      {/* Checkout Modal */}
+      <CheckoutModal
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+      />
     </div>
   );
 }

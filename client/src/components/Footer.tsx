@@ -44,9 +44,9 @@ export default function Footer() {
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>
-                    <a className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <span className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {link.label}
-                    </a>
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -60,19 +60,31 @@ export default function Footer() {
               {footerLinks.assessments.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>
-                    <a className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <span className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {link.label}
-                    </a>
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact Column */}
+          {/* Resources Links */}
           <div>
-            <h3 className="font-semibold mb-4 text-white">Contact</h3>
-            <div className="space-y-3">
+            <h3 className="font-semibold mb-4 text-white">Resources</h3>
+            <ul className="space-y-3">
+              {footerLinks.resources.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href}>
+                    <span className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                      {link.label}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 space-y-3">
+              <h4 className="font-medium text-sm text-white">Contact</h4>
               <a
                 href="mailto:humanmetrix.sales@gmail.com"
                 className="flex items-center gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"

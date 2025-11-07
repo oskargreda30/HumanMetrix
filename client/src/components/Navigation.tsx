@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
+import logoUrl from "@assets/generated_images/HUMANMETRIX_professional_tech_logo_3f605cd5.png";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -26,9 +27,11 @@ export default function Navigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-              <span className="text-white font-bold text-lg font-mono">HM</span>
-            </div>
+            <img 
+              src={logoUrl} 
+              alt="HumanMetrix" 
+              className="h-8 w-8 object-contain"
+            />
             <span className="font-semibold text-xl hidden sm:inline-block text-white">HumanMetrix</span>
           </Link>
 

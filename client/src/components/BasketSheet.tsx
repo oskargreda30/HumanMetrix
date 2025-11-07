@@ -43,11 +43,11 @@ export default function BasketSheet() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
             data-testid="button-basket-trigger"
             aria-label={`Shopping basket with ${count} item${count !== 1 ? 's' : ''}`}
           >
-            <ShoppingBag className="h-5 w-5" />
+            <ShoppingBag className="h-6 w-6" />
             {count > 0 && (
               <Badge
                 variant="default"

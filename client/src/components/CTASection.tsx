@@ -21,30 +21,26 @@ export default function CTASection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/assessments">
-                <a data-testid="link-cta-get-started">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="group bg-white text-cyan-700 hover:bg-white/90"
-                    data-testid="button-cta-get-started"
-                  >
-                    Get Started Now
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </a>
+              <Link href="/assessments" data-testid="link-cta-get-started">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="group bg-white text-cyan-700 hover:bg-white/90"
+                  data-testid="button-cta-get-started"
+                >
+                  Get Started Now
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </Link>
-              <Link href="/for-employers">
-                <a data-testid="link-cta-employers">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="bg-transparent text-white border-white/30 hover:bg-white/10"
-                    data-testid="button-cta-employers"
-                  >
-                    Learn About Enterprise
-                  </Button>
-                </a>
+              <Link href="/for-employers" data-testid="link-cta-employers">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-transparent text-white border-white/30 hover:bg-white/10"
+                  data-testid="button-cta-employers"
+                >
+                  Learn About Enterprise
+                </Button>
               </Link>
             </div>
           </div>
