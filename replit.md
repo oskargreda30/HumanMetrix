@@ -114,11 +114,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - Practical hiring recommendations
      - 7-day result caching to minimize API costs
 
-7. **Enhanced PDF Export System**
-   - **PDF Section Order** (November 2025 Update):
+7. **Enhanced PDF Export System** (November 2025)
+   - **PDF Section Order**:
      1. Cover page with candidate info
-     2. UNDERSTANDING THE ASSESSMENTS - Assessment explanations for hiring managers
-     3. ASSESSMENT SUMMARY - Quick overview of all assessment scores with candidate-specific insights
+     2. ASSESSMENT SUMMARY - Quick overview positioned on page 1 (before UNDERSTANDING THE ASSESSMENTS) for immediate insights
+     3. UNDERSTANDING THE ASSESSMENTS - Assessment explanations for hiring managers
      4. SKILLS VISUALIZATION - All assessments in sequence (FIT → AI Readiness → Prompt Architecture → AIQ)
      5. RECOMMENDATIONS - Candidate-focused only (employer recommendations removed)
    - **Assessment Explanations Page**: Optimized page explaining all 4 assessment types for non-technical hiring managers (all fit on one page with reduced text size)
@@ -126,16 +126,17 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - AI Readiness: AI competencies and productivity multiplication potential (purple theme)
      - Prompt Architecture: Prompt engineering expertise and AI output quality correlation (amber theme)
      - AIQ: AI ethics understanding and risk reduction capability (blue theme)
-   - **Assessment Summary Section**: NEW - Positioned on Page 2 after Understanding the Assessments
+   - **Assessment Summary Section**: Positioned on page 1 at yPos=200 (before UNDERSTANDING THE ASSESSMENTS) for quick scanning
      - Quick reference showing scores for all 4 assessments
      - Brief candidate-specific insights for each assessment
+     - Uses pre-declared result variables to avoid code duplication
      - Removed "Overall Assessment Summary" section (no longer showing combined score)
    - **Radar Charts Optimization**: Both FIT and AI Readiness radar charts with individual scores fit on one page (maxHeight reduced from 90 to 55)
    - **Skills Visualization Section**: Sequential presentation of all assessments
      - FIT Assessment: Radar chart + individual skill scores
      - AI Readiness: Radar chart + individual skill scores
-     - Prompt Architecture: COMPACT grid layout (smaller boxes: 20px height, 25px spacing) showing total score per level (3 columns) with legend of assessed dimensions underneath - NO detailed dimension breakdown
-     - AIQ: STANDARDIZED header style (uses addSectionHeader), REDUCED score box size (25px height, smaller fonts), single score + performance level interpretation
+     - Prompt Architecture: HORIZONTAL PROGRESS BARS (November 2025) - Clean list format with color-coded progress bars for each level (12px height, 16px spacing), score displayed on right, legend of assessed dimensions underneath
+     - AIQ: COMPACT CENTERED BOX (November 2025) - 70mm centered box (previously full-width), standardized header style, performance level interpretation
      - Prompt Architecture + AIQ fit together on one page
    - **Recommendations Section**: Candidate-focused only
      - Strengths to leverage
