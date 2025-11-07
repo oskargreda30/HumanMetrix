@@ -1,8 +1,6 @@
-import { useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,34 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, FileText } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  const { user } = useAuth();
 
-  const { data: availableAssessments, isLoading: assessmentsLoading } = useQuery({
+  const { data: availableAssessments, isLoading: assessmentsLoading } = useQuery<any[]>({
     queryKey: ["/api/available-assessments"],
-    enabled: isAuthenticated,
   });
 
-  const { data: results, isLoading: resultsLoading } = useQuery({
+  const { data: results, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
-    enabled: isAuthenticated,
   });
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "Please log in to access your dashboard",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-    }
-  }, [isAuthenticated, authLoading, toast]);
-
-  if (authLoading || assessmentsLoading || resultsLoading) {
+  if (assessmentsLoading || resultsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BasketProvider } from "@/contexts/BasketContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Assessments from "@/pages/Assessments";
@@ -19,6 +20,7 @@ import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import Terms from "@/pages/Terms";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
+import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,17 +33,54 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/assessment/:purchaseItemId" component={Assessment} />
-      <Route path="/results/:id" component={Results} />
+      <Route path="/dashboard">
+        {() => (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/assessment/:purchaseItemId">
+        {() => (
+          <ProtectedRoute>
+            <Assessment />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/results/:id">
+        {() => (
+          <ProtectedRoute>
+            <Results />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/purchase" component={Purchase} />
       <Route path="/purchase/success" component={PurchaseSuccess} />
       <Route path="/terms" component={Terms} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>
-      <Route path="/admin/invitations" component={AdminInvitations} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/invitations">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <AdminInvitations />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/dashboard">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <AdminDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/generate-samples">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <GenerateSamplePDFs />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

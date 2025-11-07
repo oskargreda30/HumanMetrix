@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
-import logoUrl from "@assets/generated_images/HUMANMETRIX_professional_tech_logo_3f605cd5.png";
+import logoUrl from "@assets/generated_images/HM_tech_monogram_transparent_3a953400.png";
 
 export default function Navigation() {
   const [location] = useLocation();
