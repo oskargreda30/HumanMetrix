@@ -6,7 +6,9 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, TrendingUp, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download } from "lucide-react";
+import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
+import { useToast } from "@/hooks/use-toast";
 import {
   Radar,
   RadarChart,
@@ -176,12 +178,90 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const { data: result, isLoading } = useQuery({
     queryKey: ["/api/results", id],
     enabled: isAuthenticated && !!id,
   });
+
+  // Fetch all user results for PDF generation
+  const { data: allResults } = useQuery<any[]>({
+    queryKey: ["/api/results"],
+    enabled: isAuthenticated,
+  });
+
+  const handleDownloadPDF = async () => {
+    if (!user || !allResults) {
+      toast({
+        title: "Error",
+        description: "Unable to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we prepare your report...",
+      });
+
+      // Filter completed results only
+      const completedResults = allResults.filter((r: any) => r.status === 'completed');
+
+      // Prepare candidate data
+      const candidateData = {
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        },
+        results: completedResults,
+      };
+
+      // Prepare skill data from all completed assessments
+      const skillData: any[] = [];
+      completedResults.forEach((r: any) => {
+        const scores = r.scores || {};
+        Object.entries(scores).forEach(([skillName, score]) => {
+          skillData.push({
+            name: skillName,
+            score: score as number,
+            assessment: r.assessmentType.toUpperCase(),
+          });
+        });
+      });
+
+      // Platform averages (simplified - could be fetched from API)
+      const platformAverages = {
+        totalCandidates: 1,
+        avgScoreAcrossCandidates: 0,
+        skillAverages: {},
+      };
+
+      await exportEnhancedCandidatePDF(
+        candidateData,
+        skillData,
+        platformAverages,
+        null,
+        null
+      );
+
+      toast({
+        title: "Success",
+        description: "Your report has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading || !result) {
     return (
@@ -218,9 +298,21 @@ export default function Results() {
             </div>
 
             <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">
-                Prompt Architecture Assessment Results
-              </h1>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+                <h1 className="text-3xl font-bold">
+                  Prompt Architecture Assessment Results
+                </h1>
+                <Button 
+                  onClick={handleDownloadPDF}
+                  variant="outline"
+                  size="default"
+                  data-testid="button-download-pdf-prompt"
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
               <p className="text-muted-foreground">
                 Completed on {new Date((result as any).completedAt).toLocaleDateString()}
               </p>
@@ -267,17 +359,31 @@ export default function Results() {
           </div>
 
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-3xl font-bold">
-                {(result as any).assessmentType.toUpperCase()} Results
-              </h1>
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                Status: {(result as any).status}
-              </Badge>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {(result as any).assessmentType.toUpperCase()} Results
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Completed on {new Date((result as any).completedAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-lg px-4 py-2">
+                  Status: {(result as any).status}
+                </Badge>
+                <Button 
+                  onClick={handleDownloadPDF}
+                  variant="outline"
+                  size="default"
+                  data-testid="button-download-pdf"
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
             </div>
-            <p className="text-muted-foreground">
-              Completed on {new Date((result as any).completedAt).toLocaleDateString()}
-            </p>
           </div>
 
           {/* Overall Score - only show for assessments with total scores */}
