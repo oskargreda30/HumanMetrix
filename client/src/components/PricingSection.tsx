@@ -88,7 +88,7 @@ export default function PricingSection() {
                   ].map((feature, index) => (
                     <div key={index} className="flex items-start gap-2 md:gap-3">
                       <Check className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-xs md:text-sm text-blue-100/70" data-testid={`text-pricing-feature-${index + 1}`}>{feature}</span>
+                      <span className="text-sm text-blue-100/70" data-testid={`text-pricing-feature-${index + 1}`}>{feature}</span>
                     </div>
                   ))}
                 </div>

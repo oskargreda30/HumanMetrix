@@ -31,12 +31,12 @@ export default function About() {
       <Navigation />
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section className="py-12 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 md:mb-6">
               About HumanMetrix
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+            <p className="text-sm md:text-base lg:text-xl text-muted-foreground leading-relaxed">
               We're building the future of professional assessment for an AI-driven world. 
               HumanMetrix helps organizations and individuals measure what truly matters: 
               the ability to work effectively with AI while maintaining essential human skills.
@@ -45,12 +45,12 @@ export default function About() {
         </section>
 
         {/* Mission Section */}
-        <section className="py-24">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
-            <div className="space-y-12">
+            <div className="space-y-8 md:space-y-12">
               <div>
-                <h2 className="text-3xl font-semibold mb-4">Our Mission</h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-3 md:mb-4">Our Mission</h2>
+                <p className="text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed">
                   In an era where AI is transforming every industry, traditional assessments no longer capture 
                   the full picture of a candidate's potential. HumanMetrix was created to bridge this gap by 
                   evaluating both timeless behavioral competencies and emerging AI literacy skills.
@@ -58,36 +58,36 @@ export default function About() {
               </div>
 
               <div>
-                <h2 className="text-3xl font-semibold mb-4">Why HumanMetrix?</h2>
-                <p className="text-lg text-muted-foreground leading-relaxed mb-6">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-3 md:mb-4">Why HumanMetrix?</h2>
+                <p className="text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed mb-4 md:mb-6">
                   The workplace is evolving rapidly. Success in 2025 and beyond requires more than technical 
                   knowledge—it demands adaptability, ethical judgment, and the ability to leverage AI tools 
                   effectively. Our comprehensive assessment suite measures:
                 </p>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-sm">✓</span>
+                <ul className="space-y-2 md:space-y-3 text-muted-foreground">
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-xs md:text-sm">✓</span>
                     </span>
-                    <span><strong>Behavioral Competencies:</strong> Core skills like agency, curiosity, resilience, empathy, growth mindset, and interpersonal agility</span>
+                    <span className="text-sm"><strong>Behavioral Competencies:</strong> Core skills like agency, curiosity, resilience, empathy, growth mindset, and interpersonal agility</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-primary text-sm">✓</span>
                     </span>
-                    <span><strong>AI Readiness:</strong> Ability to work with AI systems, from basic prompting to complex reasoning tasks</span>
+                    <span className="text-sm"><strong>AI Readiness:</strong> Ability to work with AI systems, from basic prompting to complex reasoning tasks</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-primary text-sm">✓</span>
                     </span>
-                    <span><strong>Technical AI Skills:</strong> Prompt architecture, iterative refinement, and debugging AI outputs</span>
+                    <span className="text-sm"><strong>Technical AI Skills:</strong> Prompt architecture, iterative refinement, and debugging AI outputs</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-primary text-sm">✓</span>
                     </span>
-                    <span><strong>Ethical AI Understanding:</strong> Knowledge of bias, fairness, transparency, and responsible deployment</span>
+                    <span className="text-sm"><strong>Ethical AI Understanding:</strong> Knowledge of bias, fairness, transparency, and responsible deployment</span>
                   </li>
                 </ul>
               </div>
@@ -96,25 +96,25 @@ export default function About() {
         </section>
 
         {/* Values Section */}
-        <section className="py-24 bg-muted/30">
+        <section className="py-12 md:py-24 bg-muted/30">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-4xl font-semibold">Our Values</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <div className="text-center mb-8 md:mb-16 space-y-2 md:space-y-4">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">Our Values</h2>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
                 The principles that guide everything we do
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 gap-4 md:gap-8">
               {values.map((value, index) => (
-                <div key={index} className="space-y-4 p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <value.icon className="h-6 w-6 text-primary" />
+                <div key={index} className="space-y-3 md:space-y-4 p-4 md:p-6">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <value.icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                     </div>
-                    <h3 className="text-xl font-semibold">{value.title}</h3>
+                    <h3 className="text-base md:text-lg lg:text-xl font-semibold">{value.title}</h3>
                   </div>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {value.description}
                   </p>
                 </div>
@@ -124,10 +124,10 @@ export default function About() {
         </section>
 
         {/* Team Section */}
-        <section className="py-24">
-          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center space-y-6">
-            <h2 className="text-3xl font-semibold">Built by Assessment Experts</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+        <section className="py-12 md:py-24">
+          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center space-y-4 md:space-y-6">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">Built by Assessment Experts</h2>
+            <p className="text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed">
               Our team combines expertise in organizational psychology, AI research, and enterprise software 
               to create assessments that are scientifically rigorous, technologically advanced, and practically useful. 
               Every question, scoring rubric, and evaluation methodology is designed by specialists who understand 

@@ -78,16 +78,16 @@ export default function Assessments() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
       <Navigation />
-      <main className="flex-grow py-16 px-4">
+      <main className="flex-grow py-8 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4 text-white">
+          <div className="text-center mb-8 md:mb-12">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white">
               AI Assessment Platform
             </h1>
-            <p className="text-xl text-blue-100/70 mb-6">
+            <p className="text-sm md:text-base lg:text-xl text-blue-100/70 mb-4 md:mb-6">
               Professional assessments starting at just £0.01 per test
             </p>
-            <p className="text-sm text-cyan-400 mb-6">
+            <p className="text-xs md:text-sm text-cyan-400 mb-4 md:mb-6">
               £0.02 base fee + £0.01 per assessment
             </p>
             {isAuthenticated ? (
@@ -114,9 +114,9 @@ export default function Assessments() {
             )}
           </div>
 
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 text-white">Available Assessments</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Available Assessments</h2>
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               {availableAssessments.map((assessment) => (
                 <AssessmentCard
                   key={assessment.id}
@@ -132,14 +132,13 @@ export default function Assessments() {
             </div>
             
             {/* Checkout Button */}
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 md:mt-8 flex justify-center">
               <Button 
-                size="lg"
                 onClick={() => setCheckoutOpen(true)}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-base"
                 data-testid="button-view-basket-checkout"
               >
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
                 View Basket & Checkout
                 {basketCount > 0 && (
                   <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
@@ -151,7 +150,7 @@ export default function Assessments() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-white">Coming Soon</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Coming Soon</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {comingSoon.map((assessment) => (
                 <AssessmentCard

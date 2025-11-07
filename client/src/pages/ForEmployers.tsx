@@ -87,17 +87,17 @@ export default function ForEmployers() {
       />
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section className="py-12 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
-            <div className="inline-block mb-6">
-              <span className="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+            <div className="inline-block mb-4 md:mb-6">
+              <span className="inline-flex items-center rounded-full px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-medium bg-primary/10 text-primary border border-primary/20">
                 For Employers
               </span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 md:mb-6">
               Hire for the AI Era
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8">
+            <p className="text-sm md:text-base lg:text-xl text-muted-foreground leading-relaxed mb-6 md:mb-8">
               Make better hiring decisions with objective, AI-powered assessments that measure both 
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
             </p>
@@ -121,25 +121,25 @@ export default function ForEmployers() {
         </section>
 
         {/* Features Grid */}
-        <section className="py-24">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+            <div className="text-center mb-8 md:mb-16">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
                 Everything You Need to Make Better Hires
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
                 Purpose-built for modern recruitment teams
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
               {features.map((feature, index) => (
-                <Card key={index} className="p-6 hover-elevate transition-all">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <feature.icon className="h-6 w-6 text-primary" />
+                <Card key={index} className="p-4 md:p-6 hover-elevate transition-all">
+                  <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <feature.icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold">{feature.title}</h3>
+                    <h3 className="text-sm md:text-base lg:text-lg font-semibold">{feature.title}</h3>
                   </div>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     {feature.description}
@@ -151,21 +151,21 @@ export default function ForEmployers() {
         </section>
 
         {/* Use Cases */}
-        <section className="py-24 bg-muted/30">
+        <section className="py-12 md:py-24 bg-muted/30">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+            <div className="text-center mb-8 md:mb-16">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
                 Built for Your Use Case
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
                 From recruitment to internal development, HumanMetrix adapts to your needs
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
               {useCases.map((useCase, index) => (
-                <Card key={index} className="p-6">
-                  <h3 className="text-lg font-semibold mb-2">{useCase.title}</h3>
+                <Card key={index} className="p-4 md:p-6">
+                  <h3 className="text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2">{useCase.title}</h3>
                   <p className="text-muted-foreground text-sm">
                     {useCase.description}
                   </p>
@@ -176,12 +176,12 @@ export default function ForEmployers() {
         </section>
 
         {/* Pricing Preview */}
-        <section className="py-24">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-              <Card className="p-12">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-semibold mb-4">Simple, Transparent Pricing</h2>
+              <Card className="p-6 md:p-8 lg:p-12">
+                <div className="text-center mb-6 md:mb-8">
+                  <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">Simple, Transparent Pricing</h2>
                   <p className="text-muted-foreground">
                     Enterprise plans available for teams of 10+ candidates per month
                   </p>

@@ -53,7 +53,7 @@ export default function SampleReportsSection() {
                   <h3 className="text-base md:text-lg lg:text-xl font-semibold mb-1 md:mb-2 text-white" data-testid={`text-report-${report.testId}-title`}>
                     {report.title}
                   </h3>
-                  <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed" data-testid={`text-report-${report.testId}-description`}>
+                  <p className="text-sm text-blue-100/60 leading-relaxed" data-testid={`text-report-${report.testId}-description`}>
                     {report.description}
                   </p>
                 </div>

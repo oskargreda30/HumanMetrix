@@ -53,7 +53,7 @@ export default function HowItWorks() {
                   <h3 className="text-base md:text-lg lg:text-xl font-semibold mb-1 md:mb-2 text-white" data-testid={`text-step-${index + 1}-title`}>
                     {step.title}
                   </h3>
-                  <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed" data-testid={`text-step-${index + 1}-description`}>
+                  <p className="text-sm text-blue-100/60 leading-relaxed" data-testid={`text-step-${index + 1}-description`}>
                     {step.description}
                   </p>
                 </div>
