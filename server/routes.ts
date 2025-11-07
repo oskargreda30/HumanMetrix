@@ -1588,25 +1588,25 @@ async function evaluatePromptWithGPT(userPrompt: string, level: number, taskDesc
 ${userPrompt}
 
 **Evaluation Criteria**:
-1. **Clarity (25 points)**: Is the prompt clear, unambiguous, and easy to understand?
+1. **Clarity (20 points)**: Is the prompt clear, unambiguous, and easy to understand?
 2. **Structure (20 points)**: Is the prompt well-organized with logical flow?
 3. **Context Relevance (20 points)**: Does the prompt provide necessary context and constraints?
 4. **Creativity (20 points)**: Does the prompt encourage thoughtful, creative responses?
-5. **Iterative Improvement (15 points)**: Does the prompt include mechanisms for refinement or building upon concepts?
+5. **Iterative Improvement (20 points)**: Does the prompt include mechanisms for refinement or building upon concepts?
 
 **Instructions**:
-- Provide scores for each criterion (out of the maximum points listed)
+- Provide scores for each criterion (out of 20 points each)
 - Be fair but rigorous in your evaluation
 - Consider the difficulty level when scoring
 - Provide constructive feedback
 
 **Response Format** (MUST follow exactly):
 {
-  "clarity": <score out of 25>,
+  "clarity": <score out of 20>,
   "structure": <score out of 20>,
   "contextRelevance": <score out of 20>,
   "creativity": <score out of 20>,
-  "iterativeImprovement": <score out of 15>,
+  "iterativeImprovement": <score out of 20>,
   "feedback": "<brief constructive feedback>",
   "totalScore": <sum of all scores>
 }`;

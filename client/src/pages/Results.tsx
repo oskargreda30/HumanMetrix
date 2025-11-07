@@ -122,7 +122,7 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
       break;
 
     case "prompt-architecture":
-      analysis.overall = `This Prompt Architecture assessment evaluates prompt design skills across progressive difficulty levels. Overall score: **${totalScore}/100**. Prompts are evaluated on Clarity (25%), Structure (20%), Context Relevance (20%), Creativity (20%), and Iterative Improvement (15%).`;
+      analysis.overall = `This Prompt Architecture assessment evaluates prompt design skills across progressive difficulty levels. Overall score: **${totalScore}/100**. Prompts are evaluated on five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.`;
       
       if (totalScore !== undefined) {
         if (totalScore >= 80) {
@@ -149,7 +149,7 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
       }
       
       // Add note about evaluation criteria
-      analysis.improvements.push(`**Evaluation Note**: Prompts are scored by GPT-4o across five dimensions: Clarity (25%), Structure (20%), Context Relevance (20%), Creativity (20%), and Iterative Improvement (15%). Each dimension contributes to the overall assessment of prompt effectiveness.`);
+      analysis.improvements.push(`**Evaluation Note**: Prompts are scored by GPT-4o across five equal dimensions (20 points each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Each dimension carries equal weight (20%) in the overall assessment of prompt effectiveness.`);
       break;
 
     case "aiq":

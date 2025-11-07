@@ -25,11 +25,11 @@ interface PromptArchitectureResultsProps {
 export function PromptArchitectureResults({ scores, totalScore, evaluations }: PromptArchitectureResultsProps) {
   // Transform overall scores for radar chart
   const radarData = [
-    { dimension: "Clarity (25%)", score: scores["Clarity"] || 0, weight: 25 },
+    { dimension: "Clarity (20%)", score: scores["Clarity"] || 0, weight: 20 },
     { dimension: "Structure (20%)", score: scores["Structure"] || 0, weight: 20 },
     { dimension: "Context (20%)", score: scores["Context Relevance"] || 0, weight: 20 },
     { dimension: "Creativity (20%)", score: scores["Creativity"] || 0, weight: 20 },
-    { dimension: "Iterative (15%)", score: scores["Iterative Improvement"] || 0, weight: 15 },
+    { dimension: "Iterative (20%)", score: scores["Iterative Improvement"] || 0, weight: 20 },
   ];
 
   // Sort evaluations by level
@@ -44,8 +44,8 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
     { name: "Iterative Improvement", score: scores["Iterative Improvement"] || 0 },
   ];
 
-  const strengths = dimensionScores.filter(d => d.score >= 7).sort((a, b) => b.score - a.score);
-  const improvements = dimensionScores.filter(d => d.score < 7).sort((a, b) => a.score - b.score);
+  const strengths = dimensionScores.filter(d => d.score >= 14).sort((a, b) => b.score - a.score);
+  const improvements = dimensionScores.filter(d => d.score < 14).sort((a, b) => a.score - b.score);
 
   return (
     <div className="space-y-8">
@@ -76,7 +76,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
                 />
                 <PolarRadiusAxis 
                   angle={90} 
-                  domain={[0, 12]}
+                  domain={[0, 20]}
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
                 />
                 <Radar
@@ -92,11 +92,11 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
         </div>
 
         {/* Dimension Details */}
-        <div className="mt-8 grid md:grid-cols-5 gap-4">
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {radarData.map((dim) => (
             <Card key={dim.dimension} className="p-4">
               <div className="text-xs text-muted-foreground mb-1">{dim.dimension.split(' (')[0]}</div>
-              <div className="text-2xl font-bold text-primary">{dim.score}/12</div>
+              <div className="text-2xl font-bold text-primary">{dim.score}/20</div>
               <div className="text-xs text-muted-foreground mt-1">Weight: {dim.weight}%</div>
             </Card>
           ))}
@@ -118,7 +118,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
                   <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="font-semibold">{strength.name}</div>
-                    <div className="text-sm text-muted-foreground">Score: {strength.score}/12 - Demonstrates strong proficiency</div>
+                    <div className="text-sm text-muted-foreground">Score: {strength.score}/20 - Demonstrates strong proficiency</div>
                   </div>
                 </div>
               ))}
@@ -139,7 +139,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
                   <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="font-semibold">{improvement.name}</div>
-                    <div className="text-sm text-muted-foreground">Score: {improvement.score}/12 - Room for improvement</div>
+                    <div className="text-sm text-muted-foreground">Score: {improvement.score}/20 - Room for improvement</div>
                   </div>
                 </div>
               ))}
@@ -166,31 +166,31 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
               </div>
 
               {/* Dimension Scores for This Level */}
-              <div className="grid grid-cols-5 gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
                 <div className="p-3 bg-background rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Clarity</div>
-                  <div className="text-lg font-bold text-primary">{evaluation.clarity || 0}/12</div>
-                  <div className="text-xs text-muted-foreground">25%</div>
+                  <div className="text-lg font-bold text-primary">{evaluation.clarity || 0}/20</div>
+                  <div className="text-xs text-muted-foreground">20%</div>
                 </div>
                 <div className="p-3 bg-background rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Structure</div>
-                  <div className="text-lg font-bold text-primary">{evaluation.structure || 0}/12</div>
+                  <div className="text-lg font-bold text-primary">{evaluation.structure || 0}/20</div>
                   <div className="text-xs text-muted-foreground">20%</div>
                 </div>
                 <div className="p-3 bg-background rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Context</div>
-                  <div className="text-lg font-bold text-primary">{evaluation.contextRelevance || 0}/12</div>
+                  <div className="text-lg font-bold text-primary">{evaluation.contextRelevance || 0}/20</div>
                   <div className="text-xs text-muted-foreground">20%</div>
                 </div>
                 <div className="p-3 bg-background rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Creativity</div>
-                  <div className="text-lg font-bold text-primary">{evaluation.creativity || 0}/12</div>
+                  <div className="text-lg font-bold text-primary">{evaluation.creativity || 0}/20</div>
                   <div className="text-xs text-muted-foreground">20%</div>
                 </div>
                 <div className="p-3 bg-background rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">Iterative</div>
-                  <div className="text-lg font-bold text-primary">{evaluation.iterativeImprovement || 0}/12</div>
-                  <div className="text-xs text-muted-foreground">15%</div>
+                  <div className="text-lg font-bold text-primary">{evaluation.iterativeImprovement || 0}/20</div>
+                  <div className="text-xs text-muted-foreground">20%</div>
                 </div>
               </div>
 
@@ -215,9 +215,9 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
           This assessment uses GPT-4o to evaluate your prompt engineering skills across seven progressive difficulty levels.
           Each prompt you wrote was scored on five key dimensions:
         </p>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <div className="p-4 bg-background rounded-lg">
-            <div className="font-semibold mb-2">Clarity (25% weight)</div>
+            <div className="font-semibold mb-2">Clarity (20% weight)</div>
             <p className="text-sm text-muted-foreground">
               How clear, specific, and unambiguous your instructions are. High scores indicate precise, easy-to-follow prompts.
             </p>
@@ -241,7 +241,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
             </p>
           </div>
           <div className="p-4 bg-background rounded-lg">
-            <div className="font-semibold mb-2">Iterative Improvement (15% weight)</div>
+            <div className="font-semibold mb-2">Iterative Improvement (20% weight)</div>
             <p className="text-sm text-muted-foreground">
               Your ability to refine and improve prompts through iteration and feedback incorporation.
             </p>
