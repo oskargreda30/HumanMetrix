@@ -574,7 +574,7 @@ export default function CandidatesTab() {
                 {fitResult && (
                   <div id="pdf-fit-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
                     <SkillRadarChart 
-                      data={transformToRadarData(fitResult.scores, 'fit')}
+                      data={transformToRadarData(fitResult.scores, fitResult.assessmentType)}
                       title="FIT Assessment"
                     />
                   </div>
@@ -582,7 +582,7 @@ export default function CandidatesTab() {
                 {aiReadinessResult && (
                   <div id="pdf-ai-readiness-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
                     <SkillRadarChart 
-                      data={transformToRadarData(aiReadinessResult.scores, 'ai-readiness')}
+                      data={transformToRadarData(aiReadinessResult.scores, aiReadinessResult.assessmentType)}
                       title="AI Readiness"
                     />
                   </div>
