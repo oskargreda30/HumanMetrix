@@ -924,11 +924,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if we have any skill data to compare
       const hasSkillData = skillComparison.length > 0;
 
+      // Extract specific assessment data for each candidate
+      const fitAssessments = await Promise.all(
+        candidatesResults.map(async (results) => {
+          const fitResult = results.find((r) => {
+            const normalized = normalizeAssessmentType(r.assessmentType);
+            return normalized === 'fit' && r.status === 'completed';
+          });
+          return fitResult ? {
+            scores: fitResult.scores || {},
+            completedAt: fitResult.completedAt,
+          } : null;
+        })
+      );
+
+      const aiReadinessAssessments = await Promise.all(
+        candidatesResults.map(async (results) => {
+          const aiReadinessResult = results.find((r) => {
+            const normalized = normalizeAssessmentType(r.assessmentType);
+            return (normalized === 'ai_readiness' || normalized === 'ai-readiness') && r.status === 'completed';
+          });
+          return aiReadinessResult ? {
+            scores: aiReadinessResult.scores || {},
+            completedAt: aiReadinessResult.completedAt,
+          } : null;
+        })
+      );
+
+      const aiqAssessments = await Promise.all(
+        candidatesResults.map(async (results) => {
+          const aiqResult = results.find((r) => {
+            const normalized = normalizeAssessmentType(r.assessmentType);
+            return normalized === 'aiq' && r.status === 'completed';
+          });
+          return aiqResult ? {
+            totalScore: aiqResult.totalScore || 0,
+            scores: aiqResult.scores || {},
+            completedAt: aiqResult.completedAt,
+          } : null;
+        })
+      );
+
+      const promptArchitectureAssessments = await Promise.all(
+        candidatesResults.map(async (results) => {
+          const promptResult = results.find((r) => {
+            const normalized = normalizeAssessmentType(r.assessmentType);
+            return normalized === 'prompt_architecture' && r.status === 'completed';
+          });
+          
+          if (!promptResult) return null;
+          
+          // Fetch evaluations for this result
+          const evaluations = await storage.getEvaluationsByResult(promptResult.id);
+          
+          // Organize evaluations by level (1-7)
+          const levelData = evaluations
+            .filter(e => e.status === 'completed' && e.evaluationScores)
+            .map(e => ({
+              level: e.level,
+              scores: e.evaluationScores,
+              totalScore: e.totalScore,
+              feedback: e.feedback,
+            }))
+            .sort((a, b) => a.level - b.level);
+          
+          return {
+            levels: levelData,
+            totalScore: promptResult.totalScore || 0,
+            percentile: promptResult.percentile,
+            completedAt: promptResult.completedAt,
+          };
+        })
+      );
+
       res.json({
         radarData,
         skillComparison,
         averageScores,
         hasSkillData,
+        fitAssessments,
+        aiReadinessAssessments,
+        promptArchitectureAssessments,
+        aiqAssessments,
       });
     } catch (error) {
       console.error("Error fetching comparison data:", error);
