@@ -483,282 +483,17 @@ export async function exportEnhancedCandidatePDF(
     }
   }
   
-  // AIQ Assessment - Single Score Display
-  const aiqResult = candidate.results?.find((r: any) => 
-    r.assessmentType === 'aiq' && r.status === 'completed'
-  );
-  
-  if (aiqResult && aiqResult.totalScore !== null && aiqResult.totalScore !== undefined) {
-    if (yPos > pageHeight - 100) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Algorithmic Integrity Quotient (AIQ)', 20, yPos);
-    yPos += 7;
-    
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
-    yPos += 10;
-    
-    // Score display - smaller and blue
-    pdf.setFillColor(239, 246, 255);
-    pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
-    
-    pdf.setFontSize(32);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 18, { align: 'center' });
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text('/ 100', pageWidth / 2 + 12, yPos + 18);
-    
-    pdf.setFontSize(8);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 28, { align: 'center' });
-    
-    yPos += 45;
-    
-    // Performance interpretation
-    const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
-    let interpretation = '';
-    if (aiqResult.totalScore >= 75) {
-      interpretation = 'Demonstrates strong understanding of AI ethics and responsible deployment. Can be trusted to make sound decisions regarding algorithmic systems and identify potential risks early.';
-    } else if (aiqResult.totalScore >= 50) {
-      interpretation = 'Shows foundational knowledge of AI ethics. May benefit from additional training in bias detection, fairness principles, and responsible AI practices.';
-    } else {
-      interpretation = 'Requires significant development in AI ethics and responsible deployment practices. Additional training and guidance strongly recommended before working with AI systems.';
-    }
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
-    pdf.text(`Performance Level: ${aiqPerf.label}`, 20, yPos);
-    yPos += 5;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const aiqInterpretation = pdf.splitTextToSize(interpretation, pageWidth - 40);
-    aiqInterpretation.forEach((line: string, index: number) => {
-      pdf.text(line, 20, yPos + (index * 4));
-    });
-    yPos += aiqInterpretation.length * 4 + 10;
-  }
-  
   pdf.setTextColor(0, 0, 0);
-  
-  // ========== PAGE 3: STRENGTHS & DEVELOPMENT ==========
-  pdf.addPage();
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'TOP STRENGTHS', yPos, pageWidth);
-  yPos += 5;
-  
-  // Top 5 strengths - CONSISTENT LAYOUT
-  topSkills.slice(0, 5).forEach((skill, index) => {
-    const perf = getPerformanceLevel(skill.score);
-    
-    // Same white background for both sections
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`${index + 1}. ${skill.name}`, 25, yPos + 6);
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.text(`${skill.score}/100`, pageWidth - 25, yPos + 6, { align: 'right' });
-    
-    // Progress bar
-    const barWidth = 40;
-    const barX = pageWidth - 70;
-    pdf.setDrawColor(229, 231, 235);
-    pdf.setFillColor(243, 244, 246);
-    pdf.rect(barX, yPos + 8, barWidth, 2, 'F');
-    pdf.setFillColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.rect(barX, yPos + 8, (barWidth * skill.score) / 100, 2, 'F');
-    
-    yPos += 14;
-  });
-  
-  pdf.setTextColor(0, 0, 0);
-  
-  // Development Areas - CONSISTENT LAYOUT (same as strengths)
-  yPos += 5;
-  const bottomSkills = [...skills].filter(s => s.score > 0).sort((a, b) => a.score - b.score).slice(0, 5);
-  
-  yPos = addSectionHeader(pdf, 'DEVELOPMENT OPPORTUNITIES', yPos, pageWidth);
-  yPos += 5;
-  
-  bottomSkills.forEach((skill, index) => {
-    const perf = getPerformanceLevel(skill.score);
-    
-    // Same white background as strengths
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`${index + 1}. ${skill.name}`, 25, yPos + 6);
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.text(`${skill.score}/100`, pageWidth - 25, yPos + 6, { align: 'right' });
-    
-    // Progress bar
-    const barWidth = 40;
-    const barX = pageWidth - 70;
-    pdf.setDrawColor(229, 231, 235);
-    pdf.setFillColor(243, 244, 246);
-    pdf.rect(barX, yPos + 8, barWidth, 2, 'F');
-    pdf.setFillColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.rect(barX, yPos + 8, (barWidth * skill.score) / 100, 2, 'F');
-    
-    yPos += 14;
-  });
-  
-  pdf.setTextColor(0, 0, 0);
-  
-  // ========== PAGE 4: PLATFORM COMPARISON ==========
-  pdf.addPage();
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'PLATFORM BENCHMARKING', yPos, pageWidth);
-  yPos += 10;
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  pdf.text(`Based on ${platformAverages.totalCandidates} candidates assessed on the HumanMetrix platform`, 20, yPos);
-  yPos += 10;
-  
-  // Comparison metrics
-  const candidateAvg = avgScore;
-  const platformAvg = platformAverages.avgScoreAcrossCandidates;
-  const difference = candidateAvg - platformAvg;
-  
-  // Overall comparison card
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
-  
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Overall Performance Comparison', 25, yPos + 10);
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(75, 85, 99);
-  pdf.text(`Candidate Average: ${candidateAvg}/100`, 25, yPos + 20);
-  pdf.text(`Platform Average: ${platformAvg}/100`, 25, yPos + 27);
-  
-  const diffColor = difference >= 0 ? [34, 197, 94] : [239, 68, 68];
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(diffColor[0], diffColor[1], diffColor[2]);
-  const diffText = difference >= 0 ? `+${difference} points above average` : `${difference} points below average`;
-  pdf.text(diffText, pageWidth - 25, yPos + 23, { align: 'right' });
-  
-  yPos += 45;
-  pdf.setTextColor(0, 0, 0);
-  
-  // Per-skill comparison - separated by assessment
-  const fitSkillsData = skills.filter(s => s.assessment === 'FIT Assessment');
-  const aiReadinessSkillsData = skills.filter(s => s.assessment === 'AI Readiness');
-  const aiqSkillsData = skills.filter(s => s.assessment === 'AIQ');
-  const promptSkillsData = skills.filter(s => s.assessment === 'Prompt Architecture');
-  
-  const renderSkillComparisonTable = (skillsList: SkillData[], title: string) => {
-    if (skillsList.length === 0) return;
-    
-    if (yPos > pageHeight - 50) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(title, 20, yPos);
-    yPos += 7;
-    
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Skill', 25, yPos);
-    pdf.text('Your Score', 100, yPos);
-    pdf.text('Platform Avg', 135, yPos);
-    pdf.text('Difference', pageWidth - 25, yPos, { align: 'right' });
-    yPos += 2;
-    
-    pdf.setDrawColor(229, 231, 235);
-    pdf.line(20, yPos, pageWidth - 20, yPos);
-    yPos += 5;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
-    
-    skillsList.forEach((skill, index) => {
-      if (yPos > pageHeight - 30) {
-        pdf.addPage();
-        addHeader(pdf, pageWidth);
-        yPos = 35;
-      }
-      
-      const platformSkillAvg = platformAverages.skillAverages[skill.name] || platformAvg;
-      const skillDiff = skill.score - platformSkillAvg;
-      
-      if (index % 2 === 0) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(20, yPos - 3, pageWidth - 40, 8, 'F');
-      }
-      
-      pdf.setTextColor(17, 24, 39);
-      const skillName = skill.name.length > 30 ? skill.name.substring(0, 27) + '...' : skill.name;
-      pdf.text(skillName, 25, yPos + 2);
-      
-      pdf.text(`${skill.score}`, 100, yPos + 2);
-      pdf.text(`${Math.round(platformSkillAvg)}`, 135, yPos + 2);
-      
-      const skillDiffColor = skillDiff >= 0 ? [34, 197, 94] : [239, 68, 68];
-      pdf.setTextColor(skillDiffColor[0], skillDiffColor[1], skillDiffColor[2]);
-      const skillDiffText = skillDiff >= 0 ? `+${Math.round(skillDiff)}` : `${Math.round(skillDiff)}`;
-      pdf.text(skillDiffText, pageWidth - 25, yPos + 2, { align: 'right' });
-      
-      yPos += 8;
-    });
-    
-    yPos += 5;
-    pdf.setTextColor(0, 0, 0);
-  };
-  
-  renderSkillComparisonTable(fitSkillsData, 'FIT Assessment - Behavioral Skills');
-  renderSkillComparisonTable(aiReadinessSkillsData, 'AI Readiness');
-  renderSkillComparisonTable(aiqSkillsData, 'AIQ');
   
   // ========== PROMPT ARCHITECTURE ASSESSMENT ==========
   if (promptArchitectureData && promptArchitectureData.length > 0) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
+    // Check if we need a new page
+    if (yPos > pageHeight - 60) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
     
-    yPos = 35;
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ASSESSMENT', yPos, pageWidth);
     yPos += 5;
     
@@ -900,6 +635,199 @@ export async function exportEnhancedCandidatePDF(
       pdf.setTextColor(0, 0, 0);
     });
   }
+  
+  // ========== AIQ ASSESSMENT ==========
+  const aiqResult = candidate.results?.find((r: any) => 
+    r.assessmentType === 'aiq' && r.status === 'completed'
+  );
+  
+  if (aiqResult && aiqResult.totalScore !== null && aiqResult.totalScore !== undefined) {
+    if (yPos > pageHeight - 100) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Algorithmic Integrity Quotient (AIQ)', 20, yPos);
+    yPos += 7;
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
+    yPos += 10;
+    
+    // Score display - smaller and blue
+    pdf.setFillColor(239, 246, 255);
+    pdf.setDrawColor(59, 130, 246);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
+    
+    pdf.setFontSize(32);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 18, { align: 'center' });
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('/ 100', pageWidth / 2 + 12, yPos + 18);
+    
+    pdf.setFontSize(8);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 28, { align: 'center' });
+    
+    yPos += 45;
+    
+    // Performance interpretation
+    const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
+    let interpretation = '';
+    if (aiqResult.totalScore >= 75) {
+      interpretation = 'Demonstrates strong understanding of AI ethics and responsible deployment. Can be trusted to make sound decisions regarding algorithmic systems and identify potential risks early.';
+    } else if (aiqResult.totalScore >= 50) {
+      interpretation = 'Shows foundational knowledge of AI ethics. May benefit from additional training in bias detection, fairness principles, and responsible AI practices.';
+    } else {
+      interpretation = 'Requires significant development in AI ethics and responsible deployment practices. Additional training and guidance strongly recommended before working with AI systems.';
+    }
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
+    pdf.text(`Performance Level: ${aiqPerf.label}`, 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const aiqInterpretation = pdf.splitTextToSize(interpretation, pageWidth - 40);
+    aiqInterpretation.forEach((line: string, index: number) => {
+      pdf.text(line, 20, yPos + (index * 4));
+    });
+    yPos += aiqInterpretation.length * 4 + 10;
+  }
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== PLATFORM BENCHMARKING ==========
+  pdf.addPage();
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  yPos = addSectionHeader(pdf, 'PLATFORM BENCHMARKING', yPos, pageWidth);
+  yPos += 10;
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  pdf.text(`Based on ${platformAverages.totalCandidates} candidates assessed on the HumanMetrix platform`, 20, yPos);
+  yPos += 10;
+  
+  // Comparison metrics
+  const candidateAvg = avgScore;
+  const platformAvg = platformAverages.avgScoreAcrossCandidates;
+  const difference = candidateAvg - platformAvg;
+  
+  // Overall comparison card
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 3, 3, 'FD');
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text('Overall Performance Comparison', 25, yPos + 10);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(75, 85, 99);
+  pdf.text(`Candidate Average: ${candidateAvg}/100`, 25, yPos + 20);
+  pdf.text(`Platform Average: ${platformAvg}/100`, 25, yPos + 27);
+  
+  const diffColor = difference >= 0 ? [34, 197, 94] : [239, 68, 68];
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(diffColor[0], diffColor[1], diffColor[2]);
+  const diffText = difference >= 0 ? `+${difference} points above average` : `${difference} points below average`;
+  pdf.text(diffText, pageWidth - 25, yPos + 23, { align: 'right' });
+  
+  yPos += 45;
+  pdf.setTextColor(0, 0, 0);
+  
+  // Per-skill comparison - separated by assessment
+  const fitSkillsData = skills.filter(s => s.assessment === 'FIT Assessment');
+  const aiReadinessSkillsData = skills.filter(s => s.assessment === 'AI Readiness');
+  const aiqSkillsData = skills.filter(s => s.assessment === 'AIQ');
+  const promptSkillsData = skills.filter(s => s.assessment === 'Prompt Architecture');
+  
+  const renderSkillComparisonTable = (skillsList: SkillData[], title: string) => {
+    if (skillsList.length === 0) return;
+    
+    if (yPos > pageHeight - 50) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text(title, 20, yPos);
+    yPos += 7;
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Skill', 25, yPos);
+    pdf.text('Your Score', 100, yPos);
+    pdf.text('Platform Avg', 135, yPos);
+    pdf.text('Difference', pageWidth - 25, yPos, { align: 'right' });
+    yPos += 2;
+    
+    pdf.setDrawColor(229, 231, 235);
+    pdf.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    
+    skillsList.forEach((skill, index) => {
+      if (yPos > pageHeight - 30) {
+        pdf.addPage();
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      const platformSkillAvg = platformAverages.skillAverages[skill.name] || platformAvg;
+      const skillDiff = skill.score - platformSkillAvg;
+      
+      if (index % 2 === 0) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(20, yPos - 3, pageWidth - 40, 8, 'F');
+      }
+      
+      pdf.setTextColor(17, 24, 39);
+      const skillName = skill.name.length > 30 ? skill.name.substring(0, 27) + '...' : skill.name;
+      pdf.text(skillName, 25, yPos + 2);
+      
+      pdf.text(`${skill.score}`, 100, yPos + 2);
+      pdf.text(`${Math.round(platformSkillAvg)}`, 135, yPos + 2);
+      
+      const skillDiffColor = skillDiff >= 0 ? [34, 197, 94] : [239, 68, 68];
+      pdf.setTextColor(skillDiffColor[0], skillDiffColor[1], skillDiffColor[2]);
+      const skillDiffText = skillDiff >= 0 ? `+${Math.round(skillDiff)}` : `${Math.round(skillDiff)}`;
+      pdf.text(skillDiffText, pageWidth - 25, yPos + 2, { align: 'right' });
+      
+      yPos += 8;
+    });
+    
+    yPos += 5;
+    pdf.setTextColor(0, 0, 0);
+  };
+  
+  renderSkillComparisonTable(fitSkillsData, 'FIT Assessment - Behavioral Skills');
+  renderSkillComparisonTable(aiReadinessSkillsData, 'AI Readiness');
+  renderSkillComparisonTable(aiqSkillsData, 'AIQ');
+  renderSkillComparisonTable(promptSkillsData, 'Prompt Architecture');
   
   // ========== OPTIONAL PAGE: JOB ROLE COMPARISON ==========
   if (roleComparison) {
@@ -1276,56 +1204,6 @@ export async function exportEnhancedCandidatePDF(
   ];
   
   candidateRecs.forEach((rec) => {
-    if (yPos > pageHeight - 40) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    const recLines = pdf.splitTextToSize(rec, pageWidth - 55);
-    recLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += recLines.length * 4 + 2;
-  });
-  
-  yPos += 8;
-  
-  // For the Employer
-  if (yPos > pageHeight - 60) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  }
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('For the Employer:', 25, yPos);
-  yPos += 6;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  
-  const employerRecs = [
-    avgScore >= 85 
-      ? `• ${candidateName} demonstrates exceptional capabilities across all assessed dimensions. Consider for leadership or high-impact roles.`
-      : avgScore >= 70 
-      ? `• ${candidateName} shows strong competencies well-suited for AI-augmented work environments with minimal additional training required.`
-      : `• ${candidateName} has foundational capabilities but will require structured onboarding and training to reach full productivity in AI-enabled roles.`,
-    aiqResultConclusion && aiqResultConclusion.totalScore >= 75
-      ? '• This candidate can be trusted with ethical AI decision-making and may serve as an ethics champion within teams.'
-      : '• Provide AI ethics training and establish clear guidelines for AI system deployment and oversight.',
-    promptArchResult && promptArchitectureData && promptArchitectureData.length > 0 && 
-    Math.round(promptArchitectureData.reduce((sum, p) => sum + (p.totalScore || 0), 0) / promptArchitectureData.length) >= 70
-      ? '• Candidate demonstrates strong prompt engineering capabilities and can maximize AI tool effectiveness with minimal guidance.'
-      : '• Provide prompt engineering training and resources to help the candidate fully leverage AI productivity tools.',
-    fitResult && Math.round(Object.values(fitResult.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(fitResult.scores).length) >= 70
-      ? '• Strong behavioral competencies indicate excellent cultural fit and collaboration potential.'
-      : '• Consider pairing with experienced team members to accelerate development of workplace soft skills.',
-  ];
-  
-  employerRecs.forEach((rec) => {
     if (yPos > pageHeight - 40) {
       pdf.addPage();
       addHeader(pdf, pageWidth);
