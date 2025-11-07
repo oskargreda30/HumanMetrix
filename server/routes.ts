@@ -1118,6 +1118,32 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Get prompt architecture evaluations for a specific assessment result
+  app.get("/api/prompt-evaluations/:resultId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { resultId } = req.params;
+      const userId = req.user.id;
+      
+      // Verify the assessment result belongs to the user or user is admin
+      const result = await storage.getAssessmentResult(resultId);
+      if (!result) {
+        return res.status(404).json({ message: "Assessment result not found" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (result.userId !== userId && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: You can only access your own assessment results" });
+      }
+      
+      // Get all prompt architecture evaluations for this result
+      const evaluations = await storage.getEvaluationsByResult(resultId);
+      res.json(evaluations);
+    } catch (error) {
+      console.error("Error fetching prompt evaluations:", error);
+      res.status(500).json({ message: "Failed to fetch prompt evaluations" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
