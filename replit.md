@@ -112,17 +112,22 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - 7-day result caching to minimize API costs
 
 7. **Enhanced PDF Export System**
-   - **Assessment Explanations Page**: Dedicated page explaining all 4 assessment types for non-technical hiring managers (all fit on one page)
+   - **Assessment Explanations Page**: Optimized page explaining all 4 assessment types for non-technical hiring managers (all fit on one page with reduced text size)
      - FIT Assessment: Behavioral skills and workplace adaptability impact (blue theme)
      - AI Readiness: AI competencies and productivity multiplication potential (purple theme)
      - Prompt Architecture: Prompt engineering expertise and AI output quality correlation (amber theme)
-     - AIQ: AI ethics understanding and risk reduction capability (green theme)
+     - AIQ: AI ethics understanding and risk reduction capability (blue theme - changed from green)
    - **Dynamic Layout Engine**: Automatic pagination with content-aware page breaks
    - **Visual Organization**: Color-coded sections matching assessment branding
-   - **Dedicated AIQ Section**: Large score display (48pt) with performance level interpretation and hiring guidance
+   - **Dedicated AIQ Section**: Compact score display (32pt font, 35px height) with blue theme, performance level interpretation and hiring guidance
    - **Complete Coverage**: Radar charts (FIT, AI Readiness), skill comparisons (separated by assessment type), Prompt Architecture evaluations, AIQ score display, platform benchmarks, role fit analysis (optional)
    - **Hiring Manager Focus**: Business-focused language explaining what each score means for workplace performance
-   - **Fixed**: Assessment name filters now correctly match formatAssessmentType outputs, ensuring all completed assessments appear in PDFs
+   - **Fixes Applied**:
+     - Assessment name filters correctly match formatAssessmentType outputs
+     - AI Readiness radar chart rendering fixed (correct assessment type parameter)
+     - AIQ score consistency between dedicated box and benchmarking table (direct score assignment)
+     - Development opportunities filter excludes 0-score skills
+     - Text sizing optimized to fit all explanation boxes on one page
 
 8. **Admin API Endpoints**
    - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
