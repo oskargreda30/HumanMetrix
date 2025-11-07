@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, FileText } from "lucide-react";
+import { format } from "date-fns";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -83,8 +84,9 @@ export default function Dashboard() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold">{result.assessmentType.toUpperCase()}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Score: {result.totalScore || 0}/100
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Completed {result.completedAt ? format(new Date(result.completedAt), 'MMM d, yyyy') : ''}
                         </p>
                       </div>
                       <CheckCircle2 className="h-5 w-5 text-primary" />

@@ -295,8 +295,8 @@ export default function Results() {
             </Card>
           )}
 
-          {/* Visualizations */}
-          {Object.keys(scores).length > 0 && (
+          {/* Visualizations - Hidden for AIQ */}
+          {Object.keys(scores).length > 0 && assessmentType !== 'aiq' && (
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               {/* Radar Chart */}
               <Card className="p-6">
@@ -360,29 +360,31 @@ export default function Results() {
             </div>
           )}
 
-          {/* Skill Breakdown */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-6">Skill Breakdown</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(scores).map(([skill, score]: [string, any]) => (
-                <Card key={skill} className="p-6">
-                  <h3 className="font-semibold mb-3">{skill}</h3>
-                  <div className="flex items-end gap-2">
-                    <div className="text-3xl font-bold text-primary">
-                      {score}
+          {/* Skill Breakdown - Hidden for AIQ */}
+          {assessmentType !== 'aiq' && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold mb-6">Skill Breakdown</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(scores).map(([skill, score]: [string, any]) => (
+                  <Card key={skill} className="p-6">
+                    <h3 className="font-semibold mb-3">{skill}</h3>
+                    <div className="flex items-end gap-2">
+                      <div className="text-3xl font-bold text-primary">
+                        {score}
+                      </div>
+                      <div className="text-muted-foreground mb-1">/100</div>
                     </div>
-                    <div className="text-muted-foreground mb-1">/100</div>
-                  </div>
-                  <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${score}%` }}
-                    />
-                  </div>
-                </Card>
-              ))}
+                    <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Comprehensive Analysis for Employers */}
           <Card className="p-8 mb-8">
