@@ -117,10 +117,17 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - AI Readiness: AI competencies and productivity multiplication potential (purple theme)
      - Prompt Architecture: Prompt engineering expertise and AI output quality correlation (amber theme)
      - AIQ: AI ethics understanding and risk reduction capability (blue theme - changed from green)
+   - **Radar Charts Optimization**: Both FIT and AI Readiness radar charts with individual scores fit on one page (maxHeight reduced from 90 to 55)
+   - **Comprehensive Conclusion Section**: Moved from page 1 to final page with detailed breakdown
+     - Overall performance summary across all 4 assessments
+     - Assessment-by-assessment analysis (FIT, AI Readiness, Prompt Architecture, AIQ)
+     - Recommendations for the candidate (leverage strengths, focus development areas, mentoring/training paths)
+     - Recommendations for the employer (hiring decision guidance, ethics assessment, training needs, cultural fit)
+     - Conditional recommendations based on score thresholds (70, 75, 85)
    - **Dynamic Layout Engine**: Automatic pagination with content-aware page breaks
    - **Visual Organization**: Color-coded sections matching assessment branding
    - **Dedicated AIQ Section**: Compact score display (32pt font, 35px height) with blue theme, performance level interpretation and hiring guidance
-   - **Complete Coverage**: Radar charts (FIT, AI Readiness), skill comparisons (separated by assessment type), Prompt Architecture evaluations, AIQ score display, platform benchmarks, role fit analysis (optional)
+   - **Complete Coverage**: Radar charts (FIT, AI Readiness), skill comparisons (separated by assessment type), Prompt Architecture evaluations, AIQ score display, platform benchmarks, comprehensive conclusion, role fit analysis (optional)
    - **Hiring Manager Focus**: Business-focused language explaining what each score means for workplace performance
    - **Fixes Applied**:
      - Assessment name filters correctly match formatAssessmentType outputs
@@ -128,6 +135,8 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
      - AIQ score consistency between dedicated box and benchmarking table (direct score assignment)
      - Development opportunities filter excludes 0-score skills
      - Text sizing optimized to fit all explanation boxes on one page
+     - Both radar charts optimized to fit on one page with reduced chart height
+     - Executive summary moved from cover page to comprehensive conclusion at end
 
 8. **Admin API Endpoints**
    - GET `/api/admin/candidates` - Full candidate list with results, tags, notes
