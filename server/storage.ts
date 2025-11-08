@@ -56,6 +56,7 @@ export interface IStorage {
   getPurchasesByUser(userId: string): Promise<Purchase[]>;
   updatePurchaseStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updatePurchaseStripeSession(id: string, stripeSessionId: string): Promise<void>;
+  updatePurchase(id: string, updates: Partial<InsertPurchase>): Promise<void>;
   
   // Purchase item operations
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
@@ -239,6 +240,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(purchases)
       .set({ stripeSessionId })
+      .where(eq(purchases.id, id));
+  }
+
+  async updatePurchase(id: string, updates: Partial<InsertPurchase>): Promise<void> {
+    await db
+      .update(purchases)
+      .set(updates)
       .where(eq(purchases.id, id));
   }
 

@@ -10,6 +10,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
   - **Purchase Payment Tracking**: Added `resultsAccessPaid` boolean field to purchases table to track whether users can view results (true for paid users, false for invited users)
   - **Results Payment API**: Created `/api/unlock-results` endpoint that validates "FREE" discount code or creates Stripe checkout session for £0.31 results access (matching actual test costs: £0.30 computation + £0.01 tests)
   - **Payment Flow Completion**: Added `/api/process-results-payment` endpoint to mark results as accessible after successful Stripe payment
+  - **Consolidated Dashboard UX**: Replaced individual "View Results" buttons with single "View My Results" button showing all completed assessments
   - Fixed submit button messaging: Now shows "Your answers are being evaluated, please wait..." during assessment submission (especially for Prompt Architecture with GPT evaluation)
   - Improved mobile UX for AIQ assessment: Balanced font sizes with `text-base` for questions and `text-sm` for answers
   - Created `formatAssessmentName()` helper function to display clean assessment names (e.g., "AI Readiness" instead of "AI_READINESS")

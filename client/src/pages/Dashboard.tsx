@@ -78,28 +78,40 @@ export default function Dashboard() {
           {/* Completed Assessments */}
           {completedResults.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold mb-4">Completed Assessments</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {completedResults.map((result: any) => (
-                  <Card key={result.id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{formatAssessmentName(result.assessmentType)}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Completed {result.completedAt ? format(new Date(result.completedAt), 'MMM d, yyyy') : ''}
-                        </p>
-                      </div>
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
+              <h2 className="text-2xl font-semibold mb-4">Your Results</h2>
+              <Card className="p-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <h3 className="text-xl font-semibold">Assessments Complete</h3>
                     </div>
-                    <Link href={`/results/${result.id}`}>
-                      <Button variant="outline" className="w-full" data-testid={`button-view-result-${result.id}`}>
-                        View Results
+                    <p className="text-muted-foreground mb-4">
+                      You've completed {completedResults.length} assessment{completedResults.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {completedResults.map((result: any) => (
+                        <Badge key={result.id} variant="secondary">
+                          {formatAssessmentName(result.assessmentType)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Link href={`/results/${completedResults[0].id}`}>
+                      <Button size="lg" className="gap-2" data-testid="button-view-all-results">
+                        <FileText className="h-4 w-4" />
+                        View My Results
                       </Button>
                     </Link>
-                  </Card>
-                ))}
-              </div>
+                    {completedResults[0].completedAt && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        Last completed {format(new Date(completedResults[0].completedAt), 'MMM d, yyyy')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Card>
             </section>
           )}
 

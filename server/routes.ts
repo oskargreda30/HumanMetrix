@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { discountCode } = req.body;
       
       // Find the user's purchase (should have resultsAccessPaid = false)
-      const purchases = await storage.getPurchasesByUserId(userId);
+      const purchases = await storage.getPurchasesByUser(userId);
       const unpaidPurchase = purchases.find((p: any) => !p.resultsAccessPaid);
       
       if (!unpaidPurchase) {
@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
         // Grant free access
-        await storage.updatePurchase(unpaidPurchase.id, {
+        await storage.updatePurchase(unpaidPurchase.id.toString(), {
           resultsAccessPaid: true,
         });
         
@@ -311,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid session" });
       }
       
-      const purchaseId = parseInt(metadata.purchaseId);
+      const purchaseId = metadata.purchaseId;
       
       // Update purchase to grant results access
       await storage.updatePurchase(purchaseId, {
