@@ -7,8 +7,9 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 - **November 8, 2025**: 
   - **Comprehensive MyResults Page**: Created `/my-results` page showing ALL completed assessments in unified view with summary statistics, individual assessment cards with scores/top skills, and "Download Full Report" button for comprehensive PDF export
   - **Fixed PDF Export**: All 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ) now correctly appear in ASSESSMENT SUMMARY section of PDF; added radar chart visualization for FIT and AI Readiness in SKILLS VISUALIZATION section
-  - **Radar Charts in PDF**: Implemented offscreen radar chart rendering and capture system using html2canvas to include FIT and AI Readiness skill visualizations in exported PDFs
+  - **Radar Charts in PDF**: Implemented offscreen radar chart rendering and deterministic capture system with retry mechanism to ensure FIT and AI Readiness skill visualizations reliably appear in exported PDFs
   - **Prompt Architecture Data**: Fixed PDF export to fetch evaluations from dedicated `/api/prompt-evaluations` endpoint ensuring Prompt Architecture section populates correctly
+  - **PDF Formatting Fixes**: Reduced "Top Skill" font size from 14pt to 10pt and truncation from 15 to 10 characters to prevent text overflow in metrics boxes
   - **Assessment Completion Dialog**: Implemented completion popup that appears when users finish all 4 assessments, with differentiated messaging for paid vs invited users; redirects to `/my-results` page
   - **Results Payment Gate**: Added payment barrier for invited users who haven't paid yet, with support for "FREE" discount code (employer-sponsored)
   - **Purchase Payment Tracking**: Added `resultsAccessPaid` boolean field to purchases table to track whether users can view results (true for paid users, false for invited users)

@@ -245,9 +245,9 @@ export async function exportEnhancedCandidatePDF(
   
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [
-    { label: 'Skills Assessed', value: skills.length.toString() },
-    { label: 'Average Score', value: `${avgScore}/100` },
-    { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 15) || 'N/A' },
+    { label: 'Skills Assessed', value: skills.length.toString(), fontSize: 14 },
+    { label: 'Average Score', value: `${avgScore}/100`, fontSize: 14 },
+    { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 10) || 'N/A', fontSize: 10 },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -262,7 +262,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setTextColor(107, 114, 128);
     pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 8, { align: 'center' });
     
-    pdf.setFontSize(14);
+    pdf.setFontSize(metric.fontSize);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(metric.value, xPos + (boxWidth - 5) / 2, yPos + 18, { align: 'center' });

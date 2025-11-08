@@ -121,12 +121,48 @@ export default function MyResults() {
         }
       }
 
-      // Wait a bit for charts to render
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for charts to render with retry mechanism
+      const waitForElement = async (id: string, maxRetries = 10): Promise<boolean> => {
+        for (let i = 0; i < maxRetries; i++) {
+          const element = document.getElementById(id);
+          if (element && element.querySelector('svg')) {
+            return true;
+          }
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        return false;
+      };
 
-      // Capture radar charts
-      const fitChart = await captureRadarChart('fit-radar-chart-pdf');
-      const aiReadinessChart = await captureRadarChart('ai-readiness-radar-chart-pdf');
+      // Wait for both charts to be ready
+      const fitReady = await waitForElement('fit-radar-chart-pdf');
+      const aiReady = await waitForElement('ai-readiness-radar-chart-pdf');
+      
+      console.log('FIT chart ready:', fitReady);
+      console.log('AI chart ready:', aiReady);
+
+      // Capture radar charts with retry
+      let fitChart = null;
+      let aiReadinessChart = null;
+      
+      if (fitReady) {
+        for (let i = 0; i < 3; i++) {
+          fitChart = await captureRadarChart('fit-radar-chart-pdf');
+          if (fitChart) break;
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      if (aiReady) {
+        for (let i = 0; i < 3; i++) {
+          aiReadinessChart = await captureRadarChart('ai-readiness-radar-chart-pdf');
+          if (aiReadinessChart) break;
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      console.log('Captured FIT chart:', !!fitChart);
+      console.log('Captured AI chart:', !!aiReadinessChart);
+      console.log('Prompt arch data length:', promptArchData.length);
       
       const radarChartImages: any = {};
       if (fitChart) radarChartImages.fit = fitChart;
