@@ -7,12 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useBasket } from "@/contexts/BasketContext";
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const { clearBasket } = useBasket();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -34,6 +36,7 @@ export default function Navigation() {
     onSuccess: async () => {
       queryClient.setQueryData(["/api/auth/user"], null);
       await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      clearBasket(); // Clear basket on logout
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",

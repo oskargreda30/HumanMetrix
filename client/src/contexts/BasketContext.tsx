@@ -19,7 +19,7 @@ interface BasketContextType {
 const BasketContext = createContext<BasketContextType | undefined>(undefined);
 
 const STORAGE_KEY = "humanmetrix-basket";
-const BASE_FEE = 0.02;
+const BASE_FEE = 0.30;
 
 export function BasketProvider({ children }: { children: ReactNode }) {
   const [basketItems, setBasketItems] = useState<BasketItem[]>(() => {
