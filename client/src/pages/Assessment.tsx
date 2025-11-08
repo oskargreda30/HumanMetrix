@@ -83,6 +83,7 @@ export default function Assessment() {
     },
     onSuccess: (data: any) => {
       setResultId(data.id);
+      setShowInstructions(false); // Only close instructions AFTER successful start
       // Set remaining time from server (prevents bypass by refreshing)
       if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
@@ -246,7 +247,6 @@ export default function Assessment() {
   const instructions = getInstructions();
 
   const handleBeginAssessment = () => {
-    setShowInstructions(false);
     startMutation.mutate();
   };
 
