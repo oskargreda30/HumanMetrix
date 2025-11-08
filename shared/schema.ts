@@ -41,6 +41,7 @@ export const purchases = pgTable("purchases", {
   totalAmount: integer("total_amount").notNull(),
   baseFee: integer("base_fee").notNull().default(2),
   status: text("status").notNull().default("pending"),
+  resultsAccessPaid: boolean("results_access_paid").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 });

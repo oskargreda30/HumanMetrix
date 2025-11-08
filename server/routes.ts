@@ -127,6 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalAmount: session.amount_total || 0,
           baseFee: 2,
           status: "completed",
+          resultsAccessPaid: true, // Paid users can view results
           completedAt: new Date(),
         });
 
@@ -189,6 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalAmount: session.amount_total || 0,
         baseFee: 2,
         status: "completed",
+        resultsAccessPaid: true, // Paid users can view results
         completedAt: new Date(),
       });
 

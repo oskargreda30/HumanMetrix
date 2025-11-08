@@ -661,6 +661,7 @@ export class DatabaseStorage implements IStorage {
         totalAmount: BASE_FEE + Object.values(ASSESSMENT_PRICES).reduce((a, b) => a + b, 0),
         baseFee: BASE_FEE,
         status: 'completed',
+        resultsAccessPaid: true, // Paid users can view results
         completedAt: new Date(),
       })
       .returning();
@@ -705,6 +706,7 @@ export class DatabaseStorage implements IStorage {
         totalAmount: 0, // Free!
         baseFee: 0,
         status: 'completed',
+        resultsAccessPaid: false, // Invited users must pay to view results
         completedAt: new Date(),
       })
       .returning();
