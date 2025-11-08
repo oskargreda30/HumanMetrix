@@ -14,6 +14,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import html2canvas from "html2canvas";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
@@ -83,6 +84,62 @@ export default function CompareTab() {
     if (!comparison || !selectedCandidateData) return;
     
     try {
+      toast({
+        title: "Generating PDF...",
+        description: "Capturing charts and preparing your report...",
+      });
+
+      // Wait for charts to render
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Capture radar chart images
+      const fitChartImages: (string | null)[] = [];
+      const aiChartImages: (string | null)[] = [];
+
+      for (let i = 0; i < selectedCandidateData.length; i++) {
+        // Capture FIT radar chart
+        if (comparison.fitAssessments?.[i]) {
+          try {
+            const element = document.getElementById(`pdf-comparison-fit-${i}`);
+            if (element) {
+              const canvas = await html2canvas(element, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+              });
+              fitChartImages.push(canvas.toDataURL('image/png'));
+            } else {
+              fitChartImages.push(null);
+            }
+          } catch (err) {
+            console.error('Error capturing FIT chart:', err);
+            fitChartImages.push(null);
+          }
+        } else {
+          fitChartImages.push(null);
+        }
+
+        // Capture AI Readiness radar chart
+        if (comparison.aiReadinessAssessments?.[i]) {
+          try {
+            const element = document.getElementById(`pdf-comparison-ai-${i}`);
+            if (element) {
+              const canvas = await html2canvas(element, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+              });
+              aiChartImages.push(canvas.toDataURL('image/png'));
+            } else {
+              aiChartImages.push(null);
+            }
+          } catch (err) {
+            console.error('Error capturing AI chart:', err);
+            aiChartImages.push(null);
+          }
+        } else {
+          aiChartImages.push(null);
+        }
+      }
+
       await exportComparisonPDF({
         candidates: selectedCandidateData,
         skillComparison: comparison.skillComparison,
@@ -91,7 +148,10 @@ export default function CompareTab() {
         aiReadinessAssessments: comparison.aiReadinessAssessments || [],
         promptArchitectureAssessments: comparison.promptArchitectureAssessments || [],
         aiqAssessments: comparison.aiqAssessments || [],
+        fitChartImages,
+        aiChartImages,
       });
+      
       toast({
         title: "PDF exported successfully",
         description: "Your comparison report has been downloaded.",
@@ -663,6 +723,81 @@ export default function CompareTab() {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Hidden radar charts for PDF export */}
+      {comparison && selectedCandidates.length >= 2 && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          {/* FIT radar charts */}
+          {comparison.fitAssessments?.map((fitData, index) => {
+            if (!fitData) return null;
+            
+            const radarData = FIT_SKILLS.map(skill => ({
+              skill: skill.displayName,
+              score: fitData.scores[skill.key] || 0,
+            }));
+
+            return (
+              <div 
+                key={`fit-${index}`}
+                id={`pdf-comparison-fit-${index}`}
+                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+              >
+                <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
+                  {getCandidateName(selectedCandidateData?.[index])} - FIT
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar
+                      dataKey="score"
+                      stroke={CHART_COLORS[index]}
+                      fill={CHART_COLORS[index]}
+                      fillOpacity={0.5}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })}
+
+          {/* AI Readiness radar charts */}
+          {comparison.aiReadinessAssessments?.map((aiData, index) => {
+            if (!aiData) return null;
+            
+            const radarData = AI_READINESS_SKILLS.map(skill => ({
+              skill: skill.displayName,
+              score: aiData.scores[skill.key] || 0,
+            }));
+
+            return (
+              <div 
+                key={`ai-${index}`}
+                id={`pdf-comparison-ai-${index}`}
+                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+              >
+                <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
+                  {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar
+                      dataKey="score"
+                      stroke={CHART_COLORS[index]}
+                      fill={CHART_COLORS[index]}
+                      fillOpacity={0.5}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

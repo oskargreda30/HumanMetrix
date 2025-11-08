@@ -245,6 +245,20 @@ export const cachedRoleAlignments = pgTable("cached_role_alignments", {
     gap: number;
     alignment: string; // "excellent", "good", "fair", "poor"
   }[]>(),
+  fitSkillAlignments: jsonb("fit_skill_alignments").$type<{
+    skillName: string;
+    candidateScore: number;
+    requiredScore: number;
+    gap: number;
+    alignment: string;
+  }[]>(),
+  aiReadinessSkillAlignments: jsonb("ai_readiness_skill_alignments").$type<{
+    skillName: string;
+    candidateScore: number;
+    requiredScore: number;
+    gap: number;
+    alignment: string;
+  }[]>(),
   strengths: jsonb("strengths").notNull().$type<string[]>(),
   gaps: jsonb("gaps").notNull().$type<string[]>(),
   recommendations: text("recommendations").notNull(),

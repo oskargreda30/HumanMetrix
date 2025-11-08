@@ -28,6 +28,8 @@ interface ComparisonData {
   aiqAssessments: Array<{ totalScore: number; scores: Record<string, number>; completedAt: Date } | null>;
   skillComparison: Array<{ skillName: string; scores: Array<number | null> }>;
   averageScores: number[];
+  fitChartImages?: (string | null)[];
+  aiChartImages?: (string | null)[];
 }
 
 interface RoleFitData {
@@ -172,90 +174,81 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   let yPos = 30;
   
-  // ========== PAGE 1: COVER PAGE ==========
+  // ========== PAGE 1: COVER + SUMMARY ==========
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  // Title Section with blue background
+  // Title Section
   yPos = 50;
   pdf.setFillColor(59, 130, 246);
-  pdf.rect(0, yPos, pageWidth, 45, 'F');
+  pdf.rect(0, yPos, pageWidth, 35, 'F');
   
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(24);
+  pdf.setFontSize(22);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('CANDIDATE COMPARISON', pageWidth / 2, yPos + 15, { align: 'center' });
+  pdf.text('CANDIDATE COMPARISON', pageWidth / 2, yPos + 12, { align: 'center' });
   
-  pdf.setFontSize(16);
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('COMPREHENSIVE REPORT', pageWidth / 2, yPos + 25, { align: 'center' });
+  pdf.text('COMPREHENSIVE REPORT', pageWidth / 2, yPos + 20, { align: 'center' });
   
-  pdf.setFontSize(10);
-  pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 35, { align: 'center' });
+  pdf.setFontSize(9);
+  pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 27, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
   
-  // Candidates Information Cards
-  yPos = 110;
+  // Compact Candidate Cards
+  yPos = 95;
   data.candidates.forEach((candidate, index) => {
     const name = candidate.user.firstName || candidate.user.lastName
       ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
       : 'No Name';
     
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardY = yPos + (index * 45);
+    const cardY = yPos + (index * 35);
     
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     pdf.setLineWidth(0.5);
-    pdf.roundedRect(30, cardY, pageWidth - 60, 35, 3, 3, 'FD');
+    pdf.roundedRect(25, cardY, pageWidth - 50, 28, 2, 2, 'FD');
     pdf.setLineWidth(0.2);
     
-    pdf.setFontSize(11);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`CANDIDATE ${index + 1}`, 40, cardY + 10);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(name, 40, cardY + 18);
+    pdf.text(`CANDIDATE ${index + 1}`, 30, cardY + 8);
     
     pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(17, 24, 39);
+    const shortName = name.length > 25 ? name.substring(0, 23) + '...' : name;
+    pdf.text(shortName, 30, cardY + 15);
+    
+    pdf.setFontSize(7);
     pdf.setTextColor(107, 114, 128);
-    pdf.text(candidate.user.email, 40, cardY + 25);
+    const shortEmail = candidate.user.email.length > 30 ? candidate.user.email.substring(0, 28) + '...' : candidate.user.email;
+    pdf.text(shortEmail, 30, cardY + 21);
     
     const avgScore = data.averageScores[index];
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     const perf = getPerformanceLevel(avgScore);
     pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.text(`${avgScore}`, pageWidth - 50, cardY + 20, { align: 'right' });
+    pdf.text(`${avgScore}`, pageWidth - 35, cardY + 15, { align: 'right' });
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Avg Score', pageWidth - 50, cardY + 27, { align: 'right' });
+    pdf.text('Avg', pageWidth - 35, cardY + 21, { align: 'right' });
   });
   
+  yPos += (data.candidates.length * 35) + 10;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== PAGE 2: ASSESSMENT OVERVIEW ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
+  // Assessment Completion Status
+  yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
+  yPos += 3;
   
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'ASSESSMENT OVERVIEW', yPos, pageWidth);
-  yPos += 5;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(75, 85, 99);
-  pdf.text('Assessment completion status for each candidate', 20, yPos);
-  yPos += 10;
-  
-  // Assessment overview cards
-  const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
+  const assessmentNames = ['FIT', 'AI Readiness', 'Prompt Arch.', 'AIQ'];
   const assessmentData = [
     data.fitAssessments,
     data.aiReadinessAssessments,
@@ -263,114 +256,234 @@ export async function exportComparisonPDF(data: ComparisonData) {
     data.aiqAssessments
   ];
   
-  const cardWidth = (pageWidth - 50) / data.candidates.length;
-  
-  data.candidates.forEach((candidate, candIndex) => {
-    const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
-    const xPos = 20 + (candIndex * cardWidth);
-    
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(xPos, yPos, cardWidth - 5, 70, 2, 2, 'FD');
-    pdf.setLineWidth(0.2);
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    const name = candidate.user.firstName || candidate.user.lastName
-      ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-      : `Candidate ${candIndex + 1}`;
-    const shortName = name.length > 12 ? name.substring(0, 9) + '...' : name;
-    pdf.text(shortName, xPos + (cardWidth - 5) / 2, yPos + 8, { align: 'center' });
-    
-    const completed = assessmentData.filter(ad => (ad?.[candIndex] ?? null) !== null).length;
-    pdf.setFontSize(18);
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`${completed}/4`, xPos + (cardWidth - 5) / 2, yPos + 20, { align: 'center' });
-    
-    pdf.setFontSize(7);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Completed', xPos + (cardWidth - 5) / 2, yPos + 26, { align: 'center' });
-    
-    pdf.setFontSize(7);
-    assessmentNames.forEach((aName, aIndex) => {
-      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      pdf.setTextColor(isCompleted ? 34 : 200, isCompleted ? 197 : 200, isCompleted ? 94 : 200);
-      pdf.text(isCompleted ? '✓' : '○', xPos + 5, yPos + 35 + (aIndex * 7));
-      pdf.setTextColor(75, 85, 99);
-      const shortAssessName = aName.length > 10 ? aName.substring(0, 8) + '.' : aName;
-      pdf.text(shortAssessName, xPos + 10, yPos + 35 + (aIndex * 7));
-    });
-  });
-  
-  yPos += 80;
-  pdf.setTextColor(0, 0, 0);
-  
-  // ========== OVERALL SKILL COMPARISON ==========
-  yPos = addSectionHeader(pdf, 'OVERALL SKILL COMPARISON', yPos, pageWidth);
-  yPos += 5;
-  
-  pdf.setFontSize(8);
-  pdf.setTextColor(75, 85, 99);
-  pdf.text('Skill-by-skill comparison across all candidates', 20, yPos);
-  yPos += 8;
-  
-  // Table header
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Skill Name', 20, yPos);
-  
-  const scoreColWidth = (pageWidth - 90) / data.candidates.length;
+  pdf.text('Assessment', 25, yPos);
   data.candidates.forEach((candidate, index) => {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    const name = candidate.user.firstName || candidate.user.lastName
-      ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-      : `Cand ${index + 1}`;
-    const shortName = name.length > 10 ? name.substring(0, 8) + '.' : name;
-    pdf.text(shortName, 90 + (index * scoreColWidth), yPos);
+    pdf.text(`C${index + 1}`, 80 + (index * 25), yPos);
   });
-  
-  yPos += 2;
-  pdf.setDrawColor(220, 220, 220);
-  pdf.line(20, yPos, pageWidth - 20, yPos);
+  pdf.setTextColor(0, 0, 0);
   yPos += 5;
   
-  pdf.setFont('helvetica', 'normal');
-  data.skillComparison.forEach((skill, skillIndex) => {
-    if (yPos > pageHeight - 30) {
+  assessmentNames.forEach((aName, aIndex) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text(aName, 25, yPos);
+    
+    data.candidates.forEach((_, candIndex) => {
+      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
+      pdf.setTextColor(isCompleted ? 34 : 200, isCompleted ? 197 : 200, isCompleted ? 94 : 200);
+      pdf.text(isCompleted ? '✓' : '○', 85 + (candIndex * 25), yPos);
+    });
+    yPos += 6;
+  });
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== PAGE 2: RADAR CHARTS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  
+  // FIT Assessment Radar Charts
+  const hasFIT = data.fitAssessments?.some(a => a !== null);
+  if (hasFIT && data.fitChartImages) {
+    yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
+    yPos += 2;
+    
+    const fitCharts = data.fitChartImages.filter(img => img !== null);
+    const chartsPerRow = Math.min(fitCharts.length, 2);
+    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    const chartHeight = 65;
+    
+    fitCharts.forEach((image, index) => {
+      if (!image) return;
+      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+    });
+    
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 5;
+  }
+  
+  // AI Readiness Radar Charts
+  const hasAI = data.aiReadinessAssessments?.some(a => a !== null);
+  if (hasAI && data.aiChartImages) {
+    if (yPos > pageHeight - 80) {
       pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
     
-    if (skillIndex % 2 === 0) {
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(20, yPos - 4, pageWidth - 40, 7, 'F');
+    yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
+    yPos += 2;
+    
+    const aiCharts = data.aiChartImages.filter(img => img !== null);
+    const chartsPerRow = Math.min(aiCharts.length, 2);
+    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    const chartHeight = 65;
+    
+    aiCharts.forEach((image, index) => {
+      if (!image) return;
+      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+    });
+    
+    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5);
+  }
+  
+  // ========== PAGE 3: DETAILED COMPARISONS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  
+  // Prompt Architecture Summary
+  const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
+  if (hasPrompt) {
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE', yPos, pageWidth);
+    yPos += 2;
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Candidate', 25, yPos);
+    pdf.text('Total', 100, yPos);
+    pdf.text('Percentile', 130, yPos);
+    yPos += 5;
+    
+    data.candidates.forEach((candidate, index) => {
+      const promptData = data.promptArchitectureAssessments?.[index];
+      pdf.setFont('helvetica', 'normal');
+      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      
+      const name = candidate.user.firstName || candidate.user.lastName
+        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+        : `Candidate ${index + 1}`;
+      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
+      pdf.text(shortName, 25, yPos);
+      
+      if (promptData) {
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${promptData.totalScore}/100`, 100, yPos);
+        pdf.text(`${promptData.percentile}th`, 130, yPos);
+      } else {
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('N/A', 100, yPos);
+      }
+      yPos += 6;
+    });
+    yPos += 3;
+  }
+  
+  // AIQ Summary
+  const hasAIQ = data.aiqAssessments?.some(a => a !== null);
+  if (hasAIQ) {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
     }
     
-    pdf.setFontSize(8);
+    yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
+    yPos += 2;
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Candidate', 25, yPos);
+    pdf.text('Score', 100, yPos);
+    pdf.text('Status', 130, yPos);
+    yPos += 5;
+    
+    data.candidates.forEach((candidate, index) => {
+      const aiqData = data.aiqAssessments?.[index];
+      pdf.setFont('helvetica', 'normal');
+      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      
+      const name = candidate.user.firstName || candidate.user.lastName
+        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+        : `Candidate ${index + 1}`;
+      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
+      pdf.text(shortName, 25, yPos);
+      
+      if (aiqData) {
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${aiqData.totalScore}/100`, 100, yPos);
+        const passed = aiqData.totalScore >= 70;
+        pdf.setTextColor(passed ? 34 : 239, passed ? 197 : 68, passed ? 94 : 68);
+        pdf.text(passed ? 'Passed' : 'Developing', 130, yPos);
+      } else {
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('N/A', 100, yPos);
+      }
+      yPos += 6;
+    });
+    yPos += 3;
+  }
+  
+  // Condensed Skill Comparison
+  if (yPos > pageHeight - 60) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  }
+  
+  yPos = addSectionHeader(pdf, 'KEY SKILLS OVERVIEW', yPos, pageWidth);
+  yPos += 2;
+  
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Skill', 22, yPos);
+  
+  const scoreColWidth = (pageWidth - 75) / data.candidates.length;
+  data.candidates.forEach((candidate, index) => {
+    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(`C${index + 1}`, 75 + (index * scoreColWidth), yPos);
+  });
+  yPos += 4;
+  
+  pdf.setFont('helvetica', 'normal');
+  // Show only top 10 skills to guarantee fit within page
+  const topSkills = data.skillComparison.slice(0, Math.min(10, data.skillComparison.length));
+  
+  topSkills.forEach((skill, skillIndex) => {
+    if (skillIndex % 2 === 0) {
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(20, yPos - 3, pageWidth - 40, 5, 'F');
+    }
+    
+    pdf.setFontSize(6);
     pdf.setTextColor(55, 65, 81);
-    const skillName = skill.skillName.length > 28 ? skill.skillName.substring(0, 25) + '...' : skill.skillName;
+    const skillName = skill.skillName.length > 25 ? skill.skillName.substring(0, 23) + '...' : skill.skillName;
     pdf.text(skillName, 22, yPos);
     
     skill.scores.forEach((score, index) => {
-      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
       if (score !== null) {
-        pdf.setFont('helvetica', 'bold');
         const perf = getPerformanceLevel(score);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`${score}`, 95 + (index * scoreColWidth), yPos);
+        pdf.text(`${score}`, 78 + (index * scoreColWidth), yPos);
       } else {
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(150, 150, 150);
-        pdf.text('N/A', 95 + (index * scoreColWidth), yPos);
+        pdf.text('-', 78 + (index * scoreColWidth), yPos);
       }
     });
     
-    yPos += 7;
+    yPos += 5;
   });
   
   pdf.setTextColor(0, 0, 0);

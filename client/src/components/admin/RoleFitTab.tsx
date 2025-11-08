@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -205,58 +205,182 @@ export default function RoleFitTab() {
             </CardContent>
           </Card>
 
-          {/* Skill Alignments */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Skill-by-Skill Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {alignment.skillAlignments?.map((skill: any, index: number) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{skill.skillName}</span>
-                        {skill.gap > 0 ? (
-                          <TrendingDown className="h-4 w-4 text-destructive" />
-                        ) : (
-                          <TrendingUp className="h-4 w-4 text-green-600" />
-                        )}
+          {/* FIT Skill Alignments */}
+          {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-blue-600" />
+                  FIT Assessment Skills (Behavioral)
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Behavioral competencies and workplace adaptability
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.fitSkillAlignments.map((skill: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{skill.skillName}</span>
+                          {skill.gap > 0 ? (
+                            <TrendingDown className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          )}
+                        </div>
+                        <Badge
+                          variant={
+                            skill.alignment === 'excellent'
+                              ? 'default'
+                              : skill.alignment === 'good'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                        >
+                          {skill.alignment}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={
-                          skill.alignment === 'excellent'
-                            ? 'default'
-                            : skill.alignment === 'good'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                      >
-                        {skill.alignment}
-                      </Badge>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Candidate Score</p>
+                          <p className="font-semibold">{skill.candidateScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Required Score</p>
+                          <p className="font-semibold">{skill.requiredScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gap</p>
+                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                          </p>
+                        </div>
+                      </div>
+                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Candidate Score</p>
-                        <p className="font-semibold">{skill.candidateScore}%</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Readiness Skill Alignments */}
+          {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  AI Readiness Skills (Technical)
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  AI collaboration capabilities and technical fluency
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{skill.skillName}</span>
+                          {skill.gap > 0 ? (
+                            <TrendingDown className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          )}
+                        </div>
+                        <Badge
+                          variant={
+                            skill.alignment === 'excellent'
+                              ? 'default'
+                              : skill.alignment === 'good'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                        >
+                          {skill.alignment}
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Required Score</p>
-                        <p className="font-semibold">{skill.requiredScore}%</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Candidate Score</p>
+                          <p className="font-semibold">{skill.candidateScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Required Score</p>
+                          <p className="font-semibold">{skill.requiredScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gap</p>
+                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Gap</p>
-                        <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                          {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                        </p>
-                      </div>
+                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
-                    <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Overall Skill Alignments (fallback if specific ones not available) */}
+          {(!alignment.fitSkillAlignments && !alignment.aiReadinessSkillAlignments && alignment.skillAlignments) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Skill-by-Skill Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.skillAlignments.map((skill: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{skill.skillName}</span>
+                          {skill.gap > 0 ? (
+                            <TrendingDown className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          )}
+                        </div>
+                        <Badge
+                          variant={
+                            skill.alignment === 'excellent'
+                              ? 'default'
+                              : skill.alignment === 'good'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                        >
+                          {skill.alignment}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Candidate Score</p>
+                          <p className="font-semibold">{skill.candidateScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Required Score</p>
+                          <p className="font-semibold">{skill.requiredScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gap</p>
+                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                          </p>
+                        </div>
+                      </div>
+                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Strengths and Gaps */}
           <div className="grid gap-6 md:grid-cols-2">

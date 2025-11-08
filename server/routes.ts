@@ -1153,13 +1153,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      // Aggregate candidate skills from all assessments
+      // Aggregate candidate skills from all assessments, separated by type
       const candidateSkills = new Map<string, number>();
+      const fitSkills = new Map<string, number>();
+      const aiReadinessSkills = new Map<string, number>();
+      
       completedResults.forEach((result) => {
         if (result.scores && typeof result.scores === 'object') {
           Object.entries(result.scores).forEach(([skill, score]) => {
             const currentScore = candidateSkills.get(skill) || 0;
             candidateSkills.set(skill, Math.max(currentScore, score as number));
+            
+            // Categorize by assessment type
+            if (result.assessmentType === 'fit') {
+              fitSkills.set(skill, score as number);
+            } else if (result.assessmentType === 'ai_readiness') {
+              aiReadinessSkills.set(skill, score as number);
+            }
           });
         }
       });
@@ -1175,6 +1185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 CANDIDATE SKILLS:
 ${Array.from(candidateSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n')}
 
+FIT ASSESSMENT SKILLS (Behavioral):
+${fitSkills.size > 0 ? Array.from(fitSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n') : 'Not completed'}
+
+AI READINESS SKILLS (Technical):
+${aiReadinessSkills.size > 0 ? Array.from(aiReadinessSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n') : 'Not completed'}
+
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 REQUIRED COMPETENCIES:
@@ -1183,15 +1199,19 @@ ${role.competencies.map((c: any) => `- ${c.skillName}: Importance ${c.importance
 Analyze how well this candidate fits this role. Provide:
 1. Overall fit score (0-100)
 2. Skill-by-skill alignment (excellent/good/fair/poor for each required competency)
-3. Top 3-5 strengths specific to this role
-4. Top 3-5 development areas/gaps
-5. Practical recommendations for hiring manager
-6. Any risk flags or concerns
+3. SEPARATE FIT skill alignments (if FIT assessment completed)
+4. SEPARATE AI Readiness skill alignments (if AI Readiness completed)
+5. Top 3-5 strengths specific to this role
+6. Top 3-5 development areas/gaps
+7. Practical recommendations for hiring manager
+8. Any risk flags or concerns
 
 Format your response as JSON with this structure:
 {
   "overallFit": number,
   "skillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}],
+  "fitSkillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}] | null,
+  "aiReadinessSkillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}] | null,
   "strengths": [string],
   "gaps": [string],
   "recommendations": string,
@@ -1216,6 +1236,8 @@ Format your response as JSON with this structure:
         jobRoleId,
         overallFit: analysis.overallFit,
         skillAlignments: analysis.skillAlignments,
+        fitSkillAlignments: analysis.fitSkillAlignments || null,
+        aiReadinessSkillAlignments: analysis.aiReadinessSkillAlignments || null,
         strengths: analysis.strengths,
         gaps: analysis.gaps,
         recommendations: analysis.recommendations,
