@@ -630,7 +630,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFillColor(fitColor[0], fitColor[1], fitColor[2]);
   pdf.roundedRect(barX, yPos + 1, fillWidth, barHeight, 1, 1, 'F');
   
-  yPos += 10;
+  yPos += 12;
   pdf.setTextColor(0, 0, 0);
   
   // ========== KEY STRENGTHS (on page 1, compact two-column) ==========
@@ -640,9 +640,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFontSize(6);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
-  yPos += 4;
+  yPos += 5;
   
-  pdf.setFontSize(6.5);
+  pdf.setFontSize(7.5);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for strengths
@@ -663,10 +663,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(22, 101, 52);
     const strengthLines = pdf.splitTextToSize(strength, strengthColWidth - 6);
     strengthLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, currentX + 4, currentY + (lineIdx * 2.5));
+      pdf.text(line, currentX + 4, currentY + (lineIdx * 3));
     });
     
-    const itemHeight = strengthLines.length * 2.5 + 1.5;
+    const itemHeight = strengthLines.length * 3 + 2;
     
     if (onStrengthLeftCol) {
       strengthLeftY += itemHeight;
@@ -677,7 +677,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     onStrengthLeftCol = !onStrengthLeftCol;
   });
   
-  yPos = Math.max(strengthLeftY, strengthRightY) + 4;
+  yPos = Math.max(strengthLeftY, strengthRightY) + 6;
   pdf.setTextColor(0, 0, 0);
   
   // ========== DEVELOPMENT AREAS (on page 1, compact two-column) ==========
@@ -687,9 +687,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFontSize(6);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
-  yPos += 4;
+  yPos += 5;
   
-  pdf.setFontSize(6.5);
+  pdf.setFontSize(7.5);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for gaps
@@ -710,10 +710,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(127, 29, 29);
     const gapLines = pdf.splitTextToSize(gap, gapColWidth - 6);
     gapLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, currentX + 4, currentY + (lineIdx * 2.5));
+      pdf.text(line, currentX + 4, currentY + (lineIdx * 3));
     });
     
-    const itemHeight = gapLines.length * 2.5 + 1.5;
+    const itemHeight = gapLines.length * 3 + 2;
     
     if (onGapLeftCol) {
       gapLeftY += itemHeight;
@@ -793,7 +793,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
       pdf.text(gapText, 153, yPos);
       
-      // Mini progress bar
+      // Mini progress bar - color coded based on comparison to required score
       const miniBarWidth = 18;
       const miniBarHeight = 2.5;
       const barX = 165;
@@ -802,7 +802,21 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.rect(barX, yPos - 1.5, miniBarWidth, miniBarHeight, 'F');
       
       const skillFillWidth = (skill.candidateScore / 100) * miniBarWidth;
-      pdf.setFillColor(scorePerf.color[0], scorePerf.color[1], scorePerf.color[2]);
+      
+      // Determine bar color based on comparison to required score
+      let barColor: [number, number, number];
+      if (skill.candidateScore > skill.requiredScore) {
+        // Exceeds - green
+        barColor = [34, 197, 94];
+      } else if (skill.candidateScore === skill.requiredScore) {
+        // Matches - blue
+        barColor = [59, 130, 246];
+      } else {
+        // Under - light red
+        barColor = [248, 113, 113];
+      }
+      
+      pdf.setFillColor(barColor[0], barColor[1], barColor[2]);
       pdf.rect(barX, yPos - 1.5, skillFillWidth, miniBarHeight, 'F');
       
       yPos += 7;
