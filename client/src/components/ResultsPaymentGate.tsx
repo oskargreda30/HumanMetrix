@@ -18,7 +18,13 @@ export function ResultsPaymentGate() {
       const response = await apiRequest("POST", "/api/unlock-results", {
         discountCode: code || undefined,
       });
-      return response;
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to unlock results");
+      }
+      
+      return await response.json();
     },
     onSuccess: async (data: any) => {
       if (data.free) {
