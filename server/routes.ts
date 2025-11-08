@@ -258,12 +258,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         line_items: [
           {
             price_data: {
-              currency: 'usd',
+              currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
                 description: 'Unlock your assessment results and download your professional PDF report',
               },
-              unit_amount: 2000, // $20 for results access
+              unit_amount: 31, // £0.31 (0.30 computation + 0.01 tests)
             },
             quantity: 1,
           },

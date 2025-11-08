@@ -140,7 +140,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results {discountCode ? "(Free)" : "($20)"}
+                Unlock Results {discountCode ? "(Free)" : "(£0.31)"}
               </>
             )}
           </Button>

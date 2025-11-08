@@ -8,7 +8,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
   - **Assessment Completion Dialog**: Implemented completion popup that appears when users finish all 4 assessments, with differentiated messaging for paid vs invited users
   - **Results Payment Gate**: Added payment barrier for invited users who haven't paid yet, with support for "FREE" discount code (employer-sponsored)
   - **Purchase Payment Tracking**: Added `resultsAccessPaid` boolean field to purchases table to track whether users can view results (true for paid users, false for invited users)
-  - **Results Payment API**: Created `/api/unlock-results` endpoint that validates "FREE" discount code or creates Stripe checkout session for $20 results access
+  - **Results Payment API**: Created `/api/unlock-results` endpoint that validates "FREE" discount code or creates Stripe checkout session for £0.31 results access (matching actual test costs: £0.30 computation + £0.01 tests)
   - **Payment Flow Completion**: Added `/api/process-results-payment` endpoint to mark results as accessible after successful Stripe payment
   - Fixed submit button messaging: Now shows "Your answers are being evaluated, please wait..." during assessment submission (especially for Prompt Architecture with GPT evaluation)
   - Improved mobile UX for AIQ assessment: Balanced font sizes with `text-base` for questions and `text-sm` for answers
@@ -44,7 +44,7 @@ The frontend is built with React + TypeScript, utilizing Shadcn UI and Tailwind 
     - **Algorithmic Integrity Quotient (AIQ)**: Tests understanding of AI ethics and responsible deployment.
 - **User Flows**: 
     - **Paid Users**: Purchase assessments directly → Complete assessments → View results immediately → Download PDF
-    - **Invited Users**: Receive free assessment access → Complete assessments → Unlock results with "FREE" code or $20 payment → View results and download PDF
+    - **Invited Users**: Receive free assessment access → Complete assessments → Unlock results with "FREE" code or £0.31 payment → View results and download PDF
     - Employer-driven candidate invitations with optional payment coverage
 - **Admin Dashboard**: Provides tools for candidate management (search, filter, tags, notes), multi-candidate comparison with radar charts, and AI-powered role fit analysis with cached results.
 - **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including skill visualizations, assessment summaries, and candidate recommendations. Optimized for hiring managers.
