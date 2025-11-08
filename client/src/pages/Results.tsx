@@ -559,44 +559,6 @@ export default function Results() {
             )}
           </Card>
 
-          {/* Interpretation Guide */}
-          <Card className="p-8">
-            <h2 className="text-2xl font-semibold mb-4">Score Interpretation</h2>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <Badge variant="secondary" className="min-w-[100px] justify-center">
-                  80-100
-                </Badge>
-                <p className="text-muted-foreground">
-                  <strong>Excellent:</strong> You demonstrate exceptional proficiency in this area
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <Badge variant="secondary" className="min-w-[100px] justify-center">
-                  60-79
-                </Badge>
-                <p className="text-muted-foreground">
-                  <strong>Strong:</strong> You show strong capabilities with room for further development
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <Badge variant="secondary" className="min-w-[100px] justify-center">
-                  40-59
-                </Badge>
-                <p className="text-muted-foreground">
-                  <strong>Developing:</strong> You have foundational skills that can be built upon
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <Badge variant="secondary" className="min-w-[100px] justify-center">
-                  0-39
-                </Badge>
-                <p className="text-muted-foreground">
-                  <strong>Emerging:</strong> This is an area for focused learning and growth
-                </p>
-              </div>
-            </div>
-          </Card>
         </div>
       </main>
       <Footer />
