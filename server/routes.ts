@@ -642,61 +642,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create user account with temporary password
       let temporaryPassword = '';
-      try {
-        const bcrypt = await import("bcryptjs");
-        const { sendWelcomeEmailWithPassword } = await import("./email");
-        const crypto = await import("crypto");
+      const bcrypt = await import("bcryptjs");
+      const { sendWelcomeEmailWithPassword } = await import("./email");
+      const crypto = await import("crypto");
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(validatedData.candidateEmail);
+      
+      if (!existingUser) {
+        // Generate temporary password using crypto for randomness
+        const words = [
+          "ocean", "mountain", "forest", "river", "cloud",
+          "storm", "dawn", "sunset", "moon", "star",
+          "wind", "rain", "snow", "fire", "earth",
+          "sky", "wave", "thunder", "lightning", "rainbow"
+        ];
         
-        // Check if user already exists
-        const existingUser = await storage.getUserByEmail(validatedData.candidateEmail);
+        const word1 = words[crypto.randomInt(0, words.length)];
+        const word2 = words[crypto.randomInt(0, words.length)];
+        const word3 = words[crypto.randomInt(0, words.length)];
+        const digits = crypto.randomInt(10, 100).toString();
         
-        if (!existingUser) {
-          // Generate temporary password using crypto for randomness
-          const words = [
-            "ocean", "mountain", "forest", "river", "cloud",
-            "storm", "dawn", "sunset", "moon", "star",
-            "wind", "rain", "snow", "fire", "earth",
-            "sky", "wave", "thunder", "lightning", "rainbow"
-          ];
-          
-          const word1 = words[crypto.randomInt(0, words.length)];
-          const word2 = words[crypto.randomInt(0, words.length)];
-          const word3 = words[crypto.randomInt(0, words.length)];
-          const digits = crypto.randomInt(10, 100).toString();
-          
-          temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
-          const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-          
-          // Extract first and last name from candidateName
-          const nameParts = validatedData.candidateName.split(' ');
-          const firstName = nameParts[0] || validatedData.candidateName;
-          const lastName = nameParts.slice(1).join(' ') || null;
-          
-          // Create user account
-          await storage.createUser({
-            email: validatedData.candidateEmail,
-            passwordHash,
-            firstName,
-            lastName,
-            profileImageUrl: null,
-          });
-          
-          // Grant free access to all assessments
-          const newUser = await storage.getUserByEmail(validatedData.candidateEmail);
-          if (newUser) {
-            await storage.createFreeAssessmentsForUser(newUser.id);
-          }
-          
-          // Send welcome email with credentials
-          await sendWelcomeEmailWithPassword(
-            validatedData.candidateEmail,
-            validatedData.candidateName,
-            temporaryPassword
-          );
+        temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
+        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+        
+        // Extract first and last name from candidateName
+        const nameParts = validatedData.candidateName.split(' ');
+        const firstName = nameParts[0] || validatedData.candidateName;
+        const lastName = nameParts.slice(1).join(' ') || null;
+        
+        // Create user account
+        console.log(`Creating user account for ${validatedData.candidateEmail}`);
+        await storage.createUser({
+          email: validatedData.candidateEmail,
+          passwordHash,
+          firstName,
+          lastName,
+          profileImageUrl: null,
+        });
+        
+        // Grant free access to all assessments
+        const newUser = await storage.getUserByEmail(validatedData.candidateEmail);
+        if (!newUser) {
+          throw new Error("Failed to create user account");
         }
-      } catch (emailError) {
-        console.error("Error creating user or sending email:", emailError);
-        // Continue even if email fails - admin can manually share credentials
+        
+        console.log(`Granting free assessments to user ${newUser.id}`);
+        await storage.createFreeAssessmentsForUser(newUser.id);
+        
+        // Send welcome email with credentials
+        console.log(`Sending welcome email to ${validatedData.candidateEmail}`);
+        await sendWelcomeEmailWithPassword(
+          validatedData.candidateEmail,
+          validatedData.candidateName,
+          temporaryPassword
+        );
+        
+        console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
+      } else {
+        console.log(`User ${validatedData.candidateEmail} already exists, skipping account creation`);
       }
 
       res.json({
