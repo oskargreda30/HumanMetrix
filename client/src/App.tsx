@@ -15,6 +15,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
+import MyResults from "@/pages/MyResults";
 import Purchase from "@/pages/Purchase";
 import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import Terms from "@/pages/Terms";
@@ -44,6 +45,13 @@ function Router() {
         {() => (
           <ProtectedRoute>
             <Assessment />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/my-results">
+        {() => (
+          <ProtectedRoute>
+            <MyResults />
           </ProtectedRoute>
         )}
       </Route>

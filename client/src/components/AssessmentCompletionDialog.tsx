@@ -55,7 +55,7 @@ export function AssessmentCompletionDialog({
         </div>
 
         <DialogFooter className="sm:justify-center">
-          <Link href="/dashboard">
+          <Link href="/my-results">
             <Button className="w-full sm:w-auto" data-testid="button-view-results">
               {isPaidUser ? "View My Results" : "Unlock Results"}
             </Button>
