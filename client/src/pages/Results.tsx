@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import { PromptArchitectureResults } from "@/components/PromptArchitectureResults";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
+import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 
 // Helper function to generate comprehensive analysis
 function generateAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number) {
@@ -182,9 +183,17 @@ export default function Results() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
+  // Check if user has paid for results access
+  const { data: purchases } = useQuery<any[]>({
+    queryKey: ["/api/purchases"],
+    enabled: isAuthenticated,
+  });
+
+  const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
+
   const { data: result, isLoading } = useQuery({
     queryKey: ["/api/results", id],
-    enabled: isAuthenticated && !!id,
+    enabled: isAuthenticated && !!id && hasPaidForResults !== false,
   });
 
   // Fetch all user results for PDF generation
@@ -263,6 +272,11 @@ export default function Results() {
       });
     }
   };
+
+  // Show payment gate if user hasn't paid for results access
+  if (hasPaidForResults === false) {
+    return <ResultsPaymentGate />;
+  }
 
   if (isLoading || !result) {
     return (

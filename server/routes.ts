@@ -222,6 +222,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Results payment endpoint (for invited users)
+  app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { discountCode } = req.body;
+      
+      // Find the user's purchase (should have resultsAccessPaid = false)
+      const purchases = await storage.getPurchasesByUserId(userId);
+      const unpaidPurchase = purchases.find((p: any) => !p.resultsAccessPaid);
+      
+      if (!unpaidPurchase) {
+        return res.status(400).json({ 
+          message: "No purchase found requiring payment" 
+        });
+      }
+      
+      // Check if discount code is "FREE" (case-insensitive)
+      if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
+        // Grant free access
+        await storage.updatePurchase(unpaidPurchase.id, {
+          resultsAccessPaid: true,
+        });
+        
+        return res.json({ 
+          success: true, 
+          message: "Results unlocked successfully",
+          free: true 
+        });
+      }
+      
+      // Otherwise, create Stripe checkout session for results payment
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: 'Assessment Results Access',
+                description: 'Unlock your assessment results and download your professional PDF report',
+              },
+              unit_amount: 2000, // $20 for results access
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=success`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=cancelled`,
+        metadata: {
+          userId: userId.toString(),
+          purchaseId: unpaidPurchase.id.toString(),
+          isResultsPayment: 'true',
+        },
+      });
+      
+      res.json({ 
+        success: true, 
+        sessionUrl: session.url,
+        free: false 
+      });
+    } catch (error: any) {
+      console.error("Error unlocking results:", error);
+      res.status(500).json({ 
+        message: "Failed to process request: " + error.message 
+      });
+    }
+  });
+
+  // Process results payment success (webhook or callback)
+  app.post("/api/process-results-payment", isAuthenticated, async (req: any, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+      
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (!session || session.payment_status !== "paid") {
+        return res.status(400).json({ message: "Payment not completed" });
+      }
+      
+      const metadata = session.metadata;
+      if (!metadata || metadata.isResultsPayment !== 'true') {
+        return res.status(400).json({ message: "Invalid session" });
+      }
+      
+      const purchaseId = parseInt(metadata.purchaseId);
+      
+      // Update purchase to grant results access
+      await storage.updatePurchase(purchaseId, {
+        resultsAccessPaid: true,
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Results access granted" 
+      });
+    } catch (error: any) {
+      console.error("Error processing results payment:", error);
+      res.status(500).json({ 
+        message: "Failed to process payment: " + error.message 
+      });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
