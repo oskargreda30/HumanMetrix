@@ -511,338 +511,463 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     ? `${data.candidate.user.firstName || ''} ${data.candidate.user.lastName || ''}`.trim()
     : 'Candidate';
   
-  // ========== PAGE 1: COVER PAGE ==========
+  // ========== PAGE 1: COVER + OVERALL FIT SCORE ==========
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  // Title Section with blue background
-  yPos = 50;
+  // Title Section with blue background (compact)
+  yPos = 40;
   pdf.setFillColor(59, 130, 246);
-  pdf.rect(0, yPos, pageWidth, 45, 'F');
+  pdf.rect(0, yPos, pageWidth, 35, 'F');
   
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(24);
+  pdf.setFontSize(22);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('ROLE FIT ANALYSIS', pageWidth / 2, yPos + 15, { align: 'center' });
-  
-  pdf.setFontSize(16);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('COMPREHENSIVE REPORT', pageWidth / 2, yPos + 25, { align: 'center' });
-  
-  pdf.setFontSize(10);
-  pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 35, { align: 'center' });
-  
-  pdf.setTextColor(0, 0, 0);
-  
-  // Candidate Information Card
-  yPos = 110;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(30, yPos, pageWidth - 60, 40, 3, 3, 'FD');
-  
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('CANDIDATE', 40, yPos + 10);
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text(candidateName, 40, yPos + 20);
+  pdf.text('ROLE FIT ANALYSIS', pageWidth / 2, yPos + 13, { align: 'center' });
   
   pdf.setFontSize(9);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text(data.candidate.user.email, 40, yPos + 28);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 25, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
   
-  // Role Information Card
-  yPos = 160;
+  // Candidate & Role Information (compact, side-by-side)
+  yPos = 85;
+  
+  // Candidate card (left)
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
-  const roleCardHeight = data.role.description ? 55 : 40;
-  pdf.roundedRect(30, yPos, pageWidth - 60, roleCardHeight, 3, 3, 'FD');
+  pdf.roundedRect(20, yPos, (pageWidth - 45) / 2, 30, 2, 2, 'FD');
   
-  pdf.setFontSize(11);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(55, 65, 81);
-  pdf.text('TARGET ROLE', 40, yPos + 10);
+  pdf.text('CANDIDATE', 25, yPos + 8);
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(data.role.name, 40, yPos + 20);
+  pdf.text(candidateName, 25, yPos + 16);
+  
+  pdf.setFontSize(7);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text(data.candidate.user.email, 25, yPos + 22);
+  
+  // Role card (right) with dynamic height
+  const roleX = (pageWidth + 5) / 2;
+  
+  // Calculate dynamic card height based on description
+  let roleCardHeight = 30;
+  let descLineCount = 0;
+  if (data.role.description) {
+    const tempDescLines = pdf.splitTextToSize(data.role.description, (pageWidth - 55) / 2);
+    descLineCount = tempDescLines.length;
+    roleCardHeight = Math.max(30, 20 + (descLineCount * 2.5));
+  }
+  
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(roleX, yPos, (pageWidth - 45) / 2, roleCardHeight, 2, 2, 'FD');
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(55, 65, 81);
+  pdf.text('TARGET ROLE', roleX + 5, yPos + 8);
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(data.role.name, roleX + 5, yPos + 16);
   
   if (data.role.description) {
-    pdf.setFontSize(8);
+    pdf.setFontSize(6);
     pdf.setTextColor(107, 114, 128);
-    const descLines = pdf.splitTextToSize(data.role.description, pageWidth - 80);
-    descLines.forEach((line: string, index: number) => {
-      pdf.text(line, 40, yPos + 28 + (index * 4));
+    const descLines = pdf.splitTextToSize(data.role.description, (pageWidth - 55) / 2);
+    // Render full description
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, roleX + 5, yPos + 22 + (idx * 2.5));
     });
   }
   
   pdf.setTextColor(0, 0, 0);
   
-  // ========== PAGE 2: OVERALL FIT SCORE ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
+  // OVERALL FIT SCORE (on page 1)
+  yPos = 125;
   yPos = addSectionHeader(pdf, 'OVERALL FIT SCORE', yPos, pageWidth);
-  yPos += 10;
+  yPos += 8;
   
   const fitColor = data.alignment.overallFit >= 80 ? [34, 197, 94] : 
                    data.alignment.overallFit >= 60 ? [234, 179, 8] : [239, 68, 68];
   const fitLabel = data.alignment.overallFit >= 80 ? 'Excellent Fit' : 
                    data.alignment.overallFit >= 60 ? 'Good Fit' : 'Needs Development';
   
-  // Large score display card
+  // Compact score display card
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.setLineWidth(1);
-  pdf.roundedRect(40, yPos, pageWidth - 80, 60, 3, 3, 'FD');
+  pdf.setLineWidth(0.8);
+  pdf.roundedRect(30, yPos, pageWidth - 60, 50, 3, 3, 'FD');
   pdf.setLineWidth(0.2);
   
-  pdf.setFontSize(48);
+  pdf.setFontSize(42);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.text(`${data.alignment.overallFit}%`, pageWidth / 2, yPos + 30, { align: 'center' });
+  pdf.text(`${data.alignment.overallFit}%`, pageWidth / 2, yPos + 26, { align: 'center' });
   
-  pdf.setFontSize(14);
+  pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(fitLabel, pageWidth / 2, yPos + 45, { align: 'center' });
+  pdf.text(fitLabel, pageWidth / 2, yPos + 38, { align: 'center' });
   
-  yPos += 70;
+  yPos += 58;
   pdf.setTextColor(0, 0, 0);
   
-  // Visual gauge (progress bar)
-  pdf.setFontSize(9);
+  // Visual gauge (compact)
+  pdf.setFontSize(8);
   pdf.setTextColor(75, 85, 99);
-  pdf.text('Alignment Strength', 40, yPos);
-  yPos += 5;
+  pdf.text('Alignment Strength', 30, yPos);
+  yPos += 4;
   
-  const barWidth = pageWidth - 80;
-  const barHeight = 8;
+  const barWidth = pageWidth - 60;
+  const barHeight = 6;
   
   pdf.setFillColor(229, 231, 235);
-  pdf.roundedRect(40, yPos, barWidth, barHeight, 2, 2, 'F');
+  pdf.roundedRect(30, yPos, barWidth, barHeight, 2, 2, 'F');
   
   const fillWidth = (data.alignment.overallFit / 100) * barWidth;
   pdf.setFillColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.roundedRect(40, yPos, fillWidth, barHeight, 2, 2, 'F');
+  pdf.roundedRect(30, yPos, fillWidth, barHeight, 2, 2, 'F');
   
-  yPos += 15;
+  yPos += 12;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== SKILL ALIGNMENT ANALYSIS ==========
+  // ========== PAGE 2: SKILL ALIGNMENT ANALYSIS + STRENGTHS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
-  yPos += 5;
+  yPos += 3;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setTextColor(75, 85, 99);
-  pdf.text('Detailed skill-by-skill alignment with role requirements', 20, yPos);
-  yPos += 8;
+  pdf.text('Skill-by-skill alignment with role requirements', 20, yPos);
+  yPos += 6;
   
-  // Table header
-  pdf.setFontSize(8);
+  // Compact table header
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text('Skill', 22, yPos);
-  pdf.text('Your Score', 95, yPos);
-  pdf.text('Required', 130, yPos);
-  pdf.text('Gap', 160, yPos);
+  pdf.text('Score', 105, yPos);
+  pdf.text('Req', 130, yPos);
+  pdf.text('Gap', 150, yPos);
   
   yPos += 2;
   pdf.setDrawColor(220, 220, 220);
   pdf.line(20, yPos, pageWidth - 20, yPos);
-  yPos += 5;
+  yPos += 4;
+  
+  // Limit to top 12 skills to ensure page 2 fits
+  const topSkills = data.alignment.skillAlignments.slice(0, 12);
   
   pdf.setFont('helvetica', 'normal');
-  data.alignment.skillAlignments.forEach((skill, index) => {
-    if (yPos > pageHeight - 30) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
+  topSkills.forEach((skill, index) => {
     if (index % 2 === 0) {
       pdf.setFillColor(249, 250, 251);
-      pdf.rect(20, yPos - 4, pageWidth - 40, 10, 'F');
+      pdf.rect(20, yPos - 3, pageWidth - 40, 7, 'F');
     }
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setTextColor(55, 65, 81);
-    const skillName = skill.skillName.length > 30 ? skill.skillName.substring(0, 27) + '...' : skill.skillName;
+    const skillName = skill.skillName.length > 35 ? skill.skillName.substring(0, 32) + '...' : skill.skillName;
     pdf.text(skillName, 22, yPos);
     
     const scorePerf = getPerformanceLevel(skill.candidateScore);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(scorePerf.color[0], scorePerf.color[1], scorePerf.color[2]);
-    pdf.text(`${skill.candidateScore}`, 100, yPos);
+    pdf.text(`${skill.candidateScore}`, 110, yPos);
     
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(`${skill.requiredScore}`, 135, yPos);
+    pdf.text(`${skill.requiredScore}`, 133, yPos);
     
     const gapText = skill.gap > 0 ? `-${skill.gap}` : `+${Math.abs(skill.gap)}`;
     const gapColor = skill.gap <= 0 ? [34, 197, 94] : [239, 68, 68];
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
-    pdf.text(gapText, 165, yPos);
+    pdf.text(gapText, 153, yPos);
     
-    // Progress bar for each skill
-    const miniBarWidth = 20;
-    const miniBarHeight = 3;
-    const barX = 145;
+    // Mini progress bar
+    const miniBarWidth = 18;
+    const miniBarHeight = 2.5;
+    const barX = 165;
     
     pdf.setFillColor(229, 231, 235);
-    pdf.rect(barX, yPos - 2, miniBarWidth, miniBarHeight, 'F');
+    pdf.rect(barX, yPos - 1.5, miniBarWidth, miniBarHeight, 'F');
     
     const skillFillWidth = (skill.candidateScore / 100) * miniBarWidth;
     pdf.setFillColor(scorePerf.color[0], scorePerf.color[1], scorePerf.color[2]);
-    pdf.rect(barX, yPos - 2, skillFillWidth, miniBarHeight, 'F');
+    pdf.rect(barX, yPos - 1.5, skillFillWidth, miniBarHeight, 'F');
     
-    yPos += 10;
+    yPos += 7;
   });
   
-  yPos += 5;
+  yPos += 6;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== STRENGTHS ==========
-  if (yPos > pageHeight - 60) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  }
-  
+  // ========== STRENGTHS (Two-Column Layout for space efficiency) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
-  yPos += 5;
+  yPos += 2;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(6);
   pdf.setTextColor(75, 85, 99);
-  pdf.text('Areas where the candidate exceeds or meets role requirements', 20, yPos);
-  yPos += 8;
-  
-  pdf.setFillColor(240, 253, 244);
-  pdf.setDrawColor(34, 197, 94);
-  pdf.setLineWidth(0.5);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 5 + (data.alignment.strengths.length * 8), 2, 2, 'FD');
-  pdf.setLineWidth(0.2);
-  
+  pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
-  data.alignment.strengths.forEach((strength) => {
-    if (yPos > pageHeight - 25) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
+  
+  // Render strengths in two columns for better space utilization
+  const colWidth = (pageWidth - 45) / 2;
+  const leftX = 20;
+  const rightX = leftX + colWidth + 5;
+  let leftY = yPos;
+  let rightY = yPos;
+  let onLeftCol = true;
+  
+  data.alignment.strengths.forEach((strength, index) => {
+    const currentX = onLeftCol ? leftX : rightX;
+    let currentY = onLeftCol ? leftY : rightY;
     
     pdf.setTextColor(34, 197, 94);
-    pdf.text('✓', 25, yPos);
+    pdf.text('✓', currentX + 2, currentY);
     
     pdf.setTextColor(22, 101, 52);
-    const strengthLines = pdf.splitTextToSize(strength, pageWidth - 55);
-    strengthLines.forEach((line: string, index: number) => {
-      pdf.text(line, 32, yPos + (index * 4));
+    const strengthLines = pdf.splitTextToSize(strength, colWidth - 8);
+    strengthLines.forEach((line: string, lineIdx: number) => {
+      pdf.text(line, currentX + 6, currentY + (lineIdx * 3));
     });
-    yPos += Math.max(strengthLines.length * 4, 6) + 2;
+    
+    const itemHeight = strengthLines.length * 3 + 2;
+    
+    if (onLeftCol) {
+      leftY += itemHeight;
+    } else {
+      rightY += itemHeight;
+    }
+    
+    onLeftCol = !onLeftCol;
   });
   
-  yPos += 5;
+  yPos = Math.max(leftY, rightY) + 2;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== DEVELOPMENT AREAS ==========
-  if (yPos > pageHeight - 60) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  }
+  // ========== PAGE 3: DEVELOPMENT AREAS + RECOMMENDATIONS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
   
+  yPos = 35;
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 5;
+  yPos += 2;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(6);
   pdf.setTextColor(75, 85, 99);
-  pdf.text('Skills requiring improvement to better align with role requirements', 20, yPos);
-  yPos += 8;
-  
-  pdf.setFillColor(254, 242, 242);
-  pdf.setDrawColor(239, 68, 68);
-  pdf.setLineWidth(0.5);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 5 + (data.alignment.gaps.length * 8), 2, 2, 'FD');
-  pdf.setLineWidth(0.2);
-  
+  pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
-  data.alignment.gaps.forEach((gap) => {
-    if (yPos > pageHeight - 25) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
+  
+  // Render gaps in two columns for better space utilization
+  const gapColWidth = (pageWidth - 45) / 2;
+  const gapLeftX = 20;
+  const gapRightX = gapLeftX + gapColWidth + 5;
+  let gapLeftY = yPos;
+  let gapRightY = yPos;
+  let onGapLeftCol = true;
+  
+  data.alignment.gaps.forEach((gap, index) => {
+    const currentX = onGapLeftCol ? gapLeftX : gapRightX;
+    let currentY = onGapLeftCol ? gapLeftY : gapRightY;
     
     pdf.setTextColor(239, 68, 68);
-    pdf.text('⚠', 25, yPos);
+    pdf.text('⚠', currentX + 2, currentY);
     
     pdf.setTextColor(127, 29, 29);
-    const gapLines = pdf.splitTextToSize(gap, pageWidth - 55);
-    gapLines.forEach((line: string, index: number) => {
-      pdf.text(line, 32, yPos + (index * 4));
+    const gapLines = pdf.splitTextToSize(gap, gapColWidth - 8);
+    gapLines.forEach((line: string, lineIdx: number) => {
+      pdf.text(line, currentX + 6, currentY + (lineIdx * 3));
     });
-    yPos += Math.max(gapLines.length * 4, 6) + 2;
-  });
-  
-  yPos += 5;
-  pdf.setTextColor(0, 0, 0);
-  
-  // ========== RECOMMENDATIONS ==========
-  if (yPos > pageHeight - 60) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  }
-  
-  yPos = addSectionHeader(pdf, 'RECOMMENDATIONS', yPos, pageWidth);
-  yPos += 5;
-  
-  pdf.setFontSize(8);
-  pdf.setTextColor(75, 85, 99);
-  pdf.text('Strategic guidance for maximizing role fit and development', 20, yPos);
-  yPos += 8;
-  
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  
-  const recParagraphs = data.alignment.recommendations.split('\n\n');
-  recParagraphs.forEach((paragraph) => {
-    const recLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
     
-    const paragraphHeight = recLines.length * 4 + 10;
-    if (yPos + paragraphHeight > pageHeight - 30) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
+    const itemHeight = gapLines.length * 3 + 2;
+    
+    if (onGapLeftCol) {
+      gapLeftY += itemHeight;
+    } else {
+      gapRightY += itemHeight;
     }
     
-    pdf.roundedRect(20, yPos, pageWidth - 40, paragraphHeight, 2, 2, 'FD');
-    
-    recLines.forEach((line: string, index: number) => {
-      pdf.text(line, 25, yPos + 7 + (index * 4));
-    });
-    
-    yPos += paragraphHeight + 5;
+    onGapLeftCol = !onGapLeftCol;
   });
+  
+  yPos = Math.max(gapLeftY, gapRightY) + 4;
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== RECOMMENDATIONS (Phased Densification Pipeline) ==========
+  yPos = addSectionHeader(pdf, 'RECOMMENDATIONS', yPos, pageWidth);
+  yPos += 1.5;
+  
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(75, 85, 99);
+  pdf.text('Strategic guidance for role fit and development', 20, yPos);
+  yPos += 3.5;
+  
+  pdf.setTextColor(55, 65, 81);
+  
+  // Two-column layout for recommendations
+  const recColWidth = (pageWidth - 45) / 2;
+  const recLeftX = 20;
+  const recRightX = recLeftX + recColWidth + 5;
+  let recLeftY = yPos;
+  let recRightY = yPos;
+  let onRecLeftCol = true;
+  
+  const recParagraphs = data.alignment.recommendations.split('\n\n');
+  let truncatedCount = 0;
+  
+  recParagraphs.forEach((paragraph, index) => {
+    // Determine current column and position
+    let currentX = onRecLeftCol ? recLeftX : recRightX;
+    let currentY = onRecLeftCol ? recLeftY : recRightY;
+    
+    // Smart column switching: use column with more space
+    if (onRecLeftCol && recRightY < recLeftY - 8) {
+      onRecLeftCol = false;
+      currentX = recRightX;
+      currentY = recRightY;
+    } else if (!onRecLeftCol && recLeftY < recRightY - 8) {
+      onRecLeftCol = true;
+      currentX = recLeftX;
+      currentY = recLeftY;
+    }
+    
+    // Phased densification: try progressively denser layouts
+    const availableVertical = pageHeight - currentY - 16;
+    let layoutSuccess = false;
+    
+    // Profile 1: Normal spacing (6.5pt font, 2.2pt leading)
+    if (!layoutSuccess && availableVertical > 30) {
+      pdf.setFontSize(6.5);
+      const recLines1 = pdf.splitTextToSize(paragraph.trim(), recColWidth - 6);
+      const height1 = recLines1.length * 2.2 + 3;
+      
+      if (currentY + height1 < pageHeight - 16) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.roundedRect(currentX, currentY, recColWidth, height1, 1.5, 1.5, 'FD');
+        recLines1.forEach((line: string, idx: number) => {
+          pdf.text(line, currentX + 2.5, currentY + 2.5 + (idx * 2.2));
+        });
+        currentY += height1 + 1.5;
+        layoutSuccess = true;
+      }
+    }
+    
+    // Profile 2: Tight spacing (6pt font, 1.9pt leading)
+    if (!layoutSuccess && availableVertical > 20) {
+      pdf.setFontSize(6);
+      const recLines2 = pdf.splitTextToSize(paragraph.trim(), recColWidth - 6);
+      const height2 = recLines2.length * 1.9 + 2.5;
+      
+      if (currentY + height2 < pageHeight - 16) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.roundedRect(currentX, currentY, recColWidth, height2, 1.5, 1.5, 'FD');
+        recLines2.forEach((line: string, idx: number) => {
+          pdf.text(line, currentX + 2.5, currentY + 2 + (idx * 1.9));
+        });
+        currentY += height2 + 1.5;
+        layoutSuccess = true;
+      }
+    }
+    
+    // Profile 3: Condensed typography (5.5pt font, 1.7pt leading)
+    if (!layoutSuccess && availableVertical > 12) {
+      pdf.setFontSize(5.5);
+      const recLines3 = pdf.splitTextToSize(paragraph.trim(), recColWidth - 5);
+      const height3 = recLines3.length * 1.7 + 2;
+      
+      if (currentY + height3 < pageHeight - 16) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.roundedRect(currentX, currentY, recColWidth, height3, 1, 1, 'FD');
+        recLines3.forEach((line: string, idx: number) => {
+          pdf.text(line, currentX + 2, currentY + 1.8 + (idx * 1.7));
+        });
+        currentY += height3 + 1.2;
+        layoutSuccess = true;
+      }
+    }
+    
+    // Profile 4: Bullet conversion (sentence-level fragments with 5pt font, 1.6pt leading)
+    if (!layoutSuccess && availableVertical > 8) {
+      pdf.setFontSize(5);
+      // Split paragraph into sentences using regex
+      const sentences = paragraph.trim().split(/\.\s+(?=[A-Z0-9])/).filter(s => s.trim().length > 0);
+      const bullets = sentences.map(s => `• ${s.trim()}${s.endsWith('.') ? '' : '.'}`);
+      
+      // Calculate total height for bulletized version
+      let bulletHeight = 1;
+      bullets.forEach(bullet => {
+        const bulletLines = pdf.splitTextToSize(bullet, recColWidth - 5);
+        bulletHeight += bulletLines.length * 1.6 + 0.5;
+      });
+      bulletHeight += 1;
+      
+      if (currentY + bulletHeight < pageHeight - 16) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.roundedRect(currentX, currentY, recColWidth, bulletHeight, 0.8, 0.8, 'FD');
+        
+        let bulletY = currentY + 1.5;
+        bullets.forEach(bullet => {
+          const bulletLines = pdf.splitTextToSize(bullet, recColWidth - 5);
+          bulletLines.forEach((line: string, idx: number) => {
+            pdf.text(line, currentX + 2, bulletY + (idx * 1.6));
+          });
+          bulletY += bulletLines.length * 1.6 + 0.5;
+        });
+        
+        currentY += bulletHeight + 1;
+        layoutSuccess = true;
+      }
+    }
+    
+    // Update column heights if we successfully placed the paragraph
+    if (layoutSuccess) {
+      if (onRecLeftCol) {
+        recLeftY = currentY;
+      } else {
+        recRightY = currentY;
+      }
+      // Alternate columns for balanced layout
+      onRecLeftCol = !onRecLeftCol;
+    } else {
+      // Track truncated paragraphs
+      truncatedCount++;
+    }
+  });
+  
+  // Add truncation marker if any paragraphs were skipped
+  if (truncatedCount > 0) {
+    const markerY = Math.min(recLeftY, recRightY);
+    if (markerY < pageHeight - 18) {
+      pdf.setFontSize(5);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(`[${truncatedCount} recommendation${truncatedCount > 1 ? 's' : ''} truncated due to space limits]`, 20, markerY + 2);
+    }
+  }
   
   pdf.setTextColor(0, 0, 0);
   
