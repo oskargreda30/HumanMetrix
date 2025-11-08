@@ -1042,15 +1042,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Fetch evaluations for this result
           const evaluations = await storage.getEvaluationsByResult(promptResult.id);
           
-          // Organize evaluations by level (1-7)
+          // Helper function to scale dimension scores from 0-25 to 0-20
+          const scaleDimensionScore = (score: number): number => {
+            return Math.round((score / 25) * 20);
+          };
+          
+          // Organize evaluations by level (1-7) and scale scores
           const levelData = evaluations
             .filter(e => e.status === 'completed' && e.evaluationScores)
-            .map(e => ({
-              level: e.level,
-              scores: e.evaluationScores,
-              totalScore: e.totalScore,
-              feedback: e.feedback,
-            }))
+            .map(e => {
+              const scores = e.evaluationScores!; // Safe because of filter above
+              return {
+                level: e.level,
+                scores: {
+                  clarity: scaleDimensionScore(scores.clarity),
+                  structure: scaleDimensionScore(scores.structure),
+                  contextRelevance: scaleDimensionScore(scores.contextRelevance),
+                  creativity: scaleDimensionScore(scores.creativity),
+                  iterativeImprovement: scaleDimensionScore(scores.iterativeImprovement),
+                },
+                totalScore: e.totalScore, // Already out of 100 per level
+                feedback: e.feedback,
+              };
+            })
             .sort((a, b) => a.level - b.level);
           
           return {

@@ -62,15 +62,17 @@ export default function HeroSection() {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="#sample-reports" data-testid="link-hero-sample-reports">
-                <Button 
-                  variant="outline" 
-                  className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto" 
-                  data-testid="button-hero-sample-reports"
-                >
-                  Sample Reports
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => {
+                  const element = document.getElementById('sample-reports');
+                  element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                variant="outline" 
+                className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto" 
+                data-testid="button-hero-sample-reports"
+              >
+                Sample Reports
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 max-w-4xl mx-auto">

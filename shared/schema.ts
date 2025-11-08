@@ -306,8 +306,8 @@ export type ReportExport = typeof reportExports.$inferSelect;
 // Assessment type constants
 export const ASSESSMENT_TYPES = {
   FIT: "fit",
-  AI_READINESS: "ai-readiness",
-  PROMPT_ARCHITECTURE: "prompt-architecture",
+  AI_READINESS: "ai_readiness",
+  PROMPT_ARCHITECTURE: "prompt_architecture",
   AIQ: "aiq",
 } as const;
 
