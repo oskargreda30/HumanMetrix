@@ -15,11 +15,11 @@ export default function HeroSection() {
       {/* Navy overlay with gradient for blending */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/95 via-[#1a2744]/90 to-[#0a1628]/95" />
       
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 md:py-24">
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10 md:py-24">
         <div className="max-w-4xl mx-auto text-center">
           {/* Content */}
-          <div className="space-y-6 md:space-y-8">
-            <div className="space-y-3 md:space-y-4">
+          <div className="space-y-8 md:space-y-10">
+            <div className="space-y-4 md:space-y-5">
               <div className="inline-block">
                 <span className="inline-flex items-center rounded-full px-3 py-1 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
@@ -31,15 +31,15 @@ export default function HeroSection() {
                   AI Era
                 </span>
               </h1>
-              <p className="text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2">
+              <p className="text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4">
                 Professional AI assessments designed for recruitment and career development. 
                 Evaluate FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity with enterprise-grade precision.
               </p>
-              <div className="text-left max-w-2xl mx-auto space-y-2">
-                <p className="text-sm md:text-base text-blue-100/70 font-medium mb-2">
+              <div className="text-left max-w-2xl mx-auto space-y-2 mt-6">
+                <p className="text-sm md:text-base text-blue-100/70 font-medium mb-3">
                   Get comprehensive insights through three report formats:
                 </p>
-                <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-blue-100/70">
+                <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm text-blue-100/70">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                     <span><strong className="text-blue-100">Individual Assessment Reports</strong> for personal development</span>
@@ -56,7 +56,7 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center px-2">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-2 pt-2">
               <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
                   className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto" 
@@ -69,7 +69,7 @@ export default function HeroSection() {
               <Link href="#sample-reports" data-testid="link-hero-sample-reports">
                 <Button 
                   variant="outline" 
-                  className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 backdrop-blur-sm w-full sm:w-auto" 
+                  className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto" 
                   data-testid="button-hero-sample-reports"
                 >
                   Sample Reports

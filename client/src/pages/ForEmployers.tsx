@@ -116,6 +116,13 @@ export default function ForEmployers() {
                   </Button>
                 </a>
               </Link>
+              <Link href="/#sample-reports">
+                <a>
+                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                    View Sample Reports
+                  </Button>
+                </a>
+              </Link>
             </div>
           </div>
         </section>

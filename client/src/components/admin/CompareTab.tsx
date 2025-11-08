@@ -424,14 +424,14 @@ export default function CompareTab() {
                                     <td key={candidate.user.id} className="p-3">
                                       {score !== undefined ? (
                                         <div className="flex items-center gap-2">
-                                          <span className="font-semibold">{score}/10</span>
+                                          <span className="font-semibold">{score}/20</span>
                                           <div 
                                             className="h-2 rounded-full bg-primary/20"
                                             style={{ width: '60px' }}
                                           >
                                             <div
                                               className="h-full rounded-full bg-primary"
-                                              style={{ width: `${(score / 10) * 100}%` }}
+                                              style={{ width: `${(score / 20) * 100}%` }}
                                             />
                                           </div>
                                         </div>
