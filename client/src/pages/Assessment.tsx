@@ -52,11 +52,11 @@ export default function Assessment() {
     switch (assessment.assessmentType) {
       case "fit":
         return FIT_QUESTIONS;
-      case "ai-readiness":
+      case "ai_readiness":
         return AI_READINESS_QUESTIONS;
       case "aiq":
         return AIQ_QUESTIONS;
-      case "prompt-architecture":
+      case "prompt_architecture":
         // Convert levels to question format
         return PROMPT_ARCHITECTURE_LEVELS.map(level => ({
           id: `level-${level.level}`,
@@ -74,7 +74,7 @@ export default function Assessment() {
 
   const questions = getQuestions();
   const currentQ = questions[currentQuestion];
-  const isPromptArchitecture = assessment?.assessmentType === 'prompt-architecture';
+  const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture';
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -206,7 +206,7 @@ export default function Assessment() {
             "You have 20 minutes to complete all 15 questions",
           ]
         };
-      case "ai-readiness":
+      case "ai_readiness":
         return {
           title: "AI Readiness Assessment - 21 Questions",
           description: "This assessment evaluates 9 skills critical for working effectively with AI: AI Literacy, Technical Fluency, Domain Fluency, Critical Thinking, Adaptive & Collaborative Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.",
@@ -217,7 +217,7 @@ export default function Assessment() {
             "You have 20 minutes to complete all 21 questions",
           ]
         };
-      case "prompt-architecture":
+      case "prompt_architecture":
         return {
           title: "Prompt Architecture Assessment - 7 Levels",
           description: "This assessment tests your ability to design effective prompts for AI systems across 7 progressive difficulty levels. Each prompt is evaluated by GPT-4o on Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.",

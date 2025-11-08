@@ -79,7 +79,7 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
       }
       break;
 
-    case "ai-readiness":
+    case "ai_readiness":
       analysis.overall = "This AI Readiness assessment measures capabilities critical for effective collaboration with AI systems and thriving in AI-augmented environments.";
       
       if (strengths.length > 0) {
@@ -123,7 +123,7 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
       }
       break;
 
-    case "prompt-architecture":
+    case "prompt_architecture":
       analysis.overall = `This Prompt Architecture assessment evaluates prompt design skills across progressive difficulty levels. Overall score: **${totalScore}/100**. Prompts are evaluated on five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.`;
       
       if (totalScore !== undefined) {
@@ -281,7 +281,7 @@ export default function Results() {
   const analysis = generateAnalysis(assessmentType, scores, totalScore);
 
   // For Prompt Architecture, show dedicated component
-  if (assessmentType === "prompt-architecture" && evaluations.length > 0) {
+  if (assessmentType === "prompt_architecture" && evaluations.length > 0) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
