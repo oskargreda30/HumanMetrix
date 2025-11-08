@@ -25,7 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatAssessmentName } from "@/lib/assessmentHelpers";
+import { formatAssessmentName, isAllAssessmentsComplete } from "@/lib/assessmentHelpers";
+import { AssessmentCompletionDialog } from "@/components/AssessmentCompletionDialog";
 
 export default function Assessment() {
   const { purchaseItemId } = useParams<{ purchaseItemId: string }>();
@@ -38,6 +39,8 @@ export default function Assessment() {
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
@@ -108,14 +111,34 @@ export default function Assessment() {
       }
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      
       toast({
         title: "Success",
         description: "Assessment submitted successfully!",
       });
-      setLocation("/dashboard");
+      
+      // Check if all assessments are complete
+      const allResults = await queryClient.fetchQuery({ queryKey: ["/api/results"] }) as any[];
+      const completedResults = allResults?.filter((r: any) => r.status === 'completed') || [];
+      
+      // Check if this completes all 4 assessments
+      const allComplete = isAllAssessmentsComplete(completedResults);
+      
+      if (allComplete) {
+        // Check if user is paid or invited
+        const purchases = await queryClient.fetchQuery({ queryKey: ["/api/purchases"] }) as any[];
+        const hasPaidPurchase = purchases?.some((p: any) => p.resultsAccessPaid === true);
+        
+        setIsPaidUser(hasPaidPurchase || false);
+        setShowCompletionDialog(true);
+        
+        // Don't redirect automatically - let dialog handle it
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: any) => {
       const message = error?.error === 'quota_exceeded' 
@@ -506,6 +529,14 @@ export default function Assessment() {
         </div>
       </main>
       <Footer />
+      
+      {/* Completion Dialog */}
+      <AssessmentCompletionDialog
+        open={showCompletionDialog}
+        onOpenChange={setShowCompletionDialog}
+        isPaidUser={isPaidUser}
+        completedCount={4}
+      />
     </div>
   );
 }
