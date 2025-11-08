@@ -1,0 +1,186 @@
+1. Acceptance of Terms
+By accessing and using HumanMetrix ("the Platform"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these Terms & Conditions, please do not use the Platform.
+
+2. Service Description
+HumanMetrix provides AI-powered assessments to evaluate behavioral skills, AI literacy, prompt architecture capabilities, and algorithmic integrity understanding. Our assessments include:
+
+FIT Assessment (15 questions measuring 6 behavioral skills)
+
+AI Readiness Assessment (21 questions evaluating 9 AI competencies)
+
+Prompt Architecture Assessment (7 progressive levels evaluated by GPT-4o)
+
+Algorithmic Integrity Quotient (AIQ) (4 scenario-based questions)
+
+3. User Accounts and Registration
+To access certain features of the Platform, you must register for an account. You agree to:
+
+Provide accurate, current, and complete information during registration
+
+Maintain and promptly update your account information
+
+Maintain the security of your password and account
+
+Accept all responsibility for activities that occur under your account
+
+Notify us immediately of any unauthorized use of your account
+
+4. Assessment Purchases and Pricing
+Assessment purchases are subject to the following terms:
+
+A one-time base computation fee applies to each purchase session
+
+Each assessment has an individual price as displayed on the Platform
+
+Prices are stated in GBP (£) and are subject to change with notice
+
+Payment is processed securely through Stripe
+
+All sales are final; assessments cannot be refunded once purchased.
+
+Once purchased, assessments must be completed within the allocated time period
+
+5. Assessment Rules and Conduct
+When taking assessments, you agree to:
+
+Complete assessments independently without unauthorized assistance
+
+Not share or discuss assessment content with others
+
+Complete assessments within the specified time limits
+
+Provide honest and accurate responses
+
+Not use automated tools, bots, or scripts to complete assessments
+
+Not attempt to circumvent security measures or time restrictions Violation of these rules may result in invalidation of results and account termination.
+
+6. Assessment Results, Accuracy, and Candidate Liability
+Regarding assessment results, please note and expressly acknowledge and agree that:
+
+Results are generated using proprietary algorithms and AI evaluation (GPT-4o for Prompt Architecture) and are inherently estimates and indications, not factual guarantees.
+
+Results are provided exclusively for informational and developmental purposes.
+
+Results shall under no circumstances be the sole or primary basis for any employment, hiring, termination, promotion, educational, or other critical decision. The Platform advises and requires that users (including candidates and employers) conduct independent verification and utilize multiple data points and methods before making such decisions.
+
+HumanMetrix expressly disclaims any and all liability for decisions made by any user (candidate or employer) based on these results.
+
+We do not guarantee specific outcomes, job placement, or educational advancement from using our assessments.
+
+Percentile rankings are calculated based on all platform users and are comparative; they do not represent absolute competence.
+
+Results are final and binding once submitted, and cannot be disputed or appealed.
+
+By taking the assessment, the candidate waives any right to sue or claim damages against HumanMetrix based on the content, accuracy, or perceived fairness of the assessment or its resulting score.
+
+7. Intellectual Property Rights
+All content on the Platform, including but not limited to assessment questions, evaluation criteria, algorithms, text, graphics, logos, and software, is the property of HumanMetrix and is protected by copyright, trademark, and other intellectual property laws. You may not:
+
+Copy, reproduce, or distribute Platform content without permission
+
+Modify, reverse engineer, or create derivative works
+
+Use content for commercial purposes without authorization
+
+Remove or alter copyright, trademark, or other proprietary notices
+
+8. Privacy and Data Protection
+Your privacy is important to us. We collect and process personal data in accordance with applicable data protection laws including GDPR. By using the Platform, you consent to:
+
+Collection of personal information (name, email, assessment responses)
+
+Storage of assessment results and performance data
+
+Use of data to improve Platform services and algorithms
+
+Sharing anonymized aggregate data for research purposes
+
+Communication regarding account activity and platform updates We will never sell your personal information to third parties. You have the right to request access to, correction of, or deletion of your personal data.
+
+9. Limitation of Liability and Indemnification
+To the fullest extent permitted by law, the following limitations and indemnities apply to both candidates and employers (users) in all circumstances:
+
+HumanMetrix and its affiliates shall under no circumstances be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, goodwill, or opportunity, even if we have been advised of the possibility of such damages.
+
+Our maximum and total liability to any user (candidate or employer) for any claim arising out of or relating to the Platform or the assessments shall not exceed the total fees paid by the user (or the employer on the candidate's behalf) for the specific assessment in question.
+
+We do not warrant that the Platform will be uninterrupted, error-free, or completely secure.
+
+We are not responsible for technical failures, server downtime, data loss, or any disruptions outside of our direct control.
+
+Indemnification: You agree to indemnify, defend, and hold harmless HumanMetrix, its officers, directors, employees, and agents from and against any and all claims, liabilities, damages, losses, costs, expenses, or fees (including reasonable attorneys' fees) that arise out of or relate to:
+
+Any decision made by you (or your employer) based on the assessment results.
+
+Your violation of any part of these Terms & Conditions.
+
+Your misuse of the Platform.
+
+Assessment results do not constitute professional advice, certification, licensure, or qualification of any kind.
+
+10. Disclaimer of Warranties (Strengthened)
+THE PLATFORM, THE ASSESSMENTS, AND ALL SERVICES ARE PROVIDED "AS IS," "WITH ALL FAULTS," AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, TO THE FULLEST EXTENT PERMISSIBLE UNDER APPLICABLE LAW. WE EXPRESSLY DISCLAIM AND EXCLUDE ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO:
+
+Implied warranties of merchantability, fitness for a particular purpose, non-infringement, or suitability for any employment or educational decision.
+
+Any warranty regarding the accuracy, reliability, timeliness, currency, or completeness of assessment results or other data.
+
+Uninterrupted, error-free, or secure operation.
+
+Security of data transmission or storage.
+
+Compatibility with all devices or browsers.
+
+11. Employer Use, AI Disclaimer, and Third-Party Decisions
+A. Employer Use and Responsibility:
+
+For employer-invited assessments, results will be shared with the inviting organization.
+
+Employers expressly acknowledge and agree that they are solely responsible for how they use assessment results and for ensuring that such use complies with all applicable employment laws, anti-discrimination laws, and internal company policies.
+
+HumanMetrix is not an employer, is not involved in the hiring process, and expressly disclaims all liability for any adverse employment action (e.g., non-hiring, termination) taken by an employer based, in whole or in part, on assessment results. The employer assumes full responsibility for any such decision.
+
+B. AI-Generated Content Disclaimer (Prompt Architecture):
+
+The Prompt Architecture assessment utilizes GPT-4o (OpenAI) or similar third-party AI services for evaluation.
+
+Users acknowledge and accept the inherent risks, limitations, and potential inaccuracies associated with AI-based evaluations, including the possibility of errors, inconsistencies, or bias.
+
+HumanMetrix makes no guarantees regarding the absolute accuracy, reliability, or predictive value of scores derived from AI evaluation.
+
+12. Termination
+We reserve the right to terminate or suspend your account and access to the Platform at our sole discretion, without notice, for conduct that we believe:
+
+Violates these Terms & Conditions
+
+Is harmful to other users, third parties, or our business interests
+
+Involves fraudulent, deceptive, or illegal activity
+
+Compromises the integrity of our assessments Upon termination, your right to use the Platform will immediately cease. No refunds will be provided for terminated accounts.
+
+13. Changes to Terms
+We reserve the right to modify these Terms & Conditions at any time. We will notify users of material changes by:
+
+Posting updated terms on the Platform
+
+Updating the "Last Updated" date
+
+Sending email notifications for significant changes Continued use of the Platform after changes constitutes acceptance of modified terms.
+
+14. Governing Law and Jurisdiction
+These Terms & Conditions shall be governed by and construed in accordance with the laws of England and Wales, without regard to its conflict of law provisions. Any disputes arising from these terms or use of the Platform shall be subject to the exclusive jurisdiction of the courts of England and Wales.
+
+15. Severability
+If any provision of these Terms & Conditions is found to be invalid, illegal, or unenforceable, the remaining provisions shall continue in full force and effect.
+
+16. Contact Information
+If you have questions about these Terms & Conditions, please contact us at:
+
+Email: legal@humanmetrix.com
+
+Website: www.humanmetrix.com
+
+17. Acknowledgment
+BY USING THE PLATFORM, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THESE TERMS & CONDITIONS.
