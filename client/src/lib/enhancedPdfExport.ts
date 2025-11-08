@@ -706,24 +706,29 @@ export async function exportEnhancedCandidatePDF(
       );
       const performance = getPerformanceLevel(avgScore);
       
+      // Compact score box
+      const promptBoxWidth = 70;
+      const promptBoxX = (pageWidth - promptBoxWidth) / 2;
+      
       pdf.setFillColor(249, 250, 251);
       pdf.setDrawColor(229, 231, 235);
-      pdf.roundedRect(20, yPos, pageWidth - 40, 30, 3, 3, 'FD');
+      pdf.roundedRect(promptBoxX, yPos, promptBoxWidth, 24, 2, 2, 'FD');
       
-      pdf.setFontSize(11);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      pdf.text('Overall Prompt Engineering Score', 25, yPos + 10);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 7, { align: 'center' });
       
-      pdf.setFontSize(20);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(performance.color[0], performance.color[1], performance.color[2]);
-      pdf.text(`${avgScore}/100`, pageWidth - 25, yPos + 18, { align: 'right' });
+      pdf.text(`${avgScore}/100`, pageWidth / 2, yPos + 14, { align: 'center' });
       
-      pdf.setFontSize(9);
+      pdf.setFontSize(6);
       pdf.setTextColor(107, 114, 128);
-      pdf.text(`${completedLevels.length} level(s) completed`, 25, yPos + 22);
+      pdf.text(`${completedLevels.length} level(s) completed`, pageWidth / 2, yPos + 19, { align: 'center' });
       
-      yPos += 40;
+      yPos += 28;
     }
     
     pdf.setTextColor(0, 0, 0);
@@ -826,28 +831,23 @@ export async function exportEnhancedCandidatePDF(
     yPos += 8;
     
     // Score display - compact centered box
-    const boxWidth = 70;
+    const boxWidth = 55;
     const boxX = (pageWidth - boxWidth) / 2;
     
     pdf.setFillColor(239, 246, 255);
     pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(boxX, yPos, boxWidth, 25, 3, 3, 'FD');
+    pdf.roundedRect(boxX, yPos, boxWidth, 20, 2, 2, 'FD');
     
-    pdf.setFontSize(20);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
-    pdf.text(`${aiqResult.totalScore}`, pageWidth / 2, yPos + 13, { align: 'center' });
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text('/ 100', pageWidth / 2 + 10, yPos + 13);
+    pdf.text(`${aiqResult.totalScore}/100`, pageWidth / 2, yPos + 10, { align: 'center' });
     
     pdf.setFontSize(7);
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 20, { align: 'center' });
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 16, { align: 'center' });
     
-    yPos += 33;
+    yPos += 25;
     
     // Performance interpretation
     const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
@@ -1073,23 +1073,11 @@ export async function exportEnhancedCandidatePDF(
   pdf.setTextColor(0, 0, 0);
   
   // ========== RECOMMENDATIONS SECTION ==========
-  // Check if we need a new page
-  if (yPos > pageHeight - 80) {
-    pdf.addPage();
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  }
+  // Try to fit on same page (no page break check - let it flow naturally)
   
   // Recommendations Section
-  yPos = addSectionHeader(pdf, 'RECOMMENDATIONS', yPos, pageWidth);
-  yPos += 5;
-  
-  // For the Individual
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('For the Candidate:', 25, yPos);
-  yPos += 6;
+  yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
+  yPos += 3;
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
