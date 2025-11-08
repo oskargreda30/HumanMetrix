@@ -3,6 +3,14 @@
 ## Overview
 HumanMetrix is a professional AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy. The platform aims to provide comprehensive insights into a candidate's fit for roles in the AI-driven economy through various assessment types, including FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). Its business vision is to streamline hiring processes and support career growth by leveraging AI for objective skill evaluation.
 
+## Recent Changes
+- **November 8, 2025**: 
+  - Fixed submit button messaging: Now shows "Your answers are being evaluated, please wait..." during assessment submission (especially for Prompt Architecture with GPT evaluation)
+  - Improved mobile UX for AIQ assessment: Balanced font sizes with `text-base` for questions and `text-sm` for answers
+  - Created `formatAssessmentName()` helper function to display clean assessment names (e.g., "AI Readiness" instead of "AI_READINESS")
+  - Updated all assessment displays across Dashboard, Assessment, and Results pages to use formatted names
+  - Fixed LSP type error in Results.tsx (null → undefined for function parameters)
+
 ## User Preferences
 I prefer detailed explanations.
 Do not make changes to the folder `attached_assets/`.
