@@ -25,6 +25,7 @@ import {
   Legend,
 } from "recharts";
 import { PromptArchitectureResults } from "@/components/PromptArchitectureResults";
+import { formatAssessmentName } from "@/lib/assessmentHelpers";
 
 // Helper function to generate comprehensive analysis
 function generateAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number) {
@@ -214,8 +215,8 @@ export default function Results() {
       // Prepare candidate data
       const candidateData = {
         user: {
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
           email: user.email,
         },
         results: completedResults,
@@ -229,7 +230,7 @@ export default function Results() {
           skillData.push({
             name: skillName,
             score: score as number,
-            assessment: r.assessmentType.toUpperCase(),
+            assessment: formatAssessmentName(r.assessmentType),
           });
         });
       });
@@ -245,8 +246,8 @@ export default function Results() {
         candidateData,
         skillData,
         platformAverages,
-        null,
-        null
+        undefined,
+        undefined
       );
 
       toast({
@@ -362,7 +363,7 @@ export default function Results() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h1 className="text-3xl font-bold">
-                  {(result as any).assessmentType.toUpperCase()} Results
+                  {formatAssessmentName((result as any).assessmentType)} Results
                 </h1>
                 <p className="text-muted-foreground mt-1">
                   Completed on {new Date((result as any).completedAt).toLocaleDateString()}

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { formatAssessmentName } from "@/lib/assessmentHelpers";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function Dashboard() {
                 {availableAssessments.map((assessment: any) => (
                   <Card key={assessment.purchaseItemId} className="p-6">
                     <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-lg font-semibold">{assessment.assessmentType.toUpperCase()}</h3>
+                      <h3 className="text-lg font-semibold">{formatAssessmentName(assessment.assessmentType)}</h3>
                       <Badge variant="secondary">Ready</Badge>
                     </div>
                     <Link href={`/assessment/${assessment.purchaseItemId}`}>
@@ -83,7 +84,7 @@ export default function Dashboard() {
                   <Card key={result.id} className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold">{result.assessmentType.toUpperCase()}</h3>
+                        <h3 className="text-lg font-semibold">{formatAssessmentName(result.assessmentType)}</h3>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Completed {result.completedAt ? format(new Date(result.completedAt), 'MMM d, yyyy') : ''}
@@ -110,7 +111,7 @@ export default function Dashboard() {
                 {inProgressResults.map((result: any) => (
                   <Card key={result.id} className="p-6">
                     <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-lg font-semibold">{result.assessmentType.toUpperCase()}</h3>
+                      <h3 className="text-lg font-semibold">{formatAssessmentName(result.assessmentType)}</h3>
                       <Clock className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <Link href={`/assessment/${result.purchaseItemId}`}>

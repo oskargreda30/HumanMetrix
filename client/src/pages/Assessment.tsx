@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatAssessmentName } from "@/lib/assessmentHelpers";
 
 export default function Assessment() {
   const { purchaseItemId } = useParams<{ purchaseItemId: string }>();
@@ -362,7 +363,7 @@ export default function Assessment() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-3xl font-bold mb-2">
-                      {assessment.assessmentType.toUpperCase()} Assessment
+                      {formatAssessmentName(assessment.assessmentType)} Assessment
                     </h1>
                     <p className="text-muted-foreground">
                       Question {currentQuestion + 1} of {questions.length}
@@ -439,7 +440,7 @@ export default function Assessment() {
                 ) : (
                   // Multiple choice questions (FIT, AI Readiness, AIQ)
                   <div>
-                    <h2 className="text-xl font-semibold mb-6">{currentQ.text}</h2>
+                    <h2 className="text-base md:text-lg font-semibold mb-6">{currentQ.text}</h2>
                     <RadioGroup
                       value={answers[currentQ.id] || ""}
                       onValueChange={handleAnswerChange}
@@ -455,8 +456,8 @@ export default function Assessment() {
                             htmlFor={`${currentQ.id}-${option.value}`}
                             className="flex-1 cursor-pointer"
                           >
-                            <div className="font-medium mb-1">{option.value}.</div>
-                            <div className="text-muted-foreground">{option.text}</div>
+                            <div className="font-medium mb-1 text-sm">{option.value}.</div>
+                            <div className="text-muted-foreground text-sm">{option.text}</div>
                           </Label>
                         </div>
                       ))}
@@ -485,7 +486,7 @@ export default function Assessment() {
                     {submitMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting...
+                        Your answers are being evaluated, please wait...
                       </>
                     ) : (
                       <>
