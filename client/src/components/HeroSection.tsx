@@ -26,31 +26,27 @@ export default function HeroSection() {
                 </span>
               </div>
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-                Measure What Matters in the{" "}
-                <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                  AI Era
-                </span>
+                Your Next Role Demands More Than a Resume.
               </h1>
               <p className="text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4">
-                Professional AI assessments designed for recruitment and career development. 
-                Evaluate FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity with enterprise-grade precision.
+                Stand out from the crowd. Our one-time use assessment tool will provide you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity. Attach it to your job application and increase your chances at landing your next role!
               </p>
               <div className="text-left max-w-2xl mx-auto space-y-2 mt-6">
                 <p className="text-sm md:text-base text-blue-100/70 font-medium mb-3">
-                  Get comprehensive insights through three report formats:
+                  Why use HumanMetrix:
                 </p>
                 <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm text-blue-100/70">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span><strong className="text-blue-100">Individual Assessment Reports</strong> for personal development</span>
+                    <span><strong className="text-blue-100">Stop Competing Against Fake CV Claims.</strong> As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span><strong className="text-blue-100">Candidate Comparison Reports</strong> to evaluate multiple candidates side-by-side</span>
+                    <span><strong className="text-blue-100">AI is the New Digital Literacy.</strong> Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span><strong className="text-blue-100">Role Fit Analysis Reports</strong> to match candidates with specific positions</span>
+                    <span><strong className="text-blue-100">Up to 75% of qualified applicants are rejected by Applicant Tracking Systems (ATS).</strong> Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.</span>
                   </li>
                 </ul>
               </div>
