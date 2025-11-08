@@ -630,7 +630,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFillColor(fitColor[0], fitColor[1], fitColor[2]);
   pdf.roundedRect(barX, yPos + 1, fillWidth, barHeight, 1, 1, 'F');
   
-  yPos += 12;
+  yPos += 16;
   pdf.setTextColor(0, 0, 0);
   
   // ========== KEY STRENGTHS (on page 1, compact two-column) ==========
@@ -774,13 +774,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       }
       
       pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
       const skillName = skill.skillName.length > 35 ? skill.skillName.substring(0, 32) + '...' : skill.skillName;
       pdf.text(skillName, 22, yPos);
       
-      const scorePerf = getPerformanceLevel(skill.candidateScore);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(scorePerf.color[0], scorePerf.color[1], scorePerf.color[2]);
+      pdf.setTextColor(0, 0, 0);
       pdf.text(`${skill.candidateScore}`, 110, yPos);
       
       pdf.setFont('helvetica', 'normal');

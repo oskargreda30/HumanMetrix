@@ -1393,12 +1393,19 @@ Format your response as JSON with this exact structure and skill names:
         });
       }
 
-      // Calculate overall fit score as average of all skills
+      // Calculate overall fit score based on how well candidate meets requirements
+      // Uses a weighted approach: exceeding requirements helps, falling short penalizes more
       const allAlignments = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
       const overallFit = allAlignments.length > 0
         ? Math.round(allAlignments.reduce((sum, skill) => {
-            const percentage = (skill.candidateScore / skill.requiredScore) * 100;
-            return sum + Math.min(percentage, 100);
+            // If candidate meets or exceeds requirement, give them full credit
+            if (skill.candidateScore >= skill.requiredScore) {
+              return sum + 100;
+            } else {
+              // If below requirement, scale proportionally (penalize more heavily)
+              const percentage = (skill.candidateScore / skill.requiredScore) * 100;
+              return sum + percentage;
+            }
           }, 0) / allAlignments.length)
         : 0;
 
