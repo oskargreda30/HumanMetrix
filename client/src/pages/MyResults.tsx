@@ -7,11 +7,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, CheckCircle2, FileText } from "lucide-react";
-import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
+import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { format } from "date-fns";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
@@ -30,6 +38,9 @@ export default function MyResults() {
     queryKey: ["/api/results"],
     enabled: isAuthenticated && hasPaidForResults !== false,
   });
+
+  // Find Prompt Architecture result for later fetching
+  const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
 
   // Show payment gate if user hasn't paid for results access
   if (hasPaidForResults === false) {
@@ -97,6 +108,30 @@ export default function MyResults() {
         description: "Please wait while we prepare your comprehensive report...",
       });
 
+      // Fetch Prompt Architecture evaluations if needed
+      let promptArchData: any[] = [];
+      if (promptArchResult?.id) {
+        try {
+          const res = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`);
+          if (res.ok) {
+            promptArchData = await res.json();
+          }
+        } catch (error) {
+          console.error('Error fetching prompt evaluations:', error);
+        }
+      }
+
+      // Wait a bit for charts to render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Capture radar charts
+      const fitChart = await captureRadarChart('fit-radar-chart-pdf');
+      const aiReadinessChart = await captureRadarChart('ai-readiness-radar-chart-pdf');
+      
+      const radarChartImages: any = {};
+      if (fitChart) radarChartImages.fit = fitChart;
+      if (aiReadinessChart) radarChartImages.aiReadiness = aiReadinessChart;
+
       // Prepare candidate data
       const candidateData = {
         user: {
@@ -131,8 +166,9 @@ export default function MyResults() {
         candidateData,
         skillData,
         platformAverages,
+        radarChartImages,
         undefined,
-        undefined
+        promptArchData
       );
 
       toast({
@@ -273,6 +309,69 @@ export default function MyResults() {
         </div>
       </main>
       <Footer />
+      
+      {/* Hidden radar charts for PDF export */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '400px', height: '400px' }}>
+        {/* FIT Assessment Radar */}
+        {(() => {
+          const fitResult = completedResults.find((r: any) => r.assessmentType === 'fit');
+          if (!fitResult || !fitResult.scores) return null;
+          
+          const fitData = Object.entries(fitResult.scores).map(([skill, score]) => ({
+            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
+            score: score as number,
+          }));
+          
+          return (
+            <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={fitData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666' }} />
+                  <Radar
+                    name="Score"
+                    dataKey="score"
+                    stroke="#3b82f6"
+                    fill="#3b82f6"
+                    fillOpacity={0.6}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })()}
+        
+        {/* AI Readiness Radar */}
+        {(() => {
+          const aiResult = completedResults.find((r: any) => r.assessmentType === 'ai_readiness');
+          if (!aiResult || !aiResult.scores) return null;
+          
+          const aiData = Object.entries(aiResult.scores).map(([skill, score]) => ({
+            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
+            score: score as number,
+          }));
+          
+          return (
+            <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={aiData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666' }} />
+                  <Radar
+                    name="Score"
+                    dataKey="score"
+                    stroke="#8b5cf6"
+                    fill="#8b5cf6"
+                    fillOpacity={0.6}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }
