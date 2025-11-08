@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -30,6 +30,9 @@ export default function Login() {
         email: loginEmail,
         password: loginPassword,
       });
+      
+      // Invalidate auth query to refetch user data
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       toast({
         title: "Success",
@@ -59,6 +62,9 @@ export default function Login() {
         firstName: signupFirstName,
         lastName: signupLastName,
       });
+      
+      // Invalidate auth query to refetch user data
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       toast({
         title: "Success",
