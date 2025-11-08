@@ -180,6 +180,11 @@ export const jobRoles = pgTable("job_roles", {
     importance: number; // 1-5 scale
     minimumScore: number; // 0-100
   }[]>(),
+  requiredSkillScores: jsonb("required_skill_scores").$type<{
+    fitSkills: Record<string, number>;
+    aiReadinessSkills: Record<string, number>;
+    generatedAt?: string;
+  }>(),
   isCustom: boolean("is_custom").notNull().default(false),
   createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

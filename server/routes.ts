@@ -1162,6 +1162,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Generate required skill scores for a role using OpenAI
+  app.post("/api/admin/roles/:roleId/generate-required-scores", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+
+      const { roleId } = req.params;
+      const role = await storage.getJobRole(roleId);
+      
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Use OpenAI to generate required skill scores
+      const OpenAI = await import('openai');
+      const openai = new OpenAI.default({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      const prompt = `You are an expert HR consultant determining required skill scores for a job role.
+
+JOB ROLE: ${role.name}
+${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
+
+Based on this role, determine the minimum required percentage scores (0-100) for each of the following skills:
+
+FIT ASSESSMENT SKILLS (Behavioral):
+1. Teamwork - Working effectively with others
+2. Adaptability - Adjusting to change and new situations
+3. Communication - Expressing ideas clearly
+4. Problem Solving - Finding solutions to challenges
+5. Emotional Intelligence - Understanding and managing emotions
+6. Leadership - Guiding and inspiring others
+
+AI READINESS SKILLS (Technical):
+1. Tool Fluency - Ability to use AI tools effectively
+2. Prompt Engineering - Crafting effective AI prompts
+3. Critical Evaluation - Assessing AI outputs critically
+4. AI Ethics Understanding - Understanding responsible AI use
+5. Workflow Integration - Integrating AI into workflows
+6. Continuous Learning - Adapting to new AI capabilities
+7. Data Literacy - Understanding data and its implications
+8. Human-AI Collaboration - Working effectively with AI systems
+9. AI Strategy - Strategic thinking about AI applications
+
+For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
+- Entry-level roles may require 50-60% for basic skills
+- Mid-level roles may require 65-75% for core competencies
+- Senior roles may require 80-90% for critical skills
+- Not all skills are equally important for every role
+
+Format your response as JSON with this structure:
+{
+  "fitSkills": {
+    "Teamwork": number,
+    "Adaptability": number,
+    "Communication": number,
+    "Problem Solving": number,
+    "Emotional Intelligence": number,
+    "Leadership": number
+  },
+  "aiReadinessSkills": {
+    "Tool Fluency": number,
+    "Prompt Engineering": number,
+    "Critical Evaluation": number,
+    "AI Ethics Understanding": number,
+    "Workflow Integration": number,
+    "Continuous Learning": number,
+    "Data Literacy": number,
+    "Human-AI Collaboration": number,
+    "AI Strategy": number
+  }
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
+
+      const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
+      requiredScores.generatedAt = new Date().toISOString();
+
+      // Update the role with the generated scores
+      await storage.updateJobRole(roleId, {
+        requiredSkillScores: requiredScores,
+      });
+
+      res.json(requiredScores);
+    } catch (error: any) {
+      console.error("Error generating required scores:", error);
+      res.status(500).json({ message: "Failed to generate required scores: " + error.message });
+    }
+  });
+
   // Admin: Create job role
   app.post("/api/admin/roles", isAuthenticated, async (req: any, res) => {
     try {
@@ -1240,7 +1339,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Use OpenAI to analyze role fit
+      // Check if role has required skill scores
+      if (!role.requiredSkillScores) {
+        return res.status(400).json({ 
+          message: "Role does not have required skill scores. Please generate them first.",
+          requiresGeneration: true
+        });
+      }
+
+      // Build skill alignments using stored required scores
+      const fitSkillAlignments: any[] = [];
+      const aiReadinessSkillAlignments: any[] = [];
+      
+      // Process FIT skills
+      if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
+        Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
+          const candidateScore = fitSkills.get(skillName) || 0;
+          const gap = requiredScore - candidateScore;
+          let alignment: string;
+          if (gap <= -10) alignment = 'excellent';
+          else if (gap <= 0) alignment = 'good';
+          else if (gap <= 15) alignment = 'fair';
+          else alignment = 'poor';
+          
+          fitSkillAlignments.push({
+            skillName,
+            candidateScore,
+            requiredScore,
+            gap,
+            alignment
+          });
+        });
+      }
+      
+      // Process AI Readiness skills
+      if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
+        Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+          const candidateScore = aiReadinessSkills.get(skillName) || 0;
+          const gap = requiredScore - candidateScore;
+          let alignment: string;
+          if (gap <= -10) alignment = 'excellent';
+          else if (gap <= 0) alignment = 'good';
+          else if (gap <= 15) alignment = 'fair';
+          else alignment = 'poor';
+          
+          aiReadinessSkillAlignments.push({
+            skillName,
+            candidateScore,
+            requiredScore,
+            gap,
+            alignment
+          });
+        });
+      }
+
+      // Calculate overall fit score as average of all skills
+      const allAlignments = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
+      const overallFit = allAlignments.length > 0
+        ? Math.round(allAlignments.reduce((sum, skill) => {
+            const percentage = (skill.candidateScore / skill.requiredScore) * 100;
+            return sum + Math.min(percentage, 100);
+          }, 0) / allAlignments.length)
+        : 0;
+
+      // Use OpenAI to generate strengths, gaps, and recommendations
       const OpenAI = await import('openai');
       const openai = new OpenAI.default({
         apiKey: process.env.OPENAI_API_KEY,
@@ -1248,36 +1410,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const prompt = `You are an expert HR consultant analyzing candidate-role fit.
 
-CANDIDATE SKILLS:
-${Array.from(candidateSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n')}
-
-FIT ASSESSMENT SKILLS (Behavioral):
-${fitSkills.size > 0 ? Array.from(fitSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n') : 'Not completed'}
-
-AI READINESS SKILLS (Technical):
-${aiReadinessSkills.size > 0 ? Array.from(aiReadinessSkills.entries()).map(([skill, score]) => `- ${skill}: ${score}/100`).join('\n') : 'Not completed'}
-
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
-REQUIRED COMPETENCIES:
-${role.competencies.map((c: any) => `- ${c.skillName}: Importance ${c.importance}/5, Minimum Score ${c.minimumScore}/100`).join('\n')}
 
-Analyze how well this candidate fits this role. Provide:
-1. Overall fit score (0-100)
-2. Skill-by-skill alignment (excellent/good/fair/poor for each required competency)
-3. SEPARATE FIT skill alignments (if FIT assessment completed)
-4. SEPARATE AI Readiness skill alignments (if AI Readiness completed)
-5. Top 3-5 strengths specific to this role
-6. Top 3-5 development areas/gaps
-7. Practical recommendations for hiring manager
-8. Any risk flags or concerns
+OVERALL FIT SCORE: ${overallFit}/100
+
+FIT ASSESSMENT SKILLS (Behavioral):
+${fitSkillAlignments.map(s => `- ${s.skillName}: ${s.candidateScore}/${s.requiredScore} (${s.alignment})`).join('\n')}
+
+AI READINESS SKILLS (Technical):
+${aiReadinessSkillAlignments.map(s => `- ${s.skillName}: ${s.candidateScore}/${s.requiredScore} (${s.alignment})`).join('\n')}
+
+Based on this analysis, provide:
+1. Top 3-5 strengths specific to this role (areas where candidate exceeds requirements)
+2. Top 3-5 development areas/gaps (areas where candidate falls short)
+3. Brief practical recommendations for hiring manager (2-3 sentences)
+4. Any risk flags or concerns (if any critical gaps exist)
 
 Format your response as JSON with this structure:
 {
-  "overallFit": number,
-  "skillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}],
-  "fitSkillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}] | null,
-  "aiReadinessSkillAlignments": [{"skillName": string, "candidateScore": number, "requiredScore": number, "gap": number, "alignment": "excellent"|"good"|"fair"|"poor"}] | null,
   "strengths": [string],
   "gaps": [string],
   "recommendations": string,
@@ -1290,7 +1441,18 @@ Format your response as JSON with this structure:
         response_format: { type: "json_object" },
       });
 
-      const analysis = JSON.parse(completion.choices[0].message.content || "{}");
+      const insights = JSON.parse(completion.choices[0].message.content || "{}");
+
+      const analysis = {
+        overallFit,
+        skillAlignments: allAlignments,  // Combined for backward compatibility
+        fitSkillAlignments: fitSkillAlignments.length > 0 ? fitSkillAlignments : null,
+        aiReadinessSkillAlignments: aiReadinessSkillAlignments.length > 0 ? aiReadinessSkillAlignments : null,
+        strengths: insights.strengths || [],
+        gaps: insights.gaps || [],
+        recommendations: insights.recommendations || '',
+        riskFlags: insights.riskFlags || []
+      };
 
       // Cache the result
       const crypto = await import('crypto');

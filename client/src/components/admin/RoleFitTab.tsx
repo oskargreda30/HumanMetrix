@@ -29,11 +29,56 @@ export default function RoleFitTab() {
     queryKey: ['/api/admin/roles'],
   });
 
-  const { data: alignment, isLoading: isLoadingAlignment } = useQuery({
+  type RoleAlignment = {
+    overallFit: number;
+    fitSkillAlignments?: Array<{
+      skillName: string;
+      candidateScore: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+    }> | null;
+    aiReadinessSkillAlignments?: Array<{
+      skillName: string;
+      candidateScore: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+    }> | null;
+    strengths: string[];
+    gaps: string[];
+  };
+
+  const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: selectedCandidate && selectedRole
       ? ['/api/admin/role-alignment', { userId: selectedCandidate, jobRoleId: selectedRole }]
       : undefined as any,
     enabled: !!selectedCandidate && !!selectedRole,
+  });
+
+  const generateRequiredScoresMutation = useMutation({
+    mutationFn: async (roleId: string) => {
+      const res = await fetch(`/api/admin/roles/${roleId}/generate-required-scores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: 'Failed to generate required scores' }));
+        throw new Error(error.message || 'Failed to generate required scores');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/roles'] });
+      toast({ title: "Required scores generated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Generation failed",
+        description: error.message || "Failed to generate required scores. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const analyzeRoleFitMutation = useMutation({
@@ -48,6 +93,10 @@ export default function RoleFitTab() {
       });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: 'Failed to analyze role fit' }));
+        // Check if it requires generation
+        if (error.requiresGeneration) {
+          throw new Error(error.message + ' Click "Generate Required Scores" button first.');
+        }
         throw new Error(error.message || 'Failed to analyze role fit');
       }
       return res.json();
@@ -138,7 +187,37 @@ export default function RoleFitTab() {
             </div>
           </div>
 
-          {selectedCandidate && selectedRole && !alignment && (
+          {selectedRole && selectedRoleData && !selectedRoleData.requiredSkillScores && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-yellow-800">
+                    Required Skill Scores Not Generated
+                  </p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    This role needs required skill scores before you can analyze candidates. Click the button to generate them using AI.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => generateRequiredScoresMutation.mutate(selectedRole)}
+                  disabled={generateRequiredScoresMutation.isPending}
+                  size="sm"
+                  data-testid="button-generate-required-scores"
+                >
+                  {generateRequiredScoresMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Required Scores'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {selectedCandidate && selectedRole && !alignment && selectedRoleData?.requiredSkillScores && (
             <Button
               onClick={() => analyzeRoleFitMutation.mutate()}
               disabled={analyzeRoleFitMutation.isPending}
@@ -327,60 +406,6 @@ export default function RoleFitTab() {
             </Card>
           )}
 
-          {/* Overall Skill Alignments (fallback if specific ones not available) */}
-          {(!alignment.fitSkillAlignments && !alignment.aiReadinessSkillAlignments && alignment.skillAlignments) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Skill-by-Skill Analysis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alignment.skillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{skill.skillName}</span>
-                          {skill.gap > 0 ? (
-                            <TrendingDown className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                          )}
-                        </div>
-                        <Badge
-                          variant={
-                            skill.alignment === 'excellent'
-                              ? 'default'
-                              : skill.alignment === 'good'
-                              ? 'secondary'
-                              : 'outline'
-                          }
-                        >
-                          {skill.alignment}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Candidate Score</p>
-                          <p className="font-semibold">{skill.candidateScore}%</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Required Score</p>
-                          <p className="font-semibold">{skill.requiredScore}%</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Gap</p>
-                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                          </p>
-                        </div>
-                      </div>
-                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Strengths and Gaps */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -423,15 +448,6 @@ export default function RoleFitTab() {
             </Card>
           </div>
 
-          {/* AI Recommendations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{alignment.recommendations}</p>
-            </CardContent>
-          </Card>
 
           {/* Export Button */}
           <div className="flex justify-end gap-2">
