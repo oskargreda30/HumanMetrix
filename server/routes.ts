@@ -1190,26 +1190,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-Based on this role, determine the minimum required percentage scores (0-100) for each of the following skills:
+Based on this role, determine the minimum required percentage scores (0-100) for each of the following HumanMetrix assessment skills:
 
 FIT ASSESSMENT SKILLS (Behavioral):
-1. Teamwork - Working effectively with others
-2. Adaptability - Adjusting to change and new situations
-3. Communication - Expressing ideas clearly
-4. Problem Solving - Finding solutions to challenges
-5. Emotional Intelligence - Understanding and managing emotions
-6. Leadership - Guiding and inspiring others
+1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
+2. High Agency - Taking initiative and ownership of outcomes
+3. Growth Mindset - Embracing challenges and viewing failures as learning opportunities
+4. Empathy & Ethics - Understanding others' perspectives and maintaining ethical standards
+5. Interpersonal Agility - Navigating diverse relationships and adapting communication styles
+6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. Tool Fluency - Ability to use AI tools effectively
-2. Prompt Engineering - Crafting effective AI prompts
-3. Critical Evaluation - Assessing AI outputs critically
-4. AI Ethics Understanding - Understanding responsible AI use
-5. Workflow Integration - Integrating AI into workflows
-6. Continuous Learning - Adapting to new AI capabilities
-7. Data Literacy - Understanding data and its implications
-8. Human-AI Collaboration - Working effectively with AI systems
-9. AI Strategy - Strategic thinking about AI applications
+1. AI Literacy - Understanding AI capabilities, limitations, and terminology
+2. Collaboration - Working effectively with AI systems and human teams
+3. Domain Fluency - Applying AI knowledge within specific professional contexts
+4. Responsible AI - Understanding ethical implications and biases in AI applications
+5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
+6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking - Evaluating AI outputs and making informed decisions
+8. Technical Fluency - Comfort with technical tools and systems
+9. Creative Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
 - Entry-level roles may require 50-60% for basic skills
@@ -1217,26 +1217,26 @@ For each skill, provide a realistic required score (0-100) that represents the M
 - Senior roles may require 80-90% for critical skills
 - Not all skills are equally important for every role
 
-Format your response as JSON with this structure:
+Format your response as JSON with this exact structure and skill names:
 {
   "fitSkills": {
-    "Teamwork": number,
-    "Adaptability": number,
-    "Communication": number,
-    "Problem Solving": number,
-    "Emotional Intelligence": number,
-    "Leadership": number
+    "Resilience": number,
+    "High Agency": number,
+    "Growth Mindset": number,
+    "Empathy & Ethics": number,
+    "Interpersonal Agility": number,
+    "Intellectual Curiosity": number
   },
   "aiReadinessSkills": {
-    "Tool Fluency": number,
-    "Prompt Engineering": number,
-    "Critical Evaluation": number,
-    "AI Ethics Understanding": number,
-    "Workflow Integration": number,
-    "Continuous Learning": number,
-    "Data Literacy": number,
-    "Human-AI Collaboration": number,
-    "AI Strategy": number
+    "AI Literacy": number,
+    "Collaboration": number,
+    "Domain Fluency": number,
+    "Responsible AI": number,
+    "Domain Expertise": number,
+    "Adaptive Learning": number,
+    "Critical Thinking": number,
+    "Technical Fluency": number,
+    "Creative Innovation": number
   }
 }`;
 
