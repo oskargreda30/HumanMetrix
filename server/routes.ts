@@ -1071,8 +1071,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             })
             .sort((a, b) => a.level - b.level);
           
+          // If no level-by-level evaluations exist, create a summary from assessment_results.scores
+          let finalLevelData = levelData;
+          if (levelData.length === 0 && promptResult.scores && typeof promptResult.scores === 'object') {
+            // Convert summary scores to a single "average" level entry
+            const summaryScores = promptResult.scores as Record<string, number>;
+            const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
+            
+            const getSummaryScore = (dimension: string): number | undefined => {
+              // Try direct match first
+              if (summaryScores[dimension] !== undefined) {
+                return scaleDimensionScore(summaryScores[dimension]);
+              }
+              
+              // Try normalized matching
+              const normalized = normalizeKey(dimension);
+              for (const [key, value] of Object.entries(summaryScores)) {
+                if (normalizeKey(key) === normalized) {
+                  return scaleDimensionScore(value);
+                }
+              }
+              
+              return undefined;
+            };
+            
+            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity');
+            const structure = getSummaryScore('structure') || getSummaryScore('Structure');
+            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance');
+            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
+            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
+            
+            if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
+                creativity !== undefined || iterativeImprovement !== undefined) {
+              // Create a summary level entry
+              finalLevelData = [{
+                level: 1,  // Use level 1 as summary
+                scores: {
+                  clarity: clarity || 0,
+                  structure: structure || 0,
+                  contextRelevance: contextRelevance || 0,
+                  creativity: creativity || 0,
+                  iterativeImprovement: iterativeImprovement || 0,
+                },
+                totalScore: promptResult.totalScore || 0,
+                feedback: 'Summary scores from overall assessment',
+              }];
+            }
+          }
+          
           return {
-            levels: levelData,
+            levels: finalLevelData,
             totalScore: promptResult.totalScore || 0,
             percentile: promptResult.percentile,
             completedAt: promptResult.completedAt,
