@@ -136,10 +136,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
    - **Skills Visualization Section**: Sequential presentation of all assessments
      - FIT Assessment: Radar chart + individual skill scores
      - AI Readiness: Radar chart + individual skill scores
-     - Prompt Architecture: HORIZONTAL PROGRESS BARS (November 2025) - Clean list format with color-coded progress bars for each level (6px height, 8px spacing), score displayed on right, legend of assessed dimensions underneath
-     - AIQ: COMPACT CENTERED BOX (November 2025) - 70mm centered box (previously full-width), standardized header style, performance level interpretation
-     - Prompt Architecture + AIQ fit together on one page
-   - **Recommendations Section**: Candidate-focused only
+     - Prompt Architecture: HORIZONTAL PROGRESS BARS (November 2025) - Clean list format with color-coded progress bars for each level (6px height, 8px spacing), score displayed on right, legend underneath, COMPACT SCORE BOX (70mm × 24px centered box with 8px label)
+     - AIQ: ULTRA-COMPACT CENTERED BOX (November 2025) - 55mm × 20px centered box, standardized header style, performance level interpretation
+     - Prompt Architecture + AIQ + FINAL CANDIDATE RECOMMENDATIONS all fit together on one page
+   - **Recommendations Section**: "FINAL CANDIDATE RECOMMENDATIONS" (renamed November 2025)
+     - No subheadings - bullet points start immediately
      - Strengths to leverage
      - Development areas
      - Training and mentoring paths
