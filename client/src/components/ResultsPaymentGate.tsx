@@ -15,13 +15,15 @@ export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // Fetch completed results count to calculate price
+  // Fetch unique completed assessment types to calculate price
   const { data: results } = useQuery<any[]>({
     queryKey: ["/api/results"],
   });
   
-  const completedCount = results?.filter((r: any) => r.status === 'completed').length || 0;
-  const price = (0.30 + (completedCount * 0.01)).toFixed(2);
+  const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
+  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  const uniqueCount = uniqueAssessmentTypes.size;
+  const price = (0.30 + (uniqueCount * 0.01)).toFixed(2);
 
   const unlockMutation = useMutation({
     mutationFn: async (code: string) => {

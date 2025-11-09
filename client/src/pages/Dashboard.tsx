@@ -32,8 +32,9 @@ export default function Dashboard() {
   const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
   const inProgressResults = results?.filter((r: any) => r.status === 'in_progress') || [];
   
-  // Check if all 4 assessments are completed
-  const allAssessmentsCompleted = completedResults.length === 4;
+  // Check if all 4 DISTINCT assessment types are completed
+  const uniqueCompletedTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  const allAssessmentsCompleted = uniqueCompletedTypes.size === 4;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,8 +94,8 @@ export default function Dashboard() {
                     </div>
                     <p className="text-muted-foreground mb-4">
                       {allAssessmentsCompleted 
-                        ? 'You\'ve completed all 4 assessments. View your results now!' 
-                        : `You've completed ${completedResults.length} of 4 assessments. Complete all assessments to view results.`
+                        ? 'You\'ve completed all 4 unique assessments. View your results now!' 
+                        : `You've completed ${uniqueCompletedTypes.size} of 4 unique assessments. Complete all assessments to view results.`
                       }
                     </p>
                     <div className="flex flex-wrap gap-2">

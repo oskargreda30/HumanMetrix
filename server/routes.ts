@@ -238,21 +238,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get completed assessments count to calculate price
+      // Get completed assessments and check for DISTINCT types
       const results = await storage.getResultsByUser(userId);
-      const completedCount = results.filter((r: any) => r.status === 'completed').length;
+      const completedResults = results.filter((r: any) => r.status === 'completed');
       
-      // CRITICAL: Require all 4 assessments to be completed before allowing unlock
-      if (completedCount < 4) {
+      // Get unique assessment types to prevent duplicate completions from bypassing check
+      const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+      const uniqueCount = uniqueAssessmentTypes.size;
+      
+      // CRITICAL: Require all 4 DISTINCT assessments to be completed before allowing unlock
+      if (uniqueCount < 4) {
         return res.status(400).json({ 
-          message: `You must complete all 4 assessments before unlocking results. You have completed ${completedCount} of 4.`,
-          completedCount,
+          message: `You must complete all 4 unique assessments before unlocking results. You have completed ${uniqueCount} of 4 unique assessments.`,
+          completedCount: uniqueCount,
           required: 4
         });
       }
       
-      // Calculate price: £0.30 base + £0.01 per assessment
-      const priceInPence = Math.round((0.30 + (completedCount * 0.01)) * 100);
+      // Calculate price based on unique assessments: £0.30 base + £0.01 per assessment
+      const priceInPence = Math.round((0.30 + (uniqueCount * 0.01)) * 100);
       
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
@@ -277,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${completedCount} assessment${completedCount > 1 ? 's' : ''})`,
+                description: `Unlock your assessment results and download your professional PDF report (${uniqueCount} unique assessment${uniqueCount > 1 ? 's' : ''})`,
               },
               unit_amount: priceInPence,
             },

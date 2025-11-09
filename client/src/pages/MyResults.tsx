@@ -51,7 +51,10 @@ export default function MyResults() {
   }
 
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
-  const allAssessmentsCompleted = completedResults.length === 4;
+  
+  // Check for 4 DISTINCT assessment types (prevent duplicate completions)
+  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  const allAssessmentsCompleted = uniqueAssessmentTypes.size === 4;
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
@@ -67,7 +70,7 @@ export default function MyResults() {
             <p className="text-muted-foreground mb-6">
               {completedResults.length === 0 
                 ? 'Complete your assessments to view your comprehensive results.' 
-                : `You've completed ${completedResults.length} of 4 assessments. Complete all assessments to view your results.`
+                : `You've completed ${uniqueAssessmentTypes.size} of 4 unique assessments. Complete all assessments to view your results.`
               }
             </p>
             <Link href="/dashboard">
