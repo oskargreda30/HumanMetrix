@@ -238,6 +238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Get completed assessments count to calculate price
+      const results = await storage.getResultsByUser(userId);
+      const completedCount = results.filter((r: any) => r.status === 'completed').length;
+      
+      // Calculate price: £0.30 base + £0.01 per assessment
+      const priceInPence = Math.round((0.30 + (completedCount * 0.01)) * 100);
+      
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
         // Grant free access
@@ -261,9 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
-                description: 'Unlock your assessment results and download your professional PDF report',
+                description: `Unlock your assessment results and download your professional PDF report (${completedCount} assessment${completedCount > 1 ? 's' : ''})`,
               },
-              unit_amount: 31, // £0.31 (0.30 computation + 0.01 tests)
+              unit_amount: priceInPence,
             },
             quantity: 1,
           },

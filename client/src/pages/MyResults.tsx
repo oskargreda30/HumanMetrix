@@ -56,17 +56,24 @@ export default function MyResults() {
   }
 
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
+  const allAssessmentsCompleted = completedResults.length === 4;
 
-  if (completedResults.length === 0) {
+  // Redirect to dashboard if not all assessments are completed
+  if (!allAssessmentsCompleted) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
         <main className="flex-grow flex items-center justify-center p-4">
           <Card className="p-12 text-center max-w-md">
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-2">No Results Yet</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {completedResults.length === 0 ? 'No Results Yet' : 'Assessments In Progress'}
+            </h2>
             <p className="text-muted-foreground mb-6">
-              Complete your assessments to view your comprehensive results.
+              {completedResults.length === 0 
+                ? 'Complete your assessments to view your comprehensive results.' 
+                : `You've completed ${completedResults.length} of 4 assessments. Complete all assessments to view your results.`
+              }
             </p>
             <Link href="/dashboard">
               <Button>Go to Dashboard</Button>

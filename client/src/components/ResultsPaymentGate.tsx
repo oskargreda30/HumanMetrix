@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { Lock, Sparkles, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,6 +13,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export function ResultsPaymentGate() {
   const [discountCode, setDiscountCode] = useState("");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
+  // Fetch completed results count to calculate price
+  const { data: results } = useQuery<any[]>({
+    queryKey: ["/api/results"],
+  });
+  
+  const completedCount = results?.filter((r: any) => r.status === 'completed').length || 0;
+  const price = (0.30 + (completedCount * 0.01)).toFixed(2);
 
   const unlockMutation = useMutation({
     mutationFn: async (code: string) => {
@@ -60,6 +70,16 @@ export function ResultsPaymentGate() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
       <Card className="max-w-2xl w-full p-8 space-y-6">
+        <Button
+          variant="ghost"
+          className="mb-4"
+          onClick={() => setLocation("/dashboard")}
+          data-testid="button-back-to-dashboard"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+        
         <div className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Lock className="h-8 w-8 text-primary" />
@@ -140,7 +160,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results {discountCode ? "(Free)" : "(£0.31)"}
+                Unlock Results {discountCode ? "(Free)" : `(£${price})`}
               </>
             )}
           </Button>

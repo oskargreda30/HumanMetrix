@@ -31,6 +31,9 @@ export default function Dashboard() {
 
   const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
   const inProgressResults = results?.filter((r: any) => r.status === 'in_progress') || [];
+  
+  // Check if all 4 assessments are completed
+  const allAssessmentsCompleted = completedResults.length === 4;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -84,10 +87,15 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <h3 className="text-xl font-semibold">Assessments Complete</h3>
+                      <h3 className="text-xl font-semibold">
+                        {allAssessmentsCompleted ? 'All Assessments Complete!' : 'Assessments In Progress'}
+                      </h3>
                     </div>
                     <p className="text-muted-foreground mb-4">
-                      You've completed {completedResults.length} assessment{completedResults.length > 1 ? 's' : ''}
+                      {allAssessmentsCompleted 
+                        ? 'You\'ve completed all 4 assessments. View your results now!' 
+                        : `You've completed ${completedResults.length} of 4 assessments. Complete all assessments to view results.`
+                      }
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {completedResults.map((result: any) => (
@@ -97,19 +105,21 @@ export default function Dashboard() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Link href="/my-results">
-                      <Button size="lg" className="gap-2" data-testid="button-view-all-results">
-                        <FileText className="h-4 w-4" />
-                        View My Results
-                      </Button>
-                    </Link>
-                    {completedResults[0].completedAt && (
-                      <p className="text-xs text-center text-muted-foreground">
-                        Last completed {format(new Date(completedResults[0].completedAt), 'MMM d, yyyy')}
-                      </p>
-                    )}
-                  </div>
+                  {allAssessmentsCompleted && (
+                    <div className="flex flex-col gap-2">
+                      <Link href="/my-results">
+                        <Button size="lg" className="gap-2" data-testid="button-view-all-results">
+                          <FileText className="h-4 w-4" />
+                          View My Results
+                        </Button>
+                      </Link>
+                      {completedResults[0].completedAt && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          Last completed {format(new Date(completedResults[0].completedAt), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Card>
             </section>
