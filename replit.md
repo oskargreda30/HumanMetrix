@@ -4,11 +4,15 @@
 HumanMetrix is a professional AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy. The platform aims to provide comprehensive insights into a candidate's fit for roles in the AI-driven economy through various assessment types, including FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). Its business vision is to streamline hiring processes and support career growth by leveraging AI for objective skill evaluation.
 
 ## Recent Changes
+- **November 9, 2025**: 
+  - **Results Access Gating**: Enforced requirement for ALL 4 DISTINCT assessments completed before viewing results
+  - **Unique Assessment Type Validation**: Implemented Set-based deduplication across Dashboard, MyResults, ResultsPaymentGate, and backend API to prevent duplicate assessment completions from bypassing 4-assessment requirement
+  - **Security Fix**: Moved completion check BEFORE payment gate in MyResults.tsx to prevent users from paying before completing all assessments
+  - **Server-Side Validation**: Added `/api/unlock-results` endpoint validation requiring exactly 4 unique assessment types before processing payment
+  - **Dynamic Pricing**: Results unlock price calculated based on unique completed assessments (£0.30 base + £0.01 per unique assessment)
+  - **UX Improvements**: Added back button to results payment gate; Dashboard and MyResults now show "X of 4 unique assessments" progress messaging
 - **November 8, 2025**: 
   - **AI Readiness Scoring Update**: Implemented new scoring matrix with 4 points per skill per mapping; each question option now maps to 1-3 specific skills (AL/PE, DF, TF, DE, RAI, CT/PS, ACL, CC, CI) for more granular skill assessment
-  - **Results Access Gating**: Updated to require ALL 4 assessments completed before viewing results; removed individual assessment result buttons from Dashboard
-  - **Dynamic Pricing**: Results unlock price now calculated based on number of completed assessments (£0.30 base + £0.01 per assessment)
-  - **UX Improvements**: Added back button to results payment gate; improved Dashboard messaging to show progress toward completing all assessments
 - **November 8, 2025**: 
   - **Comprehensive MyResults Page**: Created `/my-results` page showing ALL completed assessments in unified view with summary statistics, individual assessment cards with scores/top skills, and "Download Full Report" button for comprehensive PDF export
   - **Fixed PDF Export**: All 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ) now correctly appear in ASSESSMENT SUMMARY section of PDF; added radar chart visualization for FIT and AI Readiness in SKILLS VISUALIZATION section
