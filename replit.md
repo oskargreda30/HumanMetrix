@@ -6,6 +6,9 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 ## Recent Changes
 - **November 8, 2025**: 
   - **AI Readiness Scoring Update**: Implemented new scoring matrix with 4 points per skill per mapping; each question option now maps to 1-3 specific skills (AL/PE, DF, TF, DE, RAI, CT/PS, ACL, CC, CI) for more granular skill assessment
+  - **Results Access Gating**: Updated to require ALL 4 assessments completed before viewing results; removed individual assessment result buttons from Dashboard
+  - **Dynamic Pricing**: Results unlock price now calculated based on number of completed assessments (£0.30 base + £0.01 per assessment)
+  - **UX Improvements**: Added back button to results payment gate; improved Dashboard messaging to show progress toward completing all assessments
 - **November 8, 2025**: 
   - **Comprehensive MyResults Page**: Created `/my-results` page showing ALL completed assessments in unified view with summary statistics, individual assessment cards with scores/top skills, and "Download Full Report" button for comprehensive PDF export
   - **Fixed PDF Export**: All 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ) now correctly appear in ASSESSMENT SUMMARY section of PDF; added radar chart visualization for FIT and AI Readiness in SKILLS VISUALIZATION section

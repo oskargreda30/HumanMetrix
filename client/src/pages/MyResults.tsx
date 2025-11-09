@@ -33,19 +33,14 @@ export default function MyResults() {
 
   const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
 
-  // Fetch all user results
+  // Fetch all user results - ALWAYS fetch to check completion status
   const { data: allResults, isLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
-    enabled: isAuthenticated && hasPaidForResults !== false,
+    enabled: isAuthenticated,
   });
 
   // Find Prompt Architecture result for later fetching
   const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
-
-  // Show payment gate if user hasn't paid for results access
-  if (hasPaidForResults === false) {
-    return <ResultsPaymentGate />;
-  }
 
   if (isLoading || !allResults) {
     return (
@@ -58,7 +53,7 @@ export default function MyResults() {
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
   const allAssessmentsCompleted = completedResults.length === 4;
 
-  // Redirect to dashboard if not all assessments are completed
+  // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -83,6 +78,11 @@ export default function MyResults() {
         <Footer />
       </div>
     );
+  }
+
+  // SECOND: Show payment gate if user hasn't paid for results access
+  if (hasPaidForResults === false) {
+    return <ResultsPaymentGate />;
   }
 
   // Calculate aggregate statistics

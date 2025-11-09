@@ -242,6 +242,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await storage.getResultsByUser(userId);
       const completedCount = results.filter((r: any) => r.status === 'completed').length;
       
+      // CRITICAL: Require all 4 assessments to be completed before allowing unlock
+      if (completedCount < 4) {
+        return res.status(400).json({ 
+          message: `You must complete all 4 assessments before unlocking results. You have completed ${completedCount} of 4.`,
+          completedCount,
+          required: 4
+        });
+      }
+      
       // Calculate price: £0.30 base + £0.01 per assessment
       const priceInPence = Math.round((0.30 + (completedCount * 0.01)) * 100);
       
