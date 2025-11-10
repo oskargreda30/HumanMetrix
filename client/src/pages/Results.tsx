@@ -153,7 +153,7 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
       }
       
       // Add note about evaluation criteria
-      analysis.improvements.push(`**Evaluation Note**: Prompts are scored by GPT-4o across five equal dimensions (20 points each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Each dimension carries equal weight (20%) in the overall assessment of prompt effectiveness.`);
+      analysis.improvements.push(`**Evaluation Note**: Prompts are scored by an AI model across five equal dimensions (20 points each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Each dimension carries equal weight (20%) in the overall assessment of prompt effectiveness.`);
       break;
 
     case "aiq":

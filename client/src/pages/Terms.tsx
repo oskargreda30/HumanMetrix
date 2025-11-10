@@ -52,7 +52,7 @@ export default function Terms() {
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
                   <li>FIT Assessment (15 questions measuring 6 behavioral skills)</li>
                   <li>AI Readiness Assessment (21 questions evaluating 9 AI competencies)</li>
-                  <li>Prompt Architecture Assessment (7 progressive levels evaluated by GPT-4o)</li>
+                  <li>Prompt Architecture Assessment (7 progressive levels evaluated by an AI model)</li>
                   <li>Algorithmic Integrity Quotient (AIQ) (4 scenario-based questions)</li>
                 </ul>
               </section>
@@ -118,7 +118,7 @@ export default function Terms() {
                   Regarding assessment results, please note and expressly acknowledge and agree that:
                 </p>
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
-                  <li>Results are generated using proprietary algorithms and AI evaluation (GPT-4o for Prompt Architecture) and are inherently estimates and indications, not factual guarantees.</li>
+                  <li>Results are generated using proprietary algorithms and AI evaluation (an AI model for Prompt Architecture) and are inherently estimates and indications, not factual guarantees.</li>
                   <li>Results are provided exclusively for informational and developmental purposes.</li>
                   <li>Results shall under no circumstances be the sole or primary basis for any employment, hiring, termination, promotion, educational, or other critical decision. The Platform advises and requires that users (including candidates and employers) conduct independent verification and utilize multiple data points and methods before making such decisions.</li>
                   <li>HumanMetrix expressly disclaims any and all liability for decisions made by any user (candidate or employer) based on these results.</li>
@@ -216,7 +216,7 @@ export default function Terms() {
                 
                 <h3 className="text-sm md:text-lg font-semibold mb-2 md:mb-3">B. AI-Generated Content Disclaimer (Prompt Architecture):</h3>
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
-                  <li>The Prompt Architecture assessment utilizes GPT-4o (OpenAI) or similar third-party AI services for evaluation.</li>
+                  <li>The Prompt Architecture assessment utilizes an AI model or similar third-party AI services for evaluation.</li>
                   <li>Users acknowledge and accept the inherent risks, limitations, and potential inaccuracies associated with AI-based evaluations, including the possibility of errors, inconsistencies, or bias.</li>
                   <li>HumanMetrix makes no guarantees regarding the absolute accuracy, reliability, or predictive value of scores derived from AI evaluation.</li>
                 </ul>

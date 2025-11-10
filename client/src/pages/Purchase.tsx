@@ -39,7 +39,7 @@ const assessments: Assessment[] = [
   {
     id: "prompt-architecture",
     name: "Prompt Architecture Assessment",
-    description: "7 progressive levels testing prompt design skills, evaluated by GPT-4o",
+    description: "7 progressive levels testing prompt design skills, evaluated by an AI model",
     price: 0.01,
     questions: 7
   },

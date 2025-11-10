@@ -212,7 +212,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
       <Card className="p-8 bg-muted/20">
         <h2 className="text-2xl font-semibold mb-4">Evaluation Methodology</h2>
         <p className="text-foreground mb-4">
-          This assessment uses GPT-4o to evaluate your prompt engineering skills across seven progressive difficulty levels.
+          This assessment uses an AI model to evaluate your prompt engineering skills across seven progressive difficulty levels.
           Each prompt you wrote was scored on five key dimensions:
         </p>
         <div className="grid sm:grid-cols-2 gap-4">

@@ -112,38 +112,48 @@ export default function Assessment() {
       return await response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
-      
-      toast({
-        title: "Success",
-        description: "Assessment submitted successfully!",
-      });
-      
-      // Check if all assessments are complete
-      const allResults = await queryClient.fetchQuery({ queryKey: ["/api/results"] }) as any[];
-      const completedResults = allResults?.filter((r: any) => r.status === 'completed') || [];
-      
-      // Check if this completes all 4 assessments
-      const allComplete = isAllAssessmentsComplete(completedResults);
-      
-      if (allComplete) {
-        // Check if user is paid or invited
-        const purchases = await queryClient.fetchQuery({ queryKey: ["/api/purchases"] }) as any[];
-        const hasPaidPurchase = purchases?.some((p: any) => p.resultsAccessPaid === true);
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
         
-        setIsPaidUser(hasPaidPurchase || false);
-        setShowCompletionDialog(true);
+        toast({
+          title: "Success",
+          description: "Assessment submitted successfully!",
+        });
         
-        // Don't redirect automatically - let dialog handle it
-      } else {
-        setLocation("/dashboard");
+        // Check if all assessments are complete
+        const allResults = await queryClient.fetchQuery({ queryKey: ["/api/results"] }) as any[];
+        const completedResults = allResults?.filter((r: any) => r.status === 'completed') || [];
+        
+        // Check if this completes all 4 assessments
+        const allComplete = isAllAssessmentsComplete(completedResults);
+        
+        if (allComplete) {
+          // Check if user is paid or invited
+          const purchases = await queryClient.fetchQuery({ queryKey: ["/api/purchases"] }) as any[];
+          const hasPaidPurchase = purchases?.some((p: any) => p.resultsAccessPaid === true);
+          
+          setIsPaidUser(hasPaidPurchase || false);
+          setShowCompletionDialog(true);
+          
+          // Don't redirect automatically - let dialog handle it
+        } else {
+          setLocation("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error in post-submission processing:", error);
+        // Even if there's an error fetching data, redirect to dashboard
+        toast({
+          title: "Assessment submitted",
+          description: "Your assessment has been submitted. Redirecting to dashboard...",
+        });
+        setTimeout(() => setLocation("/dashboard"), 1500);
       }
     },
     onError: (error: any) => {
       const message = error?.error === 'quota_exceeded' 
         ? "OpenAI API quota exceeded. Please add credits to your OpenAI account to complete this assessment."
-        : "Failed to submit assessment";
+        : "Failed to submit assessment. Please try again.";
       
       toast({
         title: "Error",
@@ -244,7 +254,7 @@ export default function Assessment() {
       case "prompt_architecture":
         return {
           title: "Prompt Architecture Assessment - 7 Levels",
-          description: "This assessment tests your ability to design effective prompts for AI systems across 7 progressive difficulty levels. Each prompt is evaluated by GPT-4o on Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.",
+          description: "This assessment tests your ability to design effective prompts for AI systems across 7 progressive difficulty levels. Each prompt is evaluated by an AI model on Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.",
           tips: [
             "Write clear, specific prompts that address the given scenario",
             "Include relevant context and constraints in your prompts",
@@ -344,11 +354,10 @@ export default function Assessment() {
               <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-semibold mb-2">Instructions:</h4>
-                <ul className="space-y-2">
+                <ul className="space-y-2 list-disc list-inside">
                   {instructions.tips.map((tip, index) => (
-                    <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
-                      <span>{tip}</span>
+                    <li key={index} className="text-sm text-muted-foreground">
+                      {tip}
                     </li>
                   ))}
                 </ul>
@@ -477,13 +486,16 @@ export default function Assessment() {
                             value={option.value}
                             id={`${currentQ.id}-${option.value}`}
                             data-testid={`radio-${currentQ.id}-${option.value}`}
+                            className="mt-0.5"
                           />
                           <Label
                             htmlFor={`${currentQ.id}-${option.value}`}
                             className="flex-1 cursor-pointer"
                           >
-                            <div className="font-medium mb-1 text-sm">{option.value}.</div>
-                            <div className="text-muted-foreground text-sm">{option.text}</div>
+                            <span className="text-sm">
+                              <span className="font-medium">{option.value}.</span>{" "}
+                              <span className="text-muted-foreground">{option.text}</span>
+                            </span>
                           </Label>
                         </div>
                       ))}
