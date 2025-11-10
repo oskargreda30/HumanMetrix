@@ -255,6 +255,7 @@ export const AI_READINESS_SCORING = {
   "3-E": { "TF": 4, "CT/PS": 4 },
   
   "4-A": { "TF": 4, "DE": 4 },
+  "4-B": { "DF": 4, "CI": 4 },
   "4-C": { "RAI": 4, "CT/PS": 4 },
   "4-D": { "ACL": 4, "DE": 4 },
   "4-E": { "AL/PE": 4, "CC": 4 },
