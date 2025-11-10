@@ -4,7 +4,7 @@ import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
@@ -16,6 +16,9 @@ export default function Navigation() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const { clearBasket } = useBasket();
+
+  // Check if user is invitation-only (from backend auth response)
+  const isInvitationOnly = (user as any)?.isInvitationOnly;
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -146,7 +149,7 @@ export default function Navigation() {
                     data-testid="button-logout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    {isInvitationOnly ? "Exit Assessment" : "Logout"}
                   </Button>
                 </>
               ) : (
@@ -236,7 +239,7 @@ export default function Navigation() {
                       data-testid="button-mobile-logout"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Logout
+                      {isInvitationOnly ? "Exit Assessment" : "Logout"}
                     </Button>
                   </>
                 ) : (

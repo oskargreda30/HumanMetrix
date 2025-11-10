@@ -354,12 +354,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
+      
+      // Check if user has any completed purchases (to determine if invitation-only)
+      const purchases = await storage.getPurchasesByUser(user.id);
+      const hasCompletedPurchase = purchases.some((p: any) => p.status === 'completed');
+      
       res.json({
         id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         isAdmin: user.isAdmin,
+        isInvitationOnly: !hasCompletedPurchase,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
