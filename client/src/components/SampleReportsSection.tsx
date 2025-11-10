@@ -30,10 +30,10 @@ export default function SampleReportsSection() {
     <section id="sample-reports" className="py-12 md:py-24 bg-[#0a1628]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-16">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 md:mb-4 text-white" data-testid="text-sample-reports-heading">
+          <h2 className="text-lg md:text-3xl lg:text-4xl font-semibold mb-2 md:mb-4 text-white" data-testid="text-sample-reports-heading">
             View Sample Reports
           </h2>
-          <p className="text-sm md:text-base lg:text-lg text-blue-100/70 max-w-2xl mx-auto px-2" data-testid="text-sample-reports-subheading">
+          <p className="text-xs md:text-base lg:text-lg text-blue-100/70 max-w-2xl mx-auto px-2" data-testid="text-sample-reports-subheading">
             Explore our comprehensive assessment reports with real examples
           </p>
         </div>
@@ -42,21 +42,22 @@ export default function SampleReportsSection() {
           {reports.map((report, index) => (
             <div 
               key={index} 
-              className="rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-4 hover-elevate"
+              className="rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-3 md:space-y-4 hover-elevate"
               data-testid={`card-report-${report.testId}`}
             >
-              <div className="h-12 w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                <report.icon className="h-6 w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                <report.icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
               </div>
-              <h3 className="text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
+              <h3 className="text-sm md:text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
                 {report.title}
               </h3>
               <a href={report.link} download data-testid={`link-download-${report.testId}`} className="w-full">
                 <Button 
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                  size="sm"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
                   data-testid={`button-download-${report.testId}`}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-1.5 h-3 w-3" />
                   Download Sample
                 </Button>
               </a>

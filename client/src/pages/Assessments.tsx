@@ -81,19 +81,19 @@ export default function Assessments() {
       <main className="flex-grow py-8 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 md:mb-12">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white">
+            <h1 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
               AI Assessment Platform
             </h1>
-            <p className="text-sm md:text-base lg:text-xl text-blue-100/70 mb-4 md:mb-6">
+            <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
               Professional assessments starting at just £0.01 per test
             </p>
-            <p className="text-xs md:text-sm text-cyan-400 mb-4 md:mb-6">
+            <p className="text-[11px] md:text-sm text-cyan-400 mb-4 md:mb-6">
               £0.02 base fee + £0.01 per assessment
             </p>
             {isAuthenticated ? (
               <div className="flex gap-4 justify-center">
                 <Link href="/dashboard">
-                  <Button size="lg" data-testid="button-go-to-dashboard">
+                  <Button size="sm" className="text-xs md:text-sm" data-testid="button-go-to-dashboard">
                     Go to Dashboard
                   </Button>
                 </Link>
@@ -102,9 +102,9 @@ export default function Assessments() {
               <div className="flex gap-4 justify-center">
                 <Link href="/login">
                   <Button 
-                    size="lg" 
+                    size="sm"
                     variant="outline"
-                    className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10"
+                    className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 text-xs md:text-sm"
                     data-testid="button-login-to-dashboard"
                   >
                     Login to Access Dashboard
@@ -115,7 +115,7 @@ export default function Assessments() {
           </div>
 
           <div className="mb-8 md:mb-12">
-            <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Available Assessments</h2>
+            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Available Assessments</h2>
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               {availableAssessments.map((assessment) => (
                 <AssessmentCard
@@ -134,14 +134,15 @@ export default function Assessments() {
             {/* Checkout Button */}
             <div className="mt-6 md:mt-8 flex justify-center">
               <Button 
+                size="sm"
                 onClick={() => setCheckoutOpen(true)}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-base"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-xs md:text-base"
                 data-testid="button-view-basket-checkout"
               >
-                <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
+                <ShoppingCart className="h-3 w-3 md:h-5 md:w-5" />
                 View Basket & Checkout
                 {basketCount > 0 && (
-                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
                     {basketCount}
                   </span>
                 )}
@@ -150,7 +151,7 @@ export default function Assessments() {
           </div>
 
           <div>
-            <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Coming Soon</h2>
+            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Coming Soon</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {comingSoon.map((assessment) => (
                 <AssessmentCard

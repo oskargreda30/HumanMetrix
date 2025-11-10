@@ -65,49 +65,49 @@ export default function AssessmentCard({
 
   return (
     <Card className="p-4 md:p-6 hover-elevate transition-all h-full flex flex-col bg-[#1a2744]/50 border-cyan-400/20">
-      <div className="flex items-start justify-between mb-3 md:mb-4">
+      <div className="flex items-start justify-between mb-2 md:mb-4">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-            <Icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" />
+          <div className="h-8 w-8 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+            <Icon className="h-4 w-4 md:h-6 md:w-6 text-cyan-400" />
           </div>
           <div>
-            <h3 className="text-base md:text-lg lg:text-xl font-semibold mb-1 text-white" data-testid={`text-assessment-title`}>{title}</h3>
-            <Badge variant="secondary" className="text-xs" data-testid="badge-question-count">
+            <h3 className="text-sm md:text-lg lg:text-xl font-semibold mb-1 text-white" data-testid={`text-assessment-title`}>{title}</h3>
+            <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid="badge-question-count">
               {questionCount} questions
             </Badge>
           </div>
         </div>
         {status === "completed" && (
-          <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400" data-testid="icon-completed" />
+          <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-cyan-400" data-testid="icon-completed" />
         )}
         {status === "locked" && (
-          <Lock className="h-4 w-4 md:h-5 md:w-5 text-blue-100/50" data-testid="icon-locked" />
+          <Lock className="h-3 w-3 md:h-5 md:w-5 text-blue-100/50" data-testid="icon-locked" />
         )}
       </div>
 
-      <p className="text-sm text-blue-100/70 leading-relaxed mb-4 md:mb-6 flex-grow" data-testid="text-description">
+      <p className="text-xs md:text-sm text-blue-100/70 leading-relaxed mb-3 md:mb-6 flex-grow" data-testid="text-description">
         {description}
       </p>
 
-      <div className="space-y-3 md:space-y-4">
-        <div className="flex items-center justify-between text-xs md:text-sm">
-          <div className="flex items-center gap-1.5 md:gap-2 text-blue-100/70">
+      <div className="space-y-2 md:space-y-4">
+        <div className="flex items-center justify-between text-[11px] md:text-sm">
+          <div className="flex items-center gap-1 md:gap-2 text-blue-100/70">
             <Clock className="h-3 w-3 md:h-4 md:w-4" />
             <span data-testid="text-duration">{duration}</span>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2 text-blue-100/70">
+          <div className="flex items-center gap-1 md:gap-2 text-blue-100/70">
             <FileText className="h-3 w-3 md:h-4 md:w-4" />
             <span data-testid="text-question-count">{questionCount} questions</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-cyan-400/20">
+        <div className="flex items-center justify-between pt-2 md:pt-4 border-t border-cyan-400/20">
           <div>
             {free && (
-              <span className="text-xl md:text-2xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
+              <span className="text-base md:text-2xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
             )}
             {!free && price && (
-              <span className="text-xl md:text-2xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
+              <span className="text-base md:text-2xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
             )}
           </div>
           {isComingSoon ? (
