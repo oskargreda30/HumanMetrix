@@ -28,28 +28,91 @@ const reports = [
 export default function SampleReportsSection() {
   return (
     <section id="sample-reports" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
-      {/* Neural network background decoration */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
+      {/* Animated neural network background decoration - circular pattern */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
         <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          {/* Connection lines - different pattern */}
-          <line x1="5%" y1="15%" x2="25%" y2="35%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="25%" y1="35%" x2="45%" y2="25%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="45%" y1="25%" x2="65%" y2="45%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="65%" y1="45%" x2="85%" y2="30%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="20%" y1="65%" x2="40%" y2="75%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="40%" y1="75%" x2="60%" y2="65%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
-          <line x1="60%" y1="65%" x2="80%" y2="80%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <defs>
+            <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#22d3ee" stopOpacity="1" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.8" />
+            </linearGradient>
+            <radialGradient id="nodeGlow2">
+              <stop offset="0%" stopColor="#22d3ee" stopOpacity="1" />
+              <stop offset="70%" stopColor="#22d3ee" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+            </radialGradient>
+          </defs>
           
-          {/* Nodes */}
-          <circle cx="5%" cy="15%" r="4" fill="currentColor" className="text-cyan-400" />
-          <circle cx="25%" cy="35%" r="5" fill="currentColor" className="text-cyan-400" />
-          <circle cx="45%" cy="25%" r="6" fill="currentColor" className="text-cyan-400" />
-          <circle cx="65%" cy="45%" r="5" fill="currentColor" className="text-cyan-400" />
-          <circle cx="85%" cy="30%" r="4" fill="currentColor" className="text-cyan-400" />
-          <circle cx="20%" cy="65%" r="4" fill="currentColor" className="text-cyan-400" />
-          <circle cx="40%" cy="75%" r="5" fill="currentColor" className="text-cyan-400" />
-          <circle cx="60%" cy="65%" r="6" fill="currentColor" className="text-cyan-400" />
-          <circle cx="80%" cy="80%" r="5" fill="currentColor" className="text-cyan-400" />
+          {/* Center hub */}
+          <g className="animate-pulse" style={{ animationDuration: '2s' }}>
+            <circle cx="50%" cy="50%" r="20" fill="url(#nodeGlow2)" />
+            <circle cx="50%" cy="50%" r="8" fill="#22d3ee" />
+          </g>
+          
+          {/* Inner ring - 6 nodes */}
+          <g className="animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '0.2s' }}>
+            <circle cx="50%" cy="25%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="50%" cy="25%" r="5" fill="#3b82f6" />
+            <circle cx="71.65%" cy="37.5%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="71.65%" cy="37.5%" r="5" fill="#3b82f6" />
+            <circle cx="71.65%" cy="62.5%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="71.65%" cy="62.5%" r="5" fill="#3b82f6" />
+            <circle cx="50%" cy="75%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="50%" cy="75%" r="5" fill="#3b82f6" />
+            <circle cx="28.35%" cy="62.5%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="28.35%" cy="62.5%" r="5" fill="#3b82f6" />
+            <circle cx="28.35%" cy="37.5%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="28.35%" cy="37.5%" r="5" fill="#3b82f6" />
+          </g>
+          
+          {/* Outer ring - 8 nodes */}
+          <g className="animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '0.4s' }}>
+            <circle cx="50%" cy="10%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="50%" cy="10%" r="5" fill="#22d3ee" />
+            <circle cx="79.29%" cy="20.71%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="79.29%" cy="20.71%" r="5" fill="#22d3ee" />
+            <circle cx="90%" cy="50%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="90%" cy="50%" r="5" fill="#22d3ee" />
+            <circle cx="79.29%" cy="79.29%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="79.29%" cy="79.29%" r="5" fill="#22d3ee" />
+            <circle cx="50%" cy="90%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="50%" cy="90%" r="5" fill="#22d3ee" />
+            <circle cx="20.71%" cy="79.29%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="20.71%" cy="79.29%" r="5" fill="#22d3ee" />
+            <circle cx="10%" cy="50%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="10%" cy="50%" r="5" fill="#22d3ee" />
+            <circle cx="20.71%" cy="20.71%" r="12" fill="url(#nodeGlow2)" />
+            <circle cx="20.71%" cy="20.71%" r="5" fill="#22d3ee" />
+          </g>
+          
+          {/* Connections - center to inner ring */}
+          <g stroke="url(#lineGradient2)" strokeWidth="1.5" className="animate-pulse" style={{ animationDuration: '3.5s' }}>
+            <line x1="50%" y1="50%" x2="50%" y2="25%" />
+            <line x1="50%" y1="50%" x2="71.65%" y2="37.5%" />
+            <line x1="50%" y1="50%" x2="71.65%" y2="62.5%" />
+            <line x1="50%" y1="50%" x2="50%" y2="75%" />
+            <line x1="50%" y1="50%" x2="28.35%" y2="62.5%" />
+            <line x1="50%" y1="50%" x2="28.35%" y2="37.5%" />
+          </g>
+          
+          {/* Connections - inner ring to outer ring */}
+          <g stroke="url(#lineGradient2)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.3s' }}>
+            <line x1="50%" y1="25%" x2="50%" y2="10%" />
+            <line x1="50%" y1="25%" x2="79.29%" y2="20.71%" />
+            <line x1="71.65%" y1="37.5%" x2="79.29%" y2="20.71%" />
+            <line x1="71.65%" y1="37.5%" x2="90%" y2="50%" />
+            <line x1="71.65%" y1="62.5%" x2="90%" y2="50%" />
+            <line x1="71.65%" y1="62.5%" x2="79.29%" y2="79.29%" />
+            <line x1="50%" y1="75%" x2="79.29%" y2="79.29%" />
+            <line x1="50%" y1="75%" x2="50%" y2="90%" />
+            <line x1="28.35%" y1="62.5%" x2="50%" y2="90%" />
+            <line x1="28.35%" y1="62.5%" x2="20.71%" y2="79.29%" />
+            <line x1="28.35%" y1="37.5%" x2="20.71%" y2="79.29%" />
+            <line x1="28.35%" y1="37.5%" x2="10%" y2="50%" />
+            <line x1="28.35%" y1="37.5%" x2="20.71%" y2="20.71%" />
+            <line x1="50%" y1="25%" x2="20.71%" y2="20.71%" />
+          </g>
         </svg>
       </div>
       
