@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
+import logoSymbol from "@assets/Gemini_Generated_Image_h0lttqh0lttqh0lt_1762762264717.png";
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
@@ -26,6 +27,34 @@ export default function Navigation() {
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
     return location.startsWith(href);
+  };
+
+  const handleLinkClick = (href: string) => {
+    // Close mobile menu
+    setMobileMenuOpen(false);
+    
+    // If clicking same page, scroll to top
+    if (location === href) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Navigate to new page
+    navigate(href);
+    
+    // For hash links, scroll after navigation
+    if (href.includes('#')) {
+      setTimeout(() => {
+        const id = href.split('#')[1];
+        const element = document.getElementById(id);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else {
+      // Scroll to top for regular page navigation
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   const logoutMutation = useMutation({
@@ -57,7 +86,15 @@ export default function Navigation() {
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home">
+          <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
+            <img 
+              src={logoSymbol} 
+              alt="HumanMetrix Logo" 
+              className="h-10 w-10 object-contain"
+              style={{
+                filter: 'brightness(0) saturate(100%) invert(69%) sepia(94%) saturate(1715%) hue-rotate(157deg) brightness(101%) contrast(101%)'
+              }}
+            />
             <div className="flex items-center gap-1">
               <span className="font-bold text-2xl text-white">Human</span>
               <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
@@ -68,10 +105,14 @@ export default function Navigation() {
           {(!isAuthenticated || user?.isAdmin) && (
             <nav className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
-                <Link 
+                <a
                   key={link.href} 
                   href={link.href}
-                  className={`text-sm font-medium transition-colors ${
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleLinkClick(link.href);
+                  }}
+                  className={`text-sm font-medium transition-colors cursor-pointer ${
                     isActive(link.href) 
                       ? "text-cyan-300" 
                       : "text-blue-100/70 hover:text-cyan-300"
@@ -79,7 +120,7 @@ export default function Navigation() {
                   data-testid={`link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </nav>
           )}
@@ -157,17 +198,20 @@ export default function Navigation() {
           <nav className="flex flex-col gap-4 p-4">
             {/* Hide public nav links for logged-in non-admin users (candidates) */}
             {(!isAuthenticated || user?.isAdmin) && navLinks.map((link) => (
-              <Link 
+              <a
                 key={link.href} 
                 href={link.href}
-                className={`text-sm font-medium transition-colors ${
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLinkClick(link.href);
+                }}
+                className={`text-sm font-medium transition-colors cursor-pointer ${
                   isActive(link.href) ? "text-cyan-300" : "text-blue-100/70"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
                 data-testid={`link-mobile-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-cyan-400/20">
               {!isLoading && (
