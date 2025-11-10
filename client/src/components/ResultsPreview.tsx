@@ -24,12 +24,12 @@ export default function ResultsPreview() {
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { label: "Detailed Score Breakdown", value: "6 Skills" },
+            { label: "Detailed Score Breakdown", value: "Multiple Assessments" },
             { label: "Professional PDF Export", value: "CV-Ready" },
             { label: "Percentile Rankings", value: "Industry Benchmarked" },
           ].map((stat, index) => (
             <div key={index} className="text-center">
-              <div className="text-3xl font-bold font-mono text-cyan-400 mb-2" data-testid={`text-stat-value-${index + 1}`}>
+              <div className="text-xl md:text-2xl font-bold text-cyan-400 mb-2" data-testid={`text-stat-value-${index + 1}`}>
                 {stat.value}
               </div>
               <div className="text-sm text-blue-100/60" data-testid={`text-stat-label-${index + 1}`}>

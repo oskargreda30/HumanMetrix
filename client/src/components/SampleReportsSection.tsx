@@ -42,26 +42,18 @@ export default function SampleReportsSection() {
           {reports.map((report, index) => (
             <div 
               key={index} 
-              className="rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 space-y-4 md:space-y-6 hover-elevate"
+              className="rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-4 hover-elevate"
               data-testid={`card-report-${report.testId}`}
             >
-              <div className="space-y-3 md:space-y-4">
-                <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                  <report.icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
-                </div>
-                <div>
-                  <h3 className="text-base md:text-lg lg:text-xl font-semibold mb-1 md:mb-2 text-white" data-testid={`text-report-${report.testId}-title`}>
-                    {report.title}
-                  </h3>
-                  <p className="text-sm text-blue-100/60 leading-relaxed" data-testid={`text-report-${report.testId}-description`}>
-                    {report.description}
-                  </p>
-                </div>
+              <div className="h-12 w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                <report.icon className="h-6 w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
               </div>
-
-              <a href={report.link} download data-testid={`link-download-${report.testId}`}>
+              <h3 className="text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
+                {report.title}
+              </h3>
+              <a href={report.link} download data-testid={`link-download-${report.testId}`} className="w-full">
                 <Button 
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-sm"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0"
                   data-testid={`button-download-${report.testId}`}
                 >
                   <Download className="mr-2 h-4 w-4" />

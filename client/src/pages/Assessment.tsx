@@ -441,6 +441,9 @@ export default function Assessment() {
                     <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-lg">
                       <h3 className="font-semibold mb-2">Task:</h3>
                       <p className="text-sm">{(currentQ as any).taskInstructions}</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-3 font-medium">
+                        ⚠️ Candidate is measured on their creativity, copying the above question will score 0 points.
+                      </p>
                     </div>
                     
                     <div>
@@ -456,7 +459,7 @@ export default function Assessment() {
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
-                        Your prompt will be evaluated by GPT-4o on clarity, structure, context relevance, creativity, and iterative improvement.
+                        Your prompt will be evaluated by an AI model on clarity, structure, context relevance, creativity, and iterative improvement.
                       </p>
                     </div>
                   </div>

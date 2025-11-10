@@ -90,7 +90,7 @@ export function getPromptArchitectureInstructions(): string {
   return `
 # Prompt Architecture Assessment
 
-This assessment evaluates your ability to design effective prompts for advanced AI systems like GPT-5.
+This assessment evaluates your ability to design effective prompts for advanced AI systems.
 
 ## Instructions
 
@@ -107,7 +107,7 @@ You will complete 7 progressively challenging levels:
 For each level:
 - Read the scenario and task instructions carefully
 - Write your prompt in the text area provided
-- Your prompt will be evaluated by GPT-5 on 5 criteria
+- Your prompt will be evaluated by an AI model on 5 criteria
 - Move to the next level when ready
 
 ## Evaluation Criteria
