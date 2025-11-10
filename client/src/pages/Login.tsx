@@ -25,9 +25,21 @@ export default function Login() {
     }
   }, [isAuthenticated, authLoading, setLocation]);
 
-  // Don't render login page if user is authenticated or auth is loading
-  // This prevents flash of "Logout" button before redirect
-  if (authLoading || isAuthenticated) {
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#0a1628]">
+        <Navigation />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-white">Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Redirect will happen via useEffect above
+  if (isAuthenticated) {
     return null;
   }
 
