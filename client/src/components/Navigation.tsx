@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
-import logoSymbol from "@assets/Gemini_Generated_Image_h0lttqh0lttqh0lt_1762762264717.png";
+import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
