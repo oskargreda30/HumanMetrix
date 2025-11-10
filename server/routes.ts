@@ -552,13 +552,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get available assessments for user
+  // Get available assessments for user (from purchases OR invitations)
   app.get("/api/available-assessments", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const purchases = await storage.getPurchasesByUser(userId);
-      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const availableAssessments: any[] = [];
+      
+      // Check for purchased assessments
+      const purchases = await storage.getPurchasesByUser(userId);
       for (const purchase of purchases) {
         if (purchase.status === 'completed') {
           const items = await storage.getPurchaseItems(purchase.id);
@@ -569,7 +575,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 purchaseItemId: item.id,
                 assessmentType: item.assessmentType,
                 status: item.status,
+                source: 'purchase',
               });
+            }
+          }
+        }
+      }
+      
+      // Check for invitation-based assessments
+      const invitations = await storage.getInvitationsByEmail(user.email);
+      for (const invitation of invitations) {
+        // Only include active invitations (sent or accepted, not completed/expired)
+        if (invitation.status === 'sent' || invitation.status === 'accepted') {
+          // Check if invitation is still valid (not expired)
+          if (new Date(invitation.expiresAt) > new Date()) {
+            // Add each assessment type from the invitation
+            for (const assessmentType of invitation.assessmentTypes) {
+              // Check if this assessment type was already completed via this invitation
+              const existingResult = await storage.getResultByInvitationAndType(invitation.id, assessmentType);
+              
+              if (!existingResult || existingResult.status !== 'completed') {
+                // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
+                availableAssessments.push({
+                  purchaseItemId: `invitation::${invitation.id}::${assessmentType}`,
+                  assessmentType: assessmentType,
+                  status: 'ready',
+                  source: 'invitation',
+                  invitationId: invitation.id,
+                });
+              }
             }
           }
         }
@@ -582,13 +616,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start an assessment
+  // Start an assessment (from purchase or invitation)
   app.post("/api/assessments/start", isAuthenticated, async (req: any, res) => {
     try {
       const { purchaseItemId } = req.body;
       const userId = req.user.id;
+      const user = await storage.getUser(userId);
 
-      // Fetch purchase item
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if this is an invitation-based assessment (synthetic ID format: invitation::{invitationId}::{assessmentType})
+      if (purchaseItemId.startsWith('invitation::')) {
+        const parts = purchaseItemId.split('::');
+        if (parts.length !== 3 || parts[0] !== 'invitation') {
+          return res.status(400).json({ message: "Invalid invitation assessment ID" });
+        }
+        
+        const invitationId = parts[1];
+        const assessmentType = parts[2];
+
+        // Verify invitation exists and belongs to user
+        const invitation = await storage.getInvitation(invitationId);
+        if (!invitation || invitation.candidateEmail !== user.email) {
+          return res.status(403).json({ message: "Unauthorized access to this assessment" });
+        }
+
+        // Verify invitation is still valid
+        if (new Date(invitation.expiresAt) < new Date()) {
+          return res.status(400).json({ message: "Invitation has expired" });
+        }
+
+        // Verify this assessment type is included in the invitation
+        if (!invitation.assessmentTypes.includes(assessmentType)) {
+          return res.status(403).json({ message: "Assessment type not included in invitation" });
+        }
+
+        // Check if assessment already started for this invitation
+        const existing = await storage.getResultByInvitationAndType(invitationId, assessmentType);
+        if (existing) {
+          if (existing.userId !== userId) {
+            return res.status(403).json({ message: "Unauthorized access to this assessment" });
+          }
+          
+          // Calculate remaining time (20 minutes = 1200 seconds)
+          const startTime = new Date(existing.startedAt).getTime();
+          const now = Date.now();
+          const elapsed = Math.floor((now - startTime) / 1000);
+          const remaining = Math.max(0, 1200 - elapsed);
+          
+          return res.json({ ...existing, timeRemaining: remaining });
+        }
+
+        // Create new assessment result for invitation
+        const result = await storage.createAssessmentResult({
+          userId,
+          purchaseItemId: null,
+          invitationId,
+          assessmentType,
+          answers: {},
+          scores: {},
+          totalScore: null,
+          percentile: null,
+          status: 'in_progress',
+          completedAt: null,
+        });
+
+        const startTime = new Date(result.startedAt).getTime();
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const remaining = Math.max(0, 1200 - elapsed);
+
+        return res.json({ ...result, timeRemaining: remaining });
+      }
+
+      // Handle purchase-based assessment (existing logic)
       const [item] = await db.select().from(purchaseItems).where(eq(purchaseItems.id, purchaseItemId)).limit(1);
       if (!item) {
         return res.status(404).json({ message: "Purchase item not found" });

@@ -306,6 +306,19 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getResultByInvitationAndType(invitationId: string, assessmentType: string): Promise<AssessmentResult | undefined> {
+    const [result] = await db
+      .select()
+      .from(assessmentResults)
+      .where(
+        and(
+          eq(assessmentResults.invitationId, invitationId),
+          eq(assessmentResults.assessmentType, assessmentType)
+        )
+      );
+    return result;
+  }
+
   async updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void> {
     await db
       .update(assessmentResults)
@@ -353,6 +366,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitations)
       .where(eq(invitations.sentBy, senderId))
+      .orderBy(desc(invitations.sentAt));
+  }
+
+  async getInvitationsByEmail(email: string): Promise<Invitation[]> {
+    return await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.candidateEmail, email))
       .orderBy(desc(invitations.sentAt));
   }
 
