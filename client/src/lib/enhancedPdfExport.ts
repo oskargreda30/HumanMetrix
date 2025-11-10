@@ -26,8 +26,8 @@ interface PlatformAverages {
 
 // Helper to add subtle background pattern to page
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  // Light blue gradient background
-  pdf.setFillColor(239, 246, 255); // Very light blue
+  // White background
+  pdf.setFillColor(255, 255, 255); // White
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
   // Add page border
@@ -241,6 +241,7 @@ export async function exportEnhancedCandidatePDF(
   pdf.text('COMPREHENSIVE REPORT', pageWidth / 2, yPos + 25, { align: 'center' });
   
   pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
   pdf.text(candidateName.toUpperCase(), pageWidth / 2, yPos + 35, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
@@ -257,9 +258,10 @@ export async function exportEnhancedCandidatePDF(
   pdf.text('CANDIDATE PROFILE', pageWidth / 2, yPos + 8, { align: 'center' });
   
   pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(75, 85, 99);
   pdf.text(`Name: ${candidateName}`, pageWidth / 2, yPos + 16, { align: 'center' });
+  pdf.setFont('helvetica', 'normal');
   pdf.text(`Email: ${candidate.user.email}`, pageWidth / 2, yPos + 22, { align: 'center' });
   pdf.text(`Assessments Completed: ${candidate.results?.filter((r: any) => r.status === 'completed').length || 0}`, pageWidth / 2, yPos + 28, { align: 'center' });
   
@@ -780,7 +782,7 @@ export async function exportEnhancedCandidatePDF(
       pdf.setTextColor(107, 114, 128);
       pdf.text(`${completedLevels.length} level(s) completed`, pageWidth / 2, yPos + 15, { align: 'center' });
       
-      yPos += 22;
+      yPos += 28; // Increased spacing before progress bars
     }
     
     pdf.setTextColor(0, 0, 0);
@@ -1103,6 +1105,9 @@ export async function exportEnhancedCandidatePDF(
   
   // ========== RECOMMENDATIONS SECTION ==========
   // Try to fit on same page (no page break check - let it flow naturally)
+  
+  // Add extra spacing after AIQ section
+  yPos += 6;
   
   // Recommendations Section
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);

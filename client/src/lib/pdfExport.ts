@@ -63,8 +63,8 @@ interface RoleFitData {
 
 // Helper to add subtle background pattern to page
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  // Light blue gradient background
-  pdf.setFillColor(239, 246, 255); // Very light blue
+  // White background
+  pdf.setFillColor(255, 255, 255); // White
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
   // Add page border
@@ -732,7 +732,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('CANDIDATE', 25, yPos + 8);
   
   pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text(candidateName, 25, yPos + 16);
   
@@ -818,12 +818,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(6);
+  pdf.setFontSize(7);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for strengths
@@ -865,12 +865,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(6);
+  pdf.setFontSize(7);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for gaps
@@ -933,21 +933,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.text(sectionTitle, 20, yPos);
     yPos += 7;
     
-    // Line chart dimensions
-    const chartMarginLeft = 25;
-    const chartWidth = pageWidth - 50;
+    // Line chart dimensions - increased left margin for skill labels
+    const chartMarginLeft = 55;
+    const chartWidth = pageWidth - 75;
     const chartHeight = Math.min(skills.length * 8, 80); // Max 80mm height
     const chartStartY = yPos;
     
-    // Draw chart background
+    // Draw chart background with subtle border
     pdf.setFillColor(249, 250, 251);
-    pdf.rect(chartMarginLeft, chartStartY, chartWidth, chartHeight, 'F');
+    pdf.setDrawColor(229, 231, 235);
+    pdf.setLineWidth(0.5);
+    pdf.rect(chartMarginLeft, chartStartY, chartWidth, chartHeight, 'FD');
     
     // Draw Y-axis (skills)
-    pdf.setDrawColor(200, 200, 200);
+    pdf.setDrawColor(203, 213, 225);
+    pdf.setLineWidth(1);
     pdf.line(chartMarginLeft, chartStartY, chartMarginLeft, chartStartY + chartHeight);
     
     // Draw X-axis (scores 0-100)
+    pdf.setLineWidth(1);
     pdf.line(chartMarginLeft, chartStartY + chartHeight, chartMarginLeft + chartWidth, chartStartY + chartHeight);
     
     // X-axis labels (0, 25, 50, 75, 100)
@@ -955,9 +959,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(107, 114, 128);
     [0, 25, 50, 75, 100].forEach(val => {
       const x = chartMarginLeft + (val / 100) * chartWidth;
-      pdf.text(`${val}`, x - 2, chartStartY + chartHeight + 4);
-      pdf.setDrawColor(229, 231, 235);
-      pdf.line(x, chartStartY, x, chartStartY + chartHeight);
+      pdf.text(`${val}`, x, chartStartY + chartHeight + 4, { align: 'center' });
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.3);
+      if (val > 0) { // Don't draw gridline at 0 (that's the Y-axis)
+        pdf.line(x, chartStartY, x, chartStartY + chartHeight);
+      }
     });
     
     // Plot each skill as a horizontal line segment
@@ -966,29 +973,60 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     skills.forEach((skill, index) => {
       const skillY = chartStartY + (index * skillHeight) + (skillHeight / 2);
       
-      // Skill label on left
-      pdf.setFontSize(6);
+      // Skill label on left - better positioned
+      pdf.setFontSize(6.5);
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 20 ? skill.skillName.substring(0, 18) + '...' : skill.skillName;
-      pdf.text(skillName, 10, skillY + 1, { align: 'right' });
+      const skillName = skill.skillName.length > 26 ? skill.skillName.substring(0, 24) + '...' : skill.skillName;
+      pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
       
       // Calculate positions
       const requiredX = chartMarginLeft + (skill.requiredScore / 100) * chartWidth;
       const candidateX = chartMarginLeft + (skill.candidateScore / 100) * chartWidth;
       
-      // Draw line connecting required to candidate score
+      // Draw line connecting required to candidate score (thicker, with gradient effect)
       const lineColor = skill.candidateScore >= skill.requiredScore ? [34, 197, 94] : [239, 68, 68];
       pdf.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
-      pdf.setLineWidth(1.5);
+      pdf.setLineWidth(2.5);
       pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
       
-      // Draw required score marker (circle)
-      pdf.setFillColor(107, 114, 128);
-      pdf.circle(requiredX, skillY, 1.2, 'F');
+      // Draw required score marker (circle with border)
+      pdf.setFillColor(255, 255, 255); // White fill
+      pdf.circle(requiredX, skillY, 2, 'F');
+      pdf.setDrawColor(107, 114, 128);
+      pdf.setLineWidth(1.2);
+      pdf.circle(requiredX, skillY, 2, 'D');
       
-      // Draw candidate score marker (square)
+      // Draw candidate score marker (diamond shape)
       pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-      pdf.rect(candidateX - 1.5, skillY - 1.5, 3, 3, 'F');
+      const diamondSize = 2.5;
+      pdf.setLineWidth(0.5);
+      // Draw diamond (rotated square)
+      const diamondPath = [
+        [candidateX, skillY - diamondSize],           // top
+        [candidateX + diamondSize, skillY],           // right
+        [candidateX, skillY + diamondSize],           // bottom
+        [candidateX - diamondSize, skillY],           // left
+        [candidateX, skillY - diamondSize]            // close path
+      ];
+      diamondPath.forEach((point, i) => {
+        if (i === 0) return;
+        pdf.line(diamondPath[i-1][0], diamondPath[i-1][1], point[0], point[1]);
+      });
+      // Fill the diamond
+      pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
+      pdf.triangle(
+        candidateX, skillY - diamondSize,
+        candidateX + diamondSize, skillY,
+        candidateX, skillY + diamondSize,
+        'F'
+      );
+      pdf.triangle(
+        candidateX, skillY - diamondSize,
+        candidateX - diamondSize, skillY,
+        candidateX, skillY + diamondSize,
+        'F'
+      );
       
       // Add score labels
       pdf.setFontSize(5);
@@ -1008,14 +1046,30 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(55, 65, 81);
     
     // Required score legend
-    pdf.setFillColor(107, 114, 128);
-    pdf.circle(chartMarginLeft + 5, yPos, 1.2, 'F');
-    pdf.text('Required Score', chartMarginLeft + 10, yPos + 1);
+    pdf.setFillColor(255, 255, 255);
+    pdf.circle(chartMarginLeft + 5, yPos, 2, 'F');
+    pdf.setDrawColor(107, 114, 128);
+    pdf.setLineWidth(1.2);
+    pdf.circle(chartMarginLeft + 5, yPos, 2, 'D');
+    pdf.text('Required Score', chartMarginLeft + 11, yPos + 1);
     
-    // Candidate score legend
+    // Candidate score legend (diamond)
     pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-    pdf.rect(chartMarginLeft + 48, yPos - 1.5, 3, 3, 'F');
-    pdf.text('Candidate Score', chartMarginLeft + 55, yPos + 1);
+    const legendDiamondSize = 2.5;
+    const legendX = chartMarginLeft + 52;
+    pdf.triangle(
+      legendX, yPos - legendDiamondSize,
+      legendX + legendDiamondSize, yPos,
+      legendX, yPos + legendDiamondSize,
+      'F'
+    );
+    pdf.triangle(
+      legendX, yPos - legendDiamondSize,
+      legendX - legendDiamondSize, yPos,
+      legendX, yPos + legendDiamondSize,
+      'F'
+    );
+    pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
     yPos += 8;
   };
@@ -1024,6 +1078,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   if (data.alignment.fitSkillAlignments && data.alignment.fitSkillAlignments.length > 0) {
     renderSkillSection(data.alignment.fitSkillAlignments, 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
   }
+  
+  // Add spacing between sections
+  yPos += 6;
   
   // Render AI Readiness skills if available
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
@@ -1075,7 +1132,9 @@ export async function exportCandidatePDF(candidate: CandidateData, skills: Array
   const candidateName = candidate.user.firstName || candidate.user.lastName
     ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
     : 'No Name';
+  pdf.setFont('helvetica', 'bold');
   pdf.text(`Name: ${candidateName}`, 20, yPosition);
+  pdf.setFont('helvetica', 'normal');
   yPosition += 6;
   pdf.text(`Email: ${candidate.user.email}`, 20, yPosition);
   yPosition += 6;
