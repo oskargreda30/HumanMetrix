@@ -5,6 +5,14 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 
 ## Recent Changes
 - **November 10, 2025**:
+  - **Comparison PDF Redesign**: Comprehensive restructuring of multi-candidate comparison PDF export for cleaner visuals and better data presentation
+    - **Unified Section Headers**: All sections (COMPLETION STATUS, FIT ASSESSMENT, AI READINESS, PROMPT ARCHITECTURE, TOP 5 SKILLS) now use consistent addSectionHeader styling with gradient backgrounds
+    - **Enhanced Completion Status Table**: Shows candidate names (truncated to 10 chars) instead of "C1/C2", drawn checkbox shapes (3mm squares with green fill) replace Unicode characters to avoid missing glyph issues
+    - **Compact Layout**: AI Readiness Skills table stays on same page as radar charts (no page break), 3-4mm spacing between sections, 5-8pt fonts throughout
+    - **Prompt Architecture Visualization**: Replaced text table with side-by-side horizontal bar charts for all 7 levels, color-coded candidate bars with legends
+    - **Skills Score Tables**: FIT and AI Readiness tables show ALL skills with black text (17,24,39) for scores instead of performance-based colors, compact 4mm row spacing
+    - **Top 5 Skills Comparison**: Replaced KEY SKILLS OVERVIEW table with grouped horizontal bar chart showing top 5 skills by average score, candidate bars stacked per skill
+    - **Layout Optimization**: All content fits on 3 pages with bounded bar chart widths (100-110mm) and dynamic column calculations
   - **Overlapping Radar Charts for Candidate Comparison**: Implemented multi-candidate overlapping radar charts in Intelligence Hub Compare tab
     - **FIT & AI Readiness Sections**: Added "Combined Comparison" view showing 2-3 candidates overlaid on single radar chart with different colored polygons (30% transparency, 2px stroke)
     - **Visual Hierarchy**: Overlapping chart shown first for instant at-a-glance comparison, individual charts below for detailed analysis
