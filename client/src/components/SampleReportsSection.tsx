@@ -28,9 +28,9 @@ const reports = [
 export default function SampleReportsSection() {
   return (
     <section id="sample-reports" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
-      {/* Animated neural network background decoration - circular pattern */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Animated neural network background decoration - circular pattern extended */}
+      <div className="absolute inset-0 opacity-[0.14] pointer-events-none">
+        <svg className="absolute -top-1/4 -left-1/4 w-[150%] h-[150%]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
           <defs>
             <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
@@ -46,72 +46,72 @@ export default function SampleReportsSection() {
           
           {/* Center hub */}
           <g className="animate-pulse" style={{ animationDuration: '2s' }}>
-            <circle cx="50%" cy="50%" r="20" fill="url(#nodeGlow2)" />
-            <circle cx="50%" cy="50%" r="8" fill="#22d3ee" />
+            <circle cx="50" cy="50" r="3" fill="url(#nodeGlow2)" />
+            <circle cx="50" cy="50" r="1.2" fill="#22d3ee" />
           </g>
           
           {/* Inner ring - 6 nodes */}
           <g className="animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '0.2s' }}>
-            <circle cx="50%" cy="25%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="50%" cy="25%" r="5" fill="#3b82f6" />
-            <circle cx="71.65%" cy="37.5%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="71.65%" cy="37.5%" r="5" fill="#3b82f6" />
-            <circle cx="71.65%" cy="62.5%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="71.65%" cy="62.5%" r="5" fill="#3b82f6" />
-            <circle cx="50%" cy="75%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="50%" cy="75%" r="5" fill="#3b82f6" />
-            <circle cx="28.35%" cy="62.5%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="28.35%" cy="62.5%" r="5" fill="#3b82f6" />
-            <circle cx="28.35%" cy="37.5%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="28.35%" cy="37.5%" r="5" fill="#3b82f6" />
+            <circle cx="50" cy="25" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="50" cy="25" r="0.8" fill="#3b82f6" />
+            <circle cx="71.65" cy="37.5" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="71.65" cy="37.5" r="0.8" fill="#3b82f6" />
+            <circle cx="71.65" cy="62.5" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="71.65" cy="62.5" r="0.8" fill="#3b82f6" />
+            <circle cx="50" cy="75" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="50" cy="75" r="0.8" fill="#3b82f6" />
+            <circle cx="28.35" cy="62.5" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="28.35" cy="62.5" r="0.8" fill="#3b82f6" />
+            <circle cx="28.35" cy="37.5" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="28.35" cy="37.5" r="0.8" fill="#3b82f6" />
           </g>
           
           {/* Outer ring - 8 nodes */}
           <g className="animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '0.4s' }}>
-            <circle cx="50%" cy="10%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="50%" cy="10%" r="5" fill="#22d3ee" />
-            <circle cx="79.29%" cy="20.71%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="79.29%" cy="20.71%" r="5" fill="#22d3ee" />
-            <circle cx="90%" cy="50%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="90%" cy="50%" r="5" fill="#22d3ee" />
-            <circle cx="79.29%" cy="79.29%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="79.29%" cy="79.29%" r="5" fill="#22d3ee" />
-            <circle cx="50%" cy="90%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="50%" cy="90%" r="5" fill="#22d3ee" />
-            <circle cx="20.71%" cy="79.29%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="20.71%" cy="79.29%" r="5" fill="#22d3ee" />
-            <circle cx="10%" cy="50%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="10%" cy="50%" r="5" fill="#22d3ee" />
-            <circle cx="20.71%" cy="20.71%" r="12" fill="url(#nodeGlow2)" />
-            <circle cx="20.71%" cy="20.71%" r="5" fill="#22d3ee" />
+            <circle cx="50" cy="10" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="50" cy="10" r="0.8" fill="#22d3ee" />
+            <circle cx="79.29" cy="20.71" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="79.29" cy="20.71" r="0.8" fill="#22d3ee" />
+            <circle cx="90" cy="50" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="90" cy="50" r="0.8" fill="#22d3ee" />
+            <circle cx="79.29" cy="79.29" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="79.29" cy="79.29" r="0.8" fill="#22d3ee" />
+            <circle cx="50" cy="90" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="50" cy="90" r="0.8" fill="#22d3ee" />
+            <circle cx="20.71" cy="79.29" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="20.71" cy="79.29" r="0.8" fill="#22d3ee" />
+            <circle cx="10" cy="50" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="10" cy="50" r="0.8" fill="#22d3ee" />
+            <circle cx="20.71" cy="20.71" r="2" fill="url(#nodeGlow2)" />
+            <circle cx="20.71" cy="20.71" r="0.8" fill="#22d3ee" />
           </g>
           
           {/* Connections - center to inner ring */}
-          <g stroke="url(#lineGradient2)" strokeWidth="1.5" className="animate-pulse" style={{ animationDuration: '3.5s' }}>
-            <line x1="50%" y1="50%" x2="50%" y2="25%" />
-            <line x1="50%" y1="50%" x2="71.65%" y2="37.5%" />
-            <line x1="50%" y1="50%" x2="71.65%" y2="62.5%" />
-            <line x1="50%" y1="50%" x2="50%" y2="75%" />
-            <line x1="50%" y1="50%" x2="28.35%" y2="62.5%" />
-            <line x1="50%" y1="50%" x2="28.35%" y2="37.5%" />
+          <g stroke="url(#lineGradient2)" strokeWidth="0.25" className="animate-pulse" style={{ animationDuration: '3.5s' }}>
+            <line x1="50" y1="50" x2="50" y2="25" />
+            <line x1="50" y1="50" x2="71.65" y2="37.5" />
+            <line x1="50" y1="50" x2="71.65" y2="62.5" />
+            <line x1="50" y1="50" x2="50" y2="75" />
+            <line x1="50" y1="50" x2="28.35" y2="62.5" />
+            <line x1="50" y1="50" x2="28.35" y2="37.5" />
           </g>
           
           {/* Connections - inner ring to outer ring */}
-          <g stroke="url(#lineGradient2)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.3s' }}>
-            <line x1="50%" y1="25%" x2="50%" y2="10%" />
-            <line x1="50%" y1="25%" x2="79.29%" y2="20.71%" />
-            <line x1="71.65%" y1="37.5%" x2="79.29%" y2="20.71%" />
-            <line x1="71.65%" y1="37.5%" x2="90%" y2="50%" />
-            <line x1="71.65%" y1="62.5%" x2="90%" y2="50%" />
-            <line x1="71.65%" y1="62.5%" x2="79.29%" y2="79.29%" />
-            <line x1="50%" y1="75%" x2="79.29%" y2="79.29%" />
-            <line x1="50%" y1="75%" x2="50%" y2="90%" />
-            <line x1="28.35%" y1="62.5%" x2="50%" y2="90%" />
-            <line x1="28.35%" y1="62.5%" x2="20.71%" y2="79.29%" />
-            <line x1="28.35%" y1="37.5%" x2="20.71%" y2="79.29%" />
-            <line x1="28.35%" y1="37.5%" x2="10%" y2="50%" />
-            <line x1="28.35%" y1="37.5%" x2="20.71%" y2="20.71%" />
-            <line x1="50%" y1="25%" x2="20.71%" y2="20.71%" />
+          <g stroke="url(#lineGradient2)" strokeWidth="0.2" className="animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.3s' }}>
+            <line x1="50" y1="25" x2="50" y2="10" />
+            <line x1="50" y1="25" x2="79.29" y2="20.71" />
+            <line x1="71.65" y1="37.5" x2="79.29" y2="20.71" />
+            <line x1="71.65" y1="37.5" x2="90" y2="50" />
+            <line x1="71.65" y1="62.5" x2="90" y2="50" />
+            <line x1="71.65" y1="62.5" x2="79.29" y2="79.29" />
+            <line x1="50" y1="75" x2="79.29" y2="79.29" />
+            <line x1="50" y1="75" x2="50" y2="90" />
+            <line x1="28.35" y1="62.5" x2="50" y2="90" />
+            <line x1="28.35" y1="62.5" x2="20.71" y2="79.29" />
+            <line x1="28.35" y1="37.5" x2="20.71" y2="79.29" />
+            <line x1="28.35" y1="37.5" x2="10" y2="50" />
+            <line x1="28.35" y1="37.5" x2="20.71" y2="20.71" />
+            <line x1="50" y1="25" x2="20.71" y2="20.71" />
           </g>
         </svg>
       </div>

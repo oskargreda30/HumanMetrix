@@ -26,128 +26,90 @@ const steps = [
 export default function HowItWorks() {
   return (
     <section className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
-      {/* Animated neural network background decoration */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Animated neural network background decoration - circular pattern extended */}
+      <div className="absolute inset-0 opacity-[0.14] pointer-events-none">
+        <svg className="absolute -top-1/4 -left-1/4 w-[150%] h-[150%]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.4" />
+            <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#22d3ee" stopOpacity="1" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.8" />
             </linearGradient>
-            <radialGradient id="nodeGlow">
+            <radialGradient id="nodeGlow1">
               <stop offset="0%" stopColor="#22d3ee" stopOpacity="1" />
               <stop offset="70%" stopColor="#22d3ee" stopOpacity="0.6" />
               <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
             </radialGradient>
           </defs>
           
-          {/* Layer 1 - Input nodes (left) */}
-          <g className="animate-pulse" style={{ animationDuration: '3s' }}>
-            <circle cx="8%" cy="15%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="8%" cy="15%" r="4" fill="#22d3ee" />
-            <circle cx="8%" cy="35%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="8%" cy="35%" r="4" fill="#22d3ee" />
-            <circle cx="8%" cy="55%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="8%" cy="55%" r="4" fill="#22d3ee" />
-            <circle cx="8%" cy="75%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="8%" cy="75%" r="4" fill="#22d3ee" />
+          {/* Center hub */}
+          <g className="animate-pulse" style={{ animationDuration: '2s' }}>
+            <circle cx="50" cy="50" r="3" fill="url(#nodeGlow1)" />
+            <circle cx="50" cy="50" r="1.2" fill="#22d3ee" />
           </g>
           
-          {/* Layer 2 - Hidden layer 1 */}
-          <g className="animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.3s' }}>
-            <circle cx="30%" cy="10%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="30%" cy="10%" r="4" fill="#3b82f6" />
-            <circle cx="30%" cy="28%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="30%" cy="28%" r="4" fill="#3b82f6" />
-            <circle cx="30%" cy="46%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="30%" cy="46%" r="4" fill="#3b82f6" />
-            <circle cx="30%" cy="64%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="30%" cy="64%" r="4" fill="#3b82f6" />
-            <circle cx="30%" cy="82%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="30%" cy="82%" r="4" fill="#3b82f6" />
+          {/* Inner ring - 6 nodes */}
+          <g className="animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '0.2s' }}>
+            <circle cx="50" cy="25" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="50" cy="25" r="0.8" fill="#3b82f6" />
+            <circle cx="71.65" cy="37.5" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="71.65" cy="37.5" r="0.8" fill="#3b82f6" />
+            <circle cx="71.65" cy="62.5" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="71.65" cy="62.5" r="0.8" fill="#3b82f6" />
+            <circle cx="50" cy="75" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="50" cy="75" r="0.8" fill="#3b82f6" />
+            <circle cx="28.35" cy="62.5" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="28.35" cy="62.5" r="0.8" fill="#3b82f6" />
+            <circle cx="28.35" cy="37.5" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="28.35" cy="37.5" r="0.8" fill="#3b82f6" />
           </g>
           
-          {/* Layer 3 - Hidden layer 2 */}
-          <g className="animate-pulse" style={{ animationDuration: '2.8s', animationDelay: '0.6s' }}>
-            <circle cx="52%" cy="18%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="52%" cy="18%" r="4" fill="#22d3ee" />
-            <circle cx="52%" cy="38%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="52%" cy="38%" r="4" fill="#22d3ee" />
-            <circle cx="52%" cy="58%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="52%" cy="58%" r="4" fill="#22d3ee" />
-            <circle cx="52%" cy="78%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="52%" cy="78%" r="4" fill="#22d3ee" />
+          {/* Outer ring - 8 nodes */}
+          <g className="animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '0.4s' }}>
+            <circle cx="50" cy="10" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="50" cy="10" r="0.8" fill="#22d3ee" />
+            <circle cx="79.29" cy="20.71" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="79.29" cy="20.71" r="0.8" fill="#22d3ee" />
+            <circle cx="90" cy="50" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="90" cy="50" r="0.8" fill="#22d3ee" />
+            <circle cx="79.29" cy="79.29" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="79.29" cy="79.29" r="0.8" fill="#22d3ee" />
+            <circle cx="50" cy="90" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="50" cy="90" r="0.8" fill="#22d3ee" />
+            <circle cx="20.71" cy="79.29" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="20.71" cy="79.29" r="0.8" fill="#22d3ee" />
+            <circle cx="10" cy="50" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="10" cy="50" r="0.8" fill="#22d3ee" />
+            <circle cx="20.71" cy="20.71" r="2" fill="url(#nodeGlow1)" />
+            <circle cx="20.71" cy="20.71" r="0.8" fill="#22d3ee" />
           </g>
           
-          {/* Layer 4 - Hidden layer 3 */}
-          <g className="animate-pulse" style={{ animationDuration: '2.3s', animationDelay: '0.9s' }}>
-            <circle cx="74%" cy="12%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="74%" cy="12%" r="4" fill="#3b82f6" />
-            <circle cx="74%" cy="32%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="74%" cy="32%" r="4" fill="#3b82f6" />
-            <circle cx="74%" cy="52%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="74%" cy="52%" r="4" fill="#3b82f6" />
-            <circle cx="74%" cy="72%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="74%" cy="72%" r="4" fill="#3b82f6" />
-            <circle cx="74%" cy="88%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="74%" cy="88%" r="4" fill="#3b82f6" />
+          {/* Connections - center to inner ring */}
+          <g stroke="url(#lineGradient1)" strokeWidth="0.25" className="animate-pulse" style={{ animationDuration: '3.5s' }}>
+            <line x1="50" y1="50" x2="50" y2="25" />
+            <line x1="50" y1="50" x2="71.65" y2="37.5" />
+            <line x1="50" y1="50" x2="71.65" y2="62.5" />
+            <line x1="50" y1="50" x2="50" y2="75" />
+            <line x1="50" y1="50" x2="28.35" y2="62.5" />
+            <line x1="50" y1="50" x2="28.35" y2="37.5" />
           </g>
           
-          {/* Layer 5 - Output nodes (right) */}
-          <g className="animate-pulse" style={{ animationDuration: '3.2s', animationDelay: '1.2s' }}>
-            <circle cx="92%" cy="25%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="92%" cy="25%" r="4" fill="#22d3ee" />
-            <circle cx="92%" cy="50%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="92%" cy="50%" r="4" fill="#22d3ee" />
-            <circle cx="92%" cy="75%" r="8" fill="url(#nodeGlow)" />
-            <circle cx="92%" cy="75%" r="4" fill="#22d3ee" />
-          </g>
-          
-          {/* Connections - Layer 1 to Layer 2 */}
-          <g stroke="url(#lineGradient1)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '4s' }}>
-            <line x1="8%" y1="15%" x2="30%" y2="10%" />
-            <line x1="8%" y1="15%" x2="30%" y2="28%" />
-            <line x1="8%" y1="35%" x2="30%" y2="28%" />
-            <line x1="8%" y1="35%" x2="30%" y2="46%" />
-            <line x1="8%" y1="55%" x2="30%" y2="46%" />
-            <line x1="8%" y1="55%" x2="30%" y2="64%" />
-            <line x1="8%" y1="75%" x2="30%" y2="64%" />
-            <line x1="8%" y1="75%" x2="30%" y2="82%" />
-          </g>
-          
-          {/* Connections - Layer 2 to Layer 3 */}
-          <g stroke="url(#lineGradient1)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>
-            <line x1="30%" y1="10%" x2="52%" y2="18%" />
-            <line x1="30%" y1="28%" x2="52%" y2="18%" />
-            <line x1="30%" y1="28%" x2="52%" y2="38%" />
-            <line x1="30%" y1="46%" x2="52%" y2="38%" />
-            <line x1="30%" y1="46%" x2="52%" y2="58%" />
-            <line x1="30%" y1="64%" x2="52%" y2="58%" />
-            <line x1="30%" y1="64%" x2="52%" y2="78%" />
-            <line x1="30%" y1="82%" x2="52%" y2="78%" />
-          </g>
-          
-          {/* Connections - Layer 3 to Layer 4 */}
-          <g stroke="url(#lineGradient1)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '3.8s', animationDelay: '1s' }}>
-            <line x1="52%" y1="18%" x2="74%" y2="12%" />
-            <line x1="52%" y1="18%" x2="74%" y2="32%" />
-            <line x1="52%" y1="38%" x2="74%" y2="32%" />
-            <line x1="52%" y1="38%" x2="74%" y2="52%" />
-            <line x1="52%" y1="58%" x2="74%" y2="52%" />
-            <line x1="52%" y1="58%" x2="74%" y2="72%" />
-            <line x1="52%" y1="78%" x2="74%" y2="72%" />
-            <line x1="52%" y1="78%" x2="74%" y2="88%" />
-          </g>
-          
-          {/* Connections - Layer 4 to Layer 5 */}
-          <g stroke="url(#lineGradient1)" strokeWidth="1" className="animate-pulse" style={{ animationDuration: '4.2s', animationDelay: '1.5s' }}>
-            <line x1="74%" y1="12%" x2="92%" y2="25%" />
-            <line x1="74%" y1="32%" x2="92%" y2="25%" />
-            <line x1="74%" y1="32%" x2="92%" y2="50%" />
-            <line x1="74%" y1="52%" x2="92%" y2="50%" />
-            <line x1="74%" y1="52%" x2="92%" y2="75%" />
-            <line x1="74%" y1="72%" x2="92%" y2="75%" />
-            <line x1="74%" y1="88%" x2="92%" y2="75%" />
+          {/* Connections - inner ring to outer ring */}
+          <g stroke="url(#lineGradient1)" strokeWidth="0.2" className="animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.3s' }}>
+            <line x1="50" y1="25" x2="50" y2="10" />
+            <line x1="50" y1="25" x2="79.29" y2="20.71" />
+            <line x1="71.65" y1="37.5" x2="79.29" y2="20.71" />
+            <line x1="71.65" y1="37.5" x2="90" y2="50" />
+            <line x1="71.65" y1="62.5" x2="90" y2="50" />
+            <line x1="71.65" y1="62.5" x2="79.29" y2="79.29" />
+            <line x1="50" y1="75" x2="79.29" y2="79.29" />
+            <line x1="50" y1="75" x2="50" y2="90" />
+            <line x1="28.35" y1="62.5" x2="50" y2="90" />
+            <line x1="28.35" y1="62.5" x2="20.71" y2="79.29" />
+            <line x1="28.35" y1="37.5" x2="20.71" y2="79.29" />
+            <line x1="28.35" y1="37.5" x2="10" y2="50" />
+            <line x1="28.35" y1="37.5" x2="20.71" y2="20.71" />
+            <line x1="50" y1="25" x2="20.71" y2="20.71" />
           </g>
         </svg>
       </div>
