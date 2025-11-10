@@ -93,7 +93,7 @@ export default function Navigation() {
             <img 
               src={logoSymbol} 
               alt="HumanMetrix Logo" 
-              className="h-14 w-14 object-contain"
+              className="h-12 w-12 object-cover scale-150"
             />
             <div className="flex items-center gap-1">
               <span className="font-bold text-2xl text-white">Human</span>
