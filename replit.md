@@ -5,6 +5,13 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 
 ## Recent Changes
 - **November 10, 2025**:
+  - **Overlapping Radar Charts for Candidate Comparison**: Implemented multi-candidate overlapping radar charts in Intelligence Hub Compare tab
+    - **FIT & AI Readiness Sections**: Added "Combined Comparison" view showing 2-3 candidates overlaid on single radar chart with different colored polygons (30% transparency, 2px stroke)
+    - **Visual Hierarchy**: Overlapping chart shown first for instant at-a-glance comparison, individual charts below for detailed analysis
+    - **Key Collision Fix**: Uses unique user.id as dataKey instead of candidate names to prevent data overwrites when multiple candidates share identical names
+    - **PDF Export Integration**: Charts capturable via IDs `pdf-comparison-fit-overlapping` and `pdf-comparison-ai-overlapping` for professional comparison reports
+    - **Legend System**: Color-coded legend maps each polygon to candidate name for clear identification
+    - **UX Benefits**: Enables immediate visual skill gap identification across candidates, clearer hiring decisions
   - **PDF Export Enhancements**: Comprehensive visual and structural improvements to all PDF exports
     - **Individual PDFs**: Unified font sizing (8px for Skills Assessed/Average Score/Top Skill), thinner Prompt Architecture progress bars (4mm), removed AIQ performance level feedback, added horizontal bar visualization for AIQ results page
     - **Comparison PDFs**: Color-coded section headers (blue for FIT, violet for AI Readiness), score comparison tables showing all candidates side-by-side
