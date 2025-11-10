@@ -27,8 +27,33 @@ const reports = [
 
 export default function SampleReportsSection() {
   return (
-    <section id="sample-reports" className="py-12 md:py-24 bg-[#0a1628]">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+    <section id="sample-reports" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
+      {/* Neural network background decoration */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+        <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          {/* Connection lines - different pattern */}
+          <line x1="5%" y1="15%" x2="25%" y2="35%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="25%" y1="35%" x2="45%" y2="25%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="45%" y1="25%" x2="65%" y2="45%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="65%" y1="45%" x2="85%" y2="30%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="20%" y1="65%" x2="40%" y2="75%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="40%" y1="75%" x2="60%" y2="65%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="60%" y1="65%" x2="80%" y2="80%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          
+          {/* Nodes */}
+          <circle cx="5%" cy="15%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="25%" cy="35%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="45%" cy="25%" r="6" fill="currentColor" className="text-cyan-400" />
+          <circle cx="65%" cy="45%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="85%" cy="30%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="20%" cy="65%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="40%" cy="75%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="60%" cy="65%" r="6" fill="currentColor" className="text-cyan-400" />
+          <circle cx="80%" cy="80%" r="5" fill="currentColor" className="text-cyan-400" />
+        </svg>
+      </div>
+      
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-16">
           <h2 className="text-lg md:text-3xl lg:text-4xl font-semibold mb-2 md:mb-4 text-white" data-testid="text-sample-reports-heading">
             View Sample Reports

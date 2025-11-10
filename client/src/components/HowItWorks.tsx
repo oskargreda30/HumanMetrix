@@ -25,8 +25,35 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="py-12 md:py-24 bg-[#0a1628]">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+    <section className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
+      {/* Neural network background decoration */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+        <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          {/* Connection lines */}
+          <line x1="10%" y1="20%" x2="30%" y2="40%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="30%" y1="40%" x2="50%" y2="30%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="50%" y1="30%" x2="70%" y2="50%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="70%" y1="50%" x2="90%" y2="35%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="15%" y1="60%" x2="35%" y2="80%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="35%" y1="80%" x2="55%" y2="70%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="55%" y1="70%" x2="75%" y2="85%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          <line x1="75%" y1="85%" x2="95%" y2="75%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
+          
+          {/* Nodes */}
+          <circle cx="10%" cy="20%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="30%" cy="40%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="50%" cy="30%" r="6" fill="currentColor" className="text-cyan-400" />
+          <circle cx="70%" cy="50%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="90%" cy="35%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="15%" cy="60%" r="4" fill="currentColor" className="text-cyan-400" />
+          <circle cx="35%" cy="80%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="55%" cy="70%" r="6" fill="currentColor" className="text-cyan-400" />
+          <circle cx="75%" cy="85%" r="5" fill="currentColor" className="text-cyan-400" />
+          <circle cx="95%" cy="75%" r="4" fill="currentColor" className="text-cyan-400" />
+        </svg>
+      </div>
+      
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-16">
           <h2 className="text-lg md:text-3xl lg:text-4xl font-semibold mb-2 md:mb-4 text-white">How It Works</h2>
           <p className="text-xs md:text-base lg:text-lg text-blue-100/70 max-w-2xl mx-auto px-2">
