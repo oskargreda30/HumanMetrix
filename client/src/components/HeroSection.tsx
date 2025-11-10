@@ -106,7 +106,7 @@ export default function HeroSection() {
               {/* Headline - Fade in second with delay */}
               <h1 
                 className={getAnimationClass(
-                  'text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight',
+                  'text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight',
                   `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -116,7 +116,7 @@ export default function HeroSection() {
               {/* Subheadline - Fade in third with delay */}
               <p 
                 className={getAnimationClass(
-                  'text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4',
+                  'text-xs md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4',
                   `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -129,10 +129,10 @@ export default function HeroSection() {
                     `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
                   )}
                 >
-                  <p className="text-sm md:text-base text-blue-100/70 font-medium mb-3">
+                  <p className="text-xs md:text-base text-blue-100/70 font-medium mb-3">
                     Why use HumanMetrix:
                   </p>
-                  <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm text-blue-100/70">
+                  <ul className="space-y-2 md:space-y-2.5 text-[11px] md:text-sm text-blue-100/70">
                     {[
                       {
                         text: "Stop Competing Against Fake CV Claims",

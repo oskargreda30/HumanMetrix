@@ -90,7 +90,7 @@ export default function Navigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
-            <div className="h-10 w-10 flex items-center justify-center mt-1 -mr-1">
+            <div className="h-10 w-10 flex items-center justify-center -mr-1">
               <img 
                 src={logoSymbol} 
                 alt="HumanMetrix Logo" 
