@@ -1,5 +1,4 @@
 import { CheckSquare, CreditCard, ClipboardCheck, Download } from "lucide-react";
-import networkBg from "@assets/image_1761537286469.png";
 
 const steps = [
   {
@@ -26,16 +25,8 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="relative py-12 md:py-24 overflow-hidden">
-      {/* Network background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${networkBg})` }}
-      />
-      {/* Darker overlay for this section */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/98 via-[#1a2744]/95 to-[#0a1628]/98" />
-      
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+    <section className="py-12 md:py-24 bg-[#0a1628]">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-16">
           <h2 className="text-lg md:text-3xl lg:text-4xl font-semibold mb-2 md:mb-4 text-white">How It Works</h2>
           <p className="text-xs md:text-base lg:text-lg text-blue-100/70 max-w-2xl mx-auto px-2">
