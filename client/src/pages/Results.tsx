@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -416,7 +417,60 @@ export default function Results() {
             </Card>
           )}
 
-          {/* Visualizations - Hidden for AIQ */}
+          {/* AIQ Horizontal Bar Visualization */}
+          {assessmentType === 'aiq' && hasTotalScore && (
+            <Card className="p-8 mb-8">
+              <h2 className="text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
+              <div className="space-y-4">
+                {/* Score labels */}
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span data-testid="text-aiq-min">0</span>
+                  <span className="text-amber-600 font-medium" data-testid="text-aiq-pass-threshold">70 (Pass Rate)</span>
+                  <span data-testid="text-aiq-max">100</span>
+                </div>
+                
+                {/* Progress bar with pass marker */}
+                <div className="relative" data-testid="container-aiq-progress">
+                  <Progress 
+                    value={Math.min(totalScore, 100)} 
+                    className="h-8 relative"
+                    data-testid="progress-aiq-bar"
+                    indicatorClassName={
+                      totalScore >= 70 
+                        ? 'bg-green-600' 
+                        : 'bg-amber-600'
+                    }
+                  />
+                  
+                  {/* Pass rate marker line */}
+                  <div 
+                    className="absolute top-0 bottom-0 w-0.5 bg-amber-600 pointer-events-none" 
+                    style={{ left: '70%' }}
+                    data-testid="marker-aiq-pass-line"
+                  />
+                  
+                  {/* Score value label - positioned safely within bounds */}
+                  {totalScore > 0 && totalScore < 100 && (
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded text-sm font-bold whitespace-nowrap pointer-events-none"
+                      style={{ left: `${Math.min(Math.max(totalScore, 10), 90)}%` }}
+                      data-testid="label-aiq-score-position"
+                    >
+                      {totalScore}
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-center mt-4 text-muted-foreground" data-testid="text-aiq-status">
+                  {totalScore >= 70 
+                    ? '✓ Passed - Strong understanding of AI ethics and responsible deployment' 
+                    : 'Below pass rate - Additional training in AI ethics recommended'}
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Visualizations - For FIT and AI Readiness */}
           {Object.keys(scores).length > 0 && assessmentType !== 'aiq' && (
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               {/* Radar Chart */}
