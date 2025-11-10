@@ -91,7 +91,6 @@ export default function Navigation() {
               src={logoSymbol} 
               alt="HumanMetrix Logo" 
               className="h-10 w-10 object-contain"
-              style={{ filter: 'brightness(0) saturate(100%) invert(70%) sepia(50%) saturate(500%) hue-rotate(160deg) brightness(110%) contrast(100%)' }}
             />
             <div className="flex items-center gap-1">
               <span className="font-bold text-2xl text-white">Human</span>
