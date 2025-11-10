@@ -151,14 +151,84 @@ export const FIT_QUESTIONS = [
   },
 ];
 
-// Scoring key mapping: Each skill mapped to correct answers
+// Scoring matrix for FIT Assessment
+// Each entry maps: "questionId-optionValue": { skill: points }
+// Each option awards 4 points to each skill it maps to
 export const FIT_SCORING = {
-  HA: ["1-A", "2-A", "4-A", "8-A", "9-D", "10-A", "11-A", "15-A"], // High Agency
-  IC: ["1-B", "3-A", "4-B", "5-A", "7-A", "8-B", "10-B", "11-B", "15-B"], // Intellectual Curiosity
-  RA: ["2-B", "3-B", "4-C", "6-D", "7-B", "9-A", "12-A", "13-C", "14-A"], // Resilience
-  EE: ["2-C", "3-C", "4-D", "5-C", "7-D", "8-C", "9-B", "11-C", "12-B", "14-B", "15-C"], // Empathy & Ethics
-  GM: ["1-C", "3-D", "6-B", "7-C", "8-D", "10-C", "12-C", "13-D", "14-C"], // Growth Mindset
-  IA: ["1-D", "2-D", "5-D", "6-C", "9-C", "11-D", "12-D", "14-D", "15-D"], // Interpersonal Agility
+  "1-A": { "HA": 4, "RA": 4, "GM": 4 },
+  "1-B": { "IC": 4, "IA": 4 },
+  "1-C": { "EE": 4, "GM": 4 },
+  "1-D": { "HA": 4, "EE": 4, "IA": 4 },
+  
+  "2-A": { "HA": 4, "GM": 4 },
+  "2-B": { "RA": 4, "EE": 4 },
+  "2-C": { "IC": 4, "EE": 4, "IA": 4 },
+  "2-D": { "HA": 4, "RA": 4, "IA": 4 },
+  
+  "3-A": { "IC": 4, "GM": 4 },
+  "3-B": { "HA": 4, "RA": 4, "IA": 4 },
+  "3-C": { "IC": 4, "EE": 4 },
+  "3-D": { "RA": 4, "GM": 4, "IA": 4 },
+  
+  "4-A": { "HA": 4, "RA": 4, "GM": 4 },
+  "4-B": { "IC": 4, "GM": 4 },
+  "4-C": { "RA": 4, "EE": 4, "IA": 4 },
+  "4-D": { "HA": 4, "EE": 4, "GM": 4 },
+  
+  "5-A": { "IC": 4, "EE": 4 },
+  "5-B": { "RA": 4, "GM": 4, "IA": 4 },
+  "5-C": { "HA": 4, "EE": 4, "IA": 4 },
+  "5-D": { "IC": 4, "RA": 4, "IA": 4 },
+  
+  "6-A": { "HA": 4, "IC": 4 },
+  "6-B": { "RA": 4, "GM": 4 },
+  "6-C": { "EE": 4, "IA": 4 },
+  "6-D": { "HA": 4, "RA": 4, "EE": 4 },
+  
+  "7-A": { "IC": 4, "GM": 4 },
+  "7-B": { "HA": 4, "RA": 4, "GM": 4 },
+  "7-C": { "IC": 4, "GM": 4, "IA": 4 },
+  "7-D": { "EE": 4, "IA": 4 },
+  
+  "8-A": { "HA": 4, "GM": 4, "IA": 4 },
+  "8-B": { "IC": 4, "EE": 4, "IA": 4 },
+  "8-C": { "HA": 4, "EE": 4 },
+  "8-D": { "IC": 4, "RA": 4, "GM": 4 },
+  
+  "9-A": { "RA": 4, "EE": 4 },
+  "9-B": { "IC": 4, "EE": 4 },
+  "9-C": { "HA": 4, "IA": 4 },
+  "9-D": { "HA": 4, "IC": 4, "RA": 4 },
+  
+  "10-A": { "HA": 4, "RA": 4, "GM": 4 },
+  "10-B": { "IC": 4, "GM": 4 },
+  "10-C": { "IC": 4, "RA": 4, "GM": 4 },
+  "10-D": { "RA": 4, "EE": 4, "IA": 4 },
+  
+  "11-A": { "HA": 4, "RA": 4, "IA": 4 },
+  "11-B": { "IC": 4, "EE": 4 },
+  "11-C": { "HA": 4, "EE": 4 },
+  "11-D": { "IC": 4, "GM": 4, "IA": 4 },
+  
+  "12-A": { "RA": 4, "EE": 4, "IA": 4 },
+  "12-B": { "HA": 4, "RA": 4, "EE": 4 },
+  "12-C": { "HA": 4, "GM": 4, "IA": 4 },
+  "12-D": { "IC": 4, "GM": 4, "IA": 4 },
+  
+  "13-A": { "HA": 4, "IC": 4 },
+  "13-B": { "IC": 4, "GM": 4 },
+  "13-C": { "RA": 4, "GM": 4 },
+  "13-D": { "HA": 4, "RA": 4, "GM": 4 },
+  
+  "14-A": { "RA": 4, "EE": 4, "IA": 4 },
+  "14-B": { "HA": 4, "EE": 4 },
+  "14-C": { "IC": 4, "GM": 4, "IA": 4 },
+  "14-D": { "HA": 4, "EE": 4, "IA": 4 },
+  
+  "15-A": { "HA": 4, "IC": 4, "GM": 4 },
+  "15-B": { "IC": 4, "RA": 4, "IA": 4 },
+  "15-C": { "EE": 4, "GM": 4 },
+  "15-D": { "HA": 4, "RA": 4, "IA": 4 },
 };
 
 export const FIT_SKILL_NAMES = {

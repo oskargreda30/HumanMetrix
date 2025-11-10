@@ -1679,25 +1679,7 @@ Format your response as JSON with this structure:
 
 // Scoring functions
 function calculateFITScores(answers: Record<string, string>): Record<string, number> {
-  const skills = {
-    'High Agency': ['1-A', '2-A', '4-A', '8-A', '9-D', '10-A', '11-A', '15-A'],
-    'Intellectual Curiosity': ['1-B', '3-A', '4-B', '5-A', '7-A', '8-B', '10-B', '11-B', '15-B'],
-    'Resilience': ['2-B', '3-B', '4-C', '6-D', '7-B', '9-A', '12-A', '13-C', '14-A'],
-    'Empathy & Ethics': ['2-C', '3-C', '4-D', '5-C', '7-D', '8-C', '9-B', '11-C', '12-B', '14-B', '15-C'],
-    'Growth Mindset': ['1-C', '3-D', '6-B', '7-C', '8-D', '10-C', '12-C', '13-D', '14-C'],
-    'Interpersonal Agility': ['1-D', '2-D', '5-D', '6-C', '9-C', '11-D', '12-D', '14-D', '15-D'],
-  };
-
-  // Maximum possible scores for each skill (number of correct answers × 20 points)
-  const maxScores: Record<string, number> = {
-    'High Agency': 8 * 20, // 160
-    'Intellectual Curiosity': 9 * 20, // 180
-    'Resilience': 9 * 20, // 180
-    'Empathy & Ethics': 11 * 20, // 220
-    'Growth Mindset': 9 * 20, // 180
-    'Interpersonal Agility': 9 * 20, // 180
-  };
-
+  // Initialize skill scores
   const rawScores: Record<string, number> = {
     'High Agency': 0, 
     'Intellectual Curiosity': 0, 
@@ -1707,17 +1689,110 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     'Interpersonal Agility': 0,
   };
 
-  // Calculate raw scores
-  Object.entries(answers).forEach(([question, answer]) => {
-    const key = `${question}-${answer}`;
-    Object.entries(skills).forEach(([skill, correctAnswers]) => {
-      if (correctAnswers.includes(key)) {
-        rawScores[skill] += 20;
-      }
+  // Scoring matrix - each question-option maps to 1-3 skills with 4 points each
+  const scoringMatrix: Record<string, Record<string, number>> = {
+    "1-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    "1-B": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
+    "1-C": { "Empathy & Ethics": 4, "Growth Mindset": 4 },
+    "1-D": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    
+    "2-A": { "High Agency": 4, "Growth Mindset": 4 },
+    "2-B": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "2-C": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "2-D": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    
+    "3-A": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "3-B": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    "3-C": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
+    "3-D": { "Resilience": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    
+    "4-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    "4-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "4-C": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "4-D": { "High Agency": 4, "Empathy & Ethics": 4, "Growth Mindset": 4 },
+    
+    "5-A": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
+    "5-B": { "Resilience": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "5-C": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "5-D": { "Intellectual Curiosity": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    
+    "6-A": { "High Agency": 4, "Intellectual Curiosity": 4 },
+    "6-B": { "Resilience": 4, "Growth Mindset": 4 },
+    "6-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "6-D": { "High Agency": 4, "Resilience": 4, "Empathy & Ethics": 4 },
+    
+    "7-A": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "7-B": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    "7-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "7-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    
+    "8-A": { "High Agency": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "8-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "8-C": { "High Agency": 4, "Empathy & Ethics": 4 },
+    "8-D": { "Intellectual Curiosity": 4, "Resilience": 4, "Growth Mindset": 4 },
+    
+    "9-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "9-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
+    "9-C": { "High Agency": 4, "Interpersonal Agility": 4 },
+    "9-D": { "High Agency": 4, "Intellectual Curiosity": 4, "Resilience": 4 },
+    
+    "10-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    "10-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "10-C": { "Intellectual Curiosity": 4, "Resilience": 4, "Growth Mindset": 4 },
+    "10-D": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    
+    "11-A": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    "11-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
+    "11-C": { "High Agency": 4, "Empathy & Ethics": 4 },
+    "11-D": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    
+    "12-A": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "12-B": { "High Agency": 4, "Resilience": 4, "Empathy & Ethics": 4 },
+    "12-C": { "High Agency": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "12-D": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    
+    "13-A": { "High Agency": 4, "Intellectual Curiosity": 4 },
+    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "13-C": { "Resilience": 4, "Growth Mindset": 4 },
+    "13-D": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    
+    "14-A": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "14-B": { "High Agency": 4, "Empathy & Ethics": 4 },
+    "14-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "14-D": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    
+    "15-A": { "High Agency": 4, "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "15-B": { "Intellectual Curiosity": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    "15-C": { "Empathy & Ethics": 4, "Growth Mindset": 4 },
+    "15-D": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+  };
+
+  // Calculate raw scores based on answers
+  Object.entries(answers).forEach(([questionId, answer]) => {
+    const key = `${questionId}-${answer}`;
+    const skillPoints = scoringMatrix[key];
+    
+    if (skillPoints) {
+      Object.entries(skillPoints).forEach(([skill, points]) => {
+        rawScores[skill] = (rawScores[skill] || 0) + points;
+      });
+    }
+  });
+
+  // Calculate maximum possible scores for each skill
+  const maxScores: Record<string, number> = {};
+  Object.keys(rawScores).forEach(skill => {
+    maxScores[skill] = 0;
+  });
+
+  // Count max points available per skill across all questions
+  Object.values(scoringMatrix).forEach(skillPoints => {
+    Object.entries(skillPoints).forEach(([skill, points]) => {
+      maxScores[skill] = (maxScores[skill] || 0) + points;
     });
   });
 
-  // Normalize to 0-100 scale with division-by-zero guard
+  // Normalize to 0-100 scale
   const normalizedScores: Record<string, number> = {};
   Object.entries(rawScores).forEach(([skill, score]) => {
     if (maxScores[skill] > 0) {
