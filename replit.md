@@ -4,6 +4,18 @@
 HumanMetrix is a professional AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy. The platform aims to provide comprehensive insights into a candidate's fit for roles in the AI-driven economy through various assessment types, including FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). Its business vision is to streamline hiring processes and support career growth by leveraging AI for objective skill evaluation.
 
 ## Recent Changes
+- **November 10, 2025**:
+  - **Hero Section Animation Redesign**: Implemented scroll-triggered animations with comprehensive accessibility support
+    - **IntersectionObserver-Based Triggers**: Animations activate when hero section enters viewport (threshold: 0.1, rootMargin: '0px 0px -100px 0px')
+    - **Staggered Animation Timeline**: Badge (0ms) → Headline (150ms) → Subheadline (300ms) → "Why use" section (500ms) → Bullet points (500-700ms) → CTA buttons (700ms) → Feature cards (700-1000ms)
+    - **Parallax Background Effects**: Subtle parallax on network visualization background and gradient overlay for depth
+    - **CTA Microinteractions**: Primary CTA features pulse animation, hover glow effects, and animated arrow icon
+    - **Complete Reduced-Motion Support**: 
+      - State initializes with media query value to prevent flash of animated content
+      - All animations disabled when `prefers-reduced-motion: reduce` detected
+      - Parallax effects, transitions, hover animations, and smooth scrolling all respect user preference
+      - Content renders statically for users preferring reduced motion
+    - **Mobile-First Design**: Enhanced vertical spacing, responsive typography, and improved touch targets for better mobile engagement
 - **November 9, 2025**: 
   - **Results Access Gating**: Enforced requirement for ALL 4 DISTINCT assessments completed before viewing results
   - **Unique Assessment Type Validation**: Implemented Set-based deduplication across Dashboard, MyResults, ResultsPaymentGate, and backend API to prevent duplicate assessment completions from bypassing 4-assessment requirement
