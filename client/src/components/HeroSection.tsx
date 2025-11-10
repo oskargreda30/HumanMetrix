@@ -86,11 +86,11 @@ export default function HeroSection() {
         style={{ transform: prefersReducedMotion ? 'none' : `translateY(${scrollY * 0.3}px)` }}
       />
       
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10 md:py-24">
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-24">
         <div className="max-w-4xl mx-auto text-center">
           {/* Content */}
-          <div className="space-y-8 md:space-y-10">
-            <div className="space-y-4 md:space-y-5">
+          <div className="space-y-6 md:space-y-10">
+            <div className="space-y-5 md:space-y-5">
               {/* Badge - Fade in first */}
               <div 
                 className={getAnimationClass(
@@ -98,7 +98,7 @@ export default function HeroSection() {
                   `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
-                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
                 </span>
               </div>
@@ -106,7 +106,7 @@ export default function HeroSection() {
               {/* Headline - Fade in second with delay */}
               <h1 
                 className={getAnimationClass(
-                  'text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight',
+                  'text-xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight px-2',
                   `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -116,7 +116,7 @@ export default function HeroSection() {
               {/* Subheadline - Fade in third with delay */}
               <p 
                 className={getAnimationClass(
-                  'text-xs md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4',
+                  'text-[10px] md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
                   `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -125,14 +125,14 @@ export default function HeroSection() {
               <TooltipProvider delayDuration={200}>
                 <div 
                   className={getAnimationClass(
-                    'text-left max-w-2xl mx-auto space-y-2 mt-6',
+                    'text-left max-w-2xl mx-auto space-y-2 mt-6 px-2',
                     `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
                   )}
                 >
-                  <p className="text-xs md:text-base text-blue-100/70 font-medium mb-3">
+                  <p className="text-[10px] md:text-base text-blue-100/70 font-medium mb-3">
                     Why use HumanMetrix:
                   </p>
-                  <ul className="space-y-2 md:space-y-2.5 text-[11px] md:text-sm text-blue-100/70">
+                  <ul className="space-y-2.5 md:space-y-2.5 text-[10px] md:text-sm text-blue-100/70">
                     {[
                       {
                         text: "Stop Competing Against Fake CV Claims",
@@ -157,7 +157,7 @@ export default function HeroSection() {
                           `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`
                         )}
                       >
-                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className={getAnimationClass(
@@ -181,14 +181,15 @@ export default function HeroSection() {
             {/* CTA Buttons with fade-in animation */}
             <div 
               className={getAnimationClass(
-                'flex flex-col sm:flex-row gap-4 justify-center px-2 pt-2',
+                'flex flex-col sm:flex-row gap-3 justify-center px-3 pt-4',
                 `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
               <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
+                  size="sm"
                   className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50',
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-xs',
                     'transition-all duration-300'
                   )}
                   data-testid="button-hero-get-started"
@@ -199,11 +200,12 @@ export default function HeroSection() {
                   )}
                   <span className="relative flex items-center">
                     Types of Assessments
-                    <ArrowRight className={getAnimationClass('ml-2 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                    <ArrowRight className={getAnimationClass('ml-1.5 h-3 w-3', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
               </Link>
               <Button 
+                size="sm"
                 onClick={() => {
                   const element = document.getElementById('sample-reports');
                   element?.scrollIntoView({ 
@@ -213,7 +215,7 @@ export default function HeroSection() {
                 }}
                 variant="outline" 
                 className={getAnimationClass(
-                  'border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg',
+                  'border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg text-xs',
                   'transition-all duration-300'
                 )}
                 data-testid="button-hero-sample-reports"
@@ -223,7 +225,7 @@ export default function HeroSection() {
             </div>
 
             {/* Feature Cards with staggered slide-up animation */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 max-w-4xl mx-auto px-3">
               {[
                 {
                   title: "Instant PDF Results",
@@ -244,14 +246,14 @@ export default function HeroSection() {
                 <div 
                   key={i} 
                   className={getAnimationClass(
-                    'flex flex-col items-center gap-1.5 text-center px-2',
+                    'flex flex-col items-center gap-1 text-center px-2',
                     `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
                   )}
                 >
-                  <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0" />
+                  <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-cyan-400 flex-shrink-0" />
                   <div className="space-y-0.5">
-                    <div className="text-xs md:text-sm font-medium text-blue-100">{item.title}</div>
-                    <div className="text-xs text-blue-100/60 leading-tight">{item.subtitle}</div>
+                    <div className="text-[10px] md:text-sm font-medium text-blue-100">{item.title}</div>
+                    <div className="text-[9px] md:text-xs text-blue-100/60 leading-tight">{item.subtitle}</div>
                   </div>
                 </div>
               ))}
