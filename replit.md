@@ -12,11 +12,16 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
     - **PDF Export Integration**: Charts capturable via IDs `pdf-comparison-fit-overlapping` and `pdf-comparison-ai-overlapping` for professional comparison reports
     - **Legend System**: Color-coded legend maps each polygon to candidate name for clear identification
     - **UX Benefits**: Enables immediate visual skill gap identification across candidates, clearer hiring decisions
+  - **PDF Export Refinements**: Final polish to PDF visual design based on user feedback
+    - **Thinner Line Charts**: Reduced SKILL ALIGNMENT ANALYSIS line thickness from 2.5mm to 0.8mm for cleaner, less chunky appearance in role fit PDFs
+    - **Enhanced Typography**: Increased KEY STRENGTHS and DEVELOPMENT AREAS font sizes to 9pt (from 7pt headers, 8pt body) for improved readability
+    - **Clean Backgrounds**: Removed neural network watermark patterns from all PDFs for professional white backgrounds with subtle borders only
+  - **Compare Tab Scrolling Fix**: Added overflow-auto to CompareTab root container, enabling proper scrolling when candidates are selected and comparison content expands
   - **PDF Export Enhancements**: Comprehensive visual and structural improvements to all PDF exports
     - **Individual PDFs**: Unified font sizing (8px for Skills Assessed/Average Score/Top Skill), thinner Prompt Architecture progress bars (4mm), removed AIQ performance level feedback, added horizontal bar visualization for AIQ results page
     - **Comparison PDFs**: Color-coded section headers (blue for FIT, violet for AI Readiness), score comparison tables showing all candidates side-by-side
     - **Role Fit PDFs**: Replaced tabular skill comparisons with horizontal line charts showing candidate vs required score gaps (green lines for exceeds, red for shortfalls)
-    - **Visual Design**: Light blue backgrounds (RGB: 239,246,255), neural network watermark patterns, page borders, HM monogram logo in header, gradient header backgrounds
+    - **Visual Design**: White backgrounds with page borders, HM monogram logo in header, gradient header backgrounds
   - **Hero Section Animation Redesign**: Implemented scroll-triggered animations with comprehensive accessibility support
     - **IntersectionObserver-Based Triggers**: Animations activate when hero section enters viewport (threshold: 0.1, rootMargin: '0px 0px -100px 0px')
     - **Staggered Animation Timeline**: Badge (0ms) → Headline (150ms) → Subheadline (300ms) → "Why use" section (500ms) → Bullet points (500-700ms) → CTA buttons (700ms) → Feature cards (700-1000ms)
