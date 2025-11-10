@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,91 +11,187 @@ import {
 import networkBg from "@assets/image_1761537286469.png";
 
 export default function HeroSection() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    // Check for reduced motion preference
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = () => setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    // Intersection Observer for scroll-triggered animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
+    );
+
+    if (heroRef.current) {
+      observer.observe(heroRef.current);
+    }
+
+    // Parallax scroll effect (only if no reduced motion preference)
+    const handleScroll = () => {
+      if (!prefersReducedMotion) {
+        setScrollY(window.scrollY);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+      if (heroRef.current) {
+        observer.unobserve(heroRef.current);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [prefersReducedMotion]);
+
+  // Helper function to conditionally apply animation classes
+  const getAnimationClass = (baseClasses: string, animatedClasses: string) => {
+    return prefersReducedMotion 
+      ? baseClasses 
+      : `${baseClasses} ${animatedClasses}`;
+  };
+
   return (
-    <section className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden">
-      {/* Network visualization background */}
+    <section ref={heroRef} className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden">
+      {/* Network visualization background with parallax */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${networkBg})` }}
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-100"
+        style={{ 
+          backgroundImage: `url(${networkBg})`,
+          transform: prefersReducedMotion ? 'none' : `translateY(${scrollY * 0.5}px)`
+        }}
       />
       
-      {/* Navy overlay with gradient for blending */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/95 via-[#1a2744]/90 to-[#0a1628]/95" />
+      {/* Navy overlay with gradient for blending - subtle parallax */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/95 via-[#1a2744]/90 to-[#0a1628]/95 transition-transform duration-100"
+        style={{ transform: prefersReducedMotion ? 'none' : `translateY(${scrollY * 0.3}px)` }}
+      />
       
       <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10 md:py-24">
         <div className="max-w-4xl mx-auto text-center">
           {/* Content */}
           <div className="space-y-8 md:space-y-10">
             <div className="space-y-4 md:space-y-5">
-              <div className="inline-block">
+              {/* Badge - Fade in first */}
+              <div 
+                className={getAnimationClass(
+                  'inline-block',
+                  `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+                )}
+              >
                 <span className="inline-flex items-center rounded-full px-3 py-1 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
                 </span>
               </div>
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
+              
+              {/* Headline - Fade in second with delay */}
+              <h1 
+                className={getAnimationClass(
+                  'text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight',
+                  `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+                )}
+              >
                 Your Next Role Demands More Than a Resume.
               </h1>
-              <p className="text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4">
+              
+              {/* Subheadline - Fade in third with delay */}
+              <p 
+                className={getAnimationClass(
+                  'text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-2 mt-4',
+                  `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+                )}
+              >
                 Stand out from the crowd. Our one-time use assessment tool equips you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity to help you land your next role!
               </p>
               <TooltipProvider delayDuration={200}>
-                <div className="text-left max-w-2xl mx-auto space-y-2 mt-6">
+                <div 
+                  className={getAnimationClass(
+                    'text-left max-w-2xl mx-auto space-y-2 mt-6',
+                    `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+                  )}
+                >
                   <p className="text-sm md:text-base text-blue-100/70 font-medium mb-3">
                     Why use HumanMetrix:
                   </p>
                   <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm text-blue-100/70">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50 transition-colors">
-                            Stop Competing Against Fake CV Claims
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50 transition-colors">
-                            AI is the New Digital Literacy
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50 transition-colors">
-                            Up to 75% of qualified applicants are rejected by ATS
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </li>
+                    {[
+                      {
+                        text: "Stop Competing Against Fake CV Claims",
+                        tooltip: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
+                        delay: "delay-500"
+                      },
+                      {
+                        text: "AI is the New Digital Literacy",
+                        tooltip: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
+                        delay: "delay-700"
+                      },
+                      {
+                        text: "Up to 75% of qualified applicants are rejected by ATS",
+                        tooltip: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
+                        delay: "delay-700"
+                      }
+                    ].map((item, idx) => (
+                      <li 
+                        key={idx}
+                        className={getAnimationClass(
+                          'flex items-start gap-2',
+                          `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`
+                        )}
+                      >
+                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50 transition-colors">
+                              {item.text}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>{item.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </TooltipProvider>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center px-2 pt-2">
+            {/* CTA Buttons with fade-in animation */}
+            <div 
+              className={getAnimationClass(
+                'flex flex-col sm:flex-row gap-4 justify-center px-2 pt-2',
+                `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+              )}
+            >
               <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
-                  className="group bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto" 
+                  className={getAnimationClass(
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-all duration-300',
+                    !prefersReducedMotion ? ' ' : ''
+                  )}
                   data-testid="button-hero-get-started"
                 >
-                  Types of Assessments
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  {/* Pulse animation for main CTA - only if not reduced motion */}
+                  {!prefersReducedMotion && (
+                    <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                  )}
+                  <span className="relative flex items-center">
+                    Types of Assessments
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
                 </Button>
               </Link>
               <Button 
@@ -103,29 +200,39 @@ export default function HeroSection() {
                   element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
                 variant="outline" 
-                className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto" 
+                className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg transition-all duration-300" 
                 data-testid="button-hero-sample-reports"
               >
                 Sample Reports
               </Button>
             </div>
 
+            {/* Feature Cards with staggered slide-up animation */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 max-w-4xl mx-auto">
               {[
                 {
                   title: "Instant PDF Results",
-                  subtitle: "Download reports immediately"
+                  subtitle: "Download reports immediately",
+                  delay: "delay-700"
                 },
                 {
                   title: "CV-Ready Reports",
-                  subtitle: "Professional PDFs for job applications"
+                  subtitle: "Professional PDFs for job applications",
+                  delay: "delay-1000"
                 },
                 {
                   title: "Secure Data Storage",
-                  subtitle: "Safely encrypted and stored"
+                  subtitle: "Safely encrypted and stored",
+                  delay: "delay-1000"
                 }
               ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5 text-center px-2">
+                <div 
+                  key={i} 
+                  className={getAnimationClass(
+                    'flex flex-col items-center gap-1.5 text-center px-2',
+                    `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
+                  )}
+                >
                   <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0" />
                   <div className="space-y-0.5">
                     <div className="text-xs md:text-sm font-medium text-blue-100">{item.title}</div>
