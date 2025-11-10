@@ -246,6 +246,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += (data.candidates.length * 35) + 10;
   pdf.setTextColor(0, 0, 0);
   
+  // Helper function to get candidate name
+  function getCandidateName(candidate: any): string {
+    return candidate.user.firstName || candidate.user.lastName
+      ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+      : candidate.user.email.split('@')[0];
+  }
+  
   // Assessment Completion Status
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   yPos += 3;
@@ -261,10 +268,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   pdf.text('Assessment', 25, yPos);
+  const colWidth = 24;
   data.candidates.forEach((candidate, index) => {
-    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`C${index + 1}`, 80 + (index * 25), yPos);
+    pdf.setTextColor(17, 24, 39);
+    const shortName = getCandidateName(candidate).substring(0, 10);
+    pdf.text(shortName, 80 + (index * colWidth), yPos);
   });
   pdf.setTextColor(0, 0, 0);
   yPos += 5;
@@ -276,8 +284,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     data.candidates.forEach((_, candIndex) => {
       const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      pdf.setTextColor(isCompleted ? 34 : 200, isCompleted ? 197 : 200, isCompleted ? 94 : 200);
-      pdf.text(isCompleted ? '✓' : '○', 85 + (candIndex * 25), yPos);
+      const checkboxX = 83 + (candIndex * colWidth);
+      const checkboxY = yPos - 2;
+      const checkboxSize = 3;
+      
+      // Draw checkbox
+      pdf.setDrawColor(17, 24, 39);
+      pdf.setLineWidth(0.3);
+      pdf.rect(checkboxX, checkboxY, checkboxSize, checkboxSize, 'D');
+      
+      // Fill if completed
+      if (isCompleted) {
+        pdf.setFillColor(34, 197, 94);
+        pdf.rect(checkboxX + 0.5, checkboxY + 0.5, checkboxSize - 1, checkboxSize - 1, 'F');
+      }
     });
     yPos += 6;
   });
@@ -291,18 +311,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = 35;
   
-  // FIT Assessment Radar Charts (BLUE THEME)
+  // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
   if (hasFIT && data.fitChartImages) {
-    // Blue-themed section header for FIT
-    pdf.setFillColor(59, 130, 246); // Blue
-    pdf.rect(18, yPos, pageWidth - 36, 10, 'F');
-    pdf.setFontSize(13);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('FIT ASSESSMENT COMPARISON', 22, yPos + 6.5);
-    pdf.setTextColor(0, 0, 0);
-    yPos += 13;
+    yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
+    yPos += 3;
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
@@ -317,58 +330,43 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 5;
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
-    // FIT Score Table
-    if (yPos > pageHeight - 50) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(9);
+    // FIT Score Table (compact - keep on same page)
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('FIT Skills Score Comparison', 20, yPos);
-    yPos += 5;
+    pdf.text('FIT Skills Comparison', 20, yPos);
+    yPos += 4;
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.text('Skill', 22, yPos);
     const scoreColWidth = (pageWidth - 75) / data.candidates.length;
     data.candidates.forEach((candidate, index) => {
-      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      const shortName = getCandidateName(candidate).substring(0, 12);
+      pdf.setTextColor(17, 24, 39);
+      const shortName = getCandidateName(candidate).substring(0, 10);
       pdf.text(shortName, 75 + (index * scoreColWidth), yPos);
     });
-    yPos += 4;
+    yPos += 3;
     
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
     
-    // Extract FIT skills from skillComparison
+    // Show ALL FIT skills
     const fitSkillNames = ['Empathy', 'Adaptability', 'Leadership', 'Conscientiousness', 'Curiosity', 'Resilience'];
     const fitSkillData = data.skillComparison.filter(skill => 
       fitSkillNames.some(fitSkill => skill.skillName.includes(fitSkill))
     );
     
     fitSkillData.forEach((skill, skillIndex) => {
-      if (skillIndex % 2 === 0) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(20, yPos - 3, pageWidth - 40, 5, 'F');
-      }
-      
       pdf.setFontSize(6);
       pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 25 ? skill.skillName.substring(0, 23) + '...' : skill.skillName;
+      const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
       pdf.text(skillName, 22, yPos);
       
       skill.scores.forEach((score, index) => {
         if (score !== null) {
-          const perf = getPerformanceLevel(score);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+          pdf.setTextColor(17, 24, 39);
           pdf.text(`${score}`, 78 + (index * scoreColWidth), yPos);
         } else {
           pdf.setFont('helvetica', 'normal');
@@ -377,20 +375,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
         }
       });
       
-      yPos += 5;
+      yPos += 4;
     });
     
-    yPos += 5;
+    yPos += 3;
   }
   
-  // Helper function to get candidate name
-  function getCandidateName(candidate: any): string {
-    return candidate.user.firstName || candidate.user.lastName
-      ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-      : candidate.user.email.split('@')[0];
-  }
-  
-  // AI Readiness Radar Charts (VIOLET THEME)
+  // AI Readiness Radar Charts
   const hasAI = data.aiReadinessAssessments?.some(a => a !== null);
   if (hasAI && data.aiChartImages) {
     if (yPos > pageHeight - 80) {
@@ -400,15 +391,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos = 35;
     }
     
-    // Violet-themed section header for AI Readiness
-    pdf.setFillColor(139, 92, 246); // Violet
-    pdf.rect(18, yPos, pageWidth - 36, 10, 'F');
-    pdf.setFontSize(13);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('AI READINESS COMPARISON', 22, yPos + 6.5);
-    pdf.setTextColor(0, 0, 0);
-    yPos += 13;
+    yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
+    yPos += 3;
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
@@ -423,58 +407,43 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 5;
+    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
-    // AI Readiness Score Table
-    if (yPos > pageHeight - 60) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(9);
+    // AI Readiness Score Table (compact - keep on same page)
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('AI Readiness Skills Score Comparison', 20, yPos);
-    yPos += 5;
+    pdf.text('AI Readiness Skills Comparison', 20, yPos);
+    yPos += 4;
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.text('Skill', 22, yPos);
     const aiScoreColWidth = (pageWidth - 75) / data.candidates.length;
     data.candidates.forEach((candidate, index) => {
-      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      const shortName = getCandidateName(candidate).substring(0, 12);
+      pdf.setTextColor(17, 24, 39);
+      const shortName = getCandidateName(candidate).substring(0, 10);
       pdf.text(shortName, 75 + (index * aiScoreColWidth), yPos);
     });
-    yPos += 4;
+    yPos += 3;
     
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
     
-    // Extract AI Readiness skills from skillComparison
+    // Show ALL AI Readiness skills
     const aiSkillNames = ['Algorithmic Literacy', 'Data Fluency', 'Tool Familiarization', 'Digital Ethics', 'Responsible AI', 'Critical Thinking', 'Adaptive Learning', 'Cross-functional', 'Creative Innovation'];
     const aiSkillData = data.skillComparison.filter(skill => 
       aiSkillNames.some(aiSkill => skill.skillName.includes(aiSkill))
     );
     
     aiSkillData.forEach((skill, skillIndex) => {
-      if (skillIndex % 2 === 0) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(20, yPos - 3, pageWidth - 40, 5, 'F');
-      }
-      
       pdf.setFontSize(6);
       pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 25 ? skill.skillName.substring(0, 23) + '...' : skill.skillName;
+      const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
       pdf.text(skillName, 22, yPos);
       
       skill.scores.forEach((score, index) => {
         if (score !== null) {
-          const perf = getPerformanceLevel(score);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+          pdf.setTextColor(17, 24, 39);
           pdf.text(`${score}`, 78 + (index * aiScoreColWidth), yPos);
         } else {
           pdf.setFont('helvetica', 'normal');
@@ -483,10 +452,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
         }
       });
       
-      yPos += 5;
+      yPos += 4;
     });
     
-    yPos += 5;
+    yPos += 3;
   }
   
   // ========== PAGE 3: DETAILED COMPARISONS ==========
@@ -496,42 +465,74 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = 35;
   
-  // Prompt Architecture Summary
+  // Prompt Architecture - Bar Chart Comparison
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
-    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE', yPos, pageWidth);
-    yPos += 2;
-    
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Candidate', 25, yPos);
-    pdf.text('Total', 100, yPos);
-    pdf.text('Percentile', 130, yPos);
-    yPos += 5;
-    
-    data.candidates.forEach((candidate, index) => {
-      const promptData = data.promptArchitectureAssessments?.[index];
-      pdf.setFont('helvetica', 'normal');
-      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      
-      const name = candidate.user.firstName || candidate.user.lastName
-        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-        : `Candidate ${index + 1}`;
-      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
-      pdf.text(shortName, 25, yPos);
-      
-      if (promptData) {
-        pdf.setTextColor(17, 24, 39);
-        pdf.text(`${promptData.totalScore}/100`, 100, yPos);
-        pdf.text(`${promptData.percentile}th`, 130, yPos);
-      } else {
-        pdf.setTextColor(150, 150, 150);
-        pdf.text('N/A', 100, yPos);
-      }
-      yPos += 6;
-    });
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     yPos += 3;
+    
+    const barChartStartY = yPos;
+    const levelHeight = 8;
+    const maxBarWidth = 100;
+    const chartLeftMargin = 55;
+    
+    // Draw level labels and bars for each of the 7 levels
+    for (let level = 1; level <= 7; level++) {
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text(`Level ${level}`, 25, yPos + 4);
+      
+      // Draw bars for each candidate side by side
+      const barWidth = maxBarWidth / data.candidates.length - 2;
+      data.candidates.forEach((candidate, candIndex) => {
+        const promptData = data.promptArchitectureAssessments?.[candIndex];
+        if (promptData && promptData.levels && promptData.levels[level - 1]) {
+          const levelData = promptData.levels[level - 1];
+          const score = levelData.totalScore || 0;
+          const barLength = (score / 100) * barWidth;
+          
+          const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
+          const barX = chartLeftMargin + (candIndex * (barWidth + 2));
+          
+          // Background bar
+          pdf.setFillColor(229, 231, 235);
+          pdf.rect(barX, yPos, barWidth, 5, 'F');
+          
+          // Score bar
+          pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+          pdf.rect(barX, yPos, barLength, 5, 'F');
+          
+          // Score text
+          pdf.setFontSize(5);
+          pdf.setTextColor(17, 24, 39);
+          pdf.text(`${score}`, barX + barWidth + 2, yPos + 3.5);
+        } else {
+          const barX = chartLeftMargin + (candIndex * (barWidth + 2));
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(barX, yPos, barWidth, 5, 'F');
+          pdf.setFontSize(5);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('-', barX + barWidth + 2, yPos + 3.5);
+        }
+      });
+      
+      yPos += levelHeight;
+    }
+    
+    // Legend
+    yPos += 2;
+    pdf.setFontSize(5);
+    data.candidates.forEach((candidate, index) => {
+      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+      pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      pdf.rect(chartLeftMargin + (index * 35), yPos, 3, 3, 'F');
+      pdf.setTextColor(75, 85, 99);
+      const shortName = getCandidateName(candidate).substring(0, 8);
+      pdf.text(shortName, chartLeftMargin + (index * 35) + 5, yPos + 2);
+    });
+    
+    yPos += 6;
   }
   
   // AIQ Summary
@@ -581,7 +582,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
   }
   
-  // Condensed Skill Comparison
+  // Top 5 Skills Comparison - Horizontal Bar Chart
   if (yPos > pageHeight - 60) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -589,50 +590,67 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = 35;
   }
   
-  yPos = addSectionHeader(pdf, 'KEY SKILLS OVERVIEW', yPos, pageWidth);
-  yPos += 2;
+  yPos = addSectionHeader(pdf, 'TOP 5 SKILLS COMPARISON', yPos, pageWidth);
+  yPos += 3;
   
-  pdf.setFontSize(6);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('Skill', 22, yPos);
-  
-  const scoreColWidth = (pageWidth - 75) / data.candidates.length;
-  data.candidates.forEach((candidate, index) => {
-    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`C${index + 1}`, 75 + (index * scoreColWidth), yPos);
+  // Get top 5 skills based on average scores
+  const skillsWithAvg = data.skillComparison.map(skill => {
+    const validScores = skill.scores.filter((s): s is number => s !== null);
+    const avg = validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
+    return { ...skill, avg };
   });
-  yPos += 4;
+  const top5Skills = skillsWithAvg.sort((a, b) => b.avg - a.avg).slice(0, 5);
   
-  pdf.setFont('helvetica', 'normal');
-  // Show only top 10 skills to guarantee fit within page
-  const topSkills = data.skillComparison.slice(0, Math.min(10, data.skillComparison.length));
+  const barChartWidth = 110;
+  const barChartStartX = 60;
   
-  topSkills.forEach((skill, skillIndex) => {
-    if (skillIndex % 2 === 0) {
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(20, yPos - 3, pageWidth - 40, 5, 'F');
-    }
-    
+  top5Skills.forEach((skill, index) => {
     pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    const skillName = skill.skillName.length > 25 ? skill.skillName.substring(0, 23) + '...' : skill.skillName;
-    pdf.text(skillName, 22, yPos);
+    const skillName = skill.skillName.length > 20 ? skill.skillName.substring(0, 18) + '...' : skill.skillName;
+    pdf.text(skillName, 22, yPos + 4);
     
-    skill.scores.forEach((score, index) => {
+    // Draw grouped bars for each candidate
+    const barHeight = 3.5;
+    const barGap = 0.5;
+    const groupHeight = (data.candidates.length * (barHeight + barGap));
+    
+    skill.scores.forEach((score, candIndex) => {
       if (score !== null) {
-        const perf = getPerformanceLevel(score);
+        const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
+        const barLength = (score / 100) * barChartWidth;
+        const barY = yPos + (candIndex * (barHeight + barGap));
+        
+        // Background bar
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(barChartStartX, barY, barChartWidth, barHeight, 'F');
+        
+        // Score bar
+        pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+        pdf.rect(barChartStartX, barY, barLength, barHeight, 'F');
+        
+        // Score label
+        pdf.setFontSize(5);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`${score}`, 78 + (index * scoreColWidth), yPos);
-      } else {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(150, 150, 150);
-        pdf.text('-', 78 + (index * scoreColWidth), yPos);
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${score}`, barChartStartX + barChartWidth + 2, barY + 2.5);
       }
     });
     
-    yPos += 5;
+    yPos += groupHeight + 3;
+  });
+  
+  // Legend
+  yPos += 1;
+  pdf.setFontSize(5);
+  data.candidates.forEach((candidate, index) => {
+    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.rect(25 + (index * 40), yPos, 3, 3, 'F');
+    pdf.setTextColor(75, 85, 99);
+    const shortName = getCandidateName(candidate).substring(0, 10);
+    pdf.text(shortName, 30 + (index * 40), yPos + 2);
   });
   
   pdf.setTextColor(0, 0, 0);
