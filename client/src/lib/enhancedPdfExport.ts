@@ -233,10 +233,30 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  // Calculate overall performance metrics
-  const avgScore = skills.length > 0 
-    ? Math.round(skills.reduce((sum, s) => sum + s.score, 0) / skills.length)
-    : 0;
+  // Calculate overall performance metrics - average across assessment types, not individual skills
+  const avgScore = (() => {
+    if (!candidate.results || candidate.results.length === 0) return 0;
+    
+    const completedResults = candidate.results.filter((r: any) => r.status === 'completed');
+    if (completedResults.length === 0) return 0;
+    
+    const assessmentScores: number[] = [];
+    
+    completedResults.forEach((result: any) => {
+      if (result.scores && Object.keys(result.scores).length > 0) {
+        // For skill-based assessments, calculate average of scores
+        const scores = Object.values(result.scores) as number[];
+        const avg = Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length);
+        assessmentScores.push(avg);
+      } else if (result.totalScore !== null && result.totalScore !== undefined) {
+        // For totalScore assessments (AIQ, Prompt Architecture)
+        assessmentScores.push(result.totalScore);
+      }
+    });
+    
+    if (assessmentScores.length === 0) return 0;
+    return Math.round(assessmentScores.reduce((sum, score) => sum + score, 0) / assessmentScores.length);
+  })();
   const performance = getPerformanceLevel(avgScore);
   
   // Key Metrics (moved up since Executive Summary removed)
@@ -247,7 +267,7 @@ export async function exportEnhancedCandidatePDF(
   const metricsData = [
     { label: 'Skills Assessed', value: skills.length.toString(), fontSize: 14 },
     { label: 'Average Score', value: `${avgScore}/100`, fontSize: 14 },
-    { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 10) || 'N/A', fontSize: 10 },
+    { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 15) || 'N/A', fontSize: 8 },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -271,7 +291,7 @@ export async function exportEnhancedCandidatePDF(
   pdf.setTextColor(0, 0, 0);
   
   // ========== ASSESSMENT SUMMARY ==========
-  yPos = 185;
+  yPos = 185 + 10; // Added 10mm spacing
   yPos = addSectionHeader(pdf, 'ASSESSMENT SUMMARY', yPos, pageWidth);
   yPos += 2;
   
@@ -706,29 +726,29 @@ export async function exportEnhancedCandidatePDF(
       );
       const performance = getPerformanceLevel(avgScore);
       
-      // Compact score box
+      // Compact score box - reduced height from 24 to 18
       const promptBoxWidth = 70;
       const promptBoxX = (pageWidth - promptBoxWidth) / 2;
       
       pdf.setFillColor(249, 250, 251);
       pdf.setDrawColor(229, 231, 235);
-      pdf.roundedRect(promptBoxX, yPos, promptBoxWidth, 24, 2, 2, 'FD');
+      pdf.roundedRect(promptBoxX, yPos, promptBoxWidth, 18, 2, 2, 'FD');
       
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 7, { align: 'center' });
+      pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 5, { align: 'center' });
       
-      pdf.setFontSize(14);
+      pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(performance.color[0], performance.color[1], performance.color[2]);
-      pdf.text(`${avgScore}/100`, pageWidth / 2, yPos + 14, { align: 'center' });
+      pdf.text(`${avgScore}/100`, pageWidth / 2, yPos + 11, { align: 'center' });
       
-      pdf.setFontSize(6);
+      pdf.setFontSize(5);
       pdf.setTextColor(107, 114, 128);
-      pdf.text(`${completedLevels.length} level(s) completed`, pageWidth / 2, yPos + 19, { align: 'center' });
+      pdf.text(`${completedLevels.length} level(s) completed`, pageWidth / 2, yPos + 15, { align: 'center' });
       
-      yPos += 28;
+      yPos += 22;
     }
     
     pdf.setTextColor(0, 0, 0);
@@ -796,6 +816,8 @@ export async function exportEnhancedCandidatePDF(
       yPos = 35;
     }
     
+    yPos += 5; // Added spacing before "Assessed Dimensions"
+    
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(75, 85, 99);
@@ -830,24 +852,24 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
     yPos += 8;
     
-    // Score display - compact centered box
+    // Score display - compact centered box - reduced height from 20 to 15
     const boxWidth = 55;
     const boxX = (pageWidth - boxWidth) / 2;
     
     pdf.setFillColor(239, 246, 255);
     pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(boxX, yPos, boxWidth, 20, 2, 2, 'FD');
+    pdf.roundedRect(boxX, yPos, boxWidth, 15, 2, 2, 'FD');
     
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
-    pdf.text(`${aiqResult.totalScore}/100`, pageWidth / 2, yPos + 10, { align: 'center' });
+    pdf.text(`${aiqResult.totalScore}/100`, pageWidth / 2, yPos + 8, { align: 'center' });
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 16, { align: 'center' });
+    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 12, { align: 'center' });
     
-    yPos += 25;
+    yPos += 20;
     
     // Performance interpretation
     const aiqPerf = getPerformanceLevel(aiqResult.totalScore);

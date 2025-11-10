@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -326,6 +327,61 @@ export default function CandidatesTab() {
                                       <div className="text-center p-2 bg-primary/5 rounded-lg">
                                         <p className="text-xs text-muted-foreground">Average Score</p>
                                         <p className="text-xl font-bold text-primary">{calculateAverageScore(result.scores)}/100</p>
+                                      </div>
+                                    </div>
+                                  ) : result.assessmentType === 'aiq' && result.totalScore !== null && result.status === 'completed' ? (
+                                    <div className="p-4 bg-muted/30 rounded-lg space-y-3" data-testid={`aiq-result-${result.id}`}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium" data-testid="text-aiq-label">AIQ Score</span>
+                                        <span className="text-xl font-bold text-primary" data-testid="text-aiq-score">{result.totalScore}</span>
+                                      </div>
+                                      
+                                      {/* Horizontal bar with pass rate marker */}
+                                      <div className="relative">
+                                        {/* Score labels */}
+                                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                          <span data-testid="text-aiq-min">0</span>
+                                          <span className="text-amber-600 font-medium" data-testid="text-aiq-pass-threshold">70 (Pass)</span>
+                                          <span data-testid="text-aiq-max">100</span>
+                                        </div>
+                                        
+                                        {/* Bar using shadcn Progress with custom styling */}
+                                        <div className="relative" data-testid="container-aiq-progress">
+                                          <Progress 
+                                            value={Math.min(result.totalScore, 100)} 
+                                            className="h-6 relative"
+                                            data-testid="progress-aiq-bar"
+                                            indicatorClassName={
+                                              result.totalScore >= 70 
+                                                ? 'bg-green-600' 
+                                                : 'bg-amber-600'
+                                            }
+                                          />
+                                          
+                                          {/* Pass rate marker line */}
+                                          <div 
+                                            className="absolute top-0 bottom-0 w-0.5 bg-amber-600 pointer-events-none" 
+                                            style={{ left: '70%' }}
+                                            data-testid="marker-aiq-pass-line"
+                                          />
+                                          
+                                          {/* Score value label - positioned safely within bounds */}
+                                          {result.totalScore > 0 && result.totalScore < 100 && (
+                                            <div 
+                                              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap pointer-events-none"
+                                              style={{ left: `${Math.min(Math.max(result.totalScore, 10), 90)}%` }}
+                                              data-testid="label-aiq-score-position"
+                                            >
+                                              {result.totalScore}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        <p className="text-xs text-center mt-2 text-muted-foreground" data-testid="text-aiq-status">
+                                          {result.totalScore >= 70 
+                                            ? '✓ Passed - Strong AI ethics understanding' 
+                                            : 'Below pass rate - Additional training recommended'}
+                                        </p>
                                       </div>
                                     </div>
                                   ) : result.totalScore !== null && (
