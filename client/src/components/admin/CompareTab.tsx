@@ -144,10 +144,10 @@ export default function CompareTab() {
       let fitCombinedChartImage: string | null = null;
       let aiCombinedChartImage: string | null = null;
       
-      // Capture combined FIT chart if any candidates have it
+      // Capture overlapping FIT chart if any candidates have it
       if (comparison.fitAssessments?.some(a => a !== null)) {
         try {
-          const element = document.getElementById('pdf-comparison-fit-combined');
+          const element = document.getElementById('pdf-comparison-fit-overlapping');
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
@@ -156,14 +156,14 @@ export default function CompareTab() {
             fitCombinedChartImage = canvas.toDataURL('image/png');
           }
         } catch (err) {
-          console.error('Error capturing combined FIT chart:', err);
+          console.error('Error capturing overlapping FIT chart:', err);
         }
       }
       
-      // Capture combined AI Readiness chart if any candidates have it
+      // Capture overlapping AI Readiness chart if any candidates have it
       if (comparison.aiReadinessAssessments?.some(a => a !== null)) {
         try {
-          const element = document.getElementById('pdf-comparison-ai-combined');
+          const element = document.getElementById('pdf-comparison-ai-overlapping');
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
@@ -172,7 +172,7 @@ export default function CompareTab() {
             aiCombinedChartImage = canvas.toDataURL('image/png');
           }
         } catch (err) {
-          console.error('Error capturing combined AI chart:', err);
+          console.error('Error capturing overlapping AI chart:', err);
         }
       }
 
@@ -344,51 +344,101 @@ export default function CompareTab() {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
-                        const fitData = comparison.fitAssessments?.[index];
-                        
-                        if (!fitData) {
-                          return (
-                            <div key={candidate.user.id} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
-                              <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
-                              <p className="text-sm font-medium">{getCandidateName(candidate)}</p>
-                              <Badge variant="outline" className="mt-2">Not Completed</Badge>
-                            </div>
-                          );
-                        }
+                    <div className="space-y-8">
+                      {/* Overlapping Radar Chart */}
+                      <div>
+                        <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                        <div id="pdf-comparison-fit-overlapping" className="bg-white p-4 rounded-lg">
+                          <ResponsiveContainer width="100%" height={400}>
+                            <RadarChart data={(() => {
+                              // Merge all candidate FIT data into one dataset using user IDs as keys
+                              return FIT_SKILLS.map(skill => {
+                                const dataPoint: any = { skill: skill.displayName };
+                                selectedCandidateData?.forEach((candidate: any, index: number) => {
+                                  const fitData = comparison.fitAssessments?.[index];
+                                  if (fitData) {
+                                    // Use user.id as key to avoid collisions with duplicate names
+                                    dataPoint[candidate.user.id] = fitData.scores[skill.key] || 0;
+                                  }
+                                });
+                                return dataPoint;
+                              });
+                            })()}>
+                              <PolarGrid />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                              {selectedCandidateData?.map((candidate: any, index: number) => {
+                                if (!comparison.fitAssessments?.[index]) return null;
+                                return (
+                                  <Radar
+                                    key={candidate.user.id}
+                                    name={getCandidateName(candidate)}
+                                    dataKey={candidate.user.id}
+                                    stroke={CHART_COLORS[index]}
+                                    fill={CHART_COLORS[index]}
+                                    fillOpacity={0.3}
+                                    strokeWidth={2}
+                                  />
+                                );
+                              })}
+                              <Legend />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
 
-                        const radarData = FIT_SKILLS.map(skill => ({
-                          skill: skill.displayName,
-                          score: fitData.scores[skill.key] || 0,
-                        }));
+                      {/* Individual Charts */}
+                      <div>
+                        <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                          {selectedCandidateData?.map((candidate: any, index: number) => {
+                            const fitData = comparison.fitAssessments?.[index];
+                            
+                            if (!fitData) {
+                              return (
+                                <div key={candidate.user.id} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
+                                  <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
+                                  <p className="text-sm font-medium">{getCandidateName(candidate)}</p>
+                                  <Badge variant="outline" className="mt-2">Not Completed</Badge>
+                                </div>
+                              );
+                            }
 
-                        return (
-                          <div key={candidate.user.id} className="space-y-4">
-                            <div className="text-center">
-                              <p className="font-medium" style={{ color: CHART_COLORS[index] }}>
-                                {getCandidateName(candidate)}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Completed {new Date(fitData.completedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <ResponsiveContainer width="100%" height={300}>
-                              <RadarChart data={radarData}>
-                                <PolarGrid />
-                                <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                                <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                                <Radar
-                                  dataKey="score"
-                                  stroke={CHART_COLORS[index]}
-                                  fill={CHART_COLORS[index]}
-                                  fillOpacity={0.5}
-                                />
-                              </RadarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        );
-                      })}
+                            const radarData = FIT_SKILLS.map(skill => ({
+                              skill: skill.displayName,
+                              score: fitData.scores[skill.key] || 0,
+                            }));
+
+                            return (
+                              <div key={candidate.user.id} className="space-y-4">
+                                <div className="text-center">
+                                  <p className="font-medium" style={{ color: CHART_COLORS[index] }}>
+                                    {getCandidateName(candidate)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Completed {new Date(fitData.completedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
+                                  <ResponsiveContainer width="100%" height={300}>
+                                    <RadarChart data={radarData}>
+                                      <PolarGrid />
+                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
+                                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                                      <Radar
+                                        dataKey="score"
+                                        stroke={CHART_COLORS[index]}
+                                        fill={CHART_COLORS[index]}
+                                        fillOpacity={0.5}
+                                      />
+                                    </RadarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -407,51 +457,101 @@ export default function CompareTab() {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
-                        const aiReadinessData = comparison.aiReadinessAssessments?.[index];
-                        
-                        if (!aiReadinessData) {
-                          return (
-                            <div key={candidate.user.id} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
-                              <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
-                              <p className="text-sm font-medium">{getCandidateName(candidate)}</p>
-                              <Badge variant="outline" className="mt-2">Not Completed</Badge>
-                            </div>
-                          );
-                        }
+                    <div className="space-y-8">
+                      {/* Overlapping Radar Chart */}
+                      <div>
+                        <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                        <div id="pdf-comparison-ai-overlapping" className="bg-white p-4 rounded-lg">
+                          <ResponsiveContainer width="100%" height={400}>
+                            <RadarChart data={(() => {
+                              // Merge all candidate AI Readiness data into one dataset using user IDs as keys
+                              return AI_READINESS_SKILLS.map(skill => {
+                                const dataPoint: any = { skill: skill.displayName };
+                                selectedCandidateData?.forEach((candidate: any, index: number) => {
+                                  const aiData = comparison.aiReadinessAssessments?.[index];
+                                  if (aiData) {
+                                    // Use user.id as key to avoid collisions with duplicate names
+                                    dataPoint[candidate.user.id] = aiData.scores[skill.key] || 0;
+                                  }
+                                });
+                                return dataPoint;
+                              });
+                            })()}>
+                              <PolarGrid />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                              {selectedCandidateData?.map((candidate: any, index: number) => {
+                                if (!comparison.aiReadinessAssessments?.[index]) return null;
+                                return (
+                                  <Radar
+                                    key={candidate.user.id}
+                                    name={getCandidateName(candidate)}
+                                    dataKey={candidate.user.id}
+                                    stroke={CHART_COLORS[index]}
+                                    fill={CHART_COLORS[index]}
+                                    fillOpacity={0.3}
+                                    strokeWidth={2}
+                                  />
+                                );
+                              })}
+                              <Legend />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
 
-                        const radarData = AI_READINESS_SKILLS.map(skill => ({
-                          skill: skill.displayName,
-                          score: aiReadinessData.scores[skill.key] || 0,
-                        }));
+                      {/* Individual Charts */}
+                      <div>
+                        <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                          {selectedCandidateData?.map((candidate: any, index: number) => {
+                            const aiReadinessData = comparison.aiReadinessAssessments?.[index];
+                            
+                            if (!aiReadinessData) {
+                              return (
+                                <div key={candidate.user.id} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
+                                  <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
+                                  <p className="text-sm font-medium">{getCandidateName(candidate)}</p>
+                                  <Badge variant="outline" className="mt-2">Not Completed</Badge>
+                                </div>
+                              );
+                            }
 
-                        return (
-                          <div key={candidate.user.id} className="space-y-4">
-                            <div className="text-center">
-                              <p className="font-medium" style={{ color: CHART_COLORS[index] }}>
-                                {getCandidateName(candidate)}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Completed {new Date(aiReadinessData.completedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <ResponsiveContainer width="100%" height={300}>
-                              <RadarChart data={radarData}>
-                                <PolarGrid />
-                                <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
-                                <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                                <Radar
-                                  dataKey="score"
-                                  stroke={CHART_COLORS[index]}
-                                  fill={CHART_COLORS[index]}
-                                  fillOpacity={0.5}
-                                />
-                              </RadarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        );
-                      })}
+                            const radarData = AI_READINESS_SKILLS.map(skill => ({
+                              skill: skill.displayName,
+                              score: aiReadinessData.scores[skill.key] || 0,
+                            }));
+
+                            return (
+                              <div key={candidate.user.id} className="space-y-4">
+                                <div className="text-center">
+                                  <p className="font-medium" style={{ color: CHART_COLORS[index] }}>
+                                    {getCandidateName(candidate)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Completed {new Date(aiReadinessData.completedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
+                                  <ResponsiveContainer width="100%" height={300}>
+                                    <RadarChart data={radarData}>
+                                      <PolarGrid />
+                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
+                                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                                      <Radar
+                                        dataKey="score"
+                                        stroke={CHART_COLORS[index]}
+                                        fill={CHART_COLORS[index]}
+                                        fillOpacity={0.5}
+                                      />
+                                    </RadarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
