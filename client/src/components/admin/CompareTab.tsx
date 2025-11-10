@@ -139,6 +139,42 @@ export default function CompareTab() {
           aiChartImages.push(null);
         }
       }
+      
+      // Capture combined radar charts
+      let fitCombinedChartImage: string | null = null;
+      let aiCombinedChartImage: string | null = null;
+      
+      // Capture combined FIT chart if any candidates have it
+      if (comparison.fitAssessments?.some(a => a !== null)) {
+        try {
+          const element = document.getElementById('pdf-comparison-fit-combined');
+          if (element) {
+            const canvas = await html2canvas(element, {
+              backgroundColor: '#ffffff',
+              scale: 2,
+            });
+            fitCombinedChartImage = canvas.toDataURL('image/png');
+          }
+        } catch (err) {
+          console.error('Error capturing combined FIT chart:', err);
+        }
+      }
+      
+      // Capture combined AI Readiness chart if any candidates have it
+      if (comparison.aiReadinessAssessments?.some(a => a !== null)) {
+        try {
+          const element = document.getElementById('pdf-comparison-ai-combined');
+          if (element) {
+            const canvas = await html2canvas(element, {
+              backgroundColor: '#ffffff',
+              scale: 2,
+            });
+            aiCombinedChartImage = canvas.toDataURL('image/png');
+          }
+        } catch (err) {
+          console.error('Error capturing combined AI chart:', err);
+        }
+      }
 
       await exportComparisonPDF({
         candidates: selectedCandidateData,
@@ -150,6 +186,8 @@ export default function CompareTab() {
         aiqAssessments: comparison.aiqAssessments || [],
         fitChartImages,
         aiChartImages,
+        fitCombinedChartImage,
+        aiCombinedChartImage,
       });
       
       toast({
