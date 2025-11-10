@@ -265,8 +265,8 @@ export async function exportEnhancedCandidatePDF(
   
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [
-    { label: 'Skills Assessed', value: skills.length.toString(), fontSize: 14 },
-    { label: 'Average Score', value: `${avgScore}/100`, fontSize: 14 },
+    { label: 'Skills Assessed', value: skills.length.toString(), fontSize: 8 },
+    { label: 'Average Score', value: `${avgScore}/100`, fontSize: 8 },
     { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 15) || 'N/A', fontSize: 8 },
   ];
   
@@ -754,7 +754,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setTextColor(0, 0, 0);
     
     // Individual level results - clean list format with progress bars
-    const barHeight = 6;
+    const barHeight = 4;
     const barSpacing = 8;
     const barWidth = pageWidth - 100;
     
@@ -870,31 +870,6 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 12, { align: 'center' });
     
     yPos += 20;
-    
-    // Performance interpretation
-    const aiqPerf = getPerformanceLevel(aiqResult.totalScore);
-    let interpretation = '';
-    if (aiqResult.totalScore >= 75) {
-      interpretation = 'Demonstrates strong understanding of AI ethics and responsible deployment. Can be trusted to make sound decisions regarding algorithmic systems and identify potential risks early.';
-    } else if (aiqResult.totalScore >= 50) {
-      interpretation = 'Shows foundational knowledge of AI ethics. May benefit from additional training in bias detection, fairness principles, and responsible AI practices.';
-    } else {
-      interpretation = 'Requires significant development in AI ethics and responsible deployment practices. Additional training and guidance strongly recommended before working with AI systems.';
-    }
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
-    pdf.text(`Performance Level: ${aiqPerf.label}`, 20, yPos);
-    yPos += 5;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const aiqInterpretation = pdf.splitTextToSize(interpretation, pageWidth - 40);
-    aiqInterpretation.forEach((line: string, index: number) => {
-      pdf.text(line, 20, yPos + (index * 4));
-    });
-    yPos += aiqInterpretation.length * 4 + 10;
   }
   
   pdf.setTextColor(0, 0, 0);
