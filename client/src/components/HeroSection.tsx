@@ -13,7 +13,13 @@ import networkBg from "@assets/image_1761537286469.png";
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  // Initialize with media query value to prevent flash of animated content
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
   const heroRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -154,7 +160,10 @@ export default function HeroSection() {
                         <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50 transition-colors">
+                            <span className={getAnimationClass(
+                              'text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50',
+                              'transition-colors'
+                            )}>
                               {item.text}
                             </span>
                           </TooltipTrigger>
@@ -179,8 +188,8 @@ export default function HeroSection() {
               <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
                   className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-all duration-300',
-                    !prefersReducedMotion ? ' ' : ''
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50',
+                    'transition-all duration-300'
                   )}
                   data-testid="button-hero-get-started"
                 >
@@ -190,17 +199,23 @@ export default function HeroSection() {
                   )}
                   <span className="relative flex items-center">
                     Types of Assessments
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className={getAnimationClass('ml-2 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
               </Link>
               <Button 
                 onClick={() => {
                   const element = document.getElementById('sample-reports');
-                  element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  element?.scrollIntoView({ 
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth', 
+                    block: 'start' 
+                  });
                 }}
                 variant="outline" 
-                className="border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg transition-all duration-300" 
+                className={getAnimationClass(
+                  'border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg',
+                  'transition-all duration-300'
+                )}
                 data-testid="button-hero-sample-reports"
               >
                 Sample Reports
