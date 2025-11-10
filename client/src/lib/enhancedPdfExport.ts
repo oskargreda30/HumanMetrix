@@ -26,56 +26,88 @@ interface PlatformAverages {
 
 // Helper to add subtle background pattern to page
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  // Add light gradient background
-  pdf.setFillColor(249, 250, 251);
+  // Light blue gradient background
+  pdf.setFillColor(239, 246, 255); // Very light blue
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
-  // Add subtle decorative dots in corners
-  pdf.setFillColor(243, 244, 246);
+  // Add page border
+  pdf.setDrawColor(191, 219, 254); // Light blue border
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
+  pdf.setLineWidth(0.2);
   
-  // Top left corner dots
-  const dotSize = 0.5;
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), 30 + (j * 3), dotSize, 'F');
+  // Neural network watermark pattern (subtle)
+  pdf.setDrawColor(219, 234, 254); // Very light blue
+  pdf.setFillColor(219, 234, 254);
+  pdf.setLineWidth(0.3);
+  
+  // Create subtle neural network nodes in background
+  const nodes = [
+    [pageWidth * 0.15, pageHeight * 0.25],
+    [pageWidth * 0.3, pageHeight * 0.4],
+    [pageWidth * 0.25, pageHeight * 0.6],
+    [pageWidth * 0.45, pageHeight * 0.35],
+    [pageWidth * 0.55, pageHeight * 0.55],
+    [pageWidth * 0.7, pageHeight * 0.45],
+    [pageWidth * 0.75, pageHeight * 0.7],
+    [pageWidth * 0.85, pageHeight * 0.3],
+  ];
+  
+  // Draw connections between nodes (neural network style)
+  pdf.setDrawColor(226, 239, 254); // Ultra light blue for connections
+  for (let i = 0; i < nodes.length - 1; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const distance = Math.sqrt(
+        Math.pow(nodes[j][0] - nodes[i][0], 2) + 
+        Math.pow(nodes[j][1] - nodes[i][1], 2)
+      );
+      // Only draw connection if nodes are relatively close
+      if (distance < pageWidth * 0.35) {
+        pdf.setDrawColor(226, 239, 254);
+        pdf.line(nodes[i][0], nodes[i][1], nodes[j][0], nodes[j][1]);
+      }
     }
   }
   
-  // Top right corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  // Bottom left corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  // Bottom right corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
+  // Draw node circles
+  pdf.setFillColor(219, 234, 254);
+  nodes.forEach(([x, y]) => {
+    pdf.circle(x, y, 0.8, 'F');
+  });
 }
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  pdf.setFillColor(17, 24, 39);
+  // Gradient header background (dark to lighter blue)
+  pdf.setFillColor(30, 58, 138); // Dark blue
   pdf.rect(0, 0, pageWidth, 25, 'F');
   
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 15, 12);
+  // Add subtle gradient effect with lighter overlay
+  pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
+  pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  pdf.setFontSize(9);
+  // HM Logo (monogram style)
+  pdf.setFillColor(96, 165, 250); // Cyan/blue
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(18);
+  pdf.setTextColor(96, 165, 250);
+  pdf.text('HM', 12, 16);
+  
+  // Separator line
+  pdf.setDrawColor(96, 165, 250);
+  pdf.setLineWidth(0.5);
+  pdf.line(28, 9, 28, 21);
+  
+  // Company name and tagline
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HUMANMETRIX', 32, 13);
+  
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('AI Assessment Platform', 15, 18);
+  pdf.setTextColor(191, 219, 254); // Light blue
+  pdf.text('AI-Powered Assessment Platform', 32, 19);
   
   pdf.setTextColor(0, 0, 0);
 }

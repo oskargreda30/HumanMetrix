@@ -63,56 +63,88 @@ interface RoleFitData {
 
 // Helper to add subtle background pattern to page
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  // Add light gradient background
-  pdf.setFillColor(249, 250, 251);
+  // Light blue gradient background
+  pdf.setFillColor(239, 246, 255); // Very light blue
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
-  // Add subtle decorative dots in corners
-  pdf.setFillColor(243, 244, 246);
+  // Add page border
+  pdf.setDrawColor(191, 219, 254); // Light blue border
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
+  pdf.setLineWidth(0.2);
   
-  // Top left corner dots
-  const dotSize = 0.5;
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), 30 + (j * 3), dotSize, 'F');
+  // Neural network watermark pattern (subtle)
+  pdf.setDrawColor(219, 234, 254); // Very light blue
+  pdf.setFillColor(219, 234, 254);
+  pdf.setLineWidth(0.3);
+  
+  // Create subtle neural network nodes in background
+  const nodes = [
+    [pageWidth * 0.15, pageHeight * 0.25],
+    [pageWidth * 0.3, pageHeight * 0.4],
+    [pageWidth * 0.25, pageHeight * 0.6],
+    [pageWidth * 0.45, pageHeight * 0.35],
+    [pageWidth * 0.55, pageHeight * 0.55],
+    [pageWidth * 0.7, pageHeight * 0.45],
+    [pageWidth * 0.75, pageHeight * 0.7],
+    [pageWidth * 0.85, pageHeight * 0.3],
+  ];
+  
+  // Draw connections between nodes (neural network style)
+  pdf.setDrawColor(226, 239, 254); // Ultra light blue for connections
+  for (let i = 0; i < nodes.length - 1; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const distance = Math.sqrt(
+        Math.pow(nodes[j][0] - nodes[i][0], 2) + 
+        Math.pow(nodes[j][1] - nodes[i][1], 2)
+      );
+      // Only draw connection if nodes are relatively close
+      if (distance < pageWidth * 0.35) {
+        pdf.setDrawColor(226, 239, 254);
+        pdf.line(nodes[i][0], nodes[i][1], nodes[j][0], nodes[j][1]);
+      }
     }
   }
   
-  // Top right corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  // Bottom left corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  // Bottom right corner dots
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
+  // Draw node circles
+  pdf.setFillColor(219, 234, 254);
+  nodes.forEach(([x, y]) => {
+    pdf.circle(x, y, 0.8, 'F');
+  });
 }
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  pdf.setFillColor(17, 24, 39);
+  // Gradient header background (dark to lighter blue)
+  pdf.setFillColor(30, 58, 138); // Dark blue
   pdf.rect(0, 0, pageWidth, 25, 'F');
   
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 15, 12);
+  // Add subtle gradient effect with lighter overlay
+  pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
+  pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  pdf.setFontSize(9);
+  // HM Logo (monogram style)
+  pdf.setFillColor(96, 165, 250); // Cyan/blue
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(18);
+  pdf.setTextColor(96, 165, 250);
+  pdf.text('HM', 12, 16);
+  
+  // Separator line
+  pdf.setDrawColor(96, 165, 250);
+  pdf.setLineWidth(0.5);
+  pdf.line(28, 9, 28, 21);
+  
+  // Company name and tagline
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HUMANMETRIX', 32, 13);
+  
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('AI Assessment Platform', 15, 18);
+  pdf.setTextColor(191, 219, 254); // Light blue
+  pdf.text('AI-Powered Assessment Platform', 32, 19);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -890,7 +922,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skill-by-skill alignment with role requirements', 20, yPos);
   yPos += 6;
   
-  // Helper function to render skill table
+  // Helper function to render skill line chart
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
     if (!skills || skills.length === 0) return;
     
@@ -899,77 +931,91 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(iconColor[0], iconColor[1], iconColor[2]);
     pdf.text(sectionTitle, 20, yPos);
-    yPos += 5;
+    yPos += 7;
     
-    // Table header
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text('Skill', 22, yPos);
-    pdf.text('Score', 105, yPos);
-    pdf.text('Req', 130, yPos);
-    pdf.text('Gap', 150, yPos);
+    // Line chart dimensions
+    const chartMarginLeft = 25;
+    const chartWidth = pageWidth - 50;
+    const chartHeight = Math.min(skills.length * 8, 80); // Max 80mm height
+    const chartStartY = yPos;
     
-    yPos += 2;
-    pdf.setDrawColor(220, 220, 220);
-    pdf.line(20, yPos, pageWidth - 20, yPos);
-    yPos += 4;
+    // Draw chart background
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(chartMarginLeft, chartStartY, chartWidth, chartHeight, 'F');
     
-    pdf.setFont('helvetica', 'normal');
-    skills.forEach((skill, index) => {
-      if (index % 2 === 0) {
-        pdf.setFillColor(249, 250, 251);
-        pdf.rect(20, yPos - 3, pageWidth - 40, 7, 'F');
-      }
-      
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 35 ? skill.skillName.substring(0, 32) + '...' : skill.skillName;
-      pdf.text(skillName, 22, yPos);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`${skill.candidateScore}`, 110, yPos);
-      
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`${skill.requiredScore}`, 133, yPos);
-      
-      const gapText = skill.gap > 0 ? `-${skill.gap}` : `+${Math.abs(skill.gap)}`;
-      const gapColor = skill.gap <= 0 ? [34, 197, 94] : [239, 68, 68];
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
-      pdf.text(gapText, 153, yPos);
-      
-      // Mini progress bar - color coded based on comparison to required score
-      const miniBarWidth = 18;
-      const miniBarHeight = 2.5;
-      const barX = 165;
-      
-      pdf.setFillColor(229, 231, 235);
-      pdf.rect(barX, yPos - 1.5, miniBarWidth, miniBarHeight, 'F');
-      
-      const skillFillWidth = (skill.candidateScore / 100) * miniBarWidth;
-      
-      // Determine bar color based on comparison to required score
-      let barColor: [number, number, number];
-      if (skill.candidateScore > skill.requiredScore) {
-        // Exceeds - green
-        barColor = [34, 197, 94];
-      } else if (skill.candidateScore === skill.requiredScore) {
-        // Matches - blue
-        barColor = [59, 130, 246];
-      } else {
-        // Under - light red
-        barColor = [248, 113, 113];
-      }
-      
-      pdf.setFillColor(barColor[0], barColor[1], barColor[2]);
-      pdf.rect(barX, yPos - 1.5, skillFillWidth, miniBarHeight, 'F');
-      
-      yPos += 7;
+    // Draw Y-axis (skills)
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(chartMarginLeft, chartStartY, chartMarginLeft, chartStartY + chartHeight);
+    
+    // Draw X-axis (scores 0-100)
+    pdf.line(chartMarginLeft, chartStartY + chartHeight, chartMarginLeft + chartWidth, chartStartY + chartHeight);
+    
+    // X-axis labels (0, 25, 50, 75, 100)
+    pdf.setFontSize(6);
+    pdf.setTextColor(107, 114, 128);
+    [0, 25, 50, 75, 100].forEach(val => {
+      const x = chartMarginLeft + (val / 100) * chartWidth;
+      pdf.text(`${val}`, x - 2, chartStartY + chartHeight + 4);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.line(x, chartStartY, x, chartStartY + chartHeight);
     });
+    
+    // Plot each skill as a horizontal line segment
+    const skillHeight = chartHeight / skills.length;
+    
+    skills.forEach((skill, index) => {
+      const skillY = chartStartY + (index * skillHeight) + (skillHeight / 2);
+      
+      // Skill label on left
+      pdf.setFontSize(6);
+      pdf.setTextColor(55, 65, 81);
+      const skillName = skill.skillName.length > 20 ? skill.skillName.substring(0, 18) + '...' : skill.skillName;
+      pdf.text(skillName, 10, skillY + 1, { align: 'right' });
+      
+      // Calculate positions
+      const requiredX = chartMarginLeft + (skill.requiredScore / 100) * chartWidth;
+      const candidateX = chartMarginLeft + (skill.candidateScore / 100) * chartWidth;
+      
+      // Draw line connecting required to candidate score
+      const lineColor = skill.candidateScore >= skill.requiredScore ? [34, 197, 94] : [239, 68, 68];
+      pdf.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
+      pdf.setLineWidth(1.5);
+      pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
+      
+      // Draw required score marker (circle)
+      pdf.setFillColor(107, 114, 128);
+      pdf.circle(requiredX, skillY, 1.2, 'F');
+      
+      // Draw candidate score marker (square)
+      pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
+      pdf.rect(candidateX - 1.5, skillY - 1.5, 3, 3, 'F');
+      
+      // Add score labels
+      pdf.setFontSize(5);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`${skill.requiredScore}`, requiredX, skillY - 2.5, { align: 'center' });
+      pdf.setTextColor(iconColor[0], iconColor[1], iconColor[2]);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${skill.candidateScore}`, candidateX, skillY + 4, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      
+      pdf.setLineWidth(0.2);
+    });
+    
+    // Legend
+    yPos = chartStartY + chartHeight + 8;
+    pdf.setFontSize(6);
+    pdf.setTextColor(55, 65, 81);
+    
+    // Required score legend
+    pdf.setFillColor(107, 114, 128);
+    pdf.circle(chartMarginLeft + 5, yPos, 1.2, 'F');
+    pdf.text('Required Score', chartMarginLeft + 10, yPos + 1);
+    
+    // Candidate score legend
+    pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
+    pdf.rect(chartMarginLeft + 48, yPos - 1.5, 3, 3, 'F');
+    pdf.text('Candidate Score', chartMarginLeft + 55, yPos + 1);
     
     yPos += 8;
   };

@@ -5,6 +5,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 
 ## Recent Changes
 - **November 10, 2025**:
+  - **PDF Export Enhancements**: Comprehensive visual and structural improvements to all PDF exports
+    - **Individual PDFs**: Unified font sizing (8px for Skills Assessed/Average Score/Top Skill), thinner Prompt Architecture progress bars (4mm), removed AIQ performance level feedback, added horizontal bar visualization for AIQ results page
+    - **Comparison PDFs**: Color-coded section headers (blue for FIT, violet for AI Readiness), score comparison tables showing all candidates side-by-side
+    - **Role Fit PDFs**: Replaced tabular skill comparisons with horizontal line charts showing candidate vs required score gaps (green lines for exceeds, red for shortfalls)
+    - **Visual Design**: Light blue backgrounds (RGB: 239,246,255), neural network watermark patterns, page borders, HM monogram logo in header, gradient header backgrounds
   - **Hero Section Animation Redesign**: Implemented scroll-triggered animations with comprehensive accessibility support
     - **IntersectionObserver-Based Triggers**: Animations activate when hero section enters viewport (threshold: 0.1, rootMargin: '0px 0px -100px 0px')
     - **Staggered Animation Timeline**: Badge (0ms) → Headline (150ms) → Subheadline (300ms) → "Why use" section (500ms) → Bullet points (500-700ms) → CTA buttons (700ms) → Feature cards (700-1000ms)
