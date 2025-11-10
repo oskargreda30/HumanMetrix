@@ -89,12 +89,14 @@ export default function Navigation() {
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
-            <img 
-              src={logoSymbol} 
-              alt="HumanMetrix Logo" 
-              className="h-12 w-12 object-cover scale-150"
-            />
+          <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
+            <div className="h-12 w-12 flex items-center justify-center">
+              <img 
+                src={logoSymbol} 
+                alt="HumanMetrix Logo" 
+                className="h-full w-full object-cover scale-150"
+              />
+            </div>
             <div className="flex items-center gap-1">
               <span className="font-bold text-2xl text-white">Human</span>
               <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
