@@ -218,7 +218,7 @@ export default function CompareTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-auto space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Select Candidates to Compare</CardTitle>

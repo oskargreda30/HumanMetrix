@@ -73,44 +73,6 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
   pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
   pdf.setLineWidth(0.2);
   
-  // Neural network watermark pattern (subtle)
-  pdf.setDrawColor(219, 234, 254); // Very light blue
-  pdf.setFillColor(219, 234, 254);
-  pdf.setLineWidth(0.3);
-  
-  // Create subtle neural network nodes in background
-  const nodes = [
-    [pageWidth * 0.15, pageHeight * 0.25],
-    [pageWidth * 0.3, pageHeight * 0.4],
-    [pageWidth * 0.25, pageHeight * 0.6],
-    [pageWidth * 0.45, pageHeight * 0.35],
-    [pageWidth * 0.55, pageHeight * 0.55],
-    [pageWidth * 0.7, pageHeight * 0.45],
-    [pageWidth * 0.75, pageHeight * 0.7],
-    [pageWidth * 0.85, pageHeight * 0.3],
-  ];
-  
-  // Draw connections between nodes (neural network style)
-  pdf.setDrawColor(226, 239, 254); // Ultra light blue for connections
-  for (let i = 0; i < nodes.length - 1; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const distance = Math.sqrt(
-        Math.pow(nodes[j][0] - nodes[i][0], 2) + 
-        Math.pow(nodes[j][1] - nodes[i][1], 2)
-      );
-      // Only draw connection if nodes are relatively close
-      if (distance < pageWidth * 0.35) {
-        pdf.setDrawColor(226, 239, 254);
-        pdf.line(nodes[i][0], nodes[i][1], nodes[j][0], nodes[j][1]);
-      }
-    }
-  }
-  
-  // Draw node circles
-  pdf.setFillColor(219, 234, 254);
-  nodes.forEach(([x, y]) => {
-    pdf.circle(x, y, 0.8, 'F');
-  });
 }
 
 // Helper to add header to each page
@@ -818,12 +780,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(9);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for strengths
@@ -865,12 +827,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(9);
   pdf.setTextColor(75, 85, 99);
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   
   // Two-column layout for gaps
@@ -984,10 +946,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       const requiredX = chartMarginLeft + (skill.requiredScore / 100) * chartWidth;
       const candidateX = chartMarginLeft + (skill.candidateScore / 100) * chartWidth;
       
-      // Draw line connecting required to candidate score (thicker, with gradient effect)
+      // Draw line connecting required to candidate score
       const lineColor = skill.candidateScore >= skill.requiredScore ? [34, 197, 94] : [239, 68, 68];
       pdf.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
-      pdf.setLineWidth(2.5);
+      pdf.setLineWidth(0.8);
       pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
       
       // Draw required score marker (circle with border)
