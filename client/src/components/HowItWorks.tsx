@@ -27,7 +27,7 @@ export default function HowItWorks() {
   return (
     <section className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
       {/* Neural network background decoration */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
         <svg className="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           {/* Connection lines */}
           <line x1="10%" y1="20%" x2="30%" y2="40%" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
