@@ -502,11 +502,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
-    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
+    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 8);  // No extra padding
     
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-    yPos += PDF_SPACING.large;  // Breathing room before table
+    yPos += 3;  // Reduced spacing before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
