@@ -88,13 +88,11 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HumanMetrix Logo (larger for better visibility) - vertically centered with blue line
+  // HumanMetrix Logo - exactly matches blue line height (12mm)
   try {
-    const logoHeight = 15;  // Increased from 12mm for better visibility
-    const logoWidth = 15;
-    const lineHeight = 12;  // Blue line height (21 - 9)
-    const logoY = 9 + (lineHeight - logoHeight) / 2;  // Center vertically with line
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 9, logoY, logoWidth, logoHeight);
+    const logoHeight = 12;  // Match blue line height exactly
+    const logoWidth = 12;   // Square aspect ratio
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 9, 9, logoWidth, logoHeight);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -102,18 +100,18 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   // Separator line
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(30, 9, 30, 21);
+  pdf.line(27, 9, 27, 21);
   
   // Company name and tagline
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 34, 13);
+  pdf.text('HUMANMETRIX', 31, 13);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 34, 19);
+  pdf.text('AI-Powered Assessment Platform', 31, 19);
   
   pdf.setTextColor(0, 0, 0);
 }
