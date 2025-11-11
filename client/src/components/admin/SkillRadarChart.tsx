@@ -23,29 +23,33 @@ export function SkillRadarChart({
   height = 300, 
   showCard = true,
   dataKey = "score",
-  stroke = "hsl(var(--primary))",
-  fill = "hsl(var(--primary))",
+  stroke = "#2563eb",  // Blue-600
+  fill = "#3b82f6",     // Blue-500
 }: SkillRadarChartProps) {
   const chartContent = (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data}>
-        <PolarGrid />
+        <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
         <PolarAngleAxis 
           dataKey="skill" 
-          tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+          tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
         />
         <PolarRadiusAxis 
           angle={90} 
           domain={[0, 100]}
-          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fill: '#6b7280', fontWeight: 'bold' }}
         />
         <Radar 
           name="Score" 
           dataKey={dataKey}
           stroke={stroke}
           fill={fill}
-          fillOpacity={0.6}
+          fillOpacity={0.2}
+          strokeWidth={2}
+          dot={{ r: 3, fill: stroke }}
+          activeDot={{ r: 4, fill: stroke }}
         />
+        <Legend wrapperStyle={{ fontWeight: 'bold' }} />
         <Tooltip 
           contentStyle={{ 
             backgroundColor: 'hsl(var(--popover))',
@@ -115,15 +119,15 @@ export function MultiCandidateRadarChart({
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
           <RadarChart data={mergedData}>
-            <PolarGrid />
+            <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
             <PolarAngleAxis 
               dataKey="skill" 
-              tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+              tick={{ fill: '#374151', fontSize: 11, fontWeight: 'bold' }}
             />
             <PolarRadiusAxis 
               angle={90} 
               domain={[0, 100]}
-              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fill: '#6b7280', fontWeight: 'bold' }}
             />
             {candidates.map((candidate, index) => (
               <Radar
@@ -133,9 +137,12 @@ export function MultiCandidateRadarChart({
                 stroke={candidate.color}
                 fill={candidate.color}
                 fillOpacity={0.3}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 4 }}
               />
             ))}
-            <Legend />
+            <Legend wrapperStyle={{ fontWeight: 'bold' }} />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: 'hsl(var(--popover))',

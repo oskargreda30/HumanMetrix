@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { FIT_SKILLS, AI_READINESS_SKILLS } from './assessmentSkills';
+import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
+import { applyBodyText, applySubheading, applyHeading, applySmallText, PDF_SPACING } from './pdfStyles';
 
 interface CandidateData {
   user: {
@@ -86,12 +88,12 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HM Logo (monogram style)
-  pdf.setFillColor(96, 165, 250); // Cyan/blue
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(18);
-  pdf.setTextColor(96, 165, 250);
-  pdf.text('HM', 12, 16);
+  // HumanMetrix Logo (full logo image)
+  try {
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 6, 13, 13);
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+  }
   
   // Separator line
   pdf.setDrawColor(96, 165, 250);
@@ -965,13 +967,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(9);
-  pdf.setTextColor(75, 85, 99);
+  applySmallText(pdf);
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
+  applyBodyText(pdf);
   
   // Two-column layout for strengths
   const strengthColWidth = (pageWidth - 45) / 2;
@@ -1012,13 +1012,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
-  pdf.setFontSize(9);
-  pdf.setTextColor(75, 85, 99);
+  applySmallText(pdf);
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
+  applyBodyText(pdf);
   
   // Two-column layout for gaps
   const gapColWidth = (pageWidth - 45) / 2;
@@ -1233,6 +1231,86 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
     renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [147, 51, 234]);
   }
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== FINAL RECOMMENDATION ==========
+  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+  yPos += PDF_SPACING.large;
+  
+  yPos = addSectionHeader(pdf, 'FINAL RECOMMENDATION', yPos, pageWidth);
+  yPos += PDF_SPACING.medium;
+  
+  // Overall fit assessment
+  const overallFit = data.alignment.overallFit;
+  const perfLevel = getPerformanceLevel(overallFit);
+  
+  applyBodyText(pdf);
+  
+  let recommendationText = '';
+  if (overallFit >= 85) {
+    recommendationText = `${candidateName} demonstrates excellent alignment with the ${data.role.name} position, scoring ${overallFit}/100 overall. This candidate exhibits strong capabilities across the required competencies and would be a valuable addition to the team. The assessment data indicates readiness to contribute immediately with minimal onboarding time.`;
+  } else if (overallFit >= 70) {
+    recommendationText = `${candidateName} shows solid alignment with the ${data.role.name} role, achieving an overall score of ${overallFit}/100. This candidate meets most of the key requirements and demonstrates potential for growth in identified development areas. With targeted support in weaker skill areas, they could become a strong contributor to the team.`;
+  } else if (overallFit >= 55) {
+    recommendationText = `${candidateName} displays moderate alignment with the ${data.role.name} position, scoring ${overallFit}/100. While showing promise in certain competencies, this candidate would benefit from additional development in several key areas before fully meeting role requirements. Consider for positions where comprehensive training and mentorship are available.`;
+  } else {
+    recommendationText = `${candidateName} shows limited alignment with the ${data.role.name} role at this time, with an overall score of ${overallFit}/100. Significant skill gaps exist across multiple required competencies. This candidate may be better suited for entry-level positions or roles with different skill requirements. If proceeding, ensure robust onboarding and development plans are in place.`;
+  }
+  
+  const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
+  recommendationLines.forEach((line: string) => {
+    yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+    pdf.text(line, 25, yPos);
+    yPos += 4;
+  });
+  
+  yPos += PDF_SPACING.medium;
+  
+  // Key action items
+  applySubheading(pdf);
+  pdf.text('Recommended Next Steps:', 25, yPos);
+  yPos += PDF_SPACING.medium;
+  
+  applyBodyText(pdf);
+  const nextSteps = overallFit >= 70 
+    ? [
+        'Proceed to technical interview stage to validate practical skills',
+        'Conduct behavioral interview focusing on development areas identified',
+        'Check professional references with emphasis on areas of strength',
+        'Consider for final candidate pool'
+      ]
+    : [
+        'Schedule additional screening to assess cultural fit and motivation',
+        'Explore development potential through scenario-based questions',
+        'Consider alternative roles that better match current skill profile',
+        'Review against other candidate pool members before proceeding'
+      ];
+  
+  nextSteps.forEach(step => {
+    yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('•', 27, yPos);
+    pdf.setTextColor(55, 65, 81);
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    stepLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 4));
+    });
+    yPos += (stepLines.length * 4) + 2;
+  });
+  
+  yPos += PDF_SPACING.medium;
+  
+  // Disclaimer
+  applySmallText(pdf);
+  pdf.setFont('helvetica', 'italic');
+  const disclaimer = 'This recommendation is generated based on assessment data and role requirements analysis. It should be used as one input among multiple evaluation criteria including interviews, work samples, and reference checks for comprehensive hiring decisions.';
+  const disclaimerLines = pdf.splitTextToSize(disclaimer, pageWidth - 50);
+  disclaimerLines.forEach((line: string) => {
+    yPos = ensurePageSpace(pdf, yPos, 4, pageHeight, pageWidth);
+    pdf.text(line, 25, yPos);
+    yPos += 3.5;
+  });
   
   pdf.setTextColor(0, 0, 0);
   
