@@ -465,14 +465,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = 35;
   
-  // Prompt Architecture - Dimensional Score Table
+  // Prompt Architecture - Total Level Scores
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Progressive difficulty levels (1-7) with dimensional scoring', 25, yPos + 1);
+    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 1);
     yPos += 5;
     
     // Table header
@@ -480,10 +480,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text('Level', 25, yPos);
-    pdf.text('Dimension', 45, yPos);
     
     // Candidate name headers with color coding
-    const scoreColWidth = (pageWidth - 110) / data.candidates.length;
+    const scoreColWidth = (pageWidth - 80) / data.candidates.length;
     data.candidates.forEach((candidate, index) => {
       const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
       pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
@@ -491,99 +490,52 @@ export async function exportComparisonPDF(data: ComparisonData) {
         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
         : `Candidate ${index + 1}`;
       const shortName = name.length > 15 ? name.substring(0, 13) + '...' : name;
-      pdf.text(shortName, 95 + (index * scoreColWidth), yPos);
+      pdf.text(shortName, 65 + (index * scoreColWidth), yPos);
     });
     yPos += 4;
     
-    // Dimensions to display
-    const dimensions = [
-      { key: 'clarity', label: 'Clarity' },
-      { key: 'structure', label: 'Structure' },
-      { key: 'contextRelevance', label: 'Context Relevance' },
-      { key: 'creativity', label: 'Creativity' },
-      { key: 'iterativeImprovement', label: 'Iterative Improvement' }
-    ];
-    
-    // Render all 7 levels × 5 dimensions
+    // Render all 7 levels
     for (let level = 1; level <= 7; level++) {
-      const levelStartY = yPos;
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(`Level ${level}`, 25, yPos + 3);
       
-      dimensions.forEach((dimension, dimIndex) => {
-        pdf.setFontSize(6);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        
-        // Level label (only on first dimension)
-        if (dimIndex === 0) {
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`Level ${level}`, 25, yPos + 3);
-          pdf.setFont('helvetica', 'normal');
-        }
-        
-        // Dimension label
-        pdf.text(dimension.label, 45, yPos + 3);
-        
-        // Candidate scores with bars
-        data.candidates.forEach((candidate, candIndex) => {
-          const promptData = data.promptArchitectureAssessments?.[candIndex];
-          if (promptData && promptData.levels && promptData.levels[level - 1]) {
-            const levelData = promptData.levels[level - 1];
-            const score = levelData.scores[dimension.key as keyof typeof levelData.scores] || 0;
-            const barWidth = 20;
-            const barLength = (score / 20) * barWidth;
-            const barX = 95 + (candIndex * scoreColWidth);
-            
-            // Background bar
-            pdf.setFillColor(229, 231, 235);
-            pdf.rect(barX + 12, yPos, barWidth, 3.5, 'F');
-            
-            // Score bar with candidate color
-            const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
-            pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-            pdf.rect(barX + 12, yPos, barLength, 3.5, 'F');
-            
-            // Score text
-            pdf.setFontSize(6);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(17, 24, 39);
-            pdf.text(`${score}/20`, barX, yPos + 3);
-          } else {
-            const barX = 95 + (candIndex * scoreColWidth);
-            pdf.setFontSize(6);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text('—', barX, yPos + 3);
-          }
-        });
-        
-        yPos += 5;
-        
-        // Check if we need a new page
-        if (yPos > pageHeight - 30 && !(level === 7 && dimIndex === 4)) {
-          pdf.addPage();
-          addBackgroundPattern(pdf, pageWidth, pageHeight);
-          addHeader(pdf, pageWidth);
-          yPos = 35;
+      // Candidate scores with bars
+      data.candidates.forEach((candidate, candIndex) => {
+        const promptData = data.promptArchitectureAssessments?.[candIndex];
+        if (promptData && promptData.levels && promptData.levels[level - 1]) {
+          const levelData = promptData.levels[level - 1];
+          const score = levelData.totalScore || 0;
+          const maxScore = 100;
+          const barWidth = 30;
+          const barLength = (score / maxScore) * barWidth;
+          const barX = 65 + (candIndex * scoreColWidth);
           
-          // Reprint header on new page
-          pdf.setFontSize(7);
+          // Background bar
+          pdf.setFillColor(229, 231, 235);
+          pdf.rect(barX + 15, yPos + 0.5, barWidth, 4, 'F');
+          
+          // Score bar with candidate color
+          const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
+          pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+          pdf.rect(barX + 15, yPos + 0.5, barLength, 4, 'F');
+          
+          // Score text
+          pdf.setFontSize(6);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(17, 24, 39);
-          pdf.text('Level', 25, yPos);
-          pdf.text('Dimension', 45, yPos);
-          data.candidates.forEach((candidate, index) => {
-            const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-            pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-            const name = candidate.user.firstName || candidate.user.lastName
-              ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-              : `Candidate ${index + 1}`;
-            const shortName = name.length > 15 ? name.substring(0, 13) + '...' : name;
-            pdf.text(shortName, 95 + (index * scoreColWidth), yPos);
-          });
-          yPos += 4;
+          pdf.text(`${score}`, barX, yPos + 3);
+        } else {
+          const barX = 65 + (candIndex * scoreColWidth);
+          pdf.setFontSize(6);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('—', barX, yPos + 3);
         }
       });
       
-      yPos += 1; // Small gap between levels
+      yPos += 7;
     }
     
     yPos += 3;
