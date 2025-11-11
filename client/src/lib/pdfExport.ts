@@ -170,6 +170,72 @@ const CANDIDATE_COLORS = [
   [96, 165, 250],   // Light Blue (Blue-400)
 ];
 
+// Helper to ensure sufficient page space, add new page if needed
+function ensurePageSpace(pdf: jsPDF, yPos: number, requiredHeight: number, pageHeight: number, pageWidth: number): number {
+  if (yPos + requiredHeight > pageHeight - 20) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    return 35;
+  }
+  return yPos;
+}
+
+// Helper to draw a table row with borders
+function drawTableRow(
+  pdf: jsPDF,
+  x: number,
+  y: number,
+  widths: number[],
+  texts: string[],
+  height: number,
+  options: {
+    isBold?: boolean;
+    fontSize?: number;
+    fillColor?: [number, number, number];
+    textColor?: [number, number, number];
+    drawBorders?: boolean;
+  } = {}
+) {
+  const {
+    isBold = false,
+    fontSize = 7,
+    fillColor,
+    textColor = [0, 0, 0],
+    drawBorders = true
+  } = options;
+  
+  pdf.setFontSize(fontSize);
+  pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+  pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+  
+  let currentX = x;
+  
+  widths.forEach((width, index) => {
+    // Draw cell background
+    if (fillColor) {
+      pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+      pdf.rect(currentX, y, width, height, 'F');
+    }
+    
+    // Draw cell border
+    if (drawBorders) {
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.1);
+      pdf.rect(currentX, y, width, height, 'S');
+    }
+    
+    // Draw text centered in cell
+    if (texts[index]) {
+      const textX = currentX + width / 2;
+      const textY = y + height / 2 + 1.5;
+      pdf.text(texts[index], textX, textY, { align: 'center' });
+    }
+    
+    currentX += width;
+  });
+}
+
 export async function exportComparisonPDF(data: ComparisonData) {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -255,11 +321,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       : candidate.user.email.split('@')[0];
   }
   
-  // Assessment Completion Status
+  // Assessment Completion Status - IMPROVED TABLE
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   yPos += 3;
   
-  const assessmentNames = ['FIT', 'AI Readiness', 'Prompt Arch.', 'AIQ'];
+  const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentData = [
     data.fitAssessments,
     data.aiReadinessAssessments,
@@ -267,43 +333,41 @@ export async function exportComparisonPDF(data: ComparisonData) {
     data.aiqAssessments
   ];
   
-  pdf.setFontSize(7);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('Assessment', 25, yPos);
-  const colWidth = 24;
-  data.candidates.forEach((candidate, index) => {
-    pdf.setTextColor(17, 24, 39);
-    const shortName = getCandidateName(candidate).substring(0, 10);
-    pdf.text(shortName, 80 + (index * colWidth), yPos);
-  });
-  pdf.setTextColor(0, 0, 0);
-  yPos += 5;
+  // Calculate dynamic column widths
+  const tableStartX = 20;
+  const assessmentColWidth = 50;
+  const availableWidth = pageWidth - tableStartX - 10;
+  const candidateColWidth = Math.max(35, (availableWidth - assessmentColWidth) / data.candidates.length);
+  const rowHeight = 7;
   
+  // Header row
+  const headerWidths = [assessmentColWidth, ...Array(data.candidates.length).fill(candidateColWidth)];
+  const headerTexts = ['Assessment', ...data.candidates.map(c => getCandidateName(c))];
+  drawTableRow(pdf, tableStartX, yPos, headerWidths, headerTexts, rowHeight, {
+    isBold: true,
+    fontSize: 7,
+    fillColor: [249, 250, 251],
+    textColor: [17, 24, 39]
+  });
+  yPos += rowHeight;
+  
+  // Data rows
   assessmentNames.forEach((aName, aIndex) => {
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
-    pdf.text(aName, 25, yPos);
+    const rowTexts = [aName];
     
     data.candidates.forEach((_, candIndex) => {
       const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      const checkboxX = 83 + (candIndex * colWidth);
-      const checkboxY = yPos - 2;
-      const checkboxSize = 3;
-      
-      // Draw checkbox
-      pdf.setDrawColor(17, 24, 39);
-      pdf.setLineWidth(0.3);
-      pdf.rect(checkboxX, checkboxY, checkboxSize, checkboxSize, 'D');
-      
-      // Fill if completed
-      if (isCompleted) {
-        pdf.setFillColor(34, 197, 94);
-        pdf.rect(checkboxX + 0.5, checkboxY + 0.5, checkboxSize - 1, checkboxSize - 1, 'F');
-      }
+      rowTexts.push(isCompleted ? '✓' : '—');
     });
-    yPos += 6;
+    
+    drawTableRow(pdf, tableStartX, yPos, headerWidths, rowTexts, rowHeight, {
+      fontSize: 7,
+      textColor: [75, 85, 99]
+    });
+    yPos += rowHeight;
   });
   
+  yPos += 3;
   pdf.setTextColor(0, 0, 0);
   
   // ========== PAGE 2: RADAR CHARTS ==========
@@ -334,24 +398,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
-    // FIT Score Table (compact - keep on same page)
+    // FIT Score Table - PROPER TABLE FORMAT
+    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
     pdf.text('FIT Skills Comparison', 20, yPos);
-    yPos += 4;
-    
-    pdf.setFontSize(6);
-    pdf.text('Skill', 22, yPos);
-    const scoreColWidth = (pageWidth - 75) / data.candidates.length;
-    data.candidates.forEach((candidate, index) => {
-      pdf.setTextColor(17, 24, 39);
-      const shortName = getCandidateName(candidate).substring(0, 10);
-      pdf.text(shortName, 75 + (index * scoreColWidth), yPos);
-    });
-    yPos += 3;
-    
-    pdf.setFont('helvetica', 'normal');
+    yPos += 5;
     
     // Show ALL FIT skills using exact key matching
     const fitSkillKeys = FIT_SKILLS.map(s => s.key);
@@ -359,27 +413,38 @@ export async function exportComparisonPDF(data: ComparisonData) {
       fitSkillKeys.includes(skill.skillName)
     );
     
-    fitSkillData.forEach((skill, skillIndex) => {
-      pdf.setFontSize(6);
-      pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
-      pdf.text(skillName, 22, yPos);
-      
-      pdf.setFont('helvetica', 'bold');
-      skill.scores.forEach((score, index) => {
-        if (score !== null) {
-          pdf.setTextColor(17, 24, 39);
-          pdf.text(`${score}`, 78 + (index * scoreColWidth), yPos);
-        } else {
-          pdf.setTextColor(150, 150, 150);
-          pdf.text('-', 78 + (index * scoreColWidth), yPos);
-        }
+    const fitTableStartX = 20;
+    const fitSkillColWidth = 60;
+    const fitAvailableWidth = pageWidth - fitTableStartX - 10;
+    const fitScoreColWidth = Math.max(25, (fitAvailableWidth - fitSkillColWidth) / data.candidates.length);
+    const fitRowHeight = 6;
+    
+    // Header row
+    const fitHeaderWidths = [fitSkillColWidth, ...Array(data.candidates.length).fill(fitScoreColWidth)];
+    const fitHeaderTexts = ['Skill', ...data.candidates.map(c => getCandidateName(c))];
+    drawTableRow(pdf, fitTableStartX, yPos, fitHeaderWidths, fitHeaderTexts, fitRowHeight, {
+      isBold: true,
+      fontSize: 6.5,
+      fillColor: [249, 250, 251],
+      textColor: [17, 24, 39]
+    });
+    yPos += fitRowHeight;
+    
+    // Data rows
+    fitSkillData.forEach((skill) => {
+      const rowTexts = [skill.skillName];
+      skill.scores.forEach(score => {
+        rowTexts.push(score !== null ? `${score}` : '—');
       });
       
-      yPos += 4;
+      drawTableRow(pdf, fitTableStartX, yPos, fitHeaderWidths, rowTexts, fitRowHeight, {
+        fontSize: 6.5,
+        textColor: [55, 65, 81]
+      });
+      yPos += fitRowHeight;
     });
     
-    yPos += 3;
+    yPos += 5;
   }
   
   // AI Readiness Radar Charts
@@ -410,24 +475,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
-    // AI Readiness Score Table (compact - keep on same page)
+    // AI Readiness Score Table - PROPER TABLE FORMAT
+    yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+    
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
     pdf.text('AI Readiness Skills Comparison', 20, yPos);
-    yPos += 4;
-    
-    pdf.setFontSize(6);
-    pdf.text('Skill', 22, yPos);
-    const aiScoreColWidth = (pageWidth - 75) / data.candidates.length;
-    data.candidates.forEach((candidate, index) => {
-      pdf.setTextColor(17, 24, 39);
-      const shortName = getCandidateName(candidate).substring(0, 10);
-      pdf.text(shortName, 75 + (index * aiScoreColWidth), yPos);
-    });
-    yPos += 3;
-    
-    pdf.setFont('helvetica', 'normal');
+    yPos += 5;
     
     // Show ALL AI Readiness skills using exact key matching
     const aiSkillKeys = AI_READINESS_SKILLS.map(s => s.key);
@@ -435,27 +490,38 @@ export async function exportComparisonPDF(data: ComparisonData) {
       aiSkillKeys.includes(skill.skillName)
     );
     
-    aiSkillData.forEach((skill, skillIndex) => {
-      pdf.setFontSize(6);
-      pdf.setTextColor(55, 65, 81);
-      const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
-      pdf.text(skillName, 22, yPos);
-      
-      pdf.setFont('helvetica', 'bold');
-      skill.scores.forEach((score, index) => {
-        if (score !== null) {
-          pdf.setTextColor(17, 24, 39);
-          pdf.text(`${score}`, 78 + (index * aiScoreColWidth), yPos);
-        } else {
-          pdf.setTextColor(150, 150, 150);
-          pdf.text('-', 78 + (index * aiScoreColWidth), yPos);
-        }
+    const aiTableStartX = 20;
+    const aiSkillColWidth = 60;
+    const aiAvailableWidth = pageWidth - aiTableStartX - 10;
+    const aiScoreColWidth = Math.max(25, (aiAvailableWidth - aiSkillColWidth) / data.candidates.length);
+    const aiRowHeight = 6;
+    
+    // Header row
+    const aiHeaderWidths = [aiSkillColWidth, ...Array(data.candidates.length).fill(aiScoreColWidth)];
+    const aiHeaderTexts = ['Skill', ...data.candidates.map(c => getCandidateName(c))];
+    drawTableRow(pdf, aiTableStartX, yPos, aiHeaderWidths, aiHeaderTexts, aiRowHeight, {
+      isBold: true,
+      fontSize: 6.5,
+      fillColor: [249, 250, 251],
+      textColor: [17, 24, 39]
+    });
+    yPos += aiRowHeight;
+    
+    // Data rows
+    aiSkillData.forEach((skill) => {
+      const rowTexts = [skill.skillName];
+      skill.scores.forEach(score => {
+        rowTexts.push(score !== null ? `${score}` : '—');
       });
       
-      yPos += 4;
+      drawTableRow(pdf, aiTableStartX, yPos, aiHeaderWidths, rowTexts, aiRowHeight, {
+        fontSize: 6.5,
+        textColor: [55, 65, 81]
+      });
+      yPos += aiRowHeight;
     });
     
-    yPos += 3;
+    yPos += 5;
   }
   
   // ========== PAGE 3: DETAILED COMPARISONS ==========
@@ -465,9 +531,50 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = 35;
   
+  // AIQ Summary
+  const hasAIQ = data.aiqAssessments?.some(a => a !== null);
+  if (hasAIQ) {
+    yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
+    yPos += 2;
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Candidate', 25, yPos);
+    pdf.text('Score', 100, yPos);
+    pdf.text('Status', 130, yPos);
+    yPos += 5;
+    
+    data.candidates.forEach((candidate, index) => {
+      const aiqData = data.aiqAssessments?.[index];
+      pdf.setFont('helvetica', 'normal');
+      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      
+      const name = candidate.user.firstName || candidate.user.lastName
+        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+        : `Candidate ${index + 1}`;
+      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
+      pdf.text(shortName, 25, yPos);
+      
+      if (aiqData) {
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${aiqData.totalScore}/100`, 100, yPos);
+        const passed = aiqData.totalScore >= 70;
+        pdf.setTextColor(passed ? 34 : 239, passed ? 197 : 68, passed ? 94 : 68);
+        pdf.text(passed ? 'Passed' : 'Developing', 130, yPos);
+      } else {
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('N/A', 100, yPos);
+      }
+      yPos += 6;
+    });
+    yPos += 10; // ADDED BREATHING ROOM (10mm spacing)
+  }
+  
   // Prompt Architecture - Total Level Scores
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
+    yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'normal');
@@ -541,53 +648,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
   }
   
-  // AIQ Summary
-  const hasAIQ = data.aiqAssessments?.some(a => a !== null);
-  if (hasAIQ) {
-    if (yPos > pageHeight - 40) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
-    yPos += 2;
-    
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Candidate', 25, yPos);
-    pdf.text('Score', 100, yPos);
-    pdf.text('Status', 130, yPos);
-    yPos += 5;
-    
-    data.candidates.forEach((candidate, index) => {
-      const aiqData = data.aiqAssessments?.[index];
-      pdf.setFont('helvetica', 'normal');
-      const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      
-      const name = candidate.user.firstName || candidate.user.lastName
-        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-        : `Candidate ${index + 1}`;
-      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
-      pdf.text(shortName, 25, yPos);
-      
-      if (aiqData) {
-        pdf.setTextColor(17, 24, 39);
-        pdf.text(`${aiqData.totalScore}/100`, 100, yPos);
-        const passed = aiqData.totalScore >= 70;
-        pdf.setTextColor(passed ? 34 : 239, passed ? 197 : 68, passed ? 94 : 68);
-        pdf.text(passed ? 'Passed' : 'Developing', 130, yPos);
-      } else {
-        pdf.setTextColor(150, 150, 150);
-        pdf.text('N/A', 100, yPos);
-      }
-      yPos += 6;
-    });
-    yPos += 3;
-  }
-  
   // Top 5 Skills Comparison - Horizontal Bar Chart
   if (yPos > pageHeight - 60) {
     pdf.addPage();
@@ -647,16 +707,117 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += groupHeight + 3;
   });
   
-  // Legend
-  yPos += 1;
-  pdf.setFontSize(5);
+  // Legend - IMPROVED WITH FULL NAMES
+  yPos += 2;
+  pdf.setFontSize(6);
+  
+  // Calculate legend item widths dynamically to prevent cut-off
+  const legendStartX = 25;
+  const legendItemSpacing = Math.min(60, (pageWidth - legendStartX - 10) / data.candidates.length);
+  
   data.candidates.forEach((candidate, index) => {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    const xPos = legendStartX + (index * legendItemSpacing);
+    
+    // Color square
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(25 + (index * 40), yPos, 3, 3, 'F');
+    pdf.rect(xPos, yPos, 3, 3, 'F');
+    
+    // Full candidate name (truncate only if extremely long)
     pdf.setTextColor(75, 85, 99);
-    const shortName = getCandidateName(candidate).substring(0, 10);
-    pdf.text(shortName, 30 + (index * 40), yPos + 2);
+    const fullName = getCandidateName(candidate);
+    const displayName = fullName.length > 18 ? fullName.substring(0, 16) + '...' : fullName;
+    pdf.text(displayName, xPos + 5, yPos + 2.5);
+  });
+  
+  yPos += 8;
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== EMPLOYER RECOMMENDATION ==========
+  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  
+  yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATION', yPos, pageWidth);
+  yPos += 5;
+  
+  // Generate unbiased recommendation based on data
+  const candidateAnalysis = data.candidates.map((candidate, index) => {
+    const name = getCandidateName(candidate);
+    const avgScore = data.averageScores[index];
+    const completedCount = [
+      data.fitAssessments?.[index],
+      data.aiReadinessAssessments?.[index],
+      data.promptArchitectureAssessments?.[index],
+      data.aiqAssessments?.[index]
+    ].filter(a => a !== null).length;
+    
+    // Find top skills
+    const candidateSkills = data.skillComparison
+      .map(skill => ({ name: skill.skillName, score: skill.scores[index] }))
+      .filter(s => s.score !== null)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 3);
+    
+    return { name, avgScore, completedCount, topSkills: candidateSkills };
+  });
+  
+  // Sort by average score to identify top performers
+  const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.avgScore - a.avgScore);
+  
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  const recommendationText = `Based on the comprehensive assessment data, the following analysis provides an objective overview of each candidate's performance:\n\n`;
+  
+  const lines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
+  lines.forEach((line: string) => {
+    pdf.text(line, 25, yPos);
+    yPos += 4;
+  });
+  
+  // Individual candidate summaries
+  rankedCandidates.forEach((candidate, index) => {
+    yPos = ensurePageSpace(pdf, yPos, 25, pageHeight, pageWidth);
+    
+    const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(`${candidate.name}`, 25, yPos);
+    yPos += 4;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    
+    const perfLevel = getPerformanceLevel(candidate.avgScore);
+    const summary = `Average Score: ${candidate.avgScore}/100 (${perfLevel.label}) • Completed ${candidate.completedCount}/4 assessments\n` +
+      `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}\n` +
+      `Recommendation: ${candidate.avgScore >= 80 ? 'Strong candidate with demonstrated excellence across multiple competencies. Consider for roles requiring high performance and adaptability.' : 
+        candidate.avgScore >= 70 ? 'Solid candidate with good overall performance. Suitable for most positions with potential for growth in identified development areas.' :
+        candidate.avgScore >= 60 ? 'Developing candidate showing promise. May benefit from additional training or mentorship in lower-scoring areas.' :
+        'Candidate shows foundational skills but may require significant development. Consider for entry-level positions or roles with comprehensive onboarding support.'}`
+    
+    const summaryLines = pdf.splitTextToSize(summary, pageWidth - 50);
+    summaryLines.forEach((line: string) => {
+      yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+      pdf.text(line, 25, yPos);
+      yPos += 4;
+    });
+    
+    yPos += 3;
+  });
+  
+  // Closing statement
+  yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(107, 114, 128);
+  const closingText = 'This recommendation is generated based solely on assessment data and should be considered alongside interviews, references, and other evaluation criteria for comprehensive hiring decisions.';
+  const closingLines = pdf.splitTextToSize(closingText, pageWidth - 50);
+  closingLines.forEach((line: string) => {
+    pdf.text(line, 25, yPos);
+    yPos += 3.5;
   });
   
   pdf.setTextColor(0, 0, 0);
