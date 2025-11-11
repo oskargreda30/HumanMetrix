@@ -925,7 +925,7 @@ export default function CompareTab() {
                   {getCandidateName(selectedCandidateData?.[index])} - FIT
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <RadarChart data={radarData}>
+                  <RadarChart data={radarData} margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" tick={<CustomTick fontSize={11} />} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} />
@@ -960,7 +960,7 @@ export default function CompareTab() {
                   {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <RadarChart data={radarData}>
+                  <RadarChart data={radarData} margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" tick={<CustomTick fontSize={9} />} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} />
