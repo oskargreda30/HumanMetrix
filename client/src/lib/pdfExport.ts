@@ -411,9 +411,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
-    // Reduced width to prevent horizontal stretching and maintain readability
-    const chartWidth = Math.min(80, (pageWidth - 50) / chartsPerRow);  // Max 80mm width per chart
-    const chartHeight = 55;  // Reduced from 65 to prevent label clipping
+    // Square aspect ratio to prevent horizontal stretching
+    const chartWidth = Math.min(60, (pageWidth - 50) / chartsPerRow);  // Max 60mm width per chart
+    const chartHeight = 60;  // Match width for 1:1 aspect ratio
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
@@ -491,9 +491,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
-    // Reduced width to prevent horizontal stretching and maintain readability
-    const chartWidth = Math.min(80, (pageWidth - 50) / chartsPerRow);  // Max 80mm width per chart
-    const chartHeight = 55;  // Reduced from 65 to prevent label clipping
+    // Square aspect ratio to prevent horizontal stretching
+    const chartWidth = Math.min(60, (pageWidth - 50) / chartsPerRow);  // Max 60mm width per chart
+    const chartHeight = 60;  // Match width for 1:1 aspect ratio
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
