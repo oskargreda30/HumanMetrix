@@ -9,7 +9,7 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
     - **Color Unification**: Changed AI READINESS SKILLS section from purple to blue to match FIT ASSESSMENT SKILLS for consistent visual language
     - **Logo Enhancement**: Increased logo size from 12mm to 15mm height/width for better visibility and prominence; vertically centered with blue separator line; adjusted text positioning to accommodate larger logo
   - **Comparison PDF Layout Improvements**: Enhanced readability and visual clarity of multi-candidate comparison reports
-    - **Radar Chart Sizing**: Reduced width to max 80mm per chart (from full-width) to prevent horizontal stretching and maintain readable labels; added 10mm spacing between charts
+    - **Radar Chart Sizing**: Set to 60x60mm (1:1 aspect ratio) to prevent horizontal stretching and maintain circular shape; added 10mm spacing between charts
     - **Completion Status Indicators**: Replaced small checkmarks with 3.5mm green filled squares for better visibility; gray dashes remain for incomplete assessments
     - **Prompt Architecture Section**: Increased description font to 7pt bold (from 6pt regular), added 3mm extra spacing between description and table header for better visual hierarchy
     - **Improved Layout**: Charts now positioned with better spacing (20mm margins) preventing label clipping at edges
