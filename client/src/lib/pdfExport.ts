@@ -90,9 +90,9 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   
   // HumanMetrix Logo - sized so visible shape matches blue line height (12mm)
   try {
-    const logoHeight = 16;  // Larger to account for transparent padding
-    const logoWidth = 16;   // Square aspect ratio
-    const logoY = 7;        // Adjusted to center the visible logo shape
+    const logoHeight = 20;  // Much larger to account for transparent padding
+    const logoWidth = 20;   // Square aspect ratio
+    const logoY = 5;        // Adjusted to center the visible logo shape with separator
     pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 9, logoY, logoWidth, logoHeight);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
