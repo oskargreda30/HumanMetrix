@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { FIT_SKILLS, AI_READINESS_SKILLS } from './assessmentSkills';
 
 interface CandidateData {
   user: {
@@ -352,10 +353,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     pdf.setFont('helvetica', 'normal');
     
-    // Show ALL FIT skills
-    const fitSkillNames = ['Empathy', 'Adaptability', 'Leadership', 'Conscientiousness', 'Curiosity', 'Resilience'];
+    // Show ALL FIT skills using exact key matching
+    const fitSkillKeys = FIT_SKILLS.map(s => s.key);
     const fitSkillData = data.skillComparison.filter(skill => 
-      fitSkillNames.some(fitSkill => skill.skillName.includes(fitSkill))
+      fitSkillKeys.includes(skill.skillName)
     );
     
     fitSkillData.forEach((skill, skillIndex) => {
@@ -364,13 +365,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
       pdf.text(skillName, 22, yPos);
       
+      pdf.setFont('helvetica', 'bold');
       skill.scores.forEach((score, index) => {
         if (score !== null) {
-          pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(17, 24, 39);
           pdf.text(`${score}`, 78 + (index * scoreColWidth), yPos);
         } else {
-          pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(150, 150, 150);
           pdf.text('-', 78 + (index * scoreColWidth), yPos);
         }
@@ -429,10 +429,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     pdf.setFont('helvetica', 'normal');
     
-    // Show ALL AI Readiness skills
-    const aiSkillNames = ['Algorithmic Literacy', 'Data Fluency', 'Tool Familiarization', 'Digital Ethics', 'Responsible AI', 'Critical Thinking', 'Adaptive Learning', 'Cross-functional', 'Creative Innovation'];
+    // Show ALL AI Readiness skills using exact key matching
+    const aiSkillKeys = AI_READINESS_SKILLS.map(s => s.key);
     const aiSkillData = data.skillComparison.filter(skill => 
-      aiSkillNames.some(aiSkill => skill.skillName.includes(aiSkill))
+      aiSkillKeys.includes(skill.skillName)
     );
     
     aiSkillData.forEach((skill, skillIndex) => {
@@ -441,13 +441,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const skillName = skill.skillName.length > 22 ? skill.skillName.substring(0, 20) + '...' : skill.skillName;
       pdf.text(skillName, 22, yPos);
       
+      pdf.setFont('helvetica', 'bold');
       skill.scores.forEach((score, index) => {
         if (score !== null) {
-          pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(17, 24, 39);
           pdf.text(`${score}`, 78 + (index * aiScoreColWidth), yPos);
         } else {
-          pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(150, 150, 150);
           pdf.text('-', 78 + (index * aiScoreColWidth), yPos);
         }
