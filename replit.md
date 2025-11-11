@@ -5,6 +5,11 @@ HumanMetrix is a professional AI assessment platform for recruitment and career 
 
 ## Recent Changes
 - **November 11, 2025**:
+  - **Comparison PDF Layout Improvements**: Enhanced readability and visual clarity of multi-candidate comparison reports
+    - **Radar Chart Sizing**: Reduced width to max 80mm per chart (from full-width) to prevent horizontal stretching and maintain readable labels; added 10mm spacing between charts
+    - **Completion Status Indicators**: Replaced small checkmarks with 3.5mm green filled squares for better visibility; gray dashes remain for incomplete assessments
+    - **Prompt Architecture Section**: Increased description font to 7pt bold (from 6pt regular), added 3mm extra spacing between description and table header for better visual hierarchy
+    - **Improved Layout**: Charts now positioned with better spacing (20mm margins) preventing label clipping at edges
   - **Role Fit PDF Visual Refinements**: Professional polish to skill alignment charts and branding
     - **Simplified Chart Markers**: Replaced diamond shapes with filled circles for candidate scores; hollow circles for required scores; reduced size from 2mm to 1.5mm for cleaner appearance
     - **Removed Score Labels**: Eliminated numeric labels from skill alignment charts for less clutter and more professional presentation

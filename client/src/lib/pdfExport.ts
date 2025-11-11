@@ -365,14 +365,24 @@ export async function exportComparisonPDF(data: ComparisonData) {
     data.candidates.forEach((_, candIndex) => {
       const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
       const cellX = tableStartX + assessmentColWidth + (candIndex * candidateColWidth);
-      const status = isCompleted ? '✓' : '—';
-      const color: [number, number, number] = isCompleted ? [22, 163, 74] : [156, 163, 175];  // Green for completed, gray for incomplete
       
-      drawTableRow(pdf, cellX, yPos, [candidateColWidth], [status], rowHeight, {
-        fontSize: isCompleted ? 8 : 7,
-        isBold: isCompleted,
-        textColor: color
-      });
+      if (isCompleted) {
+        // Draw green filled square for completed
+        const squareSize = 3.5;  // 3.5mm square
+        const squareX = cellX + (candidateColWidth / 2) - (squareSize / 2);
+        const squareY = yPos + (rowHeight / 2) - (squareSize / 2);
+        pdf.setFillColor(22, 163, 74);  // Green
+        pdf.rect(squareX, squareY, squareSize, squareSize, 'F');
+      } else {
+        // Draw gray dash for incomplete
+        const status = '—';
+        const color: [number, number, number] = [156, 163, 175];
+        drawTableRow(pdf, cellX, yPos, [candidateColWidth], [status], rowHeight, {
+          fontSize: 7,
+          isBold: false,
+          textColor: color
+        });
+      }
     });
     
     yPos += rowHeight;
@@ -397,15 +407,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
-    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    // Reduced width to prevent horizontal stretching and maintain readability
+    const chartWidth = Math.min(80, (pageWidth - 50) / chartsPerRow);  // Max 80mm width per chart
     const chartHeight = 55;  // Reduced from 65 to prevent label clipping
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const xPos = 20 + (index % chartsPerRow) * (chartWidth + 10);
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
     yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
@@ -476,15 +487,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
-    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    // Reduced width to prevent horizontal stretching and maintain readability
+    const chartWidth = Math.min(80, (pageWidth - 50) / chartsPerRow);  // Max 80mm width per chart
     const chartHeight = 55;  // Reduced from 65 to prevent label clipping
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const xPos = 20 + (index % chartsPerRow) * (chartWidth + 10);
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
     yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
@@ -594,11 +606,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = ensurePageSpace(pdf, yPos, promptRequiredHeight, pageHeight, pageWidth);
     yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 1);
-    yPos += 5;
+    // Bigger, bolder description text
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 2);
+    yPos += 8;  // More breathing room before table header
     
     // Table header
     pdf.setFontSize(7);
