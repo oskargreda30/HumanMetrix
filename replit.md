@@ -3,6 +3,15 @@
 ## Overview
 HumanMetrix is a professional AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy. The platform aims to provide comprehensive insights into a candidate's fit for roles in the AI-driven economy through various assessment types, including FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). Its business vision is to streamline hiring processes and support career growth by leveraging AI for objective skill evaluation.
 
+## Recent Changes
+- **November 11, 2025**:
+  - **Role Fit PDF Visual Refinements**: Professional polish to skill alignment charts and branding
+    - **Simplified Chart Markers**: Replaced diamond shapes with filled circles for candidate scores; hollow circles for required scores; reduced size from 2mm to 1.5mm for cleaner appearance
+    - **Removed Score Labels**: Eliminated numeric labels from skill alignment charts for less clutter and more professional presentation
+    - **Enhanced Logo Visibility**: Increased logo height from 13mm to 12mm to match blue separator line height for better visual balance across all PDF exports
+    - **Improved Typography**: Increased font size for KEY STRENGTHS and DEVELOPMENT AREAS from 7pt to 8pt for better readability
+    - **Updated Legend**: Chart legend now shows circles only (hollow for required, filled for candidate) matching the simplified markers
+
 ## User Preferences
 I prefer detailed explanations.
 Do not make changes to the folder `attached_assets/`.
