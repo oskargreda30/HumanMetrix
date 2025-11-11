@@ -18,6 +18,7 @@ import html2canvas from "html2canvas";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
+import { CustomRadarChart } from "./CustomRadarChart";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -863,7 +864,7 @@ export default function CompareTab() {
         </Card>
       )}
 
-      {/* Hidden radar charts for PDF export - larger containers with margins */}
+      {/* Hidden radar charts for PDF export - custom SVG charts with guaranteed label visibility */}
       {comparison && selectedCandidates.length >= 2 && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
           {/* FIT radar charts */}
@@ -881,48 +882,18 @@ export default function CompareTab() {
                 id={`pdf-comparison-fit-${index}`}
                 style={{ 
                   width: '700px', 
-                  height: '600px', 
+                  height: '700px', 
                   backgroundColor: 'white', 
-                  padding: '40px',
-                  display: 'flex',
-                  flexDirection: 'column'
+                  padding: '20px'
                 }}
               >
-                <h3 style={{ 
-                  textAlign: 'center', 
-                  marginBottom: '20px', 
-                  color: CHART_COLORS[index],
-                  fontSize: '16px',
-                  fontWeight: 'bold'
-                }}>
-                  {getCandidateName(selectedCandidateData?.[index])} - FIT
-                </h3>
-                <div style={{ flex: 1, minHeight: 0 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart 
-                      data={radarData}
-                      margin={{ top: 60, right: 100, bottom: 60, left: 100 }}
-                    >
-                      <PolarGrid strokeDasharray="3 3" />
-                      <PolarAngleAxis 
-                        dataKey="skill" 
-                        tick={{ fill: '#374151', fontSize: 13, fontWeight: 'bold' }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, 100]}
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                      />
-                      <Radar
-                        dataKey="score"
-                        stroke={CHART_COLORS[index]}
-                        fill={CHART_COLORS[index]}
-                        fillOpacity={0.4}
-                        strokeWidth={2}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+                <CustomRadarChart
+                  data={radarData}
+                  color={CHART_COLORS[index]}
+                  width={660}
+                  height={660}
+                  title={`${getCandidateName(selectedCandidateData?.[index])} - FIT`}
+                />
               </div>
             );
           })}
@@ -942,48 +913,18 @@ export default function CompareTab() {
                 id={`pdf-comparison-ai-${index}`}
                 style={{ 
                   width: '700px', 
-                  height: '600px', 
+                  height: '700px', 
                   backgroundColor: 'white', 
-                  padding: '40px',
-                  display: 'flex',
-                  flexDirection: 'column'
+                  padding: '20px'
                 }}
               >
-                <h3 style={{ 
-                  textAlign: 'center', 
-                  marginBottom: '20px', 
-                  color: CHART_COLORS[index],
-                  fontSize: '16px',
-                  fontWeight: 'bold'
-                }}>
-                  {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
-                </h3>
-                <div style={{ flex: 1, minHeight: 0 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart 
-                      data={radarData}
-                      margin={{ top: 60, right: 100, bottom: 60, left: 100 }}
-                    >
-                      <PolarGrid strokeDasharray="3 3" />
-                      <PolarAngleAxis 
-                        dataKey="skill" 
-                        tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, 100]}
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                      />
-                      <Radar
-                        dataKey="score"
-                        stroke={CHART_COLORS[index]}
-                        fill={CHART_COLORS[index]}
-                        fillOpacity={0.4}
-                        strokeWidth={2}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+                <CustomRadarChart
+                  data={radarData}
+                  color={CHART_COLORS[index]}
+                  width={660}
+                  height={660}
+                  title={`${getCandidateName(selectedCandidateData?.[index])} - AI Readiness`}
+                />
               </div>
             );
           })}
