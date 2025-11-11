@@ -409,23 +409,23 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
-    // Proper sizing to show all skill labels
-    const chartWidth = Math.min(70, (pageWidth - 30) / chartsPerRow);  // Max 70mm width per chart
-    const chartHeight = 70;  // Match width for proper proportions
+    // Larger sizing to prevent label clipping
+    const chartWidth = Math.min(80, (pageWidth - 20) / chartsPerRow);  // Max 80mm width per chart
+    const chartHeight = 80;  // Match width for proper proportions
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 20 + (index % chartsPerRow) * (chartWidth + 10);
+      const xPos = 15 + (index % chartsPerRow) * (chartWidth + 10);
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 8);  // No extra padding
     
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
-    yPos += PDF_SPACING.large;  // Breathing room before table
+    yPos += 3;  // Reduced spacing before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
@@ -489,13 +489,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
-    // Proper sizing to show all skill labels
-    const chartWidth = Math.min(70, (pageWidth - 30) / chartsPerRow);  // Max 70mm width per chart
-    const chartHeight = 70;  // Match width for proper proportions
+    // Larger sizing to prevent label clipping
+    const chartWidth = Math.min(80, (pageWidth - 20) / chartsPerRow);  // Max 80mm width per chart
+    const chartHeight = 80;  // Match width for proper proportions
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 20 + (index % chartsPerRow) * (chartWidth + 10);
+      const xPos = 15 + (index % chartsPerRow) * (chartWidth + 10);
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
