@@ -4,6 +4,16 @@
 HumanMetrix is a professional AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy. The platform aims to provide comprehensive insights into a candidate's fit for roles in the AI-driven economy through various assessment types, including FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). Its business vision is to streamline hiring processes and support career growth by leveraging AI for objective skill evaluation.
 
 ## Recent Changes
+- **November 11, 2025**:
+  - **Comparison PDF Professional Refinements**: Comprehensive visual improvements based on employer feedback for better readability and presentation
+    - **Completion Status Visibility**: Replaced dots with bold green checkmarks (✓) for completed assessments, gray dashes (—) for incomplete; increased font size to 8pt for better visibility
+    - **Radar Chart Optimization**: Reduced chart height from 65mm to 55mm to prevent skill label clipping; added 8mm vertical spacing between charts for better separation
+    - **Consistent Spacing**: Added 8mm breathing room (PDF_SPACING.large) before ALL section headers (COMPLETION STATUS, FIT ASSESSMENT, AI READINESS, AIQ, PROMPT ARCHITECTURE, TOP 5 SKILLS, HIRING RECOMMENDATION)
+    - **Smart Pagination**: Optimized page breaks to fit AIQ and Prompt Architecture on previous page when ≥70mm space available; proper height calculations prevent content overflow
+    - **Candidate Color Distinction**: Changed Candidate 2 bars from Blue-500 to lighter Blue-300 [147,197,253] for better visual distinction while maintaining hierarchy
+    - **Typography Improvements**: Changed average score numbers to pure black text for readability instead of performance-based colors
+    - **Shared PDF Assets**: Created pdfAssets.ts with HumanMetrix logo (base64), pdfStyles.ts with typography helpers (7pt body, 8pt subheading, 11pt heading) and blue color palette
+    - **Unified Design**: All PDFs now use consistent HumanMetrix logo (13x13mm at position 10,6), blue-only radar charts with smaller professional dots (r:3), bold labels
 - **November 10, 2025**:
   - **Comparison PDF Redesign**: Comprehensive restructuring of multi-candidate comparison PDF export for cleaner visuals and better data presentation
     - **Unified Section Headers**: All sections (COMPLETION STATUS, FIT ASSESSMENT, AI READINESS, PROMPT ARCHITECTURE, TOP 5 SKILLS) now use consistent addSectionHeader styling with gradient backgrounds
