@@ -26,6 +26,13 @@ const CHART_COLORS = [
   "hsl(var(--chart-3))",
 ];
 
+// RGB colors for SVG (CSS variables don't work in SVG)
+const SVG_CHART_COLORS = [
+  "#3b82f6", // blue
+  "#10b981", // green
+  "#f59e0b", // amber
+];
+
 interface ComparisonData {
   radarData: Array<any>;
   skillComparison: Array<{ skillName: string; scores: Array<number | null> }>;
@@ -101,7 +108,7 @@ export default function CompareTab() {
         // Capture FIT radar chart
         if (comparison.fitAssessments?.[i]) {
           try {
-            const element = document.getElementById(`pdf-comparison-fit-${i}`);
+            const element = document.getElementById(`pdf-hidden-fit-${i}`);
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
@@ -122,7 +129,7 @@ export default function CompareTab() {
         // Capture AI Readiness radar chart
         if (comparison.aiReadinessAssessments?.[i]) {
           try {
-            const element = document.getElementById(`pdf-comparison-ai-${i}`);
+            const element = document.getElementById(`pdf-hidden-ai-${i}`);
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
@@ -879,7 +886,7 @@ export default function CompareTab() {
             return (
               <div 
                 key={`fit-${index}`}
-                id={`pdf-comparison-fit-${index}`}
+                id={`pdf-hidden-fit-${index}`}
                 style={{ 
                   width: '700px', 
                   height: '700px', 
@@ -889,7 +896,7 @@ export default function CompareTab() {
               >
                 <CustomRadarChart
                   data={radarData}
-                  color={CHART_COLORS[index]}
+                  color={SVG_CHART_COLORS[index]}
                   width={660}
                   height={660}
                   title={`${getCandidateName(selectedCandidateData?.[index])} - FIT`}
@@ -910,7 +917,7 @@ export default function CompareTab() {
             return (
               <div 
                 key={`ai-${index}`}
-                id={`pdf-comparison-ai-${index}`}
+                id={`pdf-hidden-ai-${index}`}
                 style={{ 
                   width: '700px', 
                   height: '700px', 
@@ -920,7 +927,7 @@ export default function CompareTab() {
               >
                 <CustomRadarChart
                   data={radarData}
-                  color={CHART_COLORS[index]}
+                  color={SVG_CHART_COLORS[index]}
                   width={660}
                   height={660}
                   title={`${getCandidateName(selectedCandidateData?.[index])} - AI Readiness`}
