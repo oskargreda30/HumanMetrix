@@ -7,46 +7,6 @@ interface SkillData {
   fullMark?: number;
 }
 
-// Custom tick component to handle multi-line labels
-const CustomTick = ({ payload, x, y, textAnchor, fontSize = 12 }: any) => {
-  const words = payload.value.split(' ');
-  
-  // If single word or short label, render as-is
-  if (words.length === 1 || payload.value.length <= 12) {
-    return (
-      <text
-        x={x}
-        y={y}
-        textAnchor={textAnchor}
-        fill="#374151"
-        fontSize={fontSize}
-        fontWeight="bold"
-      >
-        {payload.value}
-      </text>
-    );
-  }
-  
-  // Multi-word label: split into lines
-  const midpoint = Math.ceil(words.length / 2);
-  const line1 = words.slice(0, midpoint).join(' ');
-  const line2 = words.slice(midpoint).join(' ');
-  
-  return (
-    <text
-      x={x}
-      y={y}
-      textAnchor={textAnchor}
-      fill="#374151"
-      fontSize={fontSize}
-      fontWeight="bold"
-    >
-      <tspan x={x} dy="-0.5em">{line1}</tspan>
-      <tspan x={x} dy="1.2em">{line2}</tspan>
-    </text>
-  );
-};
-
 interface SkillRadarChartProps {
   data: SkillData[];
   title?: string;
@@ -72,7 +32,7 @@ export function SkillRadarChart({
         <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
         <PolarAngleAxis 
           dataKey="skill" 
-          tick={<CustomTick fontSize={12} />}
+          tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
         />
         <PolarRadiusAxis 
           angle={90} 
@@ -162,7 +122,7 @@ export function MultiCandidateRadarChart({
             <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
             <PolarAngleAxis 
               dataKey="skill" 
-              tick={<CustomTick fontSize={11} />}
+              tick={{ fill: '#374151', fontSize: 11, fontWeight: 'bold' }}
             />
             <PolarRadiusAxis 
               angle={90} 

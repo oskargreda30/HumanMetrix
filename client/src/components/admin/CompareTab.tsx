@@ -18,19 +18,11 @@ import html2canvas from "html2canvas";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
-import { CustomRadarChart } from "./CustomRadarChart";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
   "hsl(var(--chart-2))", 
   "hsl(var(--chart-3))",
-];
-
-// RGB colors for SVG (CSS variables don't work in SVG)
-const SVG_CHART_COLORS = [
-  "#3b82f6", // blue
-  "#10b981", // green
-  "#f59e0b", // amber
 ];
 
 interface ComparisonData {
@@ -108,7 +100,7 @@ export default function CompareTab() {
         // Capture FIT radar chart
         if (comparison.fitAssessments?.[i]) {
           try {
-            const element = document.getElementById(`pdf-hidden-fit-${i}`);
+            const element = document.getElementById(`pdf-comparison-fit-${i}`);
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
@@ -129,7 +121,7 @@ export default function CompareTab() {
         // Capture AI Readiness radar chart
         if (comparison.aiReadinessAssessments?.[i]) {
           try {
-            const element = document.getElementById(`pdf-hidden-ai-${i}`);
+            const element = document.getElementById(`pdf-comparison-ai-${i}`);
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
@@ -871,7 +863,7 @@ export default function CompareTab() {
         </Card>
       )}
 
-      {/* Hidden radar charts for PDF export - custom SVG charts with guaranteed label visibility */}
+      {/* Hidden radar charts for PDF export */}
       {comparison && selectedCandidates.length >= 2 && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
           {/* FIT radar charts */}
@@ -886,21 +878,25 @@ export default function CompareTab() {
             return (
               <div 
                 key={`fit-${index}`}
-                id={`pdf-hidden-fit-${index}`}
-                style={{ 
-                  width: '700px', 
-                  height: '700px', 
-                  backgroundColor: 'white', 
-                  padding: '20px'
-                }}
+                id={`pdf-comparison-fit-${index}`}
+                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
               >
-                <CustomRadarChart
-                  data={radarData}
-                  color={SVG_CHART_COLORS[index]}
-                  width={660}
-                  height={660}
-                  title={`${getCandidateName(selectedCandidateData?.[index])} - FIT`}
-                />
+                <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
+                  {getCandidateName(selectedCandidateData?.[index])} - FIT
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar
+                      dataKey="score"
+                      stroke={CHART_COLORS[index]}
+                      fill={CHART_COLORS[index]}
+                      fillOpacity={0.5}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             );
           })}
@@ -917,21 +913,25 @@ export default function CompareTab() {
             return (
               <div 
                 key={`ai-${index}`}
-                id={`pdf-hidden-ai-${index}`}
-                style={{ 
-                  width: '700px', 
-                  height: '700px', 
-                  backgroundColor: 'white', 
-                  padding: '20px'
-                }}
+                id={`pdf-comparison-ai-${index}`}
+                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
               >
-                <CustomRadarChart
-                  data={radarData}
-                  color={SVG_CHART_COLORS[index]}
-                  width={660}
-                  height={660}
-                  title={`${getCandidateName(selectedCandidateData?.[index])} - AI Readiness`}
-                />
+                <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
+                  {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar
+                      dataKey="score"
+                      stroke={CHART_COLORS[index]}
+                      fill={CHART_COLORS[index]}
+                      fillOpacity={0.5}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             );
           })}

@@ -88,12 +88,9 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HumanMetrix Logo - sized so visible shape matches blue line height (12mm)
+  // HumanMetrix Logo (full logo image)
   try {
-    const logoHeight = 20;  // Much larger to account for transparent padding
-    const logoWidth = 20;   // Square aspect ratio
-    const logoY = 5;        // Adjusted to center the visible logo shape with separator
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 9, logoY, logoWidth, logoHeight);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 6, 13, 13);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -101,18 +98,18 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   // Separator line
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(27, 9, 27, 21);
+  pdf.line(28, 9, 28, 21);
   
   // Company name and tagline
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 31, 13);
+  pdf.text('HUMANMETRIX', 32, 13);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 31, 19);
+  pdf.text('AI-Powered Assessment Platform', 32, 19);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -170,9 +167,9 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
 
 // Candidate color palette for comparison - different shades of blue
 const CANDIDATE_COLORS = [
-  [37, 99, 235],    // Candidate 1: Dark Blue (Blue-600)
-  [147, 197, 253],  // Candidate 2: Lighter Blue (Blue-300) - more distinction
-  [96, 165, 250],   // Candidate 3: Light Blue (Blue-400)
+  [37, 99, 235],    // Dark Blue (Blue-600)
+  [59, 130, 246],   // Medium Blue (Blue-500)
+  [96, 165, 250],   // Light Blue (Blue-400)
 ];
 
 // Helper to ensure sufficient page space, add new page if needed
@@ -307,7 +304,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const avgScore = data.averageScores[index];
     pdf.setFontSize(13);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(0, 0, 0); // Black text for average scores
+    const perf = getPerformanceLevel(avgScore);
+    pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
     pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
     
     pdf.setFontSize(6);
@@ -326,7 +324,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   }
   
   // Assessment Completion Status - IMPROVED TABLE
-  yPos += PDF_SPACING.large;
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   yPos += 3;
   
@@ -356,38 +353,19 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   yPos += rowHeight;
   
-  // Data rows - render each cell individually to control colors
+  // Data rows
   assessmentNames.forEach((aName, aIndex) => {
-    // First draw the assessment name
-    drawTableRow(pdf, tableStartX, yPos, [assessmentColWidth], [aName], rowHeight, {
+    const rowTexts = [aName];
+    
+    data.candidates.forEach((_, candIndex) => {
+      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
+      rowTexts.push(isCompleted ? '✓' : '—');
+    });
+    
+    drawTableRow(pdf, tableStartX, yPos, headerWidths, rowTexts, rowHeight, {
       fontSize: 7,
       textColor: [75, 85, 99]
     });
-    
-    // Then draw each candidate's completion status with conditional coloring
-    data.candidates.forEach((_, candIndex) => {
-      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      const cellX = tableStartX + assessmentColWidth + (candIndex * candidateColWidth);
-      
-      if (isCompleted) {
-        // Draw green filled square for completed
-        const squareSize = 3.5;  // 3.5mm square
-        const squareX = cellX + (candidateColWidth / 2) - (squareSize / 2);
-        const squareY = yPos + (rowHeight / 2) - (squareSize / 2);
-        pdf.setFillColor(22, 163, 74);  // Green
-        pdf.rect(squareX, squareY, squareSize, squareSize, 'F');
-      } else {
-        // Draw gray dash for incomplete
-        const status = '—';
-        const color: [number, number, number] = [156, 163, 175];
-        drawTableRow(pdf, cellX, yPos, [candidateColWidth], [status], rowHeight, {
-          fontSize: 7,
-          isBold: false,
-          textColor: color
-        });
-      }
-    });
-    
     yPos += rowHeight;
   });
   
@@ -404,29 +382,26 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
   if (hasFIT && data.fitChartImages) {
-    yPos += PDF_SPACING.large;
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
     yPos += 3;
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
-    // Larger sizing to prevent label clipping
-    const chartWidth = Math.min(80, (pageWidth - 20) / chartsPerRow);  // Max 80mm width per chart
-    const chartHeight = 80;  // Match width for proper proportions
+    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    const chartHeight = 65;
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * (chartWidth + 10);
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
+      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 8);  // No extra padding
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
-    yPos += 3;  // Reduced spacing before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
@@ -484,29 +459,26 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos = 35;
     }
     
-    yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
     yPos += 3;
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
-    // Larger sizing to prevent label clipping
-    const chartWidth = Math.min(80, (pageWidth - 20) / chartsPerRow);  // Max 80mm width per chart
-    const chartHeight = 80;  // Match width for proper proportions
+    const chartWidth = (pageWidth - 30) / chartsPerRow;
+    const chartHeight = 65;
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * (chartWidth + 10);
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
+      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 8);  // No extra padding
+    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-    yPos += 3;  // Reduced spacing before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
@@ -554,16 +526,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 5;
   }
   
-  // ========== DETAILED COMPARISONS (smart pagination) ==========
-  // Don't force a new page - let ensurePageSpace handle it in AIQ section
+  // ========== PAGE 3: DETAILED COMPARISONS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
   
-  // AIQ Summary - with smart pagination
+  yPos = 35;
+  
+  // AIQ Summary
   const hasAIQ = data.aiqAssessments?.some(a => a !== null);
   if (hasAIQ) {
-    // Calculate actual space needed: spacing + header + labels + candidates + padding
-    const aiqRequiredHeight = PDF_SPACING.large + 13 + 5 + 2 + (6 * data.candidates.length) + 10;
-    yPos = ensurePageSpace(pdf, yPos, aiqRequiredHeight, pageHeight, pageWidth);
-    yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
     yPos += 2;
     
@@ -604,17 +576,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Prompt Architecture - Total Level Scores
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
-    // Calculate space needed: spacing + header + description + labels + 7 levels + padding
-    const promptRequiredHeight = PDF_SPACING.large + 13 + 5 + 4 + (7 * 7) + 10;  // ~85mm
-    yPos = ensurePageSpace(pdf, yPos, promptRequiredHeight, pageHeight, pageWidth);
-    yPos += PDF_SPACING.large;  // Breathing room
+    yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
-    // Bigger, bolder description text
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 2);
-    yPos += 8;  // More breathing room before table header
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 1);
+    yPos += 5;
     
     // Table header
     pdf.setFontSize(7);
@@ -690,7 +658,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = 35;
   }
   
-  yPos += PDF_SPACING.large;  // Breathing room
   yPos = addSectionHeader(pdf, 'TOP 5 SKILLS COMPARISON', yPos, pageWidth);
   yPos += 3;
   
@@ -770,7 +737,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // ========== EMPLOYER RECOMMENDATION ==========
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-  yPos += PDF_SPACING.large;  // Breathing room
   
   yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATION', yPos, pageWidth);
   yPos += 5;
@@ -1005,9 +971,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  // Increased font size for better readability
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  applyBodyText(pdf);
   
   // Two-column layout for strengths
   const strengthColWidth = (pageWidth - 45) / 2;
@@ -1052,9 +1016,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  // Increased font size for better readability
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  applyBodyText(pdf);
   
   // Two-column layout for gaps
   const gapColWidth = (pageWidth - 45) / 2;
@@ -1173,44 +1135,85 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setLineWidth(0.8);
       pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
       
-      // Smaller circles for cleaner appearance
-      const circleRadius = 1.5;  // Reduced from 2mm
-      
-      // Draw required score marker (hollow circle)
+      // Draw required score marker (circle with border)
       pdf.setFillColor(255, 255, 255); // White fill
-      pdf.circle(requiredX, skillY, circleRadius, 'F');
+      pdf.circle(requiredX, skillY, 2, 'F');
       pdf.setDrawColor(107, 114, 128);
-      pdf.setLineWidth(1);
-      pdf.circle(requiredX, skillY, circleRadius, 'D');
+      pdf.setLineWidth(1.2);
+      pdf.circle(requiredX, skillY, 2, 'D');
       
-      // Draw candidate score marker (filled circle)
+      // Draw candidate score marker (diamond shape)
       pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-      pdf.circle(candidateX, skillY, circleRadius, 'F');
+      const diamondSize = 2.5;
+      pdf.setLineWidth(0.5);
+      // Draw diamond (rotated square)
+      const diamondPath = [
+        [candidateX, skillY - diamondSize],           // top
+        [candidateX + diamondSize, skillY],           // right
+        [candidateX, skillY + diamondSize],           // bottom
+        [candidateX - diamondSize, skillY],           // left
+        [candidateX, skillY - diamondSize]            // close path
+      ];
+      diamondPath.forEach((point, i) => {
+        if (i === 0) return;
+        pdf.line(diamondPath[i-1][0], diamondPath[i-1][1], point[0], point[1]);
+      });
+      // Fill the diamond
+      pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
+      pdf.triangle(
+        candidateX, skillY - diamondSize,
+        candidateX + diamondSize, skillY,
+        candidateX, skillY + diamondSize,
+        'F'
+      );
+      pdf.triangle(
+        candidateX, skillY - diamondSize,
+        candidateX - diamondSize, skillY,
+        candidateX, skillY + diamondSize,
+        'F'
+      );
       
-      // No score labels - removed for cleaner appearance
+      // Add score labels
+      pdf.setFontSize(5);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`${skill.requiredScore}`, requiredX, skillY - 2.5, { align: 'center' });
+      pdf.setTextColor(iconColor[0], iconColor[1], iconColor[2]);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${skill.candidateScore}`, candidateX, skillY + 4, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
       
       pdf.setLineWidth(0.2);
     });
     
-    // Legend - updated for circles only
+    // Legend
     yPos = chartStartY + chartHeight + 8;
     pdf.setFontSize(6);
     pdf.setTextColor(55, 65, 81);
     
-    const legendCircleRadius = 1.5;  // Match the chart circles
-    
-    // Required score legend (hollow circle)
+    // Required score legend
     pdf.setFillColor(255, 255, 255);
-    pdf.circle(chartMarginLeft + 5, yPos, legendCircleRadius, 'F');
+    pdf.circle(chartMarginLeft + 5, yPos, 2, 'F');
     pdf.setDrawColor(107, 114, 128);
-    pdf.setLineWidth(1);
-    pdf.circle(chartMarginLeft + 5, yPos, legendCircleRadius, 'D');
+    pdf.setLineWidth(1.2);
+    pdf.circle(chartMarginLeft + 5, yPos, 2, 'D');
     pdf.text('Required Score', chartMarginLeft + 11, yPos + 1);
     
-    // Candidate score legend (filled circle)
+    // Candidate score legend (diamond)
     pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
+    const legendDiamondSize = 2.5;
     const legendX = chartMarginLeft + 52;
-    pdf.circle(legendX, yPos, legendCircleRadius, 'F');
+    pdf.triangle(
+      legendX, yPos - legendDiamondSize,
+      legendX + legendDiamondSize, yPos,
+      legendX, yPos + legendDiamondSize,
+      'F'
+    );
+    pdf.triangle(
+      legendX, yPos - legendDiamondSize,
+      legendX - legendDiamondSize, yPos,
+      legendX, yPos + legendDiamondSize,
+      'F'
+    );
     pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
     yPos += 8;
@@ -1226,7 +1229,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render AI Readiness skills if available
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
+    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [147, 51, 234]);
   }
   
   pdf.setTextColor(0, 0, 0);
