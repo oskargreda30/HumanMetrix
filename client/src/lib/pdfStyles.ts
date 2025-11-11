@@ -16,7 +16,7 @@ export function applySubheading(pdf: jsPDF) {
 }
 
 export function applyHeading(pdf: jsPDF) {
-  pdf.setFontSize(10);
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
 }
