@@ -167,9 +167,9 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
 
 // Candidate color palette for comparison - different shades of blue
 const CANDIDATE_COLORS = [
-  [37, 99, 235],    // Dark Blue (Blue-600)
-  [59, 130, 246],   // Medium Blue (Blue-500)
-  [96, 165, 250],   // Light Blue (Blue-400)
+  [37, 99, 235],    // Candidate 1: Dark Blue (Blue-600)
+  [147, 197, 253],  // Candidate 2: Lighter Blue (Blue-300) - more distinction
+  [96, 165, 250],   // Candidate 3: Light Blue (Blue-400)
 ];
 
 // Helper to ensure sufficient page space, add new page if needed
@@ -304,8 +304,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const avgScore = data.averageScores[index];
     pdf.setFontSize(13);
     pdf.setFont('helvetica', 'bold');
-    const perf = getPerformanceLevel(avgScore);
-    pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+    pdf.setTextColor(0, 0, 0); // Black text for average scores
     pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
     
     pdf.setFontSize(6);
@@ -324,6 +323,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   }
   
   // Assessment Completion Status - IMPROVED TABLE
+  yPos += PDF_SPACING.large;
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   yPos += 3;
   
@@ -353,19 +353,28 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   yPos += rowHeight;
   
-  // Data rows
+  // Data rows - render each cell individually to control colors
   assessmentNames.forEach((aName, aIndex) => {
-    const rowTexts = [aName];
-    
-    data.candidates.forEach((_, candIndex) => {
-      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      rowTexts.push(isCompleted ? '✓' : '—');
-    });
-    
-    drawTableRow(pdf, tableStartX, yPos, headerWidths, rowTexts, rowHeight, {
+    // First draw the assessment name
+    drawTableRow(pdf, tableStartX, yPos, [assessmentColWidth], [aName], rowHeight, {
       fontSize: 7,
       textColor: [75, 85, 99]
     });
+    
+    // Then draw each candidate's completion status with conditional coloring
+    data.candidates.forEach((_, candIndex) => {
+      const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
+      const cellX = tableStartX + assessmentColWidth + (candIndex * candidateColWidth);
+      const status = isCompleted ? '✓' : '—';
+      const color: [number, number, number] = isCompleted ? [22, 163, 74] : [156, 163, 175];  // Green for completed, gray for incomplete
+      
+      drawTableRow(pdf, cellX, yPos, [candidateColWidth], [status], rowHeight, {
+        fontSize: isCompleted ? 8 : 7,
+        isBold: isCompleted,
+        textColor: color
+      });
+    });
+    
     yPos += rowHeight;
   });
   
@@ -382,26 +391,28 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
   if (hasFIT && data.fitChartImages) {
+    yPos += PDF_SPACING.large;
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
     yPos += 3;
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
     const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 65;
+    const chartHeight = 55;  // Reduced from 65 to prevent label clipping
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
       const xPos = 15 + (index % chartsPerRow) * chartWidth;
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
     
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;  // Breathing room before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
@@ -459,26 +470,28 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos = 35;
     }
     
+    yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
     yPos += 3;
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
     const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 65;
+    const chartHeight = 55;  // Reduced from 65 to prevent label clipping
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
       const xPos = 15 + (index % chartsPerRow) * chartWidth;
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 8);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
     });
     
-    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
+    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 8) + 5;  // Extra padding
     
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;  // Breathing room before table
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
@@ -526,16 +539,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 5;
   }
   
-  // ========== PAGE 3: DETAILED COMPARISONS ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
+  // ========== DETAILED COMPARISONS (smart pagination) ==========
+  // Don't force a new page - let ensurePageSpace handle it in AIQ section
   
-  yPos = 35;
-  
-  // AIQ Summary
+  // AIQ Summary - with smart pagination
   const hasAIQ = data.aiqAssessments?.some(a => a !== null);
   if (hasAIQ) {
+    // Calculate actual space needed: spacing + header + labels + candidates + padding
+    const aiqRequiredHeight = PDF_SPACING.large + 13 + 5 + 2 + (6 * data.candidates.length) + 10;
+    yPos = ensurePageSpace(pdf, yPos, aiqRequiredHeight, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
     yPos += 2;
     
@@ -576,7 +589,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Prompt Architecture - Total Level Scores
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
-    yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+    // Calculate space needed: spacing + header + description + labels + 7 levels + padding
+    const promptRequiredHeight = PDF_SPACING.large + 13 + 5 + 4 + (7 * 7) + 10;  // ~85mm
+    yPos = ensurePageSpace(pdf, yPos, promptRequiredHeight, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;  // Breathing room
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'normal');
@@ -658,6 +674,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = 35;
   }
   
+  yPos += PDF_SPACING.large;  // Breathing room
   yPos = addSectionHeader(pdf, 'TOP 5 SKILLS COMPARISON', yPos, pageWidth);
   yPos += 3;
   
@@ -737,6 +754,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // ========== EMPLOYER RECOMMENDATION ==========
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  yPos += PDF_SPACING.large;  // Breathing room
   
   yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATION', yPos, pageWidth);
   yPos += 5;
