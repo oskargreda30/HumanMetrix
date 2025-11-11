@@ -207,43 +207,44 @@ export async function exportComparisonPDF(data: ComparisonData) {
       : 'No Name';
     
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardY = yPos + (index * 35);
+    const cardY = yPos + (index * 26);
     
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     pdf.setLineWidth(0.5);
-    pdf.roundedRect(25, cardY, pageWidth - 50, 28, 2, 2, 'FD');
+    pdf.roundedRect(25, cardY, pageWidth - 50, 20, 2, 2, 'FD');
     pdf.setLineWidth(0.2);
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(`CANDIDATE ${index + 1}`, 30, cardY + 6);
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`CANDIDATE ${index + 1}`, 30, cardY + 8);
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(17, 24, 39);
     const shortName = name.length > 25 ? name.substring(0, 23) + '...' : name;
-    pdf.text(shortName, 30, cardY + 15);
+    pdf.text(shortName, 30, cardY + 12);
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     const shortEmail = candidate.user.email.length > 30 ? candidate.user.email.substring(0, 28) + '...' : candidate.user.email;
-    pdf.text(shortEmail, 30, cardY + 21);
+    pdf.text(shortEmail, 30, cardY + 17);
     
     const avgScore = data.averageScores[index];
-    pdf.setFontSize(14);
+    pdf.setFontSize(13);
     pdf.setFont('helvetica', 'bold');
     const perf = getPerformanceLevel(avgScore);
     pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-    pdf.text(`${avgScore}`, pageWidth - 35, cardY + 15, { align: 'right' });
+    pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Avg', pageWidth - 35, cardY + 21, { align: 'right' });
+    pdf.text('Avg', pageWidth - 30, cardY + 16, { align: 'right' });
   });
   
-  yPos += (data.candidates.length * 35) + 10;
+  yPos += (data.candidates.length * 26) + 8;
   pdf.setTextColor(0, 0, 0);
   
   // Helper function to get candidate name

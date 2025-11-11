@@ -1167,7 +1167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type.toLowerCase().replace(/[\s-]+/g, '_');
       
       // Aggregate skills across all skill-based assessments for radar chart
-      const skillsMap = new Map<string, number[]>();
+      const skillsMap = new Map<string, (number | null)[]>();
       
       candidatesResults.forEach((results, candidateIndex) => {
         // Only process skill-based assessments
@@ -1180,7 +1180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (result.scores && typeof result.scores === 'object') {
             Object.entries(result.scores).forEach(([skill, score]) => {
               if (!skillsMap.has(skill)) {
-                skillsMap.set(skill, new Array(userIds.length).fill(0));
+                skillsMap.set(skill, new Array(userIds.length).fill(null));
               }
               const scores = skillsMap.get(skill)!;
               scores[candidateIndex] = score as number;
@@ -1192,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       skillsMap.forEach((scores, skill) => {
         const dataPoint: any = { skill };
         scores.forEach((score, index) => {
-          dataPoint[`candidate${index}`] = score;
+          dataPoint[`candidate${index}`] = score ?? 0; // Use 0 for radar chart display
         });
         radarData.push(dataPoint);
       });
@@ -1202,7 +1202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       skillsMap.forEach((scores, skillName) => {
         skillComparison.push({
           skillName,
-          scores: scores.map(score => score ?? null), // Use ?? to preserve 0 scores
+          scores: scores, // Keep nulls for missing scores
         });
       });
 
