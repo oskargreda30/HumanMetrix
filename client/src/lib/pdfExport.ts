@@ -88,9 +88,13 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HumanMetrix Logo (full logo image) - height matches blue line (12mm)
+  // HumanMetrix Logo (larger for better visibility) - vertically centered with blue line
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 9, 12, 12);
+    const logoHeight = 15;  // Increased from 12mm for better visibility
+    const logoWidth = 15;
+    const lineHeight = 12;  // Blue line height (21 - 9)
+    const logoY = 9 + (lineHeight - logoHeight) / 2;  // Center vertically with line
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 9, logoY, logoWidth, logoHeight);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -98,18 +102,18 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   // Separator line
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(28, 9, 28, 21);
+  pdf.line(30, 9, 30, 21);
   
   // Company name and tagline
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 32, 13);
+  pdf.text('HUMANMETRIX', 34, 13);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 32, 19);
+  pdf.text('AI-Powered Assessment Platform', 34, 19);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -1223,7 +1227,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render AI Readiness skills if available
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [147, 51, 234]);
+    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
   pdf.setTextColor(0, 0, 0);
