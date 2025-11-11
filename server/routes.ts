@@ -1317,21 +1317,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const summaryScores = promptResult.scores as Record<string, number>;
             const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
             
+            // Detect if scores are out of 25 or already out of 100
+            const allScoreValues = Object.values(summaryScores).filter(v => typeof v === 'number');
+            const maxScore = Math.max(...allScoreValues);
+            const scoresAreOutOf100 = maxScore > 25; // If any score > 25, assume they're out of 100
+            
             const getSummaryScore = (dimension: string): number | undefined => {
+              let rawScore: number | undefined;
+              
               // Try direct match first
               if (summaryScores[dimension] !== undefined) {
-                return scaleDimensionScore(summaryScores[dimension]);
-              }
-              
-              // Try normalized matching
-              const normalized = normalizeKey(dimension);
-              for (const [key, value] of Object.entries(summaryScores)) {
-                if (normalizeKey(key) === normalized) {
-                  return scaleDimensionScore(value);
+                rawScore = summaryScores[dimension];
+              } else {
+                // Try normalized matching
+                const normalized = normalizeKey(dimension);
+                for (const [key, value] of Object.entries(summaryScores)) {
+                  if (normalizeKey(key) === normalized) {
+                    rawScore = value;
+                    break;
+                  }
                 }
               }
               
-              return undefined;
+              if (rawScore === undefined) return undefined;
+              
+              // Scale appropriately based on detected format
+              if (scoresAreOutOf100) {
+                // Scores are already out of 100, scale to 20
+                return Math.round((rawScore / 100) * 20);
+              } else {
+                // Scores are out of 25, scale to 20
+                return scaleDimensionScore(rawScore);
+              }
             };
             
             const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity');
