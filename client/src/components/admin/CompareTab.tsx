@@ -19,6 +19,46 @@ import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
 
+// Custom tick component to handle multi-line labels
+const CustomTick = ({ payload, x, y, textAnchor, fontSize = 12 }: any) => {
+  const words = payload.value.split(' ');
+  
+  // If single word or short label, render as-is
+  if (words.length === 1 || payload.value.length <= 12) {
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor={textAnchor}
+        fill="#374151"
+        fontSize={fontSize}
+        fontWeight="bold"
+      >
+        {payload.value}
+      </text>
+    );
+  }
+  
+  // Multi-word label: split into lines
+  const midpoint = Math.ceil(words.length / 2);
+  const line1 = words.slice(0, midpoint).join(' ');
+  const line2 = words.slice(midpoint).join(' ');
+  
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor={textAnchor}
+      fill="#374151"
+      fontSize={fontSize}
+      fontWeight="bold"
+    >
+      <tspan x={x} dy="-0.5em">{line1}</tspan>
+      <tspan x={x} dy="1.2em">{line2}</tspan>
+    </text>
+  );
+};
+
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
   "hsl(var(--chart-2))", 
@@ -887,7 +927,7 @@ export default function CompareTab() {
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData}>
                     <PolarGrid />
-                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                    <PolarAngleAxis dataKey="skill" tick={<CustomTick fontSize={11} />} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} />
                     <Radar
                       dataKey="score"
@@ -922,7 +962,7 @@ export default function CompareTab() {
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData}>
                     <PolarGrid />
-                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
+                    <PolarAngleAxis dataKey="skill" tick={<CustomTick fontSize={9} />} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} />
                     <Radar
                       dataKey="score"
