@@ -118,11 +118,23 @@ export default function MyResults() {
         description: "Please wait while we prepare your comprehensive report...",
       });
 
+      // Fetch platform averages from API (same as admin dashboard)
+      const averagesRes = await fetch('/api/admin/platform-averages', {
+        credentials: 'include',
+      });
+      const platformAverages = averagesRes.ok ? await averagesRes.json() : {
+        totalCandidates: 1,
+        avgScoreAcrossCandidates: 0,
+        skillAverages: {},
+      };
+
       // Fetch Prompt Architecture evaluations if needed
       let promptArchData: any[] = [];
       if (promptArchResult?.id) {
         try {
-          const res = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`);
+          const res = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`, {
+            credentials: 'include',
+          });
           if (res.ok) {
             promptArchData = await res.json();
           }
@@ -146,9 +158,6 @@ export default function MyResults() {
       // Wait for both charts to be ready
       const fitReady = await waitForElement('fit-radar-chart-pdf');
       const aiReady = await waitForElement('ai-readiness-radar-chart-pdf');
-      
-      console.log('FIT chart ready:', fitReady);
-      console.log('AI chart ready:', aiReady);
 
       // Capture radar charts with retry
       let fitChart = null;
@@ -169,10 +178,6 @@ export default function MyResults() {
           await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
-      
-      console.log('Captured FIT chart:', !!fitChart);
-      console.log('Captured AI chart:', !!aiReadinessChart);
-      console.log('Prompt arch data length:', promptArchData.length);
       
       const radarChartImages: any = {};
       if (fitChart) radarChartImages.fit = fitChart;
@@ -200,13 +205,6 @@ export default function MyResults() {
           });
         });
       });
-
-      // Platform averages (simplified)
-      const platformAverages = {
-        totalCandidates: 1,
-        avgScoreAcrossCandidates: 0,
-        skillAverages: {},
-      };
 
       await exportEnhancedCandidatePDF(
         candidateData,
@@ -268,10 +266,10 @@ export default function MyResults() {
           <Card className="p-8 mb-8">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-primary mb-2">{totalAssessments}</div>
+                <div className="text-4xl font-bold text-primary mb-2">{uniqueAssessmentTypes.size}</div>
                 <div className="text-sm text-muted-foreground">Assessments Completed</div>
               </div>
-              {averageScore && (
+              {averageScore !== null && (
                 <div className="text-center">
                   <div className="text-4xl font-bold text-primary mb-2">{averageScore}/100</div>
                   <div className="text-sm text-muted-foreground">Average Score</div>
@@ -285,73 +283,6 @@ export default function MyResults() {
               </div>
             </div>
           </Card>
-
-          {/* Individual Assessment Results */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-semibold">Assessment Breakdown</h2>
-            
-            <div className="grid gap-6">
-              {completedResults.map((result: any) => {
-                const hasScore = result.totalScore !== null && result.totalScore !== undefined;
-                
-                return (
-                  <Card key={result.id} className="p-6">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">
-                            {formatAssessmentName(result.assessmentType)}
-                          </h3>
-                          <Badge variant="default" className="gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Complete
-                          </Badge>
-                        </div>
-                        {result.completedAt && (
-                          <p className="text-sm text-muted-foreground">
-                            Completed on {format(new Date(result.completedAt), 'MMMM d, yyyy')}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        {hasScore && (
-                          <div className="text-center">
-                            <div className="text-3xl font-bold text-primary">
-                              {result.totalScore}
-                            </div>
-                            <div className="text-xs text-muted-foreground">/ 100</div>
-                          </div>
-                        )}
-                        <Link href={`/results/${result.id}`}>
-                          <Button variant="outline" data-testid={`button-view-details-${result.id}`}>
-                            View Details
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Show top skills if available */}
-                    {result.scores && Object.keys(result.scores).length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm font-medium mb-3">Top Skills:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {Object.entries(result.scores)
-                            .sort(([, a], [, b]) => (b as number) - (a as number))
-                            .slice(0, 5)
-                            .map(([skill, score]) => (
-                              <Badge key={skill} variant="secondary">
-                                {skill}: {score as number}/100
-                              </Badge>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </main>
       <Footer />
