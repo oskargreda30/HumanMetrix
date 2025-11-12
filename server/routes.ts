@@ -200,16 +200,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchaseId: purchase.id,
           assessmentType: assessmentId,
           price: 1,
-          status: "active",
+          status: "ready",
         });
       }
       
       // Send welcome email with credentials
-      await sendWelcomeEmailWithPassword(
-        customerEmail,
-        `${firstName} ${lastName}`,
-        temporaryPassword
-      );
+      try {
+        await sendWelcomeEmailWithPassword(
+          customerEmail,
+          `${firstName} ${lastName}`,
+          temporaryPassword
+        );
+        console.log(`✓ Welcome email sent successfully to ${customerEmail}`);
+      } catch (emailError: any) {
+        console.error(`✗ Failed to send welcome email to ${customerEmail}:`, emailError);
+        // Don't fail the payment - account is created, just email failed
+        // User can use password reset as fallback
+      }
 
       res.json({
         success: true,
