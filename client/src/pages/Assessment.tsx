@@ -119,29 +119,34 @@ export default function Assessment() {
       try {
         await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/results-access-status"] });
         
         toast({
           title: "Success",
           description: "Assessment submitted successfully!",
         });
         
-        // Check if all assessments are complete
-        const allResults = await queryClient.fetchQuery({ queryKey: ["/api/results"] }) as any[];
-        const completedResults = allResults?.filter((r: any) => r.status === 'completed') || [];
+        // Check results access status using canonical endpoint
+        const accessStatus = await queryClient.fetchQuery({ 
+          queryKey: ["/api/results-access-status"] 
+        }) as any;
         
-        // Check if this completes all 4 assessments
-        const allComplete = isAllAssessmentsComplete(completedResults);
-        
-        if (allComplete) {
-          // Check if user is paid or invited
-          const purchases = await queryClient.fetchQuery({ queryKey: ["/api/purchases"] }) as any[];
-          const hasPaidPurchase = purchases?.some((p: any) => p.resultsAccessPaid === true);
-          
-          setIsPaidUser(hasPaidPurchase || false);
-          setShowCompletionDialog(true);
-          
-          // Don't redirect automatically - let dialog handle it
+        if (accessStatus.allAssessmentsComplete) {
+          // All 4 assessments are complete
+          if (accessStatus.hasAccess) {
+            // User has already paid or used FREE code - go directly to dashboard
+            toast({
+              title: "All Assessments Complete!",
+              description: "Redirecting to your dashboard...",
+            });
+            setTimeout(() => setLocation("/dashboard"), 1500);
+          } else {
+            // User needs to pay or enter FREE code
+            setIsPaidUser(false);
+            setShowCompletionDialog(true);
+          }
         } else {
+          // Not all assessments complete yet - go to dashboard
           setLocation("/dashboard");
         }
       } catch (error) {
