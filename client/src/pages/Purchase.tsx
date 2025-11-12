@@ -8,15 +8,14 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, Info } from "lucide-react";
+import { CheckCircle2, Info, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Assessment = {
   id: string;
   name: string;
   description: string;
-  price: number;
+  duration: string;
   questions: number;
   skills?: number;
 };
@@ -26,35 +25,33 @@ const assessments: Assessment[] = [
     id: "fit",
     name: "FIT Assessment",
     description: "Measures 6 core behavioral skills including High Agency, Resilience, and Empathy & Ethics",
-    price: 0.01,
+    duration: "20 min",
     questions: 15,
     skills: 6
   },
   {
-    id: "ai-readiness",
+    id: "ai_readiness",
     name: "AI Readiness Assessment",
     description: "Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration",
-    price: 0.01,
+    duration: "30 min",
     questions: 21,
     skills: 9
   },
   {
-    id: "prompt-architecture",
+    id: "prompt_architecture",
     name: "Prompt Architecture Assessment",
     description: "7 progressive levels testing prompt design skills, evaluated by an AI model",
-    price: 0.01,
+    duration: "25 min",
     questions: 7
   },
   {
     id: "aiq",
     name: "Algorithmic Integrity Quotient (AIQ)",
     description: "Tests understanding of AI ethics, bias, fairness, transparency, and responsible deployment",
-    price: 0.01,
+    duration: "20 min",
     questions: 4
   }
 ];
-
-const BASE_FEE = 0.30;
 
 export default function Purchase() {
   const { toast } = useToast();
@@ -78,10 +75,6 @@ export default function Purchase() {
     }
     setSelectedAssessments(newSelected);
   };
-
-  const selectedItems = assessments.filter(a => selectedAssessments.has(a.id));
-  const assessmentsTotal = selectedItems.reduce((sum, a) => sum + a.price, 0);
-  const total = selectedAssessments.size > 0 ? BASE_FEE + assessmentsTotal : 0;
 
   const handleSubmit = async () => {
     if (selectedAssessments.size === 0) {
@@ -133,14 +126,14 @@ export default function Purchase() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to create invitation");
+        throw new Error(error.message || "Failed to create account");
       }
 
       const data = await response.json();
       
       toast({
         title: "Success!",
-        description: "Check your email for instructions to start your assessments.",
+        description: data.message,
       });
 
       // Redirect to login or dashboard
@@ -170,12 +163,9 @@ export default function Purchase() {
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <h1 className="text-4xl font-bold mb-4">Select Your Assessments</h1>
-            <p className="text-xl text-muted-foreground">
-              Choose your assessments and enter your details to get started
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Complete your assessments first, then pay to unlock your results
+            <h1 className="text-4xl font-bold mb-4">Get Started with HumanMetrix</h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Select your assessments and take them for free. Pay only when you're ready to unlock your results.
             </p>
           </div>
 
@@ -183,9 +173,9 @@ export default function Purchase() {
             {/* Assessment Selection */}
             <div className="lg:col-span-2">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Available Assessments</h2>
+                <h2 className="text-2xl font-bold mb-2">Choose Your Assessments</h2>
                 <p className="text-muted-foreground">
-                  Select one or more assessments to take
+                  Select one or more assessments to get started
                 </p>
               </div>
 
@@ -193,7 +183,12 @@ export default function Purchase() {
                 {assessments.map((assessment) => (
                   <Card 
                     key={assessment.id} 
-                    className="p-6 hover-elevate"
+                    className={`p-6 cursor-pointer transition-all ${
+                      selectedAssessments.has(assessment.id) 
+                        ? 'border-primary bg-primary/5' 
+                        : 'hover-elevate'
+                    }`}
+                    onClick={() => handleToggle(assessment.id)}
                     data-testid={`card-assessment-${assessment.id}`}
                   >
                     <div className="flex items-start gap-4">
@@ -203,8 +198,9 @@ export default function Purchase() {
                         onCheckedChange={() => handleToggle(assessment.id)}
                         className="mt-1"
                         data-testid={`checkbox-${assessment.id}`}
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1 cursor-pointer" onClick={() => handleToggle(assessment.id)}>
+                      <div className="flex-1" onClick={(e) => e.stopPropagation()}>
                         <Label 
                           htmlFor={assessment.id}
                           className="text-lg font-semibold cursor-pointer"
@@ -215,126 +211,122 @@ export default function Purchase() {
                           {assessment.description}
                         </p>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{assessment.questions} questions</span>
-                          {assessment.skills && <span>{assessment.skills} skills measured</span>}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {assessment.duration}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" />
+                            {assessment.questions} questions
+                          </span>
+                          {assessment.skills && (
+                            <span>{assessment.skills} skills measured</span>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">
-                          £{assessment.price.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">per test</div>
-                      </div>
+                      {selectedAssessments.has(assessment.id) && (
+                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
                     </div>
                   </Card>
                 ))}
               </div>
             </div>
 
-            {/* Summary and Details Form */}
+            {/* Details Form */}
             <div className="lg:col-span-1">
               <Card className="p-6 sticky top-4">
-                <div className="flex items-center gap-2 mb-6">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <h2 className="text-xl font-bold">Get Started</h2>
-                </div>
+                <h2 className="text-xl font-bold mb-4">Your Details</h2>
 
                 {selectedAssessments.size === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Info className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">No assessments selected</p>
-                    <p className="text-xs mt-1">Select assessments to continue</p>
+                    <p className="text-sm">Select assessments to get started</p>
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-3 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Base computation fee</span>
-                        <span className="font-medium">£{BASE_FEE.toFixed(2)}</span>
-                      </div>
-                      
-                      {selectedItems.map((assessment) => (
-                        <div key={assessment.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{assessment.name}</span>
-                          <span className="font-medium">£{assessment.price.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-lg font-bold">Total Price</span>
-                      <span className="text-2xl font-bold" data-testid="text-total">
-                        £{total.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-6">
-                      <p className="text-xs text-blue-900 dark:text-blue-100">
-                        💡 Payment required only after completing assessments to unlock results
+                    <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4 mb-6">
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                        ✨ How it works
                       </p>
+                      <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                        <li>Take all assessments for free</li>
+                        <li>Complete at your own pace</li>
+                        <li>Pay only to unlock results</li>
+                      </ol>
                     </div>
 
                     {!user && (
-                      <>
-                        <Separator className="my-4" />
-                        
-                        <div className="space-y-4 mb-6">
-                          <h3 className="text-sm font-semibold">Your Details</h3>
-                          
-                          <div>
-                            <Label htmlFor="firstName" className="text-sm">First Name</Label>
-                            <Input
-                              id="firstName"
-                              value={firstName}
-                              onChange={(e) => setFirstName(e.target.value)}
-                              placeholder="John"
-                              data-testid="input-first-name"
-                              disabled={isProcessing}
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="lastName" className="text-sm">Last Name</Label>
-                            <Input
-                              id="lastName"
-                              value={lastName}
-                              onChange={(e) => setLastName(e.target.value)}
-                              placeholder="Doe"
-                              data-testid="input-last-name"
-                              disabled={isProcessing}
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="email" className="text-sm">Email</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              placeholder="john@example.com"
-                              data-testid="input-email"
-                              disabled={isProcessing}
-                            />
-                          </div>
+                      <div className="space-y-4 mb-6">
+                        <div>
+                          <Label htmlFor="firstName" className="text-sm">First Name *</Label>
+                          <Input
+                            id="firstName"
+                            type="text"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder="John"
+                            className="mt-1"
+                            disabled={isProcessing}
+                            data-testid="input-firstName"
+                          />
                         </div>
-                      </>
+
+                        <div>
+                          <Label htmlFor="lastName" className="text-sm">Last Name *</Label>
+                          <Input
+                            id="lastName"
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Doe"
+                            className="mt-1"
+                            disabled={isProcessing}
+                            data-testid="input-lastName"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="email" className="text-sm">Email Address *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="john@example.com"
+                            className="mt-1"
+                            disabled={isProcessing}
+                            data-testid="input-email"
+                          />
+                        </div>
+                      </div>
                     )}
 
+                    <div className="space-y-3 mb-6">
+                      <h3 className="text-sm font-semibold">Selected Assessments</h3>
+                      {Array.from(selectedAssessments).map((id) => {
+                        const assessment = assessments.find(a => a.id === id);
+                        return assessment ? (
+                          <div key={id} className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="text-muted-foreground">{assessment.name}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+
                     <Button 
-                      className="w-full" 
-                      size="lg"
                       onClick={handleSubmit}
-                      disabled={isProcessing}
-                      data-testid="button-get-started"
+                      disabled={isProcessing || (!user && (!firstName || !lastName || !email))}
+                      className="w-full"
+                      size="lg"
+                      data-testid="button-continue"
                     >
-                      {isProcessing ? "Processing..." : "Get Started"}
+                      {isProcessing ? "Processing..." : "Get Started Free"}
                     </Button>
 
-                    <p className="text-xs text-muted-foreground text-center mt-4">
-                      You'll receive an email with access to your assessments
+                    <p className="text-xs text-center text-muted-foreground mt-4">
+                      You'll receive an email with your login credentials to start your assessments
                     </p>
                   </>
                 )}
@@ -343,7 +335,7 @@ export default function Purchase() {
           </div>
         </div>
       </main>
-
+      
       <Footer />
     </div>
   );

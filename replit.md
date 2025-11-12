@@ -39,6 +39,42 @@ The frontend is built with React + TypeScript, utilizing Shadcn UI and Tailwind 
 - **API-driven**: Comprehensive API endpoints for all functionalities, especially admin operations and AI integrations.
 - **Content-Aware PDF Rendering**: Dynamic layout engine ensures content fits within pages and sections are logically ordered for readability and visual consistency across all PDF exports.
 
+## Payment-Deferred Flow Implementation
+
+### How It Works
+1. **Assessment Selection** (/purchase): Users select assessments without any payment required upfront
+2. **Account Creation**: Users provide name and email to create a free account
+3. **Credential Delivery**: System generates temporary password and sends welcome email
+4. **Free Access**: Users take all selected assessments at no cost
+5. **Results Gate**: `resultsAccessPaid: false` flag blocks results viewing
+6. **Payment to Unlock**: Users pay (or use FREE discount code) to unlock results
+
+### Backend Implementation
+- **Endpoint**: POST `/api/create-free-invitation`
+  - Validates assessment IDs against ASSESSMENT_PRICES
+  - Creates user account with temporary password
+  - Creates purchase with `resultsAccessPaid: false`
+  - Creates purchase items for selected assessments
+  - Implements idempotency (checks for existing unpaid purchases)
+  - Uses storage abstractions for proper audit trails
+  - Returns `requiresLogin` flag for frontend routing
+
+### Frontend Implementation
+- **Purchase Page** (/purchase):
+  - Removed all pricing displays (no £0.01, £0.30 shown)
+  - Removed basket/checkout concept
+  - Shows assessment selection with checkboxes
+  - Prominent form for name/email
+  - "Get Started Free" button (not "checkout")
+  - Clear messaging: "Take assessments free, pay only to unlock results"
+
+### Key Design Decisions
+- Purchase status: `completed` (allows assessment taking)
+- Results access: Blocked by `resultsAccessPaid: false`
+- Pricing metadata: Stored using ASSESSMENT_PRICES for analytics
+- Total amount: £0.00 for free enrollments
+- Payment later: Users pay when ready to view results
+
 ## Production Deployment
 
 ### First-Time Production Setup
