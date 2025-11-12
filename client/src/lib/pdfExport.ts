@@ -419,7 +419,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const isLeftChart = (index % chartsPerRow) === 0;
+      const horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
@@ -496,7 +498,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      const xPos = 15 + (index % chartsPerRow) * chartWidth;
+      const isLeftChart = (index % chartsPerRow) === 0;
+      const horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
       pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
@@ -605,11 +609,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   if (hasPrompt) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 1);
-    yPos += 5;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 2);
+    yPos += 8;
     
     // Table header
     pdf.setFontSize(7);
