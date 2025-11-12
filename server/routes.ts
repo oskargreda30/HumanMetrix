@@ -980,8 +980,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all purchases
       const purchases = await storage.getPurchasesByUser(userId);
       
-      // Check if user has paid for results access (or redeemed FREE code)
-      const hasAccess = purchases.some((p: any) => p.resultsAccessPaid === true);
+      // Check if user has access to results:
+      // 1. Self-paying users: have a completed purchase (paid upfront for assessments)
+      // 2. Invited users who paid after: have resultsAccessPaid === true
+      const hasPaidUpfront = purchases.some((p: any) => p.status === 'completed');
+      const hasPaidForResults = purchases.some((p: any) => p.resultsAccessPaid === true);
+      const hasAccess = hasPaidUpfront || hasPaidForResults;
       
       // Get completed assessments
       const results = await storage.getResultsByUser(userId);
