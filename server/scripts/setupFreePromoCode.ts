@@ -22,7 +22,7 @@ async function setupFreePromoCode() {
     const promotionCode = await stripe.promotionCodes.create({
       code: 'FREE',
       coupon: coupon.id,
-    } as any);
+    });
 
     console.log('✅ Created promotion code:', promotionCode.code);
     console.log('\n🎉 SUCCESS! Candidates can now use code "FREE" at checkout to unlock results for free!\n');
