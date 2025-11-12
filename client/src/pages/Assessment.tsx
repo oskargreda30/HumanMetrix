@@ -116,43 +116,16 @@ export default function Assessment() {
       return await response.json();
     },
     onSuccess: async () => {
-      try {
-        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
-        
-        toast({
-          title: "Success",
-          description: "Assessment submitted successfully!",
-        });
-        
-        // Check if all assessments are complete
-        const allResults = await queryClient.fetchQuery({ queryKey: ["/api/results"] }) as any[];
-        const completedResults = allResults?.filter((r: any) => r.status === 'completed') || [];
-        
-        // Check if this completes all 4 assessments
-        const allComplete = isAllAssessmentsComplete(completedResults);
-        
-        if (allComplete) {
-          // Check if user is paid or invited
-          const purchases = await queryClient.fetchQuery({ queryKey: ["/api/purchases"] }) as any[];
-          const hasPaidPurchase = purchases?.some((p: any) => p.resultsAccessPaid === true);
-          
-          setIsPaidUser(hasPaidPurchase || false);
-          setShowCompletionDialog(true);
-          
-          // Don't redirect automatically - let dialog handle it
-        } else {
-          setLocation("/dashboard");
-        }
-      } catch (error) {
-        console.error("Error in post-submission processing:", error);
-        // Even if there's an error fetching data, redirect to dashboard
-        toast({
-          title: "Assessment submitted",
-          description: "Your assessment has been submitted. Redirecting to dashboard...",
-        });
-        setTimeout(() => setLocation("/dashboard"), 1500);
-      }
+      await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      
+      toast({
+        title: "Success",
+        description: "Assessment submitted successfully!",
+      });
+      
+      // Always redirect to dashboard after submission
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       const message = error?.error === 'quota_exceeded' 
