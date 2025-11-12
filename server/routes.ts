@@ -1074,56 +1074,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
 
+      // Validate assessment IDs using ASSESSMENT_PRICES as source of truth
+      const validAssessmentIds = Object.keys(ASSESSMENT_PRICES);
+      const invalidIds = assessmentIds.filter((id: string) => !validAssessmentIds.includes(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ message: `Invalid assessment IDs: ${invalidIds.join(', ')}` });
+      }
+
       const bcrypt = await import("bcryptjs");
       const { sendWelcomeEmailWithPassword } = await import("./email");
       const crypto = await import("crypto");
 
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
+      let userId: string;
       let requiresLogin = false;
 
-      let userId: string;
-
-      if (!existingUser) {
-        // Generate temporary password for new user
-        const words = [
-          "ocean", "mountain", "forest", "river", "cloud",
-          "storm", "dawn", "sunset", "moon", "star",
-          "wind", "rain", "snow", "fire", "earth",
-          "sky", "wave", "thunder", "lightning", "rainbow"
-        ];
-        
-        const word1 = words[crypto.randomInt(0, words.length)];
-        const word2 = words[crypto.randomInt(0, words.length)];
-        const word3 = words[crypto.randomInt(0, words.length)];
-        const digits = crypto.randomInt(10, 100).toString();
-        
-        const temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
-        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-        
-        // Create user account
-        const newUser = await storage.createUser({
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          profileImageUrl: null,
-        });
-        
-        userId = newUser.id;
-        requiresLogin = true;
-        
-        // Send welcome email with credentials
-        await sendWelcomeEmailWithPassword(
-          email,
-          `${firstName} ${lastName}`,
-          temporaryPassword
-        );
-
-        console.log(`Created new user ${email}`);
+      // Handle authenticated users differently
+      if (req.user) {
+        // Logged-in user: validate email matches their account
+        if (req.user.email.toLowerCase() !== email.toLowerCase()) {
+          return res.status(400).json({ 
+            message: 'Email does not match your account. Please use your account email or log out to create a new account.' 
+          });
+        }
+        userId = req.user.id;
+        console.log(`Authenticated user ${email} requesting free assessments`);
       } else {
-        userId = existingUser.id;
-        console.log(`User ${email} already exists`);
+        // Guest user: check if account exists
+        const existingUser = await storage.getUserByEmail(email);
+
+        if (!existingUser) {
+          // Generate temporary password for new user
+          const words = [
+            "ocean", "mountain", "forest", "river", "cloud",
+            "storm", "dawn", "sunset", "moon", "star",
+            "wind", "rain", "snow", "fire", "earth",
+            "sky", "wave", "thunder", "lightning", "rainbow"
+          ];
+          
+          const word1 = words[crypto.randomInt(0, words.length)];
+          const word2 = words[crypto.randomInt(0, words.length)];
+          const word3 = words[crypto.randomInt(0, words.length)];
+          const digits = crypto.randomInt(10, 100).toString();
+          
+          const temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
+          const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+          
+          // Create user account
+          const newUser = await storage.createUser({
+            email,
+            passwordHash,
+            firstName,
+            lastName,
+            profileImageUrl: null,
+          });
+          
+          userId = newUser.id;
+          requiresLogin = true;
+          
+          // Send welcome email with credentials
+          await sendWelcomeEmailWithPassword(
+            email,
+            `${firstName} ${lastName}`,
+            temporaryPassword
+          );
+
+          console.log(`Created new user ${email}`);
+        } else {
+          userId = existingUser.id;
+          requiresLogin = true; // Existing user needs to log in
+          console.log(`User ${email} already exists, requires login`);
+        }
       }
 
       // Check for existing unpaid purchase (idempotency)
@@ -1147,7 +1167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createPurchaseItem({
               purchaseId,
               assessmentType: assessmentId,
-              price: 0, // Free in pence
+              price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES], // Standard price in pence (for metadata/analytics)
               status: 'ready',
             });
             console.log(`Added ${assessmentId} to existing purchase`);
@@ -1168,12 +1188,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         purchaseId = purchase.id;
 
-        // Create purchase items for selected assessments
+        // Create purchase items for selected assessments with standard pricing (for analytics)
         for (const assessmentId of assessmentIds) {
           await storage.createPurchaseItem({
             purchaseId,
             assessmentType: assessmentId,
-            price: 0, // 0 pence (free to take)
+            price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES], // Standard price in pence
             status: 'ready',
           });
         }
