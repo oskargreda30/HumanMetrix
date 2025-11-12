@@ -597,7 +597,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       }
       yPos += 6;
     });
-    yPos += 10; // ADDED BREATHING ROOM (10mm spacing)
+    yPos += 5; // Reduced spacing to move sections up
   }
   
   // Prompt Architecture - Total Level Scores
