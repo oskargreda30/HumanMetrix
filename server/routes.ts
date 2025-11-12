@@ -6,7 +6,9 @@ import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, insertInvitationSchema }
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword } from "./email";
+import { generateTemporaryPassword } from "./passwordUtils";
+import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -462,6 +464,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+    }
+  });
+
+  // Free checkout for testing (using discount code "FREE")
+  app.post("/api/checkout-free", async (req, res) => {
+    try {
+      const { assessmentIds, customerEmail, customerName, firstName, lastName } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      if (!customerEmail || !customerName || !firstName || !lastName) {
+        return res.status(400).json({ message: "Customer details required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(customerEmail);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "An account with this email already exists. Please log in instead." 
+        });
+      }
+
+      // Generate temporary password
+      const temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+      // Create user account
+      const newUser = await storage.createUser({
+        email: customerEmail,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        isAdmin: false,
+      });
+
+      // Create purchase record with status "completed" (free checkout)
+      const purchase = await storage.createPurchase({
+        userId: newUser.id,
+        stripeSessionId: `free_${Date.now()}`, // Unique identifier for free checkout
+        totalAmount: 0, // Free
+        baseFee: 0,
+        status: "completed",
+      });
+
+      // Create purchase items with status "ready"
+      for (const assessmentId of assessmentIds) {
+        await storage.createPurchaseItem({
+          purchaseId: purchase.id,
+          assessmentType: assessmentId,
+          price: 0, // Free
+          status: "ready",
+        });
+      }
+
+      // Send welcome email with login credentials
+      try {
+        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword);
+      } catch (emailError) {
+        console.error("✗ Failed to send welcome email:", emailError);
+        // Don't fail the whole checkout if email fails
+      }
+
+      res.json({ 
+        success: true,
+        message: "Account created successfully! Check your email for login credentials."
+      });
+    } catch (error: any) {
+      console.error("Error processing free checkout:", error);
+      res.status(500).json({ 
+        message: "Failed to process free checkout: " + error.message 
+      });
     }
   });
 

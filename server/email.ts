@@ -42,6 +42,12 @@ function getTransporter() {
   return transporter;
 }
 
+// Initialize email system on startup
+export function initializeEmailSystem() {
+  console.log('🔧 Initializing email system...');
+  getTransporter();
+}
+
 export async function sendInvitationEmail(invitation: Invitation, inviterName: string) {
   const emailTransporter = getTransporter();
   

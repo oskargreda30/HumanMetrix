@@ -63,6 +63,7 @@ export default function CheckoutModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -85,7 +86,10 @@ export default function CheckoutModal({
 
   const selectedItems = assessments.filter((a) => selectedAssessments.has(a.id));
   const assessmentsTotal = selectedItems.reduce((sum, a) => sum + a.price, 0);
-  const total = selectedAssessments.size > 0 ? BASE_FEE + assessmentsTotal : 0;
+  const subtotal = selectedAssessments.size > 0 ? BASE_FEE + assessmentsTotal : 0;
+  const isFreeCode = discountCode.toUpperCase() === "FREE";
+  const discount = isFreeCode ? subtotal : 0;
+  const total = subtotal - discount;
 
   const handleCheckout = async () => {
     if (selectedAssessments.size === 0) {
@@ -118,31 +122,71 @@ export default function CheckoutModal({
     setIsProcessing(true);
 
     try {
-      const response = await fetch("/api/create-checkout-session-guest", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          assessmentIds: Array.from(selectedAssessments),
-          customerEmail: email,
-          customerName: `${firstName} ${lastName}`,
-          firstName,
-          lastName,
-        }),
-      });
+      // Check if using FREE discount code
+      if (discountCode.toUpperCase() === "FREE") {
+        const response = await fetch("/api/checkout-free", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assessmentIds: Array.from(selectedAssessments),
+            customerEmail: email,
+            customerName: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+          }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create checkout session");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to process free checkout");
+        }
 
-      const { url } = await response.json();
+        const { success, message } = await response.json();
 
-      if (url) {
-        window.location.href = url;
+        if (success) {
+          toast({
+            title: "Account Created! 🎉",
+            description: message || "Check your email for login credentials.",
+          });
+          
+          // Close modal and redirect to login
+          onOpenChange(false);
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+        } else {
+          throw new Error(message || "Free checkout failed");
+        }
       } else {
-        throw new Error("No checkout URL returned");
+        // Regular Stripe checkout
+        const response = await fetch("/api/create-checkout-session-guest", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assessmentIds: Array.from(selectedAssessments),
+            customerEmail: email,
+            customerName: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to create checkout session");
+        }
+
+        const { url } = await response.json();
+
+        if (url) {
+          window.location.href = url;
+        } else {
+          throw new Error("No checkout URL returned");
+        }
       }
     } catch (error: any) {
       toast({
@@ -252,6 +296,22 @@ export default function CheckoutModal({
                   We'll send your login credentials to this email after purchase
                 </p>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="checkout-discount">Discount Code (Optional)</Label>
+                <Input
+                  id="checkout-discount"
+                  type="text"
+                  placeholder="Enter code (e.g., FREE)"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value)}
+                  data-testid="checkout-input-discount"
+                />
+                {isFreeCode && (
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    ✓ FREE code applied - 100% discount!
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -277,6 +337,19 @@ export default function CheckoutModal({
                       <span className="font-medium">£{assessment.price.toFixed(2)}</span>
                     </div>
                   ))}
+                  
+                  {isFreeCode && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-medium">£{subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                        <span className="font-medium">Discount (FREE)</span>
+                        <span className="font-medium">-£{discount.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <Separator className="my-4" />
@@ -296,12 +369,19 @@ export default function CheckoutModal({
                   data-testid="checkout-button-proceed"
                 >
                   <CreditCard className="mr-2 h-5 w-5" />
-                  {isProcessing ? "Processing..." : "Proceed to Payment"}
+                  {isProcessing ? "Processing..." : isFreeCode ? "Complete Free Checkout" : "Proceed to Payment"}
                 </Button>
 
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  Secure payment powered by Stripe
-                </p>
+                {!isFreeCode && (
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    Secure payment powered by Stripe
+                  </p>
+                )}
+                {isFreeCode && (
+                  <p className="text-xs text-green-600 dark:text-green-400 text-center mt-3 font-medium">
+                    Free checkout - no payment required
+                  </p>
+                )}
               </>
             )}
           </div>
