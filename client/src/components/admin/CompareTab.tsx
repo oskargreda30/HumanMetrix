@@ -762,7 +762,7 @@ export default function CompareTab() {
                                   stroke={CHART_COLORS[index]}
                                   fill={CHART_COLORS[index]}
                                   fillOpacity={0.3}
-                                  label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' } : false}
+                                  label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
                                 />
                               ))}
                               <Legend />
