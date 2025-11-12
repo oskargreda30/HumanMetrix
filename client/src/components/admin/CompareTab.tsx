@@ -25,6 +25,28 @@ const CHART_COLORS = [
   "hsl(var(--chart-3))",
 ];
 
+// Custom label renderer to position scores inside the radar shape
+const renderInsideLabel = (props: any) => {
+  const { cx, cy, x, y, value } = props;
+  // Calculate position 80% from center to edge (inside the shape)
+  const insideX = cx + (x - cx) * 0.8;
+  const insideY = cy + (y - cy) * 0.8;
+  
+  return (
+    <text
+      x={insideX}
+      y={insideY}
+      fill="#374151"
+      fontSize={10}
+      fontWeight="bold"
+      textAnchor="middle"
+      dominantBaseline="middle"
+    >
+      {value}
+    </text>
+  );
+};
+
 interface ComparisonData {
   radarData: Array<any>;
   skillComparison: Array<{ skillName: string; scores: Array<number | null> }>;
@@ -378,7 +400,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
+                                    label={index === 0 ? renderInsideLabel : false}
                                   />
                                 );
                               })}
@@ -431,7 +453,7 @@ export default function CompareTab() {
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
-                                        label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                                        label={renderInsideLabel}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -493,7 +515,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
+                                    label={index === 0 ? renderInsideLabel : false}
                                   />
                                 );
                               })}
@@ -546,7 +568,7 @@ export default function CompareTab() {
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
-                                        label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                                        label={renderInsideLabel}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -899,7 +921,7 @@ export default function CompareTab() {
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
-                      label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                      label={renderInsideLabel}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -935,7 +957,7 @@ export default function CompareTab() {
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
-                      label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                      label={renderInsideLabel}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
