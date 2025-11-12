@@ -298,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=success`,
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId.toString(),
