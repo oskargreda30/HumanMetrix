@@ -90,7 +90,7 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   
   // HumanMetrix Logo (full logo image, centered with blue line)
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 2, 26, 26);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 4, 34, 34);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -971,7 +971,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
@@ -1018,7 +1018,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
