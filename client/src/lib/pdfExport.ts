@@ -579,9 +579,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
     yPos += 8;
     
-    // Add the overall skills radar chart (centered, larger size with correct proportions)
-    const chartWidth = Math.min(pageWidth - 40, 160);
-    const chartHeight = 160;
+    // Calculate proportional dimensions to maintain aspect ratio
+    const imgProps = pdf.getImageProperties(data.overallSkillsChartImage);
+    const maxWidth = pageWidth - 40; // Respect margins
+    const maxHeight = 80; // Keep compact
+    const scale = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+    const chartWidth = imgProps.width * scale;
+    const chartHeight = imgProps.height * scale;
     const xPos = (pageWidth - chartWidth) / 2;
     
     pdf.addImage(data.overallSkillsChartImage, 'PNG', xPos, yPos, chartWidth, chartHeight);
