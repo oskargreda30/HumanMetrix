@@ -169,8 +169,8 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
 // Candidate color palette for comparison - different shades of blue
 const CANDIDATE_COLORS = [
   [37, 99, 235],    // Dark Blue (Blue-600)
-  [59, 130, 246],   // Medium Blue (Blue-500)
-  [96, 165, 250],   // Light Blue (Blue-400)
+  [96, 165, 250],   // Light Blue (Blue-400) - lighter for better differentiation
+  [147, 197, 253],  // Very Light Blue (Blue-300)
 ];
 
 // Helper to ensure sufficient page space, add new page if needed
@@ -305,8 +305,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const avgScore = data.averageScores[index];
     pdf.setFontSize(13);
     pdf.setFont('helvetica', 'bold');
-    const perf = getPerformanceLevel(avgScore);
-    pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+    pdf.setTextColor(0, 0, 0);
     pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
     
     pdf.setFontSize(6);
