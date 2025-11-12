@@ -111,8 +111,9 @@ export default function CompareTab() {
         description: "Capturing charts and preparing your report...",
       });
 
-      // Wait for charts to render
+      // Wait for charts to render and fonts to load
       await new Promise(resolve => setTimeout(resolve, 300));
+      await document.fonts.ready;
 
       // Capture radar chart images
       const fitChartImages: (string | null)[] = [];
@@ -127,6 +128,8 @@ export default function CompareTab() {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
                 scale: 2,
+                useCORS: true,
+                logging: false,
               });
               fitChartImages.push(canvas.toDataURL('image/png'));
             } else {
@@ -148,6 +151,8 @@ export default function CompareTab() {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
                 scale: 2,
+                useCORS: true,
+                logging: false,
               });
               aiChartImages.push(canvas.toDataURL('image/png'));
             } else {
@@ -174,6 +179,8 @@ export default function CompareTab() {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
               scale: 2,
+              useCORS: true,
+              logging: false,
             });
             fitCombinedChartImage = canvas.toDataURL('image/png');
           }
@@ -190,6 +197,8 @@ export default function CompareTab() {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
               scale: 2,
+              useCORS: true,
+              logging: false,
             });
             aiCombinedChartImage = canvas.toDataURL('image/png');
           }
@@ -207,6 +216,8 @@ export default function CompareTab() {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
               scale: 2,
+              useCORS: true,
+              logging: false,
             });
             overallSkillsChartImage = canvas.toDataURL('image/png');
           }

@@ -421,10 +421,12 @@ export async function captureChartImage(elementId: string): Promise<string | nul
   if (!element) return null;
   
   try {
+    await document.fonts.ready;
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
       scale: 2,
       logging: false,
+      useCORS: true,
     });
     return canvas.toDataURL('image/png');
   } catch (error) {
