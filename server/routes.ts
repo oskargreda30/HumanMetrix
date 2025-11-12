@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stripeSessionId: session.id,
           stripePaymentIntentId: session.payment_intent as string || null,
           totalAmount: session.amount_total || 0,
-          baseFee: 2,
+          baseFee: BASE_FEE,
           status: "completed",
           resultsAccessPaid: true, // Paid users can view results
           completedAt: new Date(),
@@ -188,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeSessionId: session.id,
         stripePaymentIntentId: session.payment_intent as string || null,
         totalAmount: session.amount_total || 0,
-        baseFee: 2,
+        baseFee: BASE_FEE,
         status: "completed",
         resultsAccessPaid: true, // Paid users can view results
         completedAt: new Date(),
@@ -394,8 +394,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "aiq": 1,
       };
 
-      const baseFee = 2; // £0.02 in pence
-
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -405,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: baseFee,
+            unit_amount: BASE_FEE,
           },
           quantity: 1,
         },
@@ -484,8 +482,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "aiq": 1,
       };
 
-      const baseFee = 2; // £0.02 in pence
-
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -495,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: baseFee,
+            unit_amount: BASE_FEE,
           },
           quantity: 1,
         },

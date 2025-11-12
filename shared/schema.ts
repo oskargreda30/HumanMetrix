@@ -39,7 +39,7 @@ export const purchases = pgTable("purchases", {
   stripeSessionId: text("stripe_session_id").unique(),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalAmount: integer("total_amount").notNull(),
-  baseFee: integer("base_fee").notNull().default(2),
+  baseFee: integer("base_fee").notNull().default(30),
   status: text("status").notNull().default("pending"),
   resultsAccessPaid: boolean("results_access_paid").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -324,4 +324,4 @@ export const ASSESSMENT_PRICES = {
   [ASSESSMENT_TYPES.AIQ]: 400,
 } as const;
 
-export const BASE_FEE = 1500; // £15.00 in pence
+export const BASE_FEE = 30; // £0.30 in pence
