@@ -557,7 +557,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos += aiRowHeight;
     });
     
-    yPos += 5;
+    yPos += 12; // More breathing room before Overall Skills section
   }
 
   // Overall Skills Comparison Chart
@@ -643,12 +643,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const hasPrompt = data.promptArchitectureAssessments?.some(a => a !== null);
   if (hasPrompt) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+    yPos += 8; // More breathing room before Prompt Architecture section
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
     pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 2);
-    yPos += 8;
+    yPos += 12; // More breathing room before levels table
     
     // Table header
     pdf.setFontSize(7);
