@@ -2,20 +2,40 @@ import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let transporterVerified = false;
 
 function getTransporter() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn('Email credentials not configured. Emails will not be sent.');
+    console.error('❌ Email credentials not configured. GMAIL_USER and GMAIL_APP_PASSWORD required.');
     return null;
   }
   
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      requireTLS: true,
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
       },
+      pool: true, // use pooled connections for better performance
+      maxConnections: 5,
+      maxMessages: 100,
+      debug: process.env.NODE_ENV === 'development', // show SMTP traffic in dev
+      logger: true, // log to console
+    });
+
+    // Verify connection configuration
+    transporter.verify((error, success) => {
+      if (error) {
+        console.error('❌ SMTP Connection Error:', error);
+        transporterVerified = false;
+      } else {
+        console.log('✅ SMTP Server ready to send emails');
+        transporterVerified = true;
+      }
     });
   }
   
@@ -110,7 +130,8 @@ This invitation expires on ${new Date(invitation.expiresAt).toLocaleDateString('
     `.trim(),
   };
 
-  await emailTransporter.sendMail(mailOptions);
+  const info = await emailTransporter.sendMail(mailOptions);
+  console.log(`✅ Invitation email sent to ${invitation.candidateEmail} (ID: ${info.messageId})`);
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, resetToken: string) {
@@ -191,7 +212,8 @@ If you didn't request a password reset, please ignore this email.
     `.trim(),
   };
 
-  await emailTransporter.sendMail(mailOptions);
+  const info = await emailTransporter.sendMail(mailOptions);
+  console.log(`✅ Password reset email sent to ${email} (ID: ${info.messageId})`);
 }
 
 export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string) {
@@ -277,7 +299,8 @@ Log in at: ${loginUrl}
     `.trim(),
   };
 
-  await emailTransporter.sendMail(mailOptions);
+  const info = await emailTransporter.sendMail(mailOptions);
+  console.log(`✅ Welcome email sent to ${email} (ID: ${info.messageId})`);
 }
 
 export async function sendContactFormEmail(
@@ -394,5 +417,6 @@ Reply directly to this email to respond to ${name}
     `.trim(),
   };
 
-  await emailTransporter.sendMail(mailOptions);
+  const info = await emailTransporter.sendMail(mailOptions);
+  console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
 }
