@@ -353,19 +353,46 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   yPos += rowHeight;
   
-  // Data rows
+  // Data rows with green indicators
   assessmentNames.forEach((aName, aIndex) => {
-    const rowTexts = [aName];
+    // Draw assessment name cell
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
     
+    // Draw borders for first column
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.1);
+    pdf.rect(tableStartX, yPos, assessmentColWidth, rowHeight, 'S');
+    pdf.text(aName, tableStartX + 2, yPos + rowHeight * 0.6);
+    
+    // Draw candidate completion cells with green boxes
+    let currentX = tableStartX + assessmentColWidth;
     data.candidates.forEach((_, candIndex) => {
       const isCompleted = (assessmentData[aIndex]?.[candIndex] ?? null) !== null;
-      rowTexts.push(isCompleted ? '✓' : '—');
+      
+      // Draw cell border
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(currentX, yPos, candidateColWidth, rowHeight, 'S');
+      
+      if (isCompleted) {
+        // Draw green filled box
+        pdf.setFillColor(34, 197, 94); // Green-500
+        const boxSize = 3;
+        const boxX = currentX + (candidateColWidth - boxSize) / 2;
+        const boxY = yPos + (rowHeight - boxSize) / 2;
+        pdf.roundedRect(boxX, boxY, boxSize, boxSize, 0.5, 0.5, 'F');
+      } else {
+        // Draw red cross or dash
+        pdf.setTextColor(239, 68, 68); // Red-500
+        pdf.setFontSize(8);
+        pdf.text('—', currentX + candidateColWidth / 2, yPos + rowHeight * 0.6, { align: 'center' });
+        pdf.setTextColor(75, 85, 99);
+      }
+      
+      currentX += candidateColWidth;
     });
     
-    drawTableRow(pdf, tableStartX, yPos, headerWidths, rowTexts, rowHeight, {
-      fontSize: 7,
-      textColor: [75, 85, 99]
-    });
     yPos += rowHeight;
   });
   
@@ -446,7 +473,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos += fitRowHeight;
     });
     
-    yPos += 5;
+    yPos += 10; // Increased breathing room before AI READINESS section
   }
   
   // AI Readiness Radar Charts
