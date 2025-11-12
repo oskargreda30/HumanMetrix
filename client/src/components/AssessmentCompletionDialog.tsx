@@ -47,9 +47,6 @@ export function AssessmentCompletionDialog({
               <p className="text-muted-foreground">
                 To unlock your detailed results and download your professional PDF report, you'll need to complete payment.
               </p>
-              <p className="text-sm text-muted-foreground">
-                Use discount code <span className="font-mono font-bold text-foreground">FREE</span> if your employer has covered the cost.
-              </p>
             </div>
           )}
         </div>
