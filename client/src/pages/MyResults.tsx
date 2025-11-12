@@ -25,15 +25,13 @@ export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Check if user has paid for results access
-  const { data: purchases } = useQuery<any[]>({
-    queryKey: ["/api/purchases"],
+  // Use canonical results access status endpoint
+  const { data: accessStatus } = useQuery<any>({
+    queryKey: ["/api/results-access-status"],
     enabled: isAuthenticated,
   });
 
-  const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
-
-  // Fetch all user results - ALWAYS fetch to check completion status
+  // Fetch all user results
   const { data: allResults, isLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
     enabled: isAuthenticated,
@@ -52,9 +50,10 @@ export default function MyResults() {
 
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
   
-  // Check for 4 DISTINCT assessment types (prevent duplicate completions)
-  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = uniqueAssessmentTypes.size === 4;
+  // Use access status from canonical endpoint
+  const allAssessmentsCompleted = accessStatus?.allAssessmentsComplete || false;
+  const hasAccess = accessStatus?.hasAccess || false;
+  const completedCount = accessStatus?.completedCount || 0;
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
@@ -70,7 +69,7 @@ export default function MyResults() {
             <p className="text-muted-foreground mb-6">
               {completedResults.length === 0 
                 ? 'Complete your assessments to view your comprehensive results.' 
-                : `You've completed ${uniqueAssessmentTypes.size} of 4 unique assessments. Complete all assessments to view your results.`
+                : `You've completed ${completedCount} of 4 unique assessments. Complete all assessments to view your results.`
               }
             </p>
             <Link href="/dashboard">
@@ -84,7 +83,7 @@ export default function MyResults() {
   }
 
   // SECOND: Show payment gate if user hasn't paid for results access
-  if (hasPaidForResults === false) {
+  if (!hasAccess) {
     return <ResultsPaymentGate />;
   }
 

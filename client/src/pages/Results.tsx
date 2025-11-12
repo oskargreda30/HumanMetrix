@@ -185,17 +185,17 @@ export default function Results() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Check if user has paid for results access
-  const { data: purchases } = useQuery<any[]>({
-    queryKey: ["/api/purchases"],
+  // Use canonical results access status endpoint
+  const { data: accessStatus } = useQuery<any>({
+    queryKey: ["/api/results-access-status"],
     enabled: isAuthenticated,
   });
 
-  const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
+  const hasAccess = accessStatus?.hasAccess;
 
   const { data: result, isLoading } = useQuery({
     queryKey: ["/api/results", id],
-    enabled: isAuthenticated && !!id && hasPaidForResults !== false,
+    enabled: isAuthenticated && !!id && hasAccess !== false,
   });
 
   // Fetch all user results for PDF generation
@@ -323,7 +323,7 @@ export default function Results() {
   };
 
   // Show payment gate if user hasn't paid for results access
-  if (hasPaidForResults === false) {
+  if (hasAccess === false) {
     return <ResultsPaymentGate />;
   }
 
