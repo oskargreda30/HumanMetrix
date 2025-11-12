@@ -135,11 +135,11 @@ export default function Login() {
             
             <div className="mt-6 p-4 bg-cyan-500/10 border border-cyan-400/30 rounded-lg">
               <p className="text-sm text-cyan-100 mb-2">
-                <strong>Demo Admin Account:</strong>
+                <strong>First Time Setup:</strong>
               </p>
-              <p className="text-xs text-blue-100/70 font-mono">
-                Email: admin@humanmetrix.com<br />
-                Password: admin123
+              <p className="text-xs text-blue-100/70">
+                If you need to create an admin account, run the bootstrap script with your desired credentials.
+                See the documentation for details.
               </p>
             </div>
           </Card>

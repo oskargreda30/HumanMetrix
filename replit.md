@@ -38,6 +38,30 @@ The frontend is built with React + TypeScript, utilizing Shadcn UI and Tailwind 
 - **API-driven**: Comprehensive API endpoints for all functionalities, especially admin operations and AI integrations.
 - **Content-Aware PDF Rendering**: Dynamic layout engine ensures content fits within pages and sections are logically ordered for readability and visual consistency across all PDF exports.
 
+## Production Deployment
+
+### First-Time Admin Account Setup
+
+When deploying to production for the first time, you need to create an initial admin account using the bootstrap script:
+
+1. **Set Environment Variables**:
+   ```bash
+   ADMIN_EMAIL=your-email@example.com
+   ADMIN_PASSWORD=your-secure-password
+   ```
+
+2. **Run the Bootstrap Script**:
+   ```bash
+   ADMIN_EMAIL=your-email@example.com ADMIN_PASSWORD=your-secure-password tsx server/scripts/bootstrapAdmin.ts
+   ```
+
+3. **Verify Admin Account**:
+   - The script will create an admin user with `isAdmin=true`
+   - The script is idempotent - it won't create duplicates if run again
+   - You can now log in with the credentials you provided
+
+**Important**: The bootstrap script only creates the admin account if it doesn't already exist. It will skip creation if a user with that email already exists.
+
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
 - **Stripe**: Payment gateway.
