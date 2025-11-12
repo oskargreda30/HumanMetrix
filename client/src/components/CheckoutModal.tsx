@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ export default function CheckoutModal({
   basketItems,
 }: CheckoutModalProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -63,10 +65,23 @@ export default function CheckoutModal({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (basketItems && basketItems.length > 0 && open) {
+    if (!open) {
+      // Reset all state when modal closes
+      setSelectedAssessments(new Set());
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setIsProcessing(false);
+      return;
+    }
+    
+    // Set initial selections when modal opens
+    if (basketItems && basketItems.length > 0) {
       setSelectedAssessments(new Set(basketItems.map(item => item.id)));
-    } else if (preselectedAssessmentId && open) {
+    } else if (preselectedAssessmentId) {
       setSelectedAssessments(new Set([preselectedAssessmentId]));
+    } else {
+      setSelectedAssessments(new Set());
     }
   }, [preselectedAssessmentId, basketItems, open]);
 
@@ -137,15 +152,18 @@ export default function CheckoutModal({
         description: data.message,
       });
 
-      // Close modal and redirect
+      // Reset processing state before navigation
+      setIsProcessing(false);
+
+      // Close modal and navigate
       onOpenChange(false);
       if (data.requiresLogin) {
         setTimeout(() => {
-          window.location.href = "/login?message=check-email";
+          setLocation("/login?message=check-email");
         }, 2000);
       } else {
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          setLocation("/dashboard");
         }, 2000);
       }
     } catch (error: any) {

@@ -20,7 +20,7 @@ const assessments = [
     status: "available" as const,
   },
   {
-    id: "ai-readiness",
+    id: "ai_readiness",
     title: "AI Readiness Assessment",
     description: "Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage.",
     questionCount: 21,
@@ -29,7 +29,7 @@ const assessments = [
     status: "available" as const,
   },
   {
-    id: "prompt-architecture",
+    id: "prompt_architecture",
     title: "Prompt Architecture Assessment",
     description: "Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by GPT-5.",
     questionCount: 7,
@@ -68,7 +68,7 @@ const assessments = [
 
 export default function Assessments() {
   const { isAuthenticated } = useAuth();
-  const { getBasketCount } = useBasket();
+  const { getBasketCount, basketItems } = useBasket();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const availableAssessments = assessments.filter((a) => a.status === "available");
@@ -140,7 +140,7 @@ export default function Assessments() {
                 data-testid="button-view-basket-checkout"
               >
                 <ShoppingCart className="h-3 w-3 md:h-5 md:w-5" />
-                View Basket & Checkout
+                Continue to Tests
                 {basketCount > 0 && (
                   <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
                     {basketCount}
@@ -174,6 +174,7 @@ export default function Assessments() {
       <CheckoutModal
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
+        basketItems={basketItems}
       />
     </div>
   );
