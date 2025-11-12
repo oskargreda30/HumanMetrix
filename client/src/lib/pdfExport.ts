@@ -88,9 +88,9 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HumanMetrix Logo (full logo image)
+  // HumanMetrix Logo (full logo image, centered with blue line)
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 6, 13, 13);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 2, 26, 26);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -911,7 +911,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('TARGET ROLE', roleX + 5, yPos + 8);
   
   pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text(data.role.name, roleX + 5, yPos + 16);
   
@@ -971,7 +971,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 5;
   
-  applyBodyText(pdf);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
   
   // Two-column layout for strengths
   const strengthColWidth = (pageWidth - 45) / 2;
@@ -1016,7 +1018,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 5;
   
-  applyBodyText(pdf);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
   
   // Two-column layout for gaps
   const gapColWidth = (pageWidth - 45) / 2;
@@ -1135,43 +1139,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setLineWidth(0.8);
       pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
       
-      // Draw required score marker (circle with border)
+      // Draw required score marker (hollow circle)
       pdf.setFillColor(255, 255, 255); // White fill
-      pdf.circle(requiredX, skillY, 2, 'F');
+      pdf.circle(requiredX, skillY, 1.5, 'F');
       pdf.setDrawColor(107, 114, 128);
-      pdf.setLineWidth(1.2);
-      pdf.circle(requiredX, skillY, 2, 'D');
+      pdf.setLineWidth(1);
+      pdf.circle(requiredX, skillY, 1.5, 'D');
       
-      // Draw candidate score marker (diamond shape)
+      // Draw candidate score marker (filled circle)
       pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-      const diamondSize = 2.5;
-      pdf.setLineWidth(0.5);
-      // Draw diamond (rotated square)
-      const diamondPath = [
-        [candidateX, skillY - diamondSize],           // top
-        [candidateX + diamondSize, skillY],           // right
-        [candidateX, skillY + diamondSize],           // bottom
-        [candidateX - diamondSize, skillY],           // left
-        [candidateX, skillY - diamondSize]            // close path
-      ];
-      diamondPath.forEach((point, i) => {
-        if (i === 0) return;
-        pdf.line(diamondPath[i-1][0], diamondPath[i-1][1], point[0], point[1]);
-      });
-      // Fill the diamond
-      pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-      pdf.triangle(
-        candidateX, skillY - diamondSize,
-        candidateX + diamondSize, skillY,
-        candidateX, skillY + diamondSize,
-        'F'
-      );
-      pdf.triangle(
-        candidateX, skillY - diamondSize,
-        candidateX - diamondSize, skillY,
-        candidateX, skillY + diamondSize,
-        'F'
-      );
+      pdf.circle(candidateX, skillY, 1.5, 'F');
       
       // Add score labels
       pdf.setFontSize(5);
@@ -1190,30 +1167,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFontSize(6);
     pdf.setTextColor(55, 65, 81);
     
-    // Required score legend
+    // Required score legend (hollow circle)
     pdf.setFillColor(255, 255, 255);
-    pdf.circle(chartMarginLeft + 5, yPos, 2, 'F');
+    pdf.circle(chartMarginLeft + 5, yPos, 1.5, 'F');
     pdf.setDrawColor(107, 114, 128);
-    pdf.setLineWidth(1.2);
-    pdf.circle(chartMarginLeft + 5, yPos, 2, 'D');
+    pdf.setLineWidth(1);
+    pdf.circle(chartMarginLeft + 5, yPos, 1.5, 'D');
     pdf.text('Required Score', chartMarginLeft + 11, yPos + 1);
     
-    // Candidate score legend (diamond)
+    // Candidate score legend (filled circle)
     pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-    const legendDiamondSize = 2.5;
     const legendX = chartMarginLeft + 52;
-    pdf.triangle(
-      legendX, yPos - legendDiamondSize,
-      legendX + legendDiamondSize, yPos,
-      legendX, yPos + legendDiamondSize,
-      'F'
-    );
-    pdf.triangle(
-      legendX, yPos - legendDiamondSize,
-      legendX - legendDiamondSize, yPos,
-      legendX, yPos + legendDiamondSize,
-      'F'
-    );
+    pdf.circle(legendX, yPos, 1.5, 'F');
     pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
     yPos += 8;
@@ -1229,7 +1194,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render AI Readiness skills if available
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [147, 51, 234]);
+    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
   pdf.setTextColor(0, 0, 0);
