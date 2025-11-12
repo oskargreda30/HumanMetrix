@@ -52,7 +52,7 @@ const assessments: Assessment[] = [
   }
 ];
 
-const BASE_FEE = 0.02;
+const BASE_FEE = 0.30;
 
 export default function Purchase() {
   const { toast } = useToast();

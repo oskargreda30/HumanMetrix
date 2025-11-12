@@ -43,7 +43,7 @@ const assessments = [
   },
 ];
 
-const BASE_FEE = 0.02;
+const BASE_FEE = 0.30;
 
 interface CheckoutModalProps {
   open: boolean;
