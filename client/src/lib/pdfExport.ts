@@ -420,7 +420,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     fitCharts.forEach((image, index) => {
       if (!image) return;
       const isLeftChart = (index % chartsPerRow) === 0;
-      const horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      let horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      if (index === 1) horizontalOffset += 6; // Candidate 2 gets additional 6mm to the right
       const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
@@ -499,7 +500,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     aiCharts.forEach((image, index) => {
       if (!image) return;
       const isLeftChart = (index % chartsPerRow) === 0;
-      const horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      let horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
+      if (index === 1) horizontalOffset += 6; // Candidate 2 gets additional 6mm to the right
       const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
