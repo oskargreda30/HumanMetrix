@@ -803,7 +803,6 @@ export default function CompareTab() {
                                   stroke={CHART_COLORS[index]}
                                   fill={CHART_COLORS[index]}
                                   fillOpacity={0.3}
-                                  label={index === 0 ? renderInsideLabel : false}
                                 />
                               ))}
                               <Legend />
