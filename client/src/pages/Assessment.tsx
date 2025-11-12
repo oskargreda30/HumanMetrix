@@ -53,7 +53,10 @@ export default function Assessment() {
   // Get questions based on assessment type
   const getQuestions = () => {
     if (!assessment) return [];
-    switch (assessment.assessmentType) {
+    // Normalize assessment type (handle both hyphens and underscores)
+    const type = assessment.assessmentType.replace(/-/g, '_');
+    
+    switch (type) {
       case "fit":
         return FIT_QUESTIONS;
       case "ai_readiness":
@@ -72,13 +75,14 @@ export default function Assessment() {
           type: 'text-input' as const
         }));
       default:
+        console.error(`Unknown assessment type: ${assessment.assessmentType}`);
         return [];
     }
   };
 
   const questions = getQuestions();
   const currentQ = questions[currentQuestion];
-  const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture';
+  const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture' || assessment?.assessmentType === 'prompt-architecture';
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -247,8 +251,10 @@ export default function Assessment() {
   // Get instructions for each assessment type
   const getInstructions = () => {
     if (!assessment) return { title: "", description: "", tips: [] };
+    // Normalize assessment type (handle both hyphens and underscores)
+    const type = assessment.assessmentType.replace(/-/g, '_');
     
-    switch (assessment.assessmentType) {
+    switch (type) {
       case "fit":
         return {
           title: "FIT Assessment - 15 Questions",
