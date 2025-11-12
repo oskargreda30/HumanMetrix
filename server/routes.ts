@@ -962,6 +962,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check results access status (canonical endpoint for all access checks)
+  app.get("/api/results-access-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get all purchases
+      const purchases = await storage.getPurchasesByUser(userId);
+      
+      // Check if user has paid for results access (or redeemed FREE code)
+      const hasAccess = purchases.some((p: any) => p.resultsAccessPaid === true);
+      
+      // Get completed assessments
+      const results = await storage.getResultsByUser(userId);
+      const completedResults = results.filter((r: any) => r.status === 'completed');
+      const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+      const completedCount = uniqueAssessmentTypes.size;
+      
+      // Check if user was invited
+      const invitations = await storage.getAllInvitations();
+      const wasInvited = invitations.some((inv: any) => 
+        inv.candidateEmail.toLowerCase() === user.email.toLowerCase()
+      );
+      
+      // Determine if payment is required
+      const allAssessmentsComplete = completedCount === 4;
+      const requiresPayment = allAssessmentsComplete && !hasAccess;
+      
+      res.json({
+        hasAccess,
+        completedCount,
+        requiresPayment,
+        wasInvited,
+        allAssessmentsComplete
+      });
+    } catch (error) {
+      console.error("Error checking results access status:", error);
+      res.status(500).json({ message: "Failed to check results access status" });
+    }
+  });
+
   // Admin: Create invitation and send email
   app.post("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
     try {
