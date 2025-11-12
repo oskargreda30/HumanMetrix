@@ -564,14 +564,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const hasAIQ = data.aiqAssessments?.some(a => a !== null);
   if (hasAIQ) {
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
-    yPos += 2;
     
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Candidate', 25, yPos);
     pdf.text('Score', 100, yPos);
     pdf.text('Status', 130, yPos);
-    yPos += 5;
+    yPos += 3; // Reduced from 5 to save space
     
     data.candidates.forEach((candidate, index) => {
       const aiqData = data.aiqAssessments?.[index];
@@ -595,9 +594,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
         pdf.setTextColor(150, 150, 150);
         pdf.text('N/A', 100, yPos);
       }
-      yPos += 6;
+      yPos += 4.5; // Reduced from 6 to save space
     });
-    yPos += 5; // Reduced spacing to move sections up
+    yPos += 2; // Reduced from 5 to save more space
   }
   
   // Prompt Architecture - Total Level Scores
@@ -609,7 +608,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 1);
-    yPos += 5;
+    yPos += 3; // Reduced from 5 to save space
     
     // Table header
     pdf.setFontSize(7);
@@ -628,7 +627,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const shortName = name.length > 15 ? name.substring(0, 13) + '...' : name;
       pdf.text(shortName, 65 + (index * scoreColWidth), yPos);
     });
-    yPos += 4;
+    yPos += 3; // Reduced from 4 to save space
     
     // Render all 7 levels
     for (let level = 1; level <= 7; level++) {
@@ -671,10 +670,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
         }
       });
       
-      yPos += 7;
+      yPos += 6; // Reduced from 7 to save space
     }
     
-    yPos += 3;
+    yPos += 10; // Increased breathing room before TOP 5 SKILLS COMPARISON
   }
   
   // Top 5 Skills Comparison - Horizontal Bar Chart
