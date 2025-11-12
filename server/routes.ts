@@ -282,6 +282,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, create Stripe checkout session for results payment
+      // Get the base URL for redirect
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `${req.protocol}://${req.get('host')}`;
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -298,8 +303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=success`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=cancelled`,
+        success_url: `${baseUrl}/dashboard?payment=success`,
+        cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId.toString(),
           purchaseId: unpaidPurchase.id.toString(),

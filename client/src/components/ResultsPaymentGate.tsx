@@ -103,6 +103,17 @@ export function ResultsPaymentGate() {
             You've completed all your assessments! To view your detailed results and download 
             your professional PDF report, please unlock your results.
           </p>
+
+          {wasInvited && (
+            <Alert className="text-left">
+              <Sparkles className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Part of a recruitment process?</strong> If you were invited to complete these assessments 
+                by an employer, your results will be automatically shared with them once unlocked. 
+                Use the FREE code if your employer has covered the cost.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <div className="bg-muted/50 rounded-lg p-6 space-y-3">
