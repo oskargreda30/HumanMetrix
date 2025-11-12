@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
@@ -16,6 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const { data: availableAssessments, isLoading: assessmentsLoading } = useQuery<any[]>({
@@ -52,10 +53,10 @@ export default function Dashboard() {
           description: "Your results are now available. Redirecting...",
         });
 
-        // Clean URL and redirect to results
+        // Clean URL and redirect to results using SPA navigation
         setTimeout(() => {
           window.history.replaceState({}, '', '/dashboard');
-          window.location.href = '/my-results';
+          setLocation('/my-results');
         }, 1000);
       } catch (error: any) {
         console.error("Error processing payment:", error);

@@ -23,6 +23,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: isProduction,
+      sameSite: 'lax', // Required for Stripe redirects
       maxAge: sessionTtl,
     },
   });
