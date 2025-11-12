@@ -298,6 +298,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
+        allow_promotion_codes: true,
+        payment_method_collection: 'if_required',
         success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=cancelled`,
         metadata: {
@@ -331,7 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       
-      if (!session || session.payment_status !== "paid") {
+      // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
+      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
         return res.status(400).json({ message: "Payment not completed" });
       }
       

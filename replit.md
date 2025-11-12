@@ -86,10 +86,34 @@ After seeding roles, create an initial admin account:
 
 - [ ] Run `tsx server/scripts/bootstrapRoles.ts` to seed job roles
 - [ ] Run `tsx server/scripts/bootstrapAdmin.ts` with admin credentials
+- [ ] Run `tsx server/scripts/setupFreePromoCode.ts` to create FREE discount code in Stripe
 - [ ] Verify all required environment secrets are configured (see `.env` for list)
 - [ ] Test admin login and role comparison features
 - [ ] Verify email system is working (check GMAIL_USER and GMAIL_APP_PASSWORD)
 - [ ] Test Stripe integration (check STRIPE_SECRET_KEY and VITE_STRIPE_PUBLIC_KEY)
+- [ ] Test FREE discount code at checkout (should make total £0.00 with no card required)
+
+#### 3. Setup FREE Discount Code (Optional but Recommended)
+
+To allow candidates to unlock results for free using a discount code:
+
+```bash
+tsx server/scripts/setupFreePromoCode.ts
+```
+
+**What it does**:
+- Creates a Stripe coupon with 100% discount
+- Creates promotion code "FREE" that candidates can use at checkout
+- When applied, total becomes £0.00 and no credit card is required
+- Script is idempotent - safe to run multiple times
+
+**How candidates use it**:
+1. Complete all 4 assessments
+2. Click "Unlock Results" button
+3. At Stripe checkout, click "Add promotion code"
+4. Enter "FREE" and apply
+5. Total becomes £0.00, no card required
+6. Click to complete and results unlock immediately!
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
