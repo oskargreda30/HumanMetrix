@@ -35,6 +35,7 @@ interface ComparisonData {
   aiChartImages?: (string | null)[];
   fitCombinedChartImage?: string | null;
   aiCombinedChartImage?: string | null;
+  overallSkillsChartImage?: string | null;
 }
 
 interface RoleFitData {
@@ -557,6 +558,34 @@ export async function exportComparisonPDF(data: ComparisonData) {
     });
     
     yPos += 5;
+  }
+
+  // Overall Skills Comparison Chart
+  if (data.overallSkillsChartImage) {
+    if (yPos > pageHeight - 90) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 50;
+    }
+    
+    yPos = addSectionHeader(pdf, 'OVERALL SKILLS COMPARISON', yPos, pageWidth);
+    yPos += 3;
+    
+    // Add description
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
+    yPos += 8;
+    
+    // Add the overall skills radar chart (centered)
+    const chartWidth = Math.min(pageWidth - 40, 120);
+    const chartHeight = 80;
+    const xPos = (pageWidth - chartWidth) / 2;
+    
+    pdf.addImage(data.overallSkillsChartImage, 'PNG', xPos, yPos, chartWidth, chartHeight);
+    yPos += chartHeight + 8;
   }
   
   // ========== PAGE 3: DETAILED COMPARISONS ==========

@@ -198,6 +198,23 @@ export default function CompareTab() {
         }
       }
 
+      // Capture Overall Skills chart
+      let overallSkillsChartImage: string | null = null;
+      if (comparison.hasSkillData) {
+        try {
+          const element = document.getElementById('pdf-comparison-overall-skills');
+          if (element) {
+            const canvas = await html2canvas(element, {
+              backgroundColor: '#ffffff',
+              scale: 2,
+            });
+            overallSkillsChartImage = canvas.toDataURL('image/png');
+          }
+        } catch (err) {
+          console.error('Error capturing Overall Skills chart:', err);
+        }
+      }
+
       await exportComparisonPDF({
         candidates: selectedCandidateData,
         skillComparison: comparison.skillComparison,
@@ -210,6 +227,7 @@ export default function CompareTab() {
         aiChartImages,
         fitCombinedChartImage,
         aiCombinedChartImage,
+        overallSkillsChartImage,
       });
       
       toast({
@@ -771,6 +789,7 @@ export default function CompareTab() {
                       {comparison.radarData && comparison.radarData.length > 0 && (
                         <div>
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
+                          <div id="pdf-comparison-overall-skills" className="bg-white p-4 rounded-lg">
                           <ResponsiveContainer width="100%" height={400}>
                             <RadarChart data={comparison.radarData}>
                               <PolarGrid />
@@ -784,12 +803,13 @@ export default function CompareTab() {
                                   stroke={CHART_COLORS[index]}
                                   fill={CHART_COLORS[index]}
                                   fillOpacity={0.3}
-                                  label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
+                                  label={index === 0 ? renderInsideLabel : false}
                                 />
                               ))}
                               <Legend />
                             </RadarChart>
                           </ResponsiveContainer>
+                          </div>
                         </div>
                       )}
 
