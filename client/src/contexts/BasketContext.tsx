@@ -21,11 +21,21 @@ const BasketContext = createContext<BasketContextType | undefined>(undefined);
 const STORAGE_KEY = "humanmetrix-basket";
 const BASE_FEE = 0.30;
 
+const migrateOldIds = (items: BasketItem[]): BasketItem[] => {
+  return items.map(item => ({
+    ...item,
+    id: item.id.replace(/-/g, '_')
+  }));
+};
+
 export function BasketProvider({ children }: { children: ReactNode }) {
   const [basketItems, setBasketItems] = useState<BasketItem[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) return [];
+      
+      const items = JSON.parse(stored);
+      return migrateOldIds(items);
     } catch (error) {
       console.error("Error loading basket from localStorage:", error);
       return [];
