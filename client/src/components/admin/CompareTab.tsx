@@ -365,8 +365,8 @@ export default function CompareTab() {
                               });
                             })()}>
                               <PolarGrid />
-                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
-                              <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fontWeight: 'bold' }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
                                 if (!comparison.fitAssessments?.[index]) return null;
                                 return (
@@ -378,6 +378,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
+                                    label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' } : false}
                                   />
                                 );
                               })}
@@ -423,13 +424,14 @@ export default function CompareTab() {
                                   <ResponsiveContainer width="100%" height={300}>
                                     <RadarChart data={radarData}>
                                       <PolarGrid />
-                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
                                         dataKey="score"
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
+                                        label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' }}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -478,8 +480,8 @@ export default function CompareTab() {
                               });
                             })()}>
                               <PolarGrid />
-                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                              <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
                                 if (!comparison.aiReadinessAssessments?.[index]) return null;
                                 return (
@@ -491,6 +493,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
+                                    label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' } : false}
                                   />
                                 );
                               })}
@@ -536,13 +539,14 @@ export default function CompareTab() {
                                   <ResponsiveContainer width="100%" height={300}>
                                     <RadarChart data={radarData}>
                                       <PolarGrid />
-                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
-                                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9, fontWeight: 'bold' }} />
+                                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
                                         dataKey="score"
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
+                                        label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' }}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -748,8 +752,8 @@ export default function CompareTab() {
                           <ResponsiveContainer width="100%" height={400}>
                             <RadarChart data={comparison.radarData}>
                               <PolarGrid />
-                              <PolarAngleAxis dataKey="skill" />
-                              <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontWeight: 'bold' }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
                                 <Radar
                                   key={candidate.user.id}
@@ -758,6 +762,7 @@ export default function CompareTab() {
                                   stroke={CHART_COLORS[index]}
                                   fill={CHART_COLORS[index]}
                                   fillOpacity={0.3}
+                                  label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' } : false}
                                 />
                               ))}
                               <Legend />
@@ -887,13 +892,14 @@ export default function CompareTab() {
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData}>
                     <PolarGrid />
-                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fontWeight: 'bold' }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
                       dataKey="score"
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
+                      label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -922,13 +928,14 @@ export default function CompareTab() {
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData}>
                     <PolarGrid />
-                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9, fontWeight: 'bold' }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
                       dataKey="score"
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
+                      label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold' }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
