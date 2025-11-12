@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             purchaseId: purchase.id,
             assessmentType: assessmentId,
             price: 1,
-            status: "active",
+            status: "ready",
           });
         }
         
