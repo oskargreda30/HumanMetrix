@@ -116,47 +116,98 @@ export default function Assessment() {
       return await response.json();
     },
     onSuccess: async () => {
+      toast({
+        title: "Success",
+        description: "Assessment submitted successfully!",
+      });
+      
+      // Invalidate queries to trigger refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      
+      // Poll for updated access status with exponential backoff
+      const pollAccessStatus = async (): Promise<any> => {
+        const delays = [500, 500, 1000, 1000, 2000, 2000, 3000, 3000]; // Total ~15 seconds
+        
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+          try {
+            const accessStatus = await queryClient.fetchQuery({ 
+              queryKey: ["/api/results-access-status"]
+            }) as any;
+            
+            // Check if we got a valid response
+            if (accessStatus && typeof accessStatus.allAssessmentsComplete === 'boolean') {
+              // If all assessments are complete, return immediately
+              if (accessStatus.allAssessmentsComplete) {
+                return accessStatus;
+              }
+              
+              // Not complete yet - log and retry (unless this is the last attempt)
+              console.log(`Attempt ${attempt + 1}: allAssessmentsComplete is still false, retrying...`);
+            }
+            
+            // Wait before next attempt
+            if (attempt < delays.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+            }
+          } catch (error) {
+            console.error(`Polling attempt ${attempt + 1} failed:`, error);
+            // Continue trying unless this is the last attempt
+            if (attempt < delays.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+            } else {
+              throw error; // Rethrow on final attempt
+            }
+          }
+        }
+        
+        // After all retries, fetch one last time and return whatever we get
+        try {
+          return await queryClient.fetchQuery({ 
+            queryKey: ["/api/results-access-status"]
+          });
+        } catch (error) {
+          console.error('Final fetch attempt failed:', error);
+          return null;
+        }
+      };
+      
       try {
-        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/results-access-status"] });
+        const accessStatus = await pollAccessStatus();
         
-        toast({
-          title: "Success",
-          description: "Assessment submitted successfully!",
-        });
-        
-        // Check results access status using canonical endpoint
-        const accessStatus = await queryClient.fetchQuery({ 
-          queryKey: ["/api/results-access-status"] 
-        }) as any;
-        
-        if (accessStatus.allAssessmentsComplete) {
-          // All 4 assessments are complete
+        // Check if all assessments are complete and route accordingly
+        if (accessStatus?.allAssessmentsComplete) {
           if (accessStatus.hasAccess) {
-            // User has already paid or used FREE code - go directly to dashboard
+            // Self-paying user - has access, redirect to results
             toast({
               title: "All Assessments Complete!",
-              description: "Redirecting to your dashboard...",
+              description: "Redirecting to your results...",
             });
-            setTimeout(() => setLocation("/dashboard"), 1500);
+            setTimeout(() => setLocation("/my-results"), 1000);
           } else {
-            // User needs to pay or enter FREE code
+            // Invited user - needs to pay, show payment dialog
             setIsPaidUser(false);
             setShowCompletionDialog(true);
           }
         } else {
-          // Not all assessments complete yet - go to dashboard
-          setLocation("/dashboard");
+          // Either couldn't get status OR allAssessmentsComplete is false
+          // In post-submission context, redirect to /my-results and let it handle the state
+          // (could be backend lag, eventual consistency, or legitimately not done)
+          console.log('Redirecting to results page to check current state');
+          toast({
+            title: "Assessment Submitted",
+            description: "Checking your progress...",
+          });
+          setTimeout(() => setLocation("/my-results"), 1000);
         }
       } catch (error) {
-        console.error("Error in post-submission processing:", error);
-        // Even if there's an error fetching data, redirect to dashboard
+        console.error("Error in post-submission flow:", error);
+        // On error, redirect to results page and let it handle the error state
         toast({
-          title: "Assessment submitted",
-          description: "Your assessment has been submitted. Redirecting to dashboard...",
+          title: "Assessment Complete",
+          description: "Loading your results...",
         });
-        setTimeout(() => setLocation("/dashboard"), 1500);
+        setTimeout(() => setLocation("/my-results"), 1000);
       }
     },
     onError: (error: any) => {

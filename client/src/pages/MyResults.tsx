@@ -26,27 +26,77 @@ export default function MyResults() {
   const { toast } = useToast();
 
   // Use canonical results access status endpoint
-  const { data: accessStatus } = useQuery<any>({
+  const { data: accessStatus, isLoading: isLoadingAccess, error: accessError } = useQuery<any>({
     queryKey: ["/api/results-access-status"],
     enabled: isAuthenticated,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Fetch all user results
-  const { data: allResults, isLoading } = useQuery<any[]>({
+  const { data: allResults, isLoading: isLoadingResults, error: resultsError } = useQuery<any[]>({
     queryKey: ["/api/results"],
     enabled: isAuthenticated,
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // Find Prompt Architecture result for later fetching
-  const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
-
-  if (isLoading || !allResults) {
+  // Wait for both queries to load (treat empty arrays as valid data)
+  if (isLoadingAccess || isLoadingResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  // Handle query errors after loading completes
+  if (accessError || resultsError) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <Card className="p-12 text-center max-w-md">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <h2 className="text-2xl font-bold mb-2">Unable to Load Results</h2>
+            <p className="text-muted-foreground mb-6">
+              There was an error loading your assessment results. Please try again.
+            </p>
+            <Link href="/dashboard">
+              <Button>Return to Dashboard</Button>
+            </Link>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // At this point queries completed without error - validate data structure
+  // Empty arrays are valid (user hasn't completed assessments yet)
+  if (!Array.isArray(allResults) || !accessStatus) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <Card className="p-12 text-center max-w-md">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Unexpected Data Format</h2>
+            <p className="text-muted-foreground mb-6">
+              The results data format was unexpected. Please try again or contact support.
+            </p>
+            <Link href="/dashboard">
+              <Button>Return to Dashboard</Button>
+            </Link>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Find Prompt Architecture result for later fetching
+  const promptArchResult = allResults.find((r: any) => r.assessmentType === 'prompt_architecture');
 
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
   
