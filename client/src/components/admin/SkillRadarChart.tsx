@@ -37,7 +37,7 @@ export function SkillRadarChart({
         <PolarRadiusAxis 
           angle={90} 
           domain={[0, 100]}
-          tick={{ fill: '#6b7280', fontWeight: 'bold' }}
+          tick={false}
         />
         <Radar 
           name="Score" 
@@ -48,6 +48,12 @@ export function SkillRadarChart({
           strokeWidth={2}
           dot={{ r: 3, fill: stroke }}
           activeDot={{ r: 4, fill: stroke }}
+          label={{ 
+            position: 'outside',
+            fill: '#374151',
+            fontSize: 10,
+            fontWeight: 'bold'
+          }}
         />
         <Legend wrapperStyle={{ fontWeight: 'bold' }} />
         <Tooltip 
@@ -127,7 +133,7 @@ export function MultiCandidateRadarChart({
             <PolarRadiusAxis 
               angle={90} 
               domain={[0, 100]}
-              tick={{ fill: '#6b7280', fontWeight: 'bold' }}
+              tick={false}
             />
             {candidates.map((candidate, index) => (
               <Radar
@@ -140,6 +146,12 @@ export function MultiCandidateRadarChart({
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 4 }}
+                label={index === 0 ? { 
+                  position: 'outside',
+                  fill: '#374151',
+                  fontSize: 10,
+                  fontWeight: 'bold'
+                } : false}
               />
             ))}
             <Legend wrapperStyle={{ fontWeight: 'bold' }} />
