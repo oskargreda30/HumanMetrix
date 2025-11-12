@@ -378,7 +378,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
+                                    label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
                                   />
                                 );
                               })}
@@ -431,7 +431,7 @@ export default function CompareTab() {
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
-                                        label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                                        label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -493,7 +493,7 @@ export default function CompareTab() {
                                     fill={CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? { position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
+                                    label={index === 0 ? { position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 } : false}
                                   />
                                 );
                               })}
@@ -546,7 +546,7 @@ export default function CompareTab() {
                                         stroke={CHART_COLORS[index]}
                                         fill={CHART_COLORS[index]}
                                         fillOpacity={0.5}
-                                        label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                                        label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -899,7 +899,7 @@ export default function CompareTab() {
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
-                      label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                      label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -935,7 +935,7 @@ export default function CompareTab() {
                       stroke={CHART_COLORS[index]}
                       fill={CHART_COLORS[index]}
                       fillOpacity={0.5}
-                      label={{ position: 'outside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
+                      label={{ position: 'inside', fill: '#374151', fontSize: 10, fontWeight: 'bold', angle: 0 }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
