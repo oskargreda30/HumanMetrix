@@ -40,9 +40,29 @@ The frontend is built with React + TypeScript, utilizing Shadcn UI and Tailwind 
 
 ## Production Deployment
 
-### First-Time Admin Account Setup
+### First-Time Production Setup
 
-When deploying to production for the first time, you need to create an initial admin account using the bootstrap script:
+When deploying to production for the first time, you need to run two bootstrap scripts in order:
+
+#### 1. Bootstrap Job Roles (Required First)
+
+The platform requires predefined job roles for the role comparison and AI role fit analysis features in the admin dashboard. Run this script first:
+
+```bash
+tsx server/scripts/bootstrapRoles.ts
+```
+
+**What it does**:
+- Seeds 25 predefined job roles (AI/ML Engineer, Product Manager, etc.)
+- Each role includes competencies and required skill scores for FIT and AI Readiness assessments
+- Script is idempotent - safe to run multiple times (won't create duplicates)
+- Skips roles that already exist in the database
+
+**Important**: Without these roles, the admin Intelligence Hub features (role comparison, candidate-role fit analysis) will not work properly.
+
+#### 2. Bootstrap Admin Account (Required Second)
+
+After seeding roles, create an initial admin account:
 
 1. **Set Environment Variables**:
    ```bash
@@ -61,6 +81,15 @@ When deploying to production for the first time, you need to create an initial a
    - You can now log in with the credentials you provided
 
 **Important**: The bootstrap script only creates the admin account if it doesn't already exist. It will skip creation if a user with that email already exists.
+
+### Production Deployment Checklist
+
+- [ ] Run `tsx server/scripts/bootstrapRoles.ts` to seed job roles
+- [ ] Run `tsx server/scripts/bootstrapAdmin.ts` with admin credentials
+- [ ] Verify all required environment secrets are configured (see `.env` for list)
+- [ ] Test admin login and role comparison features
+- [ ] Verify email system is working (check GMAIL_USER and GMAIL_APP_PASSWORD)
+- [ ] Test Stripe integration (check STRIPE_SECRET_KEY and VITE_STRIPE_PUBLIC_KEY)
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
