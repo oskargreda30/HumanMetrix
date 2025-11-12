@@ -20,10 +20,18 @@ export function ResultsPaymentGate() {
     queryKey: ["/api/results"],
   });
   
+  // Check if user was invited (has invitation record)
+  const { data: invitationData } = useQuery<any>({
+    queryKey: ["/api/invitation-status"],
+  });
+  
   const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
   const uniqueCount = uniqueAssessmentTypes.size;
   const price = (0.30 + (uniqueCount * 0.01)).toFixed(2);
+  
+  // Check if user was invited
+  const wasInvited = invitationData?.wasInvited === true;
 
   const unlockMutation = useMutation({
     mutationFn: async (code: string) => {
@@ -43,14 +51,16 @@ export function ResultsPaymentGate() {
         // Free code used successfully
         toast({
           title: "Results Unlocked!",
-          description: "Your results are now available. Refreshing...",
+          description: "Your results are now available. Redirecting...",
         });
         
         // Refresh purchases to update resultsAccessPaid status
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
         
-        // Reload page to show results
-        window.location.reload();
+        // Small delay to show toast, then redirect to dashboard
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
       } else if (data.sessionUrl) {
         // Redirect to Stripe checkout
         window.location.href = data.sessionUrl;
@@ -128,24 +138,28 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="discount-code">Discount Code (Optional)</Label>
-            <Input
-              id="discount-code"
-              placeholder="Enter FREE if employer covered payment"
-              value={discountCode}
-              onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-              disabled={unlockMutation.isPending}
-              data-testid="input-discount-code"
-            />
-          </div>
+          {wasInvited && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="discount-code">Discount Code (Optional)</Label>
+                <Input
+                  id="discount-code"
+                  placeholder="Enter FREE if employer covered payment"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                  disabled={unlockMutation.isPending}
+                  data-testid="input-discount-code"
+                />
+              </div>
 
-          <Alert>
-            <Sparkles className="h-4 w-4" />
-            <AlertDescription>
-              If your employer has covered the cost, use discount code <span className="font-mono font-bold">FREE</span> to unlock your results instantly.
-            </AlertDescription>
-          </Alert>
+              <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertDescription>
+                  If your employer has covered the cost, use discount code <span className="font-mono font-bold">FREE</span> to unlock your results instantly.
+                </AlertDescription>
+              </Alert>
+            </>
+          )}
 
           <Button
             className="w-full"
@@ -162,16 +176,16 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results {discountCode ? "(Free)" : `(£${price})`}
+                {wasInvited && discountCode ? "Unlock Results (Free)" : `Unlock Results (£${price})`}
               </>
             )}
           </Button>
 
-          {!discountCode && (
+          {!wasInvited || !discountCode ? (
             <p className="text-sm text-center text-muted-foreground">
               Secure payment processed via Stripe
             </p>
-          )}
+          ) : null}
         </div>
       </Card>
     </div>

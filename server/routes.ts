@@ -939,6 +939,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if user was invited
+  app.get("/api/invitation-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if there's an invitation record for this email
+      const invitations = await storage.getAllInvitations();
+      const wasInvited = invitations.some((inv: any) => 
+        inv.candidateEmail.toLowerCase() === user.email.toLowerCase()
+      );
+      
+      res.json({ wasInvited });
+    } catch (error) {
+      console.error("Error checking invitation status:", error);
+      res.status(500).json({ message: "Failed to check invitation status" });
+    }
+  });
+
   // Admin: Create invitation and send email
   app.post("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
     try {

@@ -36,6 +36,13 @@ export default function PurchaseSuccess() {
         throw new Error(data.message || "Failed to process payment");
       }
 
+      // Clear basket from localStorage after successful checkout
+      try {
+        localStorage.removeItem("humanmetrix-basket");
+      } catch (error) {
+        console.error("Error clearing basket:", error);
+      }
+
       setAccountCreated(true);
       setUserEmail(data.email || "");
       setIsProcessing(false);

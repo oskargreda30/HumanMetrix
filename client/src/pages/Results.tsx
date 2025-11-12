@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
+import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
+import { isSkillBasedAssessment, transformToRadarData } from "@/lib/assessmentSkills";
 import {
   Radar,
   RadarChart,
@@ -232,32 +233,79 @@ export default function Results() {
         results: completedResults,
       };
 
-      // Prepare skill data from all completed assessments
+      // Collect all skills from completed assessments
       const skillData: any[] = [];
       completedResults.forEach((r: any) => {
-        const scores = r.scores || {};
-        Object.entries(scores).forEach(([skillName, score]) => {
-          skillData.push({
-            name: skillName,
-            score: score as number,
-            assessment: formatAssessmentName(r.assessmentType),
+        if (isSkillBasedAssessment(r.assessmentType) && r.scores) {
+          const radarData = transformToRadarData(r.scores, r.assessmentType);
+          radarData.forEach((skill: any) => {
+            skillData.push({
+              name: skill.skill,
+              score: skill.score,
+              assessment: formatAssessmentName(r.assessmentType),
+            });
           });
-        });
+        }
       });
 
-      // Platform averages (simplified - could be fetched from API)
-      const platformAverages = {
+      // Fetch platform averages
+      const averagesRes = await fetch('/api/admin/platform-averages', {
+        credentials: 'include',
+      });
+      const platformAverages = averagesRes.ok ? await averagesRes.json() : {
         totalCandidates: 1,
         avgScoreAcrossCandidates: 0,
         skillAverages: {},
       };
 
+      // Capture radar charts for FIT and AI Readiness
+      let radarChartImages: { fit?: string; aiReadiness?: string } = {};
+      
+      const fitResult = completedResults.find((r: any) => 
+        r.assessmentType === 'fit' && r.status === 'completed'
+      );
+      const aiReadinessResult = completedResults.find((r: any) => 
+        r.assessmentType === 'ai_readiness' && r.status === 'completed'
+      );
+
+      // Wait for charts to fully render
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (fitResult) {
+        const fitChart = await captureRadarChart('user-pdf-fit-chart');
+        if (fitChart) radarChartImages.fit = fitChart;
+      }
+
+      if (aiReadinessResult) {
+        const aiChart = await captureRadarChart('user-pdf-ai-readiness-chart');
+        if (aiChart) radarChartImages.aiReadiness = aiChart;
+      }
+
+      // Fetch Prompt Architecture evaluation data
+      const promptArchitectureResult = completedResults.find((r: any) => 
+        r.assessmentType === 'prompt_architecture' && r.status === 'completed'
+      );
+      let promptArchitectureData: any[] = [];
+      if (promptArchitectureResult) {
+        try {
+          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchitectureResult.id}`, {
+            credentials: 'include',
+          });
+          if (promptEvalRes.ok) {
+            promptArchitectureData = await promptEvalRes.json();
+          }
+        } catch (error) {
+          console.error('Error fetching prompt architecture data:', error);
+        }
+      }
+
       await exportEnhancedCandidatePDF(
         candidateData,
         skillData,
         platformAverages,
+        radarChartImages,
         undefined,
-        undefined
+        promptArchitectureData
       );
 
       toast({
@@ -359,9 +407,103 @@ export default function Results() {
     score: score as number,
   }));
 
+  // Get FIT and AI Readiness results for hidden PDF charts
+  const fitResult = allResults?.find((r: any) => 
+    r.assessmentType === 'fit' && r.status === 'completed'
+  );
+  const aiReadinessResult = allResults?.find((r: any) => 
+    r.assessmentType === 'ai_readiness' && r.status === 'completed'
+  );
+
+  // Prepare data for hidden PDF charts
+  const fitRadarData = fitResult?.scores ? Object.entries(fitResult.scores).map(([skill, score]) => ({
+    skill: skill.replace(/([A-Z])/g, ' $1').trim(),
+    score: score as number,
+    fullMark: 100,
+  })) : [];
+
+  const aiRadarData = aiReadinessResult?.scores ? Object.entries(aiReadinessResult.scores).map(([skill, score]) => ({
+    skill: skill.replace(/([A-Z])/g, ' $1').trim(),
+    score: score as number,
+    fullMark: 100,
+  })) : [];
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
+      
+      {/* Hidden charts for PDF export - positioned off-screen */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        {fitResult && fitRadarData.length > 0 && (
+          <div id="user-pdf-fit-chart" style={{ width: '600px', height: '400px', backgroundColor: '#ffffff' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={fitRadarData}>
+                <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
+                <PolarAngleAxis 
+                  dataKey="skill" 
+                  tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
+                />
+                <PolarRadiusAxis 
+                  angle={90} 
+                  domain={[0, 100]}
+                  tick={false}
+                />
+                <Radar
+                  name="Score"
+                  dataKey="score"
+                  stroke="#2563eb"
+                  fill="#3b82f6"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: '#2563eb' }}
+                  activeDot={{ r: 4, fill: '#2563eb' }}
+                  label={{ 
+                    position: 'outside',
+                    fill: '#374151',
+                    fontSize: 10,
+                    fontWeight: 'bold'
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        {aiReadinessResult && aiRadarData.length > 0 && (
+          <div id="user-pdf-ai-readiness-chart" style={{ width: '600px', height: '400px', backgroundColor: '#ffffff' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={aiRadarData}>
+                <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
+                <PolarAngleAxis 
+                  dataKey="skill" 
+                  tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
+                />
+                <PolarRadiusAxis 
+                  angle={90} 
+                  domain={[0, 100]}
+                  tick={false}
+                />
+                <Radar
+                  name="Score"
+                  dataKey="score"
+                  stroke="#2563eb"
+                  fill="#3b82f6"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: '#2563eb' }}
+                  activeDot={{ r: 4, fill: '#2563eb' }}
+                  label={{ 
+                    position: 'outside',
+                    fill: '#374151',
+                    fontSize: 10,
+                    fontWeight: 'bold'
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+      
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
           {/* Back Button */}
@@ -535,31 +677,6 @@ export default function Results() {
             </div>
           )}
 
-          {/* Skill Breakdown - Hidden for AIQ */}
-          {assessmentType !== 'aiq' && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-6">Skill Breakdown</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(scores).map(([skill, score]: [string, any]) => (
-                  <Card key={skill} className="p-6">
-                    <h3 className="font-semibold mb-3">{skill}</h3>
-                    <div className="flex items-end gap-2">
-                      <div className="text-3xl font-bold text-primary">
-                        {score}
-                      </div>
-                      <div className="text-muted-foreground mb-1">/100</div>
-                    </div>
-                    <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${score}%` }}
-                      />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Comprehensive Analysis for Employers */}
           <Card className="p-8 mb-8">
