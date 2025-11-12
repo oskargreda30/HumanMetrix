@@ -25,12 +25,11 @@ The frontend is built with React + TypeScript, utilizing Shadcn UI and Tailwind 
 
 ### Feature Specifications
 - **Assessment Types**: FIT Assessment (behavioral skills), AI Readiness Assessment (AI-related skills), Prompt Architecture Assessment (prompt design, evaluated by GPT-5), and Algorithmic Integrity Quotient (AIQ - AI ethics).
-- **User Flows**: Differentiated flows for paid users (direct access to results) and invited users (complete assessments first, then must pay £0.34 to unlock results - no FREE code option).
+- **User Flows**: Differentiated flows for paid users (direct access to results) and invited users (free access, then payment or code to unlock results).
 - **Admin Dashboard**: Features candidate management, multi-candidate comparison using radar charts, and AI-powered role fit analysis.
 - **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including skill visualizations, assessment summaries, and candidate recommendations, optimized for hiring managers. This includes individual and comparison reports with consistent styling.
 - **Results Access Gating**: Requires all four distinct assessments to be completed before results can be viewed or unlocked via payment.
 - **Hero Section Animations**: Scroll-triggered animations with comprehensive accessibility support, respecting `prefers-reduced-motion`.
-- **Robust Post-Submission Flow**: Assessment completion uses polling with progressive backoff (8 attempts, ~15 seconds) to handle backend eventual consistency. All uncertain states redirect to /my-results page which handles loading, errors, and retry logic.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation between frontend and backend concerns.

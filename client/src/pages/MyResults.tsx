@@ -25,24 +25,24 @@ export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Use canonical results access status endpoint
-  const { data: accessStatus, isLoading: isLoadingAccess, error: accessError } = useQuery<any>({
-    queryKey: ["/api/results-access-status"],
+  // Check if user has paid for results access
+  const { data: purchases } = useQuery<any[]>({
+    queryKey: ["/api/purchases"],
     enabled: isAuthenticated,
-    retry: 3,
-    retryDelay: 1000,
   });
 
-  // Fetch all user results
-  const { data: allResults, isLoading: isLoadingResults, error: resultsError } = useQuery<any[]>({
+  const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
+
+  // Fetch all user results - ALWAYS fetch to check completion status
+  const { data: allResults, isLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
     enabled: isAuthenticated,
-    retry: 3,
-    retryDelay: 1000,
   });
 
-  // Wait for both queries to load (treat empty arrays as valid data)
-  if (isLoadingAccess || isLoadingResults) {
+  // Find Prompt Architecture result for later fetching
+  const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
+
+  if (isLoading || !allResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -50,60 +50,11 @@ export default function MyResults() {
     );
   }
 
-  // Handle query errors after loading completes
-  if (accessError || resultsError) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <Card className="p-12 text-center max-w-md">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-destructive" />
-            <h2 className="text-2xl font-bold mb-2">Unable to Load Results</h2>
-            <p className="text-muted-foreground mb-6">
-              There was an error loading your assessment results. Please try again.
-            </p>
-            <Link href="/dashboard">
-              <Button>Return to Dashboard</Button>
-            </Link>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // At this point queries completed without error - validate data structure
-  // Empty arrays are valid (user hasn't completed assessments yet)
-  if (!Array.isArray(allResults) || !accessStatus) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <Card className="p-12 text-center max-w-md">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-2">Unexpected Data Format</h2>
-            <p className="text-muted-foreground mb-6">
-              The results data format was unexpected. Please try again or contact support.
-            </p>
-            <Link href="/dashboard">
-              <Button>Return to Dashboard</Button>
-            </Link>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Find Prompt Architecture result for later fetching
-  const promptArchResult = allResults.find((r: any) => r.assessmentType === 'prompt_architecture');
-
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
   
-  // Use access status from canonical endpoint
-  const allAssessmentsCompleted = accessStatus?.allAssessmentsComplete || false;
-  const hasAccess = accessStatus?.hasAccess || false;
-  const completedCount = accessStatus?.completedCount || 0;
+  // Check for 4 DISTINCT assessment types (prevent duplicate completions)
+  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  const allAssessmentsCompleted = uniqueAssessmentTypes.size === 4;
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
@@ -119,7 +70,7 @@ export default function MyResults() {
             <p className="text-muted-foreground mb-6">
               {completedResults.length === 0 
                 ? 'Complete your assessments to view your comprehensive results.' 
-                : `You've completed ${completedCount} of 4 unique assessments. Complete all assessments to view your results.`
+                : `You've completed ${uniqueAssessmentTypes.size} of 4 unique assessments. Complete all assessments to view your results.`
               }
             </p>
             <Link href="/dashboard">
@@ -133,7 +84,7 @@ export default function MyResults() {
   }
 
   // SECOND: Show payment gate if user hasn't paid for results access
-  if (!hasAccess) {
+  if (hasPaidForResults === false) {
     return <ResultsPaymentGate />;
   }
 

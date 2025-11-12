@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function ResultsPaymentGate() {
+  const [discountCode, setDiscountCode] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
@@ -33,8 +34,10 @@ export function ResultsPaymentGate() {
   const wasInvited = invitationData?.wasInvited === true;
 
   const unlockMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/unlock-results", {});
+    mutationFn: async (code: string) => {
+      const response = await apiRequest("POST", "/api/unlock-results", {
+        discountCode: code || undefined,
+      });
       
       if (!response.ok) {
         const error = await response.json();
@@ -73,7 +76,7 @@ export function ResultsPaymentGate() {
   });
 
   const handleUnlock = () => {
-    unlockMutation.mutate();
+    unlockMutation.mutate(discountCode);
   };
 
   return (
@@ -100,16 +103,6 @@ export function ResultsPaymentGate() {
             You've completed all your assessments! To view your detailed results and download 
             your professional PDF report, please unlock your results.
           </p>
-
-          {wasInvited && (
-            <Alert className="text-left">
-              <Sparkles className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Part of a recruitment process?</strong> If you were invited to complete these assessments 
-                by an employer, your results will be automatically shared with them once unlocked.
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
 
         <div className="bg-muted/50 rounded-lg p-6 space-y-3">
@@ -145,6 +138,29 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
+          {wasInvited && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="discount-code">Discount Code (Optional)</Label>
+                <Input
+                  id="discount-code"
+                  placeholder="Enter FREE if employer covered payment"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                  disabled={unlockMutation.isPending}
+                  data-testid="input-discount-code"
+                />
+              </div>
+
+              <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertDescription>
+                  If your employer has covered the cost, use discount code <span className="font-mono font-bold">FREE</span> to unlock your results instantly.
+                </AlertDescription>
+              </Alert>
+            </>
+          )}
+
           <Button
             className="w-full"
             size="lg"
@@ -160,14 +176,16 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results (£{price})
+                {wasInvited && discountCode ? "Unlock Results (Free)" : `Unlock Results (£${price})`}
               </>
             )}
           </Button>
 
-          <p className="text-sm text-center text-muted-foreground">
-            Secure payment processed via Stripe
-          </p>
+          {!wasInvited || !discountCode ? (
+            <p className="text-sm text-center text-muted-foreground">
+              Secure payment processed via Stripe
+            </p>
+          ) : null}
         </div>
       </Card>
     </div>

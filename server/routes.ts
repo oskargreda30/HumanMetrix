@@ -282,11 +282,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, create Stripe checkout session for results payment
-      // Get the base URL for redirect
-      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : `${req.protocol}://${req.get('host')}`;
-      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -303,8 +298,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/dashboard?payment=success`,
-        cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=success`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId.toString(),
           purchaseId: unpaidPurchase.id.toString(),
@@ -964,55 +959,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking invitation status:", error);
       res.status(500).json({ message: "Failed to check invitation status" });
-    }
-  });
-
-  // Check results access status (canonical endpoint for all access checks)
-  app.get("/api/results-access-status", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Get all purchases
-      const purchases = await storage.getPurchasesByUser(userId);
-      
-      // Check if user has access to results:
-      // 1. Self-paying users: have a completed purchase (paid upfront for assessments)
-      // 2. Invited users who paid after: have resultsAccessPaid === true
-      const hasPaidUpfront = purchases.some((p: any) => p.status === 'completed');
-      const hasPaidForResults = purchases.some((p: any) => p.resultsAccessPaid === true);
-      const hasAccess = hasPaidUpfront || hasPaidForResults;
-      
-      // Get completed assessments
-      const results = await storage.getResultsByUser(userId);
-      const completedResults = results.filter((r: any) => r.status === 'completed');
-      const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-      const completedCount = uniqueAssessmentTypes.size;
-      
-      // Check if user was invited
-      const invitations = await storage.getAllInvitations();
-      const wasInvited = invitations.some((inv: any) => 
-        inv.candidateEmail.toLowerCase() === user.email.toLowerCase()
-      );
-      
-      // Determine if payment is required
-      const allAssessmentsComplete = completedCount === 4;
-      const requiresPayment = allAssessmentsComplete && !hasAccess;
-      
-      res.json({
-        hasAccess,
-        completedCount,
-        requiresPayment,
-        wasInvited,
-        allAssessmentsComplete
-      });
-    } catch (error) {
-      console.error("Error checking results access status:", error);
-      res.status(500).json({ message: "Failed to check results access status" });
     }
   });
 
