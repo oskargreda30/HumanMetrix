@@ -80,36 +80,37 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  // Gradient header background (dark to lighter blue)
+  // Gradient header background (dark to lighter blue) - increased height to 40mm
   pdf.setFillColor(30, 58, 138); // Dark blue
-  pdf.rect(0, 0, pageWidth, 25, 'F');
+  pdf.rect(0, 0, pageWidth, 40, 'F');
   
   // Add subtle gradient effect with lighter overlay
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
-  pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
+  pdf.rect(0, 0, pageWidth * 0.6, 40, 'F');
   
   // HumanMetrix Logo (full logo image, centered with blue line)
+  // Logo center at y=20 (same as blue line center)
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 4, 34, 34);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 3, 34, 34);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Separator line
+  // Separator line - repositioned to center at y=20
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(28, 9, 28, 21);
+  pdf.line(48, 14, 48, 26);
   
-  // Company name and tagline
+  // Company name and tagline - repositioned
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 32, 13);
+  pdf.text('HUMANMETRIX', 52, 18);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 32, 19);
+  pdf.text('AI-Powered Assessment Platform', 52, 24);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -178,7 +179,7 @@ function ensurePageSpace(pdf: jsPDF, yPos: number, requiredHeight: number, pageH
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    return 35;
+    return 50; // Updated to account for 40mm header + spacing
   }
   return yPos;
 }
@@ -377,7 +378,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 35;
+  yPos = 50;
   
   // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
@@ -456,7 +457,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 35;
+      yPos = 50;
     }
     
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
@@ -531,7 +532,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 35;
+  yPos = 50;
   
   // AIQ Summary
   const hasAIQ = data.aiqAssessments?.some(a => a !== null);
@@ -655,7 +656,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    yPos = 35;
+    yPos = 50;
   }
   
   yPos = addSectionHeader(pdf, 'TOP 5 SKILLS COMPARISON', yPos, pageWidth);
@@ -721,9 +722,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
     const xPos = legendStartX + (index * legendItemSpacing);
     
-    // Color square
+    // Color circle (matching new marker style)
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(xPos, yPos, 3, 3, 'F');
+    pdf.circle(xPos + 1.5, yPos + 1.5, 1.5, 'F');
     
     // Full candidate name (truncate only if extremely long)
     pdf.setTextColor(75, 85, 99);
@@ -1062,7 +1063,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 35;
+  yPos = 50;
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
   yPos += 3;
   
