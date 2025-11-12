@@ -1057,6 +1057,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Self-service: Create free account and grant access to assessments (no payment upfront)
+  app.post("/api/create-free-invitation", async (req, res) => {
+    try {
+      const { assessmentIds, firstName, lastName, email } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Please select at least one assessment" });
+      }
+
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: "Please provide your name and email" });
+      }
+
+      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        return res.status(400).json({ message: "Please provide a valid email address" });
+      }
+
+      const bcrypt = await import("bcryptjs");
+      const { sendWelcomeEmailWithPassword } = await import("./email");
+      const crypto = await import("crypto");
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      let requiresLogin = false;
+
+      let userId: string;
+
+      if (!existingUser) {
+        // Generate temporary password for new user
+        const words = [
+          "ocean", "mountain", "forest", "river", "cloud",
+          "storm", "dawn", "sunset", "moon", "star",
+          "wind", "rain", "snow", "fire", "earth",
+          "sky", "wave", "thunder", "lightning", "rainbow"
+        ];
+        
+        const word1 = words[crypto.randomInt(0, words.length)];
+        const word2 = words[crypto.randomInt(0, words.length)];
+        const word3 = words[crypto.randomInt(0, words.length)];
+        const digits = crypto.randomInt(10, 100).toString();
+        
+        const temporaryPassword = `${word1}-${word2}-${word3}-${digits}`;
+        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+        
+        // Create user account
+        const newUser = await storage.createUser({
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          profileImageUrl: null,
+        });
+        
+        userId = newUser.id;
+        requiresLogin = true;
+        
+        // Send welcome email with credentials
+        await sendWelcomeEmailWithPassword(
+          email,
+          `${firstName} ${lastName}`,
+          temporaryPassword
+        );
+
+        console.log(`Created new user ${email}`);
+      } else {
+        userId = existingUser.id;
+        console.log(`User ${email} already exists`);
+      }
+
+      // Check for existing unpaid purchase (idempotency)
+      const existingPurchases = await storage.getPurchasesByUser(userId);
+      const unpaidPurchase = existingPurchases.find((p: any) => !p.resultsAccessPaid);
+
+      let purchaseId: string;
+
+      if (unpaidPurchase) {
+        // User already has unpaid access, use existing purchase
+        purchaseId = unpaidPurchase.id;
+        console.log(`User ${email} has existing unpaid purchase ${purchaseId}`);
+        
+        // Get existing purchase items to avoid duplicates
+        const existingItems = await storage.getPurchaseItems(purchaseId);
+        const existingTypes = new Set(existingItems.map((item: any) => item.assessmentType));
+        
+        // Only add new assessments that don't already exist
+        for (const assessmentId of assessmentIds) {
+          if (!existingTypes.has(assessmentId)) {
+            await storage.createPurchaseItem({
+              purchaseId,
+              assessmentType: assessmentId,
+              price: 0, // Free in pence
+              status: 'ready',
+            });
+            console.log(`Added ${assessmentId} to existing purchase`);
+          }
+        }
+      } else {
+        // Create new free purchase (resultsAccessPaid: false = pay later)
+        const purchase = await storage.createPurchase({
+          userId,
+          stripeSessionId: null,
+          stripePaymentIntentId: null,
+          totalAmount: 0, // 0 pence
+          baseFee: 0, // 0 pence
+          status: 'completed',
+          resultsAccessPaid: false, // Must pay to unlock results
+          completedAt: new Date(),
+        });
+        
+        purchaseId = purchase.id;
+
+        // Create purchase items for selected assessments
+        for (const assessmentId of assessmentIds) {
+          await storage.createPurchaseItem({
+            purchaseId,
+            assessmentType: assessmentId,
+            price: 0, // 0 pence (free to take)
+            status: 'ready',
+          });
+        }
+
+        console.log(`Created free purchase ${purchaseId} with ${assessmentIds.length} assessment(s) for ${email}`);
+      }
+    
+
+      res.json({
+        success: true,
+        message: requiresLogin 
+          ? "Account created! Check your email for login instructions." 
+          : "You're all set! Log in to start your assessments.",
+        requiresLogin,
+      });
+    } catch (error: any) {
+      console.error("Error creating free account:", error);
+      res.status(500).json({ 
+        message: "Failed to process request: " + error.message 
+      });
+    }
+  });
+
   // Admin: Get all invitations
   app.get("/api/admin/invitations", isAuthenticated, async (req: any, res) => {
     try {
