@@ -264,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get the user and determine required assessments (from invitation or default to all 4)
+      // Get the user and determine required assessments (from invitation or purchase)
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -285,9 +285,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // If no active invitation, default to all 4 assessments
+      // If no active invitation, get required assessments from purchase items
       if (!hasActiveInvitation) {
-        requiredAssessmentTypes = Object.keys(ASSESSMENT_TYPES).map(key => ASSESSMENT_TYPES[key as keyof typeof ASSESSMENT_TYPES]);
+        const purchaseItems = await storage.getPurchaseItemsByPurchase(unpaidPurchase.id);
+        requiredAssessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
       }
       
       // Get completed assessments and check for DISTINCT types
