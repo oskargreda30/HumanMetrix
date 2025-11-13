@@ -43,6 +43,39 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setTextColor(0, 0, 0);
 }
 
+// Helper to fit text within a given width by adjusting font size and adding ellipsis if needed
+function fitMetricValue(pdf: jsPDF, text: string, maxWidth: number, initialFontSize: number = 14, minFontSize: number = 10): { text: string; fontSize: number } {
+  let fontSize = initialFontSize;
+  let fittedText = text;
+  
+  // Try progressively smaller font sizes
+  while (fontSize >= minFontSize) {
+    pdf.setFontSize(fontSize);
+    const textWidth = pdf.getStringUnitWidth(fittedText) * fontSize / pdf.internal.scaleFactor;
+    
+    if (textWidth <= maxWidth) {
+      return { text: fittedText, fontSize };
+    }
+    
+    fontSize -= 0.5;
+  }
+  
+  // If still too wide at minimum font, add ellipsis
+  pdf.setFontSize(minFontSize);
+  while (fittedText.length > 0) {
+    const testText = fittedText.substring(0, fittedText.length - 1) + '...';
+    const textWidth = pdf.getStringUnitWidth(testText) * minFontSize / pdf.internal.scaleFactor;
+    
+    if (textWidth <= maxWidth) {
+      return { text: testText, fontSize: minFontSize };
+    }
+    
+    fittedText = fittedText.substring(0, fittedText.length - 1);
+  }
+  
+  return { text: '...', fontSize: minFontSize };
+}
+
 // Helper to add footer to each page
 function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number) {
   pdf.setDrawColor(220, 220, 220);
@@ -191,7 +224,7 @@ export async function exportProfessionalCandidatePDF(
   const metricsData = [
     { label: 'Skills Assessed', value: skills.length.toString() },
     { label: 'Average Score', value: `${avgScore}/100` },
-    { label: 'Top Skill', value: topSkills[0]?.name.substring(0, 15) || 'N/A' },
+    { label: 'Top Skill', value: topSkills[0]?.name || 'N/A' },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -206,10 +239,14 @@ export async function exportProfessionalCandidatePDF(
     pdf.setTextColor(107, 114, 128);
     pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 8, { align: 'center' });
     
-    pdf.setFontSize(14);
+    // Fit the metric value to the available width
     pdf.setFont('helvetica', 'bold');
+    const maxValueWidth = (boxWidth - 5) - 4; // Leave 2mm padding on each side
+    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 14, 10);
+    
+    pdf.setFontSize(fitted.fontSize);
     pdf.setTextColor(17, 24, 39);
-    pdf.text(metric.value, xPos + (boxWidth - 5) / 2, yPos + 18, { align: 'center' });
+    pdf.text(fitted.text, xPos + (boxWidth - 5) / 2, yPos + 18, { align: 'center' });
   });
   
   pdf.setTextColor(0, 0, 0);
