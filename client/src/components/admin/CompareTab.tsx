@@ -98,9 +98,11 @@ export default function CompareTab() {
     );
   };
 
-  const selectedCandidateData = candidates?.filter((c) =>
-    selectedCandidates.includes(c.user.id)
-  );
+  // Sort selected candidates to match the order of selectedCandidates array
+  // This ensures frontend and backend data alignment by index
+  const selectedCandidateData = selectedCandidates
+    .map(id => candidates?.find((c) => c.user.id === id))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined);
 
   const handleExportPDF = async () => {
     if (!comparison || !selectedCandidateData) return;
