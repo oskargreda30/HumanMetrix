@@ -48,7 +48,8 @@ export default function Assessment() {
     enabled: isAuthenticated,
   });
 
-  const assessment = (availableAssessments as any[])?.find((a: any) => a.purchaseItemId === purchaseItemId);
+  const assessmentsArray = (availableAssessments as any)?.assessments || [];
+  const assessment = assessmentsArray.find((a: any) => a.purchaseItemId === purchaseItemId);
   
   // Get questions based on assessment type
   const getQuestions = () => {
