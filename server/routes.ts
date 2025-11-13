@@ -931,15 +931,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For Prompt Architecture, use OpenAI GPT evaluation
         // This includes transactional storage of evaluations AND status update
         try {
+          console.log(`[Assessment Submit] Starting Prompt Architecture evaluation for assessment ${id}`);
           const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
           scores = promptEvalResult.scores;
           totalScore = promptEvalResult.totalScore;
           evaluations = promptEvalResult.evaluations;
           
+          console.log(`[Assessment Submit] Prompt Architecture evaluation completed successfully`);
+          
           // The function already updated the assessment result in a transaction
           // Just return the results
           return res.json({ success: true, scores, totalScore, evaluations });
         } catch (error: any) {
+          console.error(`[Assessment Submit ERROR] Prompt Architecture failed for assessment ${id}:`, {
+            error: error.message,
+            stack: error.stack
+          });
+          
           // Handle OpenAI API errors gracefully
           if (error.message?.includes('quota') || error.message?.includes('429')) {
             return res.status(402).json({ 
@@ -947,7 +955,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               error: "quota_exceeded"
             });
           }
-          throw error;
+          if (error.message?.includes('invalid') && error.message?.includes('key')) {
+            return res.status(500).json({ 
+              message: "OpenAI API configuration error. Please contact support.",
+              error: "api_config_error"
+            });
+          }
+          if (error.message?.includes('timeout')) {
+            return res.status(504).json({ 
+              message: "OpenAI API request timed out. Please try again.",
+              error: "timeout"
+            });
+          }
+          
+          // Return detailed error message to help debug
+          return res.status(500).json({ 
+            message: error.message || "Failed to evaluate prompts with AI. Please try again.",
+            error: "evaluation_failed"
+          });
         }
       }
 
@@ -2547,6 +2572,8 @@ ${userPrompt}
 }`;
 
   try {
+    console.log(`[Prompt Eval] Evaluating Level ${level} prompt (length: ${userPrompt.length} chars)`);
+    
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -2565,6 +2592,8 @@ ${userPrompt}
 
     const result = JSON.parse(completion.choices[0].message.content || "{}");
     
+    console.log(`[Prompt Eval] Level ${level} evaluated successfully - Total: ${result.totalScore || 0}`);
+    
     // Ensure all fields exist with fallback values
     return {
       clarity: result.clarity || 0,
@@ -2575,9 +2604,26 @@ ${userPrompt}
       feedback: result.feedback || "Evaluation completed",
       totalScore: result.totalScore || 0,
     };
-  } catch (error) {
-    console.error("Error evaluating prompt with GPT:", error);
-    throw new Error("Failed to evaluate prompt");
+  } catch (error: any) {
+    console.error(`[Prompt Eval ERROR] Level ${level} failed:`, {
+      error: error.message,
+      code: error.code,
+      type: error.type,
+      status: error.status,
+    });
+    
+    // Provide more specific error messages
+    if (error.code === 'insufficient_quota' || error.status === 429) {
+      throw new Error('OpenAI API quota exceeded');
+    }
+    if (error.code === 'invalid_api_key') {
+      throw new Error('OpenAI API key is invalid');
+    }
+    if (error.message?.includes('timeout')) {
+      throw new Error('OpenAI API request timed out');
+    }
+    
+    throw new Error(`Failed to evaluate prompt: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -2590,6 +2636,8 @@ async function calculatePromptArchitectureScores(
   totalScore: number;
   evaluations: any[];
 }> {
+  console.log(`[Prompt Arch] Starting evaluation for result ${resultId} with ${Object.keys(answers).length} prompts`);
+  
   const levelDescriptions: Record<string, string> = {
     "1": "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
     "2": "List the top 5 programming languages for web development in 2024, formatted as a numbered list with descriptions.",
@@ -2619,20 +2667,28 @@ async function calculatePromptArchitectureScores(
     const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
     
     const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
-    const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
     
-    evaluationsWithData.push({
-      level: levelNum,
-      userPrompt,
-      evaluation,
-    });
+    try {
+      const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+      
+      evaluationsWithData.push({
+        level: levelNum,
+        userPrompt,
+        evaluation,
+      });
 
-    clarityTotal += evaluation.clarity;
-    structureTotal += evaluation.structure;
-    contextTotal += evaluation.contextRelevance;
-    creativityTotal += evaluation.creativity;
-    iterativeTotal += evaluation.iterativeImprovement;
+      clarityTotal += evaluation.clarity;
+      structureTotal += evaluation.structure;
+      contextTotal += evaluation.contextRelevance;
+      creativityTotal += evaluation.creativity;
+      iterativeTotal += evaluation.iterativeImprovement;
+    } catch (error: any) {
+      console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
+      throw error; // Rethrow to stop processing
+    }
   }
+  
+  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully`);
 
   // Calculate average scores across all levels
   const numLevels = Object.keys(answers).length;
