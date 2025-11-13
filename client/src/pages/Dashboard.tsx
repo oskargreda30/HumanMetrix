@@ -19,13 +19,16 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  const { data: availableAssessments, isLoading: assessmentsLoading } = useQuery<any[]>({
+  const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
   });
 
   const { data: results, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
   });
+
+  const availableAssessments = availableData?.assessments || [];
+  const requiredAssessmentTypes = availableData?.requiredAssessmentTypes || [];
 
   // Process results payment success when returning from Stripe
   useEffect(() => {
@@ -107,9 +110,10 @@ export default function Dashboard() {
   const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
   const inProgressResults = results?.filter((r: any) => r.status === 'in_progress') || [];
   
-  // Check if all 4 DISTINCT assessment types are completed
+  // Check if all REQUIRED assessment types are completed (dynamic based on invitation or self-service)
   const uniqueCompletedTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = uniqueCompletedTypes.size === 4;
+  const allAssessmentsCompleted = requiredAssessmentTypes.length > 0 && 
+    requiredAssessmentTypes.every(type => uniqueCompletedTypes.has(type));
 
   return (
     <div className="min-h-screen flex flex-col">

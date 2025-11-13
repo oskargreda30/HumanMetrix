@@ -34,15 +34,23 @@ export default function MyResults() {
   const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
 
   // Fetch all user results - ALWAYS fetch to check completion status
-  const { data: allResults, isLoading } = useQuery<any[]>({
+  const { data: allResults, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/results"],
     enabled: isAuthenticated,
   });
 
+  // Fetch required assessment types
+  const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
+    queryKey: ["/api/available-assessments"],
+    enabled: isAuthenticated,
+  });
+
+  const requiredAssessmentTypes = availableData?.requiredAssessmentTypes || [];
+
   // Find Prompt Architecture result for later fetching
   const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
 
-  if (isLoading || !allResults) {
+  if (resultsLoading || assessmentsLoading || !allResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -52,9 +60,10 @@ export default function MyResults() {
 
   const completedResults = allResults.filter((r: any) => r.status === 'completed');
   
-  // Check for 4 DISTINCT assessment types (prevent duplicate completions)
+  // Check if all REQUIRED assessment types are completed (dynamic based on invitation or self-service)
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = uniqueAssessmentTypes.size === 4;
+  const allAssessmentsCompleted = requiredAssessmentTypes.length > 0 && 
+    requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
@@ -70,7 +79,7 @@ export default function MyResults() {
             <p className="text-muted-foreground mb-6">
               {completedResults.length === 0 
                 ? 'Complete your assessments to view your comprehensive results.' 
-                : `You've completed ${uniqueAssessmentTypes.size} of 4 unique assessments. Complete all assessments to view your results.`
+                : `You've completed ${uniqueAssessmentTypes.size} of ${requiredAssessmentTypes.length} required assessments. Complete all assessments to view your results.`
               }
             </p>
             <Link href="/dashboard">

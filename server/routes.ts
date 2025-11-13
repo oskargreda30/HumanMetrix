@@ -264,6 +264,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Get the user and determine required assessments (from invitation or default to all 4)
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let requiredAssessmentTypes: string[] = [];
+      let hasActiveInvitation = false;
+
+      // Check for active invitation
+      const invitations = await storage.getInvitationsByEmail(user.email);
+      for (const invitation of invitations) {
+        if (invitation.status === 'sent' || invitation.status === 'accepted') {
+          if (new Date(invitation.expiresAt) > new Date()) {
+            hasActiveInvitation = true;
+            requiredAssessmentTypes = invitation.assessmentTypes;
+            break; // Use first active invitation
+          }
+        }
+      }
+
+      // If no active invitation, default to all 4 assessments
+      if (!hasActiveInvitation) {
+        requiredAssessmentTypes = Object.keys(ASSESSMENT_TYPES).map(key => ASSESSMENT_TYPES[key as keyof typeof ASSESSMENT_TYPES]);
+      }
+      
       // Get completed assessments and check for DISTINCT types
       const results = await storage.getResultsByUser(userId);
       const completedResults = results.filter((r: any) => r.status === 'completed');
@@ -272,12 +298,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
       const uniqueCount = uniqueAssessmentTypes.size;
       
-      // CRITICAL: Require all 4 DISTINCT assessments to be completed before allowing unlock
-      if (uniqueCount < 4) {
+      // CRITICAL: Require all REQUIRED assessments to be completed before allowing unlock
+      const allRequiredCompleted = requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
+      
+      if (!allRequiredCompleted) {
         return res.status(400).json({ 
-          message: `You must complete all 4 unique assessments before unlocking results. You have completed ${uniqueCount} of 4 unique assessments.`,
+          message: `You must complete all required assessments before unlocking results. You have completed ${uniqueCount} of ${requiredAssessmentTypes.length} required assessments.`,
           completedCount: uniqueCount,
-          required: 4
+          required: requiredAssessmentTypes.length
         });
       }
       
@@ -655,6 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const availableAssessments: any[] = [];
+      let requiredAssessmentTypes: string[] = [];
+      let hasActiveInvitation = false;
       
       // Check for purchased assessments
       const purchases = await storage.getPurchasesByUser(userId);
@@ -682,6 +712,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (invitation.status === 'sent' || invitation.status === 'accepted') {
           // Check if invitation is still valid (not expired)
           if (new Date(invitation.expiresAt) > new Date()) {
+            hasActiveInvitation = true;
+            // Track required assessment types from invitation
+            requiredAssessmentTypes = invitation.assessmentTypes;
+            
             // Add each assessment type from the invitation
             for (const assessmentType of invitation.assessmentTypes) {
               // Check if this assessment type was already completed via this invitation
@@ -702,7 +736,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json(availableAssessments);
+      // If no active invitation, default to all 4 assessments for self-service users
+      if (!hasActiveInvitation) {
+        requiredAssessmentTypes = Object.keys(ASSESSMENT_TYPES).map(key => ASSESSMENT_TYPES[key as keyof typeof ASSESSMENT_TYPES]);
+      }
+      
+      res.json({ 
+        assessments: availableAssessments,
+        requiredAssessmentTypes,
+      });
     } catch (error) {
       console.error("Error fetching available assessments:", error);
       res.status(500).json({ message: "Failed to fetch available assessments" });
