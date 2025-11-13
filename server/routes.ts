@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -883,11 +883,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
         // For Prompt Architecture, use OpenAI GPT evaluation
+        // This includes transactional storage of evaluations AND status update
         try {
-          const promptEvalResult = await calculatePromptArchitectureScores(answers);
+          const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
           scores = promptEvalResult.scores;
           totalScore = promptEvalResult.totalScore;
           evaluations = promptEvalResult.evaluations;
+          
+          // The function already updated the assessment result in a transaction
+          // Just return the results
+          return res.json({ success: true, scores, totalScore, evaluations });
         } catch (error: any) {
           // Handle OpenAI API errors gracefully
           if (error.message?.includes('quota') || error.message?.includes('429')) {
@@ -900,6 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // For other assessment types, update assessment result
       await db.update(assessmentResults)
         .set({
           answers,
@@ -2530,7 +2536,10 @@ ${userPrompt}
 }
 
 // Calculate Prompt Architecture scores by evaluating all prompts
-async function calculatePromptArchitectureScores(answers: Record<string, string>): Promise<{
+async function calculatePromptArchitectureScores(
+  answers: Record<string, string>,
+  resultId: string
+): Promise<{
   scores: Record<string, number>;
   totalScore: number;
   evaluations: any[];
@@ -2545,21 +2554,31 @@ async function calculatePromptArchitectureScores(answers: Record<string, string>
     "7": "Design a comprehensive content moderation system covering multiple domains.",
   };
 
-  const evaluations: any[] = [];
+  const evaluationsWithData: Array<{
+    level: number;
+    userPrompt: string;
+    evaluation: any;
+  }> = [];
+  
   let clarityTotal = 0;
   let structureTotal = 0;
   let contextTotal = 0;
   let creativityTotal = 0;
   let iterativeTotal = 0;
 
-  // Evaluate each level's prompt
-  for (const [level, userPrompt] of Object.entries(answers)) {
-    const taskDesc = levelDescriptions[level] || `Level ${level} task`;
-    const evaluation = await evaluatePromptWithGPT(userPrompt, parseInt(level), taskDesc);
+  // Step 1: Evaluate all prompts with GPT (external API calls - cannot be rolled back)
+  for (const [levelKey, userPrompt] of Object.entries(answers)) {
+    // Extract numeric level from key (e.g., "level-1" -> 1)
+    const levelMatch = levelKey.match(/level-?(\d+)/);
+    const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
     
-    evaluations.push({
-      level: parseInt(level),
-      ...evaluation,
+    const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
+    const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+    
+    evaluationsWithData.push({
+      level: levelNum,
+      userPrompt,
+      evaluation,
     });
 
     clarityTotal += evaluation.clarity;
@@ -2580,6 +2599,58 @@ async function calculatePromptArchitectureScores(answers: Record<string, string>
   };
 
   const totalScore = Math.round((clarityTotal + structureTotal + contextTotal + creativityTotal + iterativeTotal) / numLevels);
+
+  // Build evaluations array for response
+  const evaluations = evaluationsWithData.map(({ level, evaluation }) => ({
+    level,
+    ...evaluation,
+  }));
+
+  // Step 2: Store all evaluations AND update assessment result in database (transactional safety)
+  // If any operation fails, all will be rolled back in the database
+  try {
+    await db.transaction(async (tx) => {
+      // Delete any existing evaluations for this result (idempotency for retries)
+      await tx.delete(promptArchitectureEvaluations)
+        .where(eq(promptArchitectureEvaluations.resultId, resultId));
+
+      // Insert all evaluations
+      for (const { level, userPrompt, evaluation } of evaluationsWithData) {
+        await tx.insert(promptArchitectureEvaluations).values({
+          resultId: resultId,
+          level: level,
+          userPrompt: userPrompt,
+          aiResponse: null,
+          evaluationScores: {
+            clarity: evaluation.clarity,
+            structure: evaluation.structure,
+            contextRelevance: evaluation.contextRelevance,
+            creativity: evaluation.creativity,
+            iterativeImprovement: evaluation.iterativeImprovement,
+          },
+          totalScore: evaluation.totalScore,
+          feedback: evaluation.feedback,
+          status: 'completed',
+          evaluatedAt: new Date(),
+        });
+      }
+      
+      // Update assessment result with scores and mark as completed
+      await tx.update(assessmentResults)
+        .set({
+          answers,
+          scores,
+          totalScore,
+          evaluations: evaluations,
+          status: 'completed',
+          completedAt: new Date(),
+        })
+        .where(eq(assessmentResults.id, resultId));
+    });
+  } catch (error) {
+    console.error("Error storing prompt evaluations in database:", error);
+    throw new Error("Failed to store prompt evaluations. Please try again.");
+  }
 
   return { scores, totalScore, evaluations };
 }
