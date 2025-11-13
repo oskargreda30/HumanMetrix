@@ -123,6 +123,18 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
+  // Apply relative scaling: make highest score = 100, scale others proportionally
+  const scoreValues = Object.values(normalizedScores);
+  const highestScore = Math.max(...scoreValues);
+  
+  if (highestScore > 0) {
+    const relativeScores: Record<string, number> = {};
+    Object.entries(normalizedScores).forEach(([skill, score]) => {
+      relativeScores[skill] = Math.round((score / highestScore) * 100);
+    });
+    return relativeScores;
+  }
+
   return normalizedScores;
 }
 
@@ -280,6 +292,18 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
       normalizedScores[skill] = 0;
     }
   });
+
+  // Apply relative scaling: make highest score = 100, scale others proportionally
+  const scoreValues = Object.values(normalizedScores);
+  const highestScore = Math.max(...scoreValues);
+  
+  if (highestScore > 0) {
+    const relativeScores: Record<string, number> = {};
+    Object.entries(normalizedScores).forEach(([skill, score]) => {
+      relativeScores[skill] = Math.round((score / highestScore) * 100);
+    });
+    return relativeScores;
+  }
 
   return normalizedScores;
 }
