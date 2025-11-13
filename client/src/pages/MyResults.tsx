@@ -31,7 +31,10 @@ export default function MyResults() {
     enabled: isAuthenticated,
   });
 
-  const hasPaidForResults = Array.isArray(purchases) ? purchases.some((p: any) => p.resultsAccessPaid === true) : undefined;
+  // User has paid if there are NO unpaid purchases (prevents showing unpaid results from new purchases)
+  const hasPaidForResults = Array.isArray(purchases) 
+    ? !purchases.some((p: any) => p.resultsAccessPaid === false)
+    : undefined;
 
   // Fetch all user results - ALWAYS fetch to check completion status
   const { data: allResults, isLoading: resultsLoading } = useQuery<any[]>({
