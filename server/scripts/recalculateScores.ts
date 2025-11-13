@@ -355,10 +355,7 @@ async function recalculateUserScores(userEmail: string) {
     console.log(`     New skill scores:`, newScores);
     console.log(`     New total score: ${newTotal}`);
     
-    await storage.updateAssessmentResult(result.id, {
-      scores: newScores,
-      totalScore: newTotal,
-    });
+    await storage.updateAssessmentScores(result.id, newScores, newTotal);
     
     console.log(`     ✅ Updated successfully`);
     updated++;
