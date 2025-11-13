@@ -36,6 +36,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
 
+  // Version check endpoint
+  app.get("/api/version", (req, res) => {
+    res.json({ 
+      version: "2.0-normalized-scoring",
+      deployed: new Date().toISOString(),
+      scoringLogic: "normalized"
+    });
+  });
+
   // Contact form endpoint with rate limiting
   app.post("/api/contact", async (req, res) => {
     try {
