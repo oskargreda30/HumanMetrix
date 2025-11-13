@@ -138,12 +138,12 @@ export default function AssessmentCard({
                     Added
                   </Badge>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="outline"
+                    size="icon"
                     onClick={handleRemoveFromBasket}
                     disabled={!isAvailable}
                     data-testid="button-remove-from-basket"
-                    className="h-8"
+                    className="border-cyan-400/30 hover:border-cyan-400/50 hover:bg-cyan-400/10 text-cyan-400"
                   >
                     <X className="h-4 w-4" />
                   </Button>
