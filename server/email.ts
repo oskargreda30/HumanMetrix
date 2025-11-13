@@ -276,7 +276,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                If you need help, please don't hesitate to reach out to your assessment coordinator.
+                If you need help, please don't hesitate to reach out to your assessment coordinator at humanmetrix.sales@gmail.com
               </p>
             </div>
             <div class="footer">

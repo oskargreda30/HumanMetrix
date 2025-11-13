@@ -293,9 +293,9 @@ export default function CheckoutModal({
               ✨ What happens next?
             </p>
             <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              <li>Complete all selected assessments at no cost</li>
-              <li>Finish at your own pace</li>
-              <li>Pay only when ready to view results</li>
+              <li>Complete all selected assessments</li>
+              <li>Submit your results and payment</li>
+              <li>Download your results</li>
             </ol>
           </div>
 
@@ -307,7 +307,7 @@ export default function CheckoutModal({
             disabled={isProcessing || selectedAssessments.size === 0}
             data-testid="checkout-button-proceed"
           >
-            {isProcessing ? "Processing..." : "Get Started Free"}
+            {isProcessing ? "Processing..." : "Get Started"}
           </Button>
         </div>
       </DialogContent>

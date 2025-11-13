@@ -322,7 +322,7 @@ export default function Purchase() {
                       size="lg"
                       data-testid="button-continue"
                     >
-                      {isProcessing ? "Processing..." : "Get Started Free"}
+                      {isProcessing ? "Processing..." : "Get Started"}
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground mt-4">
