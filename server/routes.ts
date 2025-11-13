@@ -254,13 +254,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { discountCode } = req.body;
       
-      // Find the user's purchase (should have resultsAccessPaid = false)
+      // Find the user's most recent unpaid purchase with items
+      // CRITICAL FIX: Don't use first unpaid purchase - it might be empty/abandoned
       const purchases = await storage.getPurchasesByUser(userId);
-      const unpaidPurchase = purchases.find((p: any) => !p.resultsAccessPaid);
+      const unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
+      
+      if (!unpaidPurchases || unpaidPurchases.length === 0) {
+        return res.status(400).json({ 
+          message: "No purchase found requiring payment" 
+        });
+      }
+      
+      // Sort by createdAt descending (most recent first) and find first one with items
+      unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      let unpaidPurchase = null;
+      for (const purchase of unpaidPurchases) {
+        const items = await storage.getPurchaseItemsByPurchase(purchase.id);
+        if (items && items.length > 0) {
+          unpaidPurchase = purchase;
+          break;
+        }
+      }
       
       if (!unpaidPurchase) {
         return res.status(400).json({ 
-          message: "No purchase found requiring payment" 
+          message: "No valid purchase found with assessments. Please contact support.",
+          error: "no_valid_purchase"
         });
       }
       
@@ -291,27 +311,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requiredAssessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
       }
       
+      // Validate that we have required assessments (prevent empty purchase edge case)
+      if (!requiredAssessmentTypes || requiredAssessmentTypes.length === 0) {
+        return res.status(400).json({ 
+          message: "No assessments found in this purchase. Please contact support.",
+          error: "empty_purchase"
+        });
+      }
+      
       // Get completed assessments and check for DISTINCT types
       const results = await storage.getResultsByUser(userId);
       const completedResults = results.filter((r: any) => r.status === 'completed');
       
       // Get unique assessment types to prevent duplicate completions from bypassing check
       const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-      const uniqueCount = uniqueAssessmentTypes.size;
       
       // CRITICAL: Require all REQUIRED assessments to be completed before allowing unlock
       const allRequiredCompleted = requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
       
       if (!allRequiredCompleted) {
+        // Count how many of the REQUIRED assessments are completed
+        const completedRequiredCount = requiredAssessmentTypes.filter(type => uniqueAssessmentTypes.has(type)).length;
         return res.status(400).json({ 
-          message: `You must complete all required assessments before unlocking results. You have completed ${uniqueCount} of ${requiredAssessmentTypes.length} required assessments.`,
-          completedCount: uniqueCount,
+          message: `You must complete all required assessments before unlocking results. You have completed ${completedRequiredCount} of ${requiredAssessmentTypes.length} required assessments.`,
+          completedCount: completedRequiredCount,
           required: requiredAssessmentTypes.length
         });
       }
       
-      // Calculate price based on actual assessment types completed (normalize IDs first)
-      const assessmentsTotal = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
+      // CRITICAL FIX: Calculate price based on REQUIRED assessments only, not all completed
+      // This prevents overcharging users who completed invited assessments + purchased fewer assessments
+      const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
         const normalizedType = normalizeAssessmentId(type);
         return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
       }, 0);
@@ -340,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${uniqueCount} unique assessment${uniqueCount > 1 ? 's' : ''})`,
+                description: `Unlock your assessment results and download your professional PDF report (${requiredAssessmentTypes.length} assessment${requiredAssessmentTypes.length > 1 ? 's' : ''})`,
               },
               unit_amount: priceInPence,
             },
