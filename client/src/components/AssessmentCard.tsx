@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, FileText, CheckCircle2, Lock, Check, ShoppingCart, X } from "lucide-react";
 import { type LucideIcon } from "lucide-react";
 import { useBasket } from "@/contexts/BasketContext";
+import { ASSESSMENT_PRICES, normalizeAssessmentId } from "@shared/schema";
 
 export interface AssessmentCardProps {
   id?: string;
@@ -37,7 +38,7 @@ export default function AssessmentCard({
   const [justAdded, setJustAdded] = useState(false);
   const isAvailable = status === "available" || status === "completed";
   const isComingSoon = status === "coming-soon" || comingSoon;
-  const inBasket = id ? isInBasket(id) : false;
+  const inBasket = id ? isInBasket(normalizeAssessmentId(id)) : false;
 
   useEffect(() => {
     if (justAdded) {
@@ -47,20 +48,23 @@ export default function AssessmentCard({
   }, [justAdded]);
 
   const handleAddToBasket = () => {
-    if (!id || !price) return;
+    if (!id) return;
     
-    const priceValue = parseFloat(price.replace('£', ''));
+    const normalizedId = normalizeAssessmentId(id);
+    const pricePence = ASSESSMENT_PRICES[normalizedId] || 0;
+    
     addToBasket({
-      id,
+      id: normalizedId, // Store normalized ID
       name: title,
-      price: priceValue,
+      price: pricePence, // Price in pence
     });
     setJustAdded(true);
   };
 
   const handleRemoveFromBasket = () => {
     if (!id) return;
-    removeFromBasket(id);
+    const normalizedId = normalizeAssessmentId(id);
+    removeFromBasket(normalizedId);
   };
 
   return (
@@ -149,17 +153,18 @@ export default function AssessmentCard({
                   onClick={handleAddToBasket}
                   disabled={!isAvailable || !id}
                   data-testid="button-add-to-basket"
-                  className="text-xs md:text-sm"
+                  size="sm"
+                  className="text-xs bg-cyan-400 hover:bg-cyan-500 text-white"
                 >
                   {justAdded ? (
                     <>
-                      <Check className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                      <Check className="mr-1 h-3 w-3" />
                       Added!
                     </>
                   ) : (
                     <>
-                      <ShoppingCart className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                      Add to Order
+                      <ShoppingCart className="mr-1 h-3 w-3" />
+                      Add to Testing Suite
                     </>
                   )}
                 </Button>

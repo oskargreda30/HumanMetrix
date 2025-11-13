@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
-import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, insertInvitationSchema } from "@shared/schema";
+import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -134,11 +134,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const assessmentList = JSON.parse(assessmentIds);
+        
         for (const assessmentId of assessmentList) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          const price = ASSESSMENT_PRICES[normalizedId] || 0;
+          
           await storage.createPurchaseItem({
             purchaseId: purchase.id,
-            assessmentType: assessmentId,
-            price: 1,
+            assessmentType: normalizedId,
+            price,
             status: "ready",
           });
         }
@@ -197,11 +201,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const assessmentList = JSON.parse(assessmentIds);
+      
       for (const assessmentId of assessmentList) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        const price = ASSESSMENT_PRICES[normalizedId] || 0;
+        
         await storage.createPurchaseItem({
           purchaseId: purchase.id,
-          assessmentType: assessmentId,
-          price: 1,
+          assessmentType: normalizedId,
+          price,
           status: "ready",
         });
       }
@@ -264,8 +272,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate price based on unique assessments: £0.30 base + £0.01 per assessment
-      const priceInPence = Math.round((0.30 + (uniqueCount * 0.01)) * 100);
+      // Calculate price based on actual assessment types completed (normalize IDs first)
+      const assessmentsTotal = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
+        const normalizedType = normalizeAssessmentId(type);
+        return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
+      }, 0);
+      const priceInPence = BASE_FEE + assessmentsTotal;
       
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
@@ -397,14 +409,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Customer details required" });
       }
 
-      // Assessment pricing (£0.01 each in pence)
-      const assessmentPrices: Record<string, number> = {
-        "fit": 1,
-        "ai-readiness": 1,
-        "prompt-architecture": 1,
-        "aiq": 1,
-      };
-
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -423,13 +427,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add assessment line items
       const assessmentNames: Record<string, string> = {
         "fit": "FIT Assessment (15Q)",
-        "ai-readiness": "AI Readiness Assessment (21Q)",
-        "prompt-architecture": "Prompt Architecture Assessment (7 Levels)",
+        "ai_readiness": "AI Readiness Assessment (21Q)",
+        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
         "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
       };
 
       for (const assessmentId of assessmentIds) {
-        if (!assessmentPrices[assessmentId]) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        if (!ASSESSMENT_PRICES[normalizedId]) {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
@@ -437,9 +442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: assessmentNames[assessmentId] || assessmentId,
+              name: assessmentNames[normalizedId] || normalizedId,
             },
-            unit_amount: assessmentPrices[assessmentId],
+            unit_amount: ASSESSMENT_PRICES[normalizedId], // Already in pence
           },
           quantity: 1,
         });
@@ -558,14 +563,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Assessment pricing (£0.01 each in pence)
-      const assessmentPrices: Record<string, number> = {
-        "fit": 1,
-        "ai-readiness": 1,
-        "prompt-architecture": 1,
-        "aiq": 1,
-      };
-
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -584,13 +581,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add assessment line items
       const assessmentNames: Record<string, string> = {
         "fit": "FIT Assessment (15Q)",
-        "ai-readiness": "AI Readiness Assessment (21Q)",
-        "prompt-architecture": "Prompt Architecture Assessment (7 Levels)",
+        "ai_readiness": "AI Readiness Assessment (21Q)",
+        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
         "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
       };
 
       for (const assessmentId of assessmentIds) {
-        if (!assessmentPrices[assessmentId]) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        if (!ASSESSMENT_PRICES[normalizedId]) {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
@@ -598,9 +596,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: assessmentNames[assessmentId] || assessmentId,
+              name: assessmentNames[normalizedId] || normalizedId,
             },
-            unit_amount: assessmentPrices[assessmentId],
+            unit_amount: ASSESSMENT_PRICES[normalizedId], // Already in pence
           },
           quantity: 1,
         });

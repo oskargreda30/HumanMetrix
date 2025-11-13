@@ -45,7 +45,7 @@ export default function About() {
         </section>
 
         {/* Mission Section */}
-        <section className="py-12 md:py-24">
+        <section className="py-8 md:py-12">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
             <div className="space-y-6 md:space-y-12">
               <div>

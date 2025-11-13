@@ -129,7 +129,6 @@ export default function Navigation() {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-2">
-            <BasketSheet />
             {!isLoading && (
               isAuthenticated ? (
                 <>
@@ -178,9 +177,8 @@ export default function Navigation() {
             )}
           </div>
 
-          {/* Mobile Menu Button and Basket */}
+          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
-            <BasketSheet />
             <Button
               variant="ghost"
               size="icon"

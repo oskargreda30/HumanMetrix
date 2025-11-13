@@ -7,14 +7,14 @@ const steps = [
     description: "Choose from our range of AI-focused assessments tailored to your needs and career goals.",
   },
   {
-    icon: CreditCard,
-    title: "Secure Payment",
-    description: "Pay once with our transparent pricing: £15 base fee plus £3.50-£6.50 per assessment.",
-  },
-  {
     icon: ClipboardCheck,
     title: "Complete Tests",
     description: "Take assessments at your own pace with our intuitive interface and real-time AI evaluation.",
+  },
+  {
+    icon: CreditCard,
+    title: "Secure Payment",
+    description: "Pay once with our transparent pricing: £15 base fee plus £3.50-£5.00 per assessment.",
   },
   {
     icon: Download,

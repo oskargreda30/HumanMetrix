@@ -9,6 +9,7 @@ import { Lock, Sparkles, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
 
 export function ResultsPaymentGate() {
   const [discountCode, setDiscountCode] = useState("");
@@ -27,8 +28,13 @@ export function ResultsPaymentGate() {
   
   const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const uniqueCount = uniqueAssessmentTypes.size;
-  const price = (0.30 + (uniqueCount * 0.01)).toFixed(2);
+  
+  const assessmentsTotalPence = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
+    const normalizedType = normalizeAssessmentId(type);
+    return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
+  }, 0);
+  const totalPence = BASE_FEE + assessmentsTotalPence;
+  const price = (totalPence / 100).toFixed(2); // Convert pence to pounds
   
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
@@ -99,10 +105,21 @@ export function ResultsPaymentGate() {
           
           <h1 className="text-3xl font-bold">Unlock Your Results</h1>
           
-          <p className="text-muted-foreground text-lg">
-            You've completed all your assessments! To view your detailed results and download 
-            your professional PDF report, please unlock your results.
-          </p>
+          {wasInvited ? (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-lg">
+                You've completed all your assessments! Your results will be automatically submitted to the employer who invited you.
+              </p>
+              <p className="text-muted-foreground">
+                You also have the option to view and download your own copy of the results for your records.
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-lg">
+              You've completed all your assessments! To view your detailed results and download 
+              your professional PDF report, please unlock your results below.
+            </p>
+          )}
         </div>
 
         <div className="bg-muted/50 rounded-lg p-6 space-y-3">

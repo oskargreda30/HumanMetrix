@@ -11,7 +11,7 @@ const reports = [
   },
   {
     icon: Users,
-    title: "Comparison Report",
+    title: "Comparison Report (best for employers)",
     description: "Side-by-side comparison of multiple candidates across all assessments with visual charts and performance indicators",
     link: "/sample-reports/comparison-sample.pdf",
     testId: "comparison",

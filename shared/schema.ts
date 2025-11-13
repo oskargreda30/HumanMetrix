@@ -318,10 +318,29 @@ export const ASSESSMENT_TYPES = {
 } as const;
 
 export const ASSESSMENT_PRICES = {
-  [ASSESSMENT_TYPES.FIT]: 1,
-  [ASSESSMENT_TYPES.AI_READINESS]: 1,
-  [ASSESSMENT_TYPES.PROMPT_ARCHITECTURE]: 1,
-  [ASSESSMENT_TYPES.AIQ]: 1,
+  [ASSESSMENT_TYPES.FIT]: 350, // £3.50 in pence
+  [ASSESSMENT_TYPES.AI_READINESS]: 450, // £4.50 in pence
+  [ASSESSMENT_TYPES.PROMPT_ARCHITECTURE]: 500, // £5.00 in pence
+  [ASSESSMENT_TYPES.AIQ]: 400, // £4.00 in pence
 } as const;
 
-export const BASE_FEE = 30; // £0.30 in pence
+export const BASE_FEE = 1500; // £15.00 in pence
+
+export function normalizeAssessmentId(id: string): keyof typeof ASSESSMENT_PRICES {
+  const mapping: Record<string, keyof typeof ASSESSMENT_PRICES> = {
+    "fit": "fit",
+    "ai-readiness": "ai_readiness",
+    "ai_readiness": "ai_readiness",
+    "prompt-architecture": "prompt_architecture",
+    "prompt_architecture": "prompt_architecture",
+    "aiq": "aiq",
+  };
+  
+  const normalized = mapping[id];
+  if (!normalized) {
+    console.warn(`Unknown assessment ID "${id}", returning as-is`);
+    return id as keyof typeof ASSESSMENT_PRICES;
+  }
+  
+  return normalized;
+}

@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 export interface BasketItem {
   id: string;
   name: string;
-  price: number;
+  price: number; // Price in pence (not pounds)
 }
 
 interface BasketContextType {
@@ -11,7 +11,8 @@ interface BasketContextType {
   addToBasket: (item: BasketItem) => void;
   removeFromBasket: (id: string) => void;
   clearBasket: () => void;
-  getTotalPrice: () => number;
+  getTotalPricePence: () => number; // Returns total in pence
+  getTotalPricePounds: () => number; // Returns total in pounds (for display)
   getBasketCount: () => number;
   isInBasket: (id: string) => boolean;
 }
@@ -19,7 +20,7 @@ interface BasketContextType {
 const BasketContext = createContext<BasketContextType | undefined>(undefined);
 
 const STORAGE_KEY = "humanmetrix-basket";
-const BASE_FEE = 0.30;
+const BASE_FEE_PENCE = 1500; // £15.00 in pence
 
 const migrateOldIds = (items: BasketItem[]): BasketItem[] => {
   return items.map(item => ({
@@ -67,9 +68,14 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     setBasketItems([]);
   };
 
-  const getTotalPrice = () => {
-    const itemsTotal = basketItems.reduce((sum, item) => sum + item.price, 0);
-    return basketItems.length > 0 ? BASE_FEE + itemsTotal : 0;
+  const getTotalPricePence = () => {
+    const itemsTotalPence = basketItems.reduce((sum, item) => sum + item.price, 0); // Prices already in pence
+    const totalPence = basketItems.length > 0 ? BASE_FEE_PENCE + itemsTotalPence : 0;
+    return totalPence;
+  };
+
+  const getTotalPricePounds = () => {
+    return getTotalPricePence() / 100; // Convert pence to pounds for display
   };
 
   const getBasketCount = () => {
@@ -87,7 +93,8 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         addToBasket,
         removeFromBasket,
         clearBasket,
-        getTotalPrice,
+        getTotalPricePence,
+        getTotalPricePounds,
         getBasketCount,
         isInBasket,
       }}

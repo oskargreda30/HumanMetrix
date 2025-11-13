@@ -19,16 +19,16 @@ export default function BasketSheet() {
     basketItems,
     removeFromBasket,
     clearBasket,
-    getTotalPrice,
+    getTotalPricePounds,
     getBasketCount,
   } = useBasket();
 
   const [open, setOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  const BASE_FEE = 0.02;
-  const itemsTotal = basketItems.reduce((sum, item) => sum + item.price, 0);
-  const total = getTotalPrice();
+  const BASE_FEE = 15.00; // £15.00
+  const itemsTotalPounds = basketItems.reduce((sum, item) => sum + (item.price / 100), 0); // Convert pence to pounds
+  const total = getTotalPricePounds();
   const count = getBasketCount();
 
   const handleGoToCheckout = () => {
@@ -97,7 +97,7 @@ export default function BasketSheet() {
                           {item.name}
                         </h4>
                         <p className="text-sm font-mono text-cyan-400" data-testid={`text-basket-item-price-${item.id}`}>
-                          £{item.price.toFixed(2)}
+                          £{(item.price / 100).toFixed(2)}
                         </p>
                       </div>
                       <Button
@@ -120,7 +120,7 @@ export default function BasketSheet() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-medium" data-testid="text-subtotal">
-                        £{itemsTotal.toFixed(2)}
+                        £{itemsTotalPounds.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">

@@ -18,6 +18,7 @@ const assessments = [
     duration: "20 min",
     icon: Brain,
     status: "available" as const,
+    price: "£3.50",
   },
   {
     id: "ai_readiness",
@@ -27,6 +28,7 @@ const assessments = [
     duration: "30 min",
     icon: Sparkles,
     status: "available" as const,
+    price: "£4.50",
   },
   {
     id: "prompt_architecture",
@@ -36,6 +38,7 @@ const assessments = [
     duration: "25 min",
     icon: Code2,
     status: "available" as const,
+    price: "£5.00",
   },
   {
     id: "aiq",
@@ -45,6 +48,7 @@ const assessments = [
     duration: "20 min",
     icon: Shield,
     status: "available" as const,
+    price: "£4.00",
   },
   {
     id: "logic-flow",
@@ -85,10 +89,10 @@ export default function Assessments() {
               AI Assessment Platform
             </h1>
             <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
-              Professional assessments starting at just £0.01 per test
+              Professional assessments starting at £3.50 per test
             </p>
             <p className="text-[11px] md:text-sm text-cyan-400 mb-4 md:mb-6">
-              £0.02 base fee + £0.01 per assessment
+              £15 base fee + £3.50-£5.00 per assessment
             </p>
             {isAuthenticated ? (
               <div className="flex gap-4 justify-center">
@@ -126,7 +130,7 @@ export default function Assessments() {
                   questionCount={assessment.questionCount}
                   duration={assessment.duration}
                   icon={assessment.icon}
-                  price="£0.01"
+                  price={assessment.price}
                 />
               ))}
             </div>
@@ -134,15 +138,15 @@ export default function Assessments() {
             {/* Checkout Button */}
             <div className="mt-6 md:mt-8 flex justify-center">
               <Button 
-                size="sm"
+                size="lg"
                 onClick={() => setCheckoutOpen(true)}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-xs md:text-base"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-lg"
                 data-testid="button-view-basket-checkout"
               >
-                <ShoppingCart className="h-3 w-3 md:h-5 md:w-5" />
+                <ShoppingCart className="h-4 w-4 md:h-6 md:w-6" />
                 Continue to Tests
                 {basketCount > 0 && (
-                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
                     {basketCount}
                   </span>
                 )}
