@@ -36,6 +36,7 @@ export type User = typeof users.$inferSelect;
 export const purchases = pgTable("purchases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  invitationId: varchar("invitation_id").references(() => invitations.id, { onDelete: "set null" }),
   stripeSessionId: text("stripe_session_id").unique(),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalAmount: integer("total_amount").notNull(),

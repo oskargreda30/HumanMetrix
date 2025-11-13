@@ -275,33 +275,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Determine required assessments from current unpaid purchase cycle only
       let requiredAssessmentTypes: string[] = [];
-      let hasActiveInvitation = false;
+      let linkedInvitation: any = null;
+      
+      // Get assessments from current unpaid purchase items
+      const purchaseItems = await storage.getPurchaseItemsByPurchase(unpaidPurchase.id);
+      const purchaseAssessments = purchaseItems.map((item: any) => item.assessmentType);
 
-      // Check for active invitation
-      const invitations = await storage.getInvitationsByEmail(user.email);
-      for (const invitation of invitations) {
-        if (invitation.status === 'sent' || invitation.status === 'accepted') {
-          if (new Date(invitation.expiresAt) > new Date()) {
-            hasActiveInvitation = true;
-            requiredAssessmentTypes = invitation.assessmentTypes;
-            break; // Use first active invitation
-          }
+      if (purchaseAssessments.length > 0) {
+        // Self-service purchase: Use only the purchased assessments
+        // This prevents re-billing for previously paid invitation assessments
+        requiredAssessmentTypes = purchaseAssessments;
+      } else if (unpaidPurchase.invitationId) {
+        // Invitation-linked purchase: Use the SPECIFIC linked invitation
+        // This prevents re-billing for other old invitations
+        linkedInvitation = await storage.getInvitation(unpaidPurchase.invitationId);
+        if (linkedInvitation && new Date(linkedInvitation.expiresAt) > new Date()) {
+          requiredAssessmentTypes = linkedInvitation.assessmentTypes;
         }
       }
-
-      // If no active invitation, get required assessments from purchase items
-      if (!hasActiveInvitation) {
-        const purchaseItems = await storage.getPurchaseItemsByPurchase(unpaidPurchase.id);
-        requiredAssessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
-        
-        // Validate that purchase has items (self-service users must have purchased something)
-        if (!requiredAssessmentTypes || requiredAssessmentTypes.length === 0) {
-          return res.status(400).json({ 
-            message: "No assessments found for this purchase. Please contact support.",
-            error: "no_assessments"
-          });
-        }
+      
+      // Validate that we have at least some assessments to unlock
+      if (requiredAssessmentTypes.length === 0) {
+        return res.status(400).json({ 
+          message: "No assessments found for this purchase or invitation. Please contact support.",
+          error: "no_assessments"
+        });
       }
       
       // Get completed assessments and check for DISTINCT types
@@ -324,15 +324,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate price based on ALL completed assessments
-      // Business logic: Invited users pay for results just like self-service users
-      // Mixed users (invited + purchased) pay for ALL completed assessments
-      const assessmentsTotal = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
+      // Calculate price based ONLY on required assessments for this purchase cycle
+      // Business logic: Pay per purchase cycle - don't charge for previously paid assessments
+      // Price = base fee + assessments in current unpaid purchase/invitation
+      const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
         const normalizedType = normalizeAssessmentId(type);
         return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
       }, 0);
       const priceInPence = BASE_FEE + assessmentsTotal;
-      const totalAssessmentCount = uniqueAssessmentTypes.size;
+      const totalAssessmentCount = requiredAssessmentTypes.length;
       
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
