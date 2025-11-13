@@ -685,6 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const availableAssessments: any[] = [];
       let requiredAssessmentTypes: string[] = [];
       let hasActiveInvitation = false;
+      const purchasedAssessmentTypes = new Set<string>();
       
       // Check for purchased assessments
       const purchases = await storage.getPurchasesByUser(userId);
@@ -692,6 +693,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (purchase.status === 'completed') {
           const items = await storage.getPurchaseItems(purchase.id);
           for (const item of items) {
+            // Track all purchased assessment types (regardless of completion)
+            purchasedAssessmentTypes.add(item.assessmentType);
+            
             const existing = await storage.getResultByPurchaseItem(item.id);
             if (!existing || existing.status !== 'completed') {
               availableAssessments.push({
@@ -736,9 +740,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // If no active invitation, default to all 4 assessments for self-service users
+      // If no active invitation, use the assessments they actually purchased
       if (!hasActiveInvitation) {
-        requiredAssessmentTypes = Object.keys(ASSESSMENT_TYPES).map(key => ASSESSMENT_TYPES[key as keyof typeof ASSESSMENT_TYPES]);
+        requiredAssessmentTypes = Array.from(purchasedAssessmentTypes);
       }
       
       res.json({ 
