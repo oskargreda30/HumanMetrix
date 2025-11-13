@@ -273,17 +273,11 @@ export default function MyResults() {
 
           {/* Summary Card */}
           <Card className="p-8 mb-8">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">{uniqueAssessmentTypes.size}</div>
                 <div className="text-sm text-muted-foreground">Assessments Completed</div>
               </div>
-              {averageScore !== null && (
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-primary mb-2">{averageScore}/100</div>
-                  <div className="text-sm text-muted-foreground">Average Score</div>
-                </div>
-              )}
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
