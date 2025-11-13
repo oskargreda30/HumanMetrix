@@ -1275,6 +1275,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else {
+        // Check if user has an active invitation matching these assessments
+        let matchingInvitationId: string | null = null;
+        
+        const userInvitations = await storage.getInvitationsByEmail(email);
+        for (const invitation of userInvitations) {
+          // Only consider active, non-expired invitations
+          if ((invitation.status === 'sent' || invitation.status === 'accepted') && 
+              new Date(invitation.expiresAt) > new Date()) {
+            // Check if this invitation's assessments match the selected ones
+            const invitationAssessments = new Set(invitation.assessmentTypes);
+            const selectedAssessments = new Set(assessmentIds);
+            
+            // Exact match: invitation assessments = selected assessments
+            if (invitationAssessments.size === selectedAssessments.size &&
+                [...invitationAssessments].every(a => selectedAssessments.has(a))) {
+              matchingInvitationId = invitation.id;
+              console.log(`Matched invitation ${invitation.id} for ${email}`);
+              break;
+            }
+          }
+        }
+        
         // Create new free purchase (resultsAccessPaid: false = pay later)
         const purchase = await storage.createPurchase({
           userId,
@@ -1285,6 +1307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed',
           resultsAccessPaid: false, // Must pay to unlock results
           completedAt: new Date(),
+          invitationId: matchingInvitationId, // Link to invitation if matched
         });
         
         purchaseId = purchase.id;
@@ -1299,7 +1322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        console.log(`Created free purchase ${purchaseId} with ${assessmentIds.length} assessment(s) for ${email}`);
+        const purchaseType = matchingInvitationId ? 'invitation-linked' : 'self-service';
+        console.log(`Created ${purchaseType} free purchase ${purchaseId} with ${assessmentIds.length} assessment(s) for ${email}`);
       }
     
 
