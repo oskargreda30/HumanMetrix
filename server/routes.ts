@@ -254,8 +254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { discountCode } = req.body;
       
-      // Find the user's most recent unpaid purchase with items
-      // CRITICAL FIX: Don't use first unpaid purchase - it might be empty/abandoned
+      // Find the user's most recent unpaid purchase
+      // Note: Invited users may have purchases with 0 items (just for tracking payment)
       const purchases = await storage.getPurchasesByUser(userId);
       const unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
       
@@ -265,24 +265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Sort by createdAt descending (most recent first) and find first one with items
+      // Use most recent unpaid purchase
       unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      let unpaidPurchase = null;
-      for (const purchase of unpaidPurchases) {
-        const items = await storage.getPurchaseItemsByPurchase(purchase.id);
-        if (items && items.length > 0) {
-          unpaidPurchase = purchase;
-          break;
-        }
-      }
-      
-      if (!unpaidPurchase) {
-        return res.status(400).json({ 
-          message: "No valid purchase found with assessments. Please contact support.",
-          error: "no_valid_purchase"
-        });
-      }
+      const unpaidPurchase = unpaidPurchases[0];
       
       // Get the user and determine required assessments (from invitation or purchase)
       const user = await storage.getUser(userId);
@@ -309,14 +294,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!hasActiveInvitation) {
         const purchaseItems = await storage.getPurchaseItemsByPurchase(unpaidPurchase.id);
         requiredAssessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
-      }
-      
-      // Validate that we have required assessments (prevent empty purchase edge case)
-      if (!requiredAssessmentTypes || requiredAssessmentTypes.length === 0) {
-        return res.status(400).json({ 
-          message: "No assessments found in this purchase. Please contact support.",
-          error: "empty_purchase"
-        });
+        
+        // Validate that purchase has items (self-service users must have purchased something)
+        if (!requiredAssessmentTypes || requiredAssessmentTypes.length === 0) {
+          return res.status(400).json({ 
+            message: "No assessments found for this purchase. Please contact support.",
+            error: "no_assessments"
+          });
+        }
       }
       
       // Get completed assessments and check for DISTINCT types
@@ -339,13 +324,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // CRITICAL FIX: Calculate price based on REQUIRED assessments only, not all completed
-      // This prevents overcharging users who completed invited assessments + purchased fewer assessments
-      const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
+      // Calculate price based on ALL completed assessments
+      // Business logic: Invited users pay for results just like self-service users
+      // Mixed users (invited + purchased) pay for ALL completed assessments
+      const assessmentsTotal = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
         const normalizedType = normalizeAssessmentId(type);
         return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
       }, 0);
       const priceInPence = BASE_FEE + assessmentsTotal;
+      const totalAssessmentCount = uniqueAssessmentTypes.size;
       
       // Check if discount code is "FREE" (case-insensitive)
       if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
@@ -370,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${requiredAssessmentTypes.length} assessment${requiredAssessmentTypes.length > 1 ? 's' : ''})`,
+                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})`,
               },
               unit_amount: priceInPence,
             },
