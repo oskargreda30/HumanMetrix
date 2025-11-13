@@ -57,6 +57,7 @@ export interface IStorage {
   updatePurchaseStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updatePurchaseStripeSession(id: string, stripeSessionId: string): Promise<void>;
   updatePurchase(id: string, updates: Partial<InsertPurchase>): Promise<void>;
+  ensureInvitationPurchase(userId: string, userEmail: string): Promise<Purchase | null>;
   
   // Purchase item operations
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
@@ -248,6 +249,55 @@ export class DatabaseStorage implements IStorage {
       .update(purchases)
       .set(updates)
       .where(eq(purchases.id, id));
+  }
+
+  async ensureInvitationPurchase(userId: string, userEmail: string): Promise<Purchase | null> {
+    // 1. Get all active invitations for this user (newest first)
+    const allInvitations = await this.getInvitationsByEmail(userEmail);
+    const validInvitations = allInvitations.filter(inv => 
+      (inv.status === 'sent' || inv.status === 'accepted') &&
+      new Date(inv.expiresAt) > new Date()
+    );
+    
+    if (validInvitations.length === 0) {
+      return null; // No active invitation
+    }
+    
+    // 2. Pick the newest invitation (already sorted by sentAt desc from getInvitationsByEmail)
+    const invitation = validInvitations[0];
+    
+    // 3. Check if user already has a pending purchase linked to THIS invitation
+    const userPurchases = await this.getPurchasesByUser(userId);
+    const existingPurchase = userPurchases.find(p => 
+      !p.resultsAccessPaid && 
+      p.invitationId === invitation.id
+    );
+    
+    if (existingPurchase) {
+      return existingPurchase; // Re-use existing pending purchase
+    }
+    
+    // 4. Create new pending purchase linked to invitation
+    const BASE_FEE = 1500; // £15 in pence
+    const newPurchase = await this.createPurchase({
+      userId,
+      invitationId: invitation.id,
+      stripeSessionId: null,
+      stripePaymentIntentId: null,
+      totalAmount: 0, // Will be calculated at unlock time
+      baseFee: BASE_FEE,
+      status: 'pending', // Not completed until payment
+      resultsAccessPaid: false,
+      completedAt: null,
+    });
+    
+    // 5. Optionally update invitation status to 'accepted' to track engagement
+    if (invitation.status === 'sent') {
+      await this.updateInvitationStatus(invitation.id, 'accepted');
+    }
+    
+    return newPurchase;
+    // NOTE: No purchase items created - invitation.assessmentTypes defines billing
   }
 
   // Purchase item operations

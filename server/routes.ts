@@ -256,13 +256,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Find the user's most recent unpaid purchase
       // Note: Invited users may have purchases with 0 items (just for tracking payment)
-      const purchases = await storage.getPurchasesByUser(userId);
-      const unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
+      let purchases = await storage.getPurchasesByUser(userId);
+      let unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
       
+      // Defensive fallback: For legacy invited users who logged in before the fix
       if (!unpaidPurchases || unpaidPurchases.length === 0) {
-        return res.status(400).json({ 
-          message: "No purchase found requiring payment" 
-        });
+        const user = await storage.getUser(userId);
+        if (user) {
+          const invitationPurchase = await storage.ensureInvitationPurchase(userId, user.email);
+          if (invitationPurchase) {
+            unpaidPurchases = [invitationPurchase];
+          } else {
+            return res.status(400).json({ 
+              message: "No purchase or active invitation found requiring payment" 
+            });
+          }
+        } else {
+          return res.status(404).json({ message: "User not found" });
+        }
       }
       
       // Use most recent unpaid purchase
@@ -280,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let linkedInvitation: any = null;
       
       // Get assessments from current unpaid purchase items
-      const purchaseItems = await storage.getPurchaseItemsByPurchase(unpaidPurchase.id);
+      const purchaseItems = await storage.getPurchaseItems(unpaidPurchase.id);
       const purchaseAssessments = purchaseItems.map((item: any) => item.assessmentType);
 
       if (purchaseAssessments.length > 0) {
@@ -432,6 +443,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
+      
+      // Ensure invitation purchase exists for invited users (on first login)
+      await storage.ensureInvitationPurchase(user.id, user.email);
       
       // Check if user has any completed purchases (to determine if invitation-only)
       const purchases = await storage.getPurchasesByUser(user.id);
@@ -1289,7 +1303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Exact match: invitation assessments = selected assessments
             if (invitationAssessments.size === selectedAssessments.size &&
-                [...invitationAssessments].every(a => selectedAssessments.has(a))) {
+                Array.from(invitationAssessments).every(a => selectedAssessments.has(a))) {
               matchingInvitationId = invitation.id;
               console.log(`Matched invitation ${invitation.id} for ${email}`);
               break;
