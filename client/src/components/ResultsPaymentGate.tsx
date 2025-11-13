@@ -103,21 +103,16 @@ export function ResultsPaymentGate() {
             <Lock className="h-8 w-8 text-primary" />
           </div>
           
-          <h1 className="text-3xl font-bold">Unlock Your Results</h1>
+          <h1 className="text-3xl font-bold">Pay and View Your Results</h1>
           
-          {wasInvited ? (
-            <div className="space-y-3">
-              <p className="text-muted-foreground text-lg">
-                You've completed all your assessments! Your results will be automatically submitted to the employer who invited you.
-              </p>
-              <p className="text-muted-foreground">
-                You also have the option to view and download your own copy of the results for your records.
-              </p>
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-lg">
-              You've completed all your assessments! To view your detailed results and download 
-              your professional PDF report, please unlock your results below.
+          <p className="text-muted-foreground text-lg">
+            You've completed all your assessments! To view your detailed results and download 
+            your professional PDF report, please submit your payment and view results below.
+          </p>
+          
+          {wasInvited && (
+            <p className="text-sm text-muted-foreground italic">
+              Your results have been submitted to the employer who invited you to complete these. You also have the option to pay and download your own copy of the results for your records, and your future job applications.
             </p>
           )}
         </div>
@@ -155,29 +150,6 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
-          {wasInvited && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="discount-code">Discount Code (Optional)</Label>
-                <Input
-                  id="discount-code"
-                  placeholder="Enter FREE if employer covered payment"
-                  value={discountCode}
-                  onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                  disabled={unlockMutation.isPending}
-                  data-testid="input-discount-code"
-                />
-              </div>
-
-              <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertDescription>
-                  If your employer has covered the cost, use discount code <span className="font-mono font-bold">FREE</span> to unlock your results instantly.
-                </AlertDescription>
-              </Alert>
-            </>
-          )}
-
           <Button
             className="w-full"
             size="lg"
@@ -193,16 +165,14 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                {wasInvited && discountCode ? "Unlock Results (Free)" : `Unlock Results (£${price})`}
+                Unlock Results (£{price})
               </>
             )}
           </Button>
 
-          {!wasInvited || !discountCode ? (
-            <p className="text-sm text-center text-muted-foreground">
-              Secure payment processed via Stripe
-            </p>
-          ) : null}
+          <p className="text-sm text-center text-muted-foreground">
+            Secure payment processed via Stripe
+          </p>
         </div>
       </Card>
     </div>
