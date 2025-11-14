@@ -1039,6 +1039,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's candidate data for PDF export (restricted to non-sensitive fields)
+  app.get("/api/my-candidate-data", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only fetch results - exclude admin-only data (tags, notes)
+      const results = await storage.getResultsByUser(user.id);
+
+      // Return minimal structure needed for PDF export
+      res.json({
+        user,
+        results,
+        tags: [],        // Empty - candidates shouldn't see admin tags
+        notes: [],       // Empty - candidates shouldn't see admin notes
+        invitations: [], // Empty - not needed for candidate PDF
+      });
+    } catch (error) {
+      console.error("Error fetching candidate data:", error);
+      res.status(500).json({ message: "Failed to fetch candidate data" });
+    }
+  });
+
   // Get specific result
   app.get("/api/results/:id", isAuthenticated, async (req: any, res) => {
     try {

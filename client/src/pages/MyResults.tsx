@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { format } from "date-fns";
+import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
 import {
   Radar,
   RadarChart,
@@ -130,6 +131,15 @@ export default function MyResults() {
         description: "Please wait while we prepare your comprehensive report...",
       });
 
+      // Fetch full candidate data (same format as admin uses)
+      const candidateRes = await fetch('/api/my-candidate-data', {
+        credentials: 'include',
+      });
+      if (!candidateRes.ok) {
+        throw new Error('Failed to fetch candidate data');
+      }
+      const candidate = await candidateRes.json();
+
       // Fetch platform averages from API (same as admin dashboard)
       const averagesRes = await fetch('/api/admin/platform-averages', {
         credentials: 'include',
@@ -195,32 +205,26 @@ export default function MyResults() {
       if (fitChart) radarChartImages.fit = fitChart;
       if (aiReadinessChart) radarChartImages.aiReadiness = aiReadinessChart;
 
-      // Prepare candidate data
-      const candidateData = {
-        user: {
-          firstName: user.firstName || undefined,
-          lastName: user.lastName || undefined,
-          email: user.email,
-        },
-        results: completedResults,
-      };
-
-      // Prepare skill data from all completed assessments
-      const skillData: any[] = [];
-      completedResults.forEach((r: any) => {
-        const scores = r.scores || {};
-        Object.entries(scores).forEach(([skillName, score]) => {
-          skillData.push({
-            name: skillName,
-            score: score as number,
-            assessment: formatAssessmentName(r.assessmentType),
+      // Prepare skill data using proper transformation (matching admin logic)
+      const completedResultsForPDF = candidate.results?.filter(
+        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+      );
+      
+      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
+      completedResultsForPDF?.forEach((result: any) => {
+        const radarData = transformToRadarData(result.scores, result.assessmentType);
+        radarData.forEach((skill: any) => {
+          allSkills.push({
+            name: skill.skill,
+            score: skill.score,
+            assessment: formatAssessmentType(result.assessmentType)
           });
         });
       });
 
       await exportEnhancedCandidatePDF(
-        candidateData,
-        skillData,
+        candidate,
+        allSkills,
         platformAverages,
         radarChartImages,
         undefined,
