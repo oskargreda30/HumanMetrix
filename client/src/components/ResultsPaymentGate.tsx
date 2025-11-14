@@ -151,6 +151,22 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="discount-code">Discount Code (Optional)</Label>
+            <Input
+              id="discount-code"
+              type="text"
+              placeholder="Enter code (e.g., FREE)"
+              value={discountCode}
+              onChange={(e) => setDiscountCode(e.target.value)}
+              data-testid="input-discount-code"
+              className="uppercase"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use code <span className="font-mono font-semibold">FREE</span> for complimentary access
+            </p>
+          </div>
+
           <Button
             className="w-full"
             size="lg"
@@ -166,7 +182,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results (£{price})
+                {discountCode.trim().toUpperCase() === "FREE" ? "Unlock Results (FREE)" : `Unlock Results (£${price})`}
               </>
             )}
           </Button>
