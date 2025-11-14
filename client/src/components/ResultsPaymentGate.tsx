@@ -62,10 +62,11 @@ export function ResultsPaymentGate() {
         
         // Refresh purchases to update resultsAccessPaid status
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
         
-        // Small delay to show toast, then redirect to dashboard
+        // Small delay to show toast, then redirect using client-side navigation (preserves session)
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          setLocation("/results");
         }, 1000);
       } else if (data.sessionUrl) {
         // Redirect to Stripe checkout

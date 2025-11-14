@@ -109,6 +109,12 @@ export default function Assessment() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+      // Stop the timer immediately when submitting
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
       const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers });
       if (!response.ok) {
         const errorData = await response.json();
