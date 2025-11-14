@@ -6,7 +6,7 @@ import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, i
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendResultsEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import OpenAI from "openai";
