@@ -115,7 +115,8 @@ export default function Assessment() {
         timerRef.current = null;
       }
       
-      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers });
+      // Use 3-minute timeout for assessment submission (Prompt Architecture can take 2-3 minutes)
+      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 180000 });
       if (!response.ok) {
         const errorData = await response.json();
         throw errorData;
