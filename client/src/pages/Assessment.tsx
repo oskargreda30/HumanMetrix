@@ -511,7 +511,7 @@ export default function Assessment() {
               </Card>
 
               {/* Navigation */}
-              <div className="flex justify-between">
+              <div className="flex flex-wrap gap-3 justify-between">
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
@@ -526,11 +526,13 @@ export default function Assessment() {
                     onClick={handleSubmit}
                     disabled={submitMutation.isPending}
                     data-testid="button-submit-assessment"
+                    className="flex-1 sm:flex-none"
                   >
                     {submitMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Your answers are being evaluated, this may take 2-3 minutes...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" />
+                        <span className="hidden sm:inline">Your answers are being evaluated, this may take 2-3 minutes...</span>
+                        <span className="sm:hidden">Evaluating (2-3 min)...</span>
                       </>
                     ) : (
                       <>
