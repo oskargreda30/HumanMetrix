@@ -15,11 +15,46 @@ import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 45000, // 45 seconds per request
 });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
 });
+
+// Simple retry helper with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on non-transient errors
+      if (error.code === 'invalid_api_key' || error.code === 'insufficient_quota') {
+        throw error;
+      }
+      
+      // If this was the last attempt, throw
+      if (attempt === maxRetries) {
+        break;
+      }
+      
+      // Wait with exponential backoff: 1s, 2s
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`[Retry] Attempt ${attempt + 1}/${maxRetries + 1} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+}
 
 // Rate limiting for contact form (in-memory)
 const contactFormRateLimiter = new Map<string, { count: number; resetTime: number }>();
@@ -2657,20 +2692,23 @@ ${userPrompt}
   try {
     console.log(`[Prompt Eval] Evaluating Level ${level} prompt (length: ${userPrompt.length} chars)`);
     
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert prompt engineering evaluator. Respond only with valid JSON matching the requested format.",
-        },
-        {
-          role: "user",
-          content: evaluationPrompt,
-        },
-      ],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
+    // Retry OpenAI call with exponential backoff
+    const completion = await retryWithBackoff(async () => {
+      return await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert prompt engineering evaluator. Respond only with valid JSON matching the requested format.",
+          },
+          {
+            role: "user",
+            content: evaluationPrompt,
+          },
+        ],
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+      });
     });
 
     const result = JSON.parse(completion.choices[0].message.content || "{}");
