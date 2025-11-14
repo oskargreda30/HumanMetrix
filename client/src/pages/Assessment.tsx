@@ -530,7 +530,7 @@ export default function Assessment() {
                     {submitMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Your answers are being evaluated, please wait...
+                        Your answers are being evaluated, this may take 2-3 minutes...
                       </>
                     ) : (
                       <>
