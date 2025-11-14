@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
         mode: 'payment',
         allow_promotion_codes: true,
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId.toString(),
@@ -434,41 +434,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process results payment success (webhook or callback)
-  app.post("/api/process-results-payment", isAuthenticated, async (req: any, res) => {
+  // Process results payment success (non-authenticated callback for Stripe redirects)
+  // This endpoint doesn't require authentication because session cookies can be lost during Stripe redirects
+  // Security is ensured by validating the Stripe session instead
+  app.post("/api/process-results-payment", async (req: any, res) => {
     try {
       const { sessionId } = req.body;
       
+      console.log(`[Payment Callback] Processing session: ${sessionId}`);
+      
       if (!sessionId) {
-        return res.status(400).json({ message: "Session ID required" });
+        console.error("[Payment Callback] No session ID provided");
+        return res.status(400).json({ 
+          success: false,
+          message: "Session ID required" 
+        });
       }
       
+      // Retrieve and validate Stripe session
       const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      console.log(`[Payment Callback] Stripe session retrieved - Status: ${session.payment_status}, Mode: ${session.mode}`);
       
       // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
       if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
-        return res.status(400).json({ message: "Payment not completed" });
+        console.error(`[Payment Callback] Invalid payment status: ${session?.payment_status}`);
+        return res.status(400).json({ 
+          success: false,
+          message: "Payment not completed" 
+        });
       }
       
       const metadata = session.metadata;
       if (!metadata || metadata.isResultsPayment !== 'true') {
-        return res.status(400).json({ message: "Invalid session" });
+        console.error(`[Payment Callback] Invalid session metadata - isResultsPayment: ${metadata?.isResultsPayment}`);
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid session" 
+        });
       }
       
       const purchaseId = metadata.purchaseId;
+      const userId = metadata.userId;
+      
+      if (!purchaseId || !userId) {
+        console.error(`[Payment Callback] Missing required metadata - purchaseId: ${purchaseId}, userId: ${userId}`);
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid session metadata" 
+        });
+      }
+      
+      // Check if already processed to prevent double-processing
+      const purchase = await storage.getPurchase(purchaseId);
+      if (purchase?.resultsAccessPaid) {
+        console.log(`[Payment Callback] Purchase ${purchaseId} already processed, skipping`);
+        return res.json({ 
+          success: true, 
+          message: "Results already unlocked",
+          alreadyProcessed: true
+        });
+      }
       
       // Update purchase to grant results access
       await storage.updatePurchase(purchaseId, {
         resultsAccessPaid: true,
       });
       
+      console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
+      
       res.json({ 
         success: true, 
-        message: "Results access granted" 
+        message: "Results access granted"
       });
     } catch (error: any) {
-      console.error("Error processing results payment:", error);
+      console.error("[Payment Callback ERROR]", error);
       res.status(500).json({ 
+        success: false,
         message: "Failed to process payment: " + error.message 
       });
     }

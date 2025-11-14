@@ -17,7 +17,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
@@ -30,67 +29,12 @@ export default function Dashboard() {
   const availableAssessments = availableData?.assessments || [];
   const requiredAssessmentTypes = availableData?.requiredAssessmentTypes || [];
 
-  // Process results payment success when returning from Stripe
+  // Handle payment cancellation
   useEffect(() => {
-    const processResultsPayment = async (sessionId: string) => {
-      setIsProcessingPayment(true);
-      try {
-        const res = await fetch("/api/process-results-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ sessionId }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          throw new Error(data.message || "Failed to process payment");
-        }
-
-        // Refresh purchases to update resultsAccessPaid status
-        await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        
-        toast({
-          title: "Results Unlocked!",
-          description: "Your results are now available. Redirecting...",
-        });
-
-        // Clean URL and redirect to results using SPA navigation
-        setTimeout(() => {
-          window.history.replaceState({}, '', '/dashboard');
-          setLocation('/my-results');
-        }, 1000);
-      } catch (error: any) {
-        console.error("Error processing payment:", error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to process payment",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessingPayment(false);
-      }
-    };
-
-    // Check URL parameters
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
-    const sessionId = params.get("session_id");
 
-    // If returning from Stripe with session_id (for results unlock)
-    if (payment === "success" && sessionId) {
-      processResultsPayment(sessionId);
-    } else if (payment === "success") {
-      // Success without session_id - just show message
-      toast({
-        title: "Payment Successful",
-        description: "Your results have been unlocked!",
-      });
-      setTimeout(() => {
-        window.history.replaceState({}, '', '/dashboard');
-      }, 1000);
-    } else if (payment === "cancelled") {
+    if (payment === "cancelled") {
       toast({
         title: "Payment Cancelled",
         description: "You can unlock your results anytime from your dashboard.",
@@ -99,7 +43,7 @@ export default function Dashboard() {
     }
   }, [toast]);
 
-  if (assessmentsLoading || resultsLoading || isProcessingPayment) {
+  if (assessmentsLoading || resultsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

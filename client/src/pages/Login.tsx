@@ -20,12 +20,15 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect to dashboard if already authenticated
+  // Get redirect parameter from URL
+  const redirectTo = new URLSearchParams(window.location.search).get("redirect") || "/dashboard";
+
+  // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      setLocation("/dashboard");
+      setLocation(redirectTo);
     }
-  }, [isAuthenticated, authLoading, setLocation]);
+  }, [isAuthenticated, authLoading, setLocation, redirectTo]);
 
   // Show loading state while checking authentication
   if (authLoading) {
@@ -63,7 +66,7 @@ export default function Login() {
         description: "Logged in successfully!",
       });
       
-      setLocation("/dashboard");
+      setLocation(redirectTo);
     } catch (error: any) {
       toast({
         title: "Error",
