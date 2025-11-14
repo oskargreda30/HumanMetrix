@@ -426,3 +426,108 @@ Reply directly to this email to respond to ${name}
   const info = await emailTransporter.sendMail(mailOptions);
   console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
 }
+
+export async function sendResultsEmail(email: string, name: string) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Results email not sent for ${email} - email not configured`);
+    return;
+  }
+  
+  const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000';
+  const resultsUrl = `https://${baseUrl}/results`;
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: 'Your Assessment Results are Ready - HumanMetrix',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #06b6d4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .success-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div class="success-box">
+                <h2 style="margin: 0 0 10px 0; color: #047857;">✅ Results Unlocked!</h2>
+                <p style="margin: 0; color: #047857;">Your comprehensive assessment results are now available</p>
+              </div>
+              
+              <h2>Hello ${name},</h2>
+              <p>Thank you for completing your HumanMetrix assessments. Your results have been unlocked and are ready to view.</p>
+              
+              <p><strong>What's included:</strong></p>
+              <ul>
+                <li>Detailed scores across all assessment dimensions</li>
+                <li>AI-powered insights and recommendations</li>
+                <li>Radar chart visualizations</li>
+                <li>Comprehensive skill breakdown</li>
+              </ul>
+              
+              <div style="text-align: center;">
+                <a href="${resultsUrl}" class="button">View My Results</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                You can access your results anytime by logging in to your HumanMetrix dashboard at<br>
+                <a href="${resultsUrl}" style="color: #06b6d4;">${resultsUrl}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+              <p style="margin-top: 10px;">
+                Questions? Contact us at humanmetrix.sales@gmail.com
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+HumanMetrix - Your Assessment Results are Ready
+
+✅ Results Unlocked!
+
+Hello ${name},
+
+Thank you for completing your HumanMetrix assessments. Your results have been unlocked and are ready to view.
+
+What's included:
+- Detailed scores across all assessment dimensions
+- AI-powered insights and recommendations
+- Radar chart visualizations
+- Comprehensive skill breakdown
+
+View your results at: ${resultsUrl}
+
+You can access your results anytime by logging in to your HumanMetrix dashboard.
+
+Questions? Contact us at humanmetrix.sales@gmail.com
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Results email sent to ${email} (ID: ${info.messageId})`);
+  } catch (error) {
+    console.error(`❌ Failed to send results email to ${email}:`, error);
+    // Don't throw - email failure shouldn't block payment success
+  }
+}
