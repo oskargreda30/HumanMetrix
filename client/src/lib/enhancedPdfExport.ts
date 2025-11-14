@@ -658,10 +658,10 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      // Smaller chart to fit both on one page
+      // Optimized chart size for label visibility while fitting both on one page
       const imgProps = pdf.getImageProperties(radarChartImages.fit);
       const maxWidth = pageWidth - 40;
-      const maxHeight = 55; // Reduced from 90 to fit both charts
+      const maxHeight = 72; // Increased from 55 to prevent label cutoff
       
       let chartWidth = maxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
@@ -705,10 +705,10 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      // Smaller chart to fit both on one page
+      // Optimized chart size for label visibility while fitting both on one page
       const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
       const maxWidth = pageWidth - 40;
-      const maxHeight = 55; // Reduced from 90 to fit both charts
+      const maxHeight = 72; // Increased from 55 to prevent label cutoff
       
       let chartWidth = maxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
