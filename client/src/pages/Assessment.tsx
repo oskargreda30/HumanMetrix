@@ -350,6 +350,13 @@ export default function Assessment() {
       });
       return;
     }
+    
+    // Stop the timer IMMEDIATELY when user clicks submit
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     submitMutation.mutate();
   };
 
