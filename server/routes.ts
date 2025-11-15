@@ -516,29 +516,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Re-establish session after Stripe redirect
       // Stripe redirects often cause session cookies to be lost, especially in production
       // We regenerate the session to ensure a fresh, valid session is created
-      await new Promise<void>((resolve, reject) => {
-        req.session.regenerate((err: any) => {
-          if (err) {
-            console.error(`[Payment Callback] Session regeneration error:`, err);
-            // If regeneration fails, try setting on existing session
-            req.session.userId = userId;
-            req.session.save((saveErr: any) => {
-              if (saveErr) reject(saveErr);
-              else resolve();
-            });
-          } else {
-            // Set user ID on newly regenerated session
-            req.session.userId = userId;
-            req.session.save((saveErr: any) => {
-              if (saveErr) reject(saveErr);
-              else resolve();
-            });
-          }
+      try {
+        await new Promise<void>((resolve, reject) => {
+          req.session.regenerate((err: any) => {
+            if (err) {
+              console.error(`[Payment Callback] Session regeneration error:`, err);
+              // If regeneration fails, try setting on existing session
+              req.session.userId = userId;
+              req.session.save((saveErr: any) => {
+                if (saveErr) {
+                  console.error(`[Payment Callback] Session save error:`, saveErr);
+                  reject(saveErr);
+                } else {
+                  console.log(`[Payment Callback] ✓ Session saved (fallback) for user ${userId}`);
+                  resolve();
+                }
+              });
+            } else {
+              // Set user ID on newly regenerated session
+              req.session.userId = userId;
+              req.session.save((saveErr: any) => {
+                if (saveErr) {
+                  console.error(`[Payment Callback] Session save error:`, saveErr);
+                  reject(saveErr);
+                } else {
+                  console.log(`[Payment Callback] ✓ Session regenerated and saved for user ${userId}`);
+                  resolve();
+                }
+              });
+            }
+          });
         });
-      });
+      } catch (sessionError: any) {
+        console.error(`[Payment Callback] CRITICAL: Session re-establishment failed`, sessionError);
+        return res.status(500).json({ 
+          success: false,
+          message: "Payment processed but session error occurred. Please log in manually."
+        });
+      }
       
-      console.log(`[Payment Callback] ✓ Session re-established for user ${userId}`);
-      
+      // Session is now guaranteed to be saved with Set-Cookie header
       res.json({ 
         success: true, 
         message: "Results access granted"

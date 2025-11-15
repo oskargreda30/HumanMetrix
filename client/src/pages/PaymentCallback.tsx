@@ -39,10 +39,36 @@ export default function PaymentCallback() {
         setStatus("success");
         setMessage("Results unlocked! Redirecting...");
 
-        // Results are now unlocked - redirect to results page using client-side navigation
-        setTimeout(() => {
-          setLocation("/my-results");
-        }, 1500);
+        // Wait for session to be established before redirecting
+        // Poll /api/auth/user to verify session cookie is set
+        let sessionVerified = false;
+        let attempts = 0;
+        const maxAttempts = 10; // 5 seconds max
+        
+        while (!sessionVerified && attempts < maxAttempts) {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          try {
+            const sessionCheck = await fetch("/api/auth/user", {
+              credentials: "include"
+            });
+            
+            if (sessionCheck.ok) {
+              sessionVerified = true;
+              console.log("✓ Session verified after payment");
+            }
+          } catch (e) {
+            console.log(`Session check attempt ${attempts} failed`);
+          }
+        }
+        
+        if (!sessionVerified) {
+          console.warn("Session verification timed out, redirecting anyway");
+        }
+
+        // Session verified or timeout - redirect to results page
+        setLocation("/my-results");
       } catch (error: any) {
         console.error("Payment processing error:", error);
         setStatus("error");

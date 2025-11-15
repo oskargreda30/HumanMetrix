@@ -15,6 +15,13 @@ export function getSession() {
   });
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Warning for production proxy misconfiguration
+  if (isProduction) {
+    console.log("🔒 Production mode: secure cookies enabled");
+    console.log("⚠️  IMPORTANT: Ensure your proxy/load balancer sets X-Forwarded-Proto header");
+    console.log("⚠️  Without proper proxy configuration, session cookies will be silently dropped!");
+  }
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -32,6 +39,17 @@ export function getSession() {
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+  
+  // Runtime check for proxy misconfiguration
+  app.use((req, res, next) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !req.secure && req.get('X-Forwarded-Proto') !== 'https') {
+      console.warn(`⚠️  PROXY WARNING: req.secure is false in production for ${req.path}`);
+      console.warn(`⚠️  This will cause secure session cookies to be dropped!`);
+      console.warn(`⚠️  Check X-Forwarded-Proto header and trust proxy settings`);
+    }
+    next();
+  });
 
   // Login endpoint
   app.post("/api/login", async (req, res) => {
