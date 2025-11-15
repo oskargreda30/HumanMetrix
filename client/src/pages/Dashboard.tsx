@@ -137,21 +137,34 @@ export default function Dashboard() {
                             ))}
                         </div>
                       </div>
-                      {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
-                        <Link href={`/my-results?purchaseId=${purchase.id}`}>
-                          <Button className="gap-2" data-testid={`button-view-results-${purchase.id}`}>
-                            <FileText className="h-4 w-4" />
-                            View Results
-                          </Button>
-                        </Link>
-                      )}
-                      {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
-                        <Link href="/my-results">
-                          <Button variant="outline" className="gap-2" data-testid={`button-unlock-results-${purchase.id}`}>
-                            Unlock Results
-                          </Button>
-                        </Link>
-                      )}
+                      <div className="flex flex-col gap-2">
+                        {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
+                          <>
+                            <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                              <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
+                                <FileText className="h-4 w-4" />
+                                View Results
+                              </Button>
+                            </Link>
+                            <Badge variant="secondary" className="text-xs justify-center">
+                              ✓ Results Already Paid
+                            </Badge>
+                          </>
+                        )}
+                        {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
+                          <>
+                            <Link href="/my-results">
+                              <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
+                                <FileText className="h-4 w-4" />
+                                Unlock Results
+                              </Button>
+                            </Link>
+                            <Badge variant="outline" className="text-xs justify-center border-orange-500 text-orange-600 dark:text-orange-400">
+                              💳 Payment Required
+                            </Badge>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 ))}
