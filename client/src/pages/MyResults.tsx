@@ -38,7 +38,7 @@ export default function MyResults() {
 
   // Find the specific purchase batch if purchaseId is provided
   const selectedBatch = purchaseId 
-    ? purchaseBatches?.find((p: any) => p.id === parseInt(purchaseId))
+    ? purchaseBatches?.find((p: any) => p.id === purchaseId)
     : null;
 
   // Check if user has paid for results access
@@ -73,6 +73,28 @@ export default function MyResults() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Handle invalid purchaseId - redirect to dashboard
+  if (purchaseId && !selectedBatch) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <Card className="p-12 text-center max-w-md">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Purchase Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              The requested purchase batch could not be found or you don't have access to it.
+            </p>
+            <Link href="/dashboard">
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </Card>
+        </main>
+        <Footer />
       </div>
     );
   }
