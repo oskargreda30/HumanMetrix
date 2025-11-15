@@ -128,11 +128,9 @@ export default function Login() {
                     data-testid="input-login-password"
                     className="bg-[#0f1f38] border-cyan-400/30 text-white pr-10"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 text-cyan-400 hover:text-cyan-300 hover:bg-transparent"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 p-1.5 rounded"
                     onClick={() => setShowPassword(!showPassword)}
                     data-testid="button-toggle-password-visibility"
                   >
@@ -141,7 +139,7 @@ export default function Login() {
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
               <Button
