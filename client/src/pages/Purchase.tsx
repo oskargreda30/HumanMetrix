@@ -110,41 +110,70 @@ export default function Purchase() {
     setIsProcessing(true);
     
     try {
-      const response = await fetch("/api/create-free-invitation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          assessmentIds: Array.from(selectedAssessments),
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email: email.trim(),
-        }),
-        credentials: "include",
-      });
+      // Logged-in users: go directly to Stripe payment
+      if (user) {
+        const response = await fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assessmentIds: Array.from(selectedAssessments),
+          }),
+          credentials: "include",
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create account");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to create checkout session");
+        }
 
-      const data = await response.json();
-      
-      toast({
-        title: "Success!",
-        description: data.message,
-      });
-
-      // Redirect to login or dashboard
-      if (data.requiresLogin) {
-        setTimeout(() => {
-          setLocation("/login?message=check-email");
-        }, 2000);
+        const data = await response.json();
+        
+        // Redirect to Stripe checkout
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error("No checkout URL received");
+        }
       } else {
-        setTimeout(() => {
-          setLocation("/dashboard");
-        }, 2000);
+        // Guest users: create free invitation with email
+        const response = await fetch("/api/create-free-invitation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assessmentIds: Array.from(selectedAssessments),
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+          }),
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to create account");
+        }
+
+        const data = await response.json();
+        
+        toast({
+          title: "Success!",
+          description: data.message,
+        });
+
+        // Redirect to login or dashboard
+        if (data.requiresLogin) {
+          setTimeout(() => {
+            setLocation("/login?message=check-email");
+          }, 2000);
+        } else {
+          setTimeout(() => {
+            setLocation("/dashboard");
+          }, 2000);
+        }
       }
     } catch (error: any) {
       toast({
@@ -247,13 +276,21 @@ export default function Purchase() {
                   <>
                     <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4 mb-6">
                       <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                        ✨ How it works
+                        ✨ {user ? "Purchase Additional Assessments" : "How it works"}
                       </p>
-                      <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-                        <li>Take all assessments for free</li>
-                        <li>Complete at your own pace</li>
-                        <li>Pay only to unlock results</li>
-                      </ol>
+                      {user ? (
+                        <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                          <li>Select assessments to purchase</li>
+                          <li>Complete secure payment</li>
+                          <li>Take assessments and unlock results</li>
+                        </ol>
+                      ) : (
+                        <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                          <li>Take all assessments for free</li>
+                          <li>Complete at your own pace</li>
+                          <li>Pay only to unlock results</li>
+                        </ol>
+                      )}
                     </div>
 
                     {!user && (
@@ -322,12 +359,20 @@ export default function Purchase() {
                       size="lg"
                       data-testid="button-continue"
                     >
-                      {isProcessing ? "Processing..." : "Get Started"}
+                      {isProcessing ? "Processing..." : user ? "Proceed to Payment" : "Get Started"}
                     </Button>
 
-                    <p className="text-xs text-center text-muted-foreground mt-4">
-                      You'll receive an email with your login credentials to start your assessments
-                    </p>
+                    {!user && (
+                      <p className="text-xs text-center text-muted-foreground mt-4">
+                        You'll receive an email with your login credentials to start your assessments
+                      </p>
+                    )}
+                    
+                    {user && (
+                      <p className="text-xs text-center text-muted-foreground mt-4">
+                        You'll be redirected to secure payment to unlock these assessments
+                      </p>
+                    )}
                   </>
                 )}
               </Card>

@@ -264,11 +264,8 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
               
               <div class="credentials">
                 <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${email}</p>
-                <p style="margin: 0 0 10px 0;"><strong>Temporary Password:</strong></p>
+                <p style="margin: 0 0 10px 0;"><strong>Password:</strong></p>
                 <div class="password-box">${temporaryPassword}</div>
-                <p style="margin: 15px 0 0 0; color: #f59e0b; font-size: 14px;">
-                  ⚠️ Please change this password after your first login for security.
-                </p>
               </div>
               
               <div style="text-align: center;">
@@ -295,9 +292,7 @@ An account has been created for you on HumanMetrix.
 
 Login Credentials:
 Email: ${email}
-Temporary Password: ${temporaryPassword}
-
-⚠️ Please change this password after your first login for security.
+Password: ${temporaryPassword}
 
 Log in at: ${loginUrl}
 
