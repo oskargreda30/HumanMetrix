@@ -31,7 +31,6 @@ export default function PurchaseSuccess() {
       });
 
       const data = await res.json();
-      console.log("[PurchaseSuccess] Payment processed:", data);
 
       // Check if response is OK and success flag is true
       if (!res.ok || !data.success) {
@@ -47,12 +46,10 @@ export default function PurchaseSuccess() {
 
       // Invalidate cache so dashboard shows new assessments immediately
       if (data.isLoggedIn) {
-        console.log("[PurchaseSuccess] Invalidating cache for logged-in user");
         // Logged-in user purchasing additional assessments
         await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        console.log("[PurchaseSuccess] Cache invalidated successfully");
       }
 
       setAccountCreated(true);
