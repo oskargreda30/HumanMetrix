@@ -128,7 +128,7 @@ export default function Dashboard() {
                           )}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {purchase.results
+                          {(purchase.results || [])
                             .filter((r: any) => r.status === 'completed')
                             .map((result: any) => (
                               <Badge key={result.id} variant="outline">

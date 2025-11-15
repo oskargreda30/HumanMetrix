@@ -103,8 +103,8 @@ export default function MyResults() {
   let completedResults = allResults.filter((r: any) => r.status === 'completed');
   
   if (selectedBatch) {
-    // Get result IDs from this batch
-    const batchResultIds = selectedBatch.results.map((r: any) => r.id);
+    // Get result IDs from this batch (defensive: handle missing results array)
+    const batchResultIds = (selectedBatch.results || []).map((r: any) => r.id);
     completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
   }
   

@@ -186,7 +186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completedAt: new Date(),
         });
 
-        const assessmentList = JSON.parse(assessmentIds);
+        let assessmentList: string[];
+        try {
+          assessmentList = JSON.parse(assessmentIds);
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid assessment data format" });
+        }
         
         for (const assessmentId of assessmentList) {
           const normalizedId = normalizeAssessmentId(assessmentId);
@@ -234,7 +239,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completedAt: new Date(),
         });
 
-        const assessmentList = JSON.parse(assessmentIds);
+        let assessmentList: string[];
+        try {
+          assessmentList = JSON.parse(assessmentIds);
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid assessment data format" });
+        }
         
         for (const assessmentId of assessmentList) {
           const normalizedId = normalizeAssessmentId(assessmentId);
