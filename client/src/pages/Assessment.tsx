@@ -41,6 +41,7 @@ export default function Assessment() {
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
@@ -113,12 +114,6 @@ export default function Assessment() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Stop the timer immediately when submitting
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      
       // Use 3-minute timeout for assessment submission (Prompt Architecture can take 2-3 minutes)
       const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 180000 });
       if (!response.ok) {
@@ -128,6 +123,7 @@ export default function Assessment() {
       return await response.json();
     },
     onSuccess: async () => {
+      setIsSubmitting(false); // Reset submitting state
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
       
@@ -140,6 +136,7 @@ export default function Assessment() {
       setLocation("/dashboard");
     },
     onError: (error: any) => {
+      setIsSubmitting(false); // Reset submitting state on error
       const message = error?.error === 'quota_exceeded' 
         ? "OpenAI API quota exceeded. Please add credits to your OpenAI account to complete this assessment."
         : "Failed to submit assessment. Please try again.";
@@ -181,7 +178,7 @@ export default function Assessment() {
 
   // Timer effect
   useEffect(() => {
-    if (!resultId) return;
+    if (!resultId || isSubmitting || submitMutation.isPending) return; // Don't run timer if submitting
 
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -201,7 +198,11 @@ export default function Assessment() {
         if (newTime <= 0) {
           if (timerRef.current) {
             clearInterval(timerRef.current);
+            timerRef.current = null;
           }
+          
+          // Set submitting flag to prevent timer restart
+          setIsSubmitting(true);
           
           // Auto-submit with current answers
           toast({
@@ -222,9 +223,10 @@ export default function Assessment() {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [resultId, showTimeWarning, submitMutation]);
+  }, [resultId, showTimeWarning, submitMutation, isSubmitting]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -352,6 +354,7 @@ export default function Assessment() {
     }
     
     // Stop the timer IMMEDIATELY when user clicks submit
+    setIsSubmitting(true);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
