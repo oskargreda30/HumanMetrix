@@ -319,6 +319,8 @@ export default function Assessment() {
     
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
+      // Scroll to top of page after moving to next question
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
