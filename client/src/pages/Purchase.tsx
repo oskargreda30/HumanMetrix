@@ -123,6 +123,9 @@ export default function Purchase() {
 
         if (!response.ok) {
           const error = await response.json();
+          if (response.status === 401) {
+            throw new Error("Your session has expired. Please log in again.");
+          }
           throw new Error(error.message || "Failed to add assessments");
         }
 
