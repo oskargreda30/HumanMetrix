@@ -86,10 +86,12 @@ export default function MyResults() {
     completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
   }
   
-  // Check if all REQUIRED assessment types are completed (dynamic based on invitation or self-service)
+  // Check if all REQUIRED assessment types are completed
+  // When viewing a specific batch, only check if THAT batch is complete
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = requiredAssessmentTypes.length > 0 && 
-    requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
+  const allAssessmentsCompleted = selectedBatch 
+    ? selectedBatch.allItemsCompleted  // For batch view, use batch completion status
+    : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type)));
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   if (!allAssessmentsCompleted) {
@@ -119,7 +121,12 @@ export default function MyResults() {
   }
 
   // SECOND: Show payment gate if user hasn't paid for results access
-  if (hasPaidForResults === false) {
+  // For batch view, check if THAT batch is paid. Otherwise check global payment status
+  const needsPayment = selectedBatch 
+    ? !selectedBatch.resultsAccessPaid 
+    : hasPaidForResults === false;
+    
+  if (needsPayment) {
     return <ResultsPaymentGate />;
   }
 

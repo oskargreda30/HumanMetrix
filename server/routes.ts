@@ -892,13 +892,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const completedResults = resultsForPurchase.filter(r => r.status === 'completed');
         
+        // Find the latest completion date for this purchase
+        const completedAt = completedResults.length > 0
+          ? completedResults
+              .filter(r => r.completedAt)
+              .map(r => new Date(r.completedAt))
+              .sort((a, b) => b.getTime() - a.getTime())[0]
+          : null;
+        
         return {
           ...purchase,
           purchaseItems: items,
           results: resultsForPurchase,  // All results, including multiple attempts
           completedCount: completedResults.length,
           totalCount: items.length,
-          allItemsCompleted: completedResults.length >= items.length
+          allItemsCompleted: completedResults.length >= items.length,
+          completedAt: completedAt ? completedAt.toISOString() : null
         };
       });
       
