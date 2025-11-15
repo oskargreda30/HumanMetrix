@@ -991,23 +991,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check for purchased assessments
       const purchases = await storage.getPurchasesByUser(userId);
-      console.log(`[DEBUG] User ${userId} has ${purchases.length} purchases`);
       
       for (const purchase of purchases) {
-        console.log(`[DEBUG] Purchase ${purchase.id}: status=${purchase.status}`);
         if (purchase.status === 'completed') {
           const items = await storage.getPurchaseItems(purchase.id);
-          console.log(`[DEBUG] Purchase ${purchase.id} has ${items.length} items`);
           
           for (const item of items) {
             // Track all purchased assessment types (regardless of completion)
             purchasedAssessmentTypes.add(item.assessmentType);
             
             const existing = await storage.getResultByPurchaseItem(item.id);
-            console.log(`[DEBUG] Item ${item.id} (${item.assessmentType}): existing result = ${existing ? existing.status : 'none'}`);
             
             if (!existing || existing.status !== 'completed') {
-              console.log(`[DEBUG] Adding ${item.assessmentType} to available assessments`);
               availableAssessments.push({
                 purchaseItemId: item.id,
                 assessmentType: item.assessmentType,

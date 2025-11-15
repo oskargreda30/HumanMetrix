@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 export default function PurchaseSuccess() {
   const [, setLocation] = useLocation();
@@ -41,6 +42,14 @@ export default function PurchaseSuccess() {
         localStorage.removeItem("humanmetrix-basket");
       } catch (error) {
         console.error("Error clearing basket:", error);
+      }
+
+      // Invalidate cache so dashboard shows new assessments immediately
+      if (data.isLoggedIn) {
+        // Logged-in user purchasing additional assessments
+        await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
       }
 
       setAccountCreated(true);
