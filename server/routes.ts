@@ -1350,18 +1350,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId = newUser.id;
           requiresLogin = true;
           
+          console.log(`📧 Sending welcome email to ${email} with temporary password`);
           // Send welcome email with credentials
           await sendWelcomeEmailWithPassword(
             email,
             `${firstName} ${lastName}`,
             temporaryPassword
           );
-
-          console.log(`Created new user ${email}`);
+          console.log(`✅ Created new user ${email} and sent welcome email`);
         } else {
           userId = existingUser.id;
           requiresLogin = true; // Existing user needs to log in
-          console.log(`User ${email} already exists, requires login`);
+          console.log(`⚠️  User ${email} already exists - no email will be sent, they need to use their existing password`);
         }
       }
 

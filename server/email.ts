@@ -305,8 +305,13 @@ Log in at: ${loginUrl}
     `.trim(),
   };
 
-  const info = await emailTransporter.sendMail(mailOptions);
-  console.log(`✅ Welcome email sent to ${email} (ID: ${info.messageId})`);
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Welcome email sent to ${email} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send welcome email to ${email}:`, error.message);
+    throw new Error(`Failed to send welcome email: ${error.message}`);
+  }
 }
 
 export async function sendContactFormEmail(
