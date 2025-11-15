@@ -835,6 +835,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's purchases with their results grouped (for batch viewing)
+  app.get("/api/purchases-with-results", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // Efficient bulk queries (no N+1)
+      const [purchases, allResults] = await Promise.all([
+        storage.getPurchasesByUser(userId),
+        storage.getResultsByUser(userId)
+      ]);
+      
+      // Get all purchase items in bulk
+      const allPurchaseItems = await Promise.all(
+        purchases.map(p => storage.getPurchaseItems(p.id))
+      );
+      
+      // Flatten and create a map of purchaseId -> items
+      const purchaseItemsMap = new Map<string, any[]>();
+      allPurchaseItems.forEach((items, index) => {
+        purchaseItemsMap.set(purchases[index].id, items);
+      });
+      
+      // Create map of purchaseItemId -> results[] (supports multiple results per item)
+      const resultsMap = new Map<string, any[]>();
+      allResults.forEach(result => {
+        if (result.purchaseItemId) {
+          if (!resultsMap.has(result.purchaseItemId)) {
+            resultsMap.set(result.purchaseItemId, []);
+          }
+          resultsMap.get(result.purchaseItemId)!.push(result);
+        }
+      });
+      
+      // Group results by purchase
+      const purchasesWithResults = purchases.map(purchase => {
+        const items = purchaseItemsMap.get(purchase.id) || [];
+        const resultsForPurchase: any[] = [];
+        
+        // Collect ALL results for all items in this purchase
+        items.forEach(item => {
+          const itemResults = resultsMap.get(item.id) || [];
+          itemResults.forEach(result => {
+            resultsForPurchase.push({
+              ...result,
+              purchaseItemId: item.id,  // Ensure linkage is explicit
+              assessmentType: item.assessmentType
+            });
+          });
+        });
+        
+        const completedResults = resultsForPurchase.filter(r => r.status === 'completed');
+        
+        return {
+          ...purchase,
+          purchaseItems: items,
+          results: resultsForPurchase,  // All results, including multiple attempts
+          completedCount: completedResults.length,
+          totalCount: items.length,
+          allItemsCompleted: completedResults.length >= items.length
+        };
+      });
+      
+      res.json(purchasesWithResults);
+    } catch (error) {
+      console.error("Error fetching purchases with results:", error);
+      res.status(500).json({ message: "Failed to fetch purchases with results" });
+    }
+  });
+
   // Get available assessments for user (from purchases OR invitations)
   app.get("/api/available-assessments", isAuthenticated, async (req: any, res) => {
     try {

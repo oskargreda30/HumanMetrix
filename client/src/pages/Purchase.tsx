@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -10,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Info, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 type Assessment = {
   id: string;
@@ -56,15 +56,12 @@ const assessments: Assessment[] = [
 export default function Purchase() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/auth/user"]
-  });
 
   const handleToggle = (id: string) => {
     const newSelected = new Set(selectedAssessments);

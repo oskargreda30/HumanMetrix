@@ -22,8 +22,8 @@ export default function Dashboard() {
     queryKey: ["/api/available-assessments"],
   });
 
-  const { data: results, isLoading: resultsLoading } = useQuery<any[]>({
-    queryKey: ["/api/results"],
+  const { data: purchasesWithResults, isLoading: purchasesLoading } = useQuery<any[]>({
+    queryKey: ["/api/purchases-with-results"],
   });
 
   const availableAssessments = availableData?.assessments || [];
@@ -43,21 +43,18 @@ export default function Dashboard() {
     }
   }, [toast]);
 
-  if (assessmentsLoading || resultsLoading) {
+  if (assessmentsLoading || purchasesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
-  const inProgressResults = results?.filter((r: any) => r.status === 'in_progress') || [];
   
-  // Check if all REQUIRED assessment types are completed (dynamic based on invitation or self-service)
-  const uniqueCompletedTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = requiredAssessmentTypes.length > 0 && 
-    requiredAssessmentTypes.every(type => uniqueCompletedTypes.has(type));
+  // Filter purchases with completed results
+  const purchasesWithCompletedResults = (purchasesWithResults || []).filter(
+    (purchase: any) => purchase.completedCount > 0
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
