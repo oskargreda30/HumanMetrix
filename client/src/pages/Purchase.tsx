@@ -75,8 +75,6 @@ export default function Purchase() {
   };
 
   const handleSubmit = async () => {
-    console.log("[Purchase] handleSubmit - user:", user ? `${user.email} (logged in)` : "Not logged in");
-    
     if (selectedAssessments.size === 0) {
       toast({
         title: "No assessments selected",
@@ -88,7 +86,6 @@ export default function Purchase() {
 
     // If not logged in, require name and email
     if (!user) {
-      console.log("[Purchase] Guest user flow - name/email required");
       if (!firstName.trim() || !lastName.trim() || !email.trim()) {
         toast({
           title: "Details required",
@@ -113,7 +110,6 @@ export default function Purchase() {
     try {
       // Logged-in users: create free purchase (payment-deferred model)
       if (user) {
-        console.log("[Purchase] Logged-in user - calling /api/create-free-purchase");
         const response = await fetch("/api/create-free-purchase", {
           method: "POST",
           headers: {
@@ -134,7 +130,6 @@ export default function Purchase() {
         }
 
         const data = await response.json();
-        console.log("[Purchase] Success response:", data);
         
         toast({
           title: "Success!",
@@ -145,11 +140,9 @@ export default function Purchase() {
         localStorage.removeItem("humanmetrix-basket");
         
         // Invalidate cache so dashboard shows new assessments immediately
-        console.log("[Purchase] Invalidating cache...");
         await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        console.log("[Purchase] Cache invalidated, redirecting to dashboard");
         
         // Redirect to dashboard
         setTimeout(() => {
@@ -157,7 +150,6 @@ export default function Purchase() {
         }, 1500);
       } else {
         // Guest users: create free invitation with email
-        console.log("[Purchase] Guest user - calling /api/create-free-invitation");
         const response = await fetch("/api/create-free-invitation", {
           method: "POST",
           headers: {
