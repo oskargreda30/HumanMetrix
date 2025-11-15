@@ -965,6 +965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's purchases with their results grouped (for batch viewing)
   app.get("/api/purchases-with-results", isAuthenticated, async (req: any, res) => {
     try {
+      // Prevent browser caching - always fetch fresh data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       const userId = req.user.id;
       
       // Efficient bulk queries (no N+1)
@@ -1048,6 +1053,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available assessments for user (from purchases OR invitations)
   app.get("/api/available-assessments", isAuthenticated, async (req: any, res) => {
     try {
+      // Prevent browser caching - always fetch fresh data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user) {
