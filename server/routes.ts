@@ -67,6 +67,16 @@ const contactFormSchema = z.object({
   intent: z.enum(['demo', 'sales']),
 });
 
+// Get time limit in seconds for each assessment type
+function getAssessmentTimeLimit(assessmentType: string): number {
+  // Prompt Architecture: 14 minutes (2 min per level × 7 levels)
+  if (assessmentType === 'prompt_architecture') {
+    return 840; // 14 minutes in seconds
+  }
+  // All other assessments: 20 minutes
+  return 1200;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
@@ -908,11 +918,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(403).json({ message: "Unauthorized access to this assessment" });
           }
           
-          // Calculate remaining time (20 minutes = 1200 seconds)
+          // Calculate remaining time based on assessment type
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
           const startTime = new Date(existing.startedAt).getTime();
           const now = Date.now();
           const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, 1200 - elapsed);
+          const remaining = Math.max(0, timeLimit - elapsed);
           
           return res.json({ ...existing, timeRemaining: remaining });
         }
@@ -931,10 +942,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completedAt: null,
         });
 
+        const timeLimit = getAssessmentTimeLimit(assessmentType);
         const startTime = new Date(result.startedAt).getTime();
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
-        const remaining = Math.max(0, 1200 - elapsed);
+        const remaining = Math.max(0, timeLimit - elapsed);
 
         return res.json({ ...result, timeRemaining: remaining });
       }
@@ -964,11 +976,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "Unauthorized access to this assessment" });
         }
         
-        // Calculate remaining time (20 minutes = 1200 seconds)
+        // Calculate remaining time based on assessment type
+        const timeLimit = getAssessmentTimeLimit(item.assessmentType);
         const startTime = new Date(existing.startedAt).getTime();
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
-        const remaining = Math.max(0, 1200 - elapsed);
+        const remaining = Math.max(0, timeLimit - elapsed);
         
         return res.json({ ...existing, timeRemaining: remaining });
       }
@@ -987,11 +1000,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedAt: null,
       });
 
-      // Calculate initial remaining time (should be 1200 seconds)
+      // Calculate initial remaining time based on assessment type
+      const timeLimit = getAssessmentTimeLimit(item.assessmentType);
       const startTime = new Date(result.startedAt).getTime();
       const now = Date.now();
       const elapsed = Math.floor((now - startTime) / 1000);
-      const remaining = Math.max(0, 1200 - elapsed);
+      const remaining = Math.max(0, timeLimit - elapsed);
 
       res.json({ ...result, timeRemaining: remaining });
     } catch (error) {
@@ -1012,14 +1026,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      // Check if time limit exceeded (20 minutes = 1200 seconds)
+      // Check if time limit exceeded based on assessment type
+      const timeLimit = getAssessmentTimeLimit(result.assessmentType);
       const startTime = new Date(result.startedAt).getTime();
       const now = Date.now();
       const elapsed = Math.floor((now - startTime) / 1000);
       
-      if (elapsed > 1200) {
+      if (elapsed > timeLimit) {
         // Time expired - auto-submit with current answers only
-        console.log(`Assessment ${id} submitted after time limit (${elapsed}s)`);
+        console.log(`Assessment ${id} submitted after time limit (${elapsed}s > ${timeLimit}s)`);
       }
 
       // Calculate scores based on assessment type
