@@ -36,15 +36,10 @@ export default function PaymentCallback() {
         setStatus("success");
         setMessage("Results unlocked! Redirecting...");
 
-        // Results are now unlocked in the database
-        // If user is authenticated, go directly to results
-        // Otherwise, redirect to login first
+        // Results are now unlocked - redirect to results page
+        // The backend has already validated the session, so use client-side navigation
         setTimeout(() => {
-          if (isAuthenticated) {
-            setLocation("/my-results");
-          } else {
-            window.location.href = "/login?redirect=/my-results";
-          }
+          setLocation("/my-results");
         }, 1500);
       } catch (error: any) {
         console.error("Payment processing error:", error);
