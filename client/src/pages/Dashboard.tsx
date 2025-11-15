@@ -20,14 +20,16 @@ export default function Dashboard() {
 
   const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
-    refetchOnMount: true,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    staleTime: 0, // Always consider data stale
   });
 
   const { data: purchasesWithResults, isLoading: purchasesLoading } = useQuery<any[]>({
     queryKey: ["/api/purchases-with-results"],
-    refetchOnMount: true,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    staleTime: 0, // Always consider data stale
   });
 
   const availableAssessments = availableData?.assessments || [];
