@@ -513,13 +513,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
-      // Re-establish session after Stripe redirect (cookies are lost during external redirects)
-      // This logs the user back in so they don't appear logged out after payment
-      req.session.userId = userId;
+      // Re-establish session after Stripe redirect
+      // Stripe redirects often cause session cookies to be lost, especially in production
+      // We regenerate the session to ensure a fresh, valid session is created
       await new Promise<void>((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) reject(err);
-          else resolve();
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error(`[Payment Callback] Session regeneration error:`, err);
+            // If regeneration fails, try setting on existing session
+            req.session.userId = userId;
+            req.session.save((saveErr: any) => {
+              if (saveErr) reject(saveErr);
+              else resolve();
+            });
+          } else {
+            // Set user ID on newly regenerated session
+            req.session.userId = userId;
+            req.session.save((saveErr: any) => {
+              if (saveErr) reject(saveErr);
+              else resolve();
+            });
+          }
         });
       });
       
