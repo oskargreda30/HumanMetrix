@@ -26,6 +26,21 @@ export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
+  // Check if viewing a specific purchase batch
+  const urlParams = new URLSearchParams(window.location.search);
+  const purchaseId = urlParams.get('purchaseId');
+
+  // Fetch purchase batches with results
+  const { data: purchaseBatches, isLoading: batchesLoading } = useQuery<any[]>({
+    queryKey: ["/api/purchases-with-results"],
+    enabled: isAuthenticated,
+  });
+
+  // Find the specific purchase batch if purchaseId is provided
+  const selectedBatch = purchaseId 
+    ? purchaseBatches?.find((p: any) => p.id === parseInt(purchaseId))
+    : null;
+
   // Check if user has paid for results access
   const { data: purchases } = useQuery<any[]>({
     queryKey: ["/api/purchases"],
@@ -54,7 +69,7 @@ export default function MyResults() {
   // Find Prompt Architecture result for later fetching
   const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
 
-  if (resultsLoading || assessmentsLoading || !allResults) {
+  if (resultsLoading || assessmentsLoading || batchesLoading || !allResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -62,7 +77,14 @@ export default function MyResults() {
     );
   }
 
-  const completedResults = allResults.filter((r: any) => r.status === 'completed');
+  // Filter results by purchase batch if specified
+  let completedResults = allResults.filter((r: any) => r.status === 'completed');
+  
+  if (selectedBatch) {
+    // Get result IDs from this batch
+    const batchResultIds = selectedBatch.results.map((r: any) => r.id);
+    completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
+  }
   
   // Check if all REQUIRED assessment types are completed (dynamic based on invitation or self-service)
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
@@ -261,9 +283,19 @@ export default function MyResults() {
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">My Assessment Results</h1>
+                <h1 className="text-3xl font-bold mb-2">
+                  {selectedBatch ? 'Purchase Batch Results' : 'My Assessment Results'}
+                </h1>
                 <p className="text-muted-foreground">
-                  Comprehensive report for {user?.firstName} {user?.lastName}
+                  {selectedBatch ? (
+                    <>
+                      Viewing results from purchase on {format(new Date(selectedBatch.createdAt), 'MMM d, yyyy')}
+                      {' • '}
+                      {selectedBatch.completedCount} of {selectedBatch.totalCount} assessments completed
+                    </>
+                  ) : (
+                    <>Comprehensive report for {user?.firstName} {user?.lastName}</>
+                  )}
                 </p>
               </div>
               <Button 
