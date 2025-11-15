@@ -104,18 +104,16 @@ export function ResultsPaymentGate() {
             <Lock className="h-8 w-8 text-primary" />
           </div>
           
-          <h1 className="text-3xl font-bold">Unlock Your Results</h1>
+          <h1 className="text-3xl font-bold">Pay and View Your Results</h1>
           
-          {wasInvited ? (
-            <p className="text-muted-foreground text-lg">
-              Your assessment answers have been submitted to the employer who invited you. 
-              You also have the option to purchase and download your own copy of the results 
-              for your records and future job applications.
-            </p>
-          ) : (
-            <p className="text-muted-foreground text-lg">
-              You've completed all your assessments! To view your detailed results and download 
-              your professional PDF report, please submit your payment below.
+          <p className="text-muted-foreground text-lg">
+            You've completed all your assessments! To view your detailed results and download 
+            your professional PDF report, please submit your payment below.
+          </p>
+          
+          {wasInvited && (
+            <p className="text-sm text-muted-foreground italic">
+              Your results have been submitted to the employer who invited you to complete our assessments. You also have the option to pay and download your own copy of the results for your records, and your future job applications.
             </p>
           )}
         </div>
