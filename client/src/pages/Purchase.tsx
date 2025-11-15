@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle2, Info, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { queryClient } from "@/lib/queryClient";
 
 type Assessment = {
   id: string;
@@ -107,9 +108,9 @@ export default function Purchase() {
     setIsProcessing(true);
     
     try {
-      // Logged-in users: go directly to Stripe payment
+      // Logged-in users: create free purchase (payment-deferred model)
       if (user) {
-        const response = await fetch("/api/create-checkout-session", {
+        const response = await fetch("/api/create-free-purchase", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -122,17 +123,28 @@ export default function Purchase() {
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || "Failed to create checkout session");
+          throw new Error(error.message || "Failed to add assessments");
         }
 
         const data = await response.json();
         
-        // Redirect to Stripe checkout
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          throw new Error("No checkout URL received");
-        }
+        toast({
+          title: "Success!",
+          description: data.message,
+        });
+        
+        // Clear basket
+        localStorage.removeItem("humanmetrix-basket");
+        
+        // Invalidate cache so dashboard shows new assessments immediately
+        await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 1500);
       } else {
         // Guest users: create free invitation with email
         const response = await fetch("/api/create-free-invitation", {
@@ -356,7 +368,7 @@ export default function Purchase() {
                       size="lg"
                       data-testid="button-continue"
                     >
-                      {isProcessing ? "Processing..." : user ? "Proceed to Payment" : "Get Started"}
+                      {isProcessing ? "Processing..." : "Get Started"}
                     </Button>
 
                     {!user && (
@@ -367,7 +379,7 @@ export default function Purchase() {
                     
                     {user && (
                       <p className="text-xs text-center text-muted-foreground mt-4">
-                        You'll be redirected to secure payment to unlock these assessments
+                        Take assessments for free. Pay only when you're ready to unlock your results.
                       </p>
                     )}
                   </>

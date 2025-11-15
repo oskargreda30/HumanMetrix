@@ -803,6 +803,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create free purchase for logged-in users (payment-deferred model)
+  app.post("/api/create-free-purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const { assessmentIds } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create purchase record with resultsAccessPaid: false (payment-deferred)
+      const purchase = await storage.createPurchase({
+        userId: userId,
+        stripeSessionId: `free_${Date.now()}_${userId}`,
+        totalAmount: 0,
+        baseFee: 0,
+        status: "completed",
+        resultsAccessPaid: false, // User can take assessments, pay later for results
+        completedAt: new Date(),
+      });
+
+      // Create purchase items with status "ready"
+      for (const assessmentId of assessmentIds) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        
+        await storage.createPurchaseItem({
+          purchaseId: purchase.id,
+          assessmentType: normalizedId,
+          price: 0, // Free to take
+          status: "ready",
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Assessments added to your account! You can now take them for free.",
+        purchaseId: purchase.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating free purchase:", error);
+      res.status(500).json({ message: "Failed to create free purchase: " + error.message });
+    }
+  });
+
   // Stripe checkout session
   app.post("/api/create-checkout-session", isAuthenticated, async (req: any, res) => {
     try {
