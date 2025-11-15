@@ -942,6 +942,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get purchase items by purchase ID (for price calculation)
+  app.get("/api/purchase-items/:purchaseId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { purchaseId } = req.params;
+      
+      // Verify purchase belongs to user
+      const purchase = await storage.getPurchase(purchaseId);
+      if (!purchase || purchase.userId !== userId) {
+        return res.status(404).json({ message: "Purchase not found" });
+      }
+      
+      const items = await storage.getPurchaseItems(purchaseId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching purchase items:", error);
+      res.status(500).json({ message: "Failed to fetch purchase items" });
+    }
+  });
+
   // Get user's purchases with their results grouped (for batch viewing)
   app.get("/api/purchases-with-results", isAuthenticated, async (req: any, res) => {
     try {

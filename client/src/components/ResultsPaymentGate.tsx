@@ -16,9 +16,9 @@ export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // Fetch unique completed assessment types to calculate price
-  const { data: results } = useQuery<any[]>({
-    queryKey: ["/api/results"],
+  // Fetch current unpaid purchase to get correct pricing for THIS batch only
+  const { data: purchases } = useQuery<any[]>({
+    queryKey: ["/api/purchases"],
   });
   
   // Check if user was invited (has invitation record)
@@ -26,10 +26,20 @@ export function ResultsPaymentGate() {
     queryKey: ["/api/invitation-status"],
   });
   
-  const completedResults = results?.filter((r: any) => r.status === 'completed') || [];
-  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  // Find most recent unpaid purchase
+  const unpaidPurchases = purchases?.filter((p: any) => !p.resultsAccessPaid) || [];
+  unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const currentPurchase = unpaidPurchases[0];
   
-  const assessmentsTotalPence = Array.from(uniqueAssessmentTypes).reduce((sum, type) => {
+  // Fetch purchase items for current unpaid purchase to calculate correct price
+  const { data: purchaseItems } = useQuery<any[]>({
+    queryKey: ["/api/purchase-items", currentPurchase?.id],
+    enabled: !!currentPurchase,
+  });
+  
+  // Calculate price based ONLY on assessments in current unpaid purchase batch
+  const assessmentTypesInBatch = purchaseItems?.map((item: any) => item.assessmentType) || [];
+  const assessmentsTotalPence = assessmentTypesInBatch.reduce((sum: number, type: string) => {
     const normalizedType = normalizeAssessmentId(type);
     return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
   }, 0);

@@ -20,10 +20,14 @@ export default function Dashboard() {
 
   const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const { data: purchasesWithResults, isLoading: purchasesLoading } = useQuery<any[]>({
     queryKey: ["/api/purchases-with-results"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const availableAssessments = availableData?.assessments || [];
