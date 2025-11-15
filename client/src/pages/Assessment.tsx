@@ -36,7 +36,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (2 minutes per question for Prompt Architecture)
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -93,8 +93,12 @@ export default function Assessment() {
     onSuccess: (data: any) => {
       setResultId(data.id);
       setShowInstructions(false); // Only close instructions AFTER successful start
-      // Set remaining time from server (prevents bypass by refreshing)
-      if (data.timeRemaining !== undefined) {
+      
+      // For Prompt Architecture, set 2 minutes per question instead of total time
+      const isPromptArch = assessment?.assessmentType === 'prompt_architecture' || assessment?.assessmentType === 'prompt-architecture';
+      if (isPromptArch) {
+        setTimeRemaining(120); // 2 minutes per question
+      } else if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
       }
     },
@@ -266,7 +270,7 @@ export default function Assessment() {
             "Write clear, specific prompts that address the given scenario",
             "Include relevant context and constraints in your prompts",
             "Think about structure and how to guide the AI effectively",
-            "You have 20 minutes to complete all 7 levels",
+            "You have 2 minutes per level (14 minutes total for all 7 levels)",
           ]
         };
       case "aiq":
@@ -319,6 +323,13 @@ export default function Assessment() {
     
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
+      
+      // For Prompt Architecture, reset timer to 2 minutes for each new question
+      if (isPromptArchitecture) {
+        setTimeRemaining(120); // Reset to 2 minutes
+        setShowTimeWarning(false); // Reset warning state
+      }
+      
       // Scroll to top of page after moving to next question
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
