@@ -161,8 +161,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const metadata = session.metadata;
       
-      if (!metadata || metadata.isGuestCheckout !== "true") {
-        return res.json({ success: true, message: "Payment processed" });
+      if (!metadata) {
+        return res.status(400).json({ message: "Missing session metadata" });
+      }
+
+      // Handle logged-in user purchasing additional assessments
+      if (metadata.userId && !metadata.isGuestCheckout) {
+        const userId = metadata.userId;
+        const assessmentIds = metadata.assessmentIds;
+        
+        if (!userId || !assessmentIds) {
+          return res.status(400).json({ message: "Missing user or assessment information" });
+        }
+
+        // Create purchase record
+        const purchase = await storage.createPurchase({
+          userId: userId,
+          stripeSessionId: session.id,
+          stripePaymentIntentId: session.payment_intent as string || null,
+          totalAmount: session.amount_total || 0,
+          baseFee: BASE_FEE,
+          status: "completed",
+          resultsAccessPaid: true, // Paid users can view results
+          completedAt: new Date(),
+        });
+
+        const assessmentList = JSON.parse(assessmentIds);
+        
+        for (const assessmentId of assessmentList) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          const price = ASSESSMENT_PRICES[normalizedId] || 0;
+          
+          await storage.createPurchaseItem({
+            purchaseId: purchase.id,
+            assessmentType: normalizedId,
+            price,
+            status: "ready",
+          });
+        }
+        
+        return res.json({
+          success: true,
+          message: "Assessments added to your account",
+          isLoggedIn: true,
+        });
+      }
+
+      // Handle guest checkout (new user)
+      if (metadata.isGuestCheckout !== "true") {
+        return res.status(400).json({ message: "Invalid checkout session" });
       }
 
       const { customerEmail, firstName, lastName, assessmentIds } = metadata;

@@ -166,16 +166,18 @@ export default function PurchaseSuccess() {
                   <Button
                     size="lg"
                     className="w-full"
-                    onClick={() => setLocation("/login")}
-                    data-testid="button-go-to-login"
+                    onClick={() => setLocation(userEmail ? "/login" : "/dashboard")}
+                    data-testid={userEmail ? "button-go-to-login" : "button-go-to-dashboard"}
                   >
-                    Go to Login
+                    {userEmail ? "Go to Login" : "Go to Dashboard"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                   
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Log in with the credentials we sent to your email
-                  </p>
+                  {userEmail && (
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Log in with the credentials we sent to your email
+                    </p>
+                  )}
                 </div>
               </>
             )}
