@@ -445,16 +445,6 @@ export default function Assessment() {
                 </div>
               </div>
 
-              {/* Time Warning */}
-              {timeRemaining <= 300 && timeRemaining > 0 && (
-                <Alert variant="destructive" className="mb-6">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Time Running Out!</AlertTitle>
-                  <AlertDescription>
-                    You have less than 5 minutes remaining. Please complete your assessment soon.
-                  </AlertDescription>
-                </Alert>
-              )}
 
               {/* Question */}
               <Card className="p-8 mb-6">
