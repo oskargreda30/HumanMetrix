@@ -841,10 +841,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Efficient bulk queries (no N+1)
-      const [purchases, allResults] = await Promise.all([
+      const [purchasesRaw, allResults] = await Promise.all([
         storage.getPurchasesByUser(userId),
         storage.getResultsByUser(userId)
       ]);
+      
+      // Sort purchases newest first for consistent numbering
+      const purchases = purchasesRaw.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       
       // Get all purchase items in bulk
       const allPurchaseItems = await Promise.all(

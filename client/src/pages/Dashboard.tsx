@@ -99,69 +99,60 @@ export default function Dashboard() {
             )}
           </section>
 
-          {/* Completed Assessments */}
-          {completedResults.length > 0 && (
+          {/* Completed Purchases (Batches) */}
+          {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold mb-4">Your Results</h2>
-              <Card className="p-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <h3 className="text-xl font-semibold">
-                        {allAssessmentsCompleted ? 'All Assessments Complete!' : 'Assessments In Progress'}
-                      </h3>
-                    </div>
-                    <p className="text-muted-foreground mb-4">
-                      {allAssessmentsCompleted 
-                        ? `You've completed all ${requiredAssessmentTypes.length} required assessments. View your results now!` 
-                        : `You've completed ${uniqueCompletedTypes.size} of ${requiredAssessmentTypes.length} required assessments. Complete all assessments to view results.`
-                      }
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {completedResults.map((result: any) => (
-                        <Badge key={result.id} variant="secondary">
-                          {formatAssessmentName(result.assessmentType)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  {allAssessmentsCompleted && (
-                    <div className="flex flex-col gap-2">
-                      <Link href="/my-results">
-                        <Button size="lg" className="gap-2" data-testid="button-view-all-results">
-                          <FileText className="h-4 w-4" />
-                          View My Results
-                        </Button>
-                      </Link>
-                      {completedResults[0].completedAt && (
-                        <p className="text-xs text-center text-muted-foreground">
-                          Last completed {format(new Date(completedResults[0].completedAt), 'MMM d, yyyy')}
+              <div className="space-y-6">
+                {purchasesWithCompletedResults.map((purchase: any, index: number) => (
+                  <Card key={purchase.id} className="p-6">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {purchase.allItemsCompleted ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Clock className="h-5 w-5 text-blue-500" />
+                          )}
+                          <h3 className="text-lg font-semibold">
+                            Purchase #{purchasesWithCompletedResults.length - index}
+                          </h3>
+                          {purchase.allItemsCompleted && (
+                            <Badge variant="secondary">All Complete</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {purchase.completedCount} of {purchase.totalCount} assessments completed
+                          {purchase.completedAt && (
+                            <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
+                          )}
                         </p>
+                        <div className="flex flex-wrap gap-2">
+                          {purchase.results
+                            .filter((r: any) => r.status === 'completed')
+                            .map((result: any) => (
+                              <Badge key={result.id} variant="outline">
+                                {formatAssessmentName(result.assessmentType)}
+                              </Badge>
+                            ))}
+                        </div>
+                      </div>
+                      {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
+                        <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                          <Button className="gap-2" data-testid={`button-view-results-${purchase.id}`}>
+                            <FileText className="h-4 w-4" />
+                            View Results
+                          </Button>
+                        </Link>
+                      )}
+                      {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
+                        <Link href="/my-results">
+                          <Button variant="outline" className="gap-2" data-testid={`button-unlock-results-${purchase.id}`}>
+                            Unlock Results
+                          </Button>
+                        </Link>
                       )}
                     </div>
-                  )}
-                </div>
-              </Card>
-            </section>
-          )}
-
-          {/* In Progress */}
-          {inProgressResults.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">In Progress</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {inProgressResults.map((result: any) => (
-                  <Card key={result.id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-lg font-semibold">{formatAssessmentName(result.assessmentType)}</h3>
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <Link href={`/assessment/${result.purchaseItemId}`}>
-                      <Button variant="outline" className="w-full" data-testid={`button-continue-${result.id}`}>
-                        Continue
-                      </Button>
-                    </Link>
                   </Card>
                 ))}
               </div>
