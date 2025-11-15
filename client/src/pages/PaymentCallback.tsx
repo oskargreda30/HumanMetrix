@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function PaymentCallback() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [message, setMessage] = useState("Processing your payment...");
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double processing
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     const processPayment = async () => {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -36,8 +39,7 @@ export default function PaymentCallback() {
         setStatus("success");
         setMessage("Results unlocked! Redirecting...");
 
-        // Results are now unlocked - redirect to results page
-        // The backend has already validated the session, so use client-side navigation
+        // Results are now unlocked - redirect to results page using client-side navigation
         setTimeout(() => {
           setLocation("/my-results");
         }, 1500);
@@ -53,11 +55,8 @@ export default function PaymentCallback() {
       }
     };
 
-    // Only process payment once auth status is known
-    if (!authLoading) {
-      processPayment();
-    }
-  }, [setLocation, isAuthenticated, authLoading]);
+    processPayment();
+  }, [setLocation]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
