@@ -35,7 +35,7 @@ const assessments = [
     title: "Prompt Architecture Assessment",
     description: "Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by GPT-5.",
     questionCount: 7,
-    duration: "25 min",
+    duration: "14 min",
     icon: Code2,
     status: "available" as const,
     price: "£5.00",
