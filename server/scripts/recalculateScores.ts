@@ -140,15 +140,15 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
   const skills: Record<string, number> = {
-    'AI Literacy/Prompting': 0,
-    'Technical Fluency': 0,
-    'Domain Fluency': 0,
-    'Critical Thinking': 0,
-    'Adaptive Learning': 0,
-    'Responsible AI': 0,
+    'AI Literacy & Prompt Engineering': 0,
+    'Technical Fundamentals': 0,
+    'Data Fluency': 0,
+    'Critical Thinking & Problem-Solving': 0,
+    'Adaptability & Continuous Learning': 0,
+    'Responsible AI & Ethical Awareness': 0,
     'Domain Expertise': 0,
-    'Creative Innovation': 0,
-    'Cross-functional Collaboration': 0,
+    'Creativity & Innovation': 0,
+    'Collaboration & Communication': 0,
   };
 
   const scoringMatrix: Record<string, Record<string, number>> = {

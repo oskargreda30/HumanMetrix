@@ -2755,15 +2755,15 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
   // Initialize skill scores with full names
   const skills: Record<string, number> = {
-    'AI Literacy/Prompting': 0,
-    'Technical Fluency': 0,
-    'Domain Fluency': 0,
-    'Critical Thinking': 0,
-    'Adaptive Learning': 0,
-    'Responsible AI': 0,
+    'AI Literacy & Prompt Engineering': 0,
+    'Technical Fundamentals': 0,
+    'Data Fluency': 0,
+    'Critical Thinking & Problem-Solving': 0,
+    'Adaptability & Continuous Learning': 0,
+    'Collaboration & Communication': 0,
+    'Responsible AI & Ethical Awareness': 0,
+    'Creativity & Innovation': 0,
     'Domain Expertise': 0,
-    'Creative Innovation': 0,
-    'Cross-functional Collaboration': 0,
   };
 
   // Scoring matrix - each question-option maps to skill(s) and points (4 points each)
@@ -2904,28 +2904,28 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
 
   // For each question, find the maximum points each skill can get
   const maxScores: Record<string, number> = {
-    'AI Literacy/Prompting': 0,
-    'Technical Fluency': 0,
-    'Domain Fluency': 0,
-    'Critical Thinking': 0,
-    'Adaptive Learning': 0,
-    'Responsible AI': 0,
+    'AI Literacy & Prompt Engineering': 0,
+    'Technical Fundamentals': 0,
+    'Data Fluency': 0,
+    'Critical Thinking & Problem-Solving': 0,
+    'Adaptability & Continuous Learning': 0,
+    'Responsible AI & Ethical Awareness': 0,
     'Domain Expertise': 0,
-    'Creative Innovation': 0,
-    'Cross-functional Collaboration': 0,
+    'Creativity & Innovation': 0,
+    'Collaboration & Communication': 0,
   };
 
   Object.values(questionScores).forEach((options) => {
     const questionMaxScores: Record<string, number> = {
-      'AI Literacy/Prompting': 0,
-      'Technical Fluency': 0,
-      'Domain Fluency': 0,
-      'Critical Thinking': 0,
-      'Adaptive Learning': 0,
-      'Responsible AI': 0,
+      'AI Literacy & Prompt Engineering': 0,
+      'Technical Fundamentals': 0,
+      'Data Fluency': 0,
+      'Critical Thinking & Problem-Solving': 0,
+      'Adaptability & Continuous Learning': 0,
+      'Responsible AI & Ethical Awareness': 0,
       'Domain Expertise': 0,
-      'Creative Innovation': 0,
-      'Cross-functional Collaboration': 0,
+      'Creativity & Innovation': 0,
+      'Collaboration & Communication': 0,
     };
 
     // For each option in this question, track max points per skill

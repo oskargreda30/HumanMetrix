@@ -152,15 +152,15 @@ const sarahFitScores = {
 };
 
 const sarahAIReadinessScores = {
-  'AI Literacy/Prompting': 85,
-  'Technical Fluency': 78,
-  'Domain Fluency': 82,
-  'Critical Thinking': 90,
-  'Adaptive Learning': 88,
-  'Responsible AI': 92,
+  'AI Literacy & Prompt Engineering': 85,
+  'Technical Fundamentals': 78,
+  'Data Fluency': 82,
+  'Critical Thinking & Problem-Solving': 90,
+  'Adaptability & Continuous Learning': 88,
+  'Responsible AI & Ethical Awareness': 92,
   'Domain Expertise': 80,
-  'Creative Innovation': 86,
-  'Cross-functional Collab': 84
+  'Creativity & Innovation': 86,
+  'Collaboration & Communication': 84
 };
 
 const marcusFitScores = {
@@ -173,15 +173,15 @@ const marcusFitScores = {
 };
 
 const marcusAIReadinessScores = {
-  'AI Literacy/Prompting': 72,
-  'Technical Fluency': 88,
-  'Domain Fluency': 70,
-  'Critical Thinking': 82,
-  'Adaptive Learning': 75,
-  'Responsible AI': 78,
+  'AI Literacy & Prompt Engineering': 72,
+  'Technical Fundamentals': 88,
+  'Data Fluency': 70,
+  'Critical Thinking & Problem-Solving': 82,
+  'Adaptability & Continuous Learning': 75,
+  'Responsible AI & Ethical Awareness': 78,
   'Domain Expertise': 85,
-  'Creative Innovation': 73,
-  'Cross-functional Collab': 80
+  'Creativity & Innovation': 73,
+  'Collaboration & Communication': 80
 };
 
 // ===== PDF GENERATION FUNCTIONS =====
@@ -252,7 +252,7 @@ function generateIndividualPDF(
   const metricsData = [
     { label: 'Skills Assessed', value: '19' },
     { label: 'Average Score', value: `${avgScore}/100` },
-    { label: 'Top Skill', value: 'Responsible AI' },
+    { label: 'Top Skill', value: 'Responsible AI & Ethical Awareness' },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -751,9 +751,9 @@ function generateRoleFitPDF(
   yPos += 10;
   
   const keySkills = [
-    { name: 'Technical Fluency', score: aiReadinessScores['Technical Fluency'], required: 75 },
-    { name: 'Critical Thinking', score: aiReadinessScores['Critical Thinking'], required: 80 },
-    { name: 'AI Literacy/Prompting', score: aiReadinessScores['AI Literacy/Prompting'], required: 70 },
+    { name: 'Technical Fundamentals', score: aiReadinessScores['Technical Fundamentals'], required: 75 },
+    { name: 'Critical Thinking & Problem-Solving', score: aiReadinessScores['Critical Thinking & Problem-Solving'], required: 80 },
+    { name: 'AI Literacy & Prompt Engineering', score: aiReadinessScores['AI Literacy & Prompt Engineering'], required: 70 },
     { name: 'Intellectual Curiosity', score: fitScores['Intellectual Curiosity'], required: 85 },
     { name: 'Growth Mindset', score: fitScores['Growth Mindset'], required: 80 },
   ];
