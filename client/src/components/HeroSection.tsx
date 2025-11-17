@@ -12,7 +12,7 @@ import networkBg from "@assets/image_1761537286469.png";
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
-  const [cardsVisible, setCardsVisible] = useState(false);
+  const [cardsVisible, setCardsVisible] = useState(false); // Start hidden for animation
   const [scrollY, setScrollY] = useState(0);
   // Initialize with media query value to prevent flash of animated content
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
@@ -42,7 +42,7 @@ export default function HeroSection() {
       { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
     );
 
-    // Separate observer for the cards section with more aggressive triggering
+    // Separate observer for the cards section - adjusted for mobile
     const cardsObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -53,7 +53,10 @@ export default function HeroSection() {
           }
         });
       },
-      { threshold: 0.2, rootMargin: '0px 0px -150px 0px' }
+      { 
+        threshold: 0.1, // Lower threshold for mobile
+        rootMargin: '0px 0px -50px 0px' // Less aggressive for smaller screens
+      }
     );
 
     if (heroRef.current) {
@@ -63,6 +66,18 @@ export default function HeroSection() {
     if (cardsRef.current) {
       cardsObserver.observe(cardsRef.current);
     }
+
+    // Fallback: If cards are already in view on page load (common on mobile),
+    // trigger animation after a short delay
+    const checkInitialVisibility = setTimeout(() => {
+      if (cardsRef.current) {
+        const rect = cardsRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView && !cardsVisible) {
+          setCardsVisible(true);
+        }
+      }
+    }, 500); // Small delay to let page settle
 
     // Parallax scroll effect (only if no reduced motion preference)
     const handleScroll = () => {
@@ -75,6 +90,7 @@ export default function HeroSection() {
     
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
+      clearTimeout(checkInitialVisibility);
       if (heroRef.current) {
         observer.unobserve(heroRef.current);
       }
@@ -83,7 +99,7 @@ export default function HeroSection() {
       }
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, cardsVisible]);
 
   // Helper function to conditionally apply animation classes
   const getAnimationClass = (baseClasses: string, animatedClasses: string) => {
