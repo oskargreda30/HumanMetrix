@@ -364,13 +364,13 @@ export const AI_READINESS_SCORING = {
 };
 
 export const AI_READINESS_SKILL_NAMES = {
-  "AL/PE": "AI Literacy/Prompting Effectiveness",
-  "TF": "Technical Fluency",
-  "DF": "Domain Fluency",
-  "CT/PS": "Critical Thinking/Problem Solving",
-  "ACL": "Adaptive & Collaborative Learning",
-  "RAI": "Responsible AI Integration",
+  "AL/PE": "AI Literacy & Prompt Engineering",
+  "TF": "Technical Fundamentals",
+  "DF": "Data Fluency",
+  "CT/PS": "Critical Thinking & Problem-Solving",
+  "ACL": "Adaptability & Continuous Learning",
+  "RAI": "Responsible AI & Ethical Awareness",
   "DE": "Domain Expertise",
-  "CI": "Creative Innovation",
-  "CC": "Cross-functional Collaboration",
+  "CI": "Creativity & Innovation",
+  "CC": "Collaboration & Communication",
 };
