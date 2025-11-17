@@ -658,26 +658,50 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      // Optimized chart size for label visibility while fitting both on one page
-      const imgProps = pdf.getImageProperties(radarChartImages.fit);
-      const maxWidth = pageWidth - 40;
-      const maxHeight = 72; // Increased from 55 to prevent label cutoff
+      const startY = yPos;
       
-      let chartWidth = maxWidth;
+      // LEFT SIDE: Individual Skill Scores
+      const leftColumnX = 20;
+      const leftColumnWidth = 70;
+      
+      let scoresY = startY;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
+      scoresY += 7;
+      
+      fitSkills.forEach((skill, index) => {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
+        
+        const perf = getPerformanceLevel(skill.score);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
+        
+        scoresY += 6;
+      });
+      
+      // RIGHT SIDE: Radar Chart
+      const imgProps = pdf.getImageProperties(radarChartImages.fit);
+      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
+      const chartMaxHeight = 80;
+      
+      let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
       
-      if (chartHeight > maxHeight) {
-        chartHeight = maxHeight;
+      if (chartHeight > chartMaxHeight) {
+        chartHeight = chartMaxHeight;
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = (pageWidth - chartWidth) / 2;
-      pdf.addImage(radarChartImages.fit, 'PNG', chartX, yPos, chartWidth, chartHeight);
-      yPos += chartHeight + 3;
+      const chartX = pageWidth - chartWidth - 15;
+      pdf.addImage(radarChartImages.fit, 'PNG', chartX, startY, chartWidth, chartHeight);
       
-      // Add individual scores in compact format
-      yPos = addIndividualScores(fitSkills, yPos);
-      yPos += 8;
+      yPos = Math.max(scoresY, startY + chartHeight) + 8;
     } catch (error) {
       console.error('Error adding FIT chart:', error);
       yPos += 10;
@@ -705,26 +729,50 @@ export async function exportEnhancedCandidatePDF(
     yPos += 7;
     
     try {
-      // Optimized chart size for label visibility while fitting both on one page
-      const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
-      const maxWidth = pageWidth - 40;
-      const maxHeight = 72; // Increased from 55 to prevent label cutoff
+      const startY = yPos;
       
-      let chartWidth = maxWidth;
+      // LEFT SIDE: Individual Skill Scores
+      const leftColumnX = 20;
+      const leftColumnWidth = 70;
+      
+      let scoresY = startY;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
+      scoresY += 7;
+      
+      aiReadinessSkills.forEach((skill, index) => {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
+        
+        const perf = getPerformanceLevel(skill.score);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
+        
+        scoresY += 6;
+      });
+      
+      // RIGHT SIDE: Radar Chart
+      const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
+      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
+      const chartMaxHeight = 80;
+      
+      let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
       
-      if (chartHeight > maxHeight) {
-        chartHeight = maxHeight;
+      if (chartHeight > chartMaxHeight) {
+        chartHeight = chartMaxHeight;
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = (pageWidth - chartWidth) / 2;
-      pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, yPos, chartWidth, chartHeight);
-      yPos += chartHeight + 3;
+      const chartX = pageWidth - chartWidth - 15;
+      pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, startY, chartWidth, chartHeight);
       
-      // Add individual scores in compact format
-      yPos = addIndividualScores(aiReadinessSkills, yPos);
-      yPos += 5;
+      yPos = Math.max(scoresY, startY + chartHeight) + 5;
     } catch (error) {
       console.error('Error adding AI Readiness chart:', error);
       yPos += 10;
