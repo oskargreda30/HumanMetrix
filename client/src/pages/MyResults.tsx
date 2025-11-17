@@ -201,11 +201,13 @@ export default function MyResults() {
         skillAverages: {},
       };
 
-      // Fetch Prompt Architecture evaluations if needed
+      // Fetch Prompt Architecture evaluations if needed (from the selected batch only)
       let promptArchData: any[] = [];
-      if (promptArchResult?.id) {
+      // Find Prompt Architecture result from THIS batch only
+      const batchPromptArchResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+      if (batchPromptArchResult?.id) {
         try {
-          const res = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`, {
+          const res = await fetch(`/api/prompt-evaluations/${batchPromptArchResult.id}`, {
             credentials: 'include',
           });
           if (res.ok) {
@@ -256,8 +258,19 @@ export default function MyResults() {
       if (fitChart) radarChartImages.fit = fitChart;
       if (aiReadinessChart) radarChartImages.aiReadiness = aiReadinessChart;
 
+      // CRITICAL FIX: Filter candidate results to only include results from the selected batch
+      // completedResults is already filtered by batch on lines 103-108
+      const batchResultIds = new Set(completedResults.map((r: any) => r.id));
+      
+      // Filter candidate.results to only include results from this batch
+      const filteredCandidate = {
+        ...candidate,
+        results: candidate.results?.filter((r: any) => batchResultIds.has(r.id)) || []
+      };
+
       // Prepare skill data using proper transformation (matching admin logic)
-      const completedResultsForPDF = candidate.results?.filter(
+      // Now using filtered results from the selected batch only
+      const completedResultsForPDF = filteredCandidate.results?.filter(
         (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
       );
       
@@ -274,7 +287,7 @@ export default function MyResults() {
       });
 
       await exportEnhancedCandidatePDF(
-        candidate,
+        filteredCandidate,
         allSkills,
         platformAverages,
         radarChartImages,
