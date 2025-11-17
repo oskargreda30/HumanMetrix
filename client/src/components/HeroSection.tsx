@@ -129,42 +129,46 @@ export default function HeroSection() {
                   `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
                 )}
               >
-                <p className="text-sm md:text-xl text-cyan-300 font-semibold cursor-default">
-                  Why use HumanMetrix:
-                </p>
-                
-                {/* Three branches that appear on hover */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  {[
-                    {
-                      title: "Stop Competing Against Fake CV Claims",
-                      description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see."
-                    },
-                    {
-                      title: "AI is the New Digital Literacy",
-                      description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable."
-                    },
-                    {
-                      title: "Up to 75% of qualified applicants are rejected by ATS",
-                      description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human."
-                    }
-                  ].map((item, idx) => (
-                    <div 
-                      key={idx}
-                      className="flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm"
-                    >
-                      <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
-                      <div className="text-left space-y-1.5">
-                        <p className="text-xs md:text-sm font-semibold text-blue-100">
-                          {item.title}
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
-                          {item.description}
-                        </p>
+                <p className="text-sm md:text-xl text-cyan-300 font-semibold cursor-default inline-block">
+                  <span className="group/trigger inline-block">
+                    Why use HumanMetrix:
+                    
+                    {/* Three branches that appear on hover of text only */}
+                    <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-4xl mt-6 opacity-0 invisible group-hover/trigger:opacity-100 group-hover/trigger:visible transition-all duration-500 z-10">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+                        {[
+                          {
+                            title: "Stop Competing Against Fake CV Claims",
+                            description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see."
+                          },
+                          {
+                            title: "AI is the New Digital Literacy",
+                            description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable."
+                          },
+                          {
+                            title: "Up to 75% of qualified applicants are rejected by ATS",
+                            description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human."
+                          }
+                        ].map((item, idx) => (
+                          <div 
+                            key={idx}
+                            className="flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm"
+                          >
+                            <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
+                            <div className="text-left space-y-1.5">
+                              <p className="text-xs md:text-sm font-semibold text-blue-100">
+                                {item.title}
+                              </p>
+                              <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
+                                {item.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -219,7 +223,7 @@ export default function HeroSection() {
               
               {/* Pricing disclosure */}
               <p className="text-[10px] md:text-xs text-blue-100/60 italic">
-                Tests from £3.50 (computation price extra)
+                Tests from £3.50 (plus computation price)
               </p>
             </div>
 
