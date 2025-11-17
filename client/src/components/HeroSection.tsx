@@ -122,106 +122,105 @@ export default function HeroSection() {
               >
                 Stand out from the crowd. Our one-time use assessment tool equips you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity to help you land your next role!
               </p>
-              <TooltipProvider delayDuration={200}>
-                <div 
-                  className={getAnimationClass(
-                    'text-left max-w-2xl mx-auto space-y-2 mt-6 px-2',
-                    `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
-                  )}
-                >
-                  <p className="text-[10px] md:text-base text-blue-100/70 font-medium mb-3">
-                    Why use HumanMetrix:
-                  </p>
-                  <ul className="space-y-2.5 md:space-y-2.5 text-[10px] md:text-sm text-blue-100/70">
-                    {[
-                      {
-                        text: "Stop Competing Against Fake CV Claims",
-                        tooltip: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
-                        delay: "delay-500"
-                      },
-                      {
-                        text: "AI is the New Digital Literacy",
-                        tooltip: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
-                        delay: "delay-700"
-                      },
-                      {
-                        text: "Up to 75% of qualified applicants are rejected by ATS",
-                        tooltip: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
-                        delay: "delay-700"
-                      }
-                    ].map((item, idx) => (
-                      <li 
-                        key={idx}
-                        className={getAnimationClass(
-                          'flex items-start gap-2',
-                          `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`
-                        )}
-                      >
-                        <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={getAnimationClass(
-                              'text-blue-100 font-medium cursor-help border-b border-dotted border-blue-100/30 hover:border-cyan-400/50',
-                              'transition-colors'
-                            )}>
-                              {item.text}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>{item.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </li>
-                    ))}
-                  </ul>
+              {/* Why use HumanMetrix - Hover to reveal branches */}
+              <div 
+                className={getAnimationClass(
+                  'group text-center max-w-2xl mx-auto mt-6 px-2',
+                  `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+                )}
+              >
+                <p className="text-sm md:text-xl text-cyan-300 font-semibold cursor-default">
+                  Why use HumanMetrix:
+                </p>
+                
+                {/* Three branches that appear on hover */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  {[
+                    {
+                      title: "Stop Competing Against Fake CV Claims",
+                      description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see."
+                    },
+                    {
+                      title: "AI is the New Digital Literacy",
+                      description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable."
+                    },
+                    {
+                      title: "Up to 75% of qualified applicants are rejected by ATS",
+                      description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human."
+                    }
+                  ].map((item, idx) => (
+                    <div 
+                      key={idx}
+                      className="flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm"
+                    >
+                      <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
+                      <div className="text-left space-y-1.5">
+                        <p className="text-xs md:text-sm font-semibold text-blue-100">
+                          {item.title}
+                        </p>
+                        <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </TooltipProvider>
+              </div>
             </div>
 
             {/* CTA Buttons with fade-in animation */}
             <div 
               className={getAnimationClass(
-                'flex flex-col sm:flex-row gap-3 justify-center px-3 pt-4',
+                'flex flex-col items-center gap-3 px-3 pt-4',
                 `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
-              <Link href="/assessments" data-testid="link-hero-get-started">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/assessments" data-testid="link-hero-get-started">
+                  <Button 
+                    size="sm"
+                    className={getAnimationClass(
+                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-xs',
+                      'transition-all duration-300'
+                    )}
+                    data-testid="button-hero-get-started"
+                  >
+                    {/* Pulse animation for main CTA - only if not reduced motion */}
+                    {!prefersReducedMotion && (
+                      <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                    )}
+                    <span className="relative flex items-center">
+                      Types of Assessments
+                      <ArrowRight className={getAnimationClass('ml-1.5 h-3 w-3', 'transition-transform group-hover:translate-x-1')} />
+                    </span>
+                  </Button>
+                </Link>
                 <Button 
                   size="sm"
+                  onClick={() => {
+                    const element = document.getElementById('sample-reports');
+                    element?.scrollIntoView({ 
+                      behavior: prefersReducedMotion ? 'auto' : 'smooth', 
+                      block: 'start' 
+                    });
+                  }}
                   className={getAnimationClass(
                     'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-xs',
                     'transition-all duration-300'
                   )}
-                  data-testid="button-hero-get-started"
+                  data-testid="button-hero-sample-reports"
                 >
-                  {/* Pulse animation for main CTA - only if not reduced motion */}
-                  {!prefersReducedMotion && (
-                    <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
-                  )}
                   <span className="relative flex items-center">
-                    Types of Assessments
+                    Sample Reports
                     <ArrowRight className={getAnimationClass('ml-1.5 h-3 w-3', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
-              </Link>
-              <Button 
-                size="sm"
-                onClick={() => {
-                  const element = document.getElementById('sample-reports');
-                  element?.scrollIntoView({ 
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth', 
-                    block: 'start' 
-                  });
-                }}
-                variant="outline" 
-                className={getAnimationClass(
-                  'border-cyan-400/50 bg-cyan-500/5 text-white hover:bg-cyan-500/20 hover:border-cyan-400/70 backdrop-blur-sm w-full sm:w-auto hover:shadow-lg text-xs',
-                  'transition-all duration-300'
-                )}
-                data-testid="button-hero-sample-reports"
-              >
-                Sample Reports
-              </Button>
+              </div>
+              
+              {/* Pricing disclosure */}
+              <p className="text-[10px] md:text-xs text-blue-100/60 italic">
+                Tests from £3.50 (computation price extra)
+              </p>
             </div>
 
             {/* Feature Cards with staggered slide-up animation */}
