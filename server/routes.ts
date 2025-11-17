@@ -354,33 +354,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { discountCode } = req.body;
+      const { discountCode, purchaseId } = req.body;
       
-      // Find the user's most recent unpaid purchase
-      // Note: Invited users may have purchases with 0 items (just for tracking payment)
-      let purchases = await storage.getPurchasesByUser(userId);
-      let unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
+      let unpaidPurchase: any;
       
-      // Defensive fallback: For legacy invited users who logged in before the fix
-      if (!unpaidPurchases || unpaidPurchases.length === 0) {
-        const user = await storage.getUser(userId);
-        if (user) {
-          const invitationPurchase = await storage.ensureInvitationPurchase(userId, user.email);
-          if (invitationPurchase) {
-            unpaidPurchases = [invitationPurchase];
-          } else {
-            return res.status(400).json({ 
-              message: "No purchase or active invitation found requiring payment" 
-            });
-          }
-        } else {
-          return res.status(404).json({ message: "User not found" });
+      if (purchaseId) {
+        // Use the specific purchase ID provided (preferred)
+        const purchases = await storage.getPurchasesByUser(userId);
+        unpaidPurchase = purchases.find((p: any) => p.id === purchaseId);
+        
+        if (!unpaidPurchase) {
+          return res.status(404).json({ 
+            message: "Purchase not found or does not belong to this user" 
+          });
         }
+        
+        if (unpaidPurchase.resultsAccessPaid) {
+          return res.status(400).json({ 
+            message: "Results for this purchase have already been paid for" 
+          });
+        }
+      } else {
+        // Fallback: Find the user's most recent unpaid purchase
+        // Note: Invited users may have purchases with 0 items (just for tracking payment)
+        let purchases = await storage.getPurchasesByUser(userId);
+        let unpaidPurchases = purchases.filter((p: any) => !p.resultsAccessPaid);
+        
+        // Defensive fallback: For legacy invited users who logged in before the fix
+        if (!unpaidPurchases || unpaidPurchases.length === 0) {
+          const user = await storage.getUser(userId);
+          if (user) {
+            const invitationPurchase = await storage.ensureInvitationPurchase(userId, user.email);
+            if (invitationPurchase) {
+              unpaidPurchases = [invitationPurchase];
+            } else {
+              return res.status(400).json({ 
+                message: "No purchase or active invitation found requiring payment" 
+              });
+            }
+          } else {
+            return res.status(404).json({ message: "User not found" });
+          }
+        }
+        
+        // Use most recent unpaid purchase
+        unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        unpaidPurchase = unpaidPurchases[0];
       }
-      
-      // Use most recent unpaid purchase
-      unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      const unpaidPurchase = unpaidPurchases[0];
       
       // Get the user and determine required assessments (from invitation or purchase)
       const user = await storage.getUser(userId);
@@ -615,7 +635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Session is now guaranteed to be saved with Set-Cookie header
       res.json({ 
         success: true, 
-        message: "Results access granted"
+        message: "Results access granted",
+        purchaseId: purchaseId // Return purchaseId so frontend can redirect correctly
       });
     } catch (error: any) {
       console.error("[Payment Callback ERROR]", error);

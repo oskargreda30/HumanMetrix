@@ -16,6 +16,10 @@ export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
+  // Get purchaseId from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const purchaseId = urlParams.get('purchaseId');
+  
   // Fetch current unpaid purchase to get correct pricing for THIS batch only
   const { data: purchases } = useQuery<any[]>({
     queryKey: ["/api/purchases"],
@@ -26,10 +30,16 @@ export function ResultsPaymentGate() {
     queryKey: ["/api/invitation-status"],
   });
   
-  // Find most recent unpaid purchase
-  const unpaidPurchases = purchases?.filter((p: any) => !p.resultsAccessPaid) || [];
-  unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const currentPurchase = unpaidPurchases[0];
+  // Find the specific purchase by ID, or fall back to most recent unpaid purchase
+  let currentPurchase;
+  if (purchaseId && purchases) {
+    currentPurchase = purchases.find((p: any) => p.id === purchaseId);
+  } else {
+    // Fallback: Find most recent unpaid purchase
+    const unpaidPurchases = purchases?.filter((p: any) => !p.resultsAccessPaid) || [];
+    unpaidPurchases.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    currentPurchase = unpaidPurchases[0];
+  }
   
   // Fetch purchase items for current unpaid purchase to calculate correct price
   const { data: purchaseItems } = useQuery<any[]>({
@@ -53,6 +63,7 @@ export function ResultsPaymentGate() {
     mutationFn: async (code: string) => {
       const response = await apiRequest("POST", "/api/unlock-results", {
         discountCode: code || undefined,
+        purchaseId: currentPurchase?.id, // Pass the specific purchase ID
       });
       
       if (!response.ok) {
@@ -74,12 +85,13 @@ export function ResultsPaymentGate() {
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
         
-        // Small delay to show toast, then redirect using client-side navigation (preserves session)
+        // Small delay to show toast, then redirect to batch-specific results
         setTimeout(() => {
-          setLocation("/results");
+          setLocation(`/my-results?purchaseId=${currentPurchase?.id}`);
         }, 1000);
       } else if (data.sessionUrl) {
-        // Redirect to Stripe checkout
+        // Add purchaseId to session metadata so payment callback can redirect correctly
+        // The sessionUrl already has the session ID - we'll track it on backend
         window.location.href = data.sessionUrl;
       }
     },

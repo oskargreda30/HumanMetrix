@@ -159,7 +159,7 @@ export default function Dashboard() {
                         )}
                         {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
                           <>
-                            <Link href="/my-results">
+                            <Link href={`/my-results?purchaseId=${purchase.id}`}>
                               <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
                                 <FileText className="h-4 w-4" />
                                 Unlock Results

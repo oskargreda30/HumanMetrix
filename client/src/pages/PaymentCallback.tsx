@@ -67,8 +67,11 @@ export default function PaymentCallback() {
           console.warn("Session verification timed out, redirecting anyway");
         }
 
-        // Session verified or timeout - redirect to results page
-        setLocation("/my-results");
+        // Session verified or timeout - redirect to batch-specific results page
+        const redirectUrl = data.purchaseId 
+          ? `/my-results?purchaseId=${data.purchaseId}`
+          : "/my-results";
+        setLocation(redirectUrl);
       } catch (error: any) {
         console.error("Payment processing error:", error);
         setStatus("error");
