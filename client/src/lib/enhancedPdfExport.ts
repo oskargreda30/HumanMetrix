@@ -722,7 +722,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     const aiSkills = 'Measures: AI Literacy, Technical Fluency, Domain Fluency, Critical Thinking, Adaptive Learning,';
-    const aiSkills2 = 'Responsible AI Integration, Domain Expertise, Creative Innovation, Cross-functional Collaboration';
+    const aiSkills2 = 'Responsible AI, Domain Expertise, Creative Innovation, Collaboration';
     pdf.text(aiSkills, 20, yPos);
     yPos += 4;
     pdf.text(aiSkills2, 20, yPos);
