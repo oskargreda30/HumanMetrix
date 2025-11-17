@@ -12,6 +12,7 @@ import networkBg from "@assets/image_1761537286469.png";
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
+  const [cardsVisible, setCardsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   // Initialize with media query value to prevent flash of animated content
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
@@ -21,6 +22,7 @@ export default function HeroSection() {
     return false;
   });
   const heroRef = useRef<HTMLElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check for reduced motion preference
@@ -40,8 +42,26 @@ export default function HeroSection() {
       { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
     );
 
+    // Separate observer for the cards section with more aggressive triggering
+    const cardsObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setCardsVisible(true);
+          } else {
+            setCardsVisible(false); // Reset when scrolling away
+          }
+        });
+      },
+      { threshold: 0.2, rootMargin: '0px 0px -150px 0px' }
+    );
+
     if (heroRef.current) {
       observer.observe(heroRef.current);
+    }
+
+    if (cardsRef.current) {
+      cardsObserver.observe(cardsRef.current);
     }
 
     // Parallax scroll effect (only if no reduced motion preference)
@@ -57,6 +77,9 @@ export default function HeroSection() {
       mediaQuery.removeEventListener('change', handleChange);
       if (heroRef.current) {
         observer.unobserve(heroRef.current);
+      }
+      if (cardsRef.current) {
+        cardsObserver.unobserve(cardsRef.current);
       }
       window.removeEventListener('scroll', handleScroll);
     };
@@ -179,39 +202,46 @@ export default function HeroSection() {
               </p>
             </div>
 
-            {/* Why use HumanMetrix - Permanently visible */}
+            {/* Why use HumanMetrix - Scroll-triggered animation */}
             <div 
-              className={getAnimationClass(
-                'text-center max-w-4xl mx-auto mt-8 px-2',
-                `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
-              )}
+              ref={cardsRef}
+              className="text-center max-w-4xl mx-auto mt-8 px-2"
             >
-              <p className="text-base md:text-xl text-cyan-300 font-semibold mb-6">
+              <p className={getAnimationClass(
+                'text-base md:text-xl text-cyan-300 font-semibold mb-6',
+                `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
+              )}>
                 Why use HumanMetrix:
               </p>
               
-              {/* Three cards - always visible */}
+              {/* Three cards - slide in on scroll */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   {
                     title: "Stop Competing Against Fake CV Claims",
-                    description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see."
+                    description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
+                    delay: 0
                   },
                   {
                     title: "AI is the New Digital Literacy",
-                    description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable."
+                    description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
+                    delay: 200
                   },
                   {
                     title: "Up to 75% of qualified applicants are rejected by ATS",
-                    description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human."
+                    description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
+                    delay: 400
                   }
                 ].map((item, idx) => (
                   <div 
                     key={idx}
                     className={getAnimationClass(
                       'flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm',
-                      `transition-all duration-700 delay-${700 + idx * 150} ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+                      `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`
                     )}
+                    style={prefersReducedMotion ? {} : { 
+                      transitionDelay: cardsVisible ? `${item.delay}ms` : '0ms' 
+                    }}
                   >
                     <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
                     <div className="text-left space-y-1.5">
