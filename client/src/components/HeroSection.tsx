@@ -98,7 +98,7 @@ export default function HeroSection() {
                   `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
                 </span>
               </div>
@@ -106,7 +106,7 @@ export default function HeroSection() {
               {/* Headline - Fade in second with delay */}
               <h1 
                 className={getAnimationClass(
-                  'text-xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight px-2',
+                  'text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight px-2',
                   `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -116,7 +116,7 @@ export default function HeroSection() {
               {/* Subheadline - Fade in third with delay */}
               <p 
                 className={getAnimationClass(
-                  'text-[10px] md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
+                  'text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
                   `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -136,7 +136,7 @@ export default function HeroSection() {
                   <Button 
                     size="sm"
                     className={getAnimationClass(
-                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-xs',
+                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-base',
                       'transition-all duration-300'
                     )}
                     data-testid="button-hero-get-started"
@@ -147,7 +147,7 @@ export default function HeroSection() {
                     )}
                     <span className="relative flex items-center">
                       Types of Assessments
-                      <ArrowRight className={getAnimationClass('ml-1.5 h-3 w-3', 'transition-transform group-hover:translate-x-1')} />
+                      <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                     </span>
                   </Button>
                 </Link>
@@ -161,20 +161,20 @@ export default function HeroSection() {
                     });
                   }}
                   className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-xs',
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-base',
                     'transition-all duration-300'
                   )}
                   data-testid="button-hero-sample-reports"
                 >
                   <span className="relative flex items-center">
                     Sample Reports
-                    <ArrowRight className={getAnimationClass('ml-1.5 h-3 w-3', 'transition-transform group-hover:translate-x-1')} />
+                    <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
               </div>
               
               {/* Pricing disclosure */}
-              <p className="text-[10px] md:text-xs text-blue-100/60 italic">
+              <p className="text-xs md:text-sm text-blue-100/60 italic">
                 Tests from £3.50 (plus computation price)
               </p>
             </div>
@@ -186,7 +186,7 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
-              <p className="text-sm md:text-xl text-cyan-300 font-semibold mb-6">
+              <p className="text-base md:text-xl text-cyan-300 font-semibold mb-6">
                 Why use HumanMetrix:
               </p>
               
