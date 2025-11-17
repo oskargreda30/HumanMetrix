@@ -1,18 +1,13 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Lock, Sparkles, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
 
 export function ResultsPaymentGate() {
-  const [discountCode, setDiscountCode] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
@@ -60,9 +55,8 @@ export function ResultsPaymentGate() {
   const wasInvited = invitationData?.wasInvited === true;
 
   const unlockMutation = useMutation({
-    mutationFn: async (code: string) => {
+    mutationFn: async () => {
       const response = await apiRequest("POST", "/api/unlock-results", {
-        discountCode: code || undefined,
         purchaseId: currentPurchase?.id, // Pass the specific purchase ID
       });
       
@@ -74,24 +68,8 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
-      if (data.free) {
-        // Free code used successfully
-        toast({
-          title: "Results Unlocked!",
-          description: "Your results are now available. Redirecting...",
-        });
-        
-        // Refresh purchases to update resultsAccessPaid status
-        await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-        
-        // Small delay to show toast, then redirect to batch-specific results
-        setTimeout(() => {
-          setLocation(`/my-results?purchaseId=${currentPurchase?.id}`);
-        }, 1000);
-      } else if (data.sessionUrl) {
-        // Add purchaseId to session metadata so payment callback can redirect correctly
-        // The sessionUrl already has the session ID - we'll track it on backend
+      if (data.sessionUrl) {
+        // Redirect to Stripe checkout
         window.location.href = data.sessionUrl;
       }
     },
@@ -105,7 +83,7 @@ export function ResultsPaymentGate() {
   });
 
   const handleUnlock = () => {
-    unlockMutation.mutate(discountCode);
+    unlockMutation.mutate();
   };
 
   return (
@@ -126,11 +104,10 @@ export function ResultsPaymentGate() {
             <Lock className="h-8 w-8 text-primary" />
           </div>
           
-          <h1 className="text-3xl font-bold">Pay and View Your Results</h1>
+          <h1 className="text-3xl font-bold">Congratulations! All of your assessments are complete!</h1>
           
           <p className="text-muted-foreground text-lg">
-            You've completed all your assessments! To view your detailed results and download 
-            your professional PDF report, please submit your payment below.
+            To view your detailed results and download your professional PDF report, please submit your payment below.
           </p>
           
           {wasInvited && (
@@ -173,22 +150,6 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="discount-code">Discount Code (Optional)</Label>
-            <Input
-              id="discount-code"
-              type="text"
-              placeholder="Enter code (e.g., FREE)"
-              value={discountCode}
-              onChange={(e) => setDiscountCode(e.target.value)}
-              data-testid="input-discount-code"
-              className="uppercase"
-            />
-            <p className="text-xs text-muted-foreground">
-              Use code <span className="font-mono font-semibold">FREE</span> for complimentary access
-            </p>
-          </div>
-
           <Button
             className="w-full"
             size="lg"
@@ -204,7 +165,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                {discountCode.trim().toUpperCase() === "FREE" ? "Unlock Results (FREE)" : `Unlock Results (£${price})`}
+                Unlock Results (£{price})
               </>
             )}
           </Button>
