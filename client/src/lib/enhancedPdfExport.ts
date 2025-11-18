@@ -664,7 +664,7 @@ export async function exportEnhancedCandidatePDF(
       const leftColumnX = 20;
       const leftColumnWidth = 70;
       
-      let scoresY = startY;
+      let scoresY = startY + 10; // Push down to align better with radar chart center
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(75, 85, 99);
@@ -738,7 +738,7 @@ export async function exportEnhancedCandidatePDF(
       const leftColumnX = 20;
       const leftColumnWidth = 70;
       
-      let scoresY = startY;
+      let scoresY = startY + 10; // Push down to align better with radar chart center
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(75, 85, 99);
