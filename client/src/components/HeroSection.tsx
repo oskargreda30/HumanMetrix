@@ -185,7 +185,7 @@ export default function HeroSection() {
                       <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
                     )}
                     <span className="relative flex items-center">
-                      Types of Assessments
+                      Our Assessments
                       <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                     </span>
                   </Button>
