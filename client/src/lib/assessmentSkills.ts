@@ -32,11 +32,13 @@ export const SKILL_ACRONYMS: Record<string, string> = {
   
   // Legacy AI Readiness keys (for backward compatibility with old data)
   'AI Literacy': 'AL&PE',
+  'AI Literacy/Prompting': 'AL&PE', // Very old legacy key
   'Technical Fluency': 'TF',
   'Domain Fluency': 'DF',
   'Critical Thinking': 'CT&PS',
   'Adaptive Learning': 'ACL',
   'Collaboration': 'CC',
+  'Cross-functional Collaboration': 'CC', // Very old legacy key
   'Responsible AI': 'RAI',
   'Creative Innovation': 'CI',
   // Note: 'Domain Expertise' is already correct in both old and new formats

@@ -19,11 +19,13 @@ import { eq } from "drizzle-orm";
 
 const LEGACY_TO_CANONICAL_MAPPING: Record<string, string> = {
   'AI Literacy': 'AI Literacy & Prompt Engineering',
+  'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering', // Very old legacy key
   'Technical Fluency': 'Technical Fundamentals',
   'Domain Fluency': 'Data Fluency',
   'Critical Thinking': 'Critical Thinking & Problem-Solving',
   'Adaptive Learning': 'Adaptability & Continuous Learning',
   'Collaboration': 'Collaboration & Communication',
+  'Cross-functional Collaboration': 'Collaboration & Communication', // Very old legacy key
   'Responsible AI': 'Responsible AI & Ethical Awareness',
   'Creative Innovation': 'Creativity & Innovation',
   'Domain Expertise': 'Domain Expertise', // Already canonical
