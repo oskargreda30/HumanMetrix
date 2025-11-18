@@ -655,7 +655,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Measures: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, Interpersonal Agility', 20, yPos);
-    yPos += 7;
+    yPos += 12;
     
     try {
       const startY = yPos;
@@ -729,7 +729,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.text(aiSkills2, 20, yPos);
     yPos += 4;
     pdf.text(aiSkills3, 20, yPos);
-    yPos += 7;
+    yPos += 12;
     
     try {
       const startY = yPos;
