@@ -2951,8 +2951,19 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Return normalized scores without relative scaling
-  // Scores are now based on actual performance (0-100) rather than relative to best skill
+  // Apply relative scaling: make highest score = 100, scale others proportionally
+  // This matches FIT assessment behavior for consistency
+  const scoreValues = Object.values(normalizedScores);
+  const highestScore = Math.max(...scoreValues);
+  
+  if (highestScore > 0) {
+    const relativeScores: Record<string, number> = {};
+    Object.entries(normalizedScores).forEach(([skill, score]) => {
+      relativeScores[skill] = Math.round((score / highestScore) * 100);
+    });
+    return relativeScores;
+  }
+
   return normalizedScores;
 }
 
