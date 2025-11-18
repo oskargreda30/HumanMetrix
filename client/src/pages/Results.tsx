@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { PromptArchitectureResults } from "@/components/PromptArchitectureResults";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
+import { formatAssessmentType } from "@/lib/assessmentSkills";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 
 // Helper function to generate comprehensive analysis
@@ -242,7 +243,7 @@ export default function Results() {
             skillData.push({
               name: skill.skill,
               score: skill.score,
-              assessment: formatAssessmentName(r.assessmentType),
+              assessment: formatAssessmentType(r.assessmentType),
             });
           });
         }
@@ -446,7 +447,8 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={false}
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  tickCount={5}
                 />
                 <Radar
                   name="Score"
@@ -480,7 +482,8 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={false}
+                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  tickCount={5}
                 />
                 <Radar
                   name="Score"

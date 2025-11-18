@@ -698,7 +698,8 @@ export async function exportEnhancedCandidatePDF(
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = pageWidth - chartWidth - 15;
+      // Position chart closer to left column (reduced right margin from 15 to 35 from left column)
+      const chartX = leftColumnX + leftColumnWidth + 10;
       pdf.addImage(radarChartImages.fit, 'PNG', chartX, startY, chartWidth, chartHeight);
       
       yPos = Math.max(scoresY, startY + chartHeight) + 8;
@@ -772,7 +773,8 @@ export async function exportEnhancedCandidatePDF(
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = pageWidth - chartWidth - 15;
+      // Position chart closer to left column (reduced right margin from 15 to 35 from left column)
+      const chartX = leftColumnX + leftColumnWidth + 10;
       pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, startY, chartWidth, chartHeight);
       
       yPos = Math.max(scoresY, startY + chartHeight) + 5;
