@@ -9,6 +9,35 @@ export interface SkillDefinition {
   color: string;
 }
 
+// Acronym mappings for PDF radar charts
+export const SKILL_ACRONYMS: Record<string, string> = {
+  // FIT Skills
+  'High Agency': 'HA',
+  'Intellectual Curiosity': 'IC',
+  'Resilience': 'R',
+  'Empathy & Ethics': 'E&E',
+  'Growth Mindset': 'GM',
+  'Interpersonal Agility': 'IA',
+  
+  // AI Readiness Skills
+  'AI Literacy & Prompt Engineering': 'AL&PE',
+  'Technical Fundamentals': 'TF',
+  'Data Fluency': 'DF',
+  'Critical Thinking & Problem-Solving': 'CT&PS',
+  'Adaptability & Continuous Learning': 'ACL',
+  'Collaboration & Communication': 'CC',
+  'Responsible AI & Ethical Awareness': 'RAI',
+  'Creativity & Innovation': 'CI',
+  'Domain Expertise': 'DE',
+};
+
+/**
+ * Get acronym for a skill name (for PDF radar charts)
+ */
+export function getSkillAcronym(skillName: string): string {
+  return SKILL_ACRONYMS[skillName] || skillName;
+}
+
 // FIT Assessment: 6 behavioral skills
 export const FIT_SKILLS: SkillDefinition[] = [
   {

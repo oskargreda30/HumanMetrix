@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { format } from "date-fns";
-import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
+import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import {
   Radar,
   RadarChart,
@@ -379,7 +379,7 @@ export default function MyResults() {
           if (!fitResult || !fitResult.scores) return null;
           
           const fitData = Object.entries(fitResult.scores).map(([skill, score]) => ({
-            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
+            skill: getSkillAcronym(skill),
             score: score as number,
           }));
           
@@ -409,7 +409,7 @@ export default function MyResults() {
           if (!aiResult || !aiResult.scores) return null;
           
           const aiData = Object.entries(aiResult.scores).map(([skill, score]) => ({
-            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
+            skill: getSkillAcronym(skill),
             score: score as number,
           }));
           

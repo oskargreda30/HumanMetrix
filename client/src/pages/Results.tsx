@@ -10,7 +10,7 @@ import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download } from "lucide-
 import { Progress } from "@/components/ui/progress";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
-import { isSkillBasedAssessment, transformToRadarData } from "@/lib/assessmentSkills";
+import { isSkillBasedAssessment, transformToRadarData, getSkillAcronym } from "@/lib/assessmentSkills";
 import {
   Radar,
   RadarChart,
@@ -415,15 +415,15 @@ export default function Results() {
     r.assessmentType === 'ai_readiness' && r.status === 'completed'
   );
 
-  // Prepare data for hidden PDF charts
+  // Prepare data for hidden PDF charts (use acronyms to prevent text cutoff)
   const fitRadarData = fitResult?.scores ? Object.entries(fitResult.scores).map(([skill, score]) => ({
-    skill: skill.replace(/([A-Z])/g, ' $1').trim(),
+    skill: getSkillAcronym(skill),
     score: score as number,
     fullMark: 100,
   })) : [];
 
   const aiRadarData = aiReadinessResult?.scores ? Object.entries(aiReadinessResult.scores).map(([skill, score]) => ({
-    skill: skill.replace(/([A-Z])/g, ' $1').trim(),
+    skill: getSkillAcronym(skill),
     score: score as number,
     fullMark: 100,
   })) : [];
