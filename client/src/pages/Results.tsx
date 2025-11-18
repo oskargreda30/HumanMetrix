@@ -238,16 +238,26 @@ export default function Results() {
       const skillData: any[] = [];
       completedResults.forEach((r: any) => {
         if (isSkillBasedAssessment(r.assessmentType) && r.scores) {
+          console.log(`[PDF Debug] Processing ${r.assessmentType}:`, {
+            assessmentType: r.assessmentType,
+            hasScores: !!r.scores,
+            scoreKeys: r.scores ? Object.keys(r.scores) : [],
+            formattedAssessment: formatAssessmentType(r.assessmentType)
+          });
           const radarData = transformToRadarData(r.scores, r.assessmentType);
+          console.log(`[PDF Debug] Radar data for ${r.assessmentType}:`, radarData);
           radarData.forEach((skill: any) => {
-            skillData.push({
+            const skillEntry = {
               name: skill.skill,
               score: skill.score,
               assessment: formatAssessmentType(r.assessmentType),
-            });
+            };
+            console.log(`[PDF Debug] Adding skill:`, skillEntry);
+            skillData.push(skillEntry);
           });
         }
       });
+      console.log(`[PDF Debug] Total skills collected:`, skillData.length, skillData);
 
       // Fetch platform averages
       const averagesRes = await fetch('/api/admin/platform-averages', {
@@ -447,7 +457,7 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  tick={{ fill: '#9ca3af', fontSize: 7 }}
                   tickCount={5}
                 />
                 <Radar
@@ -482,7 +492,7 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={{ fill: '#9ca3af', fontSize: 9 }}
+                  tick={{ fill: '#9ca3af', fontSize: 7 }}
                   tickCount={5}
                 />
                 <Radar
