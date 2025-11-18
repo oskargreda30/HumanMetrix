@@ -660,10 +660,35 @@ export async function exportEnhancedCandidatePDF(
     try {
       const startY = yPos;
       
-      // CENTER: Radar Chart
+      // LEFT SIDE: Individual Skill Scores
+      const leftColumnX = 20;
+      const leftColumnWidth = 70;
+      
+      let scoresY = startY;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
+      scoresY += 7;
+      
+      fitSkills.forEach((skill, index) => {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
+        
+        const perf = getPerformanceLevel(skill.score);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
+        
+        scoresY += 6;
+      });
+      
+      // RIGHT SIDE: Radar Chart
       const imgProps = pdf.getImageProperties(radarChartImages.fit);
-      const chartMaxWidth = pageWidth - 40;
-      const chartMaxHeight = 85;
+      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
+      const chartMaxHeight = 80;
       
       let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
@@ -673,36 +698,10 @@ export async function exportEnhancedCandidatePDF(
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = (pageWidth - chartWidth) / 2;
+      const chartX = pageWidth - chartWidth - 15;
       pdf.addImage(radarChartImages.fit, 'PNG', chartX, startY, chartWidth, chartHeight);
-      yPos = startY + chartHeight + 6;
       
-      // BELOW CHART: Individual Skill Scores in 3 columns
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Individual Skill Scores:', 20, yPos);
-      yPos += 6;
-      
-      const colWidth = (pageWidth - 40) / 3;
-      fitSkills.forEach((skill, index) => {
-        const col = index % 3;
-        const row = Math.floor(index / 3);
-        const xPos = 20 + (col * colWidth);
-        const yPosRow = yPos + (row * 6);
-        
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`${skill.name}:`, xPos, yPosRow);
-        
-        const perf = getPerformanceLevel(skill.score);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`${skill.score}`, xPos + colWidth - 15, yPosRow);
-      });
-      
-      yPos += (Math.ceil(fitSkills.length / 3) * 6) + 8;
+      yPos = Math.max(scoresY, startY + chartHeight) + 8;
     } catch (error) {
       console.error('Error adding FIT chart:', error);
       yPos += 10;
@@ -735,10 +734,35 @@ export async function exportEnhancedCandidatePDF(
     try {
       const startY = yPos;
       
-      // CENTER: Radar Chart
+      // LEFT SIDE: Individual Skill Scores
+      const leftColumnX = 20;
+      const leftColumnWidth = 70;
+      
+      let scoresY = startY;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
+      scoresY += 7;
+      
+      aiReadinessSkills.forEach((skill, index) => {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
+        
+        const perf = getPerformanceLevel(skill.score);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
+        
+        scoresY += 6;
+      });
+      
+      // RIGHT SIDE: Radar Chart
       const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
-      const chartMaxWidth = pageWidth - 40;
-      const chartMaxHeight = 85;
+      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
+      const chartMaxHeight = 80;
       
       let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
@@ -748,36 +772,10 @@ export async function exportEnhancedCandidatePDF(
         chartWidth = (imgProps.width / imgProps.height) * chartHeight;
       }
       
-      const chartX = (pageWidth - chartWidth) / 2;
+      const chartX = pageWidth - chartWidth - 15;
       pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, startY, chartWidth, chartHeight);
-      yPos = startY + chartHeight + 6;
       
-      // BELOW CHART: Individual Skill Scores in 3 columns
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Individual Skill Scores:', 20, yPos);
-      yPos += 6;
-      
-      const colWidth = (pageWidth - 40) / 3;
-      aiReadinessSkills.forEach((skill, index) => {
-        const col = index % 3;
-        const row = Math.floor(index / 3);
-        const xPos = 20 + (col * colWidth);
-        const yPosRow = yPos + (row * 6);
-        
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`${skill.name}:`, xPos, yPosRow);
-        
-        const perf = getPerformanceLevel(skill.score);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-        pdf.text(`${skill.score}`, xPos + colWidth - 15, yPosRow);
-      });
-      
-      yPos += (Math.ceil(aiReadinessSkills.length / 3) * 6) + 5;
+      yPos = Math.max(scoresY, startY + chartHeight) + 5;
     } catch (error) {
       console.error('Error adding AI Readiness chart:', error);
       yPos += 10;

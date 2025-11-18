@@ -5,7 +5,6 @@ export type AssessmentType = 'fit' | 'ai_readiness' | 'aiq' | 'prompt_architectu
 export interface SkillDefinition {
   key: string;
   displayName: string;
-  acronym: string;
   description?: string;
   color: string;
 }
@@ -15,42 +14,36 @@ export const FIT_SKILLS: SkillDefinition[] = [
   {
     key: 'High Agency',
     displayName: 'High Agency',
-    acronym: 'HA',
     description: 'Takes initiative and ownership of outcomes',
     color: 'hsl(var(--chart-1))',
   },
   {
     key: 'Intellectual Curiosity',
     displayName: 'Intellectual Curiosity',
-    acronym: 'IC',
     description: 'Seeks knowledge and understanding',
     color: 'hsl(var(--chart-2))',
   },
   {
     key: 'Resilience',
     displayName: 'Resilience',
-    acronym: 'RES',
     description: 'Adapts and perseveres through challenges',
     color: 'hsl(var(--chart-3))',
   },
   {
     key: 'Empathy & Ethics',
     displayName: 'Empathy & Ethics',
-    acronym: 'E&E',
     description: 'Considers impact on others and ethical implications',
     color: 'hsl(var(--chart-4))',
   },
   {
     key: 'Growth Mindset',
     displayName: 'Growth Mindset',
-    acronym: 'GM',
     description: 'Views challenges as learning opportunities',
     color: 'hsl(var(--chart-5))',
   },
   {
     key: 'Interpersonal Agility',
     displayName: 'Interpersonal Agility',
-    acronym: 'IA',
     description: 'Navigates social dynamics effectively',
     color: 'hsl(var(--chart-1))',
   },
@@ -61,63 +54,54 @@ export const AI_READINESS_SKILLS: SkillDefinition[] = [
   {
     key: 'AI Literacy & Prompt Engineering',
     displayName: 'AI Literacy & Prompt Engineering',
-    acronym: 'AL&PE',
     description: 'Understanding AI capabilities and effective prompt engineering',
     color: 'hsl(var(--chart-1))',
   },
   {
     key: 'Technical Fundamentals',
     displayName: 'Technical Fundamentals',
-    acronym: 'TF',
     description: 'Core technical knowledge and system understanding',
     color: 'hsl(var(--chart-2))',
   },
   {
     key: 'Data Fluency',
     displayName: 'Data Fluency',
-    acronym: 'DF',
     description: 'Ability to work with and interpret data effectively',
     color: 'hsl(var(--chart-3))',
   },
   {
     key: 'Critical Thinking & Problem-Solving',
     displayName: 'Critical Thinking & Problem-Solving',
-    acronym: 'CT&PS',
     description: 'Analytical reasoning and solution development',
     color: 'hsl(var(--chart-4))',
   },
   {
     key: 'Adaptability & Continuous Learning',
     displayName: 'Adaptability & Continuous Learning',
-    acronym: 'ACL',
     description: 'Embracing change and ongoing skill development',
     color: 'hsl(var(--chart-5))',
   },
   {
     key: 'Collaboration & Communication',
     displayName: 'Collaboration & Communication',
-    acronym: 'C&C',
     description: 'Effective teamwork and information sharing',
     color: 'hsl(var(--chart-1))',
   },
   {
     key: 'Responsible AI & Ethical Awareness',
     displayName: 'Responsible AI & Ethical Awareness',
-    acronym: 'RAI',
     description: 'Ethical AI practices and responsible deployment',
     color: 'hsl(var(--chart-2))',
   },
   {
     key: 'Creativity & Innovation',
     displayName: 'Creativity & Innovation',
-    acronym: 'C&I',
     description: 'Generating novel ideas and innovative solutions',
     color: 'hsl(var(--chart-3))',
   },
   {
     key: 'Domain Expertise',
     displayName: 'Domain Expertise',
-    acronym: 'DE',
     description: 'Deep specialized knowledge in specific field',
     color: 'hsl(var(--chart-4))',
   },
@@ -128,7 +112,6 @@ export const AIQ_SKILLS: SkillDefinition[] = [
   {
     key: 'Algorithmic Integrity',
     displayName: 'Algorithmic Integrity',
-    acronym: 'AIQ',
     description: 'Comprehensive understanding of AI ethics, bias, fairness, transparency, and responsible deployment',
     color: 'hsl(var(--chart-1))',
   },
@@ -189,22 +172,6 @@ export function transformToRadarData(
   
   return skills.map(skillDef => ({
     skill: skillDef.displayName,
-    score: scores[skillDef.key] || 0,
-    fullMark: 100,
-  }));
-}
-
-/**
- * Transform assessment scores into radar chart data with acronyms for PDF export
- */
-export function transformToRadarDataWithAcronyms(
-  scores: Record<string, number>,
-  assessmentType: string
-): Array<{ skill: string; score: number; fullMark: number }> {
-  const skills = getAssessmentSkills(assessmentType);
-  
-  return skills.map(skillDef => ({
-    skill: skillDef.acronym,
     score: scores[skillDef.key] || 0,
     fullMark: 100,
   }));
