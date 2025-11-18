@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
-import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
+import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore, getSkillAcronym } from "@/lib/assessmentSkills";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 
 export default function CandidatesTab() {
@@ -630,7 +630,10 @@ export default function CandidatesTab() {
                 {fitResult && (
                   <div id="pdf-fit-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
                     <SkillRadarChart 
-                      data={transformToRadarData(fitResult.scores, fitResult.assessmentType)}
+                      data={transformToRadarData(fitResult.scores, fitResult.assessmentType).map(d => ({
+                        ...d,
+                        skill: getSkillAcronym(d.skill)
+                      }))}
                       title="FIT Assessment"
                     />
                   </div>
@@ -638,7 +641,10 @@ export default function CandidatesTab() {
                 {aiReadinessResult && (
                   <div id="pdf-ai-readiness-chart" style={{ width: '600px', height: '400px', backgroundColor: 'white', padding: '20px' }}>
                     <SkillRadarChart 
-                      data={transformToRadarData(aiReadinessResult.scores, aiReadinessResult.assessmentType)}
+                      data={transformToRadarData(aiReadinessResult.scores, aiReadinessResult.assessmentType).map(d => ({
+                        ...d,
+                        skill: getSkillAcronym(d.skill)
+                      }))}
                       title="AI Readiness"
                     />
                   </div>

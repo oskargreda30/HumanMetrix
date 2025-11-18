@@ -17,7 +17,7 @@ import {
 import html2canvas from "html2canvas";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
-import { FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
+import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -406,7 +406,7 @@ export default function CompareTab() {
                             <RadarChart data={(() => {
                               // Merge all candidate FIT data into one dataset using user IDs as keys
                               return FIT_SKILLS.map(skill => {
-                                const dataPoint: any = { skill: skill.displayName };
+                                const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
                                   const fitData = comparison.fitAssessments?.[index];
                                   if (fitData) {
@@ -459,7 +459,7 @@ export default function CompareTab() {
                             }
 
                             const radarData = FIT_SKILLS.map(skill => ({
-                              skill: skill.displayName,
+                              skill: getSkillAcronym(skill.displayName),
                               score: fitData.scores[skill.key] || 0,
                             }));
 
@@ -521,7 +521,7 @@ export default function CompareTab() {
                             <RadarChart data={(() => {
                               // Merge all candidate AI Readiness data into one dataset using user IDs as keys
                               return AI_READINESS_SKILLS.map(skill => {
-                                const dataPoint: any = { skill: skill.displayName };
+                                const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
                                   const aiData = comparison.aiReadinessAssessments?.[index];
                                   if (aiData) {
@@ -574,7 +574,7 @@ export default function CompareTab() {
                             }
 
                             const radarData = AI_READINESS_SKILLS.map(skill => ({
-                              skill: skill.displayName,
+                              skill: getSkillAcronym(skill.displayName),
                               score: aiReadinessData.scores[skill.key] || 0,
                             }));
 
@@ -930,7 +930,7 @@ export default function CompareTab() {
             if (!fitData) return null;
             
             const radarData = FIT_SKILLS.map(skill => ({
-              skill: skill.displayName,
+              skill: getSkillAcronym(skill.displayName),
               score: fitData.scores[skill.key] || 0,
             }));
 
@@ -966,7 +966,7 @@ export default function CompareTab() {
             if (!aiData) return null;
             
             const radarData = AI_READINESS_SKILLS.map(skill => ({
-              skill: skill.displayName,
+              skill: getSkillAcronym(skill.displayName),
               score: aiData.scores[skill.key] || 0,
             }));
 
