@@ -2715,15 +2715,49 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
   });
 
   // Calculate maximum possible scores for each skill
-  const maxScores: Record<string, number> = {};
-  Object.keys(rawScores).forEach(skill => {
-    maxScores[skill] = 0;
+  // Group scoring matrix by question number
+  const questionScores: Record<number, Record<string, Record<string, number>>> = {};
+  
+  Object.entries(scoringMatrix).forEach(([key, skillPoints]) => {
+    const [questionNum] = key.split('-');
+    const q = parseInt(questionNum);
+    
+    if (!questionScores[q]) {
+      questionScores[q] = {};
+    }
+    questionScores[q][key] = skillPoints;
   });
 
-  // Count max points available per skill across all questions
-  Object.values(scoringMatrix).forEach(skillPoints => {
-    Object.entries(skillPoints).forEach(([skill, points]) => {
-      maxScores[skill] = (maxScores[skill] || 0) + points;
+  // For each question, find the maximum points each skill can get
+  const maxScores: Record<string, number> = {
+    'High Agency': 0,
+    'Intellectual Curiosity': 0,
+    'Resilience': 0,
+    'Empathy & Ethics': 0,
+    'Growth Mindset': 0,
+    'Interpersonal Agility': 0,
+  };
+
+  Object.values(questionScores).forEach((options) => {
+    const questionMaxScores: Record<string, number> = {
+      'High Agency': 0,
+      'Intellectual Curiosity': 0,
+      'Resilience': 0,
+      'Empathy & Ethics': 0,
+      'Growth Mindset': 0,
+      'Interpersonal Agility': 0,
+    };
+
+    // For each option in this question, track max points per skill
+    Object.values(options).forEach((skillPoints) => {
+      Object.entries(skillPoints).forEach(([skill, points]) => {
+        questionMaxScores[skill] = Math.max(questionMaxScores[skill], points);
+      });
+    });
+
+    // Add the best possible score for each skill from this question
+    Object.entries(questionMaxScores).forEach(([skill, points]) => {
+      maxScores[skill] += points;
     });
   });
 
