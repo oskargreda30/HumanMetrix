@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { format } from "date-fns";
-import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
+import { transformToRadarData, transformToRadarDataWithAcronyms, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
 import {
   Radar,
   RadarChart,
@@ -378,17 +378,14 @@ export default function MyResults() {
           const fitResult = completedResults.find((r: any) => r.assessmentType === 'fit');
           if (!fitResult || !fitResult.scores) return null;
           
-          const fitData = Object.entries(fitResult.scores).map(([skill, score]) => ({
-            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
-            score: score as number,
-          }));
+          const fitData = transformToRadarDataWithAcronyms(fitResult.scores, 'fit');
           
           return (
             <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={fitData}>
                   <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12, fontWeight: 'bold' }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666' }} />
                   <Radar
                     name="Score"
@@ -408,17 +405,14 @@ export default function MyResults() {
           const aiResult = completedResults.find((r: any) => r.assessmentType === 'ai_readiness');
           if (!aiResult || !aiResult.scores) return null;
           
-          const aiData = Object.entries(aiResult.scores).map(([skill, score]) => ({
-            skill: skill.length > 20 ? skill.substring(0, 18) + '...' : skill,
-            score: score as number,
-          }));
+          const aiData = transformToRadarDataWithAcronyms(aiResult.scores, 'ai_readiness');
           
           return (
             <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={aiData}>
                   <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12, fontWeight: 'bold' }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666' }} />
                   <Radar
                     name="Score"
