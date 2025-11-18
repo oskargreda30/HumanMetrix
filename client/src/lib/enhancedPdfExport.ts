@@ -306,7 +306,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setDrawColor(229, 231, 235);
     pdf.roundedRect(xPos, yPos, boxWidth - 5, 25, 2, 2, 'FD');
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 8, { align: 'center' });
@@ -314,7 +314,7 @@ export async function exportEnhancedCandidatePDF(
     // Fit the metric value to the available width
     pdf.setFont('helvetica', 'bold');
     const maxValueWidth = (boxWidth - 5) - 4; // Leave 2mm padding on each side
-    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 14, 10);
+    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 12, 8);
     
     pdf.setFontSize(fitted.fontSize);
     pdf.setTextColor(17, 24, 39);
