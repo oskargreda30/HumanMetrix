@@ -19,7 +19,7 @@ export const SKILL_ACRONYMS: Record<string, string> = {
   'Growth Mindset': 'GM',
   'Interpersonal Agility': 'IA',
   
-  // AI Readiness Skills
+  // AI Readiness Skills (Canonical keys)
   'AI Literacy & Prompt Engineering': 'AL&PE',
   'Technical Fundamentals': 'TF',
   'Data Fluency': 'DF',
@@ -29,6 +29,17 @@ export const SKILL_ACRONYMS: Record<string, string> = {
   'Responsible AI & Ethical Awareness': 'RAI',
   'Creativity & Innovation': 'CI',
   'Domain Expertise': 'DE',
+  
+  // Legacy AI Readiness keys (for backward compatibility with old data)
+  'AI Literacy': 'AL&PE',
+  'Technical Fluency': 'TF',
+  'Domain Fluency': 'DF',
+  'Critical Thinking': 'CT&PS',
+  'Adaptive Learning': 'ACL',
+  'Collaboration': 'CC',
+  'Responsible AI': 'RAI',
+  'Creative Innovation': 'CI',
+  // Note: 'Domain Expertise' is already correct in both old and new formats
 };
 
 /**
