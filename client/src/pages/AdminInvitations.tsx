@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Send, Mail, Calendar, CheckCircle2, Clock, XCircle } from "lucide-react";
-const ASSESSMENT_TYPES_ARRAY = ["fit", "ai-readiness", "prompt-architecture", "aiq"] as const;
+const ASSESSMENT_TYPES_ARRAY = ["fit", "ai_readiness", "prompt_architecture", "aiq"] as const;
 
 export default function AdminInvitations() {
   const { user, isLoading: userLoading } = useUser();

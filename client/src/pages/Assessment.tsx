@@ -84,7 +84,7 @@ export default function Assessment() {
 
   const questions = getQuestions();
   const currentQ = questions[currentQuestion];
-  const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture' || assessment?.assessmentType === 'prompt-architecture';
+  const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture';
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -96,7 +96,7 @@ export default function Assessment() {
       setShowInstructions(false); // Only close instructions AFTER successful start
       
       // For Prompt Architecture, set 2 minutes per question instead of total time
-      const isPromptArch = assessment?.assessmentType === 'prompt_architecture' || assessment?.assessmentType === 'prompt-architecture';
+      const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
       if (isPromptArch) {
         setTimeRemaining(120); // 2 minutes per question
       } else if (data.timeRemaining !== undefined) {
