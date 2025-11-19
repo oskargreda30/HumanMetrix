@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -63,6 +63,15 @@ export default function Purchase() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+
+  // Pre-fill user data if logged in
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
 
   const handleToggle = (id: string) => {
     const newSelected = new Set(selectedAssessments);
@@ -298,13 +307,13 @@ export default function Purchase() {
                   <>
                     <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4 mb-6">
                       <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                        ✨ {user ? "Purchase Additional Assessments" : "How it works"}
+                        ✨ {user ? "Add More Assessments" : "How it works"}
                       </p>
                       {user ? (
                         <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-                          <li>Select assessments to purchase</li>
-                          <li>Complete secure payment</li>
-                          <li>Take assessments and unlock results</li>
+                          <li>Select additional assessments</li>
+                          <li>Take them at your own pace</li>
+                          <li>Pay only to unlock results</li>
                         </ol>
                       ) : (
                         <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
@@ -315,51 +324,59 @@ export default function Purchase() {
                       )}
                     </div>
 
-                    {!user && (
-                      <div className="space-y-4 mb-6">
-                        <div>
-                          <Label htmlFor="firstName" className="text-sm">First Name *</Label>
-                          <Input
-                            id="firstName"
-                            type="text"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="John"
-                            className="mt-1"
-                            disabled={isProcessing}
-                            data-testid="input-firstName"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="lastName" className="text-sm">Last Name *</Label>
-                          <Input
-                            id="lastName"
-                            type="text"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Doe"
-                            className="mt-1"
-                            disabled={isProcessing}
-                            data-testid="input-lastName"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="email" className="text-sm">Receipt Email *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="john@example.com"
-                            className="mt-1"
-                            disabled={isProcessing}
-                            data-testid="input-email"
-                          />
-                        </div>
+                    <div className="space-y-4 mb-6">
+                      {user && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Using account details:
+                        </p>
+                      )}
+                      <div>
+                        <Label htmlFor="firstName" className="text-sm">First Name {!user && "*"}</Label>
+                        <Input
+                          id="firstName"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          className="mt-1"
+                          disabled={isProcessing || !!user}
+                          data-testid="input-firstName"
+                        />
                       </div>
-                    )}
+
+                      <div>
+                        <Label htmlFor="lastName" className="text-sm">Last Name {!user && "*"}</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Doe"
+                          className="mt-1"
+                          disabled={isProcessing || !!user}
+                          data-testid="input-lastName"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="email" className="text-sm">Email {!user && "*"}</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="john@example.com"
+                          className="mt-1"
+                          disabled={isProcessing || !!user}
+                          data-testid="input-email"
+                        />
+                        {user && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Assessment invitations and receipts will be sent here
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="space-y-3 mb-6">
                       <h3 className="text-sm font-semibold">Selected Assessments</h3>
