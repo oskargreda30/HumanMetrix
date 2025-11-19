@@ -189,7 +189,7 @@ export default function Terms() {
               <Separator className="my-4 md:my-6" />
 
               <section className="mb-6 md:mb-8">
-                <h2 className="text-base md:text-2xl font-bold mb-2 md:mb-4">10. Disclaimer of Warranties (Strengthened)</h2>
+                <h2 className="text-base md:text-2xl font-bold mb-2 md:mb-4">10. Disclaimer of Warranties</h2>
                 <p className="text-muted-foreground mb-2 md:mb-4 font-semibold uppercase">
                   THE PLATFORM, THE ASSESSMENTS, AND ALL SERVICES ARE PROVIDED "AS IS," "WITH ALL FAULTS," AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, TO THE FULLEST EXTENT PERMISSIBLE UNDER APPLICABLE LAW. WE EXPRESSLY DISCLAIM AND EXCLUDE ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO:
                 </p>
@@ -214,7 +214,7 @@ export default function Terms() {
                   <li>HumanMetrix is not an employer, is not involved in the hiring process, and expressly disclaims all liability for any adverse employment action (e.g., non-hiring, termination) taken by an employer based, in whole or in part, on assessment results. The employer assumes full responsibility for any such decision.</li>
                 </ul>
                 
-                <h3 className="text-sm md:text-lg font-semibold mb-2 md:mb-3">B. AI-Generated Content Disclaimer (Prompt Architecture):</h3>
+                <h3 className="text-sm md:text-lg font-semibold mb-2 md:mb-3">B. AI-Generated Content Disclaimer (Prompt Architecture, and any other features):</h3>
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
                   <li>The Prompt Architecture assessment utilizes an AI model or similar third-party AI services for evaluation.</li>
                   <li>Users acknowledge and accept the inherent risks, limitations, and potential inaccuracies associated with AI-based evaluations, including the possibility of errors, inconsistencies, or bias.</li>
@@ -283,8 +283,8 @@ export default function Terms() {
                   If you have questions about these Terms & Conditions, please contact us at:
                 </p>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  Email: legal@humanmetrix.com<br />
-                  Website: www.humanmetrix.com
+                  Email: humanmetrix.sales@gmail.com<br />
+                  Website: humanmetrix.co.uk
                 </p>
               </section>
 
