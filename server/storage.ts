@@ -364,13 +364,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getResultByInvitationAndType(invitationId: string, assessmentType: string): Promise<AssessmentResult | undefined> {
+    // Normalize the database assessment_type column by replacing hyphens with underscores
+    // This ensures matching even if legacy data has hyphens
     const [result] = await db
       .select()
       .from(assessmentResults)
       .where(
         and(
           eq(assessmentResults.invitationId, invitationId),
-          eq(assessmentResults.assessmentType, assessmentType)
+          sql`REPLACE(${assessmentResults.assessmentType}, '-', '_') = ${assessmentType}`
         )
       );
     return result;
