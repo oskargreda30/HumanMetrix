@@ -1,4 +1,4 @@
-import resultsImage from "@assets/generated_images/Assessment_results_dashboard_mockup_5a4dadce.png";
+import resultsImage from "@assets/generated_images/Professional_results_preview.png";
 
 export default function ResultsPreview() {
   return (
