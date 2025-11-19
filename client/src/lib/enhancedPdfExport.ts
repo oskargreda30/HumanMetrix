@@ -1156,10 +1156,11 @@ export async function exportEnhancedCandidatePDF(
   pdf.setTextColor(0, 0, 0);
   
   // ========== RECOMMENDATIONS SECTION ==========
-  // Try to fit on same page (no page break check - let it flow naturally)
-  
-  // Add extra spacing after AIQ section
-  yPos += 6;
+  // Force new page for recommendations
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 35;
   
   // Recommendations Section
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
