@@ -260,7 +260,7 @@ export default function Purchase() {
                         data-testid={`checkbox-${assessment.id}`}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex-1">
                         <Label 
                           htmlFor={assessment.id}
                           className="text-lg font-semibold cursor-pointer"
