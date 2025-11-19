@@ -1,0 +1,19 @@
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Disallow indexing of admin pages (requires authentication anyway)
+Disallow: /admin/
+
+# Disallow indexing of user dashboard pages (requires authentication)
+Disallow: /dashboard
+Disallow: /my-results
+Disallow: /results/
+Disallow: /assessment/
+
+# Disallow payment/purchase intermediate pages
+Disallow: /payment-callback
+Disallow: /purchase/success
+
+# Sitemap location
+Sitemap: https://humanmetrix.co.uk/sitemap.xml
