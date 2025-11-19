@@ -175,19 +175,16 @@ export function ResultsPaymentGate() {
           
           <h1 className="text-3xl font-bold">Congratulations! All of your assessments are complete!</h1>
           
-          {wasInvited ? (
-            <>
-              <p className="text-muted-foreground text-lg">
-                Your results have been submitted to the employer who invited you to complete these assessments.
+          <p className="text-muted-foreground text-lg">
+            You now have the option to purchase your results below.
+          </p>
+          
+          {wasInvited && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>For Invited Candidates:</strong> If you have been invited to complete our assessments as part of a hiring process, your results have been sent to your employer. If you wish to purchase your own copy of your results please do so below.
               </p>
-              <p className="text-sm text-muted-foreground">
-                You also have the option to purchase your own copy of the results for your records and future job applications.
-              </p>
-            </>
-          ) : (
-            <p className="text-muted-foreground text-lg">
-              To view your detailed results and download your professional PDF report, please submit your payment below.
-            </p>
+            </div>
           )}
         </div>
 

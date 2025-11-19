@@ -84,6 +84,16 @@ export default function Purchase() {
       return;
     }
 
+    // If logged in, validate that the entered email matches their account email
+    if (user && email.trim() && email.toLowerCase() !== user.email.toLowerCase()) {
+      toast({
+        title: "Email mismatch",
+        description: "The email address associated with this account must be used. Otherwise, a new account must be created.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // If not logged in, require name and email
     if (!user) {
       if (!firstName.trim() || !lastName.trim() || !email.trim()) {
@@ -336,7 +346,7 @@ export default function Purchase() {
                         </div>
 
                         <div>
-                          <Label htmlFor="email" className="text-sm">Email Address *</Label>
+                          <Label htmlFor="email" className="text-sm">Receipt Email *</Label>
                           <Input
                             id="email"
                             type="email"

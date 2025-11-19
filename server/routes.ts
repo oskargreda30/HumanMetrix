@@ -6,7 +6,7 @@ import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, i
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import OpenAI from "openai";
@@ -193,6 +193,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid assessment data format" });
         }
         
+        const assessmentNames: Record<string, string> = {
+          "fit": "FIT Assessment",
+          "ai_readiness": "AI Readiness Assessment",
+          "prompt_architecture": "Prompt Architecture Assessment",
+          "aiq": "Algorithmic Integrity Quotient (AIQ)",
+        };
+        
         for (const assessmentId of assessmentList) {
           const normalizedId = normalizeAssessmentId(assessmentId);
           const price = ASSESSMENT_PRICES[normalizedId] || 0;
@@ -203,6 +210,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price,
             status: "ready",
           });
+        }
+        
+        // Send receipt email to logged-in user
+        const user = await storage.getUser(userId);
+        if (user) {
+          const assessmentDisplayNames = assessmentList.map((id: string) => {
+            const normalized = normalizeAssessmentId(id);
+            return assessmentNames[normalized] || normalized;
+          });
+          
+          await sendPaymentReceiptEmail(
+            user.email,
+            user.name || "User",
+            assessmentDisplayNames,
+            session.amount_total || 0,
+            session.id
+          );
         }
         
         return res.json({
@@ -246,6 +270,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid assessment data format" });
         }
         
+        const assessmentNames: Record<string, string> = {
+          "fit": "FIT Assessment",
+          "ai_readiness": "AI Readiness Assessment",
+          "prompt_architecture": "Prompt Architecture Assessment",
+          "aiq": "Algorithmic Integrity Quotient (AIQ)",
+        };
+        
         for (const assessmentId of assessmentList) {
           const normalizedId = normalizeAssessmentId(assessmentId);
           const price = ASSESSMENT_PRICES[normalizedId] || 0;
@@ -257,6 +288,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "ready",
           });
         }
+        
+        // Send receipt email to existing user
+        const assessmentDisplayNames = assessmentList.map((id: string) => {
+          const normalized = normalizeAssessmentId(id);
+          return assessmentNames[normalized] || normalized;
+        });
+        
+        await sendPaymentReceiptEmail(
+          existingUser.email,
+          existingUser.name || `${firstName} ${lastName}`,
+          assessmentDisplayNames,
+          session.amount_total || 0,
+          session.id
+        );
         
         return res.json({
           success: true,
@@ -313,6 +358,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const assessmentList = JSON.parse(assessmentIds);
       
+      const assessmentNames: Record<string, string> = {
+        "fit": "FIT Assessment",
+        "ai_readiness": "AI Readiness Assessment",
+        "prompt_architecture": "Prompt Architecture Assessment",
+        "aiq": "Algorithmic Integrity Quotient (AIQ)",
+      };
+      
       for (const assessmentId of assessmentList) {
         const normalizedId = normalizeAssessmentId(assessmentId);
         const price = ASSESSMENT_PRICES[normalizedId] || 0;
@@ -323,6 +375,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price,
           status: "ready",
         });
+      }
+      
+      // Send payment receipt email
+      try {
+        const assessmentDisplayNames = assessmentList.map((id: string) => {
+          const normalized = normalizeAssessmentId(id);
+          return assessmentNames[normalized] || normalized;
+        });
+        
+        await sendPaymentReceiptEmail(
+          customerEmail,
+          `${firstName} ${lastName}`,
+          assessmentDisplayNames,
+          session.amount_total || 0,
+          session.id
+        );
+        console.log(`✓ Payment receipt sent successfully to ${customerEmail}`);
+      } catch (emailError: any) {
+        console.error(`✗ Failed to send payment receipt to ${customerEmail}:`, emailError);
       }
       
       // Send welcome email with credentials

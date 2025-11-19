@@ -430,3 +430,121 @@ Reply directly to this email to respond to ${name}
   const info = await emailTransporter.sendMail(mailOptions);
   console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
 }
+
+export async function sendPaymentReceiptEmail(
+  email: string,
+  name: string,
+  assessments: string[],
+  totalAmount: number,
+  sessionId: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Payment receipt email not sent for ${email} - email not configured`);
+    return;
+  }
+
+  const assessmentList = assessments.join(', ');
+  const amountFormatted = `£${(totalAmount / 100).toFixed(2)}`;
+
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: 'Payment Receipt - HumanMetrix',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .receipt { background: #f9fafb; border: 2px solid #e5e7eb; padding: 20px; border-radius: 6px; margin: 20px 0; }
+            .total { background: #0a1628; color: #06b6d4; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; margin: 15px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Payment Successful</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">HumanMetrix Receipt</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <div class="success-badge">✓ Payment Confirmed</div>
+              </div>
+              
+              <h2>Hello ${name},</h2>
+              <p>Thank you for your purchase! Your payment has been successfully processed.</p>
+              
+              <div class="receipt">
+                <h3 style="margin-top: 0; color: #374151;">Purchase Details</h3>
+                <p><strong>Assessments Purchased:</strong></p>
+                <p style="margin-left: 20px;">${assessmentList}</p>
+                
+                <div class="total">
+                  Total Paid: ${amountFormatted}
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
+                  Transaction ID: ${sessionId}
+                </p>
+              </div>
+              
+              <h3>Next Steps:</h3>
+              <ol style="padding-left: 20px;">
+                <li>Log in to your HumanMetrix account</li>
+                <li>Complete your assessments from the dashboard</li>
+                <li>View your comprehensive results and download your PDF report</li>
+              </ol>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                If you have any questions, please contact us at humanmetrix.sales@gmail.com
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+              <p style="margin-top: 10px; color: #9ca3af;">
+                This is an automated receipt for your records.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Payment Successful - HumanMetrix Receipt
+
+Hello ${name},
+
+Thank you for your purchase! Your payment has been successfully processed.
+
+PURCHASE DETAILS:
+Assessments Purchased: ${assessmentList}
+Total Paid: ${amountFormatted}
+Transaction ID: ${sessionId}
+
+NEXT STEPS:
+1. Log in to your HumanMetrix account
+2. Complete your assessments from the dashboard
+3. View your comprehensive results and download your PDF report
+
+If you have any questions, please contact us at humanmetrix.sales@gmail.com
+
+© ${new Date().getFullYear()} HumanMetrix
+This is an automated receipt for your records.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Payment receipt email sent to ${email} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send payment receipt to ${email}:`, error.message);
+    // Don't throw error - payment already succeeded, email failure shouldn't break flow
+  }
+}
