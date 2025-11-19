@@ -176,7 +176,7 @@ export function ResultsPaymentGate() {
           <h1 className="text-3xl font-bold">Congratulations! All of your assessments are complete!</h1>
           
           <p className="text-muted-foreground text-lg">
-            You now have the option to purchase your results below.
+            You can now purchase your results below.
           </p>
           
           {wasInvited && (
