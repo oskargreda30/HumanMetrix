@@ -220,9 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return assessmentNames[normalized] || normalized;
           });
           
+          const userName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.firstName || user.email;
+          
           await sendPaymentReceiptEmail(
             user.email,
-            user.name || "User",
+            userName,
             assessmentDisplayNames,
             session.amount_total || 0,
             session.id
@@ -295,9 +299,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return assessmentNames[normalized] || normalized;
         });
         
+        const existingUserName = existingUser.firstName && existingUser.lastName
+          ? `${existingUser.firstName} ${existingUser.lastName}`
+          : existingUser.firstName || `${firstName} ${lastName}`;
+        
         await sendPaymentReceiptEmail(
           existingUser.email,
-          existingUser.name || `${firstName} ${lastName}`,
+          existingUserName,
           assessmentDisplayNames,
           session.amount_total || 0,
           session.id
