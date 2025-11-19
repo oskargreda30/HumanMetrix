@@ -657,7 +657,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text('Level', 25, yPos);
     
     // Candidate name headers with color coding
-    const scoreColWidth = (pageWidth - 80) / data.candidates.length;
+    const numCandidates = data.candidates.length;
+    const scoreColWidth = Math.min(55, (pageWidth - 85) / numCandidates);
     data.candidates.forEach((candidate, index) => {
       const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
       pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
@@ -665,7 +666,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
         : `Candidate ${index + 1}`;
       const shortName = name.length > 15 ? name.substring(0, 13) + '...' : name;
-      pdf.text(shortName, 65 + (index * scoreColWidth), yPos);
+      const headerX = 60 + (index * scoreColWidth);
+      pdf.text(shortName, headerX, yPos);
     });
     yPos += 4;
     
@@ -679,34 +681,34 @@ export async function exportComparisonPDF(data: ComparisonData) {
       // Candidate scores with bars
       data.candidates.forEach((candidate, candIndex) => {
         const promptData = data.promptArchitectureAssessments?.[candIndex];
+        const colX = 60 + (candIndex * scoreColWidth);
+        
         if (promptData && promptData.levels && promptData.levels[level - 1]) {
           const levelData = promptData.levels[level - 1];
           const score = levelData.totalScore || 0;
           const maxScore = 100;
-          const barWidth = 30;
+          const barWidth = Math.min(35, scoreColWidth - 15);
           const barLength = (score / maxScore) * barWidth;
-          const barX = 65 + (candIndex * scoreColWidth);
+          
+          // Score text on the left
+          pdf.setFontSize(6);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(17, 24, 39);
+          pdf.text(`${score}`, colX, yPos + 3);
           
           // Background bar
           pdf.setFillColor(229, 231, 235);
-          pdf.rect(barX + 15, yPos + 0.5, barWidth, 4, 'F');
+          pdf.rect(colX + 8, yPos + 0.5, barWidth, 4, 'F');
           
           // Score bar with candidate color
           const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
           pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-          pdf.rect(barX + 15, yPos + 0.5, barLength, 4, 'F');
-          
-          // Score text
-          pdf.setFontSize(6);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(17, 24, 39);
-          pdf.text(`${score}`, barX, yPos + 3);
+          pdf.rect(colX + 8, yPos + 0.5, barLength, 4, 'F');
         } else {
-          const barX = 65 + (candIndex * scoreColWidth);
           pdf.setFontSize(6);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(150, 150, 150);
-          pdf.text('—', barX, yPos + 3);
+          pdf.text('—', colX, yPos + 3);
         }
       });
       
