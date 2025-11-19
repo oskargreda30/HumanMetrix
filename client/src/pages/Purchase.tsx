@@ -249,6 +249,15 @@ export default function Purchase() {
                         : 'hover-elevate'
                     }`}
                     onClick={() => handleToggle(assessment.id)}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && e.currentTarget === e.target) {
+                        e.preventDefault();
+                        handleToggle(assessment.id);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={selectedAssessments.has(assessment.id)}
                     data-testid={`card-assessment-${assessment.id}`}
                   >
                     <div className="flex items-start gap-4">
@@ -259,14 +268,15 @@ export default function Purchase() {
                         className="mt-1"
                         data-testid={`checkbox-${assessment.id}`}
                         onClick={(e) => e.stopPropagation()}
+                        aria-labelledby={`assessment-title-${assessment.id}`}
                       />
                       <div className="flex-1">
-                        <Label 
-                          htmlFor={assessment.id}
+                        <div 
+                          id={`assessment-title-${assessment.id}`}
                           className="text-lg font-semibold cursor-pointer"
                         >
                           {assessment.name}
-                        </Label>
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1 mb-3">
                           {assessment.description}
                         </p>
