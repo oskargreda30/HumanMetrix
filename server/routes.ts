@@ -1965,8 +1965,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userIds.map((id) => storage.getResultsByUser(id))
       );
 
-      // Filter to only skill-based assessments (exclude prompt_architecture which uses percentage scoring)
-      const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness', 'aiq'];
+      // Filter to only multi-skill assessments (FIT has 6 skills, AI Readiness has 9 skills)
+      // Exclude AIQ (single score) and prompt_architecture (percentage scoring)
+      const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
       
       // Build radar chart data
       const radarData: any[] = [];
@@ -1974,6 +1975,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalize assessment type for comparison (handle both hyphens and underscores)
       const normalizeAssessmentType = (type: string) => 
         type.toLowerCase().replace(/[\s-]+/g, '_');
+      
+      // Skill name normalization map (legacy to canonical)
+      const normalizeSkillName = (skill: string): string => {
+        const skillMap: Record<string, string> = {
+          // Legacy AI Readiness keys → canonical keys
+          'AI Literacy': 'AI Literacy & Prompt Engineering',
+          'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering',
+          'Technical Fluency': 'Technical Fundamentals',
+          'Domain Fluency': 'Data Fluency',
+          'Critical Thinking': 'Critical Thinking & Problem-Solving',
+          'Adaptive Learning': 'Adaptability & Continuous Learning',
+          'Collaboration': 'Collaboration & Communication',
+          'Cross-functional Collaboration': 'Collaboration & Communication',
+          'Responsible AI': 'Responsible AI & Ethical Awareness',
+          'Creative Innovation': 'Creativity & Innovation',
+        };
+        return skillMap[skill] || skill;
+      };
       
       // Aggregate skills across all skill-based assessments for radar chart
       const skillsMap = new Map<string, (number | null)[]>();
@@ -1988,10 +2007,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skillBasedResults.forEach((result) => {
           if (result.scores && typeof result.scores === 'object') {
             Object.entries(result.scores).forEach(([skill, score]) => {
-              if (!skillsMap.has(skill)) {
-                skillsMap.set(skill, new Array(userIds.length).fill(null));
+              const canonicalSkill = normalizeSkillName(skill);
+              if (!skillsMap.has(canonicalSkill)) {
+                skillsMap.set(canonicalSkill, new Array(userIds.length).fill(null));
               }
-              const scores = skillsMap.get(skill)!;
+              const scores = skillsMap.get(canonicalSkill)!;
               scores[candidateIndex] = score as number;
             });
           }
