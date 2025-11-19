@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 
 interface CandidateData {
   user: {
@@ -48,28 +49,28 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
   pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
   
-  // HM Logo (monogram style)
-  pdf.setFillColor(96, 165, 250); // Cyan/blue
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(18);
-  pdf.setTextColor(96, 165, 250);
-  pdf.text('HM', 12, 16);
+  // HumanMetrix Logo (full logo image, vertically centered)
+  try {
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 3, 20, 20);
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+  }
   
-  // Separator line
+  // Separator line - closer to logo
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(28, 9, 28, 21);
+  pdf.line(34, 9, 34, 19);
   
-  // Company name and tagline
+  // Company name and tagline - closer to separator
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 32, 13);
+  pdf.text('HUMANMETRIX', 38, 11);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 32, 19);
+  pdf.text('AI-Powered Assessment Platform', 38, 17);
   
   pdf.setTextColor(0, 0, 0);
 }
