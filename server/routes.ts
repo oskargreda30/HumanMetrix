@@ -1569,7 +1569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           validatedData.candidateEmail,
           validatedData.candidateName,
           temporaryPassword,
-          validatedData.message
+          validatedData.message ?? undefined
         );
         
         console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
