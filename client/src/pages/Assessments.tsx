@@ -33,7 +33,7 @@ const assessments = [
   {
     id: "prompt_architecture",
     title: "Prompt Architecture Assessment",
-    description: "Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by GPT-5.",
+    description: "Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by an AI model.",
     questionCount: 7,
     duration: "14 min",
     icon: Code2,
