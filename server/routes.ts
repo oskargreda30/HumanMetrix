@@ -351,6 +351,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Results payment endpoint (for invited users)
+  // Submit user reference for FREE discount code
+  app.post("/api/submit-reference", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { referenceText } = req.body;
+      
+      if (!referenceText || typeof referenceText !== 'string') {
+        return res.status(400).json({ message: "Reference text is required" });
+      }
+      
+      const wordCount = referenceText.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
+      
+      if (wordCount < 50) {
+        return res.status(400).json({ message: "Reference must be at least 50 words" });
+      }
+      
+      // Check if user already submitted a reference
+      const existing = await storage.getUserReference(userId);
+      if (existing) {
+        return res.status(400).json({ message: "You have already submitted a reference" });
+      }
+      
+      // Create reference
+      const reference = await storage.createUserReference({
+        userId,
+        referenceText,
+        wordCount,
+      });
+      
+      res.json({ success: true, reference });
+    } catch (error) {
+      console.error("Error submitting reference:", error);
+      res.status(500).json({ message: "Failed to submit reference" });
+    }
+  });
+  
+  // Check reference status
+  app.get("/api/reference-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const reference = await storage.getUserReference(userId);
+      
+      res.json({ 
+        hasSubmitted: !!reference,
+        reference: reference || null 
+      });
+    } catch (error) {
+      console.error("Error checking reference status:", error);
+      res.status(500).json({ message: "Failed to check reference status" });
+    }
+  });
+  
   app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

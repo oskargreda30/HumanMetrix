@@ -124,6 +124,23 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 
+// User References - for earning FREE discount code
+export const userReferences = pgTable("user_references", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  referenceText: text("reference_text").notNull(),
+  wordCount: integer("word_count").notNull(),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+});
+
+export const insertUserReferenceSchema = createInsertSchema(userReferences).omit({
+  id: true,
+  submittedAt: true,
+});
+
+export type InsertUserReference = z.infer<typeof insertUserReferenceSchema>;
+export type UserReference = typeof userReferences.$inferSelect;
+
 // Prompt Architecture Evaluations
 export const promptArchitectureEvaluations = pgTable("prompt_architecture_evaluations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

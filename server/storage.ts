@@ -11,6 +11,7 @@ import {
   candidateNotes,
   cachedRoleAlignments,
   reportExports,
+  userReferences,
   type User,
   type UpsertUser,
   type Purchase,
@@ -35,6 +36,8 @@ import {
   type InsertCachedRoleAlignment,
   type ReportExport,
   type InsertReportExport,
+  type UserReference,
+  type InsertUserReference,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -98,6 +101,10 @@ export interface IStorage {
     notes: CandidateNote[];
     invitations: Invitation[];
   }>>;
+  
+  // User reference operations
+  createUserReference(reference: InsertUserReference): Promise<UserReference>;
+  getUserReference(userId: string): Promise<UserReference | undefined>;
   
   // Job role operations
   createJobRole(role: InsertJobRole): Promise<JobRole>;
@@ -712,6 +719,22 @@ export class DatabaseStorage implements IStorage {
       .from(reportExports)
       .where(eq(reportExports.createdBy, userId))
       .orderBy(desc(reportExports.createdAt));
+  }
+  
+  // User reference operations
+  async createUserReference(reference: InsertUserReference): Promise<UserReference> {
+    const [ref] = await db.insert(userReferences).values(reference).returning();
+    return ref;
+  }
+  
+  async getUserReference(userId: string): Promise<UserReference | undefined> {
+    const [ref] = await db
+      .select()
+      .from(userReferences)
+      .where(eq(userReferences.userId, userId))
+      .orderBy(desc(userReferences.submittedAt))
+      .limit(1);
+    return ref;
   }
 
   // Test/development operations

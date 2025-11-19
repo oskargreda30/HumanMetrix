@@ -96,7 +96,7 @@ export default function Dashboard() {
             ) : (
               <Card className="p-12 text-center">
                 <p className="text-muted-foreground mb-4">
-                  No assessments available. Purchase assessments to get started.
+                  No assessments available. Get started with a testing series.
                 </p>
                 <Link href="/assessments">
                   <Button data-testid="button-browse-assessments">Browse Assessments</Button>
@@ -105,7 +105,7 @@ export default function Dashboard() {
             )}
           </section>
 
-          {/* Completed Purchases (Batches) */}
+          {/* Completed Testing Series (Batches) */}
           {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold mb-4">Your Results</h2>
@@ -121,7 +121,7 @@ export default function Dashboard() {
                             <Clock className="h-5 w-5 text-blue-500" />
                           )}
                           <h3 className="text-lg font-semibold">
-                            Purchase #{purchasesWithCompletedResults.length - index}
+                            Testing Series #{purchasesWithCompletedResults.length - index}
                           </h3>
                           {purchase.allItemsCompleted && (
                             <Badge variant="secondary">All Complete</Badge>

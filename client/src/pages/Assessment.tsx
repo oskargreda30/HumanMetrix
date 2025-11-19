@@ -370,7 +370,12 @@ export default function Assessment() {
       <Navigation />
       
       {/* Instructions Dialog */}
-      <Dialog open={showInstructions && !resultId} onOpenChange={() => {}}>
+      <Dialog open={showInstructions && !resultId} onOpenChange={(open) => {
+        if (!open) {
+          // User clicked X or clicked outside - navigate back to dashboard
+          setLocation('/dashboard');
+        }
+      }}>
         <DialogContent className="max-w-2xl" data-testid="dialog-instructions">
           <DialogHeader>
             <DialogTitle className="text-2xl">{instructions.title}</DialogTitle>

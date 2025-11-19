@@ -2,14 +2,26 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import { Lock, CheckCircle2, Loader2, ArrowLeft, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect } from "react";
 
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [showReferenceDialog, setShowReferenceDialog] = useState(false);
+  const [reference, setReference] = useState("");
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -53,6 +65,14 @@ export function ResultsPaymentGate() {
   
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
+  
+  // Check reference status from backend
+  const { data: referenceStatus } = useQuery<{ hasSubmitted: boolean; reference: any }>({
+    queryKey: ["/api/reference-status"],
+    refetchOnMount: "always",
+  });
+  
+  const showFreeCode = referenceStatus?.hasSubmitted || false;
 
   const unlockMutation = useMutation({
     mutationFn: async () => {
@@ -86,6 +106,55 @@ export function ResultsPaymentGate() {
     unlockMutation.mutate();
   };
 
+  // Count words in reference
+  const wordCount = reference.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const isReferenceValid = wordCount >= 50;
+
+  const submitReferenceMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/submit-reference", {
+        referenceText: reference,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to submit reference");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      setShowReferenceDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/reference-status"] });
+      
+      toast({
+        title: "Reference submitted!",
+        description: "Your FREE discount code is now displayed above.",
+        duration: 5000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit reference",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleSubmitReference = () => {
+    if (!isReferenceValid) {
+      toast({
+        title: "Reference too short",
+        description: "Please write at least 50 words for your reference.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    submitReferenceMutation.mutate();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
       <Card className="max-w-2xl w-full p-8 space-y-6">
@@ -106,13 +175,18 @@ export function ResultsPaymentGate() {
           
           <h1 className="text-3xl font-bold">Congratulations! All of your assessments are complete!</h1>
           
-          <p className="text-muted-foreground text-lg">
-            To view your detailed results and download your professional PDF report, please submit your payment below.
-          </p>
-          
-          {wasInvited && (
-            <p className="text-sm text-muted-foreground italic">
-              Your results have been submitted to the employer who invited you to complete our assessments. You also have the option to pay and download your own copy of the results for your records, and your future job applications.
+          {wasInvited ? (
+            <>
+              <p className="text-muted-foreground text-lg">
+                Your results have been submitted to the employer who invited you to complete these assessments.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You also have the option to purchase your own copy of the results for your records and future job applications.
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-lg">
+              To view your detailed results and download your professional PDF report, please submit your payment below.
             </p>
           )}
         </div>
@@ -150,6 +224,39 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
+          {/* Free Code Display (after reference submission) */}
+          {showFreeCode && (
+            <Card className="p-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+              <div className="text-center space-y-2">
+                <p className="font-semibold text-green-700 dark:text-green-300">
+                  Your discount code is ready!
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-green-500 rounded-lg text-lg font-bold">
+                    FREE
+                  </code>
+                </div>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Enter this code at checkout to unlock your results for free
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Write Reference Button */}
+          {!showFreeCode && (
+            <Button
+              variant="outline"
+              className="w-full"
+              size="lg"
+              onClick={() => setShowReferenceDialog(true)}
+              data-testid="button-write-reference"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Write a Reference for Free Results
+            </Button>
+          )}
+
           <Button
             className="w-full"
             size="lg"
@@ -175,6 +282,52 @@ export function ResultsPaymentGate() {
           </p>
         </div>
       </Card>
+
+      {/* Reference Writing Dialog */}
+      <Dialog open={showReferenceDialog} onOpenChange={setShowReferenceDialog}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-reference">
+          <DialogHeader>
+            <DialogTitle>Write a Reference for Free Results</DialogTitle>
+            <DialogDescription>
+              Write a reference for HumanMetrix (minimum 50 words) to unlock your results for free.
+              Share your honest experience completing these assessments.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Textarea
+              placeholder="Share your experience with HumanMetrix assessments... (minimum 50 words)"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              className="min-h-[200px]"
+              data-testid="input-reference"
+            />
+            
+            <div className="flex items-center justify-between">
+              <p className={`text-sm ${isReferenceValid ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                Word count: {wordCount} / 50 {isReferenceValid && '✓'}
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReferenceDialog(false)}
+              data-testid="button-cancel-reference"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitReference}
+              disabled={!isReferenceValid}
+              data-testid="button-submit-reference"
+            >
+              Submit Reference
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
