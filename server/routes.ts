@@ -837,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "fit": "FIT Assessment (15Q)",
         "ai_readiness": "AI Readiness Assessment (21Q)",
         "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
+        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
       };
 
       for (const assessmentId of assessmentIds) {
@@ -1041,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "fit": "FIT Assessment (15Q)",
         "ai_readiness": "AI Readiness Assessment (21Q)",
         "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (4Q)",
+        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
       };
 
       for (const assessmentId of assessmentIds) {

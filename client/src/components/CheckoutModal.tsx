@@ -38,7 +38,7 @@ const assessments = [
   {
     id: "aiq",
     name: "Algorithmic Integrity Quotient (AIQ)",
-    description: "4 questions + rationales",
+    description: "8 questions + rationales",
     duration: "20 min",
   },
 ];

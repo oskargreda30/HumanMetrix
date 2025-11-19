@@ -277,13 +277,13 @@ export default function Assessment() {
         };
       case "aiq":
         return {
-          title: "Algorithmic Integrity Quotient (AIQ) - 4 Questions",
+          title: "Algorithmic Integrity Quotient (AIQ) - 8 Questions",
           description: "This assessment tests your understanding of AI ethics, bias, fairness, transparency, and responsible deployment. You'll analyze real-world scenarios and make ethically sound decisions. A score of 70% or above is considered a pass.",
           tips: [
             "Read each scenario carefully and consider all ethical implications",
             "Choose the option that prioritizes ethics, safety, and fairness",
             "There are correct answers based on established AI ethics principles",
-            "You have 20 minutes to complete all 4 questions",
+            "You have 20 minutes to complete all 8 questions",
           ]
         };
       default:

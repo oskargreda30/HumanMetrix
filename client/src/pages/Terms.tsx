@@ -53,7 +53,7 @@ export default function Terms() {
                   <li>FIT Assessment (15 questions measuring 6 behavioral skills)</li>
                   <li>AI Readiness Assessment (21 questions evaluating 9 AI competencies)</li>
                   <li>Prompt Architecture Assessment (7 progressive levels evaluated by an AI model)</li>
-                  <li>Algorithmic Integrity Quotient (AIQ) (4 scenario-based questions)</li>
+                  <li>Algorithmic Integrity Quotient (AIQ) (8 scenario-based questions)</li>
                 </ul>
               </section>
 

@@ -594,7 +594,7 @@ export async function exportEnhancedCandidatePDF(
   
   // AIQ Assessment Explanation
   yPos = addAssessmentBox(
-    'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (4 Questions)',
+    'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (8 Questions)',
     [59, 130, 246],
     [239, 246, 255],
     [59, 130, 246],

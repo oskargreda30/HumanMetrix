@@ -50,7 +50,7 @@ const assessments: Assessment[] = [
     name: "Algorithmic Integrity Quotient (AIQ)",
     description: "Tests understanding of AI ethics, bias, fairness, transparency, and responsible deployment",
     duration: "20 min",
-    questions: 4
+    questions: 8
   }
 ];
 
