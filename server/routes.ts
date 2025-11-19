@@ -1574,7 +1574,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
       } else {
-        console.log(`User ${validatedData.candidateEmail} already exists, skipping account creation`);
+        console.log(`User ${validatedData.candidateEmail} already exists, granting free assessments`);
+        
+        // Grant free assessments to existing user (if they don't already have them)
+        await storage.createFreeAssessmentsForUser(existingUser.id);
+        
+        console.log(`Successfully granted free assessments to existing user ${validatedData.candidateEmail}`);
       }
 
       res.json({
