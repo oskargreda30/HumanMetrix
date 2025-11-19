@@ -389,7 +389,7 @@ export default function MyResults() {
                 <RadarChart data={fitData}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666', fontSize: 10 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                   <Radar
                     name="Score"
                     dataKey="score"
@@ -419,7 +419,7 @@ export default function MyResults() {
                 <RadarChart data={aiData}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666', fontSize: 10 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                   <Radar
                     name="Score"
                     dataKey="score"

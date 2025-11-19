@@ -457,8 +457,7 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={{ fill: '#9ca3af', fontSize: 10 }}
-                  tickCount={5}
+                  tick={false}
                 />
                 <Radar
                   name="Score"
@@ -492,8 +491,7 @@ export default function Results() {
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 100]}
-                  tick={{ fill: '#9ca3af', fontSize: 10 }}
-                  tickCount={5}
+                  tick={false}
                 />
                 <Radar
                   name="Score"
