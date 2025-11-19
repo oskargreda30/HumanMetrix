@@ -1270,11 +1270,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
               
-              // Check if this assessment type was already completed via this invitation
-              // CRITICAL: Must use normalized type to match database records
-              const existingResult = await storage.getResultByInvitationAndType(invitation.id, normalizedType);
+              // Check if this assessment type was already completed by this user
+              // CRITICAL: Check for ANY completed result (purchase OR invitation-based)
+              const allUserResults = await storage.getResultsByUser(userId);
+              const completedResult = allUserResults.find(r => 
+                normalizeAssessmentId(r.assessmentType) === normalizedType && 
+                r.status === 'completed'
+              );
               
-              if (!existingResult || existingResult.status !== 'completed') {
+              if (!completedResult) {
                 // Only add if we haven't already added this assessment type (using normalized comparison)
                 if (!addedAssessmentTypes.has(normalizedType)) {
                   // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
@@ -1693,15 +1697,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profileImageUrl: null,
         });
         
-        // Grant free access to all assessments
-        const newUser = await storage.getUserByEmail(validatedData.candidateEmail);
-        if (!newUser) {
-          throw new Error("Failed to create user account");
-        }
-        
-        console.log(`Granting free assessments to user ${newUser.id}`);
-        await storage.createFreeAssessmentsForUser(newUser.id);
-        
         // Send welcome email with credentials
         console.log(`Sending welcome email to ${validatedData.candidateEmail}`);
         await sendWelcomeEmailWithPassword(
@@ -1713,12 +1708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
       } else {
-        console.log(`User ${validatedData.candidateEmail} already exists, granting free assessments`);
-        
-        // Grant free assessments to existing user (if they don't already have them)
-        await storage.createFreeAssessmentsForUser(existingUser.id);
-        
-        console.log(`Successfully granted free assessments to existing user ${validatedData.candidateEmail}`);
+        console.log(`User ${validatedData.candidateEmail} already exists - invitation created`);
       }
 
       res.json({
