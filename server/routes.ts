@@ -1099,21 +1099,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const items = await storage.getPurchaseItems(purchase.id);
           
           for (const item of items) {
+            // Normalize assessment type for consistent comparison
+            const normalizedType = normalizeAssessmentId(item.assessmentType);
+            
             // Track all purchased assessment types (regardless of completion)
-            purchasedAssessmentTypes.add(item.assessmentType);
+            purchasedAssessmentTypes.add(normalizedType);
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
             if (!existing || existing.status !== 'completed') {
-              // Only add if we haven't already added this assessment type
-              if (!addedAssessmentTypes.has(item.assessmentType)) {
+              // Only add if we haven't already added this assessment type (using normalized comparison)
+              if (!addedAssessmentTypes.has(normalizedType)) {
                 availableAssessments.push({
                   purchaseItemId: item.id,
                   assessmentType: item.assessmentType,
                   status: item.status,
                   source: 'purchase',
                 });
-                addedAssessmentTypes.add(item.assessmentType);
+                addedAssessmentTypes.add(normalizedType);
               }
             }
           }
@@ -1133,12 +1136,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Add each assessment type from the invitation
             for (const assessmentType of invitation.assessmentTypes) {
+              // Normalize assessment type for consistent comparison
+              const normalizedType = normalizeAssessmentId(assessmentType);
+              
               // Check if this assessment type was already completed via this invitation
               const existingResult = await storage.getResultByInvitationAndType(invitation.id, assessmentType);
               
               if (!existingResult || existingResult.status !== 'completed') {
-                // Only add if we haven't already added this assessment type
-                if (!addedAssessmentTypes.has(assessmentType)) {
+                // Only add if we haven't already added this assessment type (using normalized comparison)
+                if (!addedAssessmentTypes.has(normalizedType)) {
                   // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
                   availableAssessments.push({
                     purchaseItemId: `invitation::${invitation.id}::${assessmentType}`,
@@ -1147,7 +1153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     source: 'invitation',
                     invitationId: invitation.id,
                   });
-                  addedAssessmentTypes.add(assessmentType);
+                  addedAssessmentTypes.add(normalizedType);
                 }
               }
             }
