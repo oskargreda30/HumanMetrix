@@ -203,6 +203,15 @@ export default function CheckoutModal({
                       : 'hover-elevate'
                   }`}
                   onClick={() => handleToggle(assessment.id)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && e.currentTarget === e.target) {
+                      e.preventDefault();
+                      handleToggle(assessment.id);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={selectedAssessments.has(assessment.id)}
                   data-testid={`checkout-card-${assessment.id}`}
                 >
                   <div className="flex items-start gap-3">
@@ -211,15 +220,16 @@ export default function CheckoutModal({
                       checked={selectedAssessments.has(assessment.id)}
                       onCheckedChange={() => handleToggle(assessment.id)}
                       onClick={(e) => e.stopPropagation()}
+                      aria-labelledby={`checkout-title-${assessment.id}`}
                       data-testid={`checkout-checkbox-${assessment.id}`}
                     />
-                    <div className="flex-1" onClick={(e) => e.stopPropagation()}>
-                      <Label
-                        htmlFor={`checkout-${assessment.id}`}
+                    <div className="flex-1">
+                      <div
+                        id={`checkout-title-${assessment.id}`}
                         className="font-medium cursor-pointer"
                       >
                         {assessment.name}
-                      </Label>
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {assessment.description}
                       </p>
