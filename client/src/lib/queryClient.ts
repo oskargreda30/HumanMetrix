@@ -18,12 +18,23 @@ export async function apiRequest(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const headers: Record<string, string> = {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    };
+    
+    if (data) {
+      headers["Content-Type"] = "application/json";
+    }
+    
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
       signal: controller.signal,
+      cache: "no-store", // Aggressive cache-busting
     });
 
     clearTimeout(timeoutId);
@@ -51,6 +62,12 @@ export const getQueryFn: <T>(options: {
       const res = await fetch(queryKey.join("/") as string, {
         credentials: "include",
         signal: controller.signal,
+        cache: "no-store", // Aggressive cache-busting
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
       });
 
       clearTimeout(timeoutId);

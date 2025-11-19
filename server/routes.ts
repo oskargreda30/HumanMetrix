@@ -1271,15 +1271,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const normalizedType = normalizeAssessmentId(assessmentType);
               
               // Check if this assessment type was already completed via this invitation
-              const existingResult = await storage.getResultByInvitationAndType(invitation.id, assessmentType);
+              // CRITICAL: Must use normalized type to match database records
+              const existingResult = await storage.getResultByInvitationAndType(invitation.id, normalizedType);
               
               if (!existingResult || existingResult.status !== 'completed') {
                 // Only add if we haven't already added this assessment type (using normalized comparison)
                 if (!addedAssessmentTypes.has(normalizedType)) {
                   // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
                   availableAssessments.push({
-                    purchaseItemId: `invitation::${invitation.id}::${assessmentType}`,
-                    assessmentType: assessmentType,
+                    purchaseItemId: `invitation::${invitation.id}::${normalizedType}`,
+                    assessmentType: normalizedType,
                     status: 'ready',
                     source: 'invitation',
                     invitationId: invitation.id,
@@ -1326,7 +1327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const invitationId = parts[1];
-        const assessmentType = parts[2];
+        const assessmentType = normalizeAssessmentId(parts[2]); // Normalize assessment type
 
         // Verify invitation exists and belongs to user
         const invitation = await storage.getInvitation(invitationId);
@@ -1339,12 +1340,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invitation has expired" });
         }
 
-        // Verify this assessment type is included in the invitation
-        if (!invitation.assessmentTypes.includes(assessmentType)) {
+        // Verify this assessment type is included in the invitation (compare normalized versions)
+        const normalizedInvitationTypes = invitation.assessmentTypes.map(t => normalizeAssessmentId(t));
+        if (!normalizedInvitationTypes.includes(assessmentType)) {
           return res.status(403).json({ message: "Assessment type not included in invitation" });
         }
 
-        // Check if assessment already started for this invitation
+        // Check if assessment already started for this invitation (using normalized type)
         const existing = await storage.getResultByInvitationAndType(invitationId, assessmentType);
         if (existing) {
           if (existing.userId !== userId) {
