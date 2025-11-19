@@ -2761,7 +2761,7 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     });
   });
 
-  // Normalize to 0-100 scale
+  // Normalize to 0-100 scale based on actual performance
   const normalizedScores: Record<string, number> = {};
   Object.entries(rawScores).forEach(([skill, score]) => {
     if (maxScores[skill] > 0) {
@@ -2770,18 +2770,6 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
       normalizedScores[skill] = 0;
     }
   });
-
-  // Apply relative scaling: make highest score = 100, scale others proportionally
-  const scoreValues = Object.values(normalizedScores);
-  const highestScore = Math.max(...scoreValues);
-  
-  if (highestScore > 0) {
-    const relativeScores: Record<string, number> = {};
-    Object.entries(normalizedScores).forEach(([skill, score]) => {
-      relativeScores[skill] = Math.round((score / highestScore) * 100);
-    });
-    return relativeScores;
-  }
 
   return normalizedScores;
 }
@@ -2975,7 +2963,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     });
   });
 
-  // Normalize to 0-100 scale with division-by-zero guard
+  // Normalize to 0-100 scale based on actual performance
   const normalizedScores: Record<string, number> = {};
   Object.entries(skills).forEach(([skill, score]) => {
     if (maxScores[skill] > 0) {
@@ -2984,19 +2972,6 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
       normalizedScores[skill] = 0;
     }
   });
-
-  // Apply relative scaling: make highest score = 100, scale others proportionally
-  // This matches FIT assessment behavior for consistency
-  const scoreValues = Object.values(normalizedScores);
-  const highestScore = Math.max(...scoreValues);
-  
-  if (highestScore > 0) {
-    const relativeScores: Record<string, number> = {};
-    Object.entries(normalizedScores).forEach(([skill, score]) => {
-      relativeScores[skill] = Math.round((score / highestScore) * 100);
-    });
-    return relativeScores;
-  }
 
   return normalizedScores;
 }
