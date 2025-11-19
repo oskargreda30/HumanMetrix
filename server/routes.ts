@@ -3151,6 +3151,10 @@ function calculateAIQScores(answers: Record<string, string>): Record<string, num
     '2': 'A', // Bias: Re-engineer to remove biased features
     '3': 'C', // Transparency: Deploy XAI technique
     '4': 'B', // Safety: Hard-code emergency vehicle priority
+    '5': 'B', // Surveillance: Disable system until bias is resolved
+    '6': 'A', // Mental Health: Introduce time limits and human support prompts
+    '7': 'A', // Education Equity: Baseline curriculum before adaptation
+    '8': 'C', // Healthcare Consent: Pause use until explicit consent obtained
   };
 
   let score = 0;
@@ -3158,13 +3162,13 @@ function calculateAIQScores(answers: Record<string, string>): Record<string, num
   
   Object.entries(answers).forEach(([question, answer]) => {
     if (correctAnswers[question] === answer) {
-      score += 25;
+      score += 12.5;
       correctCount++;
     }
   });
 
-  // 70% or above is pass (3 or 4 correct = pass)
-  // Below 70% is needs improvement (0-2 correct = needs improvement)
+  // 70% or above is pass (6, 7, or 8 correct = pass)
+  // Below 70% is needs improvement (0-5 correct = needs improvement)
   return { 
     'Algorithmic Integrity': score
   };

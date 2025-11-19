@@ -1,0 +1,28 @@
+Question 5: Surveillance and Civil Liberties
+Scenario: A city deploys AI-powered facial recognition cameras in public spaces to enhance security. The system flags individuals with outstanding warrants and alerts nearby officers. However, it also misidentifies individuals from minority groups at a significantly higher rate. What is the most ethically responsible course of action? 
+• A. Continue using the system but require manual verification before any police action is taken. 
+• B. Disable the system entirely until the bias is resolved, regardless of its current effectiveness. 
+• C. Publish the error rates and allow citizens to opt out of facial recognition tracking. 
+• D. Increase training data from minority groups to reduce bias while continuing deployment.
+✅ Correct Answer: B Rationale: When civil liberties are at stake, especially with disproportionate harm to vulnerable groups, pausing deployment until bias is resolved is the most responsible action. Effectiveness cannot justify systemic discrimination.
+Question 6: AI and Emotional Manipulation
+Scenario: A mental health chatbot uses sentiment analysis to tailor responses. It’s found to subtly nudge users toward longer conversations, increasing engagement metrics but delaying referrals to human therapists. What is the most ethical redesign? 
+• A. Introduce a time limit per session and prompt users to seek human support. 
+• B. Add disclaimers about the chatbot’s limitations at the start of each session. 
+• C. Continue current design but monitor for signs of emotional distress. 
+• D. Allow users to rate their emotional state after each session to guide future responses.
+✅ Correct Answer: A Rationale: Mental health tools must prioritize user well-being over engagement. Time limits and referral prompts ensure responsible use and reduce dependency.
+Question 7: AI in Education and Equity
+Scenario: An AI tutoring system adapts to student performance. However, students from under-resourced schools receive less challenging content due to lower initial scores, reinforcing achievement gaps. What is the most ethical redesign? 
+• A. Introduce a baseline curriculum that all students must complete before adaptation begins. 
+• B. Adjust the algorithm to challenge all students equally, regardless of performance. 
+• C. Provide teachers with override capabilities to manually adjust difficulty. 
+• D. Continue using the system but offer extra credit opportunities to underperforming students.
+✅ Correct Answer: A Rationale: A shared baseline ensures equity in learning opportunities before personalization begins. It prevents algorithmic reinforcement of systemic inequality.
+Question 8: AI and Consent in Healthcare
+Scenario: A hospital uses AI to predict patient deterioration. The system uses historical data, including sensitive mental health records, without explicit patient consent. What is the most ethically sound approach? 
+• A. Continue using the system but anonymize all mental health data. 
+• B. Seek retroactive consent from all patients whose data was used. 
+• C. Pause use of mental health data until explicit consent is obtained. 
+• D. Publish a notice in the hospital lobby informing patients of data use.
+✅ Correct Answer: C Rationale: Sensitive health data requires explicit consent. Ethical use demands proactive respect for patient autonomy, especially in high-stakes contexts.

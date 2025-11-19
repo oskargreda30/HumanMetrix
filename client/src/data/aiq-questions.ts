@@ -39,4 +39,44 @@ export const AIQ_QUESTIONS = [
       { value: "D", text: "Limit the system's use to non-peak hours only until the AI can learn better patterns for emergency vehicle prioritization." },
     ],
   },
+  {
+    id: "5",
+    text: "A city deploys AI-powered facial recognition cameras in public spaces to enhance security. The system flags individuals with outstanding warrants and alerts nearby officers. However, it also misidentifies individuals from minority groups at a significantly higher rate. What is the most ethically responsible course of action?",
+    options: [
+      { value: "A", text: "Continue using the system but require manual verification before any police action is taken." },
+      { value: "B", text: "Disable the system entirely until the bias is resolved, regardless of its current effectiveness." },
+      { value: "C", text: "Publish the error rates and allow citizens to opt out of facial recognition tracking." },
+      { value: "D", text: "Increase training data from minority groups to reduce bias while continuing deployment." },
+    ],
+  },
+  {
+    id: "6",
+    text: "A mental health chatbot uses sentiment analysis to tailor responses. It's found to subtly nudge users toward longer conversations, increasing engagement metrics but delaying referrals to human therapists. What is the most ethical redesign?",
+    options: [
+      { value: "A", text: "Introduce a time limit per session and prompt users to seek human support." },
+      { value: "B", text: "Add disclaimers about the chatbot's limitations at the start of each session." },
+      { value: "C", text: "Continue current design but monitor for signs of emotional distress." },
+      { value: "D", text: "Allow users to rate their emotional state after each session to guide future responses." },
+    ],
+  },
+  {
+    id: "7",
+    text: "An AI tutoring system adapts to student performance. However, students from under-resourced schools receive less challenging content due to lower initial scores, reinforcing achievement gaps. What is the most ethical redesign?",
+    options: [
+      { value: "A", text: "Introduce a baseline curriculum that all students must complete before adaptation begins." },
+      { value: "B", text: "Adjust the algorithm to challenge all students equally, regardless of performance." },
+      { value: "C", text: "Provide teachers with override capabilities to manually adjust difficulty." },
+      { value: "D", text: "Continue using the system but offer extra credit opportunities to underperforming students." },
+    ],
+  },
+  {
+    id: "8",
+    text: "A hospital uses AI to predict patient deterioration. The system uses historical data, including sensitive mental health records, without explicit patient consent. What is the most ethically sound approach?",
+    options: [
+      { value: "A", text: "Continue using the system but anonymize all mental health data." },
+      { value: "B", text: "Seek retroactive consent from all patients whose data was used." },
+      { value: "C", text: "Pause use of mental health data until explicit consent is obtained." },
+      { value: "D", text: "Publish a notice in the hospital lobby informing patients of data use." },
+    ],
+  },
 ];
