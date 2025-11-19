@@ -222,7 +222,7 @@ If you didn't request a password reset, please ignore this email.
   console.log(`✅ Password reset email sent to ${email} (ID: ${info.messageId})`);
 }
 
-export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string) {
+export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string, note?: string) {
   const emailTransporter = getTransporter();
   
   if (!emailTransporter) {
@@ -250,6 +250,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
             .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
             .credentials { background: #f0f9ff; border: 2px solid #06b6d4; padding: 20px; border-radius: 6px; margin: 20px 0; }
             .password-box { background: #0a1628; color: #06b6d4; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; text-align: center; margin: 10px 0; letter-spacing: 2px; }
+            .note-box { background: #f3f4f6; padding: 15px; border-left: 4px solid #06b6d4; margin: 20px 0; }
           </style>
         </head>
         <body>
@@ -261,6 +262,8 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
             <div class="content">
               <h2>Hello ${name},</h2>
               <p>An account has been created for you on HumanMetrix. Use the following credentials to log in and complete your assessments:</p>
+              
+              ${note ? `<div class="note-box"><em>"${note}"</em></div>` : ''}
               
               <div class="credentials">
                 <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${email}</p>
@@ -290,6 +293,7 @@ Hello ${name},
 
 An account has been created for you on HumanMetrix.
 
+${note ? `Note: "${note}"\n\n` : ''}
 Login Credentials:
 Email: ${email}
 Password: ${temporaryPassword}

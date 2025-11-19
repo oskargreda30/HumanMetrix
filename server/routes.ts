@@ -1089,6 +1089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let requiredAssessmentTypes: string[] = [];
       let hasActiveInvitation = false;
       const purchasedAssessmentTypes = new Set<string>();
+      const addedAssessmentTypes = new Set<string>(); // Track which types we've already added
       
       // Check for purchased assessments
       const purchases = await storage.getPurchasesByUser(userId);
@@ -1104,12 +1105,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const existing = await storage.getResultByPurchaseItem(item.id);
             
             if (!existing || existing.status !== 'completed') {
-              availableAssessments.push({
-                purchaseItemId: item.id,
-                assessmentType: item.assessmentType,
-                status: item.status,
-                source: 'purchase',
-              });
+              // Only add if we haven't already added this assessment type
+              if (!addedAssessmentTypes.has(item.assessmentType)) {
+                availableAssessments.push({
+                  purchaseItemId: item.id,
+                  assessmentType: item.assessmentType,
+                  status: item.status,
+                  source: 'purchase',
+                });
+                addedAssessmentTypes.add(item.assessmentType);
+              }
             }
           }
         }
@@ -1132,14 +1137,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const existingResult = await storage.getResultByInvitationAndType(invitation.id, assessmentType);
               
               if (!existingResult || existingResult.status !== 'completed') {
-                // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
-                availableAssessments.push({
-                  purchaseItemId: `invitation::${invitation.id}::${assessmentType}`,
-                  assessmentType: assessmentType,
-                  status: 'ready',
-                  source: 'invitation',
-                  invitationId: invitation.id,
-                });
+                // Only add if we haven't already added this assessment type
+                if (!addedAssessmentTypes.has(assessmentType)) {
+                  // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
+                  availableAssessments.push({
+                    purchaseItemId: `invitation::${invitation.id}::${assessmentType}`,
+                    assessmentType: assessmentType,
+                    status: 'ready',
+                    source: 'invitation',
+                    invitationId: invitation.id,
+                  });
+                  addedAssessmentTypes.add(assessmentType);
+                }
               }
             }
           }
@@ -1559,7 +1568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendWelcomeEmailWithPassword(
           validatedData.candidateEmail,
           validatedData.candidateName,
-          temporaryPassword
+          temporaryPassword,
+          validatedData.message
         );
         
         console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
