@@ -1156,11 +1156,15 @@ export async function exportEnhancedCandidatePDF(
   pdf.setTextColor(0, 0, 0);
   
   // ========== RECOMMENDATIONS SECTION ==========
-  // Force new page for recommendations
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 35;
+  // Check if we need a new page for recommendations (need ~60mm for section)
+  if (yPos > pageHeight - 60) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  } else {
+    yPos += 6; // Add spacing if continuing on same page
+  }
   
   // Recommendations Section
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
