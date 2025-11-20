@@ -60,10 +60,10 @@ export default function RoadmapSection() {
     <section id="product-roadmap" className="py-12 md:py-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-lg md:text-2xl lg:text-3xl font-bold mb-2 md:mb-4 text-white">
+          <h2 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
             What's next for us?
           </h2>
-          <p className="text-xs md:text-base text-blue-100/70 max-w-2xl mx-auto px-4">
+          <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
             Our journey to comprehensive AI-era talent assessment
           </p>
         </div>
