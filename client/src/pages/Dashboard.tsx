@@ -159,43 +159,43 @@ export default function Dashboard() {
                       key={assessment.purchaseItemId} 
                       className="overflow-hidden hover-elevate active-elevate-2 transition-all border-2"
                     >
-                      <div className="p-6">
-                        <div className="flex items-start gap-4 mb-6">
-                          <div className={`p-3 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
-                            <AssessmentIcon className="h-7 w-7" />
+                      <div className="p-4">
+                        <div className="flex items-start gap-3 mb-4">
+                          <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
+                            <AssessmentIcon className="h-6 w-6" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h3 className="text-xl font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
-                              <Badge variant="secondary" className="flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
+                              <Badge variant="secondary" className="flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 text-xs">
                                 Ready
                               </Badge>
                             </div>
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{metadata.description}</p>
-                        <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+                        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{metadata.description}</p>
+                        <div className="flex items-center gap-4 mb-4 pb-4 border-b">
                           <div className="flex items-center gap-2 text-sm">
                             <div className="p-1.5 rounded-md bg-muted">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                             <div>
-                              <div className="font-semibold">{metadata.questions}</div>
+                              <div className="font-semibold text-sm">{metadata.questions}</div>
                               <div className="text-xs text-muted-foreground">questions</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <div className="p-1.5 rounded-md bg-muted">
-                              <Timer className="h-4 w-4 text-muted-foreground" />
+                              <Timer className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                             <div>
-                              <div className="font-semibold">{metadata.minutes}</div>
+                              <div className="font-semibold text-sm">{metadata.minutes}</div>
                               <div className="text-xs text-muted-foreground">minutes</div>
                             </div>
                           </div>
                         </div>
                         <Link href={`/assessment/${assessment.purchaseItemId}`}>
-                          <Button className="w-full" size="lg" data-testid={`button-start-${assessment.assessmentType}`}>
+                          <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
                             Start Assessment
                           </Button>
                         </Link>
