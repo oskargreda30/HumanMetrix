@@ -121,9 +121,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Subtle background image */}
+      {/* Background image */}
       <div 
-        className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05]"
+        className="fixed inset-0 z-0"
         style={{
           backgroundImage: `url(${dashboardBg})`,
           backgroundSize: 'cover',
@@ -135,15 +135,15 @@ export default function Dashboard() {
       <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold mb-2 text-white">My Dashboard</h1>
+            <p className="text-white/80">
               Welcome back, {user?.firstName || 'there'}!
             </p>
           </div>
 
           {/* Available Assessments */}
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Available Assessments</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableAssessments.map((assessment: any) => {
@@ -214,7 +214,7 @@ export default function Dashboard() {
           {/* Completed Testing Series (Batches) */}
           {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold mb-4">Your Results</h2>
+              <h2 className="text-2xl font-semibold mb-4 text-white">Your Results</h2>
               <div className="space-y-6">
                 {purchasesWithCompletedResults.map((purchase: any, index: number) => {
                   const progressPercentage = Math.round((purchase.completedCount / purchase.totalCount) * 100);
