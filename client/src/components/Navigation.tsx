@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
-import logoSymbol from "@assets/image_1763599013465.png";
+import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
@@ -90,12 +90,18 @@ export default function Navigation() {
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
-            <img 
-              src={logoSymbol} 
-              alt="HumanMetrix Logo" 
-              className="h-10 w-auto object-contain"
-            />
+          <Link href="/" className="flex items-center gap-1 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
+            <div className="h-10 w-10 flex items-center justify-center -mr-1 mt-2">
+              <img 
+                src={logoSymbol} 
+                alt="HumanMetrix Logo" 
+                className="h-full w-full object-cover scale-[1.8]"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-2xl text-white">Human</span>
+              <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation - Hidden for logged-in non-admin users (candidates) */}

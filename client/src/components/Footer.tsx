@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { Mail } from "lucide-react";
-import { SiLinkedin } from "react-icons/si";
 
 export default function Footer() {
   const footerLinks = {
@@ -36,16 +35,6 @@ export default function Footer() {
             <p className="text-[11px] md:text-sm text-blue-100/60">
               Professional AI assessments for the modern workforce
             </p>
-            <a
-              href="https://www.linkedin.com/company/humanmetrix/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors w-fit"
-              data-testid="link-linkedin"
-            >
-              <SiLinkedin className="h-3 w-3 md:h-4 md:w-4" />
-              <span>Follow us on LinkedIn</span>
-            </a>
           </div>
 
           {/* Company Links */}
