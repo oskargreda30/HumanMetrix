@@ -15,30 +15,55 @@ import { queryClient } from "@/lib/queryClient";
 
 // Assessment metadata
 const getAssessmentMetadata = (type: string) => {
-  const metadata: Record<string, { icon: any; description: string; questions: number; minutes: number }> = {
+  const metadata: Record<string, { icon: any; description: string; questions: number; minutes: number; iconBg: string }> = {
     'fit': {
       icon: Brain,
       description: 'Measure behavioral competencies and workplace skills',
       questions: 30,
-      minutes: 20
+      minutes: 20,
+      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500'
+    },
+    'ai_readiness': {
+      icon: Sparkles,
+      description: 'Evaluate your preparedness for AI integration',
+      questions: 20,
+      minutes: 15,
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai-readiness': {
       icon: Sparkles,
       description: 'Evaluate your preparedness for AI integration',
       questions: 20,
-      minutes: 15
+      minutes: 15,
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
+    },
+    'prompt_architecture': {
+      icon: Code,
+      description: 'Test your AI prompt engineering abilities',
+      questions: 5,
+      minutes: 14,
+      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
+    },
+    'prompt-architecture': {
+      icon: Code,
+      description: 'Test your AI prompt engineering abilities',
+      questions: 5,
+      minutes: 14,
+      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
     },
     'prompt': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
       questions: 5,
-      minutes: 30
+      minutes: 14,
+      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
     },
     'aiq': {
       icon: Scale,
       description: 'Assess ethical AI decision-making skills',
       questions: 8,
-      minutes: 20
+      minutes: 20,
+      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500'
     }
   };
   return metadata[type] || metadata['fit'];
@@ -116,35 +141,49 @@ export default function Dashboard() {
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
-                      className="p-6 hover-elevate active-elevate-2 transition-all bg-gradient-to-br from-cyan-500/5 to-blue-500/5"
+                      className="overflow-hidden hover-elevate active-elevate-2 transition-all border-2"
                     >
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white flex-shrink-0">
-                          <AssessmentIcon className="h-6 w-6" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <h3 className="text-lg font-semibold">{formatAssessmentName(assessment.assessmentType)}</h3>
-                            <Badge variant="secondary" className="flex-shrink-0">Ready</Badge>
+                      <div className="p-6">
+                        <div className="flex items-start gap-4 mb-6">
+                          <div className={`p-3 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
+                            <AssessmentIcon className="h-7 w-7" />
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3">{metadata.description}</p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                            <div className="flex items-center gap-1">
-                              <FileText className="h-3.5 w-3.5" />
-                              <span>{metadata.questions} questions</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Timer className="h-3.5 w-3.5" />
-                              <span>{metadata.minutes} min</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3 className="text-xl font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
+                              <Badge variant="secondary" className="flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                Ready
+                              </Badge>
                             </div>
                           </div>
                         </div>
+                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{metadata.description}</p>
+                        <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="p-1.5 rounded-md bg-muted">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{metadata.questions}</div>
+                              <div className="text-xs text-muted-foreground">questions</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="p-1.5 rounded-md bg-muted">
+                              <Timer className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{metadata.minutes}</div>
+                              <div className="text-xs text-muted-foreground">minutes</div>
+                            </div>
+                          </div>
+                        </div>
+                        <Link href={`/assessment/${assessment.purchaseItemId}`}>
+                          <Button className="w-full" size="lg" data-testid={`button-start-${assessment.assessmentType}`}>
+                            Start Assessment
+                          </Button>
+                        </Link>
                       </div>
-                      <Link href={`/assessment/${assessment.purchaseItemId}`}>
-                        <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
-                          Start Assessment
-                        </Button>
-                      </Link>
                     </Card>
                   );
                 })}
