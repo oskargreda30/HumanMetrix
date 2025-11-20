@@ -47,7 +47,7 @@ export default function About() {
       <Navigation />
       <main className="flex-grow relative z-10">
         {/* Hero Section */}
-        <section className="py-12 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
             <h1 className="text-lg md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 md:mb-6 px-2">
               About HumanMetrix

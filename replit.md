@@ -13,6 +13,11 @@ Do not make changes to the file `replit.nix`.
 ### UI/UX Decisions
 The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professional aesthetic. Wouter handles navigation, and TanStack Query manages data fetching. UI components include a responsive landing page, assessment selection, results pages, and an admin dashboard. Branding features a new HM monogram logo with a cyan/blue gradient. PDF reports are designed for professional readability with consistent branding and support overlapping radar charts for multi-candidate comparison. Hero section animations are scroll-triggered and accessibility-supported. Product roadmap timeline visualization displays upcoming assessment releases with status badges and timeline connector.
 
+**Background Design System**: Network tech background image (50% opacity) with gradient overlays creates a cohesive visual identity across key pages:
+- **Dashboard & MyResults**: Dark navy overlay (rgba(13,29,51,0.85-0.75-0.85)) with white text for premium, sophisticated feel
+- **About & ForEmployers**: Light grey overlay (rgba(241,245,249,0.92-0.88-0.92)) with black text for professional readability
+- All backgrounds use fixed positioning for smooth scrolling and consistent brand presence
+
 ### Technical Implementations
 - **Frontend**: React, TypeScript, Wouter, TanStack Query, Shadcn UI, Tailwind CSS.
 - **Backend**: Express, TypeScript.

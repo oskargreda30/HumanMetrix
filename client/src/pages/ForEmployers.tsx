@@ -103,7 +103,7 @@ export default function ForEmployers() {
       />
       <main className="flex-grow relative z-10">
         {/* Hero Section */}
-        <section className="py-12 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
             <div className="inline-block mb-4 md:mb-6">
               <span className="inline-flex items-center rounded-full px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-medium bg-primary/10 text-primary border border-primary/20">
