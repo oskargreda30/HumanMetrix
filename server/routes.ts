@@ -721,6 +721,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
+      // Send payment receipt email
+      try {
+        const user = await storage.getUser(userId);
+        const purchaseItems = await storage.getPurchaseItems(purchaseId);
+        const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
+        
+        if (user && session.amount_total) {
+          await sendPaymentReceiptEmail(
+            user.email,
+            user.firstName || 'Customer',
+            assessmentTypes,
+            session.amount_total,
+            sessionId
+          );
+        }
+      } catch (emailError) {
+        console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
+        // Don't fail the payment if email fails
+      }
+      
       // Re-establish session after Stripe redirect
       // Stripe redirects often cause session cookies to be lost, especially in production
       // We regenerate the session to ensure a fresh, valid session is created
