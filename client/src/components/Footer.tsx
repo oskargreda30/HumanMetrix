@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Mail } from "lucide-react";
 import { SiLinkedin } from "react-icons/si";
+import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 export default function Footer() {
   const footerLinks = {
@@ -27,11 +28,18 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-1 space-y-2 md:space-y-4">
-            <div className="flex items-center space-x-1.5 md:space-x-2">
-              <div className="h-6 w-6 md:h-8 md:w-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white font-bold text-xs md:text-lg font-mono">HM</span>
+            <div className="flex items-center gap-1">
+              <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center -mr-1 mt-1 md:mt-2">
+                <img 
+                  src={logoSymbol} 
+                  alt="HumanMetrix Logo" 
+                  className="h-full w-full object-cover scale-[1.8]"
+                />
               </div>
-              <span className="font-semibold text-sm md:text-xl text-white">HumanMetrix</span>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-lg md:text-2xl text-white">Human</span>
+                <span className="font-bold text-lg md:text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
+              </div>
             </div>
             <p className="text-[11px] md:text-sm text-blue-100/60">
               Professional AI assessments for the modern workforce
