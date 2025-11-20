@@ -41,36 +41,36 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  // Gradient header background (dark to lighter blue)
+  // Gradient header background (dark to lighter blue) - increased height for larger logo
   pdf.setFillColor(30, 58, 138); // Dark blue
-  pdf.rect(0, 0, pageWidth, 25, 'F');
+  pdf.rect(0, 0, pageWidth, 35, 'F');
   
   // Add subtle gradient effect with lighter overlay
   pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
-  pdf.rect(0, 0, pageWidth * 0.6, 25, 'F');
+  pdf.rect(0, 0, pageWidth * 0.6, 35, 'F');
   
-  // HumanMetrix Logo (full logo image, vertically centered)
+  // HumanMetrix Logo (full logo image, vertically centered) - doubled size from 20x20 to 40x40
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, 3, 20, 20);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, -2.5, 40, 40);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Separator line - closer to logo
+  // Separator line - adjusted for larger logo
   pdf.setDrawColor(96, 165, 250);
   pdf.setLineWidth(0.5);
-  pdf.line(34, 9, 34, 19);
+  pdf.line(54, 12, 54, 25);
   
-  // Company name and tagline - closer to separator
+  // Company name and tagline - adjusted for larger logo
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 38, 11);
+  pdf.text('HUMANMETRIX', 58, 15);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 38, 17);
+  pdf.text('AI-Powered Assessment Platform', 58, 21);
   
   pdf.setTextColor(0, 0, 0);
 }
