@@ -1,8 +1,9 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
+import RoadmapSection from "@/components/RoadmapSection";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Code2, Shield, Network, Languages, ShoppingCart } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
@@ -50,24 +51,6 @@ const assessments = [
     status: "available" as const,
     price: "£4.00",
   },
-  {
-    id: "logic-flow",
-    title: "Logic Flow Assessment",
-    description: "Coming soon: Advanced assessment of logical reasoning and systematic problem-solving abilities.",
-    questionCount: 12,
-    duration: "25 min",
-    icon: Network,
-    status: "coming-soon" as const,
-  },
-  {
-    id: "ai-translator",
-    title: "AI Output Translator",
-    description: "Coming soon: Test your ability to interpret, refine, and communicate AI-generated content effectively.",
-    questionCount: 10,
-    duration: "20 min",
-    icon: Languages,
-    status: "coming-soon" as const,
-  },
 ];
 
 export default function Assessments() {
@@ -75,8 +58,6 @@ export default function Assessments() {
   const { getBasketCount, basketItems } = useBasket();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  const availableAssessments = assessments.filter((a) => a.status === "available");
-  const comingSoon = assessments.filter((a) => a.status === "coming-soon");
   const basketCount = getBasketCount();
 
   return (
@@ -118,10 +99,10 @@ export default function Assessments() {
             )}
           </div>
 
-          <div className="mb-8 md:mb-12">
+          <div className="mb-12 md:mb-16">
             <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Available Assessments</h2>
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-              {availableAssessments.map((assessment) => (
+              {assessments.map((assessment) => (
                 <AssessmentCard
                   key={assessment.id}
                   id={assessment.id}
@@ -154,22 +135,8 @@ export default function Assessments() {
             </div>
           </div>
 
-          <div>
-            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Coming Soon</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {comingSoon.map((assessment) => (
-                <AssessmentCard
-                  key={assessment.id}
-                  title={assessment.title}
-                  description={assessment.description}
-                  questionCount={assessment.questionCount}
-                  duration={assessment.duration}
-                  icon={assessment.icon}
-                  comingSoon={true}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Roadmap Section */}
+          <RoadmapSection />
         </div>
       </main>
       <Footer />

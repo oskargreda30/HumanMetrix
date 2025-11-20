@@ -11,7 +11,7 @@ Do not make changes to the file `replit.nix`.
 ## System Architecture
 
 ### UI/UX Decisions
-The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professional aesthetic. Wouter handles navigation, and TanStack Query manages data fetching. UI components include a responsive landing page, assessment selection, results pages, and an admin dashboard. Branding features a new HM monogram logo with a cyan/blue gradient. PDF reports are designed for professional readability with consistent branding and support overlapping radar charts for multi-candidate comparison. Hero section animations are scroll-triggered and accessibility-supported.
+The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professional aesthetic. Wouter handles navigation, and TanStack Query manages data fetching. UI components include a responsive landing page, assessment selection, results pages, and an admin dashboard. Branding features a new HM monogram logo with a cyan/blue gradient. PDF reports are designed for professional readability with consistent branding and support overlapping radar charts for multi-candidate comparison. Hero section animations are scroll-triggered and accessibility-supported. Product roadmap timeline visualization displays upcoming assessment releases with status badges and timeline connector.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript, Wouter, TanStack Query, Shadcn UI, Tailwind CSS.
@@ -30,6 +30,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), and AI-powered role fit analysis.
 - **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including individual and comparison reports.
 - **Results Access Gating**: Requires completion of all four distinct assessments before results can be viewed or unlocked.
+- **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, and TBC 2026 Social Influence Assessment.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
