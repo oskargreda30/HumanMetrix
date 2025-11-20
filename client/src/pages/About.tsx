@@ -1,6 +1,7 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Target, Users, Award, TrendingUp } from "lucide-react";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 const values = [
   {
@@ -27,9 +28,24 @@ const values = [
 
 export default function About() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Background image with light grey overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(241, 245, 249, 0.92), rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.92))'
+        }} />
+      </div>
       <Navigation />
-      <main className="flex-grow">
+      <main className="flex-grow relative z-10">
         {/* Hero Section */}
         <section className="py-12 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
           <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
@@ -136,7 +152,9 @@ export default function About() {
           </div>
         </section>
       </main>
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }
