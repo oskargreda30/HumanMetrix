@@ -234,7 +234,7 @@ export function ResultsPaymentGate() {
                   </code>
                 </div>
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  Enter this code at checkout to unlock your results for free
+                  Enter this code at your Stripe checkout to unlock your results for free
                 </p>
               </div>
             </Card>
