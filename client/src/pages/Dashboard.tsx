@@ -6,12 +6,43 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, FileText } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+
+// Assessment metadata
+const getAssessmentMetadata = (type: string) => {
+  const metadata: Record<string, { icon: any; description: string; questions: number; minutes: number }> = {
+    'fit': {
+      icon: Brain,
+      description: 'Measure behavioral competencies and workplace skills',
+      questions: 30,
+      minutes: 20
+    },
+    'ai-readiness': {
+      icon: Sparkles,
+      description: 'Evaluate your preparedness for AI integration',
+      questions: 20,
+      minutes: 15
+    },
+    'prompt': {
+      icon: Code,
+      description: 'Test your AI prompt engineering abilities',
+      questions: 5,
+      minutes: 30
+    },
+    'aiq': {
+      icon: Scale,
+      description: 'Assess ethical AI decision-making skills',
+      questions: 8,
+      minutes: 20
+    }
+  };
+  return metadata[type] || metadata['fit'];
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -79,19 +110,44 @@ export default function Dashboard() {
             <h2 className="text-2xl font-semibold mb-4">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableAssessments.map((assessment: any) => (
-                  <Card key={assessment.purchaseItemId} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-lg font-semibold">{formatAssessmentName(assessment.assessmentType)}</h3>
-                      <Badge variant="secondary">Ready</Badge>
-                    </div>
-                    <Link href={`/assessment/${assessment.purchaseItemId}`}>
-                      <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
-                        Start Assessment
-                      </Button>
-                    </Link>
-                  </Card>
-                ))}
+                {availableAssessments.map((assessment: any) => {
+                  const metadata = getAssessmentMetadata(assessment.assessmentType);
+                  const AssessmentIcon = metadata.icon;
+                  return (
+                    <Card 
+                      key={assessment.purchaseItemId} 
+                      className="p-6 hover-elevate active-elevate-2 transition-all bg-gradient-to-br from-cyan-500/5 to-blue-500/5"
+                    >
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white flex-shrink-0">
+                          <AssessmentIcon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3 className="text-lg font-semibold">{formatAssessmentName(assessment.assessmentType)}</h3>
+                            <Badge variant="secondary" className="flex-shrink-0">Ready</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{metadata.description}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                            <div className="flex items-center gap-1">
+                              <FileText className="h-3.5 w-3.5" />
+                              <span>{metadata.questions} questions</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Timer className="h-3.5 w-3.5" />
+                              <span>{metadata.minutes} min</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={`/assessment/${assessment.purchaseItemId}`}>
+                        <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
+                          Start Assessment
+                        </Button>
+                      </Link>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="p-12 text-center">
@@ -110,70 +166,130 @@ export default function Dashboard() {
             <section className="mb-12">
               <h2 className="text-2xl font-semibold mb-4">Your Results</h2>
               <div className="space-y-6">
-                {purchasesWithCompletedResults.map((purchase: any, index: number) => (
-                  <Card key={purchase.id} className="p-6">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {purchase.allItemsCompleted ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <Clock className="h-5 w-5 text-blue-500" />
+                {purchasesWithCompletedResults.map((purchase: any, index: number) => {
+                  const progressPercentage = Math.round((purchase.completedCount / purchase.totalCount) * 100);
+                  return (
+                    <Card key={purchase.id} className="p-6 hover-elevate transition-all">
+                      <div className="flex flex-col md:flex-row items-start gap-6">
+                        {/* Progress Circle */}
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="relative w-20 h-20" 
+                            role="img" 
+                            aria-label={`${purchase.completedCount} of ${purchase.totalCount} assessments completed, ${progressPercentage}% complete${purchase.allItemsCompleted ? ', all assessments finished' : ''}`}
+                          >
+                            <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r="36"
+                                stroke="currentColor"
+                                strokeWidth="6"
+                                fill="none"
+                                className="text-muted/20"
+                              />
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r="36"
+                                stroke="currentColor"
+                                strokeWidth="6"
+                                fill="none"
+                                strokeDasharray={`${2 * Math.PI * 36}`}
+                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
+                                className={purchase.allItemsCompleted ? "text-green-500" : "text-blue-500"}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                              <span className="text-lg font-bold">{progressPercentage}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 mb-2">
+                            {purchase.allItemsCompleted ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-lg font-semibold">
+                                  Testing Series #{purchasesWithCompletedResults.length - index}
+                                </h3>
+                                {purchase.allItemsCompleted && (
+                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                    All Complete
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground mb-3">
+                            <span className="font-medium">{purchase.completedCount} of {purchase.totalCount}</span> assessments completed
+                            {purchase.completedAt && (
+                              <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
+                            )}
+                          </p>
+
+                          {/* Completed Assessments with Icons */}
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {(purchase.results || [])
+                              .filter((r: any) => r.status === 'completed')
+                              .map((result: any) => {
+                                const metadata = getAssessmentMetadata(result.assessmentType);
+                                const ResultIcon = metadata.icon;
+                                return (
+                                  <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
+                                    <ResultIcon className="h-3 w-3" />
+                                    {formatAssessmentName(result.assessmentType)}
+                                  </Badge>
+                                );
+                              })}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2 md:w-48">
+                          {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
+                            <>
+                              <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                                <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
+                                  <FileText className="h-4 w-4" />
+                                  View Results
+                                </Button>
+                              </Link>
+                              <div className="text-center">
+                                <Badge variant="secondary" className="text-xs">
+                                  ✓ Unlocked
+                                </Badge>
+                              </div>
+                            </>
                           )}
-                          <h3 className="text-lg font-semibold">
-                            Testing Series #{purchasesWithCompletedResults.length - index}
-                          </h3>
-                          {purchase.allItemsCompleted && (
-                            <Badge variant="secondary">All Complete</Badge>
+                          {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
+                            <>
+                              <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                                <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
+                                  <FileText className="h-4 w-4" />
+                                  Unlock Results
+                                </Button>
+                              </Link>
+                              <div className="text-center">
+                                <Badge variant="outline" className="text-xs border-orange-500 text-orange-600 dark:text-orange-400">
+                                  Payment Required
+                                </Badge>
+                              </div>
+                            </>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {purchase.completedCount} of {purchase.totalCount} assessments completed
-                          {purchase.completedAt && (
-                            <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
-                          )}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {(purchase.results || [])
-                            .filter((r: any) => r.status === 'completed')
-                            .map((result: any) => (
-                              <Badge key={result.id} variant="outline">
-                                {formatAssessmentName(result.assessmentType)}
-                              </Badge>
-                            ))}
-                        </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
-                          <>
-                            <Link href={`/my-results?purchaseId=${purchase.id}`}>
-                              <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
-                                <FileText className="h-4 w-4" />
-                                View Results
-                              </Button>
-                            </Link>
-                            <Badge variant="secondary" className="text-xs justify-center">
-                              ✓ Results Already Paid
-                            </Badge>
-                          </>
-                        )}
-                        {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
-                          <>
-                            <Link href={`/my-results?purchaseId=${purchase.id}`}>
-                              <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
-                                <FileText className="h-4 w-4" />
-                                Unlock Results
-                              </Button>
-                            </Link>
-                            <Badge variant="outline" className="text-xs justify-center border-orange-500 text-orange-600 dark:text-orange-400">
-                              💳 Payment Required
-                            </Badge>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </section>
           )}
