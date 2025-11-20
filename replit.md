@@ -30,7 +30,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), and AI-powered role fit analysis.
 - **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including individual and comparison reports.
 - **Results Access Gating**: Requires completion of all four distinct assessments before results can be viewed or unlocked.
-- **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, and TBC 2026 Social Influence Assessment.
+- **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, May 2026 Team Analysis & Building Tool, and TBC 2026 Social Influence Assessment.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.

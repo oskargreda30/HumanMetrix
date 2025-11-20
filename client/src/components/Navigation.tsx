@@ -24,6 +24,7 @@ export default function Navigation() {
     { href: "/", label: "Home" },
     { href: "/about", label: "About Us" },
     { href: "/assessments", label: "Assessments" },
+    { href: "/assessments#product-roadmap", label: "Product Roadmap" },
     { href: "/for-employers", label: "For Employers" },
   ];
 

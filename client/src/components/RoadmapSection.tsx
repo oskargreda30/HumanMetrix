@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Sparkles, Code2, Shield, Compass, Languages, Users2, Rocket } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, Compass, Languages, Users2, Rocket, UsersRound } from "lucide-react";
 
 interface RoadmapItem {
   date: string;
@@ -40,6 +40,13 @@ const roadmapItems: RoadmapItem[] = [
     icon: Languages,
   },
   {
+    date: "May 2026",
+    status: "upcoming",
+    title: "Team Analysis & Building Tool",
+    description: "Powerful analytics for employers to analyze team dynamics, identify skill gaps, and build high-performing teams that maximize productivity",
+    icon: UsersRound,
+  },
+  {
     date: "TBC 2026",
     status: "planned",
     title: "Social Influence Assessment",
@@ -50,11 +57,11 @@ const roadmapItems: RoadmapItem[] = [
 
 export default function RoadmapSection() {
   return (
-    <section className="py-12 md:py-16">
+    <section id="product-roadmap" className="py-12 md:py-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-lg md:text-2xl lg:text-3xl font-bold mb-2 md:mb-4 text-white">
-            Product Roadmap
+            What's next for us?
           </h2>
           <p className="text-xs md:text-base text-blue-100/70 max-w-2xl mx-auto px-4">
             Our journey to comprehensive AI-era talent assessment
