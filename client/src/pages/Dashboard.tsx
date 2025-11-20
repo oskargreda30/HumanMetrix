@@ -20,42 +20,42 @@ const getAssessmentMetadata = (type: string) => {
     'fit': {
       icon: Brain,
       description: 'Measure behavioral competencies and workplace skills',
-      questions: 30,
+      questions: 15,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai_readiness': {
       icon: Sparkles,
       description: 'Evaluate your preparedness for AI integration',
-      questions: 20,
-      minutes: 15,
+      questions: 21,
+      minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai-readiness': {
       icon: Sparkles,
       description: 'Evaluate your preparedness for AI integration',
-      questions: 20,
-      minutes: 15,
+      questions: 21,
+      minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt_architecture': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
-      questions: 5,
+      questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt-architecture': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
-      questions: 5,
+      questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
-      questions: 5,
+      questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
@@ -121,16 +121,19 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Background image */}
-      <div 
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `url(${dashboardBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
+      {/* Background image with dark overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-slate-900/80" />
+      </div>
       <Navigation />
       <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
