@@ -124,7 +124,7 @@ export default function Dashboard() {
       {/* Background image with dark overlay */}
       <div className="fixed inset-0 z-0">
         <div 
-          className="absolute inset-0 opacity-40"
+          className="absolute inset-0 opacity-50"
           style={{
             backgroundImage: `url(${dashboardBg})`,
             backgroundSize: 'cover',
@@ -132,7 +132,9 @@ export default function Dashboard() {
             backgroundRepeat: 'no-repeat'
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-slate-900/80" />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(13, 29, 51, 0.85), rgba(13, 29, 51, 0.75), rgba(13, 29, 51, 0.85))'
+        }} />
       </div>
       <Navigation />
       <main className="flex-grow py-16 relative z-10">
