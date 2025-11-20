@@ -21,6 +21,7 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
@@ -310,9 +311,24 @@ export default function MyResults() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Background image with dark overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(13, 29, 51, 0.85), rgba(13, 29, 51, 0.75), rgba(13, 29, 51, 0.85))'
+        }} />
+      </div>
       <Navigation />
-      <main className="flex-grow py-16">
+      <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
@@ -325,10 +341,10 @@ export default function MyResults() {
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">
+                <h1 className="text-3xl font-bold mb-2 text-white">
                   {selectedBatch ? 'Purchase Batch Results' : 'My Assessment Results'}
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-white/80">
                   {selectedBatch ? (
                     <>
                       Viewing results from purchase on {format(new Date(selectedBatch.createdAt), 'MMM d, yyyy')}
@@ -369,7 +385,6 @@ export default function MyResults() {
           </Card>
         </div>
       </main>
-      <Footer />
       
       {/* Hidden radar charts for PDF export */}
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '400px', height: '400px' }}>
@@ -432,6 +447,9 @@ export default function MyResults() {
             </div>
           );
         })()}
+      </div>
+      <div className="relative z-10">
+        <Footer />
       </div>
     </div>
   );
