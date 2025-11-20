@@ -137,7 +137,7 @@ export default function HeroSection() {
                   `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-base font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                   AI-Powered Assessment Platform
                 </span>
               </div>
@@ -145,7 +145,7 @@ export default function HeroSection() {
               {/* Headline - Fade in second with delay */}
               <h1 
                 className={getAnimationClass(
-                  'text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight px-2',
+                  'text-2xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-tight px-2',
                   `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
@@ -155,7 +155,7 @@ export default function HeroSection() {
               {/* Subheadline - Fade in third with delay */}
               <p 
                 className={getAnimationClass(
-                  'text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
+                  'text-sm md:text-xl lg:text-2xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
                   `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
                 )}
               >
