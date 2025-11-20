@@ -12,6 +12,7 @@ import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 // Assessment metadata
 const getAssessmentMetadata = (type: string) => {
@@ -21,7 +22,7 @@ const getAssessmentMetadata = (type: string) => {
       description: 'Measure behavioral competencies and workplace skills',
       questions: 30,
       minutes: 20,
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500'
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai_readiness': {
       icon: Sparkles,
@@ -42,28 +43,28 @@ const getAssessmentMetadata = (type: string) => {
       description: 'Test your AI prompt engineering abilities',
       questions: 5,
       minutes: 14,
-      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt-architecture': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
       questions: 5,
       minutes: 14,
-      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt': {
       icon: Code,
       description: 'Test your AI prompt engineering abilities',
       questions: 5,
       minutes: 14,
-      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500'
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'aiq': {
       icon: Scale,
       description: 'Assess ethical AI decision-making skills',
       questions: 8,
       minutes: 20,
-      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500'
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     }
   };
   return metadata[type] || metadata['fit'];
@@ -119,9 +120,19 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Subtle background image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05]"
+        style={{
+          backgroundImage: `url(${dashboardBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
       <Navigation />
-      <main className="flex-grow py-16">
+      <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
@@ -334,7 +345,9 @@ export default function Dashboard() {
           )}
         </div>
       </main>
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }
