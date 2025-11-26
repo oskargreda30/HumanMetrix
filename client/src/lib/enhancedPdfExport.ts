@@ -50,29 +50,29 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setLineWidth(0.8);
   pdf.line(10, 32, pageWidth - 10, 32);
   
-  // HumanMetrix Logo - positioned for clean alignment
+  // HumanMetrix Logo - positioned for clean alignment (center at y=18)
   try {
     pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 15, 4, 28, 28);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Vertical separator line - blue to match branding
+  // Vertical separator line - centered with logo (y=9 to y=27, center at y=18)
   pdf.setDrawColor(30, 58, 138);
   pdf.setLineWidth(0.5);
-  pdf.line(48, 8, 48, 26);
+  pdf.line(48, 9, 48, 27);
   
   // Company name in blue - vertically centered with logo
   pdf.setTextColor(30, 58, 138); // Dark blue
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 53, 15);
+  pdf.text('HUMANMETRIX', 53, 16);
   
   // Tagline in lighter blue
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246); // Medium blue
-  pdf.text('AI-Powered Assessment Platform', 53, 22);
+  pdf.text('AI-Powered Assessment Platform', 53, 23);
   
   pdf.setTextColor(0, 0, 0);
 }
