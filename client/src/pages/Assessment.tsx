@@ -156,16 +156,13 @@ export default function Assessment() {
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
 
-  // Auto-logout when user closes window/tab during assessment
+  // Show warning when user tries to leave during assessment (but don't force logout)
   useEffect(() => {
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-      if (resultId && !submitMutation.isSuccess) {
-        // Log the user out when they close the window during an active assessment
-        try {
-          await fetch('/api/logout', { method: 'POST' });
-        } catch (error) {
-          console.error('Error logging out:', error);
-        }
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (resultId && !submitMutation.isSuccess && Object.keys(answers).length > 0) {
+        // Show browser's native "are you sure" dialog if they have unsaved answers
+        e.preventDefault();
+        e.returnValue = '';
       }
     };
 
@@ -174,7 +171,7 @@ export default function Assessment() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [resultId, submitMutation.isSuccess]);
+  }, [resultId, submitMutation.isSuccess, answers]);
 
   // Timer effect
   useEffect(() => {

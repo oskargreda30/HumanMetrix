@@ -1513,6 +1513,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
+      // Prevent duplicate submission - if already completed, return success
+      if (result.status === 'completed') {
+        console.log(`Assessment ${id} already completed - ignoring duplicate submission`);
+        return res.json({ 
+          success: true, 
+          scores: result.scores, 
+          totalScore: result.totalScore,
+          evaluations: result.evaluations,
+          message: "Assessment already submitted"
+        });
+      }
+
       // Check if time limit exceeded based on assessment type
       const timeLimit = getAssessmentTimeLimit(result.assessmentType);
       const startTime = new Date(result.startedAt).getTime();
