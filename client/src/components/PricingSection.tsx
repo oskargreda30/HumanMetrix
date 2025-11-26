@@ -37,7 +37,7 @@ export default function PricingSection() {
                 </div>
 
                 <div className="space-y-2 md:space-y-3 pt-2 md:pt-4 border-t border-cyan-400/20">
-                  <div className="text-xs md:text-base font-medium text-white">Plus per assessment:</div>
+                  <div className="text-xs md:text-sm text-blue-100/60">Plus per assessment:</div>
                   <div className="space-y-1.5 md:space-y-2 text-[11px] md:text-sm">
                     <div className="flex justify-between gap-2">
                       <span className="text-blue-100/60">FIT Assessment (15 questions)</span>
