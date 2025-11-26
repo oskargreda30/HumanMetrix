@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -7,59 +7,50 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// ===== HELPER FUNCTIONS (copied from pdfExport.ts) =====
+// Load logo from client assets
+const logoPath = join(__dirname, '../client/src/lib/pdfAssets.ts');
+const pdfAssetsContent = readFileSync(logoPath, 'utf-8');
+const logoMatch = pdfAssetsContent.match(/export const HUMANMETRIX_LOGO_BASE64 = '([^']+)'/);
+const HUMANMETRIX_LOGO_BASE64 = logoMatch ? logoMatch[1] : '';
+
+// ===== HELPER FUNCTIONS (synchronized with client pdfExport.ts) =====
 
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  pdf.setFillColor(249, 250, 251);
+  // Clean white background - no border lines
+  pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-  
-  pdf.setFillColor(243, 244, 246);
-  const dotSize = 0.5;
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(5 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      pdf.circle(pageWidth - 15 + (i * 3), pageHeight - 30 + (j * 3), dotSize, 'F');
-    }
-  }
 }
 
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  pdf.setFillColor(17, 24, 39);
-  pdf.rect(0, 0, pageWidth, 25, 'F');
+  // Clean white header background
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(0, 0, pageWidth, 50, 'F');
   
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
+  // HumanMetrix Logo - 1.5x larger (45x45) for strong presence
+  try {
+    if (HUMANMETRIX_LOGO_BASE64) {
+      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 12, 3, 45, 45);
+    }
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+  }
+  
+  // Company name - positioned close to logo, vertically centered
+  pdf.setTextColor(30, 58, 138);
+  pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 15, 12);
+  pdf.text('HUMANMETRIX', 62, 22);
   
+  // Tagline - positioned below company name
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('AI Assessment Platform', 15, 18);
+  pdf.setTextColor(59, 130, 246);
+  pdf.text('AI-Powered Assessment Platform', 62, 30);
   
   pdf.setTextColor(0, 0, 0);
 }
 
 function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number) {
-  pdf.setDrawColor(220, 220, 220);
-  pdf.line(15, pageHeight - 15, pageWidth - 15, pageHeight - 15);
-  
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
   pdf.text(
