@@ -28,17 +28,31 @@ interface SkillData {
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  pdf.setFillColor(17, 24, 39); // Dark gray header
-  pdf.rect(0, 0, pageWidth, 25, 'F');
+  // Clean white header background
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(0, 0, pageWidth, 35, 'F');
   
-  pdf.setTextColor(255, 255, 255);
+  // Subtle bottom border line
+  pdf.setDrawColor(30, 58, 138); // Dark blue
+  pdf.setLineWidth(0.8);
+  pdf.line(10, 32, pageWidth - 10, 32);
+  
+  // Vertical separator line - blue to match branding
+  pdf.setDrawColor(30, 58, 138);
+  pdf.setLineWidth(0.5);
+  pdf.line(48, 8, 48, 26);
+  
+  // Company name in blue - vertically centered
+  pdf.setTextColor(30, 58, 138); // Dark blue
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 15, 12);
+  pdf.text('HUMANMETRIX', 53, 15);
   
-  pdf.setFontSize(9);
+  // Tagline in lighter blue
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('AI Assessment Platform', 15, 18);
+  pdf.setTextColor(59, 130, 246); // Medium blue
+  pdf.text('AI-Powered Assessment Platform', 53, 22);
   
   pdf.setTextColor(0, 0, 0);
 }

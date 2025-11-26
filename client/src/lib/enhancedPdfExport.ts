@@ -41,36 +41,38 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  // Gradient header background (dark to lighter blue) - increased height for larger logo
-  pdf.setFillColor(30, 58, 138); // Dark blue
+  // Clean white header background
+  pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, 35, 'F');
   
-  // Add subtle gradient effect with lighter overlay
-  pdf.setFillColor(37, 99, 235, 0.3); // Semi-transparent lighter blue
-  pdf.rect(0, 0, pageWidth * 0.6, 35, 'F');
+  // Subtle bottom border line
+  pdf.setDrawColor(30, 58, 138); // Dark blue
+  pdf.setLineWidth(0.8);
+  pdf.line(10, 32, pageWidth - 10, 32);
   
-  // HumanMetrix Logo (full logo image, vertically centered) - doubled size from 20x20 to 40x40
+  // HumanMetrix Logo - positioned for clean alignment
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 10, -2.5, 40, 40);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 15, 4, 28, 28);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Separator line - adjusted for larger logo
-  pdf.setDrawColor(96, 165, 250);
+  // Vertical separator line - blue to match branding
+  pdf.setDrawColor(30, 58, 138);
   pdf.setLineWidth(0.5);
-  pdf.line(54, 12, 54, 25);
+  pdf.line(48, 8, 48, 26);
   
-  // Company name and tagline - adjusted for larger logo
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(14);
+  // Company name in blue - vertically centered with logo
+  pdf.setTextColor(30, 58, 138); // Dark blue
+  pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 58, 15);
+  pdf.text('HUMANMETRIX', 53, 15);
   
-  pdf.setFontSize(7);
+  // Tagline in lighter blue
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(191, 219, 254); // Light blue
-  pdf.text('AI-Powered Assessment Platform', 58, 21);
+  pdf.setTextColor(59, 130, 246); // Medium blue
+  pdf.text('AI-Powered Assessment Platform', 53, 22);
   
   pdf.setTextColor(0, 0, 0);
 }
