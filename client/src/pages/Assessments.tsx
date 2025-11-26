@@ -72,7 +72,7 @@ export default function Assessments() {
             <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
               Professional assessments starting at £3.50 per test
             </p>
-            <p className="text-[11px] md:text-sm text-cyan-400 mb-4 md:mb-6">
+            <p className="text-[9px] md:text-xs text-cyan-400 mb-4 md:mb-6">
               £15 base fee + £3.50-£5.00 per assessment
             </p>
             {isAuthenticated ? (

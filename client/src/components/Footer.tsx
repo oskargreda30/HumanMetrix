@@ -106,11 +106,11 @@ export default function Footer() {
               <h4 className="font-medium text-[11px] md:text-sm text-white">Contact</h4>
               <a
                 href="mailto:humanmetrix.sales@gmail.com"
-                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors break-all"
+                className="flex items-center gap-1 md:gap-2 text-sm md:text-base text-blue-100/60 hover:text-cyan-300 transition-colors break-all"
                 data-testid="link-email"
               >
                 <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                <span className="text-[11px]">humanmetrix.sales@gmail.com</span>
+                <span className="text-sm md:text-base">humanmetrix.sales@gmail.com</span>
               </a>
             </div>
           </div>

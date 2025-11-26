@@ -214,7 +214,7 @@ export default function HeroSection() {
               
               {/* Pricing disclosure */}
               <p className="text-xs md:text-sm text-blue-100/60 italic">
-                Tests from £3.50 (plus computation price)
+                Tests from £3.50 (plus one-time £15 computation price)
               </p>
             </div>
 

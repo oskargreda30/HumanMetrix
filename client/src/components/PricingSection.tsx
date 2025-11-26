@@ -21,7 +21,7 @@ export default function PricingSection() {
               <div className="space-y-3 md:space-y-6">
                 <div>
                   <h3 className="text-sm md:text-xl lg:text-2xl font-semibold mb-1 md:mb-2 text-white">How Pricing Works</h3>
-                  <p className="text-[11px] md:text-sm text-blue-100/60">
+                  <p className="text-xs md:text-base text-blue-100/60">
                     Simple, transparent pricing based on what you need
                   </p>
                 </div>
