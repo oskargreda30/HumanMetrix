@@ -108,10 +108,10 @@ export default function AssessmentCard({
         <div className="flex items-center justify-between pt-2 md:pt-4 border-t border-cyan-400/20">
           <div>
             {free && (
-              <span className="text-lg md:text-3xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
+              <span className="text-sm md:text-lg lg:text-xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
             )}
             {!free && price && (
-              <span className="text-lg md:text-3xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
+              <span className="text-sm md:text-lg lg:text-xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
             )}
           </div>
           {isComingSoon ? (
