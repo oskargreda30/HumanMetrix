@@ -67,16 +67,9 @@ interface RoleFitData {
 
 // Helper to add subtle background pattern to page
 function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number) {
-  // White background
-  pdf.setFillColor(255, 255, 255); // White
+  // Clean white background - no border lines
+  pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-  
-  // Add page border
-  pdf.setDrawColor(191, 219, 254); // Light blue border
-  pdf.setLineWidth(0.5);
-  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
-  pdf.setLineWidth(0.2);
-  
 }
 
 // Helper to add header to each page
@@ -109,9 +102,6 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
 
 // Helper to add footer to each page
 function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number) {
-  pdf.setDrawColor(220, 220, 220);
-  pdf.line(15, pageHeight - 15, pageWidth - 15, pageHeight - 15);
-  
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
   pdf.text(

@@ -90,9 +90,6 @@ function fitMetricValue(pdf: jsPDF, text: string, maxWidth: number, initialFontS
 
 // Helper to add footer to each page
 function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number) {
-  pdf.setDrawColor(220, 220, 220);
-  pdf.line(15, pageHeight - 15, pageWidth - 15, pageHeight - 15);
-  
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
   pdf.text(
