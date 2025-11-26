@@ -70,7 +70,7 @@ export default function Assessments() {
               AI Assessment Platform
             </h1>
             <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
-              Professional assessments starting at £3.50 per test (£15 one-time computation fee, then add as many as you want)
+              £15 one-time platform fee + assessments from £3.50 each
             </p>
             {isAuthenticated ? (
               <div className="flex gap-4 justify-center">
