@@ -333,7 +333,7 @@ export default function MyResults() {
           {/* Header */}
           <div className="mb-8">
             <Link href="/dashboard">
-              <Button variant="ghost" className="mb-4" data-testid="button-back-to-dashboard">
+              <Button variant="ghost" className="mb-4 text-white hover:text-white hover:bg-white/10" data-testid="button-back-to-dashboard">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
