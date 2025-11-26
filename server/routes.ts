@@ -1377,12 +1377,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(403).json({ message: "Unauthorized access to this assessment" });
           }
           
+          // If already completed, don't allow restart
+          if (existing.status === 'completed') {
+            return res.status(400).json({ message: "Assessment already completed" });
+          }
+          
           // Calculate remaining time based on assessment type
           const timeLimit = getAssessmentTimeLimit(assessmentType);
           const startTime = new Date(existing.startedAt).getTime();
           const now = Date.now();
           const elapsed = Math.floor((now - startTime) / 1000);
           const remaining = Math.max(0, timeLimit - elapsed);
+          
+          // If time has expired and assessment is still in progress, give them a grace period
+          // to continue (additional 5 minutes) rather than auto-submitting empty assessment
+          if (remaining <= 0 && existing.status === 'in_progress') {
+            // Reset the timer to give them 5 more minutes to complete
+            const gracePeriod = 300; // 5 minutes grace period
+            console.log(`Assessment ${existing.id} time expired - granting ${gracePeriod}s grace period`);
+            return res.json({ ...existing, timeRemaining: gracePeriod });
+          }
           
           return res.json({ ...existing, timeRemaining: remaining });
         }
@@ -1435,12 +1449,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "Unauthorized access to this assessment" });
         }
         
+        // If already completed, don't allow restart
+        if (existing.status === 'completed') {
+          return res.status(400).json({ message: "Assessment already completed" });
+        }
+        
         // Calculate remaining time based on assessment type
         const timeLimit = getAssessmentTimeLimit(item.assessmentType);
         const startTime = new Date(existing.startedAt).getTime();
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
+        
+        // If time has expired and assessment is still in progress, give them a grace period
+        // to continue (additional 5 minutes) rather than auto-submitting empty assessment
+        if (remaining <= 0 && existing.status === 'in_progress') {
+          // Reset the timer to give them 5 more minutes to complete
+          const gracePeriod = 300; // 5 minutes grace period
+          console.log(`Assessment ${existing.id} time expired - granting ${gracePeriod}s grace period`);
+          return res.json({ ...existing, timeRemaining: gracePeriod });
+        }
         
         return res.json({ ...existing, timeRemaining: remaining });
       }

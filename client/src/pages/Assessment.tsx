@@ -204,15 +204,26 @@ export default function Assessment() {
           // Set submitting flag to prevent timer restart
           setIsSubmitting(true);
           
-          // Auto-submit with current answers
-          toast({
-            title: "Time's Up!",
-            description: "Assessment will be auto-submitted with current answers",
-            variant: "destructive",
-          });
-          
-          // Submit even if incomplete
-          submitMutation.mutate();
+          // Only auto-submit if user has answered at least one question
+          // This prevents submitting an empty assessment
+          if (Object.keys(answers).length > 0) {
+            toast({
+              title: "Time's Up!",
+              description: "Assessment will be auto-submitted with current answers",
+              variant: "destructive",
+            });
+            
+            // Submit even if incomplete
+            submitMutation.mutate();
+          } else {
+            // No answers provided - show error and redirect
+            toast({
+              title: "Time Expired",
+              description: "No answers were provided. Please start the assessment again.",
+              variant: "destructive",
+            });
+            setLocation("/dashboard");
+          }
           return 0;
         }
         
