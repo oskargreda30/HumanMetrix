@@ -631,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         allow_promotion_codes: true,
         success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-cancel-callback?userId=${userId}`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-cancel-callback`,
         metadata: {
           userId: userId.toString(),
           purchaseId: unpaidPurchase.id.toString(),
@@ -795,63 +795,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to process payment: " + error.message 
       });
-    }
-  });
-
-  // Restore session after payment cancellation (prevents logout on Stripe redirect)
-  app.post("/api/restore-session", async (req: any, res) => {
-    try {
-      const { userId } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({ success: false, message: "User ID required" });
-      }
-      
-      // Verify user exists
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
-      }
-      
-      console.log(`[Session Restore] Restoring session for user ${userId}`);
-      
-      // Regenerate session and set user ID
-      try {
-        await new Promise<void>((resolve, reject) => {
-          req.session.regenerate((err: any) => {
-            if (err) {
-              console.error(`[Session Restore] Regeneration error:`, err);
-              req.session.userId = userId;
-              req.session.save((saveErr: any) => {
-                if (saveErr) {
-                  reject(saveErr);
-                } else {
-                  console.log(`[Session Restore] ✓ Session saved (fallback) for user ${userId}`);
-                  resolve();
-                }
-              });
-            } else {
-              req.session.userId = userId;
-              req.session.save((saveErr: any) => {
-                if (saveErr) {
-                  reject(saveErr);
-                } else {
-                  console.log(`[Session Restore] ✓ Session regenerated for user ${userId}`);
-                  resolve();
-                }
-              });
-            }
-          });
-        });
-        
-        res.json({ success: true, message: "Session restored" });
-      } catch (sessionError: any) {
-        console.error(`[Session Restore] CRITICAL: Failed`, sessionError);
-        res.status(500).json({ success: false, message: "Session restore failed" });
-      }
-    } catch (error: any) {
-      console.error("[Session Restore ERROR]", error);
-      res.status(500).json({ success: false, message: error.message });
     }
   });
 
