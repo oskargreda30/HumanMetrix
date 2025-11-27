@@ -130,6 +130,7 @@ export default function Assessment() {
       toast({
         title: "Success",
         description: "Assessment submitted successfully!",
+        duration: 3000,
       });
       
       // Always redirect to dashboard after submission
