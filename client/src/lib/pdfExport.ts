@@ -127,16 +127,19 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
 
 // Helper to create section header
 function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidth: number): number {
+  // Clear any previous draw color and set fill only
+  pdf.setDrawColor(243, 244, 246);
   pdf.setFillColor(243, 244, 246);
-  pdf.rect(15, yPosition - 3, pageWidth - 30, 10, 'F');
+  pdf.rect(20, yPosition, pageWidth - 40, 12, 'F');
   
   pdf.setFontSize(13);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(title, 18, yPosition + 4);
+  // Title positioned in the middle of the box (yPosition + 8 for center of 12-height box)
+  pdf.text(title, 25, yPosition + 8);
   pdf.setTextColor(0, 0, 0);
   
-  return yPosition + 13;
+  return yPosition + 16;
 }
 
 // Helper to determine performance level
