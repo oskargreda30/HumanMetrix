@@ -20,6 +20,7 @@ import MyResults from "@/pages/MyResults";
 import Purchase from "@/pages/Purchase";
 import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import PaymentCallback from "@/pages/PaymentCallback";
+import PaymentCancelCallback from "@/pages/PaymentCancelCallback";
 import Terms from "@/pages/Terms";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/purchase" component={Purchase} />
       <Route path="/purchase/success" component={PurchaseSuccess} />
       <Route path="/payment-callback" component={PaymentCallback} />
+      <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
