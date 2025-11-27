@@ -170,12 +170,12 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col items-center gap-3">
                 <Link href="/assessments" data-testid="link-hero-get-started">
                   <Button 
-                    size="sm"
+                    size="lg"
                     className={getAnimationClass(
-                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-base',
+                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-base md:text-lg px-8 py-3',
                       'transition-all duration-300'
                     )}
                     data-testid="button-hero-get-started"
@@ -186,12 +186,13 @@ export default function HeroSection() {
                     )}
                     <span className="relative flex items-center">
                       Our Assessments
-                      <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                      <ArrowRight className={getAnimationClass('ml-2 h-5 w-5', 'transition-transform group-hover:translate-x-1')} />
                     </span>
                   </Button>
                 </Link>
                 <Button 
                   size="sm"
+                  variant="ghost"
                   onClick={() => {
                     const element = document.getElementById('sample-reports');
                     element?.scrollIntoView({ 
@@ -200,7 +201,7 @@ export default function HeroSection() {
                     });
                   }}
                   className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 w-full sm:w-auto overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-base',
+                    'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm',
                     'transition-all duration-300'
                   )}
                   data-testid="button-hero-sample-reports"
