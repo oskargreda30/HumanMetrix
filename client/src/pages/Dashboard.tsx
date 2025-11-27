@@ -19,49 +19,49 @@ const getAssessmentMetadata = (type: string) => {
   const metadata: Record<string, { icon: any; description: string; questions: number; minutes: number; iconBg: string }> = {
     'fit': {
       icon: Brain,
-      description: 'Measure behavioral competencies and workplace skills',
+      description: 'Assess behavioral and workplace skills',
       questions: 15,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai_readiness': {
       icon: Sparkles,
-      description: 'Evaluate your preparedness for AI integration',
+      description: 'Evaluate AI integration readiness',
       questions: 21,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai-readiness': {
       icon: Sparkles,
-      description: 'Evaluate your preparedness for AI integration',
+      description: 'Evaluate AI integration readiness',
       questions: 21,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt_architecture': {
       icon: Code,
-      description: 'Test your AI prompt engineering abilities',
+      description: 'Test AI prompt engineering skills',
       questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt-architecture': {
       icon: Code,
-      description: 'Test your AI prompt engineering abilities',
+      description: 'Test AI prompt engineering skills',
       questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt': {
       icon: Code,
-      description: 'Test your AI prompt engineering abilities',
+      description: 'Test AI prompt engineering skills',
       questions: 7,
       minutes: 14,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'aiq': {
       icon: Scale,
-      description: 'Assess ethical AI decision-making skills',
+      description: 'Assess ethical AI decision-making',
       questions: 8,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
