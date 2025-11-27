@@ -69,18 +69,20 @@ export default function Assessments() {
             <h1 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
               Assessment Suite
             </h1>
-            <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
-              Select your assessments below, or{' '}
+            <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-2 px-2">
+              Please select your assessments below.
+            </p>
+            <p className="text-xs md:text-sm text-blue-100/50 mb-3 md:mb-6 px-2">
+              Already have an account?{' '}
               {isAuthenticated ? (
                 <Link href="/dashboard" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
-                  go to your dashboard
+                  Go to dashboard
                 </Link>
               ) : (
                 <Link href="/login" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
-                  log in
+                  Log in here
                 </Link>
               )}
-              {' '}if you already have an account.
             </p>
           </div>
 
