@@ -31,26 +31,26 @@ interface SkillData {
 function addHeader(pdf: jsPDF, pageWidth: number) {
   // Clean white header background
   pdf.setFillColor(255, 255, 255);
-  pdf.rect(0, 0, pageWidth, 50, 'F');
+  pdf.rect(0, 0, pageWidth, 45, 'F');
   
-  // HumanMetrix Logo - 1.5x larger (45x45) for strong presence
+  // HumanMetrix Logo - compact size (38x38) positioned at left edge
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 12, 3, 45, 45);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 4, 38, 38);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Company name - positioned close to logo, vertically centered
+  // Company name - positioned close to logo (logo ends at 8+38=46, text at 50)
   pdf.setTextColor(30, 58, 138);
-  pdf.setFontSize(18);
+  pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 62, 22);
+  pdf.text('HUMANMETRIX', 50, 20);
   
   // Tagline - positioned below company name
-  pdf.setFontSize(9);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 62, 30);
+  pdf.text('AI-Powered Assessment Platform', 50, 27);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -115,19 +115,22 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
 
 // Helper to create section header
 function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidth: number): number {
+  // Add extra spacing before section header for visual separation from page header
+  const adjustedY = yPosition + 4;
+  
   // Clear any previous draw color and set fill only
   pdf.setDrawColor(243, 244, 246);
   pdf.setFillColor(243, 244, 246);
-  pdf.rect(20, yPosition, pageWidth - 40, 12, 'F');
+  pdf.rect(20, adjustedY, pageWidth - 40, 9, 'F'); // Smaller box height (9 instead of 12)
   
-  pdf.setFontSize(13);
+  pdf.setFontSize(10); // Smaller font (10 instead of 13)
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  // Title positioned in the middle of the box (yPosition + 8 for center of 12-height box)
-  pdf.text(title, 25, yPosition + 8);
+  // Title positioned in the middle of the box (adjustedY + 6 for center of 9-height box)
+  pdf.text(title, 25, adjustedY + 6);
   pdf.setTextColor(0, 0, 0);
   
-  return yPosition + 16;
+  return adjustedY + 12; // Reduced return offset (12 instead of 16)
 }
 
 // Helper to determine performance level
