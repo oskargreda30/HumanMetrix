@@ -210,7 +210,7 @@ export default function Dashboard() {
                   No assessments available. Get started with a testing series.
                 </p>
                 <Link href="/assessments">
-                  <Button data-testid="button-browse-assessments">Browse Assessments</Button>
+                  <Button data-testid="button-browse-assessments">Browse More Assessments</Button>
                 </Link>
               </Card>
             )}
