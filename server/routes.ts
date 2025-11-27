@@ -1300,17 +1300,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
               
-              // Check if this assessment type was already completed by this user
-              // CRITICAL: Check for ANY completed result (purchase OR invitation-based)
-              const allUserResults = await storage.getResultsByUser(userId);
-              const completedResult = allUserResults.find(r => 
-                normalizeAssessmentId(r.assessmentType) === normalizedType && 
-                r.status === 'completed'
-              );
+              // Check if this SPECIFIC INVITATION's assessment was already completed
+              // (Not checking ALL results - allow multiple test series)
+              const existingResult = await storage.getResultByInvitationAndType(invitation.id, normalizedType);
+              const alreadyCompleted = existingResult?.status === 'completed';
               
-              if (!completedResult) {
-                // Only add if we haven't already added this assessment type (using normalized comparison)
-                if (!addedAssessmentTypes.has(normalizedType)) {
+              if (!alreadyCompleted) {
+                // Only add if we haven't already added this assessment type from THIS invitation
+                // Use invitation-specific key to allow same type from different invitations
+                const invitationTypeKey = `${invitation.id}::${normalizedType}`;
+                if (!addedAssessmentTypes.has(invitationTypeKey)) {
                   // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
                   availableAssessments.push({
                     purchaseItemId: `invitation::${invitation.id}::${normalizedType}`,
@@ -1319,7 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     source: 'invitation',
                     invitationId: invitation.id,
                   });
-                  addedAssessmentTypes.add(normalizedType);
+                  addedAssessmentTypes.add(invitationTypeKey);
                 }
               }
             }
@@ -1622,9 +1621,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(assessmentResults.id, id));
 
       res.json({ success: true, scores, totalScore, evaluations });
-    } catch (error) {
-      console.error("Error submitting assessment:", error);
-      res.status(500).json({ message: "Failed to submit assessment" });
+    } catch (error: any) {
+      console.error("Error submitting assessment:", {
+        error: error.message,
+        stack: error.stack,
+        assessmentId: req.params.id,
+        userId: req.user?.id
+      });
+      res.status(500).json({ message: "Failed to submit assessment. Please try again." });
     }
   });
 
