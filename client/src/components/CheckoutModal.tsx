@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { BasketItem } from "@/contexts/BasketContext";
 
 const assessments = [
@@ -57,6 +58,7 @@ export default function CheckoutModal({
   basketItems,
 }: CheckoutModalProps) {
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   const [firstName, setFirstName] = useState("");
@@ -105,22 +107,30 @@ export default function CheckoutModal({
       return;
     }
 
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all fields (name and email).",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Use logged-in user's info if authenticated, otherwise use form data
+    const userFirstName = isAuthenticated && user ? user.firstName : firstName.trim();
+    const userLastName = isAuthenticated && user ? user.lastName : lastName.trim();
+    const userEmail = isAuthenticated && user ? user.email : email.trim();
 
-    if (!email.includes("@")) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
+    // Only validate form fields if not authenticated
+    if (!isAuthenticated) {
+      if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all fields (name and email).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!email.includes("@")) {
+        toast({
+          title: "Invalid email",
+          description: "Please enter a valid email address.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -133,9 +143,9 @@ export default function CheckoutModal({
         },
         body: JSON.stringify({
           assessmentIds: Array.from(selectedAssessments),
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email: email.trim(),
+          firstName: userFirstName,
+          lastName: userLastName,
+          email: userEmail,
         }),
         credentials: "include",
       });
@@ -182,10 +192,13 @@ export default function CheckoutModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
-            Get Started with HumanMetrix
+            {isAuthenticated ? "Add More Assessments" : "Get Started with HumanMetrix"}
           </DialogTitle>
           <DialogDescription>
-            Choose your assessments and enter your details. Take all assessments for free, pay only to unlock results.
+            {isAuthenticated 
+              ? "Select additional assessments to add to your dashboard."
+              : "Choose your assessments and enter your details. Take all assessments for free, pay only to unlock results."
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -249,63 +262,75 @@ export default function CheckoutModal({
             </div>
           </div>
 
-          {/* Customer Details */}
-          <div>
-            <h3 className="font-semibold mb-3">Your Details</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="checkout-firstname">First Name</Label>
-                  <Input
-                    id="checkout-firstname"
-                    type="text"
-                    placeholder="John"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                    data-testid="checkout-input-firstname"
-                  />
+          {/* Customer Details - Only show for non-authenticated users */}
+          {!isAuthenticated && (
+            <div>
+              <h3 className="font-semibold mb-3">Your Details</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-firstname">First Name</Label>
+                    <Input
+                      id="checkout-firstname"
+                      type="text"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      data-testid="checkout-input-firstname"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-lastname">Last Name</Label>
+                    <Input
+                      id="checkout-lastname"
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      data-testid="checkout-input-lastname"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="checkout-lastname">Last Name</Label>
+                  <Label htmlFor="checkout-email">Email Address</Label>
                   <Input
-                    id="checkout-lastname"
-                    type="text"
-                    placeholder="Doe"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    id="checkout-email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    data-testid="checkout-input-lastname"
+                    data-testid="checkout-input-email"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    We'll send your login credentials to this email
+                  </p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-email">Email Address</Label>
-                <Input
-                  id="checkout-email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  data-testid="checkout-input-email"
-                />
-                <p className="text-xs text-muted-foreground">
-                  We'll send your login credentials to this email
-                </p>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Info Box */}
+          {/* Info Box - Different message for authenticated users */}
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-              ✨ What happens next?
+              {isAuthenticated ? "Adding to your account" : "What happens next?"}
             </p>
             <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              <li>Complete all selected assessments</li>
-              <li>Submit your results and payment</li>
-              <li>Download your results</li>
+              {isAuthenticated ? (
+                <>
+                  <li>Assessments will be added to your dashboard</li>
+                  <li>Complete and submit your results</li>
+                  <li>Pay to unlock and download your results</li>
+                </>
+              ) : (
+                <>
+                  <li>Complete all selected assessments</li>
+                  <li>Submit your results and payment</li>
+                  <li>Download your results</li>
+                </>
+              )}
             </ol>
           </div>
 
@@ -317,7 +342,7 @@ export default function CheckoutModal({
             disabled={isProcessing || selectedAssessments.size === 0}
             data-testid="checkout-button-proceed"
           >
-            {isProcessing ? "Processing..." : "Get Started"}
+            {isProcessing ? "Processing..." : (isAuthenticated ? "Add to Dashboard" : "Get Started")}
           </Button>
         </div>
       </DialogContent>
