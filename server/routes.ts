@@ -721,20 +721,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
-      // Send payment receipt email
+      // Send payment receipt email (including for FREE orders where amount_total is 0)
       try {
         const user = await storage.getUser(userId);
         const purchaseItems = await storage.getPurchaseItems(purchaseId);
         const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
         
-        if (user && session.amount_total) {
+        if (user) {
+          const amount = session.amount_total ?? 0; // Handle 0 for FREE orders
           await sendPaymentReceiptEmail(
             user.email,
             user.firstName || 'Customer',
             assessmentTypes,
-            session.amount_total,
+            amount,
             sessionId
           );
+          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: £${(amount / 100).toFixed(2)})`);
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
