@@ -14,7 +14,7 @@ const assessments = [
   {
     id: "fit",
     title: "FIT Assessment",
-    description: "Measure 6 core behavioral skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.",
+    description: "Measure 6 core behavioral and workplace skills",
     questionCount: 15,
     duration: "20 min",
     icon: Brain,
