@@ -431,6 +431,17 @@ Reply directly to this email to respond to ${name}
   console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
 }
 
+// Format assessment type for display (e.g., "fit" -> "FIT Assessment")
+function formatAssessmentName(type: string): string {
+  const names: Record<string, string> = {
+    'fit': 'FIT Assessment',
+    'ai_readiness': 'AI Readiness Assessment',
+    'prompt_architecture': 'Prompt Architecture Assessment',
+    'aiq': 'AIQ Assessment'
+  };
+  return names[type] || type;
+}
+
 export async function sendPaymentReceiptEmail(
   email: string,
   name: string,
@@ -445,7 +456,10 @@ export async function sendPaymentReceiptEmail(
     return;
   }
 
-  const assessmentList = assessments.join(', ');
+  // Format assessment names for display
+  const formattedAssessments = assessments.map(formatAssessmentName);
+  const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
+  const assessmentListText = formattedAssessments.join(', ');
   const amountFormatted = `£${(totalAmount / 100).toFixed(2)}`;
 
   const mailOptions = {
@@ -483,8 +497,10 @@ export async function sendPaymentReceiptEmail(
               
               <div class="receipt">
                 <h3 style="margin-top: 0; color: #374151;">Purchase Details</h3>
-                <p><strong>Assessments Purchased:</strong></p>
-                <p style="margin-left: 20px;">${assessmentList}</p>
+                <p><strong>Results Unlocked:</strong></p>
+                <ul style="margin-left: 20px; padding-left: 0; list-style-position: inside;">
+                  ${assessmentListHtml}
+                </ul>
                 
                 <div class="total">
                   Total Paid: ${amountFormatted}
@@ -498,7 +514,6 @@ export async function sendPaymentReceiptEmail(
               <h3>Next Steps:</h3>
               <ol style="padding-left: 20px;">
                 <li>Log in to your HumanMetrix account</li>
-                <li>Complete your assessments from the dashboard</li>
                 <li>View your comprehensive results and download your PDF report</li>
               </ol>
               
@@ -524,14 +539,13 @@ Hello ${name},
 Thank you for your purchase! Your payment has been successfully processed.
 
 PURCHASE DETAILS:
-Assessments Purchased: ${assessmentList}
+Results Unlocked: ${assessmentListText}
 Total Paid: ${amountFormatted}
 Transaction ID: ${sessionId}
 
 NEXT STEPS:
 1. Log in to your HumanMetrix account
-2. Complete your assessments from the dashboard
-3. View your comprehensive results and download your PDF report
+2. View your comprehensive results and download your PDF report
 
 If you have any questions, please contact us at humanmetrix.sales@gmail.com
 
