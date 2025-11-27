@@ -144,6 +144,13 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   return { label: 'Needs Development', color: [239, 68, 68] };
 }
 
+// Helper to get Prompt Architecture level color (3-color blue gradient)
+function getPromptLevelColor(level: number): [number, number, number] {
+  if (level <= 2) return [147, 197, 253];  // Light blue for beginner levels
+  if (level <= 5) return [59, 130, 246];   // Medium blue for intermediate levels
+  return [37, 99, 235];                     // Dark blue for advanced levels
+}
+
 interface RoleComparisonData {
   role: {
     name: string;
@@ -850,11 +857,12 @@ export async function exportEnhancedCandidatePDF(
       pdf.roundedRect(50, yPos, barWidth, barHeight, 1, 1, 'FD');
       
       if (prompt.totalScore !== undefined) {
-        const perf = getPerformanceLevel(prompt.totalScore);
+        // Use 3-color gradient based on level, not score
+        const levelColor = getPromptLevelColor(prompt.level);
         const fillWidth = (prompt.totalScore / 100) * barWidth;
         
         // Progress bar fill
-        pdf.setFillColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.setFillColor(levelColor[0], levelColor[1], levelColor[2]);
         if (fillWidth > 0) {
           pdf.roundedRect(50, yPos, fillWidth, barHeight, 1, 1, 'F');
         }
@@ -862,7 +870,7 @@ export async function exportEnhancedCandidatePDF(
         // Score text on the right
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.setTextColor(levelColor[0], levelColor[1], levelColor[2]);
         pdf.text(`${prompt.totalScore}`, 50 + barWidth + 5, yPos + 4.5);
         
         pdf.setFontSize(6);
@@ -879,16 +887,15 @@ export async function exportEnhancedCandidatePDF(
       yPos += barSpacing;
     });
     
-    yPos += 5;
-    
-    // Add legend underneath
-    if (yPos > pageHeight - 40) {
+    // Ensure "Assessed Dimensions" stays on same page - check for 25mm of content
+    const assessedDimensionsHeight = 25;
+    if (yPos + assessedDimensionsHeight > pageHeight - 20) {
       pdf.addPage();
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
     
-    yPos += 5; // Added spacing before "Assessed Dimensions"
+    yPos += 8;
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
