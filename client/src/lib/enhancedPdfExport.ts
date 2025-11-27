@@ -38,14 +38,14 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, 45, 'F');
   
-  // HumanMetrix Logo - compact size (38x38) positioned at left edge
+  // HumanMetrix Logo - compact size (32x32) positioned at left edge
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 4, 38, 38);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 7, 32, 32);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Company name - positioned close to logo (logo ends at 8+38=46, text at 42)
+  // Company name - positioned close to logo (logo ends at 8+32=40, text at 42)
   pdf.setTextColor(30, 58, 138);
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
