@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { queryClient } from "@/lib/queryClient";
 import type { BasketItem } from "@/contexts/BasketContext";
 
 const assessments = [
@@ -157,9 +158,14 @@ export default function CheckoutModal({
 
       const data = await response.json();
       
+      // Invalidate queries to refresh dashboard data
+      await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+      
       toast({
         title: "Success!",
-        description: data.message,
+        description: isAuthenticated ? "Assessments added to your dashboard!" : data.message,
+        duration: 3000,
       });
 
       // Reset processing state before navigation
@@ -172,9 +178,8 @@ export default function CheckoutModal({
           setLocation("/login?message=check-email");
         }, 2000);
       } else {
-        setTimeout(() => {
-          setLocation("/dashboard");
-        }, 2000);
+        // For authenticated users, navigate immediately
+        setLocation("/dashboard");
       }
     } catch (error: any) {
       toast({
