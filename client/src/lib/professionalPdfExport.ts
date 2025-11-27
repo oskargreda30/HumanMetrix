@@ -40,17 +40,17 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Company name - positioned close to logo (logo ends at 8+38=46, text at 50)
+  // Company name - positioned close to logo (logo ends at 8+38=46, text at 48)
   pdf.setTextColor(30, 58, 138);
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 50, 20);
+  pdf.text('HUMANMETRIX', 48, 20);
   
   // Tagline - positioned below company name
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 50, 27);
+  pdf.text('AI-Powered Assessment Platform', 48, 27);
   
   pdf.setTextColor(0, 0, 0);
 }
