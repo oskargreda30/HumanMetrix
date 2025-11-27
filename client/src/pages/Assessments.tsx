@@ -67,33 +67,21 @@ export default function Assessments() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 md:mb-12">
             <h1 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
-              AI Assessment Platform
+              Assessment Suite
             </h1>
             <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-3 md:mb-6 px-2">
-              £15 one-time platform fee + assessments from £3.50 each
+              Select your assessments below, or{' '}
+              {isAuthenticated ? (
+                <Link href="/dashboard" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+                  go to your dashboard
+                </Link>
+              ) : (
+                <Link href="/login" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+                  log in
+                </Link>
+              )}
+              {' '}if you already have an account.
             </p>
-            {isAuthenticated ? (
-              <div className="flex gap-4 justify-center">
-                <Link href="/dashboard">
-                  <Button size="sm" className="text-xs md:text-sm" data-testid="button-go-to-dashboard">
-                    Go to Dashboard
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="flex gap-4 justify-center">
-                <Link href="/login">
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 text-xs md:text-sm"
-                    data-testid="button-login-to-dashboard"
-                  >
-                    Login to Access Dashboard
-                  </Button>
-                </Link>
-              </div>
-            )}
           </div>
 
           <div className="mb-12 md:mb-16">
@@ -114,7 +102,7 @@ export default function Assessments() {
             </div>
             
             {/* Checkout Button */}
-            <div className="mt-6 md:mt-8 flex justify-center">
+            <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
               <Button 
                 size="lg"
                 onClick={() => setCheckoutOpen(true)}
@@ -129,6 +117,9 @@ export default function Assessments() {
                   </span>
                 )}
               </Button>
+              <p className="text-xs md:text-sm text-blue-100/60 italic">
+                £15 one-time platform fee + assessments from £3.50 each
+              </p>
             </div>
           </div>
 
