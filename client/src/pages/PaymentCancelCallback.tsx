@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Loader2, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { queryClient } from "@/lib/queryClient";
 
 export default function PaymentCancelCallback() {
   const [, setLocation] = useLocation();
@@ -21,14 +22,21 @@ export default function PaymentCancelCallback() {
 
         if (res.ok) {
           setStatus("authenticated");
+          
+          // Clear ALL cached data to ensure fresh data for correct user
+          queryClient.clear();
+          
           setTimeout(() => {
             setLocation("/dashboard?payment=cancelled");
           }, 1500);
         } else {
+          // Clear cache for unauthenticated state too
+          queryClient.clear();
           setStatus("needs_login");
         }
       } catch (error) {
         console.error("Session check error:", error);
+        queryClient.clear();
         setStatus("needs_login");
       }
     };

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { queryClient } from "@/lib/queryClient";
 
 export default function PaymentCallback() {
   const [, setLocation] = useLocation();
@@ -67,6 +68,9 @@ export default function PaymentCallback() {
           console.warn("Session verification timed out, redirecting anyway");
         }
 
+        // Clear cache to ensure fresh data for correct user
+        queryClient.clear();
+
         // Session verified or timeout - redirect to batch-specific results page
         const redirectUrl = data.purchaseId 
           ? `/my-results?purchaseId=${data.purchaseId}`
@@ -77,6 +81,9 @@ export default function PaymentCallback() {
         setStatus("error");
         setMessage(error.message || "Failed to process payment. Please contact support.");
 
+        // Clear cache before redirect
+        queryClient.clear();
+        
         // Redirect to dashboard after error
         setTimeout(() => {
           setLocation("/dashboard");
