@@ -839,6 +839,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Customer details required" });
       }
 
+      // Check if user already exists - they should log in instead
+      const existingUser = await storage.getUserByEmail(customerEmail);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "An account with this email already exists. Please log in instead." 
+        });
+      }
+
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
@@ -1867,9 +1875,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           console.log(`✅ Created new user ${email} and sent welcome email`);
         } else {
-          userId = existingUser.id;
-          requiresLogin = true; // Existing user needs to log in
-          console.log(`⚠️  User ${email} already exists - no email will be sent, they need to use their existing password`);
+          // User already exists - they should log in instead of creating new assessments
+          console.log(`⚠️  User ${email} already exists - rejecting checkout, they should log in`);
+          return res.status(400).json({ 
+            message: "An account with this email already exists. Please log in to add assessments to your account." 
+          });
         }
       }
 
