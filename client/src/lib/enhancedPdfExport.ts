@@ -38,14 +38,14 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, 45, 'F');
   
-  // HumanMetrix Logo - compact size (32x32) positioned at left edge
+  // HumanMetrix Logo - full size (38x38), transparent edges allow text overlap
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 7, 32, 32);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 4, 38, 38);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Company name - positioned close to logo (logo ends at 8+32=40, text at 42)
+  // Company name - positioned to overlap with logo's transparent right edge
   pdf.setTextColor(30, 58, 138);
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
