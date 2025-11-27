@@ -228,3 +228,17 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   (req as any).user = user;
   next();
 };
+
+// Middleware that populates req.user if logged in, but doesn't require it
+export const populateUser: RequestHandler = async (req, res, next) => {
+  const userId = (req.session as any).userId;
+
+  if (userId) {
+    const user = await storage.getUser(userId);
+    if (user) {
+      (req as any).user = user;
+    }
+  }
+  
+  next();
+};

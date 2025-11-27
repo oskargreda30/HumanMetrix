@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations } from "@shared/schema";
@@ -1793,7 +1793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Self-service: Create free account and grant access to assessments (no payment upfront)
-  app.post("/api/create-free-invitation", async (req, res) => {
+  app.post("/api/create-free-invitation", populateUser, async (req, res) => {
     try {
       const { assessmentIds, firstName, lastName, email } = req.body;
       
