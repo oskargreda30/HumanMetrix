@@ -1,6 +1,17 @@
 import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
 
+// Format assessment type for display (e.g., "fit" -> "FIT Assessment")
+function formatAssessmentName(type: string): string {
+  const names: Record<string, string> = {
+    'fit': 'FIT Assessment',
+    'ai_readiness': 'AI Readiness Assessment',
+    'prompt_architecture': 'Prompt Architecture Assessment',
+    'aiq': 'AIQ Assessment'
+  };
+  return names[type] || type;
+}
+
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 let transporterVerified = false;
 
@@ -55,7 +66,11 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
     console.warn(`Email not sent for invitation ${invitation.id} - email not configured`);
     return;
   }
-  const assessmentList = invitation.assessmentTypes.join(', ');
+  
+  // Format assessment names nicely
+  const formattedAssessments = invitation.assessmentTypes.map(formatAssessmentName);
+  const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
+  const assessmentListText = formattedAssessments.join(', ');
   const inviteUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/invite/${invitation.token}`;
   
   const mailOptions = {
@@ -89,7 +104,10 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
               <p>${inviterName} has invited you to complete the following assessments:</p>
               
               <div class="assessments">
-                <strong>Assessments:</strong> ${assessmentList}
+                <strong>Assessments:</strong>
+                <ul style="margin: 10px 0 0 0;">
+                  ${assessmentListHtml}
+                </ul>
               </div>
               
               ${invitation.message ? `<p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0;"><em>"${invitation.message}"</em></p>` : ''}
@@ -123,7 +141,7 @@ Hello ${invitation.candidateName},
 
 ${inviterName} has invited you to complete the following assessments on HumanMetrix:
 
-Assessments: ${assessmentList}
+Assessments: ${assessmentListText}
 
 ${invitation.message ? `Message: "${invitation.message}"\n\n` : ''}
 
@@ -429,17 +447,6 @@ Reply directly to this email to respond to ${name}
 
   const info = await emailTransporter.sendMail(mailOptions);
   console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
-}
-
-// Format assessment type for display (e.g., "fit" -> "FIT Assessment")
-function formatAssessmentName(type: string): string {
-  const names: Record<string, string> = {
-    'fit': 'FIT Assessment',
-    'ai_readiness': 'AI Readiness Assessment',
-    'prompt_architecture': 'Prompt Architecture Assessment',
-    'aiq': 'AIQ Assessment'
-  };
-  return names[type] || type;
 }
 
 export async function sendPaymentReceiptEmail(
