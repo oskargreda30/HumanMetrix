@@ -70,8 +70,20 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Set session
+      // Set session and explicitly save to ensure it's persisted before responding
       (req.session as any).userId = user.id;
+      
+      // Explicitly save session to PostgreSQL before responding
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error("Session save error during login:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
       
       res.json({
         id: user.id,
@@ -116,8 +128,20 @@ export async function setupAuth(app: Express) {
       // Auto-grant all assessments for free
       await storage.createFreeAssessmentsForUser(user.id);
 
-      // Set session
+      // Set session and explicitly save to ensure it's persisted before responding
       (req.session as any).userId = user.id;
+      
+      // Explicitly save session to PostgreSQL before responding
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error("Session save error during signup:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
       res.json({
         id: user.id,
