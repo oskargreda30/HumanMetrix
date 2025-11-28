@@ -158,14 +158,17 @@ export default function Purchase() {
         // Clear basket
         localStorage.removeItem("humanmetrix-basket");
         
-        // Invalidate cache so dashboard shows new assessments immediately
+        // Invalidate cache and refetch immediately 
         await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+        // Force refetch after invalidation
+        await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
         
-        // Redirect to dashboard
+        // Redirect to dashboard with refresh flag to force component update
         setTimeout(() => {
-          setLocation("/dashboard");
+          setLocation("/dashboard?refresh=" + Date.now());
         }, 1500);
       } else {
         // Guest users: create free invitation with email
@@ -201,8 +204,13 @@ export default function Purchase() {
             setLocation("/login?message=check-email");
           }, 2000);
         } else {
+          // Invalidate and refetch before redirect
+          await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+          await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+          await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+          await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
           setTimeout(() => {
-            setLocation("/dashboard");
+            setLocation("/dashboard?refresh=" + Date.now());
           }, 2000);
         }
       }

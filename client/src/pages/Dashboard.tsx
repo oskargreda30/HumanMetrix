@@ -75,19 +75,33 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: availableData, isLoading: assessmentsLoading } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
+  const { data: availableData, isLoading: assessmentsLoading, refetch: refetchAssessments } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0, // Always consider data stale
   });
 
-  const { data: purchasesWithResults, isLoading: purchasesLoading } = useQuery<any[]>({
+  const { data: purchasesWithResults, isLoading: purchasesLoading, refetch: refetchPurchases } = useQuery<any[]>({
     queryKey: ["/api/purchases-with-results"],
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0, // Always consider data stale
   });
+  
+  // Force refetch when returning from Purchase page with refresh flag
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refresh = params.get("refresh");
+    
+    if (refresh) {
+      // Force refetch of data
+      refetchAssessments();
+      refetchPurchases();
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [refetchAssessments, refetchPurchases]);
 
   const availableAssessments = availableData?.assessments || [];
   const requiredAssessmentTypes = availableData?.requiredAssessmentTypes || [];
