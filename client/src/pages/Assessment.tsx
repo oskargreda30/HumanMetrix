@@ -126,6 +126,10 @@ export default function Assessment() {
       setIsSubmitting(false); // Reset submitting state
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+      // Force refetch to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
       
       toast({
         title: "Success",
@@ -133,8 +137,8 @@ export default function Assessment() {
         duration: 3000,
       });
       
-      // Always redirect to dashboard after submission
-      setLocation("/dashboard");
+      // Always redirect to dashboard after submission with refresh flag
+      setLocation("/dashboard?refresh=" + Date.now());
     },
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error

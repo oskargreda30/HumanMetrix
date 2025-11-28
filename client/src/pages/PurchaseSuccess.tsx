@@ -44,12 +44,15 @@ export default function PurchaseSuccess() {
         console.error("Error clearing basket:", error);
       }
 
-      // Invalidate cache so dashboard shows new assessments immediately
+      // Invalidate and refetch cache so dashboard shows new assessments immediately
       if (data.isLoggedIn) {
         // Logged-in user purchasing additional assessments
         await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+        // Force refetch to ensure fresh data
+        await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
       }
 
       setAccountCreated(true);
@@ -175,7 +178,7 @@ export default function PurchaseSuccess() {
                   <Button
                     size="lg"
                     className="w-full"
-                    onClick={() => setLocation(userEmail ? "/login" : "/dashboard")}
+                    onClick={() => setLocation(userEmail ? "/login" : "/dashboard?refresh=" + Date.now())}
                     data-testid={userEmail ? "button-go-to-login" : "button-go-to-dashboard"}
                   >
                     {userEmail ? "Go to Login" : "Go to Dashboard"}

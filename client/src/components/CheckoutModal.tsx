@@ -158,9 +158,13 @@ export default function CheckoutModal({
 
       const data = await response.json();
       
-      // Invalidate queries to refresh dashboard data
+      // Invalidate and refetch queries to refresh dashboard data
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+      // Force refetch to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
       
       toast({
         title: "Success!",
@@ -178,8 +182,8 @@ export default function CheckoutModal({
           setLocation("/login?message=check-email");
         }, 2000);
       } else {
-        // For authenticated users, navigate immediately
-        setLocation("/dashboard");
+        // For authenticated users, navigate immediately with refresh flag
+        setLocation("/dashboard?refresh=" + Date.now());
       }
     } catch (error: any) {
       toast({
