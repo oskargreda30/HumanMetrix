@@ -1274,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 availableAssessments.push({
                   purchaseItemId: item.id,
                   assessmentType: item.assessmentType,
-                  status: item.status,
+                  status: existing?.status || 'ready', // Use result status if exists, otherwise 'ready'
                   source: 'purchase',
                 });
                 addedAssessmentTypes.add(normalizedType);

@@ -168,6 +168,7 @@ export default function Dashboard() {
                 {availableAssessments.map((assessment: any) => {
                   const metadata = getAssessmentMetadata(assessment.assessmentType);
                   const AssessmentIcon = metadata.icon;
+                  const isInProgress = assessment.status === 'in_progress';
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
@@ -181,8 +182,15 @@ export default function Dashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
-                              <Badge variant="secondary" className="flex-shrink-0 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 text-xs">
-                                Ready
+                              <Badge 
+                                variant="secondary" 
+                                className={`flex-shrink-0 text-xs ${
+                                  isInProgress 
+                                    ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
+                                    : 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
+                                }`}
+                              >
+                                {isInProgress ? 'In Progress' : 'Ready'}
                               </Badge>
                             </div>
                           </div>
@@ -210,7 +218,7 @@ export default function Dashboard() {
                         </div>
                         <Link href={`/assessment/${assessment.purchaseItemId}`}>
                           <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
-                            Start Assessment
+                            {isInProgress ? 'Continue Assessment' : 'Start Assessment'}
                           </Button>
                         </Link>
                       </div>

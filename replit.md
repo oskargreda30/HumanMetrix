@@ -40,9 +40,16 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
 - **Scalable Database Schema**: Supports users, assessments, results, invitations, and AI evaluation data.
-- **Secure Authentication**: Robust session-based authentication.
+- **Secure Authentication**: Robust session-based authentication with explicit session persistence.
 - **API-driven**: Comprehensive API endpoints for all functionalities.
 - **Content-Aware PDF Rendering**: Dynamic layout ensures readability and visual consistency.
+- **Cache Refresh Pattern**: All data-changing flows use cache invalidation + refetch + refresh URL parameter.
+
+### Bug Fixes Applied (Nov 2025)
+- **Session Race Condition**: Added explicit `await req.session.save()` in login/signup to ensure session is persisted to PostgreSQL before responding.
+- **Dashboard Refresh**: Implemented refresh URL parameter pattern (`?refresh=timestamp`) for data-changing flows (Purchase, Assessment, PurchaseSuccess, CheckoutModal).
+- **Assessment Status Display**: Fixed API to return actual result status (`in_progress`, `ready`) instead of purchase item status; Dashboard now shows "In Progress" with yellow badge and "Continue Assessment" button.
+- **Cache Invalidation**: Added proper refetch after invalidation in all mutation handlers to ensure fresh data.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
