@@ -1889,28 +1889,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Check for existing unpaid purchase (idempotency)
+      // Check for existing unpaid purchase that still has incomplete assessments
       const existingPurchases = await storage.getPurchasesByUser(userId);
-      const unpaidPurchase = existingPurchases.find((p: any) => !p.resultsAccessPaid);
+      let unpaidPurchase = existingPurchases.find((p: any) => !p.resultsAccessPaid);
+      
+      // If there's an unpaid purchase, check if all its items are completed
+      // If all completed, allow creating a NEW testing series
+      if (unpaidPurchase) {
+        const existingItems = await storage.getPurchaseItems(unpaidPurchase.id);
+        const userResults = await storage.getResultsByUser(userId);
+        
+        // Check if ALL items in this purchase have completed results
+        const allItemsCompleted = existingItems.every((item: any) => {
+          const result = userResults.find((r: any) => r.purchaseItemId === item.id);
+          return result && result.status === 'completed';
+        });
+        
+        if (allItemsCompleted && existingItems.length > 0) {
+          // All assessments completed - allow creating a NEW testing series
+          console.log(`User ${email} has completed all assessments in purchase ${unpaidPurchase.id}, allowing new series`);
+          unpaidPurchase = undefined; // Force creation of new purchase
+        }
+      }
 
       let purchaseId: string;
 
       if (unpaidPurchase) {
-        // User already has unpaid access, use existing purchase
+        // User has unpaid purchase with INCOMPLETE assessments - add to existing
         purchaseId = unpaidPurchase.id;
-        console.log(`User ${email} has existing unpaid purchase ${purchaseId}`);
+        console.log(`User ${email} has existing unpaid purchase ${purchaseId} with incomplete assessments`);
         
-        // Get existing purchase items to avoid duplicates
+        // Get existing purchase items to avoid duplicates within this purchase
         const existingItems = await storage.getPurchaseItems(purchaseId);
         const existingTypes = new Set(existingItems.map((item: any) => item.assessmentType));
         
-        // Only add new assessments that don't already exist
+        // Only add new assessments that don't already exist in THIS purchase
         for (const assessmentId of assessmentIds) {
           if (!existingTypes.has(assessmentId)) {
             await storage.createPurchaseItem({
               purchaseId,
               assessmentType: assessmentId,
-              price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES], // Standard price in pence (for metadata/analytics)
+              price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES],
               status: 'ready',
             });
             console.log(`Added ${assessmentId} to existing purchase`);
