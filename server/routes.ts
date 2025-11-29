@@ -1923,17 +1923,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingItems = await storage.getPurchaseItems(purchaseId);
         const existingTypes = new Set(existingItems.map((item: any) => item.assessmentType));
         
-        // Only add new assessments that don't already exist in THIS purchase
-        for (const assessmentId of assessmentIds) {
-          if (!existingTypes.has(assessmentId)) {
-            await storage.createPurchaseItem({
-              purchaseId,
-              assessmentType: assessmentId,
-              price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES],
-              status: 'ready',
-            });
-            console.log(`Added ${assessmentId} to existing purchase`);
-          }
+        // Check which assessments are duplicates vs new
+        const duplicates = assessmentIds.filter((id: string) => existingTypes.has(id));
+        const newAssessments = assessmentIds.filter((id: string) => !existingTypes.has(id));
+        
+        // If ALL selected assessments are duplicates, return error
+        if (newAssessments.length === 0) {
+          return res.status(400).json({ 
+            message: "These assessments are already in your dashboard. Complete them first or select different ones." 
+          });
+        }
+        
+        // Add only the new assessments
+        for (const assessmentId of newAssessments) {
+          await storage.createPurchaseItem({
+            purchaseId,
+            assessmentType: assessmentId,
+            price: ASSESSMENT_PRICES[assessmentId as keyof typeof ASSESSMENT_PRICES],
+            status: 'ready',
+          });
+          console.log(`Added ${assessmentId} to existing purchase`);
         }
       } else {
         // Check if user has an active invitation matching these assessments
