@@ -1,18 +1,15 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Lock, CheckCircle2, Loader2, ArrowLeft, Tag } from "lucide-react";
+import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
 
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [discountCode, setDiscountCode] = useState("");
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
