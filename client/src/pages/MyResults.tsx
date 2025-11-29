@@ -43,15 +43,16 @@ export default function MyResults() {
     : null;
 
   // Check if user has paid for results access
-  const { data: purchases } = useQuery<any[]>({
+  const { data: purchases, isLoading: purchasesLoading } = useQuery<any[]>({
     queryKey: ["/api/purchases"],
     enabled: isAuthenticated,
   });
 
   // User has paid if there are NO unpaid purchases (prevents showing unpaid results from new purchases)
-  const hasPaidForResults = Array.isArray(purchases) 
+  // IMPORTANT: Default to false (requiring payment) if purchases hasn't loaded yet - prevents payment bypass
+  const hasPaidForResults = Array.isArray(purchases) && purchases.length > 0
     ? !purchases.some((p: any) => p.resultsAccessPaid === false)
-    : undefined;
+    : false; // Default to requiring payment when data not loaded
 
   // Fetch all user results - ALWAYS fetch to check completion status
   const { data: allResults, isLoading: resultsLoading } = useQuery<any[]>({
@@ -70,7 +71,7 @@ export default function MyResults() {
   // Find Prompt Architecture result for later fetching
   const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
 
-  if (resultsLoading || assessmentsLoading || batchesLoading || !allResults) {
+  if (resultsLoading || assessmentsLoading || batchesLoading || purchasesLoading || !allResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -144,10 +145,11 @@ export default function MyResults() {
   }
 
   // SECOND: Show payment gate if user hasn't paid for results access
-  // For batch view, check if THAT batch is paid. Otherwise check global payment status
+  // For batch view, check if THAT batch is paid
+  // For global view, require payment if ANY purchase is unpaid (all-or-nothing approach)
   const needsPayment = selectedBatch 
     ? !selectedBatch.resultsAccessPaid 
-    : hasPaidForResults === false;
+    : !hasPaidForResults; // Show payment gate if not all purchases are paid
     
   if (needsPayment) {
     return <ResultsPaymentGate />;
