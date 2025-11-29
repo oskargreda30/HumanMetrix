@@ -1269,15 +1269,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const existing = await storage.getResultByPurchaseItem(item.id);
             
             if (!existing || existing.status !== 'completed') {
-              // Only add if we haven't already added this assessment type (using normalized comparison)
-              if (!addedAssessmentTypes.has(normalizedType)) {
+              // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
+              const purchaseItemKey = `purchase::${item.id}`;
+              if (!addedAssessmentTypes.has(purchaseItemKey)) {
                 availableAssessments.push({
                   purchaseItemId: item.id,
                   assessmentType: item.assessmentType,
                   status: existing?.status || 'ready', // Use result status if exists, otherwise 'ready'
                   source: 'purchase',
+                  purchaseId: purchase.id, // Include purchase ID for grouping
                 });
-                addedAssessmentTypes.add(normalizedType);
+                addedAssessmentTypes.add(purchaseItemKey);
               }
             }
           }

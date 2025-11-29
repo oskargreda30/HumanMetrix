@@ -50,6 +50,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **Dashboard Refresh**: Implemented refresh URL parameter pattern (`?refresh=timestamp`) for data-changing flows (Purchase, Assessment, PurchaseSuccess, CheckoutModal).
 - **Assessment Status Display**: Fixed API to return actual result status (`in_progress`, `ready`) instead of purchase item status; Dashboard now shows "In Progress" with yellow badge and "Continue Assessment" button.
 - **Cache Invalidation**: Added proper refetch after invalidation in all mutation handlers to ensure fresh data.
+- **Multiple Testing Series**: Fixed `/api/available-assessments` to use purchase-item-specific tracking (`purchase::${item.id}`) instead of assessment type tracking, allowing users to have multiple testing series with the same assessment types.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
