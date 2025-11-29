@@ -57,8 +57,7 @@ export function ResultsPaymentGate() {
   const unlockMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/unlock-results", {
-        purchaseId: currentPurchase?.id,
-        discountCode: discountCode.trim() || undefined,
+        purchaseId: currentPurchase?.id, // Pass the specific purchase ID
       });
       
       if (!response.ok) {
@@ -69,18 +68,7 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
-      if (data.free) {
-        // FREE code applied - results unlocked without payment
-        toast({
-          title: "Success!",
-          description: "Your results have been unlocked!",
-        });
-        // Invalidate cache and redirect
-        await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
-        await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
-        setLocation("/my-results?refresh=" + Date.now());
-      } else if (data.sessionUrl) {
+      if (data.sessionUrl) {
         // Redirect to Stripe checkout
         window.location.href = data.sessionUrl;
       }
@@ -164,20 +152,6 @@ export function ResultsPaymentGate() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Discount code (optional)"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value)}
-                className="pl-10"
-                data-testid="input-discount-code"
-              />
-            </div>
-          </div>
-          
           <Button
             className="w-full"
             size="lg"
