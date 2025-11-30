@@ -129,9 +129,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">1. High Agency & Proactiveness</h4>
                   <p className="text-slate-600 text-sm mb-3">Reflects an individual's ability to take ownership, act decisively, and initiate progress without relying on excessive guidance.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations used in item design:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations used in item design:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Taking initiative instead of waiting for direction</li>
                       <li>• Moving tasks forward proactively, even when information is incomplete</li>
                       <li>• Addressing obstacles independently rather than deferring action</li>
@@ -146,9 +146,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">2. Intellectual Curiosity & Unlearning Ability</h4>
                   <p className="text-slate-600 text-sm mb-3">Captures a person's willingness to seek information, question assumptions, and revise their understanding when presented with new evidence.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Asking questions to understand context more fully</li>
                       <li>• Actively seeking new or alternative perspectives</li>
                       <li>• Challenging outdated assumptions or habitual thinking</li>
@@ -163,9 +163,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">3. Resilience & Ambiguity Tolerance</h4>
                   <p className="text-slate-600 text-sm mb-3">Represents the ability to remain stable, effective, and constructive when situations become uncertain, stressful, or unclear.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Staying composed when priorities shift or instructions are vague</li>
                       <li>• Responding constructively to stress, setbacks, or time pressure</li>
                       <li>• Continuing progress despite unclear conditions</li>
@@ -180,9 +180,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">4. Empathy & Ethical Compass</h4>
                   <p className="text-slate-600 text-sm mb-3">Combines emotional understanding with fair, principled decision-making that considers the impact on others.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Recognising and respecting the needs, feelings, or perspectives of others</li>
                       <li>• Weighing human consequences when making decisions</li>
                       <li>• Acting with fairness, consistency, and integrity</li>
@@ -197,9 +197,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">5. Growth Mindset</h4>
                   <p className="text-slate-600 text-sm mb-3">Reflects how an individual approaches learning, challenge, and feedback, as well as their belief in the potential for improvement.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Viewing difficult tasks as opportunities for growth</li>
                       <li>• Responding positively to constructive feedback</li>
                       <li>• Persisting through challenge instead of giving up</li>
@@ -214,9 +214,9 @@ export default function WhitePaperFIT() {
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-slate-900 mb-2">6. Interpersonal Agility</h4>
                   <p className="text-slate-600 text-sm mb-3">Refers to the ability to adapt communication and behaviour across diverse individuals and social contexts.</p>
-                  <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm">
-                    <p className="text-slate-700 mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-xs">
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
                       <li>• Adjusting communication style to suit different people</li>
                       <li>• Navigating interpersonal friction professionally and calmly</li>
                       <li>• Collaborating constructively with varied personalities</li>
@@ -236,19 +236,33 @@ export default function WhitePaperFIT() {
               The 15 questions in the FIT assessment were created through a structured, research-driven design process. The goal was to transform the six competencies into realistic decision-making scenarios that reliably reveal how individuals behave in challenging or ambiguous professional situations.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">Step 1: Translating Competencies into Behavioural Decision Points</h3>
-              <p className="text-slate-700 mb-3">
-                The design process began by breaking each FIT competency into the specific behaviours that indicate strong or weak performance. These behavioural indicators served as the blueprint for constructing the scenarios. Instead of asking candidates to self-report tendencies, the assessment measures how they act when placed inside professionally relevant situations.
-              </p>
-              <p className="text-slate-700 mb-2">For each competency, we identified:</p>
-              <ul className="text-slate-600 space-y-1 text-sm">
-                <li>• Situations where the behaviour naturally appears</li>
-                <li>• Common workplace challenges that differentiate high performers</li>
-                <li>• Decision points that reveal underlying thought processes</li>
-                <li>• Typical ineffective and effective behavioural patterns</li>
-              </ul>
-            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              Translating Competencies into Behavioural Decision Points
+            </h3>
+            
+            <p className="text-slate-700 mb-4">
+              The design process began by breaking each FIT competency into the specific behaviours that indicate strong or weak performance. These behavioural indicators served as the blueprint for constructing the scenarios. Instead of asking candidates to self-report tendencies, the assessment measures how they act when placed inside professionally relevant situations.
+            </p>
+            
+            <p className="text-slate-700 mb-4">For each competency, we identified:</p>
+            <ul className="space-y-2 text-slate-600 mb-6">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Situations where the behaviour naturally appears</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Common workplace challenges that differentiate high performers</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Decision points that reveal underlying thought processes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Typical ineffective and effective behavioural patterns</span>
+              </li>
+            </ul>
 
             <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
               Situational Judgement Question Design
@@ -277,32 +291,49 @@ export default function WhitePaperFIT() {
               </li>
             </ul>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-8">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">Constructing Response Options: Behavioural Gradients</h3>
-              <p className="text-slate-700 mb-3">
-                Every response option in FIT was created using a behavioural gradient model—an approach that ensures each option represents a meaningful position along a continuum of effectiveness.
-              </p>
-              <p className="text-slate-700 mb-2">For each question, the design team defined:</p>
-              <ul className="text-slate-600 space-y-1 text-sm mb-3">
-                <li>• The least constructive behavioural response</li>
-                <li>• The moderately effective behaviours that show partial skill use</li>
-                <li>• The most effective response aligned with the competency definition</li>
-              </ul>
-              <p className="text-slate-700 text-sm">
-                This structure ensures that the scoring reflects the quality of reasoning and decision-making rather than preference or stylistic differences. All 15 questions were reviewed repeatedly to ensure that the reasoning behind each option clearly reflects the skill being measured.
-              </p>
-            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              Constructing Response Options: Behavioural Gradients
+            </h3>
+            
+            <p className="text-slate-700 mb-4">
+              Every response option in FIT was created using a behavioural gradient model—an approach that ensures each option represents a meaningful position along a continuum of effectiveness.
+            </p>
+            
+            <p className="text-slate-700 mb-4">For each question, the design team defined:</p>
+            <ul className="space-y-2 text-slate-600 mb-6">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>The least constructive behavioural response</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>The moderately effective behaviours that show partial skill use</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>The most effective response aligned with the competency definition</span>
+              </li>
+            </ul>
+            
+            <p className="text-slate-700 mb-8">
+              This structure ensures that the scoring reflects the quality of reasoning and decision-making rather than preference or stylistic differences. All 15 questions were reviewed repeatedly to ensure that the reasoning behind each option clearly reflects the skill being measured.
+            </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Test Structure and Question Allocation</h2>
-              <p className="text-slate-700 mb-4">
-                The FIT assessment was designed as a concise, 15-question instrument that measures six core behavioural competencies through scenario-based decision-making. Instead of assigning fixed numbers of questions to each skill, FIT uses an attribution-based scoring model where each question may contribute to one or more competencies depending on the answer selected.
-              </p>
-              <h4 className="font-semibold text-slate-900 mb-2">Overall Test Structure</h4>
-              <p className="text-slate-700 text-sm">
-                The assessment exclusively uses situational judgement multiple-choice items, each presenting a realistic workplace scenario followed by several behavioural response options. This structure was chosen because it captures behavioural tendencies rather than self-perception and increases ecological validity by reflecting real-world decision-making. Each question was crafted to reveal how a person thinks and behaves in situations involving ambiguity, conflict, change, or interpersonal dynamics.
-              </p>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
+              Test Structure and Question Allocation
+            </h2>
+            
+            <p className="text-slate-700 mb-6">
+              The FIT assessment was designed as a concise, 15-question instrument that measures six core behavioural competencies through scenario-based decision-making. Instead of assigning fixed numbers of questions to each skill, FIT uses an attribution-based scoring model where each question may contribute to one or more competencies depending on the answer selected.
+            </p>
+
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              Overall Test Structure
+            </h3>
+            
+            <p className="text-slate-700 mb-8">
+              The assessment exclusively uses situational judgement multiple-choice items, each presenting a realistic workplace scenario followed by several behavioural response options. This structure was chosen because it captures behavioural tendencies rather than self-perception and increases ecological validity by reflecting real-world decision-making. Each question was crafted to reveal how a person thinks and behaves in situations involving ambiguity, conflict, change, or interpersonal dynamics.
+            </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
               Standardisation and Fairness

@@ -66,15 +66,17 @@ export default function WhitePaperAIReadiness() {
               The World Economic Forum's Future of Jobs Report 2025 highlights that while AI will perform human-like work at machine speed, human interaction and "durable skills" remain critical. By 2030, approximately 66% of all tasks will still require human input or human-technology collaboration.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-8">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">The Shift to Skills-Based Hiring</h3>
-              <p className="text-slate-700 mb-3">
-                This establishes a clear causal link: the evolving nature of work due to AI necessitates a shift in assessment paradigms. Psychometric tests, by offering objective and detailed information about cognitive abilities and soft skills, become a critical enabler for organisations to implement skills-based hiring and effectively address the emerging skills gap.
-              </p>
-              <p className="text-slate-700 text-sm">
-                Advanced AI-driven assessment tools are emerging, capable of analysing candidate responses, tone of voice, and other subtle indicators to provide deeper information about soft skills. The shift towards "skills-based hiring" and the emphasis on "durable skills" in the AI era implies that traditional credential-based hiring is becoming insufficient.
-              </p>
-            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              The Shift to Skills-Based Hiring
+            </h3>
+            
+            <p className="text-slate-700 mb-4">
+              This establishes a clear causal link: the evolving nature of work due to AI necessitates a shift in assessment paradigms. Psychometric tests, by offering objective and detailed information about cognitive abilities and soft skills, become a critical enabler for organisations to implement skills-based hiring and effectively address the emerging skills gap.
+            </p>
+            
+            <p className="text-slate-700 mb-8">
+              Advanced AI-driven assessment tools are emerging, capable of analysing candidate responses, tone of voice, and other subtle indicators to provide deeper information about soft skills. The shift towards "skills-based hiring" and the emphasis on "durable skills" in the AI era implies that traditional credential-based hiring is becoming insufficient.
+            </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
               Overview of the 9 Assessed Skills
@@ -157,11 +159,9 @@ export default function WhitePaperAIReadiness() {
               Psychometrics is the scientific discipline concerned with measuring psychological attributes such as abilities, traits, behaviours, and decision-making patterns. Four core principles—Reliability, Validity, Standardization, and Fairness—form the backbone of all high-quality assessments.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <p className="text-slate-700">
-                With the rise of AI-supported assessments, these psychometric foundations take on even greater importance. AI introduces opportunities for efficiency, richer behavioural data, and more dynamic forms of measurement. However, it also introduces risks: opacity in AI decision-making, algorithmic bias, data protections, and the need for ongoing calibration. The development of this test therefore required applying psychometric principles both traditionally and in ways tailored to the responsible integration of AI.
-              </p>
-            </div>
+            <p className="text-slate-700 mb-6">
+              With the rise of AI-supported assessments, these psychometric foundations take on even greater importance. AI introduces opportunities for efficiency, richer behavioural data, and more dynamic forms of measurement. However, it also introduces risks: opacity in AI decision-making, algorithmic bias, data protections, and the need for ongoing calibration. The development of this test therefore required applying psychometric principles both traditionally and in ways tailored to the responsible integration of AI.
+            </p>
 
             <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
               Reliability: Consistent and Stable Measurement
@@ -186,11 +186,9 @@ export default function WhitePaperAIReadiness() {
               </li>
             </ul>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <p className="text-slate-700 text-sm">
-                The introduction of AI added an additional layer of reliability assessment. AI-assisted scoring and interpretation needed to demonstrate equivalent stability to human scoring. This meant verifying that the AI consistently recognised patterns of decision style, or reasoning indicators across a wide range of response types.
-              </p>
-            </div>
+            <p className="text-slate-700 mb-6">
+              The introduction of AI added an additional layer of reliability assessment. AI-assisted scoring and interpretation needed to demonstrate equivalent stability to human scoring. This meant verifying that the AI consistently recognised patterns of decision style, or reasoning indicators across a wide range of response types.
+            </p>
 
             <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
               Validity: Measuring What We Intend
@@ -215,11 +213,9 @@ export default function WhitePaperAIReadiness() {
               </li>
             </ul>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <p className="text-slate-700 text-sm">
-                Construct validity required demonstrating that each item genuinely tapped into the cognitive or behavioural skill associated with its domain—whether collaboration, ethical reasoning, prompt engineering, or judgment under AI uncertainty. The reasoning embedded within each option (rather than the surface content alone) was crucial: selection of a particular answer reveals the candidate's thinking process.
-              </p>
-            </div>
+            <p className="text-slate-700 mb-6">
+              Construct validity required demonstrating that each item genuinely tapped into the cognitive or behavioural skill associated with its domain—whether collaboration, ethical reasoning, prompt engineering, or judgment under AI uncertainty. The reasoning embedded within each option (rather than the surface content alone) was crucial: selection of a particular answer reveals the candidate's thinking process.
+            </p>
 
             <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
               Standardization and Fairness
@@ -229,16 +225,29 @@ export default function WhitePaperAIReadiness() {
               Standardization ensures that all test-takers experience the assessment under equivalent conditions. In an AI-supported assessment, this includes ensuring that every candidate receives scenarios of comparable difficulty and that AI-assisted components apply identical scoring logic.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <h4 className="font-semibold text-slate-900 mb-2">AI-Specific Standardization Requirements</h4>
-              <p className="text-slate-700 text-sm mb-2">This test was designed to ensure that:</p>
-              <ul className="text-slate-600 space-y-1 text-sm">
-                <li>• Every candidate receives scenarios of comparable difficulty and cognitive demand</li>
-                <li>• AI-assisted components are calibrated to apply identical scoring logic, regardless of demographic or linguistic differences</li>
-                <li>• Adaptive elements (where used) follow pre-defined rules ensuring that different test paths remain psychometrically equivalent</li>
-                <li>• Candidate responses are interpreted according to stable criteria that do not change unpredictably over time</li>
-              </ul>
-            </div>
+            <h4 className="text-lg font-semibold text-slate-900 mt-6 mb-3">
+              AI-Specific Standardization Requirements
+            </h4>
+            
+            <p className="text-slate-700 mb-4">This test was designed to ensure that:</p>
+            <ul className="space-y-2 text-slate-600 mb-6">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Every candidate receives scenarios of comparable difficulty and cognitive demand</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>AI-assisted components are calibrated to apply identical scoring logic, regardless of demographic or linguistic differences</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Adaptive elements (where used) follow pre-defined rules ensuring that different test paths remain psychometrically equivalent</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-500 font-bold">•</span>
+                <span>Candidate responses are interpreted according to stable criteria that do not change unpredictably over time</span>
+              </li>
+            </ul>
 
             <p className="text-slate-700 mb-8">
               Fairness ensures that the test does not disadvantage any individual or group. Items were designed to avoid cultural, linguistic, or situational assumptions that might influence interpretation. Answer options represent differences in reasoning rather than differences in lived experience.
@@ -252,12 +261,13 @@ export default function WhitePaperAIReadiness() {
               AI literacy and prompt engineering were defined as the ability to understand AI systems, interact with them effectively, and evaluate their outputs critically. The CLEAR principles—Concise, Logical, Explicit, Adaptive, and Reflective—were used to establish what effective prompting behaviour looks like within realistic workplace contexts.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-6">
-              <h4 className="font-semibold text-slate-900 mb-2">Rationale for Inclusion</h4>
-              <p className="text-slate-700 text-sm">
-                This skill was included because prompt engineering has emerged as a foundational competency for anyone working with generative AI tools. It is not merely a technical function but a communication and problem-solving task that requires clarity, structured thinking, and the ability to judge relevance and completeness. As organisations increasingly adopt AI-augmented workflows, employees must be able to guide AI systems effectively and interpret their outputs responsibly.
-              </p>
-            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              Rationale for Inclusion
+            </h3>
+            
+            <p className="text-slate-700 mb-6">
+              This skill was included because prompt engineering has emerged as a foundational competency for anyone working with generative AI tools. It is not merely a technical function but a communication and problem-solving task that requires clarity, structured thinking, and the ability to judge relevance and completeness. As organisations increasingly adopt AI-augmented workflows, employees must be able to guide AI systems effectively and interpret their outputs responsibly.
+            </p>
 
             <Card className="mb-8 border-slate-200">
               <CardContent className="p-6">
@@ -268,15 +278,17 @@ export default function WhitePaperAIReadiness() {
               </CardContent>
             </Card>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Conceptualization and Measurement Rationale</h2>
-              <p className="text-slate-700 mb-3">
-                Assessing skills, particularly "soft skills" or "durable skills," is increasingly crucial for modern workforce evaluation. Psychometric tests offer a standardized way to measure cognitive abilities, personality traits, and job-specific competencies. Methodologies such as Situational Judgment Tests (SJTs) and behavioural assessments are particularly effective for evaluating complex soft skills like communication, problem-solving, and adaptability by presenting realistic scenarios.
-              </p>
-              <p className="text-slate-700 text-sm">
-                It is emphasised that "durable skills" are foundational for success in the AI-driven workforce. Psychometric tests, especially those leveraging AI for nuanced soft skill measurement, are transforming into indispensable tools for identifying candidates who can thrive alongside AI systems.
-              </p>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
+              Conceptualization and Measurement Rationale
+            </h2>
+            
+            <p className="text-slate-700 mb-6">
+              Assessing skills, particularly "soft skills" or "durable skills," is increasingly crucial for modern workforce evaluation. Psychometric tests offer a standardized way to measure cognitive abilities, personality traits, and job-specific competencies. Methodologies such as Situational Judgment Tests (SJTs) and behavioural assessments are particularly effective for evaluating complex soft skills like communication, problem-solving, and adaptability by presenting realistic scenarios.
+            </p>
+            
+            <p className="text-slate-700 mb-8">
+              It is emphasised that "durable skills" are foundational for success in the AI-driven workforce. Psychometric tests, especially those leveraging AI for nuanced soft skill measurement, are transforming into indispensable tools for identifying candidates who can thrive alongside AI systems.
+            </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
               The Role of AI in Assessment
@@ -290,15 +302,17 @@ export default function WhitePaperAIReadiness() {
               Throughout the test's design, the guiding philosophy was that psychometrics should not simply tolerate AI integration but actively shape how AI is used. The aim was to ensure that every AI-supported feature strengthens rather than undermines the trustworthiness of the test.
             </p>
 
-            <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 mb-8">
-              <h4 className="font-semibold text-slate-900 mb-2">Ethical Considerations in AI Assessment</h4>
-              <p className="text-slate-700 text-sm mb-3">
-                Fairness was built in from the earliest design phase, aligning psychometric fairness principles with the ethical standards of Responsible AI. The test's fairness framework includes mechanisms for transparency—allowing score interpretations to be communicated clearly and allowing candidates to understand how their responses contributed to their results.
-              </p>
-              <p className="text-slate-700 text-sm">
-                Extensive internal testing was conducted to confirm that the AI system does not create unintended variation in difficulty or scoring. This level of standardization ensures that results are comparable across all test-takers, upholding fairness and score integrity.
-              </p>
-            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+              Ethical Considerations in AI Assessment
+            </h3>
+            
+            <p className="text-slate-700 mb-4">
+              Fairness was built in from the earliest design phase, aligning psychometric fairness principles with the ethical standards of Responsible AI. The test's fairness framework includes mechanisms for transparency—allowing score interpretations to be communicated clearly and allowing candidates to understand how their responses contributed to their results.
+            </p>
+            
+            <p className="text-slate-700 mb-8">
+              Extensive internal testing was conducted to confirm that the AI system does not create unintended variation in difficulty or scoring. This level of standardization ensures that results are comparable across all test-takers, upholding fairness and score integrity.
+            </p>
 
             <Card className="bg-gradient-to-r from-cyan-500 to-blue-600 border-0">
               <CardContent className="p-6 text-center">
