@@ -1515,26 +1515,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit assessment answers
   app.post("/api/assessments/:id/submit", isAuthenticated, async (req: any, res) => {
     const { id } = req.params;
-    console.log(`[SUBMIT DEBUG] Starting submission for assessment ${id}, user ${req.user?.id}`);
+    const timestamp = new Date().toISOString();
+    console.log(`[SUBMIT ${timestamp}] Starting submission for assessment ${id}, user ${req.user?.id}`);
     
     try {
       const { answers } = req.body;
       const userId = req.user.id;
       
-      console.log(`[SUBMIT DEBUG] Answers received:`, JSON.stringify(answers));
+      // Input validation - ensure answers is a valid object
+      if (!answers || typeof answers !== 'object') {
+        console.log(`[SUBMIT ${timestamp}] Invalid answers format:`, typeof answers, answers);
+        return res.status(400).json({ message: "Invalid answers format" });
+      }
+      
+      const answerCount = Object.keys(answers).length;
+      console.log(`[SUBMIT ${timestamp}] Answers received: ${answerCount} answers`);
+      console.log(`[SUBMIT ${timestamp}] Answer keys:`, Object.keys(answers).join(', '));
 
-      const result = await storage.getAssessmentResult(id);
-      console.log(`[SUBMIT DEBUG] Assessment result found:`, result ? {
+      let result;
+      try {
+        result = await storage.getAssessmentResult(id);
+      } catch (dbError: any) {
+        console.error(`[SUBMIT ${timestamp}] Database error fetching assessment:`, {
+          error: dbError.message,
+          code: dbError.code,
+          assessmentId: id
+        });
+        return res.status(500).json({ message: "Database error. Please try again." });
+      }
+      
+      console.log(`[SUBMIT ${timestamp}] Assessment result found:`, result ? {
         id: result.id,
         userId: result.userId,
         assessmentType: result.assessmentType,
         status: result.status,
-        purchaseItemId: result.purchaseItemId
+        purchaseItemId: result.purchaseItemId,
+        startedAt: result.startedAt
       } : 'null');
       
-      if (!result || result.userId !== userId) {
-        console.log(`[SUBMIT DEBUG] Assessment not found or user mismatch. Result userId: ${result?.userId}, Request userId: ${userId}`);
+      if (!result) {
+        console.log(`[SUBMIT ${timestamp}] Assessment not found for id: ${id}`);
         return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        console.log(`[SUBMIT ${timestamp}] User mismatch! Result userId: ${result.userId}, Request userId: ${userId}`);
+        return res.status(403).json({ message: "Access denied to this assessment" });
       }
 
       // Prevent duplicate submission - if already completed, return success
@@ -1626,29 +1652,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // For other assessment types, update assessment result
-      console.log(`[SUBMIT DEBUG] Updating database for assessment ${id}`);
-      await db.update(assessmentResults)
-        .set({
-          answers,
-          scores,
-          totalScore,
-          evaluations: Array.isArray(evaluations) && evaluations.length > 0 ? evaluations : null,
-          status: 'completed',
-          completedAt: new Date(),
-        })
-        .where(eq(assessmentResults.id, id));
-
-      console.log(`[SUBMIT DEBUG] Database update successful for assessment ${id}`);
+      console.log(`[SUBMIT ${timestamp}] Updating database for assessment ${id}, type: ${result.assessmentType}`);
+      console.log(`[SUBMIT ${timestamp}] Scores to save:`, JSON.stringify(scores));
+      
+      try {
+        await db.update(assessmentResults)
+          .set({
+            answers,
+            scores,
+            totalScore,
+            evaluations: Array.isArray(evaluations) && evaluations.length > 0 ? evaluations : null,
+            status: 'completed',
+            completedAt: new Date(),
+          })
+          .where(eq(assessmentResults.id, id));
+        
+        console.log(`[SUBMIT ${timestamp}] Database update successful for assessment ${id}`);
+      } catch (dbUpdateError: any) {
+        console.error(`[SUBMIT ${timestamp}] Database update failed:`, {
+          error: dbUpdateError.message,
+          code: dbUpdateError.code,
+          assessmentId: id,
+          assessmentType: result.assessmentType
+        });
+        return res.status(500).json({ 
+          message: "Failed to save assessment results. Please try again.",
+          error: "database_error"
+        });
+      }
+      
       res.json({ success: true, scores, totalScore, evaluations });
     } catch (error: any) {
-      console.error(`[SUBMIT ERROR] Assessment ${id} failed:`, {
+      const timestamp = new Date().toISOString();
+      console.error(`[SUBMIT ERROR ${timestamp}] Assessment ${id} failed:`, {
         error: error.message,
         code: error.code,
         stack: error.stack,
         assessmentId: id,
-        userId: req.user?.id
+        userId: req.user?.id,
+        bodyKeys: req.body ? Object.keys(req.body) : 'no body'
       });
-      res.status(500).json({ message: "Failed to submit assessment. Please try again." });
+      
+      // Provide more specific error messages based on error type
+      let userMessage = "Failed to submit assessment. Please try again.";
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        userMessage = "Connection error. Please check your internet and try again.";
+      } else if (error.message?.includes('session')) {
+        userMessage = "Session expired. Please log in again and retry.";
+      }
+      
+      res.status(500).json({ message: userMessage, error: "submission_failed" });
     }
   });
 

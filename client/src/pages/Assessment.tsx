@@ -142,14 +142,30 @@ export default function Assessment() {
     },
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error
-      const message = error?.error === 'quota_exceeded' 
-        ? "OpenAI API quota exceeded. Please add credits to your OpenAI account to complete this assessment."
-        : "Failed to submit assessment. Please try again.";
+      console.error("[Assessment] Submission error:", error);
+      
+      // Determine appropriate error message based on error type
+      let message = "Failed to submit assessment. Please try again.";
+      let title = "Submission Error";
+      
+      if (error?.error === 'quota_exceeded') {
+        message = "OpenAI API quota exceeded. Please contact support to complete this assessment.";
+        title = "API Limit Reached";
+      } else if (error?.error === 'timeout') {
+        message = "The evaluation is taking longer than expected. Please try again.";
+        title = "Request Timeout";
+      } else if (error?.error === 'database_error') {
+        message = "Could not save your results. Please try again in a moment.";
+        title = "Save Failed";
+      } else if (error?.message) {
+        message = error.message;
+      }
       
       toast({
-        title: "Error",
+        title,
         description: message,
         variant: "destructive",
+        duration: 6000, // Show error for longer
       });
     },
   });
