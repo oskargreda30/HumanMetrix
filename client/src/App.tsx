@@ -12,6 +12,9 @@ import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Assessments from "@/pages/Assessments";
 import ForEmployers from "@/pages/ForEmployers";
+import Articles from "@/pages/Articles";
+import ArticlePsychometricTests from "@/pages/ArticlePsychometricTests";
+import ArticleRecruitmentTesting from "@/pages/ArticleRecruitmentTesting";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -36,6 +39,9 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/assessments" component={Assessments} />
       <Route path="/for-employers" component={ForEmployers} />
+      <Route path="/articles" component={Articles} />
+      <Route path="/articles/how-to-pass-psychometric-tests-job-interviews" component={ArticlePsychometricTests} />
+      <Route path="/articles/role-of-psychometric-testing-in-recruitment" component={ArticleRecruitmentTesting} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />

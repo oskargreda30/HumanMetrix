@@ -48,4 +48,25 @@
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
   </url>
+  
+  <url>
+    <loc>https://humanmetrix.co.uk/articles</loc>
+    <lastmod>2025-11-30</lastmod>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  
+  <url>
+    <loc>https://humanmetrix.co.uk/articles/how-to-pass-psychometric-tests-job-interviews</loc>
+    <lastmod>2025-11-28</lastmod>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  
+  <url>
+    <loc>https://humanmetrix.co.uk/articles/role-of-psychometric-testing-in-recruitment</loc>
+    <lastmod>2025-11-28</lastmod>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>
