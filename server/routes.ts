@@ -1400,13 +1400,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const elapsed = Math.floor((now - startTime) / 1000);
           const remaining = Math.max(0, timeLimit - elapsed);
           
-          // If time has expired and assessment is still in progress, give them a grace period
-          // to continue (additional 5 minutes) rather than auto-submitting empty assessment
+          // If time has expired, give full time again (not just grace period)
+          // This allows users to properly complete assessments that timed out
           if (remaining <= 0 && existing.status === 'in_progress') {
-            // Reset the timer to give them 5 more minutes to complete
-            const gracePeriod = 300; // 5 minutes grace period
-            console.log(`Assessment ${existing.id} time expired - granting ${gracePeriod}s grace period`);
-            return res.json({ ...existing, timeRemaining: gracePeriod });
+            // Give full time limit back to allow proper completion
+            console.log(`[START ASSESSMENT] Invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ ...existing, timeRemaining: timeLimit });
           }
           
           return res.json({ ...existing, timeRemaining: remaining });
@@ -1436,32 +1435,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Handle purchase-based assessment (existing logic)
+      console.log(`[START ASSESSMENT] Looking for purchaseItem ${purchaseItemId} for user ${userId}`);
+      
       const [item] = await db.select().from(purchaseItems).where(eq(purchaseItems.id, purchaseItemId)).limit(1);
       if (!item) {
+        console.log(`[START ASSESSMENT] Purchase item not found: ${purchaseItemId}`);
         return res.status(404).json({ message: "Purchase item not found" });
       }
+      
+      console.log(`[START ASSESSMENT] Found purchase item:`, {
+        id: item.id,
+        assessmentType: item.assessmentType,
+        status: item.status,
+        purchaseId: item.purchaseId
+      });
 
       // Verify item status is ready
       if (item.status !== 'ready') {
+        console.log(`[START ASSESSMENT] Item not ready: ${item.status}`);
         return res.status(400).json({ message: "Assessment not ready to start" });
       }
 
       // Verify purchase belongs to user
       const purchase = await storage.getPurchase(item.purchaseId);
       if (!purchase || purchase.userId !== userId) {
+        console.log(`[START ASSESSMENT] Purchase mismatch. Purchase userId: ${purchase?.userId}, Request userId: ${userId}`);
         return res.status(403).json({ message: "Unauthorized access to this assessment" });
       }
 
       // Check if assessment already started
       const existing = await storage.getResultByPurchaseItem(purchaseItemId);
+      console.log(`[START ASSESSMENT] Existing result lookup for purchaseItemId ${purchaseItemId}:`, existing ? {
+        id: existing.id,
+        status: existing.status,
+        userId: existing.userId,
+        assessmentType: existing.assessmentType,
+        startedAt: existing.startedAt
+      } : 'null');
+      
       if (existing) {
         // Verify existing result belongs to current user
         if (existing.userId !== userId) {
+          console.log(`[START ASSESSMENT] User mismatch! Existing userId: ${existing.userId}, Request userId: ${userId}`);
           return res.status(403).json({ message: "Unauthorized access to this assessment" });
         }
         
         // If already completed, don't allow restart
         if (existing.status === 'completed') {
+          console.log(`[START ASSESSMENT] Assessment already completed: ${existing.id}`);
           return res.status(400).json({ message: "Assessment already completed" });
         }
         
@@ -1472,13 +1493,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const elapsed = Math.floor((now - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
         
-        // If time has expired and assessment is still in progress, give them a grace period
-        // to continue (additional 5 minutes) rather than auto-submitting empty assessment
+        console.log(`[START ASSESSMENT] Time calculation: timeLimit=${timeLimit}s, elapsed=${elapsed}s, remaining=${remaining}s`);
+        
+        // If time has expired, give full time again (not just grace period)
+        // This allows users to properly complete assessments that timed out
         if (remaining <= 0 && existing.status === 'in_progress') {
-          // Reset the timer to give them 5 more minutes to complete
-          const gracePeriod = 300; // 5 minutes grace period
-          console.log(`Assessment ${existing.id} time expired - granting ${gracePeriod}s grace period`);
-          return res.json({ ...existing, timeRemaining: gracePeriod });
+          // Give full time limit back to allow proper completion
+          console.log(`[START ASSESSMENT] Assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+          return res.json({ ...existing, timeRemaining: timeLimit });
         }
         
         return res.json({ ...existing, timeRemaining: remaining });
