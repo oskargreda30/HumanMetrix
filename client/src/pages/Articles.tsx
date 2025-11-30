@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Calendar, Clock, ArrowRight } from "lucide-react";
+import { Calendar, Clock, ArrowRight, FileText } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { SEO } from "@/lib/seo";
@@ -24,6 +24,21 @@ const articles = [
     readTime: "7 min read",
     date: "November 28, 2025",
     featured: true,
+  },
+];
+
+const whitePapers = [
+  {
+    id: "white-paper-fit-test",
+    title: "FIT Test Design – White Paper",
+    description: "Explore the scientific rationale behind the FIT psychometric assessment — a 15-question instrument measuring six high-impact professional skills essential for modern AI work performance.",
+    category: "Research",
+  },
+  {
+    id: "white-paper-ai-readiness-test",
+    title: "AI Readiness Test – White Paper",
+    description: "Discover the scientific foundation of our AI Readiness assessment, designed to measure nine critical skills positioning individuals for success in an AI-driven professional landscape.",
+    category: "Research",
   },
 ];
 
@@ -101,6 +116,54 @@ export default function Articles() {
                 </Card>
               </Link>
             ))}
+          </div>
+
+          <div className="mt-16 pt-12 border-t border-slate-200">
+            <div className="text-center mb-8">
+              <Badge variant="outline" className="mb-4 text-blue-600 border-blue-300">
+                Technical Documentation
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
+                White Papers
+              </h2>
+              <p className="text-slate-600 max-w-xl mx-auto">
+                In-depth scientific documentation on our assessment methodologies and psychometric foundations
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {whitePapers.map((paper) => (
+                <Link key={paper.id} href={`/articles/${paper.id}`}>
+                  <Card 
+                    className="group cursor-pointer border-slate-200 hover-elevate transition-all duration-300 h-full"
+                    data-testid={`card-whitepaper-${paper.id}`}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-blue-100 rounded-lg shrink-0">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {paper.category}
+                            </Badge>
+                          </div>
+                          
+                          <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                            {paper.title}
+                          </h3>
+                          
+                          <p className="text-slate-600 text-sm line-clamp-3">
+                            {paper.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </main>

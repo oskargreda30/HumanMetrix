@@ -69,4 +69,18 @@
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
   </url>
+  
+  <url>
+    <loc>https://humanmetrix.co.uk/articles/white-paper-fit-test</loc>
+    <lastmod>2025-11-30</lastmod>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  
+  <url>
+    <loc>https://humanmetrix.co.uk/articles/white-paper-ai-readiness-test</loc>
+    <lastmod>2025-11-30</lastmod>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>
