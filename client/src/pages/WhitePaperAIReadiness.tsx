@@ -86,67 +86,157 @@ export default function WhitePaperAIReadiness() {
               The assessment evaluates nine interconnected skills deemed vital for navigating and excelling in the contemporary AI-integrated workplace:
             </p>
 
-            <div className="grid gap-3 mb-8">
+            <div className="grid gap-4 mb-8">
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">1. AI Literacy & Prompt Engineering</h4>
-                  <p className="text-slate-600 text-sm mb-0">Understanding AI systems, interacting effectively, and evaluating outputs critically using the CLEAR principles.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">1. AI Literacy & Prompt Engineering</h4>
+                  <p className="text-slate-600 text-sm mb-3">Understanding AI systems, interacting effectively, and evaluating outputs critically using the CLEAR principles.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Understanding how AI models work, their capabilities, and limitations</li>
+                      <li>• Crafting effective prompts using the CLEAR framework: Concise, Logical, Explicit, Adaptive, Reflective</li>
+                      <li>• Critically evaluating AI-generated outputs for accuracy, bias, and relevance</li>
+                      <li>• Iteratively refining prompts to achieve desired outcomes</li>
+                      <li>• Recognising when AI assistance is appropriate versus when human judgment is required</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">2. Technical Fundamentals</h4>
-                  <p className="text-slate-600 text-sm mb-0">Core technical knowledge required to work alongside AI systems effectively.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">2. Technical Fundamentals</h4>
+                  <p className="text-slate-600 text-sm mb-3">Core technical knowledge required to work alongside AI systems effectively.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Basic understanding of machine learning concepts and terminology</li>
+                      <li>• Familiarity with common AI tools, platforms, and interfaces</li>
+                      <li>• Ability to integrate AI solutions into existing workflows and systems</li>
+                      <li>• Understanding of APIs, automation, and digital infrastructure</li>
+                      <li>• Awareness of technical constraints and resource requirements of AI systems</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">3. Data Fluency</h4>
-                  <p className="text-slate-600 text-sm mb-0">Ability to interpret, analyse, and draw insights from data.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">3. Data Fluency</h4>
+                  <p className="text-slate-600 text-sm mb-3">Ability to interpret, analyse, and draw insights from data.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Reading, interpreting, and questioning data visualisations and reports</li>
+                      <li>• Understanding data quality, sources, and potential biases in datasets</li>
+                      <li>• Drawing meaningful conclusions from quantitative and qualitative information</li>
+                      <li>• Communicating data-driven insights to technical and non-technical audiences</li>
+                      <li>• Recognising patterns, trends, and anomalies that inform decision-making</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">4. Critical Thinking & Problem-Solving</h4>
-                  <p className="text-slate-600 text-sm mb-0">Analytical reasoning and structured approach to complex challenges.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">4. Critical Thinking & Problem-Solving</h4>
+                  <p className="text-slate-600 text-sm mb-3">Analytical reasoning and structured approach to complex challenges.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Breaking down complex problems into manageable components</li>
+                      <li>• Evaluating information objectively and identifying logical fallacies</li>
+                      <li>• Generating and testing hypotheses systematically</li>
+                      <li>• Weighing trade-offs and making decisions under uncertainty</li>
+                      <li>• Applying structured frameworks to novel situations</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">5. Adaptability & Continuous Learning</h4>
-                  <p className="text-slate-600 text-sm mb-0">Flexibility and commitment to ongoing skill development.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">5. Adaptability & Continuous Learning</h4>
+                  <p className="text-slate-600 text-sm mb-3">Flexibility and commitment to ongoing skill development.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Embracing change and adjusting quickly to new tools, processes, or expectations</li>
+                      <li>• Proactively seeking opportunities to learn and upskill</li>
+                      <li>• Remaining open to feedback and using it constructively</li>
+                      <li>• Unlearning outdated practices when better alternatives emerge</li>
+                      <li>• Maintaining curiosity and a growth-oriented mindset in rapidly evolving environments</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">6. Collaboration & Communication</h4>
-                  <p className="text-slate-600 text-sm mb-0">Working effectively with others and conveying ideas clearly.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">6. Collaboration & Communication</h4>
+                  <p className="text-slate-600 text-sm mb-3">Working effectively with others and conveying ideas clearly.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Articulating complex technical concepts to diverse audiences</li>
+                      <li>• Collaborating across teams, disciplines, and organisational boundaries</li>
+                      <li>• Active listening and incorporating multiple perspectives into solutions</li>
+                      <li>• Managing conflicts constructively and building consensus</li>
+                      <li>• Facilitating productive human-AI collaboration within teams</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">7. Responsible AI & Ethical Awareness</h4>
-                  <p className="text-slate-600 text-sm mb-0">Understanding ethical implications and responsible use of AI technology.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">7. Responsible AI & Ethical Awareness</h4>
+                  <p className="text-slate-600 text-sm mb-3">Understanding ethical implications and responsible use of AI technology.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Recognising potential biases, fairness issues, and unintended consequences in AI systems</li>
+                      <li>• Understanding privacy, security, and data governance requirements</li>
+                      <li>• Making principled decisions when AI recommendations conflict with ethical standards</li>
+                      <li>• Advocating for transparency and accountability in AI deployment</li>
+                      <li>• Balancing efficiency gains with human impact and societal considerations</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">8. Creativity & Innovation</h4>
-                  <p className="text-slate-600 text-sm mb-0">Generating novel ideas and approaches in an AI-augmented environment.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">8. Creativity & Innovation</h4>
+                  <p className="text-slate-600 text-sm mb-3">Generating novel ideas and approaches in an AI-augmented environment.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Generating original ideas that go beyond AI-suggested solutions</li>
+                      <li>• Combining AI capabilities with human intuition to create novel approaches</li>
+                      <li>• Challenging conventional thinking and exploring unconventional possibilities</li>
+                      <li>• Experimenting with new tools and methods to improve outcomes</li>
+                      <li>• Identifying opportunities for innovation that AI alone cannot recognise</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="border-slate-200">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-slate-900 mb-1">9. Domain Expertise</h4>
-                  <p className="text-slate-600 text-sm mb-0">Deep knowledge in specific professional areas that AI enhances rather than replaces.</p>
+                <CardContent className="p-5">
+                  <h4 className="font-semibold text-slate-900 mb-2">9. Domain Expertise</h4>
+                  <p className="text-slate-600 text-sm mb-3">Deep knowledge in specific professional areas that AI enhances rather than replaces.</p>
+                  <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
+                    <p className="text-slate-700 text-sm mb-2"><strong>Key components:</strong></p>
+                    <ul className="text-slate-600 space-y-1 text-sm">
+                      <li>• Applying specialised knowledge to guide and validate AI outputs</li>
+                      <li>• Understanding industry-specific regulations, standards, and best practices</li>
+                      <li>• Recognising nuances and edge cases that require human expertise</li>
+                      <li>• Translating domain requirements into effective AI applications</li>
+                      <li>• Maintaining and deepening expertise as AI transforms the field</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
             </div>
