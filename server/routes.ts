@@ -1514,13 +1514,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Submit assessment answers
   app.post("/api/assessments/:id/submit", isAuthenticated, async (req: any, res) => {
+    const { id } = req.params;
+    console.log(`[SUBMIT DEBUG] Starting submission for assessment ${id}, user ${req.user?.id}`);
+    
     try {
-      const { id } = req.params;
       const { answers } = req.body;
       const userId = req.user.id;
+      
+      console.log(`[SUBMIT DEBUG] Answers received:`, JSON.stringify(answers));
 
       const result = await storage.getAssessmentResult(id);
+      console.log(`[SUBMIT DEBUG] Assessment result found:`, result ? {
+        id: result.id,
+        userId: result.userId,
+        assessmentType: result.assessmentType,
+        status: result.status,
+        purchaseItemId: result.purchaseItemId
+      } : 'null');
+      
       if (!result || result.userId !== userId) {
+        console.log(`[SUBMIT DEBUG] Assessment not found or user mismatch. Result userId: ${result?.userId}, Request userId: ${userId}`);
         return res.status(404).json({ message: "Assessment not found" });
       }
 
@@ -1559,8 +1572,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIReadinessScores(answers);
         totalScore = null; // No total score for AI Readiness - just individual skills
       } else if (result.assessmentType === ASSESSMENT_TYPES.AIQ) {
+        console.log(`[SUBMIT DEBUG] Calculating AIQ scores for assessment ${id}`);
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
+        console.log(`[SUBMIT DEBUG] AIQ scores calculated:`, { scores, totalScore });
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
         // For Prompt Architecture, use OpenAI GPT evaluation
         // This includes transactional storage of evaluations AND status update
@@ -1611,6 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // For other assessment types, update assessment result
+      console.log(`[SUBMIT DEBUG] Updating database for assessment ${id}`);
       await db.update(assessmentResults)
         .set({
           answers,
@@ -1622,12 +1638,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(assessmentResults.id, id));
 
+      console.log(`[SUBMIT DEBUG] Database update successful for assessment ${id}`);
       res.json({ success: true, scores, totalScore, evaluations });
     } catch (error: any) {
-      console.error("Error submitting assessment:", {
+      console.error(`[SUBMIT ERROR] Assessment ${id} failed:`, {
         error: error.message,
+        code: error.code,
         stack: error.stack,
-        assessmentId: req.params.id,
+        assessmentId: id,
         userId: req.user?.id
       });
       res.status(500).json({ message: "Failed to submit assessment. Please try again." });
