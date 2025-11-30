@@ -16,6 +16,7 @@ import {
   Clock 
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
+import { SEO } from "@/lib/seo";
 
 const features = [
   {
@@ -80,6 +81,11 @@ export default function ForEmployers() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
+      <SEO 
+        title="For Employers - Enterprise Recruitment Assessments"
+        description="Streamline your hiring with AI-powered candidate assessments. Compare candidates, track progress, and make data-driven hiring decisions with HumanMetrix."
+        canonical="/for-employers"
+      />
       {/* Background image with light grey overlay */}
       <div className="fixed inset-0 z-0">
         <div 

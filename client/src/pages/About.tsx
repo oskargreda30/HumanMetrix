@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Target, Users, Award, TrendingUp } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
+import { SEO } from "@/lib/seo";
 
 const values = [
   {
@@ -29,6 +30,11 @@ const values = [
 export default function About() {
   return (
     <div className="min-h-screen flex flex-col relative">
+      <SEO 
+        title="About Us"
+        description="Learn about HumanMetrix - the professional AI-powered assessment platform for recruitment and career development. We measure behavioral skills and AI literacy for the modern workforce."
+        canonical="/about"
+      />
       {/* Background image with light grey overlay */}
       <div className="fixed inset-0 z-0">
         <div 

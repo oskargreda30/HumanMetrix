@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
 import { useState } from "react";
 import CheckoutModal from "@/components/CheckoutModal";
+import { SEO, ProductSchema } from "@/lib/seo";
 
 const assessments = [
   {
@@ -62,6 +63,20 @@ export default function Assessments() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
+      <SEO 
+        title="Professional AI Assessments"
+        description="Take our enterprise-grade assessments: FIT (behavioral skills), AI Readiness, Prompt Architecture, and AIQ (AI ethics). Results suitable for CV inclusion."
+        canonical="/assessments"
+      />
+      {assessments.map((a) => (
+        <ProductSchema 
+          key={a.id}
+          name={a.title}
+          description={a.description}
+          price={parseFloat(a.price.replace('£', ''))}
+          url={`/assessments#${a.id}`}
+        />
+      ))}
       <Navigation />
       <main className="flex-grow py-8 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
