@@ -131,12 +131,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Reflects an individual's ability to take ownership, act decisively, and initiate progress without relying on excessive guidance.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations used in item design:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Taking initiative instead of waiting for direction</li>
-                      <li>• Moving tasks forward proactively, even when information is incomplete</li>
-                      <li>• Addressing obstacles independently rather than deferring action</li>
-                      <li>• Choosing decisive and constructive steps rather than passive approaches</li>
-                      <li>• Demonstrating personal responsibility for outcomes</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Taking initiative instead of waiting for direction</li>
+                      <li>Moving tasks forward proactively, even when information is incomplete</li>
+                      <li>Addressing obstacles independently rather than deferring action</li>
+                      <li>Choosing decisive and constructive steps rather than passive approaches</li>
+                      <li>Demonstrating personal responsibility for outcomes</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -148,12 +148,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Captures a person's willingness to seek information, question assumptions, and revise their understanding when presented with new evidence.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Asking questions to understand context more fully</li>
-                      <li>• Actively seeking new or alternative perspectives</li>
-                      <li>• Challenging outdated assumptions or habitual thinking</li>
-                      <li>• Demonstrating openness to replacing old approaches with better ones</li>
-                      <li>• Showing interest in learning, exploration, and deeper understanding</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Asking questions to understand context more fully</li>
+                      <li>Actively seeking new or alternative perspectives</li>
+                      <li>Challenging outdated assumptions or habitual thinking</li>
+                      <li>Demonstrating openness to replacing old approaches with better ones</li>
+                      <li>Showing interest in learning, exploration, and deeper understanding</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -165,12 +165,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Represents the ability to remain stable, effective, and constructive when situations become uncertain, stressful, or unclear.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Staying composed when priorities shift or instructions are vague</li>
-                      <li>• Responding constructively to stress, setbacks, or time pressure</li>
-                      <li>• Continuing progress despite unclear conditions</li>
-                      <li>• Maintaining emotional regulation during unexpected challenges</li>
-                      <li>• Choosing stabilising, problem-solving actions rather than reactive ones</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Staying composed when priorities shift or instructions are vague</li>
+                      <li>Responding constructively to stress, setbacks, or time pressure</li>
+                      <li>Continuing progress despite unclear conditions</li>
+                      <li>Maintaining emotional regulation during unexpected challenges</li>
+                      <li>Choosing stabilising, problem-solving actions rather than reactive ones</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -182,12 +182,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Combines emotional understanding with fair, principled decision-making that considers the impact on others.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Recognising and respecting the needs, feelings, or perspectives of others</li>
-                      <li>• Weighing human consequences when making decisions</li>
-                      <li>• Acting with fairness, consistency, and integrity</li>
-                      <li>• Choosing compassionate behaviour that does not compromise standards</li>
-                      <li>• Avoiding actions that disadvantage or disregard others</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Recognising and respecting the needs, feelings, or perspectives of others</li>
+                      <li>Weighing human consequences when making decisions</li>
+                      <li>Acting with fairness, consistency, and integrity</li>
+                      <li>Choosing compassionate behaviour that does not compromise standards</li>
+                      <li>Avoiding actions that disadvantage or disregard others</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -199,12 +199,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Reflects how an individual approaches learning, challenge, and feedback, as well as their belief in the potential for improvement.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Viewing difficult tasks as opportunities for growth</li>
-                      <li>• Responding positively to constructive feedback</li>
-                      <li>• Persisting through challenge instead of giving up</li>
-                      <li>• Demonstrating willingness to adjust approach based on new input</li>
-                      <li>• Showing belief in development rather than fixed limitations</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Viewing difficult tasks as opportunities for growth</li>
+                      <li>Responding positively to constructive feedback</li>
+                      <li>Persisting through challenge instead of giving up</li>
+                      <li>Demonstrating willingness to adjust approach based on new input</li>
+                      <li>Showing belief in development rather than fixed limitations</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -216,12 +216,12 @@ export default function WhitePaperFIT() {
                   <p className="text-slate-600 text-sm mb-3">Refers to the ability to adapt communication and behaviour across diverse individuals and social contexts.</p>
                   <div className="bg-slate-50 border-l-4 border-cyan-500 p-3">
                     <p className="text-slate-700 text-sm mb-2"><strong>Behavioural manifestations:</strong></p>
-                    <ul className="text-slate-600 space-y-1 text-sm">
-                      <li>• Adjusting communication style to suit different people</li>
-                      <li>• Navigating interpersonal friction professionally and calmly</li>
-                      <li>• Collaborating constructively with varied personalities</li>
-                      <li>• Maintaining respectful, appropriate conduct even under pressure</li>
-                      <li>• Demonstrating flexibility in how relationships are managed</li>
+                    <ul className="text-slate-600 space-y-1 text-sm list-disc list-inside">
+                      <li>Adjusting communication style to suit different people</li>
+                      <li>Navigating interpersonal friction professionally and calmly</li>
+                      <li>Collaborating constructively with varied personalities</li>
+                      <li>Maintaining respectful, appropriate conduct even under pressure</li>
+                      <li>Demonstrating flexibility in how relationships are managed</li>
                     </ul>
                   </div>
                 </CardContent>
