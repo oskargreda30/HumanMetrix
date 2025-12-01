@@ -147,6 +147,140 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   return { label: 'Needs Development', color: [239, 68, 68] };
 }
 
+// Helper to generate role-based recommendations based on assessment profile
+interface RoleRecommendations {
+  suitableRoles: string[];
+  thrivingEnvironments: string[];
+  roleStrengths: string[];
+}
+
+function generateRoleRecommendations(
+  skills: SkillData[],
+  avgScore: number,
+  fitScore: number | null,
+  aiReadinessScore: number | null,
+  promptArchScore: number | null,
+  aiqScore: number | null
+): RoleRecommendations {
+  // Determine strongest assessment area
+  const assessmentScores: { name: string; score: number }[] = [];
+  if (fitScore !== null) assessmentScores.push({ name: 'fit', score: fitScore });
+  if (aiReadinessScore !== null) assessmentScores.push({ name: 'ai_readiness', score: aiReadinessScore });
+  if (promptArchScore !== null) assessmentScores.push({ name: 'prompt_architecture', score: promptArchScore });
+  if (aiqScore !== null) assessmentScores.push({ name: 'aiq', score: aiqScore });
+  
+  assessmentScores.sort((a, b) => b.score - a.score);
+  const strongestArea = assessmentScores[0]?.name || 'fit';
+  const secondStrongest = assessmentScores[1]?.name;
+  
+  // Role mappings based on strongest assessment areas
+  const roleMap: Record<string, string[]> = {
+    fit: [
+      'Team Leader – Strong interpersonal skills and adaptability suit leadership positions.',
+      'Project Manager – Collaborative nature and resilience enable effective project delivery.',
+      'HR Business Partner – People-focused skills translate well to human resources functions.',
+      'Customer Success Manager – Relationship-building abilities drive client retention.',
+    ],
+    ai_readiness: [
+      'Business Analyst – Systematic thinking enables data-driven decision making.',
+      'Digital Transformation Lead – AI literacy positions them to drive modernization initiatives.',
+      'Innovation Manager – Technical awareness combined with strategic thinking suits innovation roles.',
+      'Strategy Consultant – Ability to evaluate AI opportunities informs business recommendations.',
+    ],
+    prompt_architecture: [
+      'Technical Writer – Clear communication skills translate complex concepts effectively.',
+      'Content Strategist – Structured thinking enables cohesive content planning.',
+      'Knowledge Manager – Information organization abilities support institutional learning.',
+      'Communications Specialist – Precision in language suits stakeholder engagement.',
+    ],
+    aiq: [
+      'Compliance Officer – Ethical judgment supports regulatory adherence.',
+      'Risk Analyst – Principled decision-making identifies potential issues early.',
+      'Quality Assurance Lead – Attention to standards ensures consistent outputs.',
+      'Policy Advisor – Ethical reasoning informs governance recommendations.',
+    ],
+  };
+  
+  // Environment mappings
+  const environmentMap: Record<string, string[]> = {
+    fit: [
+      'Collaborative team settings with regular interaction',
+      'Dynamic environments requiring adaptability',
+      'Roles involving mentoring or coaching others',
+      'Organizations valuing interpersonal relationships',
+    ],
+    ai_readiness: [
+      'Forward-thinking organizations embracing technology',
+      'Data-driven decision-making cultures',
+      'Environments encouraging continuous learning',
+      'Roles bridging technical and business functions',
+    ],
+    prompt_architecture: [
+      'Environments requiring clear documentation',
+      'Roles involving training or knowledge transfer',
+      'Organizations prioritizing communication excellence',
+      'Settings requiring translation of complex information',
+    ],
+    aiq: [
+      'Organizations with strong ethical frameworks',
+      'Regulated industries requiring compliance focus',
+      'Environments valuing transparency and accountability',
+      'Roles requiring careful risk assessment',
+    ],
+  };
+  
+  // Strength mappings
+  const strengthMap: Record<string, string[]> = {
+    fit: [
+      'Building and maintaining productive working relationships',
+      'Adapting to changing priorities and environments',
+      'Facilitating collaboration across diverse teams',
+      'Navigating ambiguity with resilience',
+    ],
+    ai_readiness: [
+      'Evaluating technology solutions for business problems',
+      'Identifying opportunities for process improvement',
+      'Bridging communication between technical and non-technical stakeholders',
+      'Staying current with emerging tools and methodologies',
+    ],
+    prompt_architecture: [
+      'Articulating requirements with precision and clarity',
+      'Structuring information for maximum comprehension',
+      'Creating documentation that drives consistent understanding',
+      'Translating complex concepts into actionable guidance',
+    ],
+    aiq: [
+      'Identifying potential risks before they become problems',
+      'Making principled decisions under uncertainty',
+      'Evaluating options against ethical frameworks',
+      'Building trust through consistent, fair judgment',
+    ],
+  };
+  
+  // Select roles (primary area + blend with secondary if available)
+  let suitableRoles = roleMap[strongestArea]?.slice(0, 3) || roleMap.fit.slice(0, 3);
+  
+  // Select environments (blend of top two areas)
+  let thrivingEnvironments = environmentMap[strongestArea]?.slice(0, 3) || environmentMap.fit.slice(0, 3);
+  if (secondStrongest && environmentMap[secondStrongest]) {
+    thrivingEnvironments = [
+      ...environmentMap[strongestArea].slice(0, 2),
+      environmentMap[secondStrongest][0],
+    ];
+  }
+  
+  // Select strengths (blend of top two areas)
+  let roleStrengths = strengthMap[strongestArea]?.slice(0, 3) || strengthMap.fit.slice(0, 3);
+  if (secondStrongest && strengthMap[secondStrongest]) {
+    roleStrengths = [
+      ...strengthMap[strongestArea].slice(0, 2),
+      strengthMap[secondStrongest][0],
+    ];
+  }
+  
+  return { suitableRoles, thrivingEnvironments, roleStrengths };
+}
+
 // Helper to get Prompt Architecture level color (3-color blue gradient)
 function getPromptLevelColor(level: number): [number, number, number] {
   if (level <= 2) return [147, 197, 253];  // Light blue for beginner levels
@@ -1173,39 +1307,151 @@ export async function exportEnhancedCandidatePDF(
     yPos += 10; // Add more spacing if continuing on same page
   }
   
-  // Recommendations Section
+  // Calculate assessment-level scores for role recommendations
+  const fitAvgScore = fitResultSummary?.scores 
+    ? Math.round(Object.values(fitResultSummary.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(fitResultSummary.scores).length)
+    : null;
+  const aiReadinessAvgScore = aiReadinessResultSummary?.scores
+    ? Math.round(Object.values(aiReadinessResultSummary.scores).reduce((sum: number, score: any) => sum + score, 0) / Object.values(aiReadinessResultSummary.scores).length)
+    : null;
+  const promptArchAvgScore = promptArchResultSummary?.totalScore ?? null;
+  const aiqAvgScore = aiqResultSummary?.totalScore ?? null;
+  
+  // Generate role-based recommendations
+  const roleRecs = generateRoleRecommendations(
+    skills,
+    avgScore,
+    fitAvgScore,
+    aiReadinessAvgScore,
+    promptArchAvgScore,
+    aiqAvgScore
+  );
+  
+  // Recommendations Section Header
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
-  yPos += 5;
+  yPos += 3;
   
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
+  const recBoxMargin = 20;
+  const recBoxWidth = (pageWidth - recBoxMargin * 2 - 5) / 2; // Two columns with 5mm gap
+  const recBoxPadding = 4;
+  const recLineHeight = 3.5;
   
+  // Helper to draw a recommendation box
+  const drawRecBox = (
+    title: string,
+    items: string[],
+    x: number,
+    y: number,
+    width: number,
+    titleColor: [number, number, number]
+  ): number => {
+    // Calculate box height based on content
+    pdf.setFontSize(7);
+    let contentHeight = 8; // Title height
+    items.forEach(item => {
+      const lines = pdf.splitTextToSize(`• ${item}`, width - recBoxPadding * 2);
+      contentHeight += lines.length * recLineHeight + 1;
+    });
+    const recBoxHeight = contentHeight + recBoxPadding;
+    
+    // Draw box background
+    pdf.setFillColor(249, 250, 251);
+    pdf.setDrawColor(229, 231, 235);
+    pdf.roundedRect(x, y, width, recBoxHeight, 2, 2, 'FD');
+    
+    // Draw title
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+    pdf.text(title, x + recBoxPadding, y + 5);
+    
+    // Draw items
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    let itemY = y + 9;
+    items.forEach(item => {
+      const lines = pdf.splitTextToSize(`• ${item}`, width - recBoxPadding * 2);
+      lines.forEach((line: string) => {
+        pdf.text(line, x + recBoxPadding, itemY);
+        itemY += recLineHeight;
+      });
+      itemY += 1;
+    });
+    
+    return recBoxHeight;
+  };
+  
+  // Check if we need a page break (need about 120mm for all boxes)
+  if (yPos > pageHeight - 120) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 45;
+  }
+  
+  // Row 1: Most Suitable Roles (left) and Where Candidate Would Thrive (right)
+  const leftX = recBoxMargin;
+  const rightX = recBoxMargin + recBoxWidth + 5;
+  
+  const rolesHeight = drawRecBox(
+    'MOST SUITABLE ROLES',
+    roleRecs.suitableRoles,
+    leftX,
+    yPos,
+    recBoxWidth,
+    [30, 58, 138] // Dark blue
+  );
+  
+  const thrivingHeight = drawRecBox(
+    'WHERE THIS CANDIDATE WOULD THRIVE',
+    roleRecs.thrivingEnvironments,
+    rightX,
+    yPos,
+    recBoxWidth,
+    [16, 185, 129] // Green
+  );
+  
+  yPos += Math.max(rolesHeight, thrivingHeight) + 4;
+  
+  // Check for page break before second row
+  if (yPos > pageHeight - 60) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 45;
+  }
+  
+  // Row 2: Role Strengths (left) and Development Recommendations (right)
+  const strengthsHeight = drawRecBox(
+    'ROLE STRENGTHS',
+    roleRecs.roleStrengths,
+    leftX,
+    yPos,
+    recBoxWidth,
+    [139, 92, 246] // Purple
+  );
+  
+  // Development recommendations
   const topStrengths = [...skills].sort((a, b) => b.score - a.score).slice(0, 2);
-  const developmentAreas = [...skills].filter(s => s.score > 0).sort((a, b) => a.score - b.score).slice(0, 2);
-  
-  const candidateRecs = [
-    `• Leverage your strongest areas (${topStrengths.map(s => s.name).join(', ')}) to drive immediate impact in your role.`,
-    developmentAreas.length > 0 
-      ? `• Focus development efforts on ${developmentAreas.map(s => s.name).join(' and ')}, which will significantly enhance your overall effectiveness.`
-      : '• Continue building on your strengths across all assessed competencies.',
+  const developmentItems = [
+    `Leverage strongest areas (${topStrengths.map(s => s.name).join(', ')}) to drive immediate impact.`,
     avgScore >= 70 
-      ? '• Consider mentoring others in AI adoption and best practices, as your strong foundation positions you as a potential champion.'
-      : '• Seek out formal training programs or workshops in AI literacy and prompt engineering to accelerate your AI competency development.',
+      ? 'Well-positioned to mentor others in AI adoption and best practices.'
+      : 'Formal training in AI literacy would accelerate professional development.',
+    'Continue building on strengths across all assessed competencies.',
   ];
   
-  candidateRecs.forEach((rec) => {
-    if (yPos > pageHeight - 40) {
-      pdf.addPage();
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    const recLines = pdf.splitTextToSize(rec, pageWidth - 55);
-    recLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 4));
-    });
-    yPos += recLines.length * 4 + 2;
-  });
+  const devHeight = drawRecBox(
+    'DEVELOPMENT RECOMMENDATIONS',
+    developmentItems,
+    rightX,
+    yPos,
+    recBoxWidth,
+    [234, 88, 12] // Orange
+  );
+  
+  yPos += Math.max(strengthsHeight, devHeight) + 4;
   
   pdf.setTextColor(0, 0, 0);
   
