@@ -32,6 +32,7 @@ import Terms from "@/pages/Terms";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
 import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
+import Subscribe from "@/pages/Subscribe";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/payment-callback" component={PaymentCallback} />
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
+      <Route path="/subscribe" component={Subscribe} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>
