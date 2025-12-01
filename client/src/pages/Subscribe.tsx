@@ -58,7 +58,7 @@ export default function Subscribe() {
   return (
     <>
       <SEO
-        title="Subscribe for Career Insights | HumanMetrix"
+        title="Career News & Insights | HumanMetrix"
         description="Get free materials on career trends, insights, career tips, and exclusive offers from HumanMetrix."
       />
       

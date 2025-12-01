@@ -83,7 +83,7 @@ function Router() {
       <Route path="/payment-callback" component={PaymentCallback} />
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
-      <Route path="/subscribe" component={Subscribe} />
+      <Route path="/news" component={Subscribe} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>
