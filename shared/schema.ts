@@ -327,6 +327,26 @@ export const insertReportExportSchema = createInsertSchema(reportExports).omit({
 export type InsertReportExport = z.infer<typeof insertReportExportSchema>;
 export type ReportExport = typeof reportExports.$inferSelect;
 
+// Marketing Opt-ins for email capture
+export const marketingOptins = pgTable("marketing_optins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  source: varchar("source").default("job_ad"), // where they came from (job_ad, website, etc.)
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  consentGiven: boolean("consent_given").notNull().default(true),
+  optedInAt: timestamp("opted_in_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+});
+
+export const insertMarketingOptinSchema = createInsertSchema(marketingOptins).omit({
+  id: true,
+  optedInAt: true,
+});
+
+export type InsertMarketingOptin = z.infer<typeof insertMarketingOptinSchema>;
+export type MarketingOptin = typeof marketingOptins.$inferSelect;
+
 // Assessment type constants
 export const ASSESSMENT_TYPES = {
   FIT: "fit",
