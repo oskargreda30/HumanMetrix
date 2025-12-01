@@ -84,7 +84,6 @@ export default function PricingSection() {
                     "Percentile rankings and benchmarks",
                     "Results suitable for CV inclusion",
                     "Lifetime access to your results",
-                    "Email delivery of completion certificate",
                   ].map((feature, index) => (
                     <div key={index} className="flex items-start gap-2 md:gap-3">
                       <Check className="h-3 w-3 md:h-5 md:w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
