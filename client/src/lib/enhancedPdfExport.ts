@@ -1336,28 +1336,31 @@ export async function exportEnhancedCandidatePDF(
   const recBoxPadding = 4;
   const recLineHeight = 3.5;
   
-  // Helper to draw a recommendation box
-  const drawRecBox = (
-    title: string,
-    items: string[],
-    x: number,
-    y: number,
-    width: number,
-    titleColor: [number, number, number]
-  ): number => {
-    // Calculate box height based on content
+  // Helper to calculate box height for content
+  const calculateBoxHeight = (items: string[], width: number): number => {
     pdf.setFontSize(7);
     let contentHeight = 8; // Title height
     items.forEach(item => {
       const lines = pdf.splitTextToSize(`• ${item}`, width - recBoxPadding * 2);
       contentHeight += lines.length * recLineHeight + 1;
     });
-    const recBoxHeight = contentHeight + recBoxPadding;
-    
-    // Draw box background
+    return contentHeight + recBoxPadding;
+  };
+  
+  // Helper to draw a recommendation box with fixed height
+  const drawRecBox = (
+    title: string,
+    items: string[],
+    x: number,
+    y: number,
+    width: number,
+    fixedHeight: number,
+    titleColor: [number, number, number]
+  ): void => {
+    // Draw box background with fixed height
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(x, y, width, recBoxHeight, 2, 2, 'FD');
+    pdf.roundedRect(x, y, width, fixedHeight, 2, 2, 'FD');
     
     // Draw title
     pdf.setFontSize(8);
@@ -1378,12 +1381,30 @@ export async function exportEnhancedCandidatePDF(
       });
       itemY += 1;
     });
-    
-    return recBoxHeight;
   };
   
-  // Check if we need a page break (need about 120mm for all boxes)
-  if (yPos > pageHeight - 120) {
+  // Development recommendations content
+  const topStrengths = [...skills].sort((a, b) => b.score - a.score).slice(0, 2);
+  const developmentItems = [
+    `Leverage strongest areas (${topStrengths.map(s => s.name).join(', ')}) to drive immediate impact.`,
+    avgScore >= 70 
+      ? 'Well-positioned to mentor others in AI adoption and best practices.'
+      : 'Formal training in AI literacy would accelerate professional development.',
+    'Continue building on strengths across all assessed competencies.',
+  ];
+  
+  // Calculate heights for all 4 boxes to find the maximum
+  const rolesCalcHeight = calculateBoxHeight(roleRecs.suitableRoles, recBoxWidth);
+  const thrivingCalcHeight = calculateBoxHeight(roleRecs.thrivingEnvironments, recBoxWidth);
+  const strengthsCalcHeight = calculateBoxHeight(roleRecs.roleStrengths, recBoxWidth);
+  const devCalcHeight = calculateBoxHeight(developmentItems, recBoxWidth);
+  
+  // Use the maximum height for all boxes (with a minimum of 45mm)
+  const uniformBoxHeight = Math.max(rolesCalcHeight, thrivingCalcHeight, strengthsCalcHeight, devCalcHeight, 45);
+  
+  // Check if we need a page break (need space for both rows)
+  const totalNeededHeight = (uniformBoxHeight * 2) + 8; // Two rows plus spacing
+  if (yPos > pageHeight - totalNeededHeight - 20) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
@@ -1394,28 +1415,30 @@ export async function exportEnhancedCandidatePDF(
   const leftX = recBoxMargin;
   const rightX = recBoxMargin + recBoxWidth + 5;
   
-  const rolesHeight = drawRecBox(
+  drawRecBox(
     'MOST SUITABLE ROLES',
     roleRecs.suitableRoles,
     leftX,
     yPos,
     recBoxWidth,
+    uniformBoxHeight,
     [30, 58, 138] // Dark blue
   );
   
-  const thrivingHeight = drawRecBox(
+  drawRecBox(
     'WHERE THIS CANDIDATE WOULD THRIVE',
     roleRecs.thrivingEnvironments,
     rightX,
     yPos,
     recBoxWidth,
+    uniformBoxHeight,
     [16, 185, 129] // Green
   );
   
-  yPos += Math.max(rolesHeight, thrivingHeight) + 4;
+  yPos += uniformBoxHeight + 4;
   
   // Check for page break before second row
-  if (yPos > pageHeight - 60) {
+  if (yPos > pageHeight - uniformBoxHeight - 20) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
@@ -1423,35 +1446,27 @@ export async function exportEnhancedCandidatePDF(
   }
   
   // Row 2: Role Strengths (left) and Development Recommendations (right)
-  const strengthsHeight = drawRecBox(
+  drawRecBox(
     'ROLE STRENGTHS',
     roleRecs.roleStrengths,
     leftX,
     yPos,
     recBoxWidth,
+    uniformBoxHeight,
     [139, 92, 246] // Purple
   );
   
-  // Development recommendations
-  const topStrengths = [...skills].sort((a, b) => b.score - a.score).slice(0, 2);
-  const developmentItems = [
-    `Leverage strongest areas (${topStrengths.map(s => s.name).join(', ')}) to drive immediate impact.`,
-    avgScore >= 70 
-      ? 'Well-positioned to mentor others in AI adoption and best practices.'
-      : 'Formal training in AI literacy would accelerate professional development.',
-    'Continue building on strengths across all assessed competencies.',
-  ];
-  
-  const devHeight = drawRecBox(
+  drawRecBox(
     'DEVELOPMENT RECOMMENDATIONS',
     developmentItems,
     rightX,
     yPos,
     recBoxWidth,
+    uniformBoxHeight,
     [234, 88, 12] // Orange
   );
   
-  yPos += Math.max(strengthsHeight, devHeight) + 4;
+  yPos += uniformBoxHeight + 4;
   
   pdf.setTextColor(0, 0, 0);
   
