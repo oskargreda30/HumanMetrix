@@ -143,6 +143,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Marketing opt-in endpoint (public - no auth required)
+  app.post("/api/marketing-optin", async (req, res) => {
+    try {
+      const { email, source } = req.body;
+      
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+
+      const ip = req.ip || req.socket.remoteAddress || undefined;
+      const userAgent = req.headers['user-agent'] || undefined;
+
+      // Save the opt-in to database
+      await storage.createMarketingOptin({
+        email: email.toLowerCase().trim(),
+        source: source || 'job_ad',
+        ipAddress: ip,
+        userAgent: userAgent,
+        consentGiven: true,
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Thank you for subscribing!" 
+      });
+    } catch (error: any) {
+      console.error("Marketing opt-in error:", error);
+      res.status(500).json({ 
+        message: "Failed to subscribe. Please try again later." 
+      });
+    }
+  });
+
+  // Admin endpoint to get marketing opt-ins list
+  app.get("/api/admin/marketing-optins", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const optins = await storage.getMarketingOptins();
+      res.json(optins);
+    } catch (error: any) {
+      console.error("Error fetching marketing opt-ins:", error);
+      res.status(500).json({ message: "Failed to fetch opt-ins" });
+    }
+  });
+
   // Process payment success and create user account
   app.post("/api/process-payment-success", async (req, res) => {
     try {

@@ -12,6 +12,7 @@ import {
   cachedRoleAlignments,
   reportExports,
   userReferences,
+  marketingOptins,
   type User,
   type UpsertUser,
   type Purchase,
@@ -38,6 +39,8 @@ import {
   type InsertReportExport,
   type UserReference,
   type InsertUserReference,
+  type MarketingOptin,
+  type InsertMarketingOptin,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -142,6 +145,10 @@ export interface IStorage {
   
   // Free assessment operations
   createFreeAssessmentsForUser(userId: string): Promise<void>;
+  
+  // Marketing opt-in operations
+  createMarketingOptin(optin: InsertMarketingOptin): Promise<MarketingOptin>;
+  getMarketingOptins(): Promise<MarketingOptin[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -827,6 +834,22 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log('[FREE ASSESSMENTS] Created free assessments for user');
+  }
+
+  // Marketing opt-in operations
+  async createMarketingOptin(optin: InsertMarketingOptin): Promise<MarketingOptin> {
+    const [created] = await db
+      .insert(marketingOptins)
+      .values(optin)
+      .returning();
+    return created;
+  }
+
+  async getMarketingOptins(): Promise<MarketingOptin[]> {
+    return await db
+      .select()
+      .from(marketingOptins)
+      .orderBy(desc(marketingOptins.optedInAt));
   }
 }
 
