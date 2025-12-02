@@ -146,7 +146,7 @@ export default function HeroSection() {
             {/* Headline */}
             <h1 
               className={getAnimationClass(
-                'text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight',
+                'text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight',
                 `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
@@ -258,13 +258,13 @@ export default function HeroSection() {
           {/* Right Column - Report Image (hidden on mobile, shown on desktop) */}
           <div 
             className={getAnimationClass(
-              'relative hidden lg:block',
+              'relative hidden lg:flex lg:justify-center lg:items-center',
               `transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`
             )}
           >
-            <div className="relative">
+            <div className="relative max-w-md">
               {/* Glow effect behind image */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-2xl blur-2xl opacity-60" />
+              <div className="absolute -inset-3 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-2xl blur-2xl opacity-60" />
               
               {/* Report image */}
               <img
