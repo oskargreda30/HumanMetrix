@@ -166,7 +166,7 @@ export default function HeroSection() {
             {/* CTA Buttons */}
             <div 
               className={getAnimationClass(
-                'flex flex-row items-center gap-4 pt-2',
+                'flex flex-row flex-wrap items-center gap-3 pt-2',
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
@@ -174,7 +174,7 @@ export default function HeroSection() {
                 <Button 
                   size="lg"
                   className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-base md:text-lg px-6 py-3',
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
                     'transition-all duration-300'
                   )}
                   data-testid="button-hero-get-started"
@@ -184,7 +184,7 @@ export default function HeroSection() {
                   )}
                   <span className="relative flex items-center">
                     Our Assessments
-                    <ArrowRight className={getAnimationClass('ml-2 h-5 w-5', 'transition-transform group-hover:translate-x-1')} />
+                    <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
               </Link>
@@ -199,7 +199,7 @@ export default function HeroSection() {
                   });
                 }}
                 className={getAnimationClass(
-                  'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20',
+                  'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
                   'transition-all duration-300'
                 )}
                 data-testid="button-hero-sample-reports"
@@ -237,10 +237,10 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Right Column - Report Image */}
+          {/* Right Column - Report Image (hidden on mobile, shown on desktop) */}
           <div 
             className={getAnimationClass(
-              'relative',
+              'relative hidden lg:block',
               `transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`
             )}
           >
