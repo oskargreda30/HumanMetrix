@@ -235,6 +235,24 @@ export default function HeroSection() {
                 </div>
               ))}
             </div>
+
+            {/* Mobile Report Image - shown only on mobile */}
+            <div 
+              className={getAnimationClass(
+                'relative mt-6 lg:hidden',
+                `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
+              )}
+            >
+              <div className="relative">
+                <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-50" />
+                <img
+                  src={resultsImage}
+                  alt="Professional HumanMetrix assessment report preview"
+                  className="relative w-full rounded-lg shadow-xl border border-cyan-400/20"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent rounded-lg pointer-events-none" />
+              </div>
+            </div>
           </div>
 
           {/* Right Column - Report Image (hidden on mobile, shown on desktop) */}
