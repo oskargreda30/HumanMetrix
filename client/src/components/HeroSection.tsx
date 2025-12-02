@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import networkBg from "@assets/image_1761537286469.png";
+import resultsImage from "@assets/generated_images/Professional_results_preview.png";
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -125,189 +126,193 @@ export default function HeroSection() {
         style={{ transform: prefersReducedMotion ? 'none' : `translateY(${scrollY * 0.3}px)` }}
       />
       
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-24">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Content */}
-          <div className="space-y-6 md:space-y-10">
-            <div className="space-y-5 md:space-y-5">
-              {/* Badge - Fade in first */}
-              <div 
-                className={getAnimationClass(
-                  'inline-block',
-                  `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
-                )}
-              >
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
-                  AI-Powered Assessment Platform
-                </span>
-              </div>
-              
-              {/* Headline - Fade in second with delay */}
-              <h1 
-                className={getAnimationClass(
-                  'text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight px-2',
-                  `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
-                )}
-              >
-                Your Next Role Demands More Than a Resume.
-              </h1>
-              
-              {/* Subheadline - Fade in third with delay */}
-              <p 
-                className={getAnimationClass(
-                  'text-sm md:text-lg lg:text-xl text-blue-100/80 leading-relaxed max-w-3xl mx-auto px-3 mt-4',
-                  `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
-                )}
-              >
-                Stand out from the crowd. Our one-time use assessment tool equips you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity to help you land your next role!
-              </p>
-            </div>
-
-            {/* CTA Buttons with fade-in animation */}
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-20">
+        {/* Two-column layout: Text left, Image right */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Left Column - Text Content */}
+          <div className="text-left space-y-6">
+            {/* Badge */}
             <div 
               className={getAnimationClass(
-                'flex flex-col items-center gap-3 px-3 pt-4',
-                `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+                'inline-block',
+                `transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              <div className="flex flex-col items-center gap-3">
-                <Link href="/assessments" data-testid="link-hero-get-started">
-                  <Button 
-                    size="lg"
-                    className={getAnimationClass(
-                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-base md:text-lg px-8 py-3',
-                      'transition-all duration-300'
-                    )}
-                    data-testid="button-hero-get-started"
-                  >
-                    {/* Pulse animation for main CTA - only if not reduced motion */}
-                    {!prefersReducedMotion && (
-                      <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
-                    )}
-                    <span className="relative flex items-center">
-                      Our Assessments
-                      <ArrowRight className={getAnimationClass('ml-2 h-5 w-5', 'transition-transform group-hover:translate-x-1')} />
-                    </span>
-                  </Button>
-                </Link>
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
+                AI-Powered Assessment Platform
+              </span>
+            </div>
+            
+            {/* Headline */}
+            <h1 
+              className={getAnimationClass(
+                'text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight',
+                `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+              )}
+            >
+              Your Next Role Demands More Than a Resume.
+            </h1>
+            
+            {/* Subheadline */}
+            <p 
+              className={getAnimationClass(
+                'text-sm md:text-lg text-blue-100/80 leading-relaxed max-w-xl',
+                `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+              )}
+            >
+              Stand out from the crowd. Our one-time use assessment tool equips you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity to help you land your next role!
+            </p>
+
+            {/* CTA Buttons */}
+            <div 
+              className={getAnimationClass(
+                'flex flex-row items-center gap-4 pt-2',
+                `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+              )}
+            >
+              <Link href="/assessments" data-testid="link-hero-get-started">
                 <Button 
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    const element = document.getElementById('sample-reports');
-                    element?.scrollIntoView({ 
-                      behavior: prefersReducedMotion ? 'auto' : 'smooth', 
-                      block: 'start' 
-                    });
-                  }}
+                  size="lg"
                   className={getAnimationClass(
-                    'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm',
+                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-base md:text-lg px-6 py-3',
                     'transition-all duration-300'
                   )}
-                  data-testid="button-hero-sample-reports"
+                  data-testid="button-hero-get-started"
                 >
+                  {!prefersReducedMotion && (
+                    <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                  )}
                   <span className="relative flex items-center">
-                    Sample Reports
-                    <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                    Our Assessments
+                    <ArrowRight className={getAnimationClass('ml-2 h-5 w-5', 'transition-transform group-hover:translate-x-1')} />
                   </span>
                 </Button>
-              </div>
-              
-              {/* Pricing disclosure */}
-              <p className="text-xs md:text-sm text-blue-100/60 italic">
-                Tests from £3.50 (plus one-time £15 computation price)
-              </p>
+              </Link>
+              <Button 
+                size="lg"
+                variant="ghost"
+                onClick={() => {
+                  const element = document.getElementById('sample-reports');
+                  element?.scrollIntoView({ 
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth', 
+                    block: 'start' 
+                  });
+                }}
+                className={getAnimationClass(
+                  'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20',
+                  'transition-all duration-300'
+                )}
+                data-testid="button-hero-sample-reports"
+              >
+                <span className="relative flex items-center">
+                  Sample Reports
+                  <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                </span>
+              </Button>
             </div>
+            
+            {/* Pricing disclosure */}
+            <p className="text-xs md:text-sm text-blue-100/60 italic">
+              Tests from £3.50 (plus one-time £15 computation price)
+            </p>
 
-            {/* Why use HumanMetrix - Scroll-triggered animation */}
-            <div 
-              ref={cardsRef}
-              className="text-center max-w-4xl mx-auto mt-8 px-2"
-            >
-              <p className={getAnimationClass(
-                'text-base md:text-xl text-cyan-300 font-semibold mb-6',
-                `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
-              )}>
-                Why use HumanMetrix:
-              </p>
-              
-              {/* Three cards - slide in on scroll */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  {
-                    title: "Stop Competing Against Fake CV Claims",
-                    description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
-                    delay: 0
-                  },
-                  {
-                    title: "AI is the New Digital Literacy",
-                    description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
-                    delay: 200
-                  },
-                  {
-                    title: "Up to 75% of qualified applicants are rejected by ATS",
-                    description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
-                    delay: 400
-                  }
-                ].map((item, idx) => (
-                  <div 
-                    key={idx}
-                    className={getAnimationClass(
-                      'flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm',
-                      `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`
-                    )}
-                    style={prefersReducedMotion ? {} : { 
-                      transitionDelay: cardsVisible ? `${item.delay}ms` : '0ms' 
-                    }}
-                  >
-                    <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
-                    <div className="text-left space-y-1.5">
-                      <p className="text-xs md:text-sm font-semibold text-blue-100">
-                        {item.title}
-                      </p>
-                      <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Feature Cards with staggered slide-up animation */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 max-w-4xl mx-auto px-3">
+            {/* Feature highlights - horizontal */}
+            <div className="flex flex-wrap gap-4 pt-2">
               {[
-                {
-                  title: "Instant PDF Results",
-                  subtitle: "Download reports immediately",
-                  delay: "delay-700"
-                },
-                {
-                  title: "CV-Ready Reports",
-                  subtitle: "Professional PDFs for job applications",
-                  delay: "delay-1000"
-                },
-                {
-                  title: "Secure Data Storage",
-                  subtitle: "Safely encrypted and stored",
-                  delay: "delay-1000"
-                }
+                "Instant PDF Results",
+                "CV-Ready Reports",
+                "Secure Data Storage"
               ].map((item, i) => (
                 <div 
                   key={i} 
                   className={getAnimationClass(
-                    'flex flex-col items-center gap-1 text-center px-2',
-                    `transition-all duration-700 ${item.delay} ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
+                    'flex items-center gap-2',
+                    `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
                   )}
                 >
-                  <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-cyan-400 flex-shrink-0" />
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] md:text-sm font-medium text-blue-100">{item.title}</div>
-                    <div className="text-[9px] md:text-xs text-blue-100/60 leading-tight">{item.subtitle}</div>
-                  </div>
+                  <CheckCircle2 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                  <span className="text-xs md:text-sm text-blue-100/80">{item}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Right Column - Report Image */}
+          <div 
+            className={getAnimationClass(
+              'relative',
+              `transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`
+            )}
+          >
+            <div className="relative">
+              {/* Glow effect behind image */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-2xl blur-2xl opacity-60" />
+              
+              {/* Report image */}
+              <img
+                src={resultsImage}
+                alt="Professional HumanMetrix assessment report preview"
+                className="relative w-full rounded-xl shadow-2xl border border-cyan-400/30"
+              />
+              
+              {/* Subtle overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/40 via-transparent to-transparent rounded-xl pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Why use HumanMetrix - Below the main hero */}
+        <div 
+          ref={cardsRef}
+          className="mt-16 max-w-6xl mx-auto"
+        >
+          <p className={getAnimationClass(
+            'text-base md:text-xl text-cyan-300 font-semibold mb-6 text-center',
+            `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
+          )}>
+            Why use HumanMetrix:
+          </p>
+          
+          {/* Three cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                title: "Stop Competing Against Fake CV Claims",
+                description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
+                delay: 0
+              },
+              {
+                title: "AI is the New Digital Literacy",
+                description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
+                delay: 200
+              },
+              {
+                title: "Up to 75% of qualified applicants are rejected by ATS",
+                description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
+                delay: 400
+              }
+            ].map((item, idx) => (
+              <div 
+                key={idx}
+                className={getAnimationClass(
+                  'flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm',
+                  `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`
+                )}
+                style={prefersReducedMotion ? {} : { 
+                  transitionDelay: cardsVisible ? `${item.delay}ms` : '0ms' 
+                }}
+              >
+                <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
+                <div className="text-left space-y-1.5">
+                  <p className="text-xs md:text-sm font-semibold text-blue-100">
+                    {item.title}
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
