@@ -646,8 +646,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const priceInPence = BASE_FEE + assessmentsTotal;
       const totalAssessmentCount = requiredAssessmentTypes.length;
       
-      // Check if discount code is "FREE" (case-insensitive)
-      if (discountCode && discountCode.trim().toUpperCase() === "FREE") {
+      // Apply discount codes
+      let finalPriceInPence = priceInPence;
+      let discountApplied = false;
+      let discountDescription = '';
+      const normalizedCode = discountCode ? discountCode.trim().toUpperCase() : '';
+      
+      // Check if discount code is "FREE" (case-insensitive) - 100% off
+      if (normalizedCode === "FREE") {
         // Grant free access
         await storage.updatePurchase(unpaidPurchase.id.toString(), {
           resultsAccessPaid: true,
@@ -660,6 +666,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // COMPOFF - £15 off
+      if (normalizedCode === "COMPOFF") {
+        const discountAmount = 1500; // £15 in pence
+        finalPriceInPence = Math.max(0, priceInPence - discountAmount);
+        discountApplied = true;
+        discountDescription = ' (£15 discount applied)';
+        
+        // If discount makes it free, grant access immediately
+        if (finalPriceInPence === 0) {
+          await storage.updatePurchase(unpaidPurchase.id.toString(), {
+            resultsAccessPaid: true,
+          });
+          
+          return res.json({ 
+            success: true, 
+            message: "Results unlocked successfully with COMPOFF discount",
+            free: true 
+          });
+        }
+      }
+      
+      // 20OFFPRICE - 20% off
+      if (normalizedCode === "20OFFPRICE") {
+        const discountAmount = Math.round(priceInPence * 0.20);
+        finalPriceInPence = priceInPence - discountAmount;
+        discountApplied = true;
+        discountDescription = ' (20% discount applied)';
+        
+        // If discount makes it free, grant access immediately
+        if (finalPriceInPence === 0) {
+          await storage.updatePurchase(unpaidPurchase.id.toString(), {
+            resultsAccessPaid: true,
+          });
+          
+          return res.json({ 
+            success: true, 
+            message: "Results unlocked successfully with 20% discount",
+            free: true 
+          });
+        }
+      }
+      
       // Otherwise, create Stripe checkout session for results payment
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -669,9 +717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'gbp',
               product_data: {
                 name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})`,
+                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
               },
-              unit_amount: priceInPence,
+              unit_amount: finalPriceInPence,
             },
             quantity: 1,
           },
