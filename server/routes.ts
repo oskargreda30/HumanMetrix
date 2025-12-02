@@ -22,6 +22,105 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
 });
 
+// Initialize Stripe promotion codes
+async function initializeStripeCoupons() {
+  const couponsToCreate = [
+    {
+      id: 'FREE_100_OFF',
+      code: 'FREE',
+      percent_off: 100,
+      duration: 'forever' as const,
+      name: 'Free Access (100% off)'
+    },
+    {
+      id: 'COMPOFF_15_OFF',
+      code: 'COMPOFF',
+      amount_off: 1500, // £15 in pence
+      currency: 'gbp',
+      duration: 'once' as const, // Fixed amount coupons must use 'once'
+      name: 'Company Offer (£15 off)'
+    },
+    {
+      id: '20OFFPRICE_20_OFF',
+      code: '20OFFPRICE',
+      percent_off: 20,
+      duration: 'forever' as const,
+      name: '20% Discount'
+    }
+  ];
+
+  for (const couponData of couponsToCreate) {
+    try {
+      // Check if coupon already exists
+      let couponExists = false;
+      try {
+        await stripe.coupons.retrieve(couponData.id);
+        couponExists = true;
+        console.log(`[Stripe] Coupon ${couponData.id} already exists`);
+      } catch (e: any) {
+        if (e.code === 'resource_missing') {
+          // Create the coupon
+          const couponParams: Stripe.CouponCreateParams = {
+            id: couponData.id,
+            name: couponData.name,
+            duration: couponData.duration,
+          };
+          
+          if (couponData.percent_off) {
+            couponParams.percent_off = couponData.percent_off;
+          } else if (couponData.amount_off) {
+            couponParams.amount_off = couponData.amount_off;
+            couponParams.currency = couponData.currency;
+          }
+          
+          await stripe.coupons.create(couponParams);
+          couponExists = true;
+          console.log(`[Stripe] Created coupon: ${couponData.id}`);
+        } else {
+          throw e;
+        }
+      }
+
+      if (!couponExists) continue;
+
+      // Check if promotion code already exists by listing all promo codes
+      let codeExists = false;
+      try {
+        const existingPromoCodes = await stripe.promotionCodes.list({ limit: 100 });
+        codeExists = existingPromoCodes.data.some(
+          pc => pc.code === couponData.code && pc.coupon && 
+          (typeof pc.coupon === 'string' ? pc.coupon === couponData.id : pc.coupon.id === couponData.id)
+        );
+      } catch (e) {
+        console.log(`[Stripe] Could not list promotion codes`);
+      }
+
+      if (!codeExists) {
+        // Create the promotion code using raw fetch to Stripe API
+        const promoResponse = await fetch('https://api.stripe.com/v1/promotion_codes', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `coupon=${couponData.id}&code=${couponData.code}`,
+        });
+        
+        if (promoResponse.ok) {
+          console.log(`[Stripe] Created promotion code: ${couponData.code}`);
+        } else {
+          const errorData = await promoResponse.json();
+          console.error(`[Stripe] Failed to create promo code ${couponData.code}:`, errorData.error?.message);
+        }
+      } else {
+        console.log(`[Stripe] Promotion code ${couponData.code} already exists`);
+      }
+    } catch (error: any) {
+      console.error(`[Stripe] Error setting up coupon ${couponData.code}:`, error.message);
+    }
+  }
+}
+
 // Simple retry helper with exponential backoff
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -80,6 +179,11 @@ function getAssessmentTimeLimit(assessmentType: string): number {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
+
+  // Initialize Stripe discount codes (runs in background)
+  initializeStripeCoupons().catch(err => {
+    console.error('[Stripe] Failed to initialize coupons:', err.message);
+  });
 
   // Version check endpoint
   app.get("/api/version", (req, res) => {
