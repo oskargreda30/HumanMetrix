@@ -1383,15 +1383,29 @@ export async function exportEnhancedCandidatePDF(
     });
   };
   
-  // Development recommendations content
-  const topStrengths = [...skills].sort((a, b) => b.score - a.score).slice(0, 2);
-  const developmentItems = [
-    `Leverage strongest areas (${topStrengths.map(s => s.name).join(', ')}) to drive immediate impact.`,
-    avgScore >= 70 
-      ? 'Well-positioned to mentor others in AI adoption and best practices.'
-      : 'Formal training in AI literacy would accelerate professional development.',
-    'Continue building on strengths across all assessed competencies.',
-  ];
+  // Development recommendations content - focus on actual improvement areas
+  const weakestSkills = [...skills].sort((a, b) => a.score - b.score).slice(0, 2);
+  const developmentItems: string[] = [];
+  
+  // Add specific recommendations based on weakest areas
+  weakestSkills.forEach(skill => {
+    if (skill.score < 50) {
+      developmentItems.push(`Priority development in ${skill.name} through targeted training and practical exercises.`);
+    } else if (skill.score < 70) {
+      developmentItems.push(`Strengthen ${skill.name} skills through hands-on projects and peer collaboration.`);
+    } else {
+      developmentItems.push(`Refine ${skill.name} expertise with advanced certifications or specialized workshops.`);
+    }
+  });
+  
+  // Add overall recommendation based on average score
+  if (avgScore < 50) {
+    developmentItems.push('Consider structured AI literacy programs to build foundational competencies.');
+  } else if (avgScore < 70) {
+    developmentItems.push('Seek mentorship opportunities to accelerate growth in identified development areas.');
+  } else {
+    developmentItems.push('Pursue leadership training to translate technical strengths into team impact.');
+  }
   
   // Calculate heights for all 4 boxes to find the maximum
   const rolesCalcHeight = calculateBoxHeight(roleRecs.suitableRoles, recBoxWidth);
