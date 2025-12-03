@@ -518,6 +518,9 @@ export default function Assessment() {
                         placeholder="Write your prompt here... Be specific, clear, and creative!"
                         value={answers[currentQ.id] || ""}
                         onChange={handleTextChange}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                        }}
                         className="min-h-[200px] text-base"
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
