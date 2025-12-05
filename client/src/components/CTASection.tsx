@@ -6,42 +6,42 @@ const testimonials = [
   {
     id: 1,
     quote: "The FIT assessment gave me insights I'd never considered about my working style. It helped me articulate my strengths in interviews and I landed my dream role within weeks.",
-    name: "Anonymous 1",
+    name: "Anonymous",
     role: "Marketing Manager",
     rating: 5,
   },
   {
     id: 2,
     quote: "As a recruiter, HumanMetrix has transformed how we evaluate candidates. The AI Readiness scores have been remarkably predictive of on-the-job performance.",
-    name: "Anonymous 2",
+    name: "Anonymous",
     role: "Senior Recruiter",
     rating: 5,
   },
   {
     id: 3,
     quote: "I was skeptical about AI assessments, but the Prompt Architecture test genuinely challenged my thinking. The detailed feedback helped me improve my AI collaboration skills.",
-    name: "Anonymous 3",
+    name: "Anonymous",
     role: "Product Designer",
     rating: 5,
   },
   {
     id: 4,
     quote: "The AIQ assessment opened my eyes to ethical considerations I hadn't thought about. Essential for anyone working with AI systems in their role.",
-    name: "Anonymous 4",
+    name: "Anonymous",
     role: "Data Analyst",
     rating: 5,
   },
   {
     id: 5,
     quote: "Completed all four assessments and shared them with potential employers. It gave me a real edge - employers loved seeing validated AI and behavioural competencies.",
-    name: "Anonymous 5",
+    name: "Anonymous",
     role: "Software Engineer",
     rating: 5,
   },
   {
     id: 6,
     quote: "We've integrated HumanMetrix into our hiring pipeline. The comprehensive reports save us hours of screening time while ensuring we find the right cultural fit.",
-    name: "Anonymous 6",
+    name: "Anonymous",
     role: "HR Director",
     rating: 5,
   },
@@ -99,17 +99,17 @@ export default function CTASection() {
   const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="py-12 md:py-24 bg-[#0f1f38]">
+    <section className="py-8 md:py-16 bg-[#0f1f38]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-500 px-6 py-12 md:px-16 md:py-16">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-500 px-6 py-8 md:px-12 md:py-12">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative">
-            <div className="text-center mb-8">
-              <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+            <div className="text-center mb-6">
+              <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-white mb-1">
                 What Our Users Say
               </h2>
-              <p className="text-sm md:text-base text-white/80">
+              <p className="text-xs md:text-sm text-white/80">
                 Trusted by professionals and recruiters worldwide
               </p>
             </div>
@@ -132,7 +132,7 @@ export default function CTASection() {
                 onMouseLeave={() => setIsAutoPlaying(true)}
               >
                 <div 
-                  className={`bg-white/10 backdrop-blur-sm p-6 md:p-10 min-h-[220px] md:min-h-[240px] flex flex-col justify-center transition-transform duration-300 ease-in-out ${
+                  className={`bg-white/10 backdrop-blur-sm p-5 md:p-8 min-h-[180px] md:min-h-[200px] flex flex-col justify-center transition-transform duration-300 ease-in-out ${
                     isAnimating 
                       ? slideDirection === 'left' 
                         ? '-translate-x-full opacity-0' 
@@ -140,19 +140,19 @@ export default function CTASection() {
                       : 'translate-x-0 opacity-100'
                   }`}
                 >
-                  <Quote className="h-8 w-8 md:h-10 md:w-10 text-white/40 mb-4 mx-auto" />
+                  <Quote className="h-6 w-6 md:h-8 md:w-8 text-white/40 mb-3 mx-auto" />
                   
                   <blockquote className="text-center">
-                    <p className="text-base md:text-xl lg:text-2xl text-white font-medium leading-relaxed mb-6">
+                    <p className="text-sm md:text-lg lg:text-xl text-white font-medium leading-relaxed mb-4">
                       "{currentTestimonial.quote}"
                     </p>
                     
-                    <footer className="flex flex-col items-center gap-2">
-                      <div className="flex gap-1">
+                    <footer className="flex flex-col items-center gap-1">
+                      <div className="flex gap-0.5">
                         {[...Array(currentTestimonial.rating)].map((_, i) => (
                           <svg
                             key={i}
-                            className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-current"
+                            className="w-3 h-3 md:w-4 md:h-4 text-yellow-400 fill-current"
                             viewBox="0 0 20 20"
                           >
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -181,7 +181,7 @@ export default function CTASection() {
               </Button>
             </div>
 
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-4">
               {testimonials.map((_, index) => (
                 <button
                   key={index}
