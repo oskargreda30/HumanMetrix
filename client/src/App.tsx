@@ -108,6 +108,27 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      
+      {/* Redirects for old URLs (fixes Google Search Console 404s) */}
+      <Route path="/candidate-portal">
+        {() => <Redirect to="/login" />}
+      </Route>
+      <Route path="/tests">
+        {() => <Redirect to="/assessments" />}
+      </Route>
+      <Route path="/contact">
+        {() => <Redirect to="/about" />}
+      </Route>
+      <Route path="/terms-of-service">
+        {() => <Redirect to="/terms" />}
+      </Route>
+      <Route path="/white-papers">
+        {() => <Redirect to="/articles" />}
+      </Route>
+      <Route path="/subscribe">
+        {() => <Redirect to="/purchase" />}
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );
