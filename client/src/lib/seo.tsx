@@ -13,7 +13,7 @@ interface SEOProps {
 
 const defaultSEO = {
   title: 'HumanMetrix - AI Assessment Platform for Recruitment | Human Metrix UK',
-  description: 'HumanMetrix (Human Metrix) is the leading AI-powered psychometric testing platform for recruitment UK. Measure candidate skills with FIT, AI Readiness, Prompt Architecture & AIQ assessments. Pre-employment testing trusted by employers.',
+  description: 'HumanMetrix - UK AI-powered psychometric testing platform. Pre-employment assessments for FIT, AI Readiness & AIQ. Trusted by employers.',
   ogImage: `${BASE_URL}/og-image.png`,
 };
 

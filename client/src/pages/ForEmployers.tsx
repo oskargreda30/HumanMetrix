@@ -83,7 +83,7 @@ export default function ForEmployers() {
     <div className="min-h-screen flex flex-col relative">
       <SEO 
         title="For Employers - Pre-Employment Testing UK | HumanMetrix"
-        description="Streamline recruitment with HumanMetrix (Human Metrix) AI-powered candidate assessment platform. Pre-employment psychometric testing, compare candidates with human metrics analytics, make data-driven hiring decisions. Trusted by UK employers."
+        description="HumanMetrix for employers: AI candidate assessments, compare human metrics analytics & make data-driven hiring decisions. UK trusted."
         canonical="/for-employers"
       />
       {/* Background image with light grey overlay */}

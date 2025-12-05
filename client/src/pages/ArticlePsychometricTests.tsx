@@ -12,7 +12,7 @@ export default function ArticlePsychometricTests() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
         title="How to Pass Psychometric Tests for Job Interviews UK | HumanMetrix Guide"
-        description="Struggling with psychometric tests UK? HumanMetrix (Human Metrix) guide on how to prepare for pre-employment testing, what to expect & best strategies to pass psychometric assessments for job interviews. Expert human metrics insights."
+        description="HumanMetrix guide: how to prepare for UK psychometric tests, what to expect & strategies to pass pre-employment assessments."
         canonical="/articles/how-to-pass-psychometric-tests-job-interviews"
       />
       <Navigation />

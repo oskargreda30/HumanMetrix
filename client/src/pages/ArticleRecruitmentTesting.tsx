@@ -20,7 +20,7 @@ export default function ArticleRecruitmentTesting() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
         title="Role of Psychometric Testing in Recruitment UK | HumanMetrix Insights"
-        description="HumanMetrix (Human Metrix) explores why UK employers use psychometric testing in recruitment. Learn about pre-employment assessment types, candidate evaluation methods & how human metrics shape data-driven hiring decisions."
+        description="Why UK employers use psychometric testing in recruitment. Learn about pre-employment assessment types & data-driven hiring."
         canonical="/articles/role-of-psychometric-testing-in-recruitment"
       />
       <Navigation />

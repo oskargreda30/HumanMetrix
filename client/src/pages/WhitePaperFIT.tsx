@@ -12,7 +12,7 @@ export default function WhitePaperFIT() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
         title="FIT Test White Paper - Behavioural Assessment Design | HumanMetrix"
-        description="HumanMetrix (Human Metrix) FIT psychometric test white paper: scientific rationale behind our behavioural assessment measuring six professional skills. Human metrics methodology for AI workplace performance evaluation UK."
+        description="HumanMetrix FIT psychometric test white paper: scientific rationale behind our behavioural assessment measuring six skills."
         canonical="/articles/white-paper-fit-test"
       />
       <Navigation />

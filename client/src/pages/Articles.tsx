@@ -47,7 +47,7 @@ export default function Articles() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
         title="Psychometric Testing Articles & Career Insights UK | HumanMetrix"
-        description="Expert articles from HumanMetrix (Human Metrix) on psychometric tests UK, pre-employment testing, career development & recruitment best practices. Learn how to pass assessments and understand modern hiring with human metrics insights."
+        description="HumanMetrix articles on psychometric tests UK, pre-employment testing & career development. Learn how to pass assessments."
         canonical="/articles"
       />
       <Navigation />
