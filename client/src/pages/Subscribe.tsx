@@ -58,8 +58,8 @@ export default function Subscribe() {
   return (
     <>
       <SEO
-        title="Career News & Insights | HumanMetrix"
-        description="Get free materials on career trends, insights, career tips, and exclusive offers from HumanMetrix."
+        title="Career Tips & Job Market Insights UK | HumanMetrix Newsletter"
+        description="Subscribe to HumanMetrix (Human Metrix) for free career materials, job market insights UK, psychometric test tips & exclusive offers. Stay ahead with human metrics career advice and recruitment trends."
       />
       
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">

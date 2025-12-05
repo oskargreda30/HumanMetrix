@@ -64,8 +64,8 @@ export default function Assessments() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
       <SEO 
-        title="Professional AI Assessments"
-        description="Take our enterprise-grade assessments: FIT (behavioral skills), AI Readiness, Prompt Architecture, and AIQ (AI ethics). Results suitable for CV inclusion."
+        title="Psychometric Tests & AI Assessments UK - HumanMetrix"
+        description="Take HumanMetrix (Human Metrix) enterprise-grade psychometric tests: FIT behavioural assessment, AI Readiness test, Prompt Architecture & AIQ ethics assessment. Pre-employment testing with CV-ready results. UK's trusted candidate assessment platform."
         canonical="/assessments"
       />
       {assessments.map((a) => (

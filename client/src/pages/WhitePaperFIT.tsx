@@ -11,8 +11,8 @@ export default function WhitePaperFIT() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="FIT Test Design White Paper - Scientific Rationale"
-        description="Explore the scientific rationale behind the FIT psychometric assessment - a 15-question instrument measuring six high-impact professional skills essential for modern AI work performance."
+        title="FIT Test White Paper - Behavioural Assessment Design | HumanMetrix"
+        description="HumanMetrix (Human Metrix) FIT psychometric test white paper: scientific rationale behind our behavioural assessment measuring six professional skills. Human metrics methodology for AI workplace performance evaluation UK."
         canonical="/articles/white-paper-fit-test"
       />
       <Navigation />

@@ -19,8 +19,8 @@ export default function ArticleRecruitmentTesting() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="The Essential Role of Psychometric Testing in Recruitment: A UK Perspective"
-        description="Explore the pivotal role of psychometric testing in modern recruitment. Learn why UK employers use these assessments, the types of tests involved, and how they shape the future of hiring."
+        title="Role of Psychometric Testing in Recruitment UK | HumanMetrix Insights"
+        description="HumanMetrix (Human Metrix) explores why UK employers use psychometric testing in recruitment. Learn about pre-employment assessment types, candidate evaluation methods & how human metrics shape data-driven hiring decisions."
         canonical="/articles/role-of-psychometric-testing-in-recruitment"
       />
       <Navigation />

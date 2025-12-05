@@ -31,8 +31,8 @@ export default function About() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
-        title="About Us"
-        description="Learn about HumanMetrix - the professional AI-powered assessment platform for recruitment and career development. We measure behavioral skills and AI literacy for the modern workforce."
+        title="About HumanMetrix - AI Psychometric Testing Company UK"
+        description="Learn about HumanMetrix (Human Metrix) - the UK's professional AI-powered psychometric testing platform. We measure human metrics including behavioral skills, AI literacy & candidate potential for modern recruitment."
         canonical="/about"
       />
       {/* Background image with light grey overlay */}

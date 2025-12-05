@@ -11,8 +11,8 @@ export default function WhitePaperAIReadiness() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="AI Readiness Test White Paper - Psychometric Assessment Design"
-        description="Discover the scientific foundation of our AI Readiness psychometric assessment, measuring nine critical skills for success in an AI-driven professional landscape."
+        title="AI Readiness Test White Paper - Skills Assessment Design | HumanMetrix"
+        description="HumanMetrix (Human Metrix) AI Readiness psychometric test white paper: measuring nine critical AI skills for workforce success. Human metrics scientific methodology for evaluating AI literacy & digital transformation readiness UK."
         canonical="/articles/white-paper-ai-readiness-test"
       />
       <Navigation />

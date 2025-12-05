@@ -11,8 +11,8 @@ export default function ArticlePsychometricTests() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="How to Approach Psychometric Tests for Job Interviews: Your Ultimate UK Guide"
-        description="Struggling with job application psychometric tests? Learn exactly how to prepare, what to expect, and the best strategies to approach psychometric tests for job interviews in the UK."
+        title="How to Pass Psychometric Tests for Job Interviews UK | HumanMetrix Guide"
+        description="Struggling with psychometric tests UK? HumanMetrix (Human Metrix) guide on how to prepare for pre-employment testing, what to expect & best strategies to pass psychometric assessments for job interviews. Expert human metrics insights."
         canonical="/articles/how-to-pass-psychometric-tests-job-interviews"
       />
       <Navigation />
