@@ -122,6 +122,9 @@ function Router() {
       <Route path="/terms-of-service">
         {() => <Redirect to="/terms" />}
       </Route>
+      <Route path="/privacy-policy">
+        {() => <Redirect to="/terms" />}
+      </Route>
       <Route path="/white-papers">
         {() => <Redirect to="/articles" />}
       </Route>
