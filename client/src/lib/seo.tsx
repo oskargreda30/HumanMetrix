@@ -58,9 +58,10 @@ export function OrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "HumanMetrix",
+    "alternateName": ["Human Metrix", "HumanMetrix UK", "Human Metrics"],
     "url": BASE_URL,
     "logo": `${BASE_URL}/favicon.png`,
-    "description": "Professional AI-powered assessment platform for recruitment and career development.",
+    "description": "HumanMetrix (Human Metrix) is the UK's leading AI-powered psychometric testing and candidate assessment platform. We measure human metrics for recruitment and career development.",
     "sameAs": [
       "https://www.linkedin.com/company/humanmetrix"
     ],
@@ -68,7 +69,9 @@ export function OrganizationSchema() {
       "@type": "ContactPoint",
       "email": "humanmetrix.sales@gmail.com",
       "contactType": "sales"
-    }
+    },
+    "areaServed": "GB",
+    "knowsAbout": ["psychometric testing", "pre-employment assessment", "AI skills evaluation", "behavioural assessment", "candidate assessment", "recruitment testing"]
   };
 
   return (

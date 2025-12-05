@@ -139,7 +139,7 @@ export default function HeroSection() {
               )}
             >
               <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
-                AI-Powered Assessment Platform
+                HumanMetrix - UK's AI-Powered Psychometric Testing Platform
               </span>
             </div>
             
@@ -160,7 +160,7 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              Stand out from the crowd. Our one-time use assessment tool equips you a CV-attachable report on your FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity to help you land your next role!
+              Stand out from the crowd with HumanMetrix psychometric tests. Our pre-employment assessments provide CV-ready reports measuring your human metrics across FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity - trusted by UK recruiters.
             </p>
 
             {/* CTA Buttons */}
