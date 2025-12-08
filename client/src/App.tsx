@@ -29,6 +29,7 @@ import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import PaymentCallback from "@/pages/PaymentCallback";
 import PaymentCancelCallback from "@/pages/PaymentCancelCallback";
 import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
 import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/payment-callback" component={PaymentCallback} />
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/news" component={Subscribe} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
@@ -123,7 +125,7 @@ function Router() {
         {() => <Redirect to="/terms" />}
       </Route>
       <Route path="/privacy-policy">
-        {() => <Redirect to="/terms" />}
+        {() => <Redirect to="/privacy" />}
       </Route>
       <Route path="/white-papers">
         {() => <Redirect to="/articles" />}

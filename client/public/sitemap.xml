@@ -43,6 +43,13 @@
   </url>
   
   <url>
+    <loc>https://humanmetrix.co.uk/privacy</loc>
+    <lastmod>2025-12-08</lastmod>
+    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  
+  <url>
     <loc>https://humanmetrix.co.uk/login</loc>
     <lastmod>2025-12-05</lastmod>
     <priority>0.5</priority>

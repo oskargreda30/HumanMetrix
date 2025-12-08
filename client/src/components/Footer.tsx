@@ -9,6 +9,7 @@ export default function Footer() {
       { label: "About Us", href: "/about" },
       { label: "How It Works", href: "/#how-it-works" },
       { label: "Terms & Conditions", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
     ],
     assessments: [
       { label: "FIT Assessment", href: "/assessments#fit" },
