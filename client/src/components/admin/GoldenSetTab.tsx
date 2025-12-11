@@ -95,9 +95,10 @@ export default function GoldenSetTab() {
       const response = await apiRequest("POST", "/api/admin/golden-set/run");
       return response.json() as Promise<RunEvaluationResponse>;
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setLastRunResult(result);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+      refetch();
     },
   });
 
@@ -106,9 +107,10 @@ export default function GoldenSetTab() {
       const response = await apiRequest("POST", "/api/admin/golden-set/reset");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setLastRunResult(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+      refetch();
     },
   });
 
