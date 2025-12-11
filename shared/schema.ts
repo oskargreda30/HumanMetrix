@@ -347,6 +347,58 @@ export const insertMarketingOptinSchema = createInsertSchema(marketingOptins).om
 export type InsertMarketingOptin = z.infer<typeof insertMarketingOptinSchema>;
 export type MarketingOptin = typeof marketingOptins.$inferSelect;
 
+// Golden Set Prompts - benchmark prompts for scoring consistency verification
+export const goldenSetPrompts = pgTable("golden_set_prompts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  level: integer("level").notNull(),
+  taskDescription: text("task_description").notNull(),
+  promptText: text("prompt_text").notNull(),
+  expectedScores: jsonb("expected_scores").notNull().$type<{
+    clarity: number;
+    structure: number;
+    contextRelevance: number;
+    creativity: number;
+    iterativeImprovement: number;
+    totalScore: number;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertGoldenSetPromptSchema = createInsertSchema(goldenSetPrompts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertGoldenSetPrompt = z.infer<typeof insertGoldenSetPromptSchema>;
+export type GoldenSetPrompt = typeof goldenSetPrompts.$inferSelect;
+
+// Golden Set Results - daily test results for scoring stability
+export const goldenSetResults = pgTable("golden_set_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promptId: varchar("prompt_id").notNull().references(() => goldenSetPrompts.id, { onDelete: "cascade" }),
+  actualScores: jsonb("actual_scores").notNull().$type<{
+    clarity: number;
+    structure: number;
+    contextRelevance: number;
+    creativity: number;
+    iterativeImprovement: number;
+    totalScore: number;
+    feedback: string;
+  }>(),
+  driftPercentage: integer("drift_percentage").notNull(),
+  passed: boolean("passed").notNull(),
+  testedAt: timestamp("tested_at").defaultNow().notNull(),
+});
+
+export const insertGoldenSetResultSchema = createInsertSchema(goldenSetResults).omit({
+  id: true,
+  testedAt: true,
+});
+
+export type InsertGoldenSetResult = z.infer<typeof insertGoldenSetResultSchema>;
+export type GoldenSetResult = typeof goldenSetResults.$inferSelect;
+
 // Assessment type constants
 export const ASSESSMENT_TYPES = {
   FIT: "fit",

@@ -13,6 +13,8 @@ import {
   reportExports,
   userReferences,
   marketingOptins,
+  goldenSetPrompts,
+  goldenSetResults,
   type User,
   type UpsertUser,
   type Purchase,
@@ -41,6 +43,10 @@ import {
   type InsertUserReference,
   type MarketingOptin,
   type InsertMarketingOptin,
+  type GoldenSetPrompt,
+  type InsertGoldenSetPrompt,
+  type GoldenSetResult,
+  type InsertGoldenSetResult,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -149,6 +155,13 @@ export interface IStorage {
   // Marketing opt-in operations
   createMarketingOptin(optin: InsertMarketingOptin): Promise<MarketingOptin>;
   getMarketingOptins(): Promise<MarketingOptin[]>;
+  
+  // Golden Set operations (scoring consistency benchmarks)
+  createGoldenSetPrompt(prompt: InsertGoldenSetPrompt): Promise<GoldenSetPrompt>;
+  getAllGoldenSetPrompts(): Promise<GoldenSetPrompt[]>;
+  createGoldenSetResult(result: InsertGoldenSetResult): Promise<GoldenSetResult>;
+  getLatestGoldenSetResults(): Promise<Array<GoldenSetResult & { prompt: GoldenSetPrompt }>>;
+  getGoldenSetResultHistory(promptId: string, limit?: number): Promise<GoldenSetResult[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -850,6 +863,59 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(marketingOptins)
       .orderBy(desc(marketingOptins.optedInAt));
+  }
+
+  // Golden Set operations
+  async createGoldenSetPrompt(prompt: InsertGoldenSetPrompt): Promise<GoldenSetPrompt> {
+    const [created] = await db
+      .insert(goldenSetPrompts)
+      .values(prompt)
+      .returning();
+    return created;
+  }
+
+  async getAllGoldenSetPrompts(): Promise<GoldenSetPrompt[]> {
+    return await db
+      .select()
+      .from(goldenSetPrompts)
+      .orderBy(goldenSetPrompts.level);
+  }
+
+  async createGoldenSetResult(result: InsertGoldenSetResult): Promise<GoldenSetResult> {
+    const [created] = await db
+      .insert(goldenSetResults)
+      .values(result)
+      .returning();
+    return created;
+  }
+
+  async getLatestGoldenSetResults(): Promise<Array<GoldenSetResult & { prompt: GoldenSetPrompt }>> {
+    const prompts = await this.getAllGoldenSetPrompts();
+    const results: Array<GoldenSetResult & { prompt: GoldenSetPrompt }> = [];
+    
+    for (const prompt of prompts) {
+      const [latestResult] = await db
+        .select()
+        .from(goldenSetResults)
+        .where(eq(goldenSetResults.promptId, prompt.id))
+        .orderBy(desc(goldenSetResults.testedAt))
+        .limit(1);
+      
+      if (latestResult) {
+        results.push({ ...latestResult, prompt });
+      }
+    }
+    
+    return results;
+  }
+
+  async getGoldenSetResultHistory(promptId: string, limit: number = 30): Promise<GoldenSetResult[]> {
+    return await db
+      .select()
+      .from(goldenSetResults)
+      .where(eq(goldenSetResults.promptId, promptId))
+      .orderBy(desc(goldenSetResults.testedAt))
+      .limit(limit);
   }
 }
 

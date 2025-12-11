@@ -3620,7 +3620,7 @@ ${userPrompt}
     // Retry OpenAI call with exponential backoff
     const completion = await retryWithBackoff(async () => {
       return await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o-2024-08-06",
         messages: [
           {
             role: "system",
@@ -3631,7 +3631,7 @@ ${userPrompt}
             content: evaluationPrompt,
           },
         ],
-        temperature: 0.3,
+        temperature: 0,
         response_format: { type: "json_object" },
       });
     });
