@@ -2869,7 +2869,7 @@ Format your response as JSON with this exact structure and skill names:
 }`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -3071,7 +3071,7 @@ Format your response as JSON with this structure:
 }`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -3750,7 +3750,7 @@ ${userPrompt}
     // Retry OpenAI call with exponential backoff
     const completion = await retryWithBackoff(async () => {
       return await openai.chat.completions.create({
-        model: "gpt-4o-2024-08-06",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
