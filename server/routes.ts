@@ -4006,7 +4006,7 @@ const GOLDEN_SET_PROMPTS = [
     level: 7,
     taskDescription: "Write a prompt for designing a content moderation system.",
     promptText: "Design a content moderation system for a social media platform. Consider the technical side, ethics, and how to handle appeals. Make it scalable.",
-    expectedScores: { clarity: 12, structure: 10, contextRelevance: 12, creativity: 10, iterativeImprovement: 8, totalScore: 52 }
+    expectedScores: { clarity: 17, structure: 16, contextRelevance: 16, creativity: 16, iterativeImprovement: 15, totalScore: 80 }
   }
 ];
 
