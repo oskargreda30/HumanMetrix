@@ -1075,24 +1075,39 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
     yPos += 8;
     
-    // Score display - compact centered box - reduced height from 20 to 15
-    const boxWidth = 55;
+    // Get band interpretation for display
+    const aiqBand = getAIQBandInterpretation(aiqResult.totalScore);
+    const aiqBandColor = getAIQBandColor(aiqResult.totalScore);
+    
+    // Score display - compact centered box with band color
+    const boxWidth = 70;
     const boxX = (pageWidth - boxWidth) / 2;
     
-    pdf.setFillColor(239, 246, 255);
-    pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(boxX, yPos, boxWidth, 15, 2, 2, 'FD');
+    // Use band-specific background tint
+    const bgTint: [number, number, number] = [
+      Math.min(255, aiqBandColor[0] + 180),
+      Math.min(255, aiqBandColor[1] + 180),
+      Math.min(255, aiqBandColor[2] + 180)
+    ];
+    pdf.setFillColor(bgTint[0], bgTint[1], bgTint[2]);
+    pdf.setDrawColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
+    pdf.roundedRect(boxX, yPos, boxWidth, 20, 2, 2, 'FD');
     
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
+    pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
     pdf.text(`${aiqResult.totalScore}/100`, pageWidth / 2, yPos + 8, { align: 'center' });
     
-    pdf.setFontSize(6);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Overall AIQ Score', pageWidth / 2, yPos + 12, { align: 'center' });
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(aiqBand.title, pageWidth / 2, yPos + 14, { align: 'center' });
     
-    yPos += 20;
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text(`${aiqBand.range}`, pageWidth / 2, yPos + 18, { align: 'center' });
+    
+    yPos += 25;
   }
   
   pdf.setTextColor(0, 0, 0);
