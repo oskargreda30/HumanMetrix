@@ -162,6 +162,8 @@ export interface IStorage {
   createGoldenSetResult(result: InsertGoldenSetResult): Promise<GoldenSetResult>;
   getLatestGoldenSetResults(): Promise<Array<GoldenSetResult & { prompt: GoldenSetPrompt }>>;
   getGoldenSetResultHistory(promptId: string, limit?: number): Promise<GoldenSetResult[]>;
+  deleteAllGoldenSetPrompts(): Promise<void>;
+  deleteAllGoldenSetResults(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -916,6 +918,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(goldenSetResults.promptId, promptId))
       .orderBy(desc(goldenSetResults.testedAt))
       .limit(limit);
+  }
+
+  async deleteAllGoldenSetPrompts(): Promise<void> {
+    await db.delete(goldenSetPrompts);
+  }
+
+  async deleteAllGoldenSetResults(): Promise<void> {
+    await db.delete(goldenSetResults);
   }
 }
 

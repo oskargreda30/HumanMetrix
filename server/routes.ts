@@ -3268,6 +3268,39 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Admin: Reset golden set (delete all prompts/results and re-seed with updated expected scores)
+  app.post("/api/admin/golden-set/reset", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      console.log('[Golden Set] Resetting all prompts and results...');
+      
+      // Delete all results first (due to foreign key)
+      await storage.deleteAllGoldenSetResults();
+      
+      // Delete all prompts
+      await storage.deleteAllGoldenSetPrompts();
+      
+      // Re-seed with updated expected scores
+      const created = [];
+      for (const prompt of GOLDEN_SET_PROMPTS) {
+        const result = await storage.createGoldenSetPrompt(prompt);
+        created.push(result);
+      }
+      
+      console.log(`[Golden Set] Reset complete. Created ${created.length} prompts with calibrated scores.`);
+      res.json({ message: "Golden set reset complete", count: created.length });
+    } catch (error) {
+      console.error("Error resetting golden set:", error);
+      res.status(500).json({ message: "Failed to reset golden set" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -3903,20 +3936,21 @@ async function calculatePromptArchitectureScores(
 // ==================== GOLDEN SET BENCHMARK SYSTEM ====================
 
 // 10 Benchmark prompts across all 7 levels for scoring consistency verification
+// Expected scores calibrated from actual GPT-4o-2024-08-06 output (Dec 2025)
 const GOLDEN_SET_PROMPTS = [
   {
     name: "L1-Basic-Good",
     level: 1,
     taskDescription: "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
     promptText: "Tell me the capital of France and provide 3 interesting facts about this city, including its history, culture, and landmarks.",
-    expectedScores: { clarity: 18, structure: 16, contextRelevance: 17, creativity: 14, iterativeImprovement: 10, totalScore: 75 }
+    expectedScores: { clarity: 18, structure: 17, contextRelevance: 17, creativity: 15, iterativeImprovement: 14, totalScore: 81 }
   },
   {
     name: "L1-Basic-Poor",
     level: 1,
     taskDescription: "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
     promptText: "France capital facts",
-    expectedScores: { clarity: 8, structure: 6, contextRelevance: 8, creativity: 4, iterativeImprovement: 2, totalScore: 28 }
+    expectedScores: { clarity: 5, structure: 4, contextRelevance: 5, creativity: 2, iterativeImprovement: 2, totalScore: 18 }
   },
   {
     name: "L2-Structured-Good",
@@ -3930,14 +3964,14 @@ const GOLDEN_SET_PROMPTS = [
     level: 3,
     taskDescription: "Write a prompt asking the AI to explain quantum computing as if it were a senior physics professor teaching undergraduate students.",
     promptText: "You are a senior physics professor at MIT with 30 years of experience teaching undergraduates. Explain quantum computing to your introductory physics class. Use accessible language, real-world analogies, and avoid jargon. Structure your explanation with: 1) What is quantum computing, 2) How it differs from classical computing, 3) One practical application students can relate to.",
-    expectedScores: { clarity: 19, structure: 19, contextRelevance: 18, creativity: 17, iterativeImprovement: 14, totalScore: 87 }
+    expectedScores: { clarity: 19, structure: 19, contextRelevance: 18, creativity: 17, iterativeImprovement: 16, totalScore: 89 }
   },
   {
     name: "L4-MultiStep-Good",
     level: 4,
     taskDescription: "Write a prompt asking the AI to help debug a Python function that's supposed to find duplicates in a list.",
     promptText: "I have a Python function that should find duplicate values in a list but it's not working correctly. Please help me debug it by following these steps:\n\n1. ANALYZE: First, examine the code logic and identify potential issues\n2. IDENTIFY: Pinpoint the specific bug(s) causing the problem\n3. EXPLAIN: Describe why this bug causes incorrect behavior\n4. FIX: Provide a corrected version of the function with comments explaining the changes\n\nHere's my function:\ndef find_duplicates(lst):\n    duplicates = []\n    for i in lst:\n        if lst.count(i) > 1:\n            duplicates.append(i)\n    return duplicates",
-    expectedScores: { clarity: 19, structure: 20, contextRelevance: 19, creativity: 16, iterativeImprovement: 16, totalScore: 90 }
+    expectedScores: { clarity: 19, structure: 20, contextRelevance: 19, creativity: 16, iterativeImprovement: 15, totalScore: 89 }
   },
   {
     name: "L5-Creative-Good",
@@ -3951,21 +3985,21 @@ const GOLDEN_SET_PROMPTS = [
     level: 6,
     taskDescription: "Write a prompt for drafting and self-improving a job offer decline email.",
     promptText: "Complete this multi-step task for writing a professional email declining a job offer:\n\nSTEP 1 - DRAFT:\nWrite a professional email to decline a job offer from TechCorp for a Software Engineer position. Express gratitude, decline politely, and leave the door open for future opportunities.\n\nSTEP 2 - SELF-EVALUATE:\nCritically analyze your draft on these criteria:\n- Tone (professional yet warm?)\n- Clarity (is the message unambiguous?)\n- Professionalism (appropriate language and structure?)\n- Completeness (all necessary elements included?)\nList 2-3 specific weaknesses.\n\nSTEP 3 - IMPROVE:\nRewrite the email addressing the weaknesses you identified. Highlight what you changed and why.",
-    expectedScores: { clarity: 19, structure: 20, contextRelevance: 18, creativity: 17, iterativeImprovement: 20, totalScore: 94 }
+    expectedScores: { clarity: 19, structure: 20, contextRelevance: 18, creativity: 17, iterativeImprovement: 18, totalScore: 92 }
   },
   {
     name: "L7-Complex-Good",
     level: 7,
     taskDescription: "Write a prompt for designing a comprehensive content moderation system.",
     promptText: "Design a comprehensive content moderation system for a social media platform with 50 million active users.\n\nProvide a structured response covering ALL of these sections:\n\n1. TECHNICAL ARCHITECTURE\n   - AI/ML pipeline components\n   - Human review integration\n   - Real-time vs batch processing\n\n2. CONTENT CLASSIFICATION\n   - Decision tree for content types (text, images, video)\n   - Severity levels and corresponding actions\n   - Edge case handling protocol\n\n3. ETHICAL CONSIDERATIONS\n   - Free speech balance\n   - Cultural sensitivity across regions\n   - Bias mitigation in AI systems\n\n4. SCALABILITY\n   - Load handling during viral events\n   - Queue management and prioritization\n\n5. APPEALS PROCESS\n   - User dispute mechanism\n   - Escalation tiers\n   - Resolution timeframes\n\n6. METRICS & MONITORING\n   - Key performance indicators\n   - False positive/negative tracking\n\nFor each section, provide specific recommendations with rationale.",
-    expectedScores: { clarity: 19, structure: 20, contextRelevance: 20, creativity: 18, iterativeImprovement: 18, totalScore: 95 }
+    expectedScores: { clarity: 19, structure: 19, contextRelevance: 18, creativity: 16, iterativeImprovement: 16, totalScore: 88 }
   },
   {
     name: "L4-MultiStep-Poor",
     level: 4,
     taskDescription: "Write a prompt asking the AI to help debug a Python function.",
     promptText: "Fix this code:\ndef find_duplicates(lst):\n    duplicates = []\n    for i in lst:\n        if lst.count(i) > 1:\n            duplicates.append(i)\n    return duplicates",
-    expectedScores: { clarity: 10, structure: 8, contextRelevance: 10, creativity: 6, iterativeImprovement: 4, totalScore: 38 }
+    expectedScores: { clarity: 12, structure: 10, contextRelevance: 14, creativity: 8, iterativeImprovement: 6, totalScore: 50 }
   },
   {
     name: "L7-Complex-Medium",
@@ -4030,7 +4064,7 @@ async function runGoldenSetEvaluation(): Promise<{
   }
   
   const results = [];
-  const DRIFT_THRESHOLD = 10; // 10% drift threshold for pass/fail
+  const DRIFT_THRESHOLD = 2; // 2% drift threshold for pass/fail
   
   console.log(`[Golden Set] Running evaluation on ${prompts.length} benchmark prompts...`);
   

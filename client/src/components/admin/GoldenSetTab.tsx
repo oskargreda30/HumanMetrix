@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Play, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Play, RefreshCw, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Table,
@@ -101,6 +101,17 @@ export default function GoldenSetTab() {
     },
   });
 
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/golden-set/reset");
+      return response.json();
+    },
+    onSuccess: () => {
+      setLastRunResult(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -127,15 +138,34 @@ export default function GoldenSetTab() {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              disabled={runMutation.isPending}
+              disabled={runMutation.isPending || resetMutation.isPending}
               data-testid="button-refresh-results"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => resetMutation.mutate()}
+              disabled={runMutation.isPending || resetMutation.isPending}
+              data-testid="button-reset-prompts"
+            >
+              {resetMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset & Recalibrate
+                </>
+              )}
+            </Button>
+            <Button
               onClick={() => runMutation.mutate()}
-              disabled={runMutation.isPending}
+              disabled={runMutation.isPending || resetMutation.isPending}
               data-testid="button-run-evaluation"
             >
               {runMutation.isPending ? (
@@ -211,7 +241,7 @@ export default function GoldenSetTab() {
           <CardHeader>
             <CardTitle>Benchmark Results</CardTitle>
             <CardDescription>
-              Expected vs actual scores for each benchmark prompt (drift threshold: 10%)
+              Expected vs actual scores for each benchmark prompt (drift threshold: 2%)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -237,7 +267,7 @@ export default function GoldenSetTab() {
                     <TableCell className="text-right">{result.prompt.expectedScores.totalScore}</TableCell>
                     <TableCell className="text-right">{result.actualScores.totalScore}</TableCell>
                     <TableCell className="text-right">
-                      <span className={result.driftPercentage > 10 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
+                      <span className={result.driftPercentage > 2 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
                         {result.driftPercentage.toFixed(1)}%
                       </span>
                     </TableCell>
@@ -302,7 +332,7 @@ export default function GoldenSetTab() {
                     <TableCell className="text-right">{result.expectedScore}</TableCell>
                     <TableCell className="text-right">{result.actualScore}</TableCell>
                     <TableCell className="text-right">
-                      <span className={result.driftPercentage > 10 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
+                      <span className={result.driftPercentage > 2 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
                         {result.driftPercentage}%
                       </span>
                     </TableCell>
