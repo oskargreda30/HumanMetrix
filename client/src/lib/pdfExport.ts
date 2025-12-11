@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import { FIT_SKILLS, AI_READINESS_SKILLS } from './assessmentSkills';
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 import { applyBodyText, applySubheading, applyHeading, applySmallText, PDF_SPACING } from './pdfStyles';
+import { getAIQBandInterpretation } from '@/data/aiq-questions';
 
 interface CandidateData {
   user: {
@@ -609,11 +610,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.text(shortName, 25, yPos);
       
       if (aiqData) {
+        const aiqBand = getAIQBandInterpretation(aiqData.totalScore);
+        // Get band-specific color
+        const getBandColor = (score: number): [number, number, number] => {
+          if (score >= 80) return [34, 197, 94];   // Green
+          if (score >= 60) return [59, 130, 246];  // Blue
+          if (score >= 40) return [245, 158, 11];  // Amber
+          if (score >= 20) return [249, 115, 22];  // Orange
+          return [239, 68, 68];                     // Red
+        };
         pdf.setTextColor(17, 24, 39);
         pdf.text(`${aiqData.totalScore}/100`, 100, yPos);
-        const passed = aiqData.totalScore >= 70;
-        pdf.setTextColor(passed ? 34 : 239, passed ? 197 : 68, passed ? 94 : 68);
-        pdf.text(passed ? 'Passed' : 'Developing', 130, yPos);
+        const bandColor = getBandColor(aiqData.totalScore);
+        pdf.setTextColor(bandColor[0], bandColor[1], bandColor[2]);
+        pdf.text(aiqBand.title, 130, yPos);
       } else {
         pdf.setTextColor(150, 150, 150);
         pdf.text('N/A', 100, yPos);

@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { isSkillBasedAssessment, transformToRadarData, getSkillAcronym } from "@/lib/assessmentSkills";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   Radar,
   RadarChart,
@@ -161,19 +162,29 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
 
     case "aiq":
       const aiqScore = Object.values(scores)[0] as number || 0;
-      const isPassed = aiqScore >= 70;
+      const bandInterpretation = getAIQBandInterpretation(aiqScore);
       
-      analysis.overall = `This Algorithmic Integrity Quotient (AIQ) assessment evaluates understanding of AI ethics, bias, fairness, transparency, and responsible deployment. Score: **${aiqScore}/100** - **${isPassed ? 'PASSED' : 'NEEDS IMPROVEMENT'}** (70% threshold).`;
+      analysis.overall = `This Algorithmic Integrity Quotient (AIQ) assessment evaluates ethical reasoning in AI scenarios using graded scoring. Score: **${aiqScore}/100** - **${bandInterpretation.title}** (${bandInterpretation.range}). ${bandInterpretation.description}`;
       
-      if (isPassed) {
-        analysis.strengths.push(`**Strong ethical foundation**: Demonstrates solid understanding of AI ethics principles and responsible deployment practices.`);
-        analysis.strengths.push(`**Good judgment**: Shows ability to identify and address ethical concerns in AI systems, including bias, transparency, and safety issues.`);
-        analysis.strengths.push(`**Ready for AI governance**: Can make ethically sound decisions regarding AI system design, deployment, and oversight.`);
+      if (aiqScore >= 80) {
+        analysis.strengths.push(`**Exceptional ethical alignment**: Consistently prioritizes optimal ethical outcomes with sophisticated reasoning about complex trade-offs.`);
+        analysis.strengths.push(`**Strategic ethical leadership**: Demonstrates ability to navigate gray areas while maintaining strong ethical principles.`);
+        analysis.strengths.push(`**AI governance ready**: Well-prepared for roles requiring ethical oversight of AI systems.`);
+      } else if (aiqScore >= 60) {
+        analysis.strengths.push(`**Strong ethical foundation**: Shows sound judgment balancing ethical imperatives with operational realities.`);
+        analysis.strengths.push(`**Practical ethics awareness**: Understands core principles of responsible AI deployment.`);
+        if (aiqScore < 80) {
+          analysis.improvements.push(`**Advanced ethical reasoning**: Consider exploring more complex ethical frameworks and edge cases in AI decision-making.`);
+        }
+      } else if (aiqScore >= 40) {
+        analysis.strengths.push(`**Basic ethical awareness**: Shows foundational understanding of AI ethics concepts.`);
+        analysis.improvements.push(`**Ethical prioritization**: Practice weighing ethical considerations more heavily against efficiency or convenience.`);
+        analysis.improvements.push(`**Bias recognition**: Develop stronger skills in identifying and mitigating algorithmic bias.`);
       } else {
-        analysis.improvements.push(`**AI ethics fundamentals**: Recommend training on core AI ethics principles, including fairness, transparency, accountability, and safety.`);
-        analysis.improvements.push(`**Bias recognition**: Develop skills in identifying various forms of algorithmic bias and understanding their real-world implications.`);
-        analysis.improvements.push(`**Responsible deployment**: Study best practices for responsible AI deployment, including risk assessment and safeguard implementation.`);
-        analysis.improvements.push(`**Regulatory awareness**: Familiarize with AI governance frameworks and ethical decision-making in AI contexts.`);
+        analysis.improvements.push(`**AI ethics fundamentals**: Recommend comprehensive training on fairness, transparency, accountability, and safety principles.`);
+        analysis.improvements.push(`**Consent and privacy**: Study best practices for handling sensitive data and obtaining proper consent.`);
+        analysis.improvements.push(`**Responsible deployment**: Learn risk assessment and safeguard implementation for AI systems.`);
+        analysis.improvements.push(`**Regulatory awareness**: Familiarize with AI governance frameworks and ethical decision-making.`);
       }
       break;
   }
@@ -570,58 +581,81 @@ export default function Results() {
             </Card>
           )}
 
-          {/* AIQ Horizontal Bar Visualization */}
-          {assessmentType === 'aiq' && hasTotalScore && (
-            <Card className="p-8 mb-8">
-              <h2 className="text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
-              <div className="space-y-4">
-                {/* Score labels */}
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span data-testid="text-aiq-min">0</span>
-                  <span className="text-amber-600 font-medium" data-testid="text-aiq-pass-threshold">70 (Pass Rate)</span>
-                  <span data-testid="text-aiq-max">100</span>
-                </div>
-                
-                {/* Progress bar with pass marker */}
-                <div className="relative" data-testid="container-aiq-progress">
-                  <Progress 
-                    value={Math.min(totalScore, 100)} 
-                    className="h-8 relative"
-                    data-testid="progress-aiq-bar"
-                    indicatorClassName={
-                      totalScore >= 70 
-                        ? 'bg-green-600' 
-                        : 'bg-amber-600'
-                    }
-                  />
+          {/* AIQ Graded Score Visualization */}
+          {assessmentType === 'aiq' && hasTotalScore && (() => {
+            const band = getAIQBandInterpretation(totalScore);
+            const getBarColor = (score: number) => {
+              if (score >= 80) return 'bg-green-600';
+              if (score >= 60) return 'bg-blue-600';
+              if (score >= 40) return 'bg-amber-500';
+              if (score >= 20) return 'bg-orange-500';
+              return 'bg-red-500';
+            };
+            return (
+              <Card className="p-8 mb-8">
+                <h2 className="text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
+                <div className="space-y-6">
+                  {/* Band labels */}
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span data-testid="text-aiq-min">0</span>
+                    <span>20</span>
+                    <span>40</span>
+                    <span>60</span>
+                    <span>80</span>
+                    <span data-testid="text-aiq-max">100</span>
+                  </div>
                   
-                  {/* Pass rate marker line */}
-                  <div 
-                    className="absolute top-0 bottom-0 w-0.5 bg-amber-600 pointer-events-none" 
-                    style={{ left: '70%' }}
-                    data-testid="marker-aiq-pass-line"
-                  />
+                  {/* Progress bar with band markers */}
+                  <div className="relative" data-testid="container-aiq-progress">
+                    <Progress 
+                      value={Math.min(totalScore, 100)} 
+                      className="h-8 relative"
+                      data-testid="progress-aiq-bar"
+                      indicatorClassName={getBarColor(totalScore)}
+                    />
+                    
+                    {/* Band marker lines */}
+                    {[20, 40, 60, 80].map((mark) => (
+                      <div 
+                        key={mark}
+                        className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 pointer-events-none" 
+                        style={{ left: `${mark}%` }}
+                      />
+                    ))}
+                    
+                    {/* Score value label */}
+                    {totalScore > 0 && (
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded text-sm font-bold whitespace-nowrap pointer-events-none"
+                        style={{ left: `${Math.min(Math.max(totalScore, 8), 92)}%` }}
+                        data-testid="label-aiq-score-position"
+                      >
+                        {totalScore}%
+                      </div>
+                    )}
+                  </div>
                   
-                  {/* Score value label - positioned safely within bounds */}
-                  {totalScore > 0 && totalScore < 100 && (
-                    <div 
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded text-sm font-bold whitespace-nowrap pointer-events-none"
-                      style={{ left: `${Math.min(Math.max(totalScore, 10), 90)}%` }}
-                      data-testid="label-aiq-score-position"
+                  {/* Band interpretation */}
+                  <div className="text-center space-y-2" data-testid="container-aiq-band">
+                    <Badge 
+                      className={`text-sm px-4 py-1 ${
+                        totalScore >= 80 ? 'bg-green-600' :
+                        totalScore >= 60 ? 'bg-blue-600' :
+                        totalScore >= 40 ? 'bg-amber-500' :
+                        totalScore >= 20 ? 'bg-orange-500' : 'bg-red-500'
+                      }`}
+                      data-testid="badge-aiq-band"
                     >
-                      {totalScore}
-                    </div>
-                  )}
+                      {band.title}
+                    </Badge>
+                    <p className="text-muted-foreground text-sm max-w-2xl mx-auto" data-testid="text-aiq-description">
+                      {band.description}
+                    </p>
+                  </div>
                 </div>
-                
-                <p className="text-center mt-4 text-muted-foreground" data-testid="text-aiq-status">
-                  {totalScore >= 70 
-                    ? '✓ Passed - Strong understanding of AI ethics and responsible deployment' 
-                    : 'Below pass rate - Additional training in AI ethics recommended'}
-                </p>
-              </div>
-            </Card>
-          )}
+              </Card>
+            );
+          })()}
 
           {/* Visualizations - For FIT and AI Readiness */}
           {Object.keys(scores).length > 0 && assessmentType !== 'aiq' && (

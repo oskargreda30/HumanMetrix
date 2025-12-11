@@ -3809,32 +3809,37 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
 }
 
 function calculateAIQScores(answers: Record<string, string>): Record<string, number> {
-  // Correct answers based on AIQ assessment
-  const correctAnswers: Record<string, string> = {
-    '1': 'A', // Data Privacy: Delete combined dataset
-    '2': 'A', // Bias: Re-engineer to remove biased features
-    '3': 'C', // Transparency: Deploy XAI technique
-    '4': 'B', // Safety: Hard-code emergency vehicle priority
-    '5': 'B', // Surveillance: Disable system until bias is resolved
-    '6': 'A', // Mental Health: Introduce time limits and human support prompts
-    '7': 'A', // Education Equity: Baseline curriculum before adaptation
-    '8': 'C', // Healthcare Consent: Pause use until explicit consent obtained
+  // Graded scoring for AIQ assessment
+  // Each answer option has a score from 0-100 based on ethical alignment
+  const gradedScores: Record<string, Record<string, number>> = {
+    '1': { 'A': 100, 'B': 0, 'C': 65, 'D': 30 },   // Re-identification Risk
+    '2': { 'A': 100, 'B': 70, 'C': 25, 'D': 0 },   // Résumé Screening Bias
+    '3': { 'A': 70, 'B': 55, 'C': 100, 'D': 0 },   // Black Box Loan Decisions
+    '4': { 'A': 0, 'B': 100, 'C': 20, 'D': 60 },   // Emergency Vehicle Priority
+    '5': { 'A': 75, 'B': 100, 'C': 15, 'D': 40 },  // Facial Recognition Bias
+    '6': { 'A': 100, 'B': 60, 'C': 20, 'D': 45 },  // Mental Health Chatbot
+    '7': { 'A': 100, 'B': 50, 'C': 75, 'D': 20 },  // AI Tutoring Achievement Gap
+    '8': { 'A': 50, 'B': 70, 'C': 100, 'D': 0 },   // Hospital AI Consent
   };
 
-  let score = 0;
-  let correctCount = 0;
+  let totalPoints = 0;
+  let questionsAnswered = 0;
   
   Object.entries(answers).forEach(([question, answer]) => {
-    if (correctAnswers[question] === answer) {
-      score += 12.5;
-      correctCount++;
+    const questionScores = gradedScores[question];
+    if (questionScores && questionScores[answer] !== undefined) {
+      totalPoints += questionScores[answer];
+      questionsAnswered++;
     }
   });
 
-  // 70% or above is pass (6, 7, or 8 correct = pass)
-  // Below 70% is needs improvement (0-5 correct = needs improvement)
+  // Calculate average score (out of 100)
+  const averageScore = questionsAnswered > 0 
+    ? Math.round(totalPoints / questionsAnswered) 
+    : 0;
+  
   return { 
-    'Algorithmic Integrity': score
+    'Algorithmic Integrity': averageScore
   };
 }
 

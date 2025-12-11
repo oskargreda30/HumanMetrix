@@ -28,6 +28,7 @@ import {
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore, getSkillAcronym } from "@/lib/assessmentSkills";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
 export default function CandidatesTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -330,60 +331,80 @@ export default function CandidatesTab() {
                                       </div>
                                     </div>
                                   ) : result.assessmentType === 'aiq' && result.totalScore !== null && result.status === 'completed' ? (
-                                    <div className="p-4 bg-muted/30 rounded-lg space-y-3" data-testid={`aiq-result-${result.id}`}>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium" data-testid="text-aiq-label">AIQ Score</span>
-                                        <span className="text-xl font-bold text-primary" data-testid="text-aiq-score">{result.totalScore}</span>
-                                      </div>
-                                      
-                                      {/* Horizontal bar with pass rate marker */}
-                                      <div className="relative">
-                                        {/* Score labels */}
-                                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                          <span data-testid="text-aiq-min">0</span>
-                                          <span className="text-amber-600 font-medium" data-testid="text-aiq-pass-threshold">70 (Pass)</span>
-                                          <span data-testid="text-aiq-max">100</span>
-                                        </div>
-                                        
-                                        {/* Bar using shadcn Progress with custom styling */}
-                                        <div className="relative" data-testid="container-aiq-progress">
-                                          <Progress 
-                                            value={Math.min(result.totalScore, 100)} 
-                                            className="h-6 relative"
-                                            data-testid="progress-aiq-bar"
-                                            indicatorClassName={
-                                              result.totalScore >= 70 
-                                                ? 'bg-green-600' 
-                                                : 'bg-amber-600'
-                                            }
-                                          />
+                                    (() => {
+                                      const aiqBand = getAIQBandInterpretation(result.totalScore);
+                                      const getBarColor = (score: number) => {
+                                        if (score >= 80) return 'bg-green-600';
+                                        if (score >= 60) return 'bg-blue-600';
+                                        if (score >= 40) return 'bg-amber-500';
+                                        if (score >= 20) return 'bg-orange-500';
+                                        return 'bg-red-500';
+                                      };
+                                      return (
+                                        <div className="p-4 bg-muted/30 rounded-lg space-y-3" data-testid={`aiq-result-${result.id}`}>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium" data-testid="text-aiq-label">AIQ Score</span>
+                                            <span className="text-xl font-bold text-primary" data-testid="text-aiq-score">{result.totalScore}%</span>
+                                          </div>
                                           
-                                          {/* Pass rate marker line */}
-                                          <div 
-                                            className="absolute top-0 bottom-0 w-0.5 bg-amber-600 pointer-events-none" 
-                                            style={{ left: '70%' }}
-                                            data-testid="marker-aiq-pass-line"
-                                          />
-                                          
-                                          {/* Score value label - positioned safely within bounds */}
-                                          {result.totalScore > 0 && result.totalScore < 100 && (
-                                            <div 
-                                              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap pointer-events-none"
-                                              style={{ left: `${Math.min(Math.max(result.totalScore, 10), 90)}%` }}
-                                              data-testid="label-aiq-score-position"
-                                            >
-                                              {result.totalScore}
+                                          {/* Horizontal bar with graded band markers */}
+                                          <div className="relative">
+                                            {/* Band labels */}
+                                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                              <span data-testid="text-aiq-min">0</span>
+                                              <span>40</span>
+                                              <span>80</span>
+                                              <span data-testid="text-aiq-max">100</span>
                                             </div>
-                                          )}
+                                            
+                                            {/* Bar using shadcn Progress with graded coloring */}
+                                            <div className="relative" data-testid="container-aiq-progress">
+                                              <Progress 
+                                                value={Math.min(result.totalScore, 100)} 
+                                                className="h-6 relative"
+                                                data-testid="progress-aiq-bar"
+                                                indicatorClassName={getBarColor(result.totalScore)}
+                                              />
+                                              
+                                              {/* Band marker lines */}
+                                              {[20, 40, 60, 80].map((mark) => (
+                                                <div 
+                                                  key={mark}
+                                                  className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 pointer-events-none" 
+                                                  style={{ left: `${mark}%` }}
+                                                />
+                                              ))}
+                                              
+                                              {/* Score value label */}
+                                              {result.totalScore > 0 && (
+                                                <div 
+                                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap pointer-events-none"
+                                                  style={{ left: `${Math.min(Math.max(result.totalScore, 8), 92)}%` }}
+                                                  data-testid="label-aiq-score-position"
+                                                >
+                                                  {result.totalScore}%
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            {/* Band interpretation */}
+                                            <div className="text-center mt-2" data-testid="container-aiq-band">
+                                              <Badge 
+                                                className={`text-xs ${
+                                                  result.totalScore >= 80 ? 'bg-green-600' :
+                                                  result.totalScore >= 60 ? 'bg-blue-600' :
+                                                  result.totalScore >= 40 ? 'bg-amber-500' :
+                                                  result.totalScore >= 20 ? 'bg-orange-500' : 'bg-red-500'
+                                                }`}
+                                                data-testid="badge-aiq-band"
+                                              >
+                                                {aiqBand.title}
+                                              </Badge>
+                                            </div>
+                                          </div>
                                         </div>
-                                        
-                                        <p className="text-xs text-center mt-2 text-muted-foreground" data-testid="text-aiq-status">
-                                          {result.totalScore >= 70 
-                                            ? '✓ Passed - Strong AI ethics understanding' 
-                                            : 'Below pass rate - Additional training recommended'}
-                                        </p>
-                                      </div>
-                                    </div>
+                                      );
+                                    })()
                                   ) : result.totalScore !== null && (
                                     <div className="text-center p-3 bg-muted rounded-lg">
                                       <p className="text-lg font-bold text-primary">

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
+import { getAIQBandInterpretation } from '@/data/aiq-questions';
 
 interface CandidateData {
   user: {
@@ -145,6 +146,15 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   if (score >= 55) return { label: 'Competent', color: [234, 179, 8] };
   if (score >= 40) return { label: 'Developing', color: [249, 115, 22] };
   return { label: 'Needs Development', color: [239, 68, 68] };
+}
+
+// Helper to get AIQ band-specific colors (aligned with 20% band system)
+function getAIQBandColor(score: number): [number, number, number] {
+  if (score >= 80) return [34, 197, 94];   // Green - Exemplary
+  if (score >= 60) return [59, 130, 246];  // Blue - Strong
+  if (score >= 40) return [245, 158, 11];  // Amber - Developing
+  if (score >= 20) return [249, 115, 22];  // Orange - Significant Gaps
+  return [239, 68, 68];                     // Red - Critical Concerns
 }
 
 // Helper to generate role-based recommendations based on assessment profile
@@ -562,7 +572,7 @@ export async function exportEnhancedCandidatePDF(
     yPos += promptLines.length * 3 + 5;
   }
   
-  // AIQ Summary
+  // AIQ Summary - Graded Band Interpretation
   if (aiqResultSummary) {
     if (yPos > pageHeight - 40) {
       pdf.addPage();
@@ -572,25 +582,22 @@ export async function exportEnhancedCandidatePDF(
     }
     
     const aiqScore = aiqResultSummary.totalScore;
-    const aiqPerf = getPerformanceLevel(aiqScore);
+    const aiqBandColor = getAIQBandColor(aiqScore);
+    const aiqBand = getAIQBandInterpretation(aiqScore);
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
     pdf.text('Algorithmic Integrity Quotient (AIQ)', 25, yPos);
     
-    pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
-    pdf.text(`${aiqScore}/100`, pageWidth - 25, yPos, { align: 'right' });
+    pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
+    pdf.text(`${aiqScore}/100 - ${aiqBand.title}`, pageWidth - 25, yPos, { align: 'right' });
     yPos += 4;
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    const aiqSummary = aiqScore >= 75 
-      ? `Strong ethical understanding of AI systems; trusted for responsible algorithmic deployment decisions.`
-      : aiqScore >= 50
-      ? `Foundational AI ethics knowledge; additional training recommended before system deployment.`
-      : `Significant AI ethics development needed; close supervision and training strongly recommended.`;
+    const aiqSummary = `${aiqBand.description}`;
     const aiqLines = pdf.splitTextToSize(aiqSummary, pageWidth - 50);
     aiqLines.forEach((line: string, idx: number) => {
       pdf.text(line, 30, yPos + (idx * 3));
@@ -721,14 +728,14 @@ export async function exportEnhancedCandidatePDF(
     yPos
   );
   
-  // AIQ Assessment Explanation
+  // AIQ Assessment Explanation - Graded Scoring
   yPos = addAssessmentBox(
     'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (8 Questions)',
     [59, 130, 246],
     [239, 246, 255],
     [59, 130, 246],
-    'Understanding of AI ethics, bias detection, fairness, transparency, and responsible deployment. Tests decision-making in scenarios involving algorithmic systems and their societal impact.',
-    'Critical for reducing AI deployment risks and ensuring compliance. High scorers identify bias early, implement fair AI systems, and make ethically sound decisions that protect brand reputation and avoid regulatory issues.',
+    'AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%). Recognizes strategic ethical reasoning.',
+    'Graded scoring captures nuanced ethical judgment that senior strategists demonstrate. Identifies candidates who balance ethical imperatives with operational realities, making them valuable for AI governance and deployment oversight roles.',
     yPos
   );
   

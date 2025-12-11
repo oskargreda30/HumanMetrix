@@ -149,12 +149,12 @@ export const AI_READINESS_SKILLS: SkillDefinition[] = [
   },
 ];
 
-// AIQ: Algorithmic Integrity Quotient (single comprehensive score)
+// AIQ: Algorithmic Integrity Quotient (graded scoring with 20% band interpretations)
 export const AIQ_SKILLS: SkillDefinition[] = [
   {
     key: 'Algorithmic Integrity',
     displayName: 'Algorithmic Integrity',
-    description: 'Comprehensive understanding of AI ethics, bias, fairness, transparency, and responsible deployment',
+    description: 'AI ethics using graded scoring (0-100%) with weighted options for nuanced ethical judgment',
     color: 'hsl(var(--chart-1))',
   },
 ];
