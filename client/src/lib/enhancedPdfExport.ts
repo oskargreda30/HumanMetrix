@@ -1080,34 +1080,49 @@ export async function exportEnhancedCandidatePDF(
     const aiqBandColor = getAIQBandColor(aiqResult.totalScore);
     
     // Score display - compact centered box with band color
-    const boxWidth = 70;
+    const boxWidth = 80;
+    const boxHeight = 28;
     const boxX = (pageWidth - boxWidth) / 2;
     
-    // Use band-specific background tint
+    // Create proper light background tint (10% of band color mixed with white)
     const bgTint: [number, number, number] = [
-      Math.min(255, aiqBandColor[0] + 180),
-      Math.min(255, aiqBandColor[1] + 180),
-      Math.min(255, aiqBandColor[2] + 180)
+      Math.round(255 - (255 - aiqBandColor[0]) * 0.15),
+      Math.round(255 - (255 - aiqBandColor[1]) * 0.15),
+      Math.round(255 - (255 - aiqBandColor[2]) * 0.15)
     ];
     pdf.setFillColor(bgTint[0], bgTint[1], bgTint[2]);
     pdf.setDrawColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
-    pdf.roundedRect(boxX, yPos, boxWidth, 20, 2, 2, 'FD');
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(boxX, yPos, boxWidth, boxHeight, 3, 3, 'FD');
     
-    pdf.setFontSize(14);
+    // Score number
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
-    pdf.text(`${aiqResult.totalScore}/100`, pageWidth / 2, yPos + 8, { align: 'center' });
+    pdf.text(`${aiqResult.totalScore}%`, pageWidth / 2, yPos + 10, { align: 'center' });
     
-    pdf.setFontSize(8);
+    // Band title
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(aiqBand.title, pageWidth / 2, yPos + 14, { align: 'center' });
+    pdf.text(aiqBand.title, pageWidth / 2, yPos + 18, { align: 'center' });
     
-    pdf.setFontSize(6);
+    // Band range
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text(`${aiqBand.range}`, pageWidth / 2, yPos + 18, { align: 'center' });
+    pdf.text(`(${aiqBand.range})`, pageWidth / 2, yPos + 24, { align: 'center' });
     
-    yPos += 25;
+    yPos += boxHeight + 8;
+    
+    // Add band description below the box
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(55, 65, 81);
+    const descLines = pdf.splitTextToSize(aiqBand.description, pageWidth - 50);
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, pageWidth / 2, yPos + (idx * 4), { align: 'center' });
+    });
+    yPos += descLines.length * 4 + 5;
   }
   
   pdf.setTextColor(0, 0, 0);
