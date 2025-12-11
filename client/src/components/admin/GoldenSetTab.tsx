@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, CheckCircle2, XCircle, Play, RefreshCw, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -85,6 +86,8 @@ interface RunEvaluationResponse {
 
 export default function GoldenSetTab() {
   const [lastRunResult, setLastRunResult] = useState<RunEvaluationResponse | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [currentPrompt, setCurrentPrompt] = useState("");
 
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
     queryKey: ["/api/admin/golden-set/results"],
@@ -97,10 +100,43 @@ export default function GoldenSetTab() {
     },
     onSuccess: async (result) => {
       setLastRunResult(result);
+      setProgress(100);
+      setCurrentPrompt("");
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
       refetch();
     },
   });
+
+  useEffect(() => {
+    if (!runMutation.isPending) {
+      setProgress(0);
+      setCurrentPrompt("");
+      return;
+    }
+
+    const pollProgress = async () => {
+      try {
+        const response = await fetch("/api/admin/golden-set/results", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          const tested = data.testedCount || 0;
+          const total = data.totalPrompts || 10;
+          const newProgress = Math.round((tested / total) * 100);
+          setProgress(newProgress);
+          if (tested < total) {
+            setCurrentPrompt(`Evaluating prompt ${tested + 1} of ${total}...`);
+          }
+        }
+      } catch (e) {
+        console.error("Error polling progress:", e);
+      }
+    };
+
+    const interval = setInterval(pollProgress, 2000);
+    pollProgress();
+
+    return () => clearInterval(interval);
+  }, [runMutation.isPending]);
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -185,6 +221,19 @@ export default function GoldenSetTab() {
           </div>
         </CardHeader>
         <CardContent>
+          {runMutation.isPending && (
+            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg" data-testid="progress-container">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Evaluation Progress</span>
+                <span className="text-sm font-bold text-primary" data-testid="text-progress-percent">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-3 mb-2" />
+              <p className="text-sm text-muted-foreground" data-testid="text-current-prompt">
+                {currentPrompt || "Starting evaluation..."}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 bg-muted rounded-lg">
               <div className="text-2xl font-bold" data-testid="text-total-prompts">
