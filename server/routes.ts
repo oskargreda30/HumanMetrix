@@ -4086,3 +4086,45 @@ async function runGoldenSetEvaluation(): Promise<{
   
   return { results, overallPassed, testedAt };
 }
+
+// Daily scheduler for golden set evaluation (runs at midnight UTC)
+let goldenSetSchedulerStarted = false;
+
+export function startGoldenSetScheduler() {
+  if (goldenSetSchedulerStarted) {
+    console.log('[Golden Set Scheduler] Already started, skipping');
+    return;
+  }
+  
+  goldenSetSchedulerStarted = true;
+  
+  // Calculate time until next midnight UTC
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+  
+  console.log(`[Golden Set Scheduler] Will run first evaluation in ${Math.round(timeUntilMidnight / 1000 / 60)} minutes at ${tomorrow.toISOString()}`);
+  
+  // Run at next midnight, then every 24 hours
+  setTimeout(() => {
+    runScheduledGoldenSetEvaluation();
+    
+    // Then run every 24 hours
+    setInterval(() => {
+      runScheduledGoldenSetEvaluation();
+    }, 24 * 60 * 60 * 1000);
+  }, timeUntilMidnight);
+}
+
+async function runScheduledGoldenSetEvaluation() {
+  console.log(`[Golden Set Scheduler] Starting scheduled evaluation at ${new Date().toISOString()}`);
+  
+  try {
+    const result = await runGoldenSetEvaluation();
+    console.log(`[Golden Set Scheduler] Completed. Pass: ${result.overallPassed}, Results: ${result.results.length}`);
+  } catch (error: any) {
+    console.error('[Golden Set Scheduler] Failed:', error.message);
+  }
+}

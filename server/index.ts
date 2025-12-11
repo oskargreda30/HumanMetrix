@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes, startGoldenSetScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 
@@ -81,5 +81,8 @@ app.use((req, res, next) => {
     
     // Initialize email system after server starts
     initializeEmailSystem();
+    
+    // Start Golden Set scheduler for daily GPT-4o scoring consistency checks
+    startGoldenSetScheduler();
   });
 })();
