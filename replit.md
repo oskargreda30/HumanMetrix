@@ -29,7 +29,8 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **PDF Generation**: `jsPDF` and `html2canvas` for dynamic, comprehensive PDF reports.
 
 ### Feature Specifications
-- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-5 evaluated), AIQ (AI ethics).
+- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-5 evaluated), AIQ (AI ethics with graded scoring).
+- **AIQ Graded Scoring System**: Uses weighted option scores (Best Answer 100%, Acceptable 65-75%, Suboptimal 30-50%, Poor 0-25%) to capture nuanced ethical reasoning. Results display 20% band interpretations: Exemplary (80-100%), Strong (60-79%), Developing (40-59%), Significant Gaps (20-39%), Critical Concerns (0-19%). Colors are consistent across all surfaces (green/blue/amber/orange/red). Centralized via `getAIQBandInterpretation` helper in aiq-questions.ts.
 - **Payment Flow**: Payment-deferred model where candidates take assessments for free and pay only to unlock results. A "FREE" discount code (100% off) is supported.
 - **User Flows**: Self-service for candidates and admin-invited users, both following the pay-after-completion model.
 - **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), AI-powered role fit analysis, and Scoring QA (Golden Set monitoring).
