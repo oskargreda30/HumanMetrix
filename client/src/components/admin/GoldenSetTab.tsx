@@ -88,6 +88,8 @@ export default function GoldenSetTab() {
   const [lastRunResult, setLastRunResult] = useState<RunEvaluationResponse | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentPrompt, setCurrentPrompt] = useState("");
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [startedTestedCount, setStartedTestedCount] = useState(0);
 
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
     queryKey: ["/api/admin/golden-set/results"],
@@ -96,21 +98,18 @@ export default function GoldenSetTab() {
   const runMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/golden-set/run");
-      return response.json() as Promise<RunEvaluationResponse>;
+      return response.json();
     },
-    onSuccess: async (result) => {
-      setLastRunResult(result);
-      setProgress(100);
-      setCurrentPrompt("");
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
-      refetch();
+    onSuccess: async () => {
+      setIsEvaluating(true);
+      setStartedTestedCount(data?.testedCount || 0);
+      setProgress(0);
+      setCurrentPrompt("Starting evaluation...");
     },
   });
 
   useEffect(() => {
-    if (!runMutation.isPending) {
-      setProgress(0);
-      setCurrentPrompt("");
+    if (!isEvaluating) {
       return;
     }
 
@@ -118,13 +117,21 @@ export default function GoldenSetTab() {
       try {
         const response = await fetch("/api/admin/golden-set/results", { credentials: "include" });
         if (response.ok) {
-          const data = await response.json();
-          const tested = data.testedCount || 0;
-          const total = data.totalPrompts || 10;
-          const newProgress = Math.round((tested / total) * 100);
-          setProgress(newProgress);
-          if (tested < total) {
-            setCurrentPrompt(`Evaluating prompt ${tested + 1} of ${total}...`);
+          const pollData = await response.json();
+          const tested = pollData.testedCount || 0;
+          const total = pollData.totalPrompts || 10;
+          const newlyTested = tested - startedTestedCount;
+          const newProgress = Math.round((newlyTested / total) * 100);
+          setProgress(Math.min(newProgress, 100));
+          
+          if (newlyTested < total) {
+            setCurrentPrompt(`Evaluating prompt ${newlyTested + 1} of ${total}...`);
+          } else {
+            setCurrentPrompt("Evaluation complete!");
+            setProgress(100);
+            setIsEvaluating(false);
+            await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+            refetch();
           }
         }
       } catch (e) {
@@ -136,7 +143,7 @@ export default function GoldenSetTab() {
     pollProgress();
 
     return () => clearInterval(interval);
-  }, [runMutation.isPending]);
+  }, [isEvaluating, startedTestedCount, refetch]);
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -176,7 +183,7 @@ export default function GoldenSetTab() {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              disabled={runMutation.isPending || resetMutation.isPending}
+              disabled={isEvaluating || runMutation.isPending || resetMutation.isPending}
               data-testid="button-refresh-results"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -186,7 +193,7 @@ export default function GoldenSetTab() {
               variant="outline"
               size="sm"
               onClick={() => resetMutation.mutate()}
-              disabled={runMutation.isPending || resetMutation.isPending}
+              disabled={isEvaluating || runMutation.isPending || resetMutation.isPending}
               data-testid="button-reset-prompts"
             >
               {resetMutation.isPending ? (
@@ -203,10 +210,10 @@ export default function GoldenSetTab() {
             </Button>
             <Button
               onClick={() => runMutation.mutate()}
-              disabled={runMutation.isPending || resetMutation.isPending}
+              disabled={isEvaluating || runMutation.isPending || resetMutation.isPending}
               data-testid="button-run-evaluation"
             >
-              {runMutation.isPending ? (
+              {(isEvaluating || runMutation.isPending) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Running...
@@ -221,7 +228,7 @@ export default function GoldenSetTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {runMutation.isPending && (
+          {(isEvaluating || runMutation.isPending) && (
             <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg" data-testid="progress-container">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Evaluation Progress</span>

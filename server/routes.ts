@@ -3230,7 +3230,7 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Admin: Run golden set evaluation (manual trigger)
+  // Admin: Run golden set evaluation (manual trigger - runs in background)
   app.post("/api/admin/golden-set/run", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -3241,12 +3241,19 @@ Format your response as JSON with this structure:
       }
       
       console.log('[Golden Set] Manual evaluation triggered by admin');
-      const evaluation = await runGoldenSetEvaluation();
       
-      res.json(evaluation);
+      // Start evaluation in background (don't await)
+      runGoldenSetEvaluation().then(result => {
+        console.log('[Golden Set] Background evaluation completed:', result.overallPassed ? 'PASSED' : 'SOME FAILED');
+      }).catch(err => {
+        console.error('[Golden Set] Background evaluation error:', err);
+      });
+      
+      // Return immediately
+      res.json({ message: "Evaluation started", status: "running" });
     } catch (error: any) {
-      console.error("Error running golden set evaluation:", error);
-      res.status(500).json({ message: "Failed to run golden set evaluation: " + error.message });
+      console.error("Error starting golden set evaluation:", error);
+      res.status(500).json({ message: "Failed to start golden set evaluation: " + error.message });
     }
   });
 
