@@ -132,7 +132,7 @@ export default function GoldenSetTab() {
           <div>
             <CardTitle>Golden Set Benchmark Monitoring</CardTitle>
             <CardDescription>
-              GPT-4o scoring consistency verification using 10 benchmark prompts
+              GPT-5 scoring consistency verification using 10 benchmark prompts
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -232,7 +232,7 @@ export default function GoldenSetTab() {
           {!hasResults && (
             <div className="text-center py-8 text-muted-foreground">
               <p>No evaluations have been run yet.</p>
-              <p className="text-sm">Click "Run Evaluation" to test GPT-4o scoring consistency.</p>
+              <p className="text-sm">Click "Run Evaluation" to test GPT-5 scoring consistency.</p>
             </div>
           )}
         </CardContent>
@@ -358,7 +358,7 @@ export default function GoldenSetTab() {
         <CardHeader>
           <CardTitle>Benchmark Prompts</CardTitle>
           <CardDescription>
-            10 benchmark prompts used to verify GPT-4o scoring consistency across difficulty levels 1-7
+            10 benchmark prompts used to verify GPT-5 scoring consistency across difficulty levels 1-7
           </CardDescription>
         </CardHeader>
         <CardContent>

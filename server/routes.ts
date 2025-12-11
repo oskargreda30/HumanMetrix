@@ -3761,7 +3761,6 @@ ${userPrompt}
             content: evaluationPrompt,
           },
         ],
-        temperature: 0,
         response_format: { type: "json_object" },
       });
     });
