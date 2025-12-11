@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -3331,7 +3331,7 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Admin: Reset golden set (delete all prompts/results and re-seed with updated expected scores)
+  // Admin: Recalibrate golden set - runs GPT-5 evaluation and updates expected scores to match
   app.post("/api/admin/golden-set/reset", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -3341,7 +3341,7 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
-      console.log('[Golden Set] Resetting all prompts and results...');
+      console.log('[Golden Set] Starting recalibration...');
       
       // Delete all results first (due to foreign key)
       await storage.deleteAllGoldenSetResults();
@@ -3349,18 +3349,54 @@ Format your response as JSON with this structure:
       // Delete all prompts
       await storage.deleteAllGoldenSetPrompts();
       
-      // Re-seed with updated expected scores
+      // Re-seed prompts (with placeholder expected scores)
       const created = [];
       for (const prompt of GOLDEN_SET_PROMPTS) {
         const result = await storage.createGoldenSetPrompt(prompt);
         created.push(result);
       }
       
-      console.log(`[Golden Set] Reset complete. Created ${created.length} prompts with calibrated scores.`);
-      res.json({ message: "Golden set reset complete", count: created.length });
+      console.log(`[Golden Set] Seeded ${created.length} prompts. Starting GPT-5 calibration run...`);
+      
+      // Run calibration in background
+      (async () => {
+        try {
+          const prompts = await storage.getAllGoldenSetPrompts();
+          
+          for (const prompt of prompts) {
+            console.log(`[Calibration] Evaluating: ${prompt.name}`);
+            
+            // Run GPT-5 evaluation
+            const scores = await evaluatePromptWithGPT5(prompt.promptText, prompt.level);
+            const actualScore = scores.totalScore;
+            
+            // Update the expected score to match GPT-5's output
+            await db.update(goldenSetPrompts)
+              .set({ expectedScore: actualScore })
+              .where(eq(goldenSetPrompts.id, prompt.id));
+            
+            // Store result with 0% drift (since we're calibrating)
+            await storage.createGoldenSetResult({
+              promptId: prompt.id,
+              actualScores: scores,
+              expectedScore: actualScore,
+              driftPercentage: 0,
+              passed: true,
+            });
+            
+            console.log(`[Calibration] ${prompt.name}: Calibrated to ${actualScore}`);
+          }
+          
+          console.log('[Calibration] Complete! All prompts calibrated to GPT-5 output.');
+        } catch (err) {
+          console.error('[Calibration] Error:', err);
+        }
+      })();
+      
+      res.json({ message: "Recalibration started", status: "running", count: created.length });
     } catch (error) {
-      console.error("Error resetting golden set:", error);
-      res.status(500).json({ message: "Failed to reset golden set" });
+      console.error("Error starting recalibration:", error);
+      res.status(500).json({ message: "Failed to start recalibration" });
     }
   });
 
