@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Users, FileText, TrendingUp, Mail, CheckCircle, Calendar } from "lucide-react";
+import { Loader2, Users, FileText, TrendingUp, Mail, CheckCircle, Calendar, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { isSkillBasedAssessment, getTopSkills, formatAssessmentType } from "@/lib/assessmentSkills";
+import { isSkillBasedAssessment, getTopSkills, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
 
 export default function OverviewTab() {
   const { data: results, isLoading } = useQuery<any[]>({
@@ -128,38 +128,47 @@ export default function OverviewTab() {
                           variant={result.status === 'completed' ? 'default' : 'secondary'}
                           data-testid={`badge-status-${result.id}`}
                         >
-                          {result.status}
+                          {result.status === 'completed' ? 'Completed' : 'In Progress'}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground" data-testid={`text-user-id-${result.id}`}>
-                        User ID: {result.userId}
-                      </p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        <span data-testid={`text-user-name-${result.id}`}>
+                          {result.userName || result.userEmail || 'Unknown'}
+                        </span>
+                        {result.userEmail && result.userName && (
+                          <span className="text-xs">({result.userEmail})</span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
-                      {isSkillBasedAssessment(result.assessmentType) && result.scores ? (
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Top Skills</p>
-                          {getTopSkills(result.scores, result.assessmentType, 2).map((skill) => (
-                            <div key={skill.name} className="flex items-center gap-2 justify-end">
-                              <span className="text-sm font-medium">{skill.name}</span>
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {skill.score}
-                              </Badge>
+                      {result.status === 'completed' ? (
+                        isSkillBasedAssessment(result.assessmentType) && result.scores ? (
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold text-primary" data-testid={`text-avg-score-${result.id}`}>
+                              {calculateAverageScore(result.scores)}%
                             </div>
-                          ))}
-                        </div>
-                      ) : result.totalScore !== null && result.totalScore !== undefined ? (
-                        <div>
-                          <div className="text-2xl font-bold text-primary" data-testid={`text-total-score-${result.id}`}>
-                            {result.totalScore}/100
+                            <div className="flex items-center gap-2 justify-end">
+                              {getTopSkills(result.scores, result.assessmentType, 2).map((skill) => (
+                                <Badge key={skill.name} variant="outline" className="text-xs">
+                                  {skill.name}: {skill.score}%
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
-                          {result.percentile && (
-                            <p className="text-sm text-muted-foreground">
-                              {result.percentile}th percentile
-                            </p>
-                          )}
-                        </div>
-                      ) : null}
+                        ) : result.totalScore !== null && result.totalScore !== undefined ? (
+                          <div>
+                            <div className="text-lg font-bold text-primary" data-testid={`text-total-score-${result.id}`}>
+                              {result.totalScore}%
+                            </div>
+                            <p className="text-xs text-muted-foreground">Total Score</p>
+                          </div>
+                        ) : (
+                          <Badge variant="outline">Completed</Badge>
+                        )
+                      ) : (
+                        <Badge variant="secondary">In Progress</Badge>
+                      )}
                     </div>
                   </div>
 

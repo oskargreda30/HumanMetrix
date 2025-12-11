@@ -2323,7 +2323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Get all results
+  // Admin: Get all results with user info
   app.get("/api/admin/results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -2334,7 +2334,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const results = await storage.getAllResults();
-      res.json(results);
+      
+      // Enrich results with user info
+      const enrichedResults = await Promise.all(
+        results.map(async (result) => {
+          const resultUser = await storage.getUser(result.userId);
+          return {
+            ...result,
+            userEmail: resultUser?.email || 'Unknown',
+            userName: resultUser?.firstName && resultUser?.lastName 
+              ? `${resultUser.firstName} ${resultUser.lastName}` 
+              : resultUser?.email?.split('@')[0] || 'Unknown',
+          };
+        })
+      );
+      
+      // Sort: completed first, then by completedAt/startedAt descending
+      enrichedResults.sort((a, b) => {
+        // Completed results first
+        if (a.status === 'completed' && b.status !== 'completed') return -1;
+        if (a.status !== 'completed' && b.status === 'completed') return 1;
+        
+        // Then by date (most recent first)
+        const dateA = a.completedAt ? new Date(a.completedAt) : new Date(a.startedAt);
+        const dateB = b.completedAt ? new Date(b.completedAt) : new Date(b.startedAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      res.json(enrichedResults);
     } catch (error) {
       console.error("Error fetching all results:", error);
       res.status(500).json({ message: "Failed to fetch results" });
