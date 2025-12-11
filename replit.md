@@ -29,14 +29,15 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **PDF Generation**: `jsPDF` and `html2canvas` for dynamic, comprehensive PDF reports.
 
 ### Feature Specifications
-- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-5 evaluated), AIQ (AI ethics).
+- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-4o evaluated), AIQ (AI ethics).
 - **Payment Flow**: Payment-deferred model where candidates take assessments for free and pay only to unlock results. A "FREE" discount code (100% off) is supported.
 - **User Flows**: Self-service for candidates and admin-invited users, both following the pay-after-completion model.
-- **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), and AI-powered role fit analysis.
+- **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), AI-powered role fit analysis, and Scoring QA (Golden Set monitoring).
 - **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including individual and comparison reports.
 - **Results Access Gating**: Requires completion of all four distinct assessments before results can be viewed or unlocked.
 - **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, May 2026 Team Analysis & Building Tool, and TBC 2026 Social Influence Assessment.
 - **Marketing Email Opt-in**: Subscribe page (/news) with popup-style centered card for capturing job seeker emails from job ad links. Data stored in marketing_optins table for targeting campaigns. Redirects to landing page after submission.
+- **Golden Set Benchmark System**: GPT-4o scoring consistency verification using 10 benchmark prompts across all 7 difficulty levels. Runs daily at midnight UTC with drift detection (10% threshold). Admin UI shows pass/fail status, expected vs actual scores, and drift percentage. Uses temperature=0 and version-pinned model (gpt-4o-2024-08-06) for reproducibility.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
