@@ -3367,19 +3367,28 @@ Format your response as JSON with this structure:
             console.log(`[Calibration] Evaluating: ${prompt.name}`);
             
             // Run GPT-5 evaluation
-            const scores = await evaluatePromptWithGPT5(prompt.promptText, prompt.level);
+            const scores = await evaluatePromptWithGPT(prompt.promptText, prompt.level, prompt.taskDescription);
             const actualScore = scores.totalScore;
             
-            // Update the expected score to match GPT-5's output
+            // Create expected scores object matching the actual scores
+            const newExpectedScores = {
+              clarity: scores.clarity,
+              structure: scores.structure,
+              contextRelevance: scores.contextRelevance,
+              creativity: scores.creativity,
+              iterativeImprovement: scores.iterativeImprovement,
+              totalScore: scores.totalScore,
+            };
+            
+            // Update the expected scores to match GPT-5's output
             await db.update(goldenSetPrompts)
-              .set({ expectedScore: actualScore })
+              .set({ expectedScores: newExpectedScores })
               .where(eq(goldenSetPrompts.id, prompt.id));
             
             // Store result with 0% drift (since we're calibrating)
             await storage.createGoldenSetResult({
               promptId: prompt.id,
               actualScores: scores,
-              expectedScore: actualScore,
               driftPercentage: 0,
               passed: true,
             });

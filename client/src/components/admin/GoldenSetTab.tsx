@@ -110,6 +110,7 @@ export default function GoldenSetTab() {
   const [progress, setProgress] = useState(0);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [isCalibrating, setIsCalibrating] = useState(false);
   const [startedTestedCount, setStartedTestedCount] = useState(0);
 
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
@@ -150,12 +151,15 @@ export default function GoldenSetTab() {
           setProgress(Math.min(newProgress, 100));
           
           if (newlyTested < total) {
-            setCurrentPrompt(`Evaluating prompt ${newlyTested + 1} of ${total}...`);
+            const action = isCalibrating ? "Calibrating" : "Evaluating";
+            setCurrentPrompt(`${action} prompt ${newlyTested + 1} of ${total}...`);
           } else {
-            setCurrentPrompt("Evaluation complete!");
+            setCurrentPrompt(isCalibrating ? "Calibration complete!" : "Evaluation complete!");
             setProgress(100);
             setIsEvaluating(false);
+            setIsCalibrating(false);
             await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+            await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/history"] });
             refetch();
           }
         }
@@ -168,7 +172,7 @@ export default function GoldenSetTab() {
     pollProgress();
 
     return () => clearInterval(interval);
-  }, [isEvaluating, startedTestedCount, refetch]);
+  }, [isEvaluating, isCalibrating, startedTestedCount, refetch]);
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -177,7 +181,14 @@ export default function GoldenSetTab() {
     },
     onSuccess: async () => {
       setLastRunResult(null);
+      // Recalibration runs GPT-5 in background, so track progress
+      setIsEvaluating(true);
+      setIsCalibrating(true);
+      setStartedTestedCount(0); // Reset starts from 0
+      setProgress(0);
+      setCurrentPrompt("Recalibrating with GPT-5...");
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/history"] });
       refetch();
     },
   });
@@ -253,10 +264,10 @@ export default function GoldenSetTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {(isEvaluating || runMutation.isPending) && (
+          {(isEvaluating || runMutation.isPending || resetMutation.isPending) && (
             <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg" data-testid="progress-container">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Evaluation Progress</span>
+                <span className="text-sm font-medium">{isCalibrating ? "Calibration" : "Evaluation"} Progress</span>
                 <span className="text-sm font-bold text-primary" data-testid="text-progress-percent">{progress}%</span>
               </div>
               <Progress value={progress} className="h-3 mb-2" />
