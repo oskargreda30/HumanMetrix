@@ -3171,6 +3171,102 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== GOLDEN SET ADMIN API ====================
+
+  // Admin: Get golden set benchmark prompts
+  app.get("/api/admin/golden-set/prompts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      let prompts = await storage.getAllGoldenSetPrompts();
+      
+      // Seed if empty
+      if (prompts.length === 0) {
+        await seedGoldenSetPrompts();
+        prompts = await storage.getAllGoldenSetPrompts();
+      }
+      
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error fetching golden set prompts:", error);
+      res.status(500).json({ message: "Failed to fetch golden set prompts" });
+    }
+  });
+
+  // Admin: Get latest golden set results
+  app.get("/api/admin/golden-set/results", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const results = await storage.getLatestGoldenSetResults();
+      
+      // Also get prompts that haven't been tested yet
+      const prompts = await storage.getAllGoldenSetPrompts();
+      const testedPromptIds = new Set(results.map(r => r.promptId));
+      const untestedPrompts = prompts.filter(p => !testedPromptIds.has(p.id));
+      
+      res.json({
+        results,
+        untestedPrompts,
+        totalPrompts: prompts.length,
+        testedCount: results.length,
+        passedCount: results.filter(r => r.passed).length,
+        failedCount: results.filter(r => !r.passed).length
+      });
+    } catch (error) {
+      console.error("Error fetching golden set results:", error);
+      res.status(500).json({ message: "Failed to fetch golden set results" });
+    }
+  });
+
+  // Admin: Run golden set evaluation (manual trigger)
+  app.post("/api/admin/golden-set/run", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      console.log('[Golden Set] Manual evaluation triggered by admin');
+      const evaluation = await runGoldenSetEvaluation();
+      
+      res.json(evaluation);
+    } catch (error: any) {
+      console.error("Error running golden set evaluation:", error);
+      res.status(500).json({ message: "Failed to run golden set evaluation: " + error.message });
+    }
+  });
+
+  // Admin: Seed golden set prompts (if needed)
+  app.post("/api/admin/golden-set/seed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const prompts = await seedGoldenSetPrompts();
+      res.json({ message: "Golden set prompts seeded", count: prompts.length });
+    } catch (error) {
+      console.error("Error seeding golden set prompts:", error);
+      res.status(500).json({ message: "Failed to seed golden set prompts" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -3801,4 +3897,192 @@ async function calculatePromptArchitectureScores(
   }
 
   return { scores, totalScore, evaluations };
+}
+
+// ==================== GOLDEN SET BENCHMARK SYSTEM ====================
+
+// 10 Benchmark prompts across all 7 levels for scoring consistency verification
+const GOLDEN_SET_PROMPTS = [
+  {
+    name: "L1-Basic-Good",
+    level: 1,
+    taskDescription: "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
+    promptText: "Tell me the capital of France and provide 3 interesting facts about this city, including its history, culture, and landmarks.",
+    expectedScores: { clarity: 18, structure: 16, contextRelevance: 17, creativity: 14, iterativeImprovement: 10, totalScore: 75 }
+  },
+  {
+    name: "L1-Basic-Poor",
+    level: 1,
+    taskDescription: "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
+    promptText: "France capital facts",
+    expectedScores: { clarity: 8, structure: 6, contextRelevance: 8, creativity: 4, iterativeImprovement: 2, totalScore: 28 }
+  },
+  {
+    name: "L2-Structured-Good",
+    level: 2,
+    taskDescription: "Write a prompt asking the AI to list the top 5 programming languages for web development in 2024, formatted as a numbered list with a brief one-sentence description for each.",
+    promptText: "Please provide a numbered list of the top 5 programming languages for web development in 2024. For each language, include: 1) The language name, 2) A one-sentence description of its primary use case and popularity. Format each entry on its own line.",
+    expectedScores: { clarity: 19, structure: 18, contextRelevance: 18, creativity: 14, iterativeImprovement: 12, totalScore: 81 }
+  },
+  {
+    name: "L3-Role-Good",
+    level: 3,
+    taskDescription: "Write a prompt asking the AI to explain quantum computing as if it were a senior physics professor teaching undergraduate students.",
+    promptText: "You are a senior physics professor at MIT with 30 years of experience teaching undergraduates. Explain quantum computing to your introductory physics class. Use accessible language, real-world analogies, and avoid jargon. Structure your explanation with: 1) What is quantum computing, 2) How it differs from classical computing, 3) One practical application students can relate to.",
+    expectedScores: { clarity: 19, structure: 19, contextRelevance: 18, creativity: 17, iterativeImprovement: 14, totalScore: 87 }
+  },
+  {
+    name: "L4-MultiStep-Good",
+    level: 4,
+    taskDescription: "Write a prompt asking the AI to help debug a Python function that's supposed to find duplicates in a list.",
+    promptText: "I have a Python function that should find duplicate values in a list but it's not working correctly. Please help me debug it by following these steps:\n\n1. ANALYZE: First, examine the code logic and identify potential issues\n2. IDENTIFY: Pinpoint the specific bug(s) causing the problem\n3. EXPLAIN: Describe why this bug causes incorrect behavior\n4. FIX: Provide a corrected version of the function with comments explaining the changes\n\nHere's my function:\ndef find_duplicates(lst):\n    duplicates = []\n    for i in lst:\n        if lst.count(i) > 1:\n            duplicates.append(i)\n    return duplicates",
+    expectedScores: { clarity: 19, structure: 20, contextRelevance: 19, creativity: 16, iterativeImprovement: 16, totalScore: 90 }
+  },
+  {
+    name: "L5-Creative-Good",
+    level: 5,
+    taskDescription: "Write a prompt for a 100-word eco-friendly water bottle product description with constraints.",
+    promptText: "Create a product description for EcoFlow, a new eco-friendly water bottle.\n\nRequirements:\n- Exactly 100 words (±5 words acceptable)\n- Include exactly 3 key benefits, each clearly labeled\n- Use persuasive marketing language with action verbs\n- Mention sustainability and environmental impact at least twice\n- Target audience: health-conscious millennials aged 25-35\n- Tone: enthusiastic but not overly salesy\n- End with a call-to-action\n\nFormat: Short opening hook, followed by the 3 benefits as bullet points, then closing statement with CTA.",
+    expectedScores: { clarity: 18, structure: 19, contextRelevance: 20, creativity: 18, iterativeImprovement: 14, totalScore: 89 }
+  },
+  {
+    name: "L6-Iterative-Good",
+    level: 6,
+    taskDescription: "Write a prompt for drafting and self-improving a job offer decline email.",
+    promptText: "Complete this multi-step task for writing a professional email declining a job offer:\n\nSTEP 1 - DRAFT:\nWrite a professional email to decline a job offer from TechCorp for a Software Engineer position. Express gratitude, decline politely, and leave the door open for future opportunities.\n\nSTEP 2 - SELF-EVALUATE:\nCritically analyze your draft on these criteria:\n- Tone (professional yet warm?)\n- Clarity (is the message unambiguous?)\n- Professionalism (appropriate language and structure?)\n- Completeness (all necessary elements included?)\nList 2-3 specific weaknesses.\n\nSTEP 3 - IMPROVE:\nRewrite the email addressing the weaknesses you identified. Highlight what you changed and why.",
+    expectedScores: { clarity: 19, structure: 20, contextRelevance: 18, creativity: 17, iterativeImprovement: 20, totalScore: 94 }
+  },
+  {
+    name: "L7-Complex-Good",
+    level: 7,
+    taskDescription: "Write a prompt for designing a comprehensive content moderation system.",
+    promptText: "Design a comprehensive content moderation system for a social media platform with 50 million active users.\n\nProvide a structured response covering ALL of these sections:\n\n1. TECHNICAL ARCHITECTURE\n   - AI/ML pipeline components\n   - Human review integration\n   - Real-time vs batch processing\n\n2. CONTENT CLASSIFICATION\n   - Decision tree for content types (text, images, video)\n   - Severity levels and corresponding actions\n   - Edge case handling protocol\n\n3. ETHICAL CONSIDERATIONS\n   - Free speech balance\n   - Cultural sensitivity across regions\n   - Bias mitigation in AI systems\n\n4. SCALABILITY\n   - Load handling during viral events\n   - Queue management and prioritization\n\n5. APPEALS PROCESS\n   - User dispute mechanism\n   - Escalation tiers\n   - Resolution timeframes\n\n6. METRICS & MONITORING\n   - Key performance indicators\n   - False positive/negative tracking\n\nFor each section, provide specific recommendations with rationale.",
+    expectedScores: { clarity: 19, structure: 20, contextRelevance: 20, creativity: 18, iterativeImprovement: 18, totalScore: 95 }
+  },
+  {
+    name: "L4-MultiStep-Poor",
+    level: 4,
+    taskDescription: "Write a prompt asking the AI to help debug a Python function.",
+    promptText: "Fix this code:\ndef find_duplicates(lst):\n    duplicates = []\n    for i in lst:\n        if lst.count(i) > 1:\n            duplicates.append(i)\n    return duplicates",
+    expectedScores: { clarity: 10, structure: 8, contextRelevance: 10, creativity: 6, iterativeImprovement: 4, totalScore: 38 }
+  },
+  {
+    name: "L7-Complex-Medium",
+    level: 7,
+    taskDescription: "Write a prompt for designing a content moderation system.",
+    promptText: "Design a content moderation system for a social media platform. Consider the technical side, ethics, and how to handle appeals. Make it scalable.",
+    expectedScores: { clarity: 12, structure: 10, contextRelevance: 12, creativity: 10, iterativeImprovement: 8, totalScore: 52 }
+  }
+];
+
+// Seed golden set prompts into database
+async function seedGoldenSetPrompts() {
+  const existingPrompts = await storage.getAllGoldenSetPrompts();
+  
+  if (existingPrompts.length > 0) {
+    console.log(`[Golden Set] Already have ${existingPrompts.length} prompts, skipping seed`);
+    return existingPrompts;
+  }
+  
+  console.log('[Golden Set] Seeding 10 benchmark prompts...');
+  const created = [];
+  
+  for (const prompt of GOLDEN_SET_PROMPTS) {
+    const result = await storage.createGoldenSetPrompt(prompt);
+    created.push(result);
+  }
+  
+  console.log(`[Golden Set] Created ${created.length} benchmark prompts`);
+  return created;
+}
+
+// Evaluate a single golden set prompt (reuses existing GPT evaluation)
+async function evaluateGoldenSetPrompt(prompt: { level: number; taskDescription: string; promptText: string }) {
+  return await evaluatePromptWithGPT(prompt.promptText, prompt.level, prompt.taskDescription);
+}
+
+// Calculate drift percentage between expected and actual scores
+function calculateDrift(expected: { totalScore: number }, actual: { totalScore: number }): number {
+  if (expected.totalScore === 0) return actual.totalScore > 0 ? 100 : 0;
+  return Math.abs(((actual.totalScore - expected.totalScore) / expected.totalScore) * 100);
+}
+
+// Run full golden set evaluation
+async function runGoldenSetEvaluation(): Promise<{
+  results: Array<{
+    promptName: string;
+    level: number;
+    expectedScore: number;
+    actualScore: number;
+    driftPercentage: number;
+    passed: boolean;
+  }>;
+  overallPassed: boolean;
+  testedAt: Date;
+}> {
+  const prompts = await storage.getAllGoldenSetPrompts();
+  
+  if (prompts.length === 0) {
+    await seedGoldenSetPrompts();
+    const newPrompts = await storage.getAllGoldenSetPrompts();
+    prompts.push(...newPrompts);
+  }
+  
+  const results = [];
+  const DRIFT_THRESHOLD = 10; // 10% drift threshold for pass/fail
+  
+  console.log(`[Golden Set] Running evaluation on ${prompts.length} benchmark prompts...`);
+  
+  for (const prompt of prompts) {
+    try {
+      console.log(`[Golden Set] Evaluating: ${prompt.name} (Level ${prompt.level})`);
+      
+      const evaluation = await evaluateGoldenSetPrompt({
+        level: prompt.level,
+        taskDescription: prompt.taskDescription,
+        promptText: prompt.promptText
+      });
+      
+      const expectedScores = prompt.expectedScores as any;
+      const driftPercentage = Math.round(calculateDrift(expectedScores, evaluation));
+      const passed = driftPercentage <= DRIFT_THRESHOLD;
+      
+      // Store result in database
+      await storage.createGoldenSetResult({
+        promptId: prompt.id,
+        actualScores: evaluation,
+        driftPercentage,
+        passed
+      });
+      
+      results.push({
+        promptName: prompt.name,
+        level: prompt.level,
+        expectedScore: expectedScores.totalScore,
+        actualScore: evaluation.totalScore,
+        driftPercentage,
+        passed
+      });
+      
+      console.log(`[Golden Set] ${prompt.name}: Expected ${expectedScores.totalScore}, Got ${evaluation.totalScore}, Drift: ${driftPercentage}%, ${passed ? 'PASS' : 'FAIL'}`);
+      
+    } catch (error: any) {
+      console.error(`[Golden Set] Failed to evaluate ${prompt.name}:`, error.message);
+      results.push({
+        promptName: prompt.name,
+        level: prompt.level,
+        expectedScore: (prompt.expectedScores as any).totalScore,
+        actualScore: 0,
+        driftPercentage: 100,
+        passed: false
+      });
+    }
+  }
+  
+  const overallPassed = results.every(r => r.passed);
+  const testedAt = new Date();
+  
+  console.log(`[Golden Set] Evaluation complete. Overall: ${overallPassed ? 'ALL PASS' : 'SOME FAILED'}`);
+  
+  return { results, overallPassed, testedAt };
 }
