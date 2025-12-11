@@ -3218,6 +3218,7 @@ Format your response as JSON with this structure:
       res.json({
         results,
         untestedPrompts,
+        allPrompts: prompts,
         totalPrompts: prompts.length,
         testedCount: results.length,
         passedCount: results.filter(r => r.passed).length,

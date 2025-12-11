@@ -31,7 +31,14 @@ interface GoldenSetResult {
     id: string;
     name: string;
     level: number;
+    taskDescription: string;
+    promptText: string;
     expectedScores: {
+      clarity: number;
+      structure: number;
+      contextRelevance: number;
+      creativity: number;
+      iterativeImprovement: number;
       totalScore: number;
     };
   };
@@ -41,7 +48,14 @@ interface GoldenSetPrompt {
   id: string;
   name: string;
   level: number;
+  taskDescription: string;
+  promptText: string;
   expectedScores: {
+    clarity: number;
+    structure: number;
+    contextRelevance: number;
+    creativity: number;
+    iterativeImprovement: number;
     totalScore: number;
   };
 }
@@ -49,6 +63,7 @@ interface GoldenSetPrompt {
 interface GoldenSetResultsResponse {
   results: GoldenSetResult[];
   untestedPrompts: GoldenSetPrompt[];
+  allPrompts: GoldenSetPrompt[];
   totalPrompts: number;
   testedCount: number;
   passedCount: number;
@@ -305,6 +320,64 @@ export default function GoldenSetTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* Benchmark Prompts - Show All Questions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Benchmark Prompts</CardTitle>
+          <CardDescription>
+            10 benchmark prompts used to verify GPT-4o scoring consistency across difficulty levels 1-7
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data?.allPrompts?.sort((a, b) => a.level - b.level).map((prompt) => (
+              <div 
+                key={prompt.id} 
+                className="border rounded-lg p-4 space-y-3"
+                data-testid={`prompt-card-${prompt.name}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">L{prompt.level}</Badge>
+                    <span className="font-semibold">{prompt.name}</span>
+                  </div>
+                  <Badge variant="secondary">
+                    Expected: {prompt.expectedScores.totalScore}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Task Description:</div>
+                  <p className="text-sm bg-muted p-2 rounded">{prompt.taskDescription}</p>
+                </div>
+                
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Sample Response (Prompt Text):</div>
+                  <pre className="text-sm bg-muted p-2 rounded whitespace-pre-wrap font-mono text-xs">
+                    {prompt.promptText}
+                  </pre>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>Clarity: {prompt.expectedScores.clarity}</span>
+                  <span>Structure: {prompt.expectedScores.structure}</span>
+                  <span>Context: {prompt.expectedScores.contextRelevance}</span>
+                  <span>Creativity: {prompt.expectedScores.creativity}</span>
+                  <span>Iterative: {prompt.expectedScores.iterativeImprovement}</span>
+                </div>
+              </div>
+            ))}
+            
+            {(!data?.allPrompts || data.allPrompts.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No benchmark prompts found.</p>
+                <p className="text-sm">Run "Seed Prompts" to initialize the benchmark set.</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
