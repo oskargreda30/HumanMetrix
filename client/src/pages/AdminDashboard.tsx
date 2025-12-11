@@ -7,6 +7,7 @@ import OverviewTab from "@/components/admin/OverviewTab";
 import CandidatesTab from "@/components/admin/CandidatesTab";
 import CompareTab from "@/components/admin/CompareTab";
 import RoleFitTab from "@/components/admin/RoleFitTab";
+import GoldenSetTab from "@/components/admin/GoldenSetTab";
 
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
           </TabsTrigger>
@@ -57,6 +58,9 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="role-fit" data-testid="tab-role-fit">
             Role Fit
+          </TabsTrigger>
+          <TabsTrigger value="golden-set" data-testid="tab-golden-set">
+            Scoring QA
           </TabsTrigger>
         </TabsList>
 
@@ -74,6 +78,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="role-fit" className="space-y-4">
           <RoleFitTab />
+        </TabsContent>
+
+        <TabsContent value="golden-set" className="space-y-4">
+          <GoldenSetTab />
         </TabsContent>
       </Tabs>
     </div>
