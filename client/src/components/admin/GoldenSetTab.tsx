@@ -84,6 +84,27 @@ interface RunEvaluationResponse {
   testedAt: string;
 }
 
+interface HistoryResult {
+  promptName: string;
+  level: number;
+  actualScores: { totalScore: number };
+  driftPercentage: number;
+  passed: boolean;
+}
+
+interface HistoryRun {
+  runTime: string;
+  testedCount: number;
+  passedCount: number;
+  failedCount: number;
+  avgDrift: number;
+  results: HistoryResult[];
+}
+
+interface HistoryResponse {
+  history: HistoryRun[];
+}
+
 export default function GoldenSetTab() {
   const [lastRunResult, setLastRunResult] = useState<RunEvaluationResponse | null>(null);
   const [progress, setProgress] = useState(0);
@@ -93,6 +114,10 @@ export default function GoldenSetTab() {
 
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
     queryKey: ["/api/admin/golden-set/results"],
+  });
+
+  const { data: historyData } = useQuery<HistoryResponse>({
+    queryKey: ["/api/admin/golden-set/history"],
   });
 
   const runMutation = useMutation({
@@ -466,6 +491,89 @@ export default function GoldenSetTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Historical Comparisons */}
+      {historyData?.history && historyData.history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Historical Comparisons</CardTitle>
+            <CardDescription>
+              Past evaluation runs showing scoring consistency over time
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {historyData.history.map((run, idx) => (
+                <div 
+                  key={run.runTime} 
+                  className="border rounded-lg p-4"
+                  data-testid={`history-run-${idx}`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">
+                        {new Date(run.runTime).toLocaleString()}
+                      </span>
+                      {run.failedCount === 0 ? (
+                        <Badge className="bg-green-600">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          All Passed
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          {run.failedCount} Failed
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>Tested: {run.testedCount}</span>
+                      <span>Avg Drift: {run.avgDrift}%</span>
+                    </div>
+                  </div>
+                  
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Prompt</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
+                        <TableHead className="text-right">Drift %</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {run.results.map((result, rIdx) => (
+                        <TableRow key={rIdx}>
+                          <TableCell className="font-medium">{result.promptName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">L{result.level}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {result.actualScores?.totalScore || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={result.driftPercentage > 2 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
+                              {result.driftPercentage}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {result.passed ? (
+                              <Badge className="bg-green-600">Pass</Badge>
+                            ) : (
+                              <Badge variant="destructive">Fail</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

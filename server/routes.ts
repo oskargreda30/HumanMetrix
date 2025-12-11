@@ -4,8 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -3227,6 +3227,62 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error fetching golden set results:", error);
       res.status(500).json({ message: "Failed to fetch golden set results" });
+    }
+  });
+
+  // Admin: Get golden set historical results
+  app.get("/api/admin/golden-set/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Get all results grouped by test run (using testedAt date)
+      const allResults = await db
+        .select()
+        .from(goldenSetResults)
+        .orderBy(desc(goldenSetResults.testedAt))
+        .limit(100);
+      
+      // Get all prompts for reference
+      const prompts = await storage.getAllGoldenSetPrompts();
+      const promptMap = new Map(prompts.map(p => [p.id, p]));
+      
+      // Group by test run date (rounded to minute)
+      const runGroups: Map<string, Array<typeof allResults[0] & { promptName: string; level: number }>> = new Map();
+      
+      for (const result of allResults) {
+        const runTime = new Date(result.testedAt).toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+        const prompt = promptMap.get(result.promptId);
+        
+        if (!runGroups.has(runTime)) {
+          runGroups.set(runTime, []);
+        }
+        
+        runGroups.get(runTime)!.push({
+          ...result,
+          promptName: prompt?.name || 'Unknown',
+          level: prompt?.level || 0
+        });
+      }
+      
+      // Convert to array with summary stats
+      const history = Array.from(runGroups.entries()).map(([runTime, results]) => ({
+        runTime,
+        testedCount: results.length,
+        passedCount: results.filter(r => r.passed).length,
+        failedCount: results.filter(r => !r.passed).length,
+        avgDrift: Math.round(results.reduce((sum, r) => sum + (r.driftPercentage || 0), 0) / results.length * 10) / 10,
+        results: results.sort((a, b) => a.level - b.level)
+      }));
+      
+      res.json({ history });
+    } catch (error) {
+      console.error("Error fetching golden set history:", error);
+      res.status(500).json({ message: "Failed to fetch golden set history" });
     }
   });
 
