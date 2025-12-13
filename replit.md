@@ -30,6 +30,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 
 ### Feature Specifications
 - **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-5 evaluated), AIQ (AI ethics with graded scoring).
+- **Enhanced Score Differentiation**: FIT and AI Readiness use a curved scoring formula to create meaningful differentiation while maintaining a 50% floor. Formula: `50 + (raw * 0.4) + (raw^2 * 0.05)` results in: Average performers (~50% raw) → ~71%, Strong performers (~80% raw) → ~85%, Exceptional performers (100% raw) → 95%. Creates ~25pt spread in top half vs old ~10pt spread.
 - **AIQ Graded Scoring System**: Uses weighted option scores (Best Answer 100%, Acceptable 65-75%, Suboptimal 30-50%, Poor 0-25%) to capture nuanced ethical reasoning. Results display 20% band interpretations: Exemplary (80-100%), Strong (60-79%), Developing (40-59%), Significant Gaps (20-39%), Critical Concerns (0-19%). Colors are consistent across all surfaces (green/blue/amber/orange/red). Centralized via `getAIQBandInterpretation` helper in aiq-questions.ts.
 - **Payment Flow**: Payment-deferred model where candidates take assessments for free and pay only to unlock results. A "FREE" discount code (100% off) is supported.
 - **User Flows**: Self-service for candidates and admin-invited users, both following the pay-after-completion model.
@@ -38,7 +39,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **Results Access Gating**: Requires completion of all four distinct assessments before results can be viewed or unlocked.
 - **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, May 2026 Team Analysis & Building Tool, and TBC 2026 Social Influence Assessment.
 - **Marketing Email Opt-in**: Subscribe page (/news) with popup-style centered card for capturing job seeker emails from job ad links. Data stored in marketing_optins table for targeting campaigns. Redirects to landing page after submission.
-- **Golden Set Benchmark System**: GPT-5 scoring consistency verification using 10 benchmark prompts across all 7 difficulty levels. Runs daily at midnight UTC. Features **smoothed evaluation** (3 runs per prompt, averaged) to eliminate LLM variance and provide stable drift measurements. Uses 5% drift threshold to account for normal variance while detecting true model changes. Admin UI shows pass/fail status, expected vs actual scores, and drift percentage. "Reset & Recalibrate" button runs smoothed calibration to establish new baseline.
+- **Golden Set Benchmark System**: GPT-5 scoring consistency verification using 10 benchmark prompts across all 7 difficulty levels. Runs daily at midnight UTC. Features **smoothed evaluation** (5 runs per prompt, averaged) to eliminate LLM variance and provide stable drift measurements. Uses 2% drift threshold to detect true model changes. Admin UI shows pass/fail status, expected vs actual scores, and drift percentage. "Reset & Recalibrate" button runs smoothed calibration to establish new baseline.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
