@@ -114,12 +114,12 @@ export default function CTASection() {
               </p>
             </div>
 
-            <div className="relative max-w-4xl mx-auto">
+            <div className="flex items-center justify-center gap-3 md:gap-6 max-w-4xl mx-auto">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={goToPrevious}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-12 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full h-10 w-10"
+                className="flex-shrink-0 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full h-10 w-10"
                 data-testid="button-testimonial-prev"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -127,7 +127,7 @@ export default function CTASection() {
 
               <div 
                 ref={containerRef}
-                className="overflow-hidden rounded-2xl"
+                className="flex-1 overflow-hidden rounded-2xl"
                 onMouseEnter={() => setIsAutoPlaying(false)}
                 onMouseLeave={() => setIsAutoPlaying(true)}
               >
@@ -174,7 +174,7 @@ export default function CTASection() {
                 variant="ghost"
                 size="icon"
                 onClick={() => { setIsAutoPlaying(false); goToNext(); }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-12 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full h-10 w-10"
+                className="flex-shrink-0 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full h-10 w-10"
                 data-testid="button-testimonial-next"
               >
                 <ChevronRight className="h-5 w-5" />
