@@ -270,6 +270,108 @@ Each answer option is "anchored" to specific behaviors that research links to co
 
 ---
 
+---
+
+# PART 3: SCORING FORMULAS
+
+## FIT & AI Readiness: Enhanced Score Differentiation
+
+Both FIT and AI Readiness assessments use an enhanced differentiation formula designed to create meaningful score spread while maintaining a supportive floor.
+
+### Formula
+
+```
+Final Score = 50 + (rawNormalized × 0.4) + ((rawNormalized/100)² × 5)
+```
+
+Where:
+- `rawNormalized` = (earnedPoints / maxPossiblePoints) × 100
+
+### Score Mapping
+
+| Raw Score | Final Score | Performance Level |
+|-----------|-------------|-------------------|
+| 0% | 50% | Floor (minimum) |
+| 50% (average) | ~71% | Competent |
+| 80% (strong) | ~85% | Strong |
+| 100% (perfect) | 95% | Exceptional |
+
+### Rationale
+
+1. **50% Floor**: Eliminates demoralising low scores; everyone who participates receives at least 50%
+2. **Linear Component (0.4×)**: Provides 0-40 points based on raw performance
+3. **Quadratic Bonus**: The `(raw/100)² × 5` term rewards high performers with additional differentiation
+4. **~25pt Spread in Top Half**: Creates meaningful differentiation between average and exceptional performers (vs ~10pt spread in linear scaling)
+
+---
+
+## AIQ: Graded Ethical Scoring
+
+The Algorithmic Integrity Quotient uses graded scoring to capture nuanced ethical reasoning.
+
+### Answer Weighting
+
+Each question offers four options with weighted scores:
+
+| Option Quality | Score Weight |
+|----------------|--------------|
+| Best Answer | 100% |
+| Acceptable | 65-75% |
+| Suboptimal | 30-50% |
+| Poor | 0-25% |
+
+### Calculation
+
+```
+Final AIQ Score = Average of all answered question scores
+```
+
+### Interpretation Bands
+
+| Score Range | Band | Interpretation |
+|-------------|------|----------------|
+| 80-100% | Exemplary | Exceptional ethical alignment; consistently prioritises optimal outcomes |
+| 60-79% | Strong | Sound judgment balancing ethical imperatives with operational realities |
+| 40-59% | Developing | Basic ethical awareness with room for growth |
+| 20-39% | Significant Gaps | Requires focused development in AI ethics |
+| 0-19% | Critical Concerns | Fundamental ethics training needed |
+
+### Rationale
+
+Graded scoring recognises that ethical decisions often involve trade-offs. Unlike binary right/wrong scoring, this approach:
+- Rewards nuanced ethical reasoning
+- Distinguishes between acceptable and poor choices
+- Identifies candidates with sophisticated ethical frameworks
+
+---
+
+## Prompt Architecture: GPT-5 Evaluated
+
+The Prompt Architecture assessment uses GPT-5 to evaluate prompt engineering skills across 7 progressive difficulty levels.
+
+### Evaluation Dimensions (Equal Weighting)
+
+| Dimension | Points | Description |
+|-----------|--------|-------------|
+| Clarity | 20 | Clear, unambiguous, easy to understand |
+| Structure | 20 | Well-organised with logical flow |
+| Context Relevance | 20 | Provides necessary context and constraints |
+| Creativity | 20 | Encourages thoughtful, creative responses |
+| Iterative Improvement | 20 | Includes mechanisms for refinement |
+
+### Calculation
+
+```
+Level Score = Clarity + Structure + Context Relevance + Creativity + Iterative Improvement
+Overall Score = Average of all completed level scores
+```
+
+### Rationale
+
+Equal 20% weighting ensures no single dimension dominates, reflecting that effective prompts require balance across all five areas. Progressive difficulty levels test real-world prompting skills from basic to advanced scenarios.
+
+---
+
 ## Contact
 
 **HumanMetrix Ltd**  
