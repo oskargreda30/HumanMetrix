@@ -723,7 +723,7 @@ export async function exportEnhancedCandidatePDF(
     [245, 158, 11],
     [254, 243, 199],
     [245, 158, 11],
-    'Prompt engineering expertise across five dimensions: Clarity (25%), Structure (20%), Context Relevance (20%), Creativity (20%), and Iterative Improvement (15%). Progressive difficulty levels test real-world prompting skills.',
+    'Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.',
     'Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.',
     yPos
   );
