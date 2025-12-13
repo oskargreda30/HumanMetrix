@@ -23,11 +23,11 @@ export const AIQ_QUESTIONS: AIQQuestion[] = [
   },
   {
     id: "2",
-    text: "An AI-powered résumé screening tool, designed to filter candidates for a prestigious scholarship, shows a significantly higher rejection rate (20% higher) for candidates who attended vocational schools compared to those who attended traditional universities. The overall scholarship objective is to find high-potential students regardless of background. What is the most appropriate action to address this bias?",
+    text: "An AI-powered CV screening tool, designed to filter candidates for a prestigious scholarship, shows a significantly higher rejection rate (20% higher) for candidates who attended vocational schools compared to those who attended traditional universities. The overall scholarship objective is to find high-potential students regardless of background. What is the most appropriate action to address this bias?",
     options: [
       { value: "A", text: "Re-engineer the model to exclude the 'school name' feature and any proxy features (e.g., specific GPA scales common to vocational schools).", score: 100 },
       { value: "B", text: "Implement a post-screening human review that automatically flags and overrides any rejection of a vocational school candidate.", score: 70 },
-      { value: "C", text: "Publish a report stating the tool's performance and notify vocational schools that they should encourage students to standardize their résumé formatting.", score: 25 },
+      { value: "C", text: "Publish a report stating the tool's performance and notify vocational schools that they should encourage students to standardize their CV formatting.", score: 25 },
       { value: "D", text: "Accept the outcome, arguing that the model is merely reflecting the historical hiring bias found in its training data.", score: 0 },
     ],
   },

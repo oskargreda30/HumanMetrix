@@ -3813,7 +3813,7 @@ function calculateAIQScores(answers: Record<string, string>): Record<string, num
   // Each answer option has a score from 0-100 based on ethical alignment
   const gradedScores: Record<string, Record<string, number>> = {
     '1': { 'A': 100, 'B': 0, 'C': 65, 'D': 30 },   // Re-identification Risk
-    '2': { 'A': 100, 'B': 70, 'C': 25, 'D': 0 },   // Résumé Screening Bias
+    '2': { 'A': 100, 'B': 70, 'C': 25, 'D': 0 },   // CV Screening Bias
     '3': { 'A': 70, 'B': 55, 'C': 100, 'D': 0 },   // Black Box Loan Decisions
     '4': { 'A': 0, 'B': 100, 'C': 20, 'D': 60 },   // Emergency Vehicle Priority
     '5': { 'A': 75, 'B': 100, 'C': 15, 'D': 40 },  // Facial Recognition Bias
