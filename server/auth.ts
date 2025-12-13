@@ -234,6 +234,48 @@ export async function setupAuth(app: Express) {
       res.status(500).json({ message: "Failed to reset password" });
     }
   });
+
+  // Change password endpoint (for logged-in users)
+  app.post("/api/change-password", async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current and new password required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!validPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update password
+      await storage.updatePassword(user.id, passwordHash);
+
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {

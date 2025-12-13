@@ -1,17 +1,27 @@
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 // Assessment metadata
@@ -74,6 +84,56 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  
+  // Change password state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/change-password", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Changed",
+        description: "Your password has been updated successfully.",
+      });
+      setPasswordDialogOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({
+        title: "Error",
+        description: "New password must be at least 8 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+    changePasswordMutation.mutate({ currentPassword, newPassword });
+  };
 
   const { data: availableData, isLoading: assessmentsLoading, refetch: refetchAssessments } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
@@ -153,11 +213,79 @@ export default function Dashboard() {
       <Navigation />
       <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2 text-white">My Dashboard</h1>
-            <p className="text-white/80">
-              Welcome back, {user?.firstName || 'there'}!
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 text-white">My Dashboard</h1>
+              <p className="text-white/80">
+                Welcome back, {user?.firstName || 'there'}!
+              </p>
+            </div>
+            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2" data-testid="button-change-password">
+                  <Key className="h-4 w-4" />
+                  Change Password
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                  <DialogDescription>
+                    Enter your current password and choose a new one.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password"
+                      data-testid="input-current-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      data-testid="input-new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      data-testid="input-confirm-password"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleChangePassword}
+                    disabled={changePasswordMutation.isPending}
+                    className="w-full"
+                    data-testid="button-submit-password-change"
+                  >
+                    {changePasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Changing...
+                      </>
+                    ) : (
+                      "Change Password"
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Available Assessments */}
