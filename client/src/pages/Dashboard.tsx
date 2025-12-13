@@ -222,7 +222,7 @@ export default function Dashboard() {
             </div>
             <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2" data-testid="button-change-password">
+                <Button variant="outline" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-change-password">
                   <Key className="h-4 w-4" />
                   Change Password
                 </Button>
