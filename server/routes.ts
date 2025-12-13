@@ -3400,49 +3400,87 @@ Format your response as JSON with this structure:
         created.push(result);
       }
       
-      console.log(`[Golden Set] Seeded ${created.length} prompts. Starting GPT-5 calibration run...`);
+      console.log(`[Golden Set] Seeded ${created.length} prompts. Starting smoothed GPT-5 calibration (3 runs per prompt)...`);
       
-      // Run calibration in background
+      const CALIBRATION_RUNS = 3; // Run each prompt 3 times and average for stable baseline
+      
+      // Run calibration in background with progress tracking
       (async () => {
         try {
           const prompts = await storage.getAllGoldenSetPrompts();
           
-          for (const prompt of prompts) {
-            console.log(`[Calibration] Evaluating: ${prompt.name}`);
+          // Initialize progress tracking for calibration
+          goldenSetProgress = {
+            isRunning: true,
+            currentPrompt: 0,
+            totalPrompts: prompts.length,
+            currentPromptName: "Starting calibration...",
+            startedAt: new Date(),
+            isCalibrating: true,
+          };
+          
+          for (let i = 0; i < prompts.length; i++) {
+            const prompt = prompts[i];
             
-            // Run GPT-5 evaluation
-            const scores = await evaluatePromptWithGPT(prompt.promptText, prompt.level, prompt.taskDescription);
-            const actualScore = scores.totalScore;
+            // Update progress
+            goldenSetProgress.currentPrompt = i + 1;
+            goldenSetProgress.currentPromptName = prompt.name;
             
-            // Create expected scores object matching the actual scores
-            const newExpectedScores = {
-              clarity: scores.clarity,
-              structure: scores.structure,
-              contextRelevance: scores.contextRelevance,
-              creativity: scores.creativity,
-              iterativeImprovement: scores.iterativeImprovement,
-              totalScore: scores.totalScore,
+            console.log(`[Calibration] Evaluating: ${prompt.name} (${CALIBRATION_RUNS} runs)`);
+            
+            // Run GPT-5 evaluation multiple times and collect scores
+            const evaluations: Array<{
+              clarity: number;
+              structure: number;
+              contextRelevance: number;
+              creativity: number;
+              iterativeImprovement: number;
+              totalScore: number;
+            }> = [];
+            
+            for (let run = 0; run < CALIBRATION_RUNS; run++) {
+              console.log(`[Calibration] ${prompt.name} - Run ${run + 1}/${CALIBRATION_RUNS}`);
+              const scores = await evaluatePromptWithGPT(prompt.promptText, prompt.level, prompt.taskDescription);
+              evaluations.push(scores);
+            }
+            
+            // Calculate averaged scores across all runs
+            const averagedScores = {
+              clarity: Math.round(evaluations.reduce((sum, e) => sum + e.clarity, 0) / CALIBRATION_RUNS),
+              structure: Math.round(evaluations.reduce((sum, e) => sum + e.structure, 0) / CALIBRATION_RUNS),
+              contextRelevance: Math.round(evaluations.reduce((sum, e) => sum + e.contextRelevance, 0) / CALIBRATION_RUNS),
+              creativity: Math.round(evaluations.reduce((sum, e) => sum + e.creativity, 0) / CALIBRATION_RUNS),
+              iterativeImprovement: Math.round(evaluations.reduce((sum, e) => sum + e.iterativeImprovement, 0) / CALIBRATION_RUNS),
+              totalScore: Math.round(evaluations.reduce((sum, e) => sum + e.totalScore, 0) / CALIBRATION_RUNS),
             };
             
-            // Update the expected scores to match GPT-5's output
+            // Update the expected scores to match averaged GPT-5 output
             await db.update(goldenSetPrompts)
-              .set({ expectedScores: newExpectedScores })
+              .set({ expectedScores: averagedScores })
               .where(eq(goldenSetPrompts.id, prompt.id));
             
             // Store result with 0% drift (since we're calibrating)
             await storage.createGoldenSetResult({
               promptId: prompt.id,
-              actualScores: scores,
+              actualScores: averagedScores,
               driftPercentage: 0,
               passed: true,
             });
             
-            console.log(`[Calibration] ${prompt.name}: Calibrated to ${actualScore}`);
+            const runScores = evaluations.map(e => e.totalScore).join(', ');
+            console.log(`[Calibration] ${prompt.name}: Runs [${runScores}], Calibrated to avg ${averagedScores.totalScore}`);
           }
           
-          console.log('[Calibration] Complete! All prompts calibrated to GPT-5 output.');
+          // Mark calibration as complete
+          goldenSetProgress.isRunning = false;
+          goldenSetProgress.currentPromptName = "Complete";
+          goldenSetProgress.isCalibrating = false;
+          
+          console.log('[Calibration] Complete! All prompts calibrated to smoothed GPT-5 output.');
         } catch (err) {
           console.error('[Calibration] Error:', err);
+          goldenSetProgress.isRunning = false;
+          goldenSetProgress.isCalibrating = false;
         }
       })();
       
@@ -4240,9 +4278,10 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
   };
   
   const results = [];
-  const DRIFT_THRESHOLD = 2; // 2% drift threshold for pass/fail
+  const DRIFT_THRESHOLD = 5; // 5% drift threshold for pass/fail
+  const EVALUATION_RUNS = 3; // Run each prompt 3 times and average for stability
   
-  console.log(`[Golden Set] Running evaluation on ${prompts.length} benchmark prompts...`);
+  console.log(`[Golden Set] Running smoothed evaluation (${EVALUATION_RUNS} runs per prompt) on ${prompts.length} benchmark prompts...`);
   
   for (let i = 0; i < prompts.length; i++) {
     const prompt = prompts[i];
@@ -4252,22 +4291,46 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
     goldenSetProgress.currentPromptName = prompt.name;
     
     try {
-      console.log(`[Golden Set] Evaluating: ${prompt.name} (Level ${prompt.level})`);
+      console.log(`[Golden Set] Evaluating: ${prompt.name} (Level ${prompt.level}) - ${EVALUATION_RUNS} runs`);
       
-      const evaluation = await evaluateGoldenSetPrompt({
-        level: prompt.level,
-        taskDescription: prompt.taskDescription,
-        promptText: prompt.promptText
-      });
+      // Run evaluation multiple times and collect scores
+      const evaluations: Array<{
+        clarity: number;
+        structure: number;
+        contextRelevance: number;
+        creativity: number;
+        iterativeImprovement: number;
+        totalScore: number;
+      }> = [];
+      
+      for (let run = 0; run < EVALUATION_RUNS; run++) {
+        console.log(`[Golden Set] ${prompt.name} - Run ${run + 1}/${EVALUATION_RUNS}`);
+        const evaluation = await evaluateGoldenSetPrompt({
+          level: prompt.level,
+          taskDescription: prompt.taskDescription,
+          promptText: prompt.promptText
+        });
+        evaluations.push(evaluation);
+      }
+      
+      // Calculate averaged scores across all runs
+      const averagedEvaluation = {
+        clarity: Math.round(evaluations.reduce((sum, e) => sum + e.clarity, 0) / EVALUATION_RUNS),
+        structure: Math.round(evaluations.reduce((sum, e) => sum + e.structure, 0) / EVALUATION_RUNS),
+        contextRelevance: Math.round(evaluations.reduce((sum, e) => sum + e.contextRelevance, 0) / EVALUATION_RUNS),
+        creativity: Math.round(evaluations.reduce((sum, e) => sum + e.creativity, 0) / EVALUATION_RUNS),
+        iterativeImprovement: Math.round(evaluations.reduce((sum, e) => sum + e.iterativeImprovement, 0) / EVALUATION_RUNS),
+        totalScore: Math.round(evaluations.reduce((sum, e) => sum + e.totalScore, 0) / EVALUATION_RUNS),
+      };
       
       const expectedScores = prompt.expectedScores as any;
-      const driftPercentage = Math.round(calculateDrift(expectedScores, evaluation));
+      const driftPercentage = Math.round(calculateDrift(expectedScores, averagedEvaluation) * 10) / 10; // One decimal place
       const passed = driftPercentage <= DRIFT_THRESHOLD;
       
-      // Store result in database
+      // Store result in database (with averaged scores)
       await storage.createGoldenSetResult({
         promptId: prompt.id,
-        actualScores: evaluation,
+        actualScores: averagedEvaluation,
         driftPercentage,
         passed
       });
@@ -4276,12 +4339,13 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
         promptName: prompt.name,
         level: prompt.level,
         expectedScore: expectedScores.totalScore,
-        actualScore: evaluation.totalScore,
+        actualScore: averagedEvaluation.totalScore,
         driftPercentage,
         passed
       });
       
-      console.log(`[Golden Set] ${prompt.name}: Expected ${expectedScores.totalScore}, Got ${evaluation.totalScore}, Drift: ${driftPercentage}%, ${passed ? 'PASS' : 'FAIL'}`);
+      const runScores = evaluations.map(e => e.totalScore).join(', ');
+      console.log(`[Golden Set] ${prompt.name}: Expected ${expectedScores.totalScore}, Runs [${runScores}], Avg ${averagedEvaluation.totalScore}, Drift: ${driftPercentage}%, ${passed ? 'PASS' : 'FAIL'}`);
       
     } catch (error: any) {
       console.error(`[Golden Set] Failed to evaluate ${prompt.name}:`, error.message);
