@@ -3028,9 +3028,25 @@ Format your response as JSON with this exact structure and skill names:
       }
       
       // Process AI Readiness skills
+      // Mapping from short skill names (used in required scores) to full names (stored in assessment results)
+      const aiReadinessSkillMapping: Record<string, string> = {
+        'AI Literacy': 'AI Literacy & Prompt Engineering',
+        'Collaboration': 'Collaboration & Communication',
+        'Domain Fluency': 'Data Fluency',
+        'Responsible AI': 'Responsible AI & Ethical Awareness',
+        'Data Fluency': 'Data Fluency',
+        'Technical Fundamentals': 'Technical Fundamentals',
+        'Critical Thinking': 'Critical Thinking & Problem-Solving',
+        'Adaptability': 'Adaptability & Continuous Learning',
+        'Creativity': 'Creativity & Innovation',
+        'Domain Expertise': 'Domain Expertise',
+      };
+      
       if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
         Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-          const candidateScore = aiReadinessSkills.get(skillName) || 0;
+          // Look up using full name from mapping, fallback to original name
+          const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+          const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
           const gap = requiredScore - candidateScore;
           let alignment: string;
           if (gap <= -10) alignment = 'excellent';
