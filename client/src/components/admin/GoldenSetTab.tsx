@@ -111,7 +111,6 @@ export default function GoldenSetTab() {
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
-  const [startedTestedCount, setStartedTestedCount] = useState(0);
 
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
     queryKey: ["/api/admin/golden-set/results"],
@@ -128,7 +127,6 @@ export default function GoldenSetTab() {
     },
     onSuccess: async () => {
       setIsEvaluating(true);
-      setStartedTestedCount(data?.testedCount || 0);
       setProgress(0);
       setCurrentPrompt("Starting evaluation...");
     },
@@ -141,20 +139,22 @@ export default function GoldenSetTab() {
 
     const pollProgress = async () => {
       try {
-        const response = await fetch("/api/admin/golden-set/results", { credentials: "include" });
+        // Poll the dedicated progress endpoint
+        const response = await fetch("/api/admin/golden-set/progress", { credentials: "include" });
         if (response.ok) {
-          const pollData = await response.json();
-          const tested = pollData.testedCount || 0;
-          const total = pollData.totalPrompts || 10;
-          const newlyTested = tested - startedTestedCount;
-          const newProgress = Math.round((newlyTested / total) * 100);
+          const progressData = await response.json();
+          const current = progressData.currentPrompt || 0;
+          const total = progressData.totalPrompts || 10;
+          const newProgress = Math.round((current / total) * 100);
           setProgress(Math.min(newProgress, 100));
+          setIsCalibrating(progressData.isCalibrating || false);
           
-          if (newlyTested < total) {
-            const action = isCalibrating ? "Calibrating" : "Evaluating";
-            setCurrentPrompt(`${action} prompt ${newlyTested + 1} of ${total}...`);
+          if (progressData.isRunning) {
+            const action = progressData.isCalibrating ? "Calibrating" : "Evaluating";
+            setCurrentPrompt(`${action} prompt ${current} of ${total}: ${progressData.currentPromptName || '...'}`);
           } else {
-            setCurrentPrompt(isCalibrating ? "Calibration complete!" : "Evaluation complete!");
+            // Evaluation completed
+            setCurrentPrompt(progressData.isCalibrating ? "Calibration complete!" : "Evaluation complete!");
             setProgress(100);
             setIsEvaluating(false);
             setIsCalibrating(false);
@@ -168,11 +168,11 @@ export default function GoldenSetTab() {
       }
     };
 
-    const interval = setInterval(pollProgress, 2000);
+    const interval = setInterval(pollProgress, 1500);
     pollProgress();
 
     return () => clearInterval(interval);
-  }, [isEvaluating, isCalibrating, startedTestedCount, refetch]);
+  }, [isEvaluating, refetch]);
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -184,7 +184,6 @@ export default function GoldenSetTab() {
       // Recalibration runs GPT-5 in background, so track progress
       setIsEvaluating(true);
       setIsCalibrating(true);
-      setStartedTestedCount(0); // Reset starts from 0
       setProgress(0);
       setCurrentPrompt("Recalibrating with GPT-5...");
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/golden-set/results"] });

@@ -3340,6 +3340,23 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Admin: Get golden set evaluation progress
+  app.get("/api/admin/golden-set/progress", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      res.json(goldenSetProgress);
+    } catch (error) {
+      console.error("Error fetching golden set progress:", error);
+      res.status(500).json({ message: "Failed to fetch progress" });
+    }
+  });
+
   // Admin: Seed golden set prompts (if needed)
   app.post("/api/admin/golden-set/seed", isAuthenticated, async (req: any, res) => {
     try {
@@ -4074,6 +4091,16 @@ async function calculatePromptArchitectureScores(
 
 // ==================== GOLDEN SET BENCHMARK SYSTEM ====================
 
+// Progress tracking for golden set evaluations
+let goldenSetProgress = {
+  isRunning: false,
+  currentPrompt: 0,
+  totalPrompts: 10,
+  currentPromptName: "",
+  startedAt: null as Date | null,
+  isCalibrating: false,
+};
+
 // 10 Benchmark prompts across all 7 levels for scoring consistency verification
 // Expected scores calibrated from actual GPT-4o-2024-08-06 output (Dec 2025)
 const GOLDEN_SET_PROMPTS = [
@@ -4182,7 +4209,7 @@ function calculateDrift(expected: { totalScore: number }, actual: { totalScore: 
 }
 
 // Run full golden set evaluation
-async function runGoldenSetEvaluation(): Promise<{
+async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
   results: Array<{
     promptName: string;
     level: number;
@@ -4202,12 +4229,28 @@ async function runGoldenSetEvaluation(): Promise<{
     prompts.push(...newPrompts);
   }
   
+  // Initialize progress tracking
+  goldenSetProgress = {
+    isRunning: true,
+    currentPrompt: 0,
+    totalPrompts: prompts.length,
+    currentPromptName: "Starting...",
+    startedAt: new Date(),
+    isCalibrating,
+  };
+  
   const results = [];
   const DRIFT_THRESHOLD = 2; // 2% drift threshold for pass/fail
   
   console.log(`[Golden Set] Running evaluation on ${prompts.length} benchmark prompts...`);
   
-  for (const prompt of prompts) {
+  for (let i = 0; i < prompts.length; i++) {
+    const prompt = prompts[i];
+    
+    // Update progress
+    goldenSetProgress.currentPrompt = i + 1;
+    goldenSetProgress.currentPromptName = prompt.name;
+    
     try {
       console.log(`[Golden Set] Evaluating: ${prompt.name} (Level ${prompt.level})`);
       
@@ -4252,6 +4295,10 @@ async function runGoldenSetEvaluation(): Promise<{
       });
     }
   }
+  
+  // Mark evaluation as complete
+  goldenSetProgress.isRunning = false;
+  goldenSetProgress.currentPromptName = "Complete";
   
   const overallPassed = results.every(r => r.passed);
   const testedAt = new Date();
