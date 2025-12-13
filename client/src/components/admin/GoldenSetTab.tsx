@@ -210,7 +210,7 @@ export default function GoldenSetTab() {
           <div>
             <CardTitle>Golden Set Benchmark Monitoring</CardTitle>
             <CardDescription>
-              GPT-5 scoring consistency verification using 10 benchmark prompts (3 runs per prompt, averaged for stability)
+              GPT-5 scoring consistency verification using 10 benchmark prompts (5 runs per prompt, averaged for stability)
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -334,7 +334,7 @@ export default function GoldenSetTab() {
           <CardHeader>
             <CardTitle>Benchmark Results</CardTitle>
             <CardDescription>
-              Expected vs actual scores for each benchmark prompt (drift threshold: 5%, smoothed via 3 runs)
+              Expected vs actual scores for each benchmark prompt (drift threshold: 2%, smoothed via 5 runs)
             </CardDescription>
           </CardHeader>
           <CardContent>

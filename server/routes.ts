@@ -3400,9 +3400,9 @@ Format your response as JSON with this structure:
         created.push(result);
       }
       
-      console.log(`[Golden Set] Seeded ${created.length} prompts. Starting smoothed GPT-5 calibration (3 runs per prompt)...`);
+      console.log(`[Golden Set] Seeded ${created.length} prompts. Starting smoothed GPT-5 calibration (5 runs per prompt)...`);
       
-      const CALIBRATION_RUNS = 3; // Run each prompt 3 times and average for stable baseline
+      const CALIBRATION_RUNS = 5; // Run each prompt 5 times and average for maximum stable baseline
       
       // Run calibration in background with progress tracking
       (async () => {
@@ -4278,8 +4278,8 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
   };
   
   const results = [];
-  const DRIFT_THRESHOLD = 5; // 5% drift threshold for pass/fail
-  const EVALUATION_RUNS = 3; // Run each prompt 3 times and average for stability
+  const DRIFT_THRESHOLD = 2; // 2% drift threshold for pass/fail (smoothing makes this achievable)
+  const EVALUATION_RUNS = 5; // Run each prompt 5 times and average for maximum stability
   
   console.log(`[Golden Set] Running smoothed evaluation (${EVALUATION_RUNS} runs per prompt) on ${prompts.length} benchmark prompts...`);
   
