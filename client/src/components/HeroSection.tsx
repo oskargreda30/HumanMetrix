@@ -274,12 +274,12 @@ export default function HeroSection() {
             </div>
 
             {/* Mobile only: Pricing disclosure - after images */}
-            <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-8">
+            <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-4">
               Tests from £3.50 (plus one-time £15 computation price)
             </p>
 
             {/* Mobile only: Feature highlights - after pricing */}
-            <div className="lg:hidden flex flex-wrap justify-center gap-3 pt-2">
+            <div className="lg:hidden flex flex-wrap justify-center gap-2 pt-1">
               {[
                 "Instant PDF Results",
                 "CV-Ready Reports",
