@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, Redirect } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
@@ -81,9 +81,16 @@ const getAssessmentMetadata = (type: string) => {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  
+  // Redirect admins and super_admins to the admin dashboard
+  if (!authLoading && user) {
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      return <Redirect to="/admin/dashboard" />;
+    }
+  }
   
   // Change password state
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
