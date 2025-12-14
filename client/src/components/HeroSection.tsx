@@ -212,13 +212,13 @@ export default function HeroSection() {
               </Button>
             </div>
             
-            {/* Pricing disclosure */}
-            <p className="text-xs md:text-sm text-blue-100/60 italic">
+            {/* Desktop only: Pricing disclosure */}
+            <p className="hidden lg:block text-xs md:text-sm text-blue-100/60 italic">
               Tests from £3.50 (plus one-time £15 computation price)
             </p>
 
-            {/* Feature highlights - horizontal */}
-            <div className="flex flex-wrap gap-4 pt-2">
+            {/* Desktop only: Feature highlights - horizontal */}
+            <div className="hidden lg:flex flex-wrap gap-4 pt-2">
               {[
                 "Instant PDF Results",
                 "CV-Ready Reports",
@@ -237,14 +237,14 @@ export default function HeroSection() {
               ))}
             </div>
 
-            {/* Mobile Report Images - shown only on mobile */}
+            {/* Mobile Report Images - shown only on mobile, FIRST */}
             <div 
               className={getAnimationClass(
                 'relative mt-4 lg:hidden flex justify-center',
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
               )}
             >
-              <div className="relative max-w-[280px]">
+              <div className="relative max-w-[280px]" style={{ marginRight: '25px' }}>
                 <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-50" />
                 {/* Back image (partially visible) */}
                 <img
@@ -271,6 +271,31 @@ export default function HeroSection() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent rounded-lg pointer-events-none" style={{ zIndex: 3 }} />
               </div>
+            </div>
+
+            {/* Mobile only: Pricing disclosure - after images */}
+            <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-8">
+              Tests from £3.50 (plus one-time £15 computation price)
+            </p>
+
+            {/* Mobile only: Feature highlights - after pricing */}
+            <div className="lg:hidden flex flex-wrap justify-center gap-3 pt-2">
+              {[
+                "Instant PDF Results",
+                "CV-Ready Reports",
+                "Secure Data Storage"
+              ].map((item, i) => (
+                <div 
+                  key={i} 
+                  className={getAnimationClass(
+                    'flex items-center gap-2',
+                    `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
+                  )}
+                >
+                  <CheckCircle2 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                  <span className="text-xs text-blue-100/80">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
 
