@@ -240,7 +240,7 @@ export default function HeroSection() {
             {/* Mobile Report Images - shown only on mobile, FIRST */}
             <div 
               className={getAnimationClass(
-                'relative mt-4 lg:hidden flex justify-center',
+                'relative mt-4 lg:hidden flex justify-center pb-10',
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
               )}
             >
