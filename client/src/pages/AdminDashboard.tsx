@@ -14,6 +14,7 @@ import RoleFitTab from "@/components/admin/RoleFitTab";
 import GoldenSetTab from "@/components/admin/GoldenSetTab";
 import OrganizationsTab from "@/components/admin/OrganizationsTab";
 import PlatformStatsTab from "@/components/admin/PlatformStatsTab";
+import InvitationsTab from "@/components/admin/InvitationsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -67,6 +68,9 @@ export default function AdminDashboard() {
     );
   }
 
+  // Calculate number of tabs for grid layout
+  const tabCount = isSuperAdmin ? 8 : 7; // Super admin has Platform + Organizations tabs
+
   return (
     <div className="min-h-screen flex flex-col relative">
       {/* Background image with dark overlay */}
@@ -113,7 +117,7 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-7' : 'grid-cols-5'} lg:w-auto lg:inline-grid bg-white/10 border border-white/20`}>
+            <TabsList className={`grid w-full grid-cols-${tabCount} lg:w-auto lg:inline-grid bg-white/10 border border-white/20`}>
               {isSuperAdmin && (
                 <TabsTrigger value="platform" data-testid="tab-platform" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Platform
@@ -131,14 +135,15 @@ export default function AdminDashboard() {
               <TabsTrigger value="role-fit" data-testid="tab-role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                 Role Fit
               </TabsTrigger>
+              <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Invitations
+              </TabsTrigger>
+              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Organisations
+              </TabsTrigger>
               <TabsTrigger value="golden-set" data-testid="tab-golden-set" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                 Scoring QA
               </TabsTrigger>
-              {isSuperAdmin && (
-                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
-                  Organisations
-                </TabsTrigger>
-              )}
             </TabsList>
 
             {isSuperAdmin && (
@@ -163,15 +168,17 @@ export default function AdminDashboard() {
               <RoleFitTab />
             </TabsContent>
 
+            <TabsContent value="invitations" className="space-y-4">
+              <InvitationsTab />
+            </TabsContent>
+
+            <TabsContent value="organizations" className="space-y-4">
+              <OrganizationsTab />
+            </TabsContent>
+
             <TabsContent value="golden-set" className="space-y-4">
               <GoldenSetTab />
             </TabsContent>
-
-            {isSuperAdmin && (
-              <TabsContent value="organizations" className="space-y-4">
-                <OrganizationsTab />
-              </TabsContent>
-            )}
           </Tabs>
         </div>
       </main>

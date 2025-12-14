@@ -3413,35 +3413,52 @@ Format your response as JSON with this structure:
     }
   });
 
-  // ==================== ORGANIZATION ADMIN API (Super Admin Only) ====================
+  // ==================== ORGANIZATION ADMIN API ====================
 
-  // Super Admin: Get all organizations
+  // Admin/Super Admin: Get organizations (super admin sees all, admin sees their own)
   app.get("/api/admin/organizations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      // Only super admins can manage organizations
-      if (user?.role !== 'super_admin') {
-        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
-      const organizations = await storage.getAllOrganizations();
-      res.json(organizations);
+      if (user?.role === 'super_admin') {
+        // Super admins see all organizations
+        const organizations = await storage.getAllOrganizations();
+        res.json(organizations);
+      } else {
+        // Regular admins see only their organization
+        if (user?.organizationId) {
+          const org = await storage.getOrganization(user.organizationId);
+          res.json(org ? [org] : []);
+        } else {
+          res.json([]);
+        }
+      }
     } catch (error) {
       console.error("Error fetching organizations:", error);
       res.status(500).json({ message: "Failed to fetch organizations" });
     }
   });
 
-  // Super Admin: Get single organization with member count
+  // Admin/Super Admin: Get single organization with member count
   app.get("/api/admin/organizations/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin') {
-        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Regular admins can only view their own organization
+      if (user?.role === 'admin' && user.organizationId !== req.params.id) {
+        return res.status(403).json({ message: "Forbidden: You can only view your own organization" });
       }
       
       const org = await storage.getOrganization(req.params.id);
@@ -3469,14 +3486,20 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Super Admin: Create organization
+  // Admin/Super Admin: Create organization
   app.post("/api/admin/organizations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin') {
-        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Regular admins can only create one organization and must not already have one
+      if (user?.role === 'admin' && user.organizationId) {
+        return res.status(400).json({ message: "You already belong to an organization. Only super admins can create multiple organizations." });
       }
       
       const { name, slug, logoUrl, primaryColor, maxSeats } = req.body;
@@ -3499,6 +3522,11 @@ Format your response as JSON with this structure:
         maxSeats: maxSeats || 10,
         isActive: true,
       });
+      
+      // If admin (not super admin), automatically assign them to the new organization
+      if (user?.role === 'admin') {
+        await storage.updateUserOrganization(userId, org.id);
+      }
       
       res.json(org);
     } catch (error) {
