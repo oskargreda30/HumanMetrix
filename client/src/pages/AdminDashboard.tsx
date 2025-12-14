@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Building2, Globe } from "lucide-react";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import OverviewTab from "@/components/admin/OverviewTab";
 import CandidatesTab from "@/components/admin/CandidatesTab";
 import CompareTab from "@/components/admin/CompareTab";
@@ -12,6 +14,7 @@ import RoleFitTab from "@/components/admin/RoleFitTab";
 import GoldenSetTab from "@/components/admin/GoldenSetTab";
 import OrganizationsTab from "@/components/admin/OrganizationsTab";
 import PlatformStatsTab from "@/components/admin/PlatformStatsTab";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
@@ -35,105 +38,144 @@ export default function AdminDashboard() {
 
   if (!hasAdminAccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You do not have permission to access this page.</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="min-h-screen flex flex-col relative">
+        <div className="fixed inset-0 z-0">
+          <div 
+            className="absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: `url(${dashboardBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          />
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(to bottom, rgba(13, 29, 51, 0.85), rgba(13, 29, 51, 0.75), rgba(13, 29, 51, 0.85))'
+          }} />
+        </div>
+        <Navigation />
+        <div className="flex-grow flex items-center justify-center relative z-10">
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>You do not have permission to access this page.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-bold" data-testid="heading-admin-dashboard">
-            {isSuperAdmin ? 'Platform Admin Hub' : 'Organisation Dashboard'}
-          </h1>
-          {isSuperAdmin ? (
-            <Badge variant="secondary" className="gap-1.5">
-              <Globe className="h-3 w-3" />
-              Super Admin
-            </Badge>
-          ) : orgInfo?.organization ? (
-            <Badge variant="outline" className="gap-1.5">
-              <Building2 className="h-3 w-3" />
-              {orgInfo.organization.name}
-            </Badge>
-          ) : null}
-        </div>
-        <p className="text-muted-foreground">
-          {isSuperAdmin 
-            ? 'Platform-wide metrics, candidate analytics, and organisation management'
-            : 'Candidate analytics, comparisons, and role alignment for your organisation'
-          }
-        </p>
+    <div className="min-h-screen flex flex-col relative">
+      {/* Background image with dark overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(13, 29, 51, 0.85), rgba(13, 29, 51, 0.75), rgba(13, 29, 51, 0.85))'
+        }} />
       </div>
+      <Navigation />
+      <main className="flex-grow py-16 relative z-10">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-white" data-testid="heading-admin-dashboard">
+                {isSuperAdmin ? 'Platform Admin Hub' : 'Organisation Dashboard'}
+              </h1>
+              {isSuperAdmin ? (
+                <Badge variant="secondary" className="gap-1.5 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                  <Globe className="h-3 w-3" />
+                  Super Admin
+                </Badge>
+              ) : orgInfo?.organization ? (
+                <Badge variant="outline" className="gap-1.5 text-white/80 border-white/30">
+                  <Building2 className="h-3 w-3" />
+                  {orgInfo.organization.name}
+                </Badge>
+              ) : null}
+            </div>
+            <p className="text-white/80">
+              {isSuperAdmin 
+                ? 'Platform-wide metrics, candidate analytics, and organisation management'
+                : 'Candidate analytics, comparisons, and role alignment for your organisation'
+              }
+            </p>
+          </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-7' : 'grid-cols-5'} lg:w-auto lg:inline-grid`}>
-          {isSuperAdmin && (
-            <TabsTrigger value="platform" data-testid="tab-platform">
-              Platform
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="overview" data-testid="tab-overview">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="candidates" data-testid="tab-candidates">
-            Candidates
-          </TabsTrigger>
-          <TabsTrigger value="compare" data-testid="tab-compare">
-            Compare
-          </TabsTrigger>
-          <TabsTrigger value="role-fit" data-testid="tab-role-fit">
-            Role Fit
-          </TabsTrigger>
-          <TabsTrigger value="golden-set" data-testid="tab-golden-set">
-            Scoring QA
-          </TabsTrigger>
-          {isSuperAdmin && (
-            <TabsTrigger value="organizations" data-testid="tab-organizations">
-              Organisations
-            </TabsTrigger>
-          )}
-        </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-7' : 'grid-cols-5'} lg:w-auto lg:inline-grid bg-white/10 border border-white/20`}>
+              {isSuperAdmin && (
+                <TabsTrigger value="platform" data-testid="tab-platform" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                  Platform
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="overview" data-testid="tab-overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="candidates" data-testid="tab-candidates" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Candidates
+              </TabsTrigger>
+              <TabsTrigger value="compare" data-testid="tab-compare" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Compare
+              </TabsTrigger>
+              <TabsTrigger value="role-fit" data-testid="tab-role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Role Fit
+              </TabsTrigger>
+              <TabsTrigger value="golden-set" data-testid="tab-golden-set" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                Scoring QA
+              </TabsTrigger>
+              {isSuperAdmin && (
+                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                  Organisations
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-        {isSuperAdmin && (
-          <TabsContent value="platform" className="space-y-4">
-            <PlatformStatsTab />
-          </TabsContent>
-        )}
+            {isSuperAdmin && (
+              <TabsContent value="platform" className="space-y-4">
+                <PlatformStatsTab />
+              </TabsContent>
+            )}
 
-        <TabsContent value="overview" className="space-y-4">
-          <OverviewTab />
-        </TabsContent>
+            <TabsContent value="overview" className="space-y-4">
+              <OverviewTab />
+            </TabsContent>
 
-        <TabsContent value="candidates" className="space-y-4">
-          <CandidatesTab />
-        </TabsContent>
+            <TabsContent value="candidates" className="space-y-4">
+              <CandidatesTab />
+            </TabsContent>
 
-        <TabsContent value="compare" className="space-y-4">
-          <CompareTab />
-        </TabsContent>
+            <TabsContent value="compare" className="space-y-4">
+              <CompareTab />
+            </TabsContent>
 
-        <TabsContent value="role-fit" className="space-y-4">
-          <RoleFitTab />
-        </TabsContent>
+            <TabsContent value="role-fit" className="space-y-4">
+              <RoleFitTab />
+            </TabsContent>
 
-        <TabsContent value="golden-set" className="space-y-4">
-          <GoldenSetTab />
-        </TabsContent>
+            <TabsContent value="golden-set" className="space-y-4">
+              <GoldenSetTab />
+            </TabsContent>
 
-        {isSuperAdmin && (
-          <TabsContent value="organizations" className="space-y-4">
-            <OrganizationsTab />
-          </TabsContent>
-        )}
-      </Tabs>
+            {isSuperAdmin && (
+              <TabsContent value="organizations" className="space-y-4">
+                <OrganizationsTab />
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }
