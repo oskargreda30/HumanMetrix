@@ -68,9 +68,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Calculate number of tabs for grid layout
-  const tabCount = isSuperAdmin ? 8 : 7; // Super admin has Platform + Organizations tabs
-
   return (
     <div className="min-h-screen flex flex-col relative">
       {/* Background image with dark overlay */}
@@ -117,7 +114,7 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className={`grid w-full grid-cols-${tabCount} lg:w-auto lg:inline-grid bg-white/10 border border-white/20`}>
+            <TabsList className="flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20">
               {isSuperAdmin && (
                 <TabsTrigger value="platform" data-testid="tab-platform" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Platform
