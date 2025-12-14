@@ -253,7 +253,7 @@ export default function HeroSection() {
                   className="absolute w-full rounded-lg shadow-lg border border-cyan-400/15"
                   style={{ 
                     imageRendering: 'auto',
-                    top: '25px',
+                    top: '40px',
                     left: '25px',
                     zIndex: 1
                   }}
