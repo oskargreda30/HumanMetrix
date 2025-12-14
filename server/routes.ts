@@ -2374,11 +2374,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (!user?.isAdmin) {
+      // Check if user has admin access (either legacy isAdmin or new role system)
+      const isSuperAdmin = user?.role === 'super_admin';
+      const isOrgAdmin = user?.role === 'admin';
+      const hasAdminAccess = user?.isAdmin || isSuperAdmin || isOrgAdmin;
+      
+      if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
-      const candidates = await storage.getCandidatesWithResults();
+      // Super admins see all candidates, org admins only see their organization's candidates
+      let candidates;
+      if (isSuperAdmin || (user?.isAdmin && !user?.organizationId)) {
+        // Super admin or legacy admin without org: see all
+        candidates = await storage.getCandidatesWithResultsByOrganization(null);
+      } else if (isOrgAdmin && user?.organizationId) {
+        // Org admin: see only their organization's candidates
+        candidates = await storage.getCandidatesWithResultsByOrganization(user.organizationId);
+      } else {
+        // Fallback for legacy isAdmin users
+        candidates = await storage.getCandidatesWithResults();
+      }
+      
       res.json(candidates);
     } catch (error) {
       console.error("Error fetching candidates:", error);
@@ -3211,6 +3228,280 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error fetching prompt evaluations:", error);
       res.status(500).json({ message: "Failed to fetch prompt evaluations" });
+    }
+  });
+
+  // ==================== ORGANIZATION ADMIN API (Super Admin Only) ====================
+
+  // Super Admin: Get all organizations
+  app.get("/api/admin/organizations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      // Only super admins can manage organizations
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const organizations = await storage.getAllOrganizations();
+      res.json(organizations);
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+      res.status(500).json({ message: "Failed to fetch organizations" });
+    }
+  });
+
+  // Super Admin: Get single organization with member count
+  app.get("/api/admin/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const org = await storage.getOrganization(req.params.id);
+      if (!org) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Get member count
+      const members = await storage.getUsersByOrganization(org.id);
+      
+      res.json({
+        ...org,
+        memberCount: members.length,
+        members: members.map(m => ({
+          id: m.id,
+          email: m.email,
+          firstName: m.firstName,
+          lastName: m.lastName,
+          role: m.role,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      res.status(500).json({ message: "Failed to fetch organization" });
+    }
+  });
+
+  // Super Admin: Create organization
+  app.post("/api/admin/organizations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { name, slug, logoUrl, primaryColor, maxSeats } = req.body;
+      
+      if (!name || !slug) {
+        return res.status(400).json({ message: "Name and slug are required" });
+      }
+      
+      // Check if slug is unique
+      const existing = await storage.getOrganizationBySlug(slug);
+      if (existing) {
+        return res.status(400).json({ message: "An organization with this slug already exists" });
+      }
+      
+      const org = await storage.createOrganization({
+        name,
+        slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+        logoUrl: logoUrl || null,
+        primaryColor: primaryColor || null,
+        maxSeats: maxSeats || 10,
+        isActive: true,
+      });
+      
+      res.json(org);
+    } catch (error) {
+      console.error("Error creating organization:", error);
+      res.status(500).json({ message: "Failed to create organization" });
+    }
+  });
+
+  // Super Admin: Update organization
+  app.put("/api/admin/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { name, slug, logoUrl, primaryColor, maxSeats, isActive } = req.body;
+      
+      const org = await storage.getOrganization(req.params.id);
+      if (!org) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Check slug uniqueness if changed
+      if (slug && slug !== org.slug) {
+        const existing = await storage.getOrganizationBySlug(slug);
+        if (existing) {
+          return res.status(400).json({ message: "An organization with this slug already exists" });
+        }
+      }
+      
+      await storage.updateOrganization(req.params.id, {
+        name: name ?? org.name,
+        slug: slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : org.slug,
+        logoUrl: logoUrl !== undefined ? logoUrl : org.logoUrl,
+        primaryColor: primaryColor !== undefined ? primaryColor : org.primaryColor,
+        maxSeats: maxSeats ?? org.maxSeats,
+        isActive: isActive !== undefined ? isActive : org.isActive,
+      });
+      
+      const updated = await storage.getOrganization(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      res.status(500).json({ message: "Failed to update organization" });
+    }
+  });
+
+  // Super Admin: Delete organization
+  app.delete("/api/admin/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const org = await storage.getOrganization(req.params.id);
+      if (!org) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Check if there are any members
+      const members = await storage.getUsersByOrganization(org.id);
+      if (members.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete organization with ${members.length} member(s). Remove all members first.` 
+        });
+      }
+      
+      await storage.deleteOrganization(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      res.status(500).json({ message: "Failed to delete organization" });
+    }
+  });
+
+  // Super Admin: Assign user to organization
+  app.post("/api/admin/organizations/:id/members", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { userEmail, role } = req.body;
+      
+      if (!userEmail) {
+        return res.status(400).json({ message: "User email is required" });
+      }
+      
+      const org = await storage.getOrganization(req.params.id);
+      if (!org) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      const targetUser = await storage.getUserByEmail(userEmail);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check seat limit
+      const members = await storage.getUsersByOrganization(org.id);
+      if (members.length >= (org.maxSeats || 10)) {
+        return res.status(400).json({ message: `Organization has reached maximum seats (${org.maxSeats})` });
+      }
+      
+      // Update user's organization and role
+      await storage.updateUserOrganization(targetUser.id, org.id);
+      if (role && (role === 'candidate' || role === 'admin')) {
+        await storage.updateUserRole(targetUser.id, role);
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error adding member to organization:", error);
+      res.status(500).json({ message: "Failed to add member" });
+    }
+  });
+
+  // Super Admin: Remove user from organization
+  app.delete("/api/admin/organizations/:id/members/:memberId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const targetUser = await storage.getUser(req.params.memberId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (targetUser.organizationId !== req.params.id) {
+        return res.status(400).json({ message: "User is not a member of this organization" });
+      }
+      
+      // Remove from organization and set role to candidate
+      await storage.updateUserOrganization(targetUser.id, null);
+      await storage.updateUserRole(targetUser.id, 'candidate');
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing member from organization:", error);
+      res.status(500).json({ message: "Failed to remove member" });
+    }
+  });
+
+  // Super Admin: Update member role
+  app.put("/api/admin/organizations/:id/members/:memberId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { role } = req.body;
+      if (!role || (role !== 'candidate' && role !== 'admin')) {
+        return res.status(400).json({ message: "Valid role (candidate or admin) is required" });
+      }
+      
+      const targetUser = await storage.getUser(req.params.memberId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (targetUser.organizationId !== req.params.id) {
+        return res.status(400).json({ message: "User is not a member of this organization" });
+      }
+      
+      await storage.updateUserRole(targetUser.id, role);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      res.status(500).json({ message: "Failed to update member role" });
     }
   });
 

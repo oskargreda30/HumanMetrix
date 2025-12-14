@@ -15,6 +15,7 @@ import {
   marketingOptins,
   goldenSetPrompts,
   goldenSetResults,
+  organizations,
   type User,
   type UpsertUser,
   type Purchase,
@@ -47,6 +48,9 @@ import {
   type InsertGoldenSetPrompt,
   type GoldenSetResult,
   type InsertGoldenSetResult,
+  type Organization,
+  type InsertOrganization,
+  type UserRole,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -164,6 +168,26 @@ export interface IStorage {
   getGoldenSetResultHistory(promptId: string, limit?: number): Promise<GoldenSetResult[]>;
   deleteAllGoldenSetPrompts(): Promise<void>;
   deleteAllGoldenSetResults(): Promise<void>;
+  
+  // Organization operations
+  createOrganization(org: InsertOrganization): Promise<Organization>;
+  getOrganization(id: string): Promise<Organization | undefined>;
+  getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
+  getAllOrganizations(): Promise<Organization[]>;
+  updateOrganization(id: string, updates: Partial<InsertOrganization>): Promise<void>;
+  deleteOrganization(id: string): Promise<void>;
+  
+  // User role/organization operations
+  updateUserRole(userId: string, role: UserRole): Promise<void>;
+  updateUserOrganization(userId: string, organizationId: string | null): Promise<void>;
+  getUsersByOrganization(organizationId: string): Promise<User[]>;
+  getCandidatesWithResultsByOrganization(organizationId: string | null): Promise<Array<{
+    user: User;
+    results: AssessmentResult[];
+    tags: CandidateTag[];
+    notes: CandidateNote[];
+    invitations: Invitation[];
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -926,6 +950,118 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllGoldenSetResults(): Promise<void> {
     await db.delete(goldenSetResults);
+  }
+
+  // Organization operations
+  async createOrganization(org: InsertOrganization): Promise<Organization> {
+    const [created] = await db
+      .insert(organizations)
+      .values(org)
+      .returning();
+    return created;
+  }
+
+  async getOrganization(id: string): Promise<Organization | undefined> {
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id));
+    return org;
+  }
+
+  async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, slug));
+    return org;
+  }
+
+  async getAllOrganizations(): Promise<Organization[]> {
+    return await db
+      .select()
+      .from(organizations)
+      .orderBy(desc(organizations.createdAt));
+  }
+
+  async updateOrganization(id: string, updates: Partial<InsertOrganization>): Promise<void> {
+    await db
+      .update(organizations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(organizations.id, id));
+  }
+
+  async deleteOrganization(id: string): Promise<void> {
+    await db
+      .delete(organizations)
+      .where(eq(organizations.id, id));
+  }
+
+  // User role/organization operations
+  async updateUserRole(userId: string, role: UserRole): Promise<void> {
+    await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserOrganization(userId: string, organizationId: string | null): Promise<void> {
+    await db
+      .update(users)
+      .set({ organizationId, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getUsersByOrganization(organizationId: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.organizationId, organizationId));
+  }
+
+  async getCandidatesWithResultsByOrganization(organizationId: string | null): Promise<Array<{
+    user: User;
+    results: AssessmentResult[];
+    tags: CandidateTag[];
+    notes: CandidateNote[];
+    invitations: Invitation[];
+  }>> {
+    let allUsers: User[];
+    
+    if (organizationId === null) {
+      // Super admin: get all users
+      allUsers = await db.select().from(users);
+    } else {
+      // Org admin: get only users in their organization
+      allUsers = await db
+        .select()
+        .from(users)
+        .where(eq(users.organizationId, organizationId));
+    }
+
+    const candidatesData = await Promise.all(
+      allUsers.map(async (user) => {
+        const [results, tags, notes, userInvitations] = await Promise.all([
+          this.getResultsByUser(user.id),
+          this.getTagsByCandidate(user.id),
+          this.getNotesByCandidate(user.id),
+          db.select().from(invitations).where(eq(invitations.candidateEmail, user.email)),
+        ]);
+
+        return {
+          user,
+          results,
+          tags,
+          notes,
+          invitations: userInvitations,
+        };
+      })
+    );
+
+    // Filter to only include candidates with results or invitations
+    return candidatesData.filter(
+      (candidate) => candidate.results.length > 0 || candidate.invitations.length > 0
+    );
   }
 }
 

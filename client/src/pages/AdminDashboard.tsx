@@ -8,6 +8,7 @@ import CandidatesTab from "@/components/admin/CandidatesTab";
 import CompareTab from "@/components/admin/CompareTab";
 import RoleFitTab from "@/components/admin/RoleFitTab";
 import GoldenSetTab from "@/components/admin/GoldenSetTab";
+import OrganizationsTab from "@/components/admin/OrganizationsTab";
 
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
@@ -21,7 +22,10 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!user?.isAdmin) {
+  const hasAdminAccess = user?.isAdmin || user?.role === 'super_admin' || user?.role === 'admin';
+  const isSuperAdmin = user?.role === 'super_admin' || user?.isAdmin;
+
+  if (!hasAdminAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-md">
@@ -46,7 +50,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-6' : 'grid-cols-5'} lg:w-auto lg:inline-grid`}>
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
           </TabsTrigger>
@@ -62,6 +66,11 @@ export default function AdminDashboard() {
           <TabsTrigger value="golden-set" data-testid="tab-golden-set">
             Scoring QA
           </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="organizations" data-testid="tab-organizations">
+              Organisations
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -83,6 +92,12 @@ export default function AdminDashboard() {
         <TabsContent value="golden-set" className="space-y-4">
           <GoldenSetTab />
         </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="organizations" className="space-y-4">
+            <OrganizationsTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
