@@ -1234,7 +1234,12 @@ export async function exportEnhancedCandidatePDF(
     }
     
     yPos = addSectionHeader(pdf, 'KEY STRENGTHS FOR THIS ROLE', yPos, pageWidth);
-    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Areas where candidate meets or exceeds requirements', 25, yPos + 4);
+    yPos += 10;
     
     roleComparison.alignment.strengths?.slice(0, 5).forEach((strength, index) => {
       if (yPos > pageHeight - 40) {
@@ -1247,7 +1252,7 @@ export async function exportEnhancedCandidatePDF(
       pdf.setDrawColor(229, 231, 235);
       pdf.roundedRect(25, yPos, pageWidth - 50, 10, 2, 2, 'FD');
       
-      pdf.setFontSize(9);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(34, 197, 94);
       pdf.text('✓', 30, yPos + 6);
@@ -1261,7 +1266,12 @@ export async function exportEnhancedCandidatePDF(
     
     yPos += 5;
     yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS FOR THIS ROLE', yPos, pageWidth);
-    yPos += 5;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Skills that may benefit from additional development or support', 25, yPos + 4);
+    yPos += 10;
     
     roleComparison.alignment.gaps?.slice(0, 5).forEach((area, index) => {
       if (yPos > pageHeight - 40) {
@@ -1274,7 +1284,7 @@ export async function exportEnhancedCandidatePDF(
       pdf.setDrawColor(229, 231, 235);
       pdf.roundedRect(25, yPos, pageWidth - 50, 10, 2, 2, 'FD');
       
-      pdf.setFontSize(9);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(249, 115, 22);
       pdf.text('!', 30, yPos + 6);
