@@ -274,7 +274,7 @@ export default function HeroSection() {
             </div>
 
             {/* Mobile only: Pricing disclosure - after images */}
-            <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-4">
+            <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-12">
               Tests from £3.50 (plus one-time £15 computation price)
             </p>
 
