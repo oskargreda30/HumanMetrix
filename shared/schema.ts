@@ -140,6 +140,7 @@ export const invitations = pgTable("invitations", {
   assessmentTypes: jsonb("assessment_types").notNull().$type<string[]>(),
   message: text("message"),
   sentBy: varchar("sent_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  organizationId: varchar("organization_id").references(() => organizations.id, { onDelete: "set null" }),
   status: text("status").notNull().default("sent"),
   expiresAt: timestamp("expires_at").notNull(),
   sentAt: timestamp("sent_at").defaultNow().notNull(),

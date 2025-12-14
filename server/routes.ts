@@ -2013,13 +2013,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (!user?.isAdmin) {
+      // Allow super_admin, isAdmin, or organization admin
+      const isSuperAdmin = user?.role === 'super_admin' || user?.isAdmin;
+      const isOrgAdmin = user?.role === 'admin' && user?.organizationId;
+      
+      if (!isSuperAdmin && !isOrgAdmin) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+
+      // Determine organizationId: org admins use their own org, super admins can specify
+      let organizationId: string | null = null;
+      if (isOrgAdmin) {
+        // Organization admins always use their own organization
+        organizationId = user!.organizationId;
+      } else if (isSuperAdmin && req.body.organizationId) {
+        // Super admins can optionally specify an organization - validate it exists
+        const specifiedOrg = await storage.getOrganization(req.body.organizationId);
+        if (!specifiedOrg) {
+          return res.status(400).json({ message: "Specified organization does not exist" });
+        }
+        organizationId = req.body.organizationId;
       }
 
       const validatedData = insertInvitationSchema.parse({
         ...req.body,
         sentBy: userId,
+        organizationId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       });
 
@@ -2056,14 +2075,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const firstName = nameParts[0] || validatedData.candidateName;
         const lastName = nameParts.slice(1).join(' ') || null;
         
-        // Create user account
-        console.log(`Creating user account for ${validatedData.candidateEmail}`);
+        // Create user account with organization assignment from invitation
+        console.log(`Creating user account for ${validatedData.candidateEmail}${organizationId ? ` in organization ${organizationId}` : ''}`);
         await storage.createUser({
           email: validatedData.candidateEmail,
           passwordHash,
           firstName,
           lastName,
           profileImageUrl: null,
+          role: 'candidate',
+          organizationId: organizationId ?? undefined,
         });
         
         // Send welcome email with credentials
@@ -2077,6 +2098,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
       } else {
+        // If user exists but has no organization, assign them to the invitation's org
+        if (organizationId && !existingUser.organizationId) {
+          await storage.updateUser(existingUser.id, { 
+            organizationId,
+            role: 'candidate'
+          });
+          console.log(`Assigned existing user ${validatedData.candidateEmail} to organization ${organizationId}`);
+        }
         console.log(`User ${validatedData.candidateEmail} already exists - invitation created`);
       }
 
@@ -3239,8 +3268,8 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      // Only super admins can manage organizations
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      // Only super admins can manage organizations (strict check, no legacy isAdmin)
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3258,7 +3287,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3293,7 +3322,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3331,7 +3360,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3373,7 +3402,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3404,7 +3433,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3449,7 +3478,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
@@ -3479,7 +3508,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'super_admin' && !user?.isAdmin) {
+      if (user?.role !== 'super_admin') {
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
