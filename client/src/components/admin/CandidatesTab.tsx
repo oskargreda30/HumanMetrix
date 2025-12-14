@@ -575,12 +575,12 @@ export default function CandidatesTab() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Assessments</p>
-                    <p className="font-semibold">{candidate.results?.length || 0}</p>
+                    <p className="font-semibold">{new Set(candidate.results?.map((r: any) => r.assessmentType) || []).size}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Completed</p>
                     <p className="font-semibold">
-                      {candidate.results?.filter((r: any) => r.status === 'completed').length || 0}
+                      {new Set(candidate.results?.filter((r: any) => r.status === 'completed').map((r: any) => r.assessmentType) || []).size}
                     </p>
                   </div>
                   <div>
