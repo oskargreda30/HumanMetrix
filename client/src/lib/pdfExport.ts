@@ -1036,7 +1036,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
   yPos += 6;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
@@ -1085,7 +1085,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
   yPos += 6;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
