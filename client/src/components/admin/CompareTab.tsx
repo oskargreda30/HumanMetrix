@@ -129,7 +129,7 @@ export default function CompareTab() {
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
               });
@@ -152,7 +152,7 @@ export default function CompareTab() {
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
               });
@@ -180,7 +180,7 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 2,
+              scale: 3,
               useCORS: true,
               logging: false,
             });
@@ -198,7 +198,7 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 2,
+              scale: 3,
               useCORS: true,
               logging: false,
             });
@@ -217,7 +217,7 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 2,
+              scale: 3,
               useCORS: true,
               logging: false,
             });

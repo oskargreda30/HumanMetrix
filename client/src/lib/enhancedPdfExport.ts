@@ -1547,7 +1547,7 @@ export async function captureRadarChart(elementId: string): Promise<string | nul
     await document.fonts.ready;
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
-      scale: 2,
+      scale: 3,
       logging: false,
       useCORS: true,
       width: element.offsetWidth,
