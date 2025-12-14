@@ -253,8 +253,8 @@ export default function HeroSection() {
                   className="absolute w-full rounded-lg shadow-lg border border-cyan-400/15"
                   style={{ 
                     imageRendering: 'auto',
-                    top: '30px',
-                    left: '30px',
+                    top: '50px',
+                    left: '50px',
                     zIndex: 1
                   }}
                   loading="eager"
@@ -292,8 +292,8 @@ export default function HeroSection() {
                 className="absolute w-full rounded-xl shadow-xl border border-cyan-400/20"
                 style={{ 
                   imageRendering: 'auto',
-                  top: '50px',
-                  left: '50px',
+                  top: '80px',
+                  left: '80px',
                   zIndex: 1
                 }}
                 loading="eager"
