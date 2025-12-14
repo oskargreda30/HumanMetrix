@@ -2342,12 +2342,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const isSuperAdmin = user?.role === 'super_admin';
+      const isOrgAdmin = user?.role === 'admin';
+      const hasAdminAccess = isSuperAdmin || isOrgAdmin;
+      
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
-      const invitations = await storage.getAllInvitations();
+      let invitations = await storage.getAllInvitations();
+      
+      // Filter by organisation for regular admins
+      if (isOrgAdmin && user?.organizationId) {
+        invitations = invitations.filter((inv: any) => inv.organizationId === user.organizationId);
+      } else if (isOrgAdmin && !user?.organizationId) {
+        // Admin without organisation sees no invitations
+        invitations = [];
+      }
+      
       res.json(invitations);
     } catch (error) {
       console.error("Error fetching invitations:", error);
@@ -2361,12 +2373,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const isSuperAdmin = user?.role === 'super_admin';
+      const isOrgAdmin = user?.role === 'admin';
+      const hasAdminAccess = isSuperAdmin || isOrgAdmin;
+      
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
-      const results = await storage.getAllResults();
+      let results = await storage.getAllResults();
+      
+      // Filter by organisation for regular admins
+      if (isOrgAdmin) {
+        if (user?.organizationId) {
+          // Get users belonging to this organization
+          const orgUsers = await storage.getUsersByOrganization(user.organizationId);
+          const orgUserIds = new Set(orgUsers.map((u: any) => u.id));
+          results = results.filter((r: any) => orgUserIds.has(r.userId));
+        } else {
+          // Admin without organisation sees no results
+          results = [];
+        }
+      }
       
       // Enrich results with user info
       const enrichedResults = await Promise.all(
