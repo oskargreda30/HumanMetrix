@@ -1030,11 +1030,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 2;
   
-  applySmallText(pdf);
-  pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
-  yPos += 5;
-  
   pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
@@ -1077,11 +1079,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
-  applySmallText(pdf);
-  pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
-  yPos += 5;
-  
   pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
