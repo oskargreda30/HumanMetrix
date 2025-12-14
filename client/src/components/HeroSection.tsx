@@ -249,6 +249,9 @@ export default function HeroSection() {
                   src={resultsImage}
                   alt="Professional HumanMetrix assessment report preview"
                   className="relative w-full rounded-lg shadow-xl border border-cyan-400/20"
+                  style={{ imageRendering: 'auto' }}
+                  loading="eager"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent rounded-lg pointer-events-none" />
               </div>
@@ -271,6 +274,9 @@ export default function HeroSection() {
                 src={resultsImage}
                 alt="Professional HumanMetrix assessment report preview"
                 className="relative w-full rounded-xl shadow-2xl border border-cyan-400/30"
+                style={{ imageRendering: 'auto' }}
+                loading="eager"
+                decoding="async"
               />
               
               {/* Subtle overlay gradient */}
