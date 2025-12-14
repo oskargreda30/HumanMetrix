@@ -91,7 +91,7 @@ export default function AdminDashboard() {
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-white" data-testid="heading-admin-dashboard">
-                {isSuperAdmin ? 'Platform Admin Hub' : 'Organisation Dashboard'}
+                {isSuperAdmin ? 'Platform Admin Hub' : 'Admin Dashboard'}
               </h1>
               {isSuperAdmin ? (
                 <Badge variant="secondary" className="gap-1.5 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
