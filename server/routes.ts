@@ -3277,6 +3277,114 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== PLATFORM METRICS (Super Admin Only) ====================
+
+  // Super Admin: Get platform-wide stats across all organizations
+  app.get("/api/admin/platform-stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      // Get all organizations
+      const organizations = await storage.getAllOrganizations();
+      
+      // Get all candidates and results
+      const allCandidates = await storage.getCandidatesWithResults();
+      const allResults = await storage.getAllResults();
+      const allInvitations = await storage.getAllInvitations();
+      
+      // Calculate per-organization stats
+      const orgStats = await Promise.all(organizations.map(async (org) => {
+        const orgCandidates = await storage.getCandidatesWithResultsByOrganization(org.id);
+        const members = await storage.getUsersByOrganization(org.id);
+        
+        const completedAssessments = orgCandidates.reduce((count: number, candidate: any) => {
+          const completed = (candidate.results || []).filter((r: any) => r.status === 'completed').length;
+          return count + completed;
+        }, 0);
+        
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          isActive: org.isActive,
+          memberCount: members.length,
+          candidateCount: orgCandidates.length,
+          completedAssessments,
+        };
+      }));
+      
+      // Calculate totals
+      const totalOrganizations = organizations.length;
+      const activeOrganizations = organizations.filter(o => o.isActive).length;
+      const totalCandidates = allCandidates.length;
+      const totalAssessments = allResults.length;
+      const completedAssessments = allResults.filter((r: any) => r.status === 'completed').length;
+      const totalInvitations = allInvitations.length;
+      
+      // Calculate candidates without organization (self-service)
+      const selfServiceCandidates = allCandidates.filter((c: any) => !c.user?.organizationId).length;
+      
+      res.json({
+        totals: {
+          organizations: totalOrganizations,
+          activeOrganizations,
+          candidates: totalCandidates,
+          selfServiceCandidates,
+          assessments: totalAssessments,
+          completedAssessments,
+          invitations: totalInvitations,
+        },
+        organizationStats: orgStats,
+      });
+    } catch (error) {
+      console.error("Error fetching platform stats:", error);
+      res.status(500).json({ message: "Failed to fetch platform stats" });
+    }
+  });
+
+  // Admin: Get current user's organization info
+  app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      if (user?.role === 'super_admin') {
+        // Super admins don't have a specific organization, they see all
+        return res.json({ 
+          isSuperAdmin: true, 
+          organization: null 
+        });
+      }
+      
+      if (!user?.organizationId) {
+        return res.json({ 
+          isSuperAdmin: false, 
+          organization: null,
+          message: "No organization assigned" 
+        });
+      }
+      
+      const organization = await storage.getOrganization(user.organizationId);
+      res.json({ 
+        isSuperAdmin: false, 
+        organization 
+      });
+    } catch (error) {
+      console.error("Error fetching user's organization:", error);
+      res.status(500).json({ message: "Failed to fetch organization" });
+    }
+  });
+
   // ==================== ORGANIZATION ADMIN API (Super Admin Only) ====================
 
   // Super Admin: Get all organizations
