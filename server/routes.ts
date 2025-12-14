@@ -3094,9 +3094,12 @@ Format your response as JSON with this exact structure and skill names:
         'Responsible AI': 'Responsible AI & Ethical Awareness',
         'Data Fluency': 'Data Fluency',
         'Technical Fundamentals': 'Technical Fundamentals',
+        'Technical Fluency': 'Technical Fundamentals',
         'Critical Thinking': 'Critical Thinking & Problem-Solving',
         'Adaptability': 'Adaptability & Continuous Learning',
+        'Adaptive Learning': 'Adaptability & Continuous Learning',
         'Creativity': 'Creativity & Innovation',
+        'Creative Innovation': 'Creativity & Innovation',
         'Domain Expertise': 'Domain Expertise',
       };
       
