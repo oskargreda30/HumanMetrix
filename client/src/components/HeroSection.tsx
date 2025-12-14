@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import networkBg from "@assets/image_1761537286469.png";
-import resultsImage from "@assets/image_1765681131675.png";
+import resultsImage from "@assets/Untitled_design_1765687154799.png";
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
