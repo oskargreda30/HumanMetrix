@@ -1,8 +1,11 @@
 import { useEffect } from "react";
+import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ArrowRight } from "lucide-react";
 
 export default function Privacy() {
   useEffect(() => {
@@ -264,6 +267,20 @@ export default function Privacy() {
               </section>
             </div>
           </Card>
+
+          {/* CTA Section */}
+          <div className="mt-8 md:mt-12 text-center">
+            <Link href="/assessments">
+              <Button 
+                size="lg"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                data-testid="button-privacy-go-to-assessments"
+              >
+                Go to Assessments
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
 

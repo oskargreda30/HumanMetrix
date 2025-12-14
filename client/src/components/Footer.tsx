@@ -1,13 +1,21 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Mail } from "lucide-react";
 import { SiLinkedin } from "react-icons/si";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
+type FooterLink = {
+  label: string;
+  href: string;
+  isAnchor?: boolean;
+};
+
 export default function Footer() {
-  const footerLinks = {
+  const [location, setLocation] = useLocation();
+  
+  const footerLinks: { company: FooterLink[]; assessments: FooterLink[]; resources: FooterLink[] } = {
     company: [
       { label: "About Us", href: "/about" },
-      { label: "How It Works", href: "/#how-it-works" },
+      { label: "How It Works", href: "/#how-it-works", isAnchor: true },
       { label: "Terms & Conditions", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },
     ],
@@ -21,6 +29,20 @@ export default function Footer() {
       { label: "For Employers", href: "/for-employers" },
       { label: "Pricing", href: "/assessments#pricing" },
     ],
+  };
+
+  const handleAnchorClick = (href: string) => {
+    const [path, hash] = href.split('#');
+    if (location === path || (path === '/' && location === '/')) {
+      const element = document.getElementById(hash);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      setLocation(path);
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   };
 
   return (
@@ -63,11 +85,21 @@ export default function Footer() {
             <ul className="space-y-1.5 md:space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href}>
-                    <span className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  {link.isAnchor ? (
+                    <button
+                      onClick={() => handleAnchorClick(link.href)}
+                      className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer text-left"
+                      data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
                       {link.label}
-                    </span>
-                  </Link>
+                    </button>
+                  ) : (
+                    <Link href={link.href}>
+                      <span className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                        {link.label}
+                      </span>
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -107,11 +139,11 @@ export default function Footer() {
               <h4 className="font-medium text-[11px] md:text-sm text-white">Contact</h4>
               <a
                 href="mailto:humanmetrix.sales@gmail.com"
-                className="flex items-center gap-1 md:gap-2 text-sm md:text-base text-blue-100/60 hover:text-cyan-300 transition-colors break-all"
+                className="flex items-start gap-1 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
                 data-testid="link-email"
               >
-                <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                <span className="text-sm md:text-base">humanmetrix.sales@gmail.com</span>
+                <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0 mt-0.5" />
+                <span className="break-words">humanmetrix.sales@gmail.com</span>
               </a>
             </div>
           </div>

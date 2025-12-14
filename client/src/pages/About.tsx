@@ -1,6 +1,8 @@
+import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Target, Users, Award, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Target, Users, Award, TrendingUp, ArrowRight } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
 
@@ -155,6 +157,22 @@ export default function About() {
               Every question, scoring rubric, and evaluation methodology is designed by specialists who understand 
               both human behavior and artificial intelligence.
             </p>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-8 md:py-16">
+          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 text-center">
+            <Link href="/assessments">
+              <Button 
+                size="lg"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                data-testid="button-about-go-to-assessments"
+              >
+                Go to Assessments
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </section>
       </main>

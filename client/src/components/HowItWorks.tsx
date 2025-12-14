@@ -25,7 +25,7 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
+    <section id="how-it-works" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
       {/* Animated neural network background decoration - circular pattern extended */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
         <svg className="absolute -top-1/4 -left-[5%] w-[150%] h-[150%]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
