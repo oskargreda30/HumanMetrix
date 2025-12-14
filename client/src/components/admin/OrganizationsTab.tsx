@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Building2, Users, Plus, Trash2, Edit, UserPlus, Loader2, Crown, User } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
+import { Building2, Users, Plus, Trash2, Edit, UserPlus, Loader2, Crown, User, CheckCircle2 } from "lucide-react";
 import type { Organization } from "@shared/schema";
 
 interface OrganizationWithMembers extends Organization {
@@ -26,12 +27,15 @@ interface OrganizationWithMembers extends Organization {
 
 export default function OrganizationsTab() {
   const { toast } = useToast();
+  const { user } = useUser();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<OrganizationWithMembers | null>(null);
   const [newOrg, setNewOrg] = useState({ name: "", slug: "", maxSeats: 10 });
   const [newMember, setNewMember] = useState({ email: "", role: "candidate" });
+
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/admin/organizations"],
@@ -147,10 +151,262 @@ export default function OrganizationsTab() {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   };
 
-  if (isLoading) {
+  if (isLoading || user === undefined) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const hasOrganization = organizations && organizations.length > 0;
+  const myOrganization = hasOrganization ? organizations[0] : null;
+
+  if (!isSuperAdmin && !hasOrganization) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white" data-testid="heading-organizations">Your Organisation</h2>
+          <p className="text-white/70">Create your organisation to invite and manage candidates</p>
+        </div>
+
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Create Your Organisation
+            </CardTitle>
+            <CardDescription>
+              Set up your organisation to start inviting candidates and managing assessments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Organisation Name</Label>
+                <Input
+                  id="org-name"
+                  data-testid="input-org-name"
+                  value={newOrg.name}
+                  onChange={(e) => {
+                    setNewOrg({ ...newOrg, name: e.target.value, slug: generateSlug(e.target.value) });
+                  }}
+                  placeholder="Your Company Name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-slug">URL Slug</Label>
+                <Input
+                  id="org-slug"
+                  data-testid="input-org-slug"
+                  value={newOrg.slug}
+                  onChange={(e) => setNewOrg({ ...newOrg, slug: e.target.value })}
+                  placeholder="your-company-name"
+                />
+                <p className="text-xs text-muted-foreground">This will be used in invitation URLs</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-seats">Maximum Seats</Label>
+                <Input
+                  id="org-seats"
+                  data-testid="input-org-seats"
+                  type="number"
+                  value={newOrg.maxSeats}
+                  onChange={(e) => setNewOrg({ ...newOrg, maxSeats: parseInt(e.target.value) || 10 })}
+                  min={1}
+                />
+                <p className="text-xs text-muted-foreground">Number of candidates you can invite</p>
+              </div>
+              <Button
+                className="w-full"
+                data-testid="button-submit-create-org"
+                onClick={() => createOrgMutation.mutate(newOrg)}
+                disabled={!newOrg.name || !newOrg.slug || createOrgMutation.isPending}
+              >
+                {createOrgMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Plus className="mr-2 h-4 w-4" />
+                Create Organisation
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isSuperAdmin && myOrganization) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white" data-testid="heading-organizations">Your Organisation</h2>
+          <p className="text-white/70">Manage your organisation and team members</p>
+        </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-md bg-primary/10">
+                <Building2 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">{myOrganization.name}</CardTitle>
+                <CardDescription>Slug: {myOrganization.slug}</CardDescription>
+              </div>
+            </div>
+            <Badge variant={myOrganization.isActive ? "default" : "secondary"} className="gap-1">
+              {myOrganization.isActive ? <CheckCircle2 className="h-3 w-3" /> : null}
+              {myOrganization.isActive ? "Active" : "Inactive"}
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Max {myOrganization.maxSeats} seats</span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              data-testid="button-manage-org"
+              onClick={() => fetchOrgDetails(myOrganization)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Manage Members
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Member Management Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setSelectedOrg(null); }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Manage Organisation: {selectedOrg?.name}</DialogTitle>
+              <DialogDescription>Manage team members and their roles</DialogDescription>
+            </DialogHeader>
+            {selectedOrg && (
+              <div className="space-y-6">
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold">Members ({selectedOrg.memberCount})</h3>
+                    <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" data-testid="button-add-member">
+                          <UserPlus className="mr-1 h-3 w-3" />
+                          Add Member
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Member</DialogTitle>
+                          <DialogDescription>Add an existing user to this organisation</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>User Email</Label>
+                            <Input
+                              data-testid="input-member-email"
+                              value={newMember.email}
+                              onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                              placeholder="user@example.com"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Role</Label>
+                            <Select value={newMember.role} onValueChange={(value) => setNewMember({ ...newMember, role: value })}>
+                              <SelectTrigger data-testid="select-member-role">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="candidate">Candidate</SelectItem>
+                                <SelectItem value="admin">Organisation Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>Cancel</Button>
+                          <Button
+                            data-testid="button-submit-add-member"
+                            onClick={() => addMemberMutation.mutate({ orgId: selectedOrg.id, data: newMember })}
+                            disabled={!newMember.email || addMemberMutation.isPending}
+                          >
+                            {addMemberMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Add
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {selectedOrg.members && selectedOrg.members.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedOrg.members.map((member) => (
+                        <div
+                          key={member.id}
+                          data-testid={`member-row-${member.id}`}
+                          className="flex items-center justify-between p-3 border rounded-md"
+                        >
+                          <div className="flex items-center gap-3">
+                            {member.role === "admin" ? (
+                              <Crown className="h-4 w-4 text-amber-500" />
+                            ) : (
+                              <User className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <div>
+                              <p className="font-medium">
+                                {member.firstName && member.lastName
+                                  ? `${member.firstName} ${member.lastName}`
+                                  : member.email}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={member.role}
+                              onValueChange={(value) => {
+                                updateMemberRoleMutation.mutate({
+                                  orgId: selectedOrg.id,
+                                  memberId: member.id,
+                                  role: value,
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="w-32" data-testid={`select-role-${member.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="candidate">Candidate</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`button-remove-member-${member.id}`}
+                              onClick={() => {
+                                if (confirm(`Remove ${member.email} from this organisation?`)) {
+                                  removeMemberMutation.mutate({ orgId: selectedOrg.id, memberId: member.id });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No members yet</p>
+                  )}
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -159,8 +415,8 @@ export default function OrganizationsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold" data-testid="heading-organizations">Organisations</h2>
-          <p className="text-muted-foreground">Manage employer organisations and their members</p>
+          <h2 className="text-2xl font-bold text-white" data-testid="heading-organizations">Organisations</h2>
+          <p className="text-white/70">Manage employer organisations and their members</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -272,7 +528,7 @@ export default function OrganizationsTab() {
           </Card>
         ))}
 
-        {(!organizations || organizations.length === 0) && (
+        {(!organizations || organizations.length === 0) && isSuperAdmin && (
           <Card className="col-span-full">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
