@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import networkBg from "@assets/image_1761537286469.png";
 import resultsImage from "@assets/image_1765687422066.png";
+import resultsImage2 from "@assets/image_1765687714401.png";
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -236,7 +237,7 @@ export default function HeroSection() {
               ))}
             </div>
 
-            {/* Mobile Report Image - shown only on mobile */}
+            {/* Mobile Report Images - shown only on mobile */}
             <div 
               className={getAnimationClass(
                 'relative mt-6 lg:hidden',
@@ -245,20 +246,35 @@ export default function HeroSection() {
             >
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-50" />
+                {/* Back image (partially visible) */}
+                <img
+                  src={resultsImage2}
+                  alt="Additional HumanMetrix assessment report pages"
+                  className="absolute w-full rounded-lg shadow-lg border border-cyan-400/15"
+                  style={{ 
+                    imageRendering: 'auto',
+                    top: '15px',
+                    left: '15px',
+                    zIndex: 1
+                  }}
+                  loading="eager"
+                  decoding="async"
+                />
+                {/* Front image (fully visible) */}
                 <img
                   src={resultsImage}
                   alt="Professional HumanMetrix assessment report preview"
                   className="relative w-full rounded-lg shadow-xl border border-cyan-400/20"
-                  style={{ imageRendering: 'auto' }}
+                  style={{ imageRendering: 'auto', zIndex: 2 }}
                   loading="eager"
                   decoding="async"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent rounded-lg pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent rounded-lg pointer-events-none" style={{ zIndex: 3 }} />
               </div>
             </div>
           </div>
 
-          {/* Right Column - Report Image (hidden on mobile, shown on desktop) */}
+          {/* Right Column - Report Images (hidden on mobile, shown on desktop) */}
           <div 
             className={getAnimationClass(
               'relative hidden lg:flex lg:justify-center lg:items-center',
@@ -266,21 +282,36 @@ export default function HeroSection() {
             )}
           >
             <div className="relative max-w-md">
-              {/* Glow effect behind image */}
+              {/* Glow effect behind images */}
               <div className="absolute -inset-3 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-2xl blur-2xl opacity-60" />
               
-              {/* Report image */}
+              {/* Back image (partially visible) - positioned behind and offset */}
+              <img
+                src={resultsImage2}
+                alt="Additional HumanMetrix assessment report pages"
+                className="absolute w-full rounded-xl shadow-xl border border-cyan-400/20"
+                style={{ 
+                  imageRendering: 'auto',
+                  top: '25px',
+                  left: '25px',
+                  zIndex: 1
+                }}
+                loading="eager"
+                decoding="async"
+              />
+              
+              {/* Front image (fully visible) */}
               <img
                 src={resultsImage}
                 alt="Professional HumanMetrix assessment report preview"
                 className="relative w-full rounded-xl shadow-2xl border border-cyan-400/30"
-                style={{ imageRendering: 'auto' }}
+                style={{ imageRendering: 'auto', zIndex: 2 }}
                 loading="eager"
                 decoding="async"
               />
               
               {/* Subtle overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/40 via-transparent to-transparent rounded-xl pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/40 via-transparent to-transparent rounded-xl pointer-events-none" style={{ zIndex: 3 }} />
             </div>
           </div>
         </div>
