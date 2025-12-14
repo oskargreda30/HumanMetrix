@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import networkBg from "@assets/image_1761537286469.png";
-import resultsImage from "@assets/image_1765687422066.png";
+import resultsImage from "@assets/image_1765688061458.png";
 import resultsImage2 from "@assets/image_1765687714401.png";
 
 export default function HeroSection() {
@@ -253,8 +253,8 @@ export default function HeroSection() {
                   className="absolute w-full rounded-lg shadow-lg border border-cyan-400/15"
                   style={{ 
                     imageRendering: 'auto',
-                    top: '15px',
-                    left: '15px',
+                    top: '30px',
+                    left: '30px',
                     zIndex: 1
                   }}
                   loading="eager"
@@ -292,8 +292,8 @@ export default function HeroSection() {
                 className="absolute w-full rounded-xl shadow-xl border border-cyan-400/20"
                 style={{ 
                   imageRendering: 'auto',
-                  top: '25px',
-                  left: '25px',
+                  top: '50px',
+                  left: '50px',
                   zIndex: 1
                 }}
                 loading="eager"
