@@ -140,7 +140,7 @@ export default function HeroSection() {
               )}
             >
               <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
-                HumanMetrix - AI-Powered Psychometric Testing Platform
+                AI-Powered Psychometric Testing Platform
               </span>
             </div>
             
