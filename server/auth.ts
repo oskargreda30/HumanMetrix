@@ -90,7 +90,7 @@ export async function setupAuth(app: Express) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        isAdmin: user.isAdmin,
+        role: user.role,
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -148,7 +148,7 @@ export async function setupAuth(app: Express) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        isAdmin: user.isAdmin,
+        role: user.role,
       });
     } catch (error) {
       console.error("Signup error:", error);

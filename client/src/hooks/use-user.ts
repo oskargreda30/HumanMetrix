@@ -6,7 +6,8 @@ export interface User {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
-  isAdmin: boolean;
+  role: string;
+  organizationId?: string;
 }
 
 export function useUser() {

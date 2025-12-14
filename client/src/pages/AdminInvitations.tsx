@@ -22,7 +22,7 @@ export default function AdminInvitations() {
 
   const { data: invitations, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/invitations'],
-    enabled: !!user?.isAdmin,
+    enabled: user?.role === 'super_admin' || user?.role === 'admin',
   });
 
   const createInvitation = useMutation({
@@ -87,7 +87,7 @@ export default function AdminInvitations() {
     );
   }
 
-  if (!user?.isAdmin) {
+  if (user?.role !== 'super_admin' && user?.role !== 'admin') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-md">

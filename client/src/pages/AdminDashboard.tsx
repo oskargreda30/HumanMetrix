@@ -22,7 +22,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const hasAdminAccess = user?.isAdmin || user?.role === 'super_admin' || user?.role === 'admin';
+  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
   const isSuperAdmin = user?.role === 'super_admin';
 
   if (!hasAdminAccess) {

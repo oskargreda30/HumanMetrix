@@ -12,13 +12,15 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
+  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       setLocation("/login");
-    } else if (!isLoading && isAuthenticated && requireAdmin && !(user as any)?.isAdmin) {
+    } else if (!isLoading && isAuthenticated && requireAdmin && !hasAdminAccess) {
       setLocation("/dashboard");
     }
-  }, [isAuthenticated, isLoading, user, requireAdmin, setLocation]);
+  }, [isAuthenticated, isLoading, user, requireAdmin, setLocation, hasAdminAccess]);
 
   if (isLoading) {
     return (
@@ -32,7 +34,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     return null;
   }
 
-  if (requireAdmin && !(user as any)?.isAdmin) {
+  if (requireAdmin && !hasAdminAccess) {
     return null;
   }
 

@@ -20,12 +20,13 @@ async function bootstrapAdmin() {
     const existingUser = await storage.getUserByEmail(adminEmail);
     
     if (existingUser) {
-      if (existingUser.isAdmin) {
+      if (existingUser.role === 'super_admin' || existingUser.role === 'admin') {
         console.log(`✅ Admin user already exists: ${adminEmail}`);
+        console.log(`   Role: ${existingUser.role}`);
         console.log("   No action needed.");
       } else {
         console.log(`⚠️  User ${adminEmail} exists but is not an admin.`);
-        console.log("   Manual intervention required to set isAdmin=true in database.");
+        console.log("   Manual intervention required to set role='super_admin' in database.");
       }
       process.exit(0);
     }
@@ -34,7 +35,7 @@ async function bootstrapAdmin() {
     console.log("🔐 Hashing password...");
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
-    // Create admin user
+    // Create admin user with super_admin role
     console.log(`👤 Creating admin user: ${adminEmail}...`);
     const adminUser = await storage.createUser({
       email: adminEmail,
@@ -42,13 +43,13 @@ async function bootstrapAdmin() {
       firstName: null,
       lastName: null,
       profileImageUrl: null,
-      isAdmin: true,
+      role: 'super_admin',
     });
 
     console.log("\n✅ SUCCESS!");
     console.log(`   Admin user created: ${adminUser.email}`);
     console.log(`   User ID: ${adminUser.id}`);
-    console.log(`   Admin: ${adminUser.isAdmin}`);
+    console.log(`   Role: ${adminUser.role}`);
     console.log("\n🎉 You can now log in with these credentials.");
     process.exit(0);
 

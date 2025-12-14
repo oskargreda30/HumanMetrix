@@ -6,7 +6,7 @@ declare global {
       id: string;
       email: string;
       name: string | null;
-      isAdmin: boolean;
+      role: string;
     }
 
     interface Request {
