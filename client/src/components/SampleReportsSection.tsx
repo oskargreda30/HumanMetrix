@@ -7,6 +7,7 @@ const reports = [
     title: "Individual Report",
     description: "Comprehensive analysis of all 4 assessments with detailed skill breakdowns, performance levels, and personalized recommendations",
     link: "/sample-reports/individual-sample.pdf",
+    downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
     testId: "individual",
   },
   {
@@ -14,6 +15,7 @@ const reports = [
     title: "Comparison Report (best for employers)",
     description: "Side-by-side comparison of multiple candidates across all assessments with visual charts and performance indicators",
     link: "/sample-reports/comparison-sample.pdf",
+    downloadName: "Candidate_Comparison_Example_Report_HumanMetrix.pdf",
     testId: "comparison",
   },
   {
@@ -21,6 +23,7 @@ const reports = [
     title: "Role Fit Report",
     description: "AI-powered role alignment analysis showing skill match, strengths, development areas, and hiring recommendations",
     link: "/sample-reports/rolefit-sample.pdf",
+    downloadName: "Role_Fit_Example_Report_HumanMetrix.pdf",
     testId: "rolefit",
   },
 ];
@@ -139,7 +142,7 @@ export default function SampleReportsSection() {
               <h3 className="text-sm md:text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
                 {report.title}
               </h3>
-              <a href={report.link} download data-testid={`link-download-${report.testId}`} className="w-full">
+              <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
                 <Button 
                   size="sm"
                   className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
