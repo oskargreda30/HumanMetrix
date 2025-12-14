@@ -398,7 +398,8 @@ export async function exportEnhancedCandidatePDF(
   pdf.text(`Name: ${candidateName}`, pageWidth / 2, yPos + 16, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
   pdf.text(`Email: ${candidate.user.email}`, pageWidth / 2, yPos + 22, { align: 'center' });
-  pdf.text(`Assessments Completed: ${candidate.results?.filter((r: any) => r.status === 'completed').length || 0}`, pageWidth / 2, yPos + 28, { align: 'center' });
+  const uniqueCompletedTypes = new Set(candidate.results?.filter((r: any) => r.status === 'completed').map((r: any) => r.assessmentType) || []);
+  pdf.text(`Assessments Completed: ${uniqueCompletedTypes.size}`, pageWidth / 2, yPos + 28, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
   
