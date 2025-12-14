@@ -240,11 +240,11 @@ export default function HeroSection() {
             {/* Mobile Report Images - shown only on mobile */}
             <div 
               className={getAnimationClass(
-                'relative mt-6 lg:hidden',
+                'relative mt-4 lg:hidden flex justify-center',
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
               )}
             >
-              <div className="relative">
+              <div className="relative max-w-[280px]">
                 <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-50" />
                 {/* Back image (partially visible) */}
                 <img
@@ -253,8 +253,8 @@ export default function HeroSection() {
                   className="absolute w-full rounded-lg shadow-lg border border-cyan-400/15"
                   style={{ 
                     imageRendering: 'auto',
-                    top: '50px',
-                    left: '50px',
+                    top: '25px',
+                    left: '25px',
                     zIndex: 1
                   }}
                   loading="eager"
@@ -277,7 +277,7 @@ export default function HeroSection() {
           {/* Right Column - Report Images (hidden on mobile, shown on desktop) */}
           <div 
             className={getAnimationClass(
-              'relative hidden lg:flex lg:justify-center lg:items-center',
+              'relative hidden lg:flex lg:justify-center lg:items-start -mt-8',
               `transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`
             )}
           >
