@@ -129,9 +129,10 @@ export default function CompareTab() {
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 3,
+                scale: 4,
                 useCORS: true,
                 logging: false,
+                allowTaint: true,
               });
               fitChartImages.push(canvas.toDataURL('image/png'));
             } else {
@@ -152,9 +153,10 @@ export default function CompareTab() {
             if (element) {
               const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 3,
+                scale: 4,
                 useCORS: true,
                 logging: false,
+                allowTaint: true,
               });
               aiChartImages.push(canvas.toDataURL('image/png'));
             } else {
@@ -180,9 +182,10 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 3,
+              scale: 4,
               useCORS: true,
               logging: false,
+              allowTaint: true,
             });
             fitCombinedChartImage = canvas.toDataURL('image/png');
           }
@@ -198,9 +201,10 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 3,
+              scale: 4,
               useCORS: true,
               logging: false,
+              allowTaint: true,
             });
             aiCombinedChartImage = canvas.toDataURL('image/png');
           }
@@ -217,9 +221,10 @@ export default function CompareTab() {
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
-              scale: 3,
+              scale: 4,
               useCORS: true,
               logging: false,
+              allowTaint: true,
             });
             overallSkillsChartImage = canvas.toDataURL('image/png');
           }

@@ -476,9 +476,10 @@ export async function captureChartImage(elementId: string): Promise<string | nul
     await document.fonts.ready;
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
-      scale: 3,
+      scale: 4,
       logging: false,
       useCORS: true,
+      allowTaint: true,
     });
     return canvas.toDataURL('image/png');
   } catch (error) {
