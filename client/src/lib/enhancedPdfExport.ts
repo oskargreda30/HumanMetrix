@@ -583,7 +583,6 @@ export async function exportEnhancedCandidatePDF(
     
     const aiqScore = aiqResultSummary.totalScore;
     const aiqBandColor = getAIQBandColor(aiqScore);
-    const aiqBand = getAIQBandInterpretation(aiqScore);
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
@@ -591,18 +590,8 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Algorithmic Integrity Quotient (AIQ)', 25, yPos);
     
     pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
-    pdf.text(`${aiqScore}/100 - ${aiqBand.title}`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 4;
-    
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const aiqSummary = `${aiqBand.description}`;
-    const aiqLines = pdf.splitTextToSize(aiqSummary, pageWidth - 50);
-    aiqLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + (idx * 3));
-    });
-    yPos += aiqLines.length * 3 + 5;
+    pdf.text(`${aiqScore}/100`, pageWidth - 25, yPos, { align: 'right' });
+    yPos += 8;
   }
   
   pdf.setTextColor(0, 0, 0);
