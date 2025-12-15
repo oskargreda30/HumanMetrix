@@ -104,18 +104,15 @@ The ability to navigate diverse social situations, adapt communication, and leve
 ### Step 1: Response Collection
 15 situational judgment questions, each with 4 response options (A, B, C, D). Each response maps to 2-3 competencies simultaneously.
 
-### Step 2: Matrix-Weighted Scoring
-Each selected response contributes 4 points to each mapped competency. The scoring matrix was developed through SME consensus with inter-rater reliability (Cohen's kappa) > 0.80.
-
-### Step 3: Raw Score Calculation
+### Step 2: Raw Score Calculation
 Raw scores are summed for each competency. Maximum possible raw score per competency: 60 points (15 questions × max 4 points per question).
 
-### Step 4: Normalisation
+### Step 3: Normalisation
 ```
 rawNormalised = (earnedPoints / maxPossiblePoints) × 100
 ```
 
-### Step 5: Enhanced Differentiation Scaling (50-95 Range)
+### Step 4: Enhanced Differentiation Scaling (50-95 Range)
 
 ```
 Final Score = 50 + (rawNormalised × 0.4) + ((rawNormalised/100)² × 5)
@@ -136,7 +133,7 @@ Final Score = 50 + (rawNormalised × 0.4) + ((rawNormalised/100)² × 5)
 - **Quadratic Bonus**: The `(raw/100)² × 5` term rewards high performers with additional differentiation
 - **~25pt Spread in Top Half**: Creates meaningful differentiation between average and exceptional performers (vs ~10pt spread in simple linear scaling)
 
-### Step 6: Total Score Calculation
+### Step 5: Total Score Calculation
 ```
 Total Score = Mean of all six competency scores
 ```
@@ -484,6 +481,6 @@ Key differentiators:
 
 **HumanMetrix Ltd**  
 Website: humanmetrix.co.uk  
-Email: contact@humanmetrix.co.uk
+Email: assessments@humanmetrix.co.uk
 
 *Evidence-based assessment for the AI-driven economy*
