@@ -1,0 +1,81 @@
+config:
+  target: "https://humanmetrix.replit.app"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 15
+      name: "Ramp up load"
+    - duration: 180
+      arrivalRate: 30
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+
+scenarios:
+  - name: "Landing page browsing"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/about"
+          expect:
+            - statusCode: 200
+      - think: 3
+      - get:
+          url: "/assessments"
+          expect:
+            - statusCode: 200
+
+  - name: "Login flow"
+    weight: 30
+    flow:
+      - get:
+          url: "/login"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ $randomString(8) }}@test.com"
+            password: "TestPassword123"
+          expect:
+            - statusCode: 401
+
+  - name: "API health checks"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/user"
+          expect:
+            - statusCode: [200, 401]
+      - think: 1
+      - get:
+          url: "/api/assessments"
+          expect:
+            - statusCode: [200, 401]
+
+  - name: "Static assets"
+    weight: 10
+    flow:
+      - get:
+          url: "/for-employers"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/product-roadmap"
+          expect:
+            - statusCode: 200

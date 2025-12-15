@@ -11,5 +11,27 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+
+pool.on('error', (err) => {
+  console.error('❌ Database pool error:', err.message);
+});
+
+pool.on('connect', () => {
+  console.log('✅ New database connection established');
+});
+
 export const db = drizzle({ client: pool, schema });
+
+export async function getPoolStats() {
+  return {
+    totalConnections: pool.totalCount,
+    idleConnections: pool.idleCount,
+    waitingClients: pool.waitingCount,
+  };
+}

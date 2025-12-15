@@ -1,9 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes, startGoldenSetScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
+import { initializeJobQueues, shutdownJobQueues } from "./queues";
 
 const app = express();
+
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6,
+  threshold: 1024,
+}));
+
+console.log('✅ Response compression enabled (gzip/deflate)');
 
 declare module 'http' {
   interface IncomingMessage {
@@ -79,10 +94,40 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
+    // Initialize job queues for background processing
+    initializeJobQueues();
+    
     // Initialize email system after server starts
     initializeEmailSystem();
     
     // Start Golden Set scheduler for daily GPT-4o scoring consistency checks
     startGoldenSetScheduler();
   });
+
+  // Graceful shutdown handling
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    
+    server.close(async () => {
+      console.log('HTTP server closed');
+      
+      try {
+        await shutdownJobQueues();
+        console.log('All queues shut down');
+        process.exit(0);
+      } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    });
+
+    // Force exit after 30 seconds
+    setTimeout(() => {
+      console.error('Forceful shutdown after timeout');
+      process.exit(1);
+    }, 30000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();
