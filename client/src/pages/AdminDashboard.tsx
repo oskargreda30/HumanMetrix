@@ -145,7 +145,7 @@ export default function AdminDashboard() {
 
             {isSuperAdmin && (
               <TabsContent value="platform" className="space-y-4">
-                <PlatformStatsTab />
+                <PlatformStatsTab currentUser={user} />
               </TabsContent>
             )}
 

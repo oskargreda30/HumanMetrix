@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Building2, Users, FileText, CheckCircle, Mail, Globe, UserCheck } from "lucide-react";
+import { Loader2, Building2, Users, FileText, CheckCircle, Mail, Globe, UserCheck, Activity, Database, Server } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface PlatformStats {
@@ -25,9 +25,49 @@ interface PlatformStats {
   }>;
 }
 
-export default function PlatformStatsTab() {
+interface QueueStats {
+  queues: {
+    email: {
+      pending: number;
+      processing: number;
+      completed: number;
+      failed: number;
+    };
+    scoring: {
+      pending: number;
+      processing: number;
+      completed: number;
+      failed: number;
+    };
+  };
+  database: {
+    totalConnections: number;
+    idleConnections: number;
+    waitingRequests: number;
+  };
+  timestamp: string;
+}
+
+interface User {
+  id: string;
+  role?: string;
+}
+
+interface PlatformStatsTabProps {
+  currentUser?: User | null;
+}
+
+export default function PlatformStatsTab({ currentUser }: PlatformStatsTabProps) {
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  
   const { data: stats, isLoading } = useQuery<PlatformStats>({
     queryKey: ["/api/admin/platform-stats"],
+  });
+
+  const { data: queueStats, isLoading: queueLoading } = useQuery<QueueStats>({
+    queryKey: ["/api/admin/queue-stats"],
+    refetchInterval: 10000,
+    enabled: isSuperAdmin,
   });
 
   if (isLoading) {
@@ -200,6 +240,105 @@ export default function PlatformStatsTab() {
           </CardContent>
         </Card>
       </div>
+
+      {isSuperAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              System Health
+              {queueLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {queueStats ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 border rounded-md" data-testid="card-email-queue">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm">Email Queue</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Pending:</span>
+                      <span className="ml-2 font-medium" data-testid="text-email-pending">{queueStats.queues.email.pending}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Processing:</span>
+                      <span className="ml-2 font-medium" data-testid="text-email-processing">{queueStats.queues.email.processing}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Completed:</span>
+                      <span className="ml-2 font-medium text-primary" data-testid="text-email-completed">{queueStats.queues.email.completed}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Failed:</span>
+                      <span className="ml-2 font-medium text-destructive" data-testid="text-email-failed">{queueStats.queues.email.failed}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-md" data-testid="card-scoring-queue">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Server className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm">Scoring Queue</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Pending:</span>
+                      <span className="ml-2 font-medium" data-testid="text-scoring-pending">{queueStats.queues.scoring.pending}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Processing:</span>
+                      <span className="ml-2 font-medium" data-testid="text-scoring-processing">{queueStats.queues.scoring.processing}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Completed:</span>
+                      <span className="ml-2 font-medium text-primary" data-testid="text-scoring-completed">{queueStats.queues.scoring.completed}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Failed:</span>
+                      <span className="ml-2 font-medium text-destructive" data-testid="text-scoring-failed">{queueStats.queues.scoring.failed}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-md" data-testid="card-database-pool">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Database className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm">Database Pool</h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Connections:</span>
+                      <span className="font-medium" data-testid="text-db-total">{queueStats.database.totalConnections}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Idle:</span>
+                      <span className="font-medium text-primary" data-testid="text-db-idle">{queueStats.database.idleConnections}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Waiting:</span>
+                      <span className={`font-medium ${queueStats.database.waitingRequests > 0 ? 'text-destructive' : ''}`} data-testid="text-db-waiting">
+                        {queueStats.database.waitingRequests}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                Unable to load system health data
+              </p>
+            )}
+            {queueStats && (
+              <p className="text-xs text-muted-foreground mt-4 text-right">
+                Last updated: {new Date(queueStats.timestamp).toLocaleTimeString()}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

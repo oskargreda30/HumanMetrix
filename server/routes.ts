@@ -8,6 +8,8 @@ import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluati
 import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
+import { getQueueStats } from "./queues";
+import { getPoolStats } from "./db";
 import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
@@ -3372,6 +3374,30 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error fetching platform stats:", error);
       res.status(500).json({ message: "Failed to fetch platform stats" });
+    }
+  });
+
+  // Super Admin: Get queue and system health stats
+  app.get("/api/admin/queue-stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const queueStats = getQueueStats();
+      const poolStats = await getPoolStats();
+      
+      res.json({
+        queues: queueStats,
+        database: poolStats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching queue stats:", error);
+      res.status(500).json({ message: "Failed to fetch queue stats" });
     }
   });
 
