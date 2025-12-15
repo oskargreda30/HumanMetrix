@@ -71,7 +71,8 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
   const formattedAssessments = invitation.assessmentTypes.map(formatAssessmentName);
   const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
   const assessmentListText = formattedAssessments.join(', ');
-  const inviteUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/invite/${invitation.token}`;
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const inviteUrl = domain ? `https://${domain}/invite/${invitation.token}` : `http://localhost:5000/invite/${invitation.token}`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -166,8 +167,9 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
     return;
   }
   
-  const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000';
-  const resetUrl = `https://${baseUrl}/reset-password/${resetToken}`;
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const baseUrl = domain ? `https://${domain}` : 'http://localhost:5000';
+  const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -248,8 +250,8 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
     return;
   }
   
-  const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000';
-  const loginUrl = `https://${baseUrl}/login`;
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const loginUrl = domain ? `https://${domain}/login` : 'http://localhost:5000/login';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
