@@ -1,0 +1,3071 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 4598
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 785.1970866141732586 Td
+(HumanMetrix Assessment Scoring Framework) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 741.2600787401574962 Td
+(Methodology & Rationale) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 712.9136220472440755 Td
+(Technical Documentation for Academic Review  ) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 698.7403937007873083 Td
+(Version 2.0 | December 2025) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 653.3860629921259715 Td
+(Abstract) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 625.0396062992125508 Td
+(This document presents the complete psychometric methodology underlying the HumanMetrix assessment battery.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 610.8663779527558972 Td
+(It details construct definitions, scoring algorithms, and the rationale explaining why specific response options map to) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 596.69314960629913 Td
+(particular competencies. The framework employs Situational Judgment Test \(SJT\) methodology for behavioural) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 582.5199212598424765 Td
+(assessments, GPT-5 powered evaluation for prompt engineering skills, and graded percentage scoring for ethical) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 568.346692913385823 Td
+(reasoning.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 522.9923622047243725 Td
+(Table of Contents) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 494.6459055118109518 Td
+(1. Assessment Overview) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 480.4726771653542983 Td
+(2. FIT Assessment: Constructs & Methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 466.2994488188975879 Td
+(   - 2.1 Construct Definitions) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 452.1262204724408775 Td
+(   - 2.2 Scoring Algorithm) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 437.952992125984224 Td
+(   - 2.3 Question-by-Question Rationale) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 423.7797637795275136 Td
+(3. AI Readiness Assessment: Constructs & Methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 409.6065354330708033 Td
+(   - 3.1 Construct Definitions) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 395.4333070866140929 Td
+(   - 3.2 Scoring Algorithm) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 381.2600787401574394 Td
+(   - 3.3 Question-by-Question Rationale) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 367.086850393700729 Td
+(4. Prompt Architecture Assessment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 352.9136220472440186 Td
+(   - 4.1 Assessment Structure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 338.7403937007873083 Td
+(   - 4.2 GPT-5 Evaluation Methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 324.5671653543306547 Td
+(   - 4.3 Scoring Dimensions) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 310.3939370078740012 Td
+(5. AIQ \(Algorithmic Integrity Quotient\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 296.220708661417234 Td
+(   - 5.1 Ethical Reasoning Framework) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 282.0474803149605805 Td
+(   - 5.2 Graded Scoring Methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 267.8742519685038133 Td
+(   - 5.3 Interpretation Bands) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 253.7010236220471597 Td
+(6. Golden Set Benchmark System) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 239.5277952755905062 Td
+(   - 6.1 Purpose & Overview) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 225.354566929133739 Td
+(   - 6.2 Benchmark Prompts) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 211.1813385826770855 Td
+(   - 6.3 Drift Detection & Recalibration) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 197.0081102362204319 Td
+(7. Market Opportunity & Investment Considerations) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 182.8348818897636647 Td
+(8. References) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 131.8112598425195756 Td
+(1. Assessment Overview) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 96.3781889763778281 Td
+(HumanMetrix provides four assessment instruments designed to evaluate candidates for the AI-augmented) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 82.2049606299211746 Td
+(workplace:) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 52.4411811023620658 Td
+(1.1 Assessment Portfolio) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 6178
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 792.2837007874015853 Td
+(FIT Assessment \(Behavioural Competencies\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 775.2758267716535556 Td
+(Measures six core behavioural traits that predict workplace effectiveness: High Agency, Intellectual Curiosity,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 761.1025984251967884 Td
+(Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility. Uses 15 situational judgment questions) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 746.9293700787401349 Td
+(with 4 response options each. Score range: 50-95 \(enhanced differentiation formula\).) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 725.6695275590550409 Td
+(AI Readiness Assessment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 708.6616535433070112 Td
+(Evaluates nine competencies for effective AI collaboration: AI Literacy & Prompt Engineering, Technical) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 694.4884251968503577 Td
+(Fundamentals, Data Fluency, Critical Thinking, Adaptability, Responsible AI Awareness, Domain Expertise,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 680.3151968503937042 Td
+(Creativity, and Collaboration. Uses 21 scenario-based questions with 5 response options each. Score range: 50-95) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 666.1419685039369369 Td
+(\(enhanced differentiation formula\).) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 644.8821259842519567 Td
+(Prompt Architecture Assessment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 627.8742519685039269 Td
+(Measures ability to effectively communicate with AI systems. Candidates complete 7 progressively challenging) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 613.7010236220471597 Td
+(prompt engineering tasks evaluated by GPT-5 across five dimensions: Clarity, Structure, Context Relevance,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 599.5277952755905062 Td
+(Creativity, and Iterative Improvement. Each dimension scored 0-20, total 0-100 per level.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 578.2679527559055259 Td
+(AIQ \(Algorithmic Integrity Quotient\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 561.2600787401574962 Td
+(Assesses ethical reasoning when working with AI systems. 8 ethical scenario questions with graded scoring based) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 547.086850393700729 Td
+(on ethical alignment quality. Each answer is weighted \(100%/65-75%/30-50%/0-25%\) to capture nuanced ethical) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 532.9136220472440755 Td
+(judgment. Score expressed as percentage with 5 interpretation bands.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 503.1498425196849666 Td
+(1.2 Theoretical Foundation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 474.8033858267716028 Td
+(The assessment framework integrates Situational Judgment Test methodology, competency modelling frameworks,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 460.6301574803148924 Td
+(Growth Mindset theory, and emerging AI Literacy constructs. Full academic references are provided at the end of) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 446.4569291338582389 Td
+(this document.) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 395.4333070866140929 Td
+(2. FIT Assessment: Constructs & Methodology) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 351.4962992125983874 Td
+(2.1 Construct Definitions) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 323.1498425196849666 Td
+(High Agency) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 306.1419685039369369 Td
+(The tendency to take ownership, act decisively, and initiate action without requiring external permission.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 284.882125984251843 Td
+(Theoretical basis: Agency reflects internal locus of control and proactive personality. Behavioural indicators include) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 270.7088976377951894 Td
+(self-starting behaviour, anticipating problems, and taking responsibility for outcomes.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 249.4490551181102092 Td
+(Intellectual Curiosity) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 232.4411811023621794 Td
+(The intrinsic motivation to seek knowledge, explore ideas, and understand underlying mechanisms.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 211.1813385826770855 Td
+(Theoretical basis: Related to Openness to Experience and epistemic curiosity. Behavioural indicators include active) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 197.0081102362204319 Td
+(information-seeking, asking probing questions, and investing effort in learning.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 175.748267716535338 Td
+(Resilience) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 158.7403937007873083 Td
+(The capacity to recover from setbacks, maintain emotional stability, and persist despite obstacles.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 137.480551181102328 Td
+(Theoretical basis: Psychological resilience and hardiness research. Behavioural indicators include adaptive coping,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 123.3073228346455608 Td
+(maintaining performance under pressure, and viewing difficulties as challenges.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 102.0474803149605805 Td
+(Empathy & Ethics) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 85.0396062992125508 Td
+(The ability to understand others' emotional states combined with commitment to principled decision-making.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 63.7797637795274568 Td
+(Theoretical basis: Integrates affective empathy with moral reasoning. Behavioural indicators include active listening,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 49.6065354330708033 Td
+(validating emotions, and demonstrating fairness in decisions.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 8 0 R
+>>
+endobj
+8 0 obj
+<<
+/Length 6084
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 792.2837007874015853 Td
+(Growth Mindset) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 775.2758267716535556 Td
+(The belief that abilities can be developed through dedication, effort, and learning from feedback.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 754.0159842519684616 Td
+(Theoretical basis: Implicit theories of intelligence. Behavioural indicators include embracing challenges, persisting) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 739.8427559055118081 Td
+(through difficulties, viewing effort as path to mastery.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 718.5829133858267141 Td
+(Interpersonal Agility) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 701.5750393700786844 Td
+(The ability to navigate diverse social situations, adapt communication, and leverage relationships.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 680.3151968503937042 Td
+(Theoretical basis: Social intelligence and emotional intelligence. Behavioural indicators include effective delegation,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 666.1419685039369369 Td
+(cross-boundary collaboration, and mobilising social resources.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 636.3781889763779418 Td
+(2.2 Scoring Algorithm \(Enhanced Differentiation\)) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 608.0317322834645211 Td
+(Step 1: Response Collection) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 591.0238582677164914 Td
+(15 situational judgment questions, each with 4 response options \(A, B, C, D\). Each response maps to 2-3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 576.8506299212597241 Td
+(competencies simultaneously.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 555.5907874015747439 Td
+(Step 2: Raw Score Calculation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 538.5829133858267141 Td
+(Raw scores are summed for each competency. Maximum possible raw score per competency: 60 points \(15) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 524.4096850393700606 Td
+(questions × max 4 points per question\).) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 503.1498425196849666 Td
+(Step 3: Normalisation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 486.1419685039369369 Td
+(rawNormalised = \(earnedPoints / maxPossiblePoints\) × 100) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 464.8821259842518998 Td
+(Step 4: Enhanced Differentiation Scaling \(50-95 Range\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 440.7876377952755433 Td
+(Final Score = 50 + \(rawNormalised × 0.4\) + \(\(rawNormalised/100\)² × 5\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 419.5277952755905062 Td
+(Score Mapping:) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 398.2679527559054691 Td
+( |  Raw Score  |  Final Score  |  Performance Level  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 385.5120472440944468 Td
+( | ----------- | ------------- | ------------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 372.7561417322834245 Td
+( |  0%  |  50%  |  Floor \(minimum\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 360.0002362204724022 Td
+( |  50% \(average\)  |  ~71%  |  Competent  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 347.24433070866138 Td
+( |  80% \(strong\)  |  ~85%  |  Strong  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 334.4884251968503008 Td
+( |  100% \(perfect\)  |  95%  |  Exceptional  | ) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 314.6459055118109518 Td
+(Rationale for Enhanced Formula:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 300.4726771653542983 Td
+(- 50% Floor: Eliminates demoralising low scores; everyone who participates receives at least 50%) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 286.2994488188975311 Td
+(- Linear Component \(0.4×\): Provides 0-40 points based on raw performance) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 272.1262204724408775 Td
+(- Quadratic Bonus: The \(raw/100\)² × 5 term rewards high performers with additional differentiation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 257.952992125984224 Td
+(- ~25pt Spread in Top Half: Creates meaningful differentiation between average and exceptional performers \(vs) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 243.7797637795274568 Td
+(~10pt spread in simple linear scaling\)) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 222.5199212598424765 Td
+(Step 5: Total Score Calculation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 205.5120472440944468 Td
+(Total Score = Mean of all six competency scores) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 184.2522047244093528 Td
+(Why Multiple Competencies Per Answer?) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 167.2443307086613231 Td
+(Real-world behaviours rarely demonstrate single constructs. When someone "takes immediate action while) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 153.0711023622046696 Td
+(coordinating with others," this single behaviour manifests both High Agency \(initiative\) and Interpersonal Agility) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 138.8978740157479024 Td
+(\(coordination\). Single-factor scoring would artificially constrain the construct space.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 109.1340944881889072 Td
+(2.3 Question-by-Question Rationale) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 80.7876377952754865 Td
+(Below we present FIT Assessment examples with detailed explanation of why each response option maps to) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 66.614409448818833 Td
+(specific competencies.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 45.354566929133739 Td
+(Question 1: Crisis Resource Management) Tj
+ET
+endstream
+endobj
+9 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 10 0 R
+>>
+endobj
+10 0 obj
+<<
+/Length 8688
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 799.3703149606299121 Td
+(Scenario: "You are hosting a dinner party. A key ingredient is missing, and the stores are about to close.") Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 778.1104724409448181 Td
+( |  Option  |  Text  |  Skills Mapped  |  Rationale  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 765.3545669291338527 Td
+( | -------- | ------ | --------------- | ----------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 752.5986614173227736 Td
+( |  A  |  Quickly change the recipe using what's on hand  |  High Agency \(+4\), Resilience \(+4\), Growth Mindset \(+4\)  |  Taking) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 739.8427559055118081 Td
+(immediate ownership demonstrates HIGH AGENCY. Accepting the constraint demonstrates RESILIENCE. Reframing as creative) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 727.086850393700729 Td
+(challenge demonstrates GROWTH MINDSET.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 714.3309448818897636 Td
+( |  B  |  Call a foodie friend for creative replacement ideas  |  Intellectual Curiosity \(+4\), Interpersonal Agility \(+4\)  |  Seeking novel) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 701.5750393700786844 Td
+(culinary knowledge demonstrates INTELLECTUAL CURIOSITY. Leveraging social network demonstrates INTERPERSONAL) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 688.819133858267719 Td
+(AGILITY.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 676.0632283464566399 Td
+( |  C  |  Look up advanced techniques for making the dish work  |  Empathy & Ethics \(+4\), Growth Mindset \(+4\)  |  Concern for) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 663.3073228346456744 Td
+(quality reflects guests' experience \(EMPATHY\). Viewing as learning opportunity demonstrates GROWTH MINDSET.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 650.5514173228345953 Td
+( |  D  |  Text guests to see if someone can grab the item  |  High Agency \(+4\), Empathy & Ethics \(+4\), Interpersonal Agility \(+4\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 637.7955118110235162 Td
+(Taking action demonstrates HIGH AGENCY. Offering to reimburse shows fairness \(ETHICS\). Coordinating people demonstrates) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 625.0396062992125508 Td
+(INTERPERSONAL AGILITY.  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 605.1970866141732586 Td
+(Question 2: Emotional Support vs. Practical Help) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 588.1892125984251152 Td
+(Scenario: "A friend tells you they failed their driving test for the third time and are deeply upset.") Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 566.9293700787401349 Td
+( |  Option  |  Text  |  Skills Mapped  |  Rationale  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 554.1734645669291695 Td
+( | -------- | ------ | --------------- | ----------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 541.4175590551180903 Td
+( |  A  |  Insist on practice right away, coaching them until fixed  |  High Agency \(+4\), Growth Mindset \(+4\)  |  Immediate ownership) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 528.6616535433070112 Td
+(of helping demonstrates HIGH AGENCY. Believing practice leads to improvement demonstrates GROWTH MINDSET.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 515.9057480314959321 Td
+( |  B  |  Remind them failure is normal, encourage a short break  |  Resilience \(+4\), Empathy & Ethics \(+4\)  |  Normalising) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 503.1498425196849666 Td
+(setbacks models RESILIENCE. Validating emotional state demonstrates EMPATHY.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 490.3939370078739444 Td
+( |  C  |  Focus entirely on listening, avoiding practical advice  |  Intellectual Curiosity \(+4\), Empathy & Ethics \(+4\), Interpersonal) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 477.6380314960629221 Td
+(Agility \(+4\)  |  Curiosity about feelings demonstrates INTELLECTUAL CURIOSITY. Pure validation demonstrates EMPATHY.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 464.8821259842518998 Td
+(Knowing when NOT to advise demonstrates INTERPERSONAL AGILITY.  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 452.1262204724408775 Td
+( |  D  |  Set up practice with several different patient friends  |  High Agency \(+4\), Resilience \(+4\), Interpersonal Agility \(+4\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 439.3703149606298552 Td
+(Proactively organising shows HIGH AGENCY. Structuring support shows RESILIENCE. Coordinating people shows) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 426.614409448818833 Td
+(INTERPERSONAL AGILITY.  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 406.7718897637794839 Td
+(Core Behavioural Patterns) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 389.7640157480314542 Td
+(The remaining FIT questions \(3-15\) follow the same mapping principles:) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 368.5041732283464171 Td
+( |  Behavioural Pattern  |  Associated Competency  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 355.7482677165353948 Td
+( | --------------------- | ---------------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 342.9923622047243725 Td
+( |  "I will handle this myself right now"  |  High Agency  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 330.2364566929132934 Td
+( |  "Let me research this thoroughly first"  |  Intellectual Curiosity  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 317.480551181102328 Td
+( |  "This is difficult but I will persist"  |  Resilience  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 304.7246456692912489 Td
+( |  "How does this affect others?"  |  Empathy & Ethics  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 291.9687401574802834 Td
+( |  "I can learn to do this better"  |  Growth Mindset  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 279.2128346456692043 Td
+( |  "Let me involve the right people"  |  Interpersonal Agility  | ) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 229.6065354330708033 Td
+(3. AI Readiness Assessment: Constructs & Methodology) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 185.6695275590550409 Td
+(3.1 Construct Definitions) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 157.3230708661416202 Td
+( |  Abbreviation  |  Competency  |  What It Measures  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 144.5671653543306547 Td
+( | -------------- | ------------ | ------------------ | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 131.8112598425195756 Td
+( |  AL/PE  |  AI Literacy & Prompt Engineering  |  Understanding AI capabilities and writing effective prompts  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 119.0553543307086102 Td
+( |  TF  |  Technical Fundamentals  |  Basic technical knowledge for AI collaboration  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 106.2994488188975311 Td
+( |  DF  |  Data Fluency  |  Comfort with data-driven decision making  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 93.5435433070865656 Td
+( |  CT/PS  |  Critical Thinking & Problem-Solving  |  Analytical reasoning, breaking down problems  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 80.7876377952754865 Td
+( |  ACL  |  Adaptability & Continuous Learning  |  Willingness to evolve, learn new approaches  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 68.0317322834645211 Td
+( |  RAI  |  Responsible AI & Ethical Awareness  |  Understanding AI limitations, ethics, bias  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 55.2758267716534419 Td
+( |  DE  |  Domain Expertise  |  Industry/field-specific knowledge application  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 42.5199212598424765 Td
+( |  CI  |  Creativity & Innovation  |  Novel approaches, challenging assumptions  | ) Tj
+ET
+endstream
+endobj
+11 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 12 0 R
+>>
+endobj
+12 0 obj
+<<
+/Length 5890
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 799.3703149606299121 Td
+( |  CC  |  Collaboration & Communication  |  Cross-functional teamwork, knowledge sharing  | ) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 771.0238582677164914 Td
+(3.2 Scoring Algorithm \(Enhanced Differentiation\)) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 742.6774015748030706 Td
+(Step 1: Response Collection) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 725.6695275590550409 Td
+(21 scenario-based questions with 5 response options \(A-E\). Each response maps to 2-3 competencies.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 704.4096850393700606 Td
+(Step 2: Matrix-Weighted Scoring) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 687.4018110236220309 Td
+(Each response contributes 4 points to mapped competencies.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 666.1419685039369369 Td
+(Step 3: Raw Score Aggregation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 649.1340944881889072 Td
+(Raw scores summed per competency across all 21 questions.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 627.8742519685039269 Td
+(Step 4: Normalisation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 610.8663779527558972 Td
+(rawNormalised = \(earnedPoints / maxPossiblePoints\) × 100) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 589.6065354330708033 Td
+(Step 5: Enhanced Differentiation Scaling \(50-95 Range\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 565.5120472440944468 Td
+(Final Score = 50 + \(rawNormalised × 0.4\) + \(\(rawNormalised/100\)² × 5\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 544.2522047244094665 Td
+(Score Mapping \(identical to FIT\):) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 522.9923622047243725 Td
+( |  Raw Score  |  Final Score  |  Performance Level  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 510.2364566929133503 Td
+( | ----------- | ------------- | ------------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 497.480551181102328 Td
+( |  0%  |  50%  |  Floor \(minimum\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 484.7246456692913057 Td
+( |  50% \(average\)  |  ~71%  |  Competent  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 471.9687401574802834 Td
+( |  80% \(strong\)  |  ~85%  |  Strong  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 459.2128346456692611 Td
+( |  100% \(perfect\)  |  95%  |  Exceptional  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 439.3703149606298552 Td
+(Step 6: Total Score) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 422.3624409448818255 Td
+(Total Score = Mean of all nine competency scores) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 392.5986614173227736 Td
+(3.3 Question-by-Question Rationale) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 364.2522047244094097 Td
+(Example: AI Data Integration) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 347.24433070866138 Td
+(Scenario: "You need to integrate an AI-generated data set with an existing structured database.") Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 325.9844881889763428 Td
+( |  Option  |  Text  |  Skills Mapped  |  Rationale  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 313.2285826771652637 Td
+( | -------- | ------ | --------------- | ----------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 300.4726771653542983 Td
+( |  A  |  Write iterative prompt for compatible formatting  |  AL/PE \(+4\), DF \(+4\)  |  Prompt engineering skill plus data compatibility) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 287.7167716535432191 Td
+(awareness  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 274.9608661417322537 Td
+( |  B  |  Review database schema for incompatibilities  |  TF \(+4\), DE \(+4\)  |  Technical database knowledge plus system) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 262.2049606299211746 Td
+(integration expertise  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 249.4490551181102092 Td
+( |  C  |  Analyse AI data for biases before merging  |  TF \(+4\), RAI \(+4\), CT/PS \(+4\)  |  Proactive bias detection plus critical) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 236.69314960629913 Td
+(evaluation  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 223.9372440944881646 Td
+( |  D  |  Document structure and communicate with team  |  ACL \(+4\), CC \(+4\)  |  Workflow adaptation plus team communication) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 211.1813385826770855 Td
+(priority  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 198.4254330708660063 Td
+( |  E  |  Challenge necessity, seek innovative solution  |  AL/PE \(+4\), CI \(+4\)  |  Critical AI evaluation plus innovative thinking  | ) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 148.8191338582676053 Td
+(4. Prompt Architecture Assessment) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 104.882125984251843 Td
+(4.1 Assessment Structure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 76.5356692913385359 Td
+(The Prompt Architecture Assessment evaluates candidates' ability to design effective prompts for advanced AI) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 62.3624409448817687 Td
+(systems. This is a critical skill for the AI-augmented workplace where human-AI collaboration requires clear,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 48.1892125984251152 Td
+(structured communication.) Tj
+ET
+endstream
+endobj
+13 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 14 0 R
+>>
+endobj
+14 0 obj
+<<
+/Length 6212
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 792.2837007874015853 Td
+(7 Progressive Levels) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 768.1892125984252289 Td
+( |  Level  |  Skill Tested  |  Example Task  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 755.4333070866141497 Td
+( | ------- | -------------- | -------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 742.6774015748030706 Td
+( |  1  |  Basic Information Retrieval  |  Ask for capital of France and 3 interesting facts  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 729.9214960629921052 Td
+( |  2  |  Structured Output Request  |  Top 5 programming languages as numbered list with descriptions  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 717.1655905511811397 Td
+( |  3  |  Role-Based Instruction  |  Physics professor explaining quantum computing to undergraduates  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 704.4096850393700606 Td
+(   |     4     |     M u l t i - S t e p   P r o b l e m   S o l v i n g     |     D e b u g   P y t h o n   f u n c t i o n   w i t h   a n a l y s i s  !’   i d e n t i f i c a t i o n  !’   e x p l a n a t i o n  !’   c o r r e c t i o n     |  ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 691.6537795275589815 Td
+( |  5  |  Constrained Creative Generation  |  100-word product description with 3 benefits, sustainability, millennial targeting  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 678.8978740157480161 Td
+(   |     6     |     I t e r a t i v e   R e f i n e m e n t   S t r a t e g y     |     D r a f t   e m a i l  !’   s e l f - c r i t i q u e  !’   i m p r o v e   b a s e d   o n   c r i t i q u e     |  ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 666.1419685039369369 Td
+( |  7  |  Complex System Design  |  Content moderation system with architecture, ethics, scalability, appeals  | ) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 637.7955118110235162 Td
+(4.2 GPT-5 Evaluation Methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 609.4490551181102092 Td
+(Each candidate-written prompt is evaluated by GPT-5 using a standardised evaluation framework. The AI evaluator) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 595.2758267716535556 Td
+(is given:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 574.0159842519684616 Td
+(- The level number and task description) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 559.8427559055116944 Td
+(- The candidate's written prompt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 545.6695275590550409 Td
+(- Explicit scoring criteria with point allocations) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 531.4962992125983874 Td
+(- Instructions to be fair but rigorous, considering difficulty level) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 510.2364566929133503 Td
+(The evaluation returns a structured JSON response with scores for each dimension plus constructive feedback.) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 480.4726771653542983 Td
+(4.3 Scoring Dimensions) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 452.1262204724408775 Td
+( |  Dimension  |  Points  |  Description  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 439.3703149606298552 Td
+( | ----------- | -------- | ------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 426.614409448818833 Td
+( |  Clarity  |  20  |  Clear, unambiguous, easy to understand  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 413.8585039370078107 Td
+( |  Structure  |  20  |  Well-organised with logical flow  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 401.1025984251967884 Td
+( |  Context Relevance  |  20  |  Provides necessary context and constraints  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 388.3466929133857661 Td
+( |  Creativity  |  20  |  Encourages thoughtful, creative responses  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 375.5907874015747439 Td
+( |  Iterative Improvement  |  20  |  Includes mechanisms for refinement  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 355.7482677165353948 Td
+(Scoring Calculation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 338.7403937007873083 Td
+(Level Score = Clarity + Structure + Context Relevance + Creativity + Iterative Improvement \(max 100\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 324.5671653543306547 Td
+(Total Score = Mean of all 7 Level Scores) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 273.5435433070865656 Td
+(5. AIQ \(Algorithmic Integrity Quotient\)) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 229.6065354330708033 Td
+(5.1 Ethical Reasoning Framework) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 201.2600787401573825 Td
+(The AIQ assessment measures a candidate's ability to make ethically sound decisions when working with AI) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 187.086850393700729 Td
+(systems. This is increasingly critical as AI systems are deployed in high-stakes domains including hiring, lending,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 172.9136220472439618 Td
+(healthcare, and public safety.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 151.6537795275589815 Td
+(The assessment draws upon established AI governance frameworks including:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 130.3939370078738875 Td
+(- GDPR and data protection principles) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 116.220708661417234 Td
+(- EU AI Act risk classification) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 102.0474803149605805 Td
+(- IEEE Ethically Aligned Design guidelines) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 87.8742519685038133 Td
+(- OECD AI Principles) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 58.1104724409448181 Td
+(5.2 Graded Scoring Methodology) Tj
+ET
+endstream
+endobj
+15 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 16 0 R
+>>
+endobj
+16 0 obj
+<<
+/Length 6564
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 792.2837007874015853 Td
+(Unlike binary right/wrong scoring, AIQ uses a graded percentage system that captures the nuance of ethical) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 778.1104724409448181 Td
+(reasoning. Each question offers four options with weighted scores:) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 756.8506299212598378 Td
+( |  Option Quality  |  Score Weight  |  Description  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 744.0947244094487587 Td
+( | ---------------- | -------------- | ------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 731.3388188976377933 Td
+( |  Best Answer  |  100%  |  Optimal ethical alignment  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 718.5829133858267141 Td
+( |  Acceptable  |  65-75%  |  Sound judgment with minor trade-offs  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 705.8270078740157487 Td
+( |  Suboptimal  |  30-50%  |  Basic awareness but flawed reasoning  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 693.0711023622046696 Td
+( |  Poor  |  0-25%  |  Misaligned with ethical principles  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 673.2285826771653774 Td
+(Example Question: Re-identification Risk) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 649.1340944881889072 Td
+(Scenario: AI model can re-identify 15% of customers by combining anonymised purchase data with public) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 634.9608661417322537 Td
+(demographics. Accuracy is highest with combined data.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 613.7010236220471597 Td
+( |  Option  |  Text  |  Score  |  Rationale  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 600.9451181102361943 Td
+( | -------- | ------ | ------- | ----------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 588.1892125984251152 Td
+( |  A  |  Delete combined dataset and retrain on anonymised data only  |  100%  |  Prioritises privacy-by-design; eliminates) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 575.4333070866141497 Td
+(re-identification risk entirely  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 562.6774015748030706 Td
+( |  B  |  Continue using combined data with NDA requirements  |  0%  |  NDAs don't eliminate fundamental privacy breach  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 549.9214960629921052 Td
+( |  C  |  Archive combined data in secure cold storage  |  65%  |  Reduces risk but doesn't eliminate it; acceptable compromise  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 537.1655905511811397 Td
+( |  D  |  Disclose re-identification possibility in terms update  |  30%  |  Disclosure without action is insufficient  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 517.3230708661417339 Td
+(Calculation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 500.3151968503936473 Td
+(Final AIQ Score = Average of all answered question scores) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 470.5514173228345953 Td
+(5.3 Interpretation Bands) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 442.2049606299212314 Td
+( |  Score Range  |  Band  |  Interpretation  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 429.4490551181101523 Td
+( | ------------- | ------ | ---------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 416.69314960629913 Td
+( |  80-100%  |  Exemplary  |  Exceptional ethical alignment; consistently prioritises optimal outcomes  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 403.9372440944881077 Td
+( |  60-79%  |  Strong  |  Sound judgment balancing ethical imperatives with operational realities  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 391.1813385826770855 Td
+( |  40-59%  |  Developing  |  Basic ethical awareness with room for growth  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 378.4254330708660632 Td
+( |  20-39%  |  Significant Gaps  |  Requires focused development in AI ethics  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 365.6695275590550409 Td
+( |  0-19%  |  Critical Concerns  |  Fundamental ethics training needed  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 345.8270078740156919 Td
+(Rationale for Graded Scoring) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 321.7325196850392786 Td
+(Graded scoring recognises that ethical decisions often involve trade-offs. Unlike binary scoring, this approach:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 300.4726771653542983 Td
+(- Rewards nuanced reasoning: Distinguishes between acceptable and poor choices) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 286.2994488188975311 Td
+(- Captures judgment quality: Identifies candidates with sophisticated ethical frameworks) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 272.1262204724408775 Td
+(- Reflects real-world complexity: Ethical dilemmas rarely have single "correct" answers) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 257.952992125984224 Td
+(- Enables development focus: Identifies specific areas for growth) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 206.9293700787401349 Td
+(6. Golden Set Benchmark System) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 162.9923622047243725 Td
+(6.1 Purpose & Overview) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 134.6459055118109518 Td
+(The Golden Set is a collection of 10 benchmark prompts used to verify GPT-5's scoring consistency for the Prompt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 120.4726771653542983 Td
+(Architecture assessment. This system ensures that AI evaluation remains stable over time and detects any drift in) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 106.2994488188975311 Td
+(model behaviour.) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 85.0396062992125508 Td
+(How It Works) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 60.9451181102360806 Td
+(1. Benchmark Prompts: 10 carefully crafted prompts across all 7 difficulty levels, including both exemplary and) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 46.7718897637794271 Td
+(poor-quality examples) Tj
+ET
+endstream
+endobj
+17 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 18 0 R
+>>
+endobj
+18 0 obj
+<<
+/Length 6928
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 799.3703149606299121 Td
+(2. Smoothed Evaluation: Each prompt is evaluated 5 times and scores are averaged to eliminate LLM variance) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 785.1970866141732586 Td
+(3. Drift Detection: Compares actual scores against calibrated baselines using a 2% drift threshold) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 771.0238582677164914 Td
+(4. Daily Monitoring: Automated tests run at midnight UTC) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 756.8506299212598378 Td
+(5. Recalibration: Admin UI allows reset and recalibration when GPT-5 updates occur) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 727.086850393700729 Td
+(6.2 Benchmark Prompts) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 698.7403937007873083 Td
+( |  Name  |  Level  |  Task Description  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 685.9844881889763428 Td
+( | ------ | ------- | ------------------ | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 673.2285826771653774 Td
+( |  L1-Basic-Good  |  1  |  Ask for the capital of France with 3 interesting facts  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 660.4726771653542983 Td
+( |  L1-Basic-Poor  |  1  |  Same task, but minimal prompt \("France capital facts"\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 647.7167716535432191 Td
+( |  L2-Structured-Good  |  2  |  Top 5 programming languages for web dev 2024, formatted as numbered list  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 634.9608661417322537 Td
+( |  L3-Role-Good  |  3  |  Explain quantum computing as a senior physics professor to undergraduates  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 622.2049606299212883 Td
+(   |     L 4 - M u l t i S t e p - G o o d     |     4     |     D e b u g   a   P y t h o n   f u n c t i o n   w i t h   s t r u c t u r e d   a n a l y s i s   s t e p s   \( A N A L Y Z E  !’   I D E N T I F Y  !’   E X P L A I N  !’   F I X \)     |) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 596.69314960629913 Td
+( |  L4-MultiStep-Poor  |  4  |  Same debugging task with minimal prompt \("Fix this code"\)  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 583.9372440944881646 Td
+( |  L5-Creative-Good  |  5  |  Write 100-word eco-friendly water bottle description with specific constraints  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 571.1813385826771992 Td
+( |  L6-Iterative-Good  |  6  |  Draft job offer decline email with self-evaluation and improvement steps  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 558.42543307086612 Td
+( |  L7-Complex-Good  |  7  |  Design comprehensive content moderation system covering architecture, ethics, scalability  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 545.6695275590550409 Td
+( |  L7-Complex-Medium  |  7  |  Same moderation task with less structured prompt  | ) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 525.827007874015635 Td
+(Scoring Criteria Per Prompt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 501.7325196850393354 Td
+(Each benchmark prompt is scored on 5 dimensions \(20 points each, 100 total\):) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 480.4726771653542983 Td
+( |  Dimension  |  Description  |  Poor Prompt Score  |  Good Prompt Score  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 467.716771653543276 Td
+( | ----------- | ------------- | ------------------- | ------------------- | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 454.9608661417322537 Td
+( |  Clarity  |  Unambiguous, easy to understand  |  5-12  |  17-19  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 442.2049606299212314 Td
+( |  Structure  |  Logical organisation and flow  |  4-10  |  17-20  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 429.4490551181101523 Td
+( |  Context Relevance  |  Provides necessary constraints  |  5-14  |  17-20  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 416.69314960629913 Td
+( |  Creativity  |  Encourages thoughtful responses  |  2-8  |  14-18  | ) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0 g
+42.5196850393700814 403.9372440944881077 Td
+( |  Iterative Improvement  |  Mechanisms for refinement  |  2-6  |  12-18  | ) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 375.5907874015747439 Td
+(6.3 Drift Detection & Recalibration) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 347.24433070866138 Td
+(Pass/Fail Criteria) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 323.1498425196849666 Td
+(Drift Percentage = |Actual Score - Expected Score| / Expected Score × 100) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 301.8899999999999864 Td
+( P a s s :   D r i f t  "d   2 %) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 287.7167716535432191 Td
+(Fail: Drift > 2%) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 266.4569291338582389 Td
+(Why 2% Threshold?) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 242.3624409448817687 Td
+(The 2% threshold is achievable because:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 228.1892125984251152 Td
+(- Smoothed evaluation: Averaging 5 runs eliminates random LLM variance) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 214.0159842519684616 Td
+(- Calibrated baselines: Expected scores are set using the same smoothed method) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 199.8427559055116944 Td
+(- Detects true changes: Larger drifts indicate actual model behaviour changes, not noise) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 178.5829133858267141 Td
+(Admin Dashboard Features) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 154.4884251968503577 Td
+(Super admins have access to the Scoring QA panel which displays:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 140.3151968503935905 Td
+(- Pass/fail status for each benchmark prompt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 126.1419685039369369 Td
+(- Expected vs actual scores with drift percentage) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 111.9687401574801697 Td
+(- Overall system health indicator) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 97.7955118110235162 Td
+(- "Reset & Recalibrate" button to establish new baselines after GPT-5 updates) Tj
+ET
+BT
+/F2 11 Tf
+12.6499999999999986 TL
+0 g
+42.5196850393700814 76.5356692913385359 Td
+(Rationale) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 52.4411811023620658 Td
+(The Golden Set system addresses a critical challenge in AI-evaluated assessments: ensuring consistent scoring) Tj
+ET
+endstream
+endobj
+19 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 20 0 R
+>>
+endobj
+20 0 obj
+<<
+/Length 5087
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 799.3703149606299121 Td
+(over time. GPT-5 may receive updates that subtly change its evaluation behaviour. By:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 785.1970866141732586 Td
+(- Testing known prompts with known expected scores) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 771.0238582677164914 Td
+(- Using smoothed evaluation to reduce variance) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 756.8506299212598378 Td
+(- Setting a tight drift threshold) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 742.6774015748030706 Td
+(- Providing recalibration tools) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 721.4175590551180903 Td
+(HumanMetrix maintains assessment fairness across all candidates, regardless of when they complete the Prompt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 707.2443307086614368 Td
+(Architecture test.) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 656.2207086614173477 Td
+(7. Market Opportunity & Investment Considerations) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 612.2837007874015853 Td
+(7.1 Market Size & Growth) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 583.9372440944881646 Td
+(The global psychometric testing market was valued at USD 6.4 billion in 2023 and is projected to reach USD 11.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 569.7640157480313974 Td
+(billion by 2030 \(CAGR 8.3%\). The UK represents approximately 12% of global volume.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 548.5041732283464171 Td
+(Key growth drivers:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 534.3309448818897636 Td
+(- Increasing AI adoption in recruitment \(40% of enterprises by 2025\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 520.1577165354329964 Td
+(- Skills-based hiring replacing credential-based approaches) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 505.9844881889763428 Td
+(- Regulatory pressure for objective, auditable selection methods) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 491.8112598425196325 Td
+(- Remote work requiring standardised assessment tools) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 462.0474803149605805 Td
+(7.2 Competitive Positioning) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 433.7010236220471597 Td
+(- First-to-market AI Readiness assessment for AI-era workforce) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 419.5277952755905062 Td
+(- GPT-5 powered Prompt Architecture assessment \(no direct competitors\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 405.3545669291337958 Td
+(- Price advantage: GBP 17.50 vs. GBP 50-200 for traditional assessments) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 391.1813385826770855 Td
+(- Real-time scoring vs. days/weeks for traditional assessment centres) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 361.4175590551180335 Td
+(7.3 Revenue Model) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 333.0711023622046696 Td
+(- B2C: Individual assessments with pay-to-unlock results model) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 318.8978740157480161 Td
+(- B2B: Enterprise licensing for bulk candidate assessment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 304.7246456692912489 Td
+(- B2B Premium: AI-powered role alignment and team composition analysis) Tj
+ET
+BT
+/F2 14 Tf
+16.0999999999999979 TL
+0 g
+42.5196850393700814 274.9608661417322537 Td
+(7.4 Investment Thesis) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 246.614409448818833 Td
+(The convergence of AI workforce transformation and skills-based hiring creates significant opportunity for) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 232.4411811023621794 Td
+(assessment providers with AI-specific instruments. HumanMetrix combines established psychometric methodology) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 218.2679527559054122 Td
+(with AI-powered evaluation, positioning for scalable growth in both B2C and B2B segments.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 197.0081102362204319 Td
+(Key differentiators:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 182.8348818897636647 Td
+(- Proprietary AI Readiness construct validated for emerging job market) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 168.6616535433070112 Td
+(- Transparent, explainable scoring \(critical for regulatory compliance\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 154.4884251968503577 Td
+(- Golden Set benchmark system for scoring consistency verification) Tj
+ET
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42.5196850393700814 103.4648031496061549 Td
+(8. References) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 68.0317322834645211 Td
+(1. Dweck, C. S. \(2006\). Mindset: The New Psychology of Success. Random House.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 53.8585039370077538 Td
+(2. Lievens, F., & Patterson, F. \(2011\). The validity and incremental validity of knowledge tests, low-fidelity) Tj
+ET
+endstream
+endobj
+21 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 22 0 R
+>>
+endobj
+22 0 obj
+<<
+/Length 1395
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 799.3703149606299121 Td
+(simulations, and high-fidelity simulations. Journal of Applied Psychology, 96\(5\), 927-940.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 785.1970866141732586 Td
+(3. OECD \(2019\). OECD Principles on AI. Organisation for Economic Co-operation and Development.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 771.0238582677164914 Td
+(4. IEEE \(2019\). Ethically Aligned Design: A Vision for Prioritizing Human Well-being with Autonomous and) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 756.8506299212598378 Td
+(Intelligent Systems.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 742.6774015748030706 Td
+(5. European Commission \(2021\). Proposal for a Regulation laying down harmonised rules on artificial intelligence) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 728.5041732283464171 Td
+(\(Artificial Intelligence Act\).) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 691.6537795275589815 Td
+(HumanMetrix Ltd  ) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 677.480551181102328 Td
+(Website: humanmetrix.co.uk  ) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 663.3073228346456744 Td
+(Email: assessments@humanmetrix.co.uk) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0 g
+42.5196850393700814 642.0474803149605805 Td
+(Evidence-based assessment for the AI-driven economy) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R ]
+/Count 10
+>>
+endobj
+23 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+24 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+25 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+26 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+27 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+28 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+29 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+30 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+31 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+32 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+33 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+34 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+35 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+36 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 23 0 R
+/F2 24 0 R
+/F3 25 0 R
+/F4 26 0 R
+/F5 27 0 R
+/F6 28 0 R
+/F7 29 0 R
+/F8 30 0 R
+/F9 31 0 R
+/F10 32 0 R
+/F11 33 0 R
+/F12 34 0 R
+/F13 35 0 R
+/F14 36 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+37 0 obj
+<<
+/Producer (jsPDF 3.0.3)
+/CreationDate (D:20251215153052-00'00')
+>>
+endobj
+38 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 39
+0000000000 65535 f 
+0000059549 00000 n 
+0000061432 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000004802 00000 n 
+0000004939 00000 n 
+0000011169 00000 n 
+0000011306 00000 n 
+0000017442 00000 n 
+0000017580 00000 n 
+0000026321 00000 n 
+0000026460 00000 n 
+0000032403 00000 n 
+0000032542 00000 n 
+0000038807 00000 n 
+0000038946 00000 n 
+0000045563 00000 n 
+0000045702 00000 n 
+0000052683 00000 n 
+0000052822 00000 n 
+0000057962 00000 n 
+0000058101 00000 n 
+0000059667 00000 n 
+0000059793 00000 n 
+0000059924 00000 n 
+0000060058 00000 n 
+0000060196 00000 n 
+0000060320 00000 n 
+0000060449 00000 n 
+0000060581 00000 n 
+0000060717 00000 n 
+0000060845 00000 n 
+0000060972 00000 n 
+0000061101 00000 n 
+0000061234 00000 n 
+0000061336 00000 n 
+0000061685 00000 n 
+0000061771 00000 n 
+trailer
+<<
+/Size 39
+/Root 38 0 R
+/Info 37 0 R
+/ID [ <54DA2EF3DCAB68E02C9AD2A9A6D8A0FC> <54DA2EF3DCAB68E02C9AD2A9A6D8A0FC> ]
+>>
+startxref
+61875
+%%EOF
