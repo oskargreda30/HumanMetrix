@@ -296,7 +296,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                If you need help, please don't hesitate to reach out to your assessment coordinator at humanmetrix.sales@gmail.com
+                If you need help, please don't hesitate to reach out to your assessment coordinator at assessments@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -348,7 +348,7 @@ export async function sendContactFormEmail(
   }
 
   const intentLabel = intent === 'demo' ? 'Demo Request' : 'Sales Inquiry';
-  const salesEmail = 'humanmetrix.sales@gmail.com';
+  const salesEmail = 'assessments@humanmetrix.co.uk';
 
   const mailOptions = {
     from: `"HumanMetrix Contact Form" <${process.env.GMAIL_USER}>`,
@@ -527,7 +527,7 @@ export async function sendPaymentReceiptEmail(
               </ol>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                If you have any questions, please contact us at humanmetrix.sales@gmail.com
+                If you have any questions, please contact us at assessments@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -556,7 +556,7 @@ NEXT STEPS:
 1. Log in to your HumanMetrix account
 2. View your comprehensive results and download your PDF report
 
-If you have any questions, please contact us at humanmetrix.sales@gmail.com
+If you have any questions, please contact us at assessments@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix
 This is an automated receipt for your records.

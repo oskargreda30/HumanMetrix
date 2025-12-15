@@ -56,7 +56,7 @@ export default function Privacy() {
                   HumanMetrix is the data controller responsible for your personal data. If you have any questions about this Privacy Policy or our data practices, please contact us at:
                 </p>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  Email: humanmetrix.sales@gmail.com<br />
+                  Email: assessments@humanmetrix.co.uk<br />
                   Website: humanmetrix.co.uk
                 </p>
               </section>
@@ -182,7 +182,7 @@ export default function Privacy() {
                   <li><strong>Right to withdraw consent:</strong> Withdraw consent at any time</li>
                 </ul>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  To exercise any of these rights, please contact us at humanmetrix.sales@gmail.com. We will respond within 30 days.
+                  To exercise any of these rights, please contact us at assessments@humanmetrix.co.uk. We will respond within 30 days.
                 </p>
               </section>
 
@@ -261,7 +261,7 @@ export default function Privacy() {
                   For any questions about this Privacy Policy or to exercise your data rights, please contact us:
                 </p>
                 <p className="text-muted-foreground">
-                  Email: humanmetrix.sales@gmail.com<br />
+                  Email: assessments@humanmetrix.co.uk<br />
                   Website: humanmetrix.co.uk
                 </p>
               </section>

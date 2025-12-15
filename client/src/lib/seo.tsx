@@ -67,7 +67,7 @@ export function OrganizationSchema() {
     ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "email": "humanmetrix.sales@gmail.com",
+      "email": "assessments@humanmetrix.co.uk",
       "contactType": "sales"
     },
     "areaServed": "GB",
