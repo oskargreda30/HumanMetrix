@@ -372,6 +372,83 @@ Equal 20% weighting ensures no single dimension dominates, reflecting that effec
 
 ---
 
+# PART 4: GOLDEN SET BENCHMARK SYSTEM
+
+## Purpose
+
+The Golden Set is a collection of 10 benchmark prompts used to verify GPT-5's scoring consistency for the Prompt Architecture assessment. This system ensures that AI evaluation remains stable over time and detects any drift in model behaviour.
+
+## How It Works
+
+1. **Benchmark Prompts**: 10 carefully crafted prompts across all 7 difficulty levels, including both exemplary and poor-quality examples
+2. **Smoothed Evaluation**: Each prompt is evaluated 5 times and scores are averaged to eliminate LLM variance
+3. **Drift Detection**: Compares actual scores against calibrated baselines using a 2% drift threshold
+4. **Daily Monitoring**: Automated tests run at midnight UTC
+5. **Recalibration**: Admin UI allows reset and recalibration when GPT-5 updates occur
+
+## Benchmark Prompts
+
+| Name | Level | Task Description |
+|------|-------|------------------|
+| **L1-Basic-Good** | 1 | Ask for the capital of France with 3 interesting facts |
+| **L1-Basic-Poor** | 1 | Same task, but minimal prompt ("France capital facts") |
+| **L2-Structured-Good** | 2 | Top 5 programming languages for web dev 2024, formatted as numbered list |
+| **L3-Role-Good** | 3 | Explain quantum computing as a senior physics professor to undergraduates |
+| **L4-MultiStep-Good** | 4 | Debug a Python function with structured analysis steps (ANALYZE → IDENTIFY → EXPLAIN → FIX) |
+| **L4-MultiStep-Poor** | 4 | Same debugging task with minimal prompt ("Fix this code") |
+| **L5-Creative-Good** | 5 | Write 100-word eco-friendly water bottle description with specific constraints |
+| **L6-Iterative-Good** | 6 | Draft job offer decline email with self-evaluation and improvement steps |
+| **L7-Complex-Good** | 7 | Design comprehensive content moderation system covering architecture, ethics, scalability |
+| **L7-Complex-Medium** | 7 | Same moderation task with less structured prompt |
+
+## Scoring Criteria Per Prompt
+
+Each benchmark prompt is scored on 5 dimensions (20 points each, 100 total):
+
+| Dimension | Description | Poor Prompt Score | Good Prompt Score |
+|-----------|-------------|-------------------|-------------------|
+| Clarity | Unambiguous, easy to understand | 5-12 | 17-19 |
+| Structure | Logical organisation and flow | 4-10 | 17-20 |
+| Context Relevance | Provides necessary constraints | 5-14 | 17-20 |
+| Creativity | Encourages thoughtful responses | 2-8 | 14-18 |
+| Iterative Improvement | Mechanisms for refinement | 2-6 | 12-18 |
+
+## Pass/Fail Criteria
+
+```
+Drift Percentage = |Actual Score - Expected Score| / Expected Score × 100
+
+Pass: Drift ≤ 2%
+Fail: Drift > 2%
+```
+
+### Why 2% Threshold?
+
+The 2% threshold is achievable because:
+- **Smoothed evaluation**: Averaging 5 runs eliminates random LLM variance
+- **Calibrated baselines**: Expected scores are set using the same smoothed method
+- **Detects true changes**: Larger drifts indicate actual model behaviour changes, not noise
+
+## Admin Dashboard Features
+
+Super admins have access to the Scoring QA panel which displays:
+- Pass/fail status for each benchmark prompt
+- Expected vs actual scores with drift percentage
+- Overall system health indicator
+- "Reset & Recalibrate" button to establish new baselines after GPT-5 updates
+
+## Rationale
+
+The Golden Set system addresses a critical challenge in AI-evaluated assessments: ensuring consistent scoring over time. GPT-5 may receive updates that subtly change its evaluation behaviour. By:
+- Testing known prompts with known expected scores
+- Using smoothed evaluation to reduce variance
+- Setting a tight drift threshold
+- Providing recalibration tools
+
+HumanMetrix maintains assessment fairness across all candidates, regardless of when they complete the Prompt Architecture test.
+
+---
+
 ## Contact
 
 **HumanMetrix Ltd**  
