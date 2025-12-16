@@ -4,8 +4,19 @@ import { registerRoutes, startGoldenSetScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
+import { apiRateLimiter, authRateLimiter, stripeRateLimiter } from "./middleware/rateLimit";
+import { requestDeduplication } from "./middleware/requestDedup";
+import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache";
+import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
+import { preloadModules } from "./lazyModules";
 
 const app = express();
+
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction) {
+  app.set('trust proxy', 1);
+  console.log('✅ Trust proxy enabled for production');
+}
 
 app.use(compression({
   filter: (req, res) => {
@@ -19,6 +30,23 @@ app.use(compression({
 }));
 
 console.log('✅ Response compression enabled (gzip/deflate)');
+
+app.use(setSecurityHeaders());
+app.use(keepAliveHeaders());
+app.use(staticCacheHeaders());
+console.log('✅ Security headers, keep-alive, and cache headers configured');
+
+app.use('/api/', apiRateLimiter);
+app.use('/api/login', authRateLimiter);
+app.use('/api/signup', authRateLimiter);
+app.use('/api/stripe', stripeRateLimiter);
+console.log('✅ API rate limiting enabled');
+
+app.use(requestDeduplication({
+  methods: ['POST', 'PUT', 'DELETE'],
+  pathPatterns: [/^\/api\//],
+}));
+console.log('✅ Request deduplication enabled');
 
 declare module 'http' {
   interface IncomingMessage {
@@ -87,6 +115,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  configureKeepAlive(server);
+  
   server.listen({
     port,
     host: "0.0.0.0",
@@ -102,6 +132,9 @@ app.use((req, res, next) => {
     
     // Start Golden Set scheduler for daily GPT-4o scoring consistency checks
     startGoldenSetScheduler();
+    
+    // Preload heavy modules in production
+    preloadModules();
   });
 
   // Graceful shutdown handling

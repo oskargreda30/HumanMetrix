@@ -59,7 +59,11 @@ export const users = pgTable("users", {
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_users_email").on(table.email),
+  index("idx_users_role").on(table.role),
+  index("idx_users_organization").on(table.organizationId),
+]);
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -77,7 +81,11 @@ export const purchases = pgTable("purchases", {
   resultsAccessPaid: boolean("results_access_paid").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => [
+  index("idx_purchases_user").on(table.userId),
+  index("idx_purchases_status").on(table.status),
+  index("idx_purchases_user_status").on(table.userId, table.status),
+]);
 
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({
   id: true,
@@ -95,7 +103,10 @@ export const purchaseItems = pgTable("purchase_items", {
   price: integer("price").notNull(),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_purchase_items_purchase").on(table.purchaseId),
+  index("idx_purchase_items_type").on(table.assessmentType),
+]);
 
 export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({
   id: true,
@@ -120,7 +131,13 @@ export const assessmentResults = pgTable("assessment_results", {
   status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => [
+  index("idx_results_user").on(table.userId),
+  index("idx_results_type").on(table.assessmentType),
+  index("idx_results_status").on(table.status),
+  index("idx_results_user_type").on(table.userId, table.assessmentType),
+  index("idx_results_purchase_item").on(table.purchaseItemId),
+]);
 
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults).omit({
   id: true,
@@ -144,7 +161,11 @@ export const invitations = pgTable("invitations", {
   expiresAt: timestamp("expires_at").notNull(),
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => [
+  index("idx_invitations_token").on(table.token),
+  index("idx_invitations_email").on(table.candidateEmail),
+  index("idx_invitations_status").on(table.status),
+]);
 
 export const insertInvitationSchema = createInsertSchema(invitations).omit({
   id: true,

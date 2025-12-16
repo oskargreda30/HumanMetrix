@@ -49,6 +49,17 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
 - **Content-Aware PDF Rendering**: Dynamic layout ensures readability and visual consistency.
 - **Cache Refresh Pattern**: All data-changing flows use cache invalidation + refetch + refresh URL parameter.
 
+### Scalability Optimizations (Dec 2025)
+- **Database Indexes**: Comprehensive indexes on frequently queried columns (users.email/role, purchases.userId/status, assessment_results.userId/type/status, invitations.token/email).
+- **Connection Pool Tuning**: 20 connections dev / 50 production with extended timeouts.
+- **API Rate Limiting**: Memory-based per-IP rate limiting (100 req/min general, 10/15min auth, 20/min Stripe).
+- **Request Deduplication**: Prevents duplicate POST/PUT/DELETE within 500ms window.
+- **Lazy Module Loading**: OpenAI, Stripe, jsPDF loaded on-demand with production preloading.
+- **Static Asset Caching**: Immutable assets cached 1 year (hashed), static 1 day.
+- **HTTP Keep-Alive**: 65s timeout reduces TCP handshake overhead.
+- **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy.
+- **Trust Proxy**: Enabled in production for correct IP detection behind load balancers.
+
 ### Bug Fixes Applied (Nov 2025)
 - **Session Race Condition**: Added explicit `await req.session.save()` in login/signup to ensure session is persisted to PostgreSQL before responding.
 - **Dashboard Refresh**: Implemented refresh URL parameter pattern (`?refresh=timestamp`) for data-changing flows (Purchase, Assessment, PurchaseSuccess, CheckoutModal).

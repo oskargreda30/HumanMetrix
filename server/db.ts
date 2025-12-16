@@ -11,12 +11,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  max: isProduction ? 50 : 20,
+  idleTimeoutMillis: isProduction ? 60000 : 30000,
+  connectionTimeoutMillis: isProduction ? 10000 : 5000,
 });
+
+console.log(`✅ Database pool configured (max: ${isProduction ? 50 : 20} connections)`);
 
 pool.on('error', (err) => {
   console.error('❌ Database pool error:', err.message);
