@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 10
+      arrivalRate: 5
+      name: "Quick smoke test"
+    - duration: 20
+      arrivalRate: 25
+      name: "Light load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Core Endpoints"
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/user"
+      - get:
+          url: "/api/fit-questions"
+          expect:
+            - statusCode: 200

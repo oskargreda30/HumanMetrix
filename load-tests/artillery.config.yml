@@ -1,0 +1,80 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 20
+      name: "Ramp up load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Sustained load"
+    - duration: 30
+      arrivalRate: 100
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+
+scenarios:
+  - name: "Landing Page"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+
+  - name: "API Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/user"
+          expect:
+            - statusCode:
+                - 200
+                - 401
+
+  - name: "Assessment Questions"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/fit-questions"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/ai-readiness-questions"
+          expect:
+            - statusCode: 200
+
+  - name: "Static Assets"
+    weight: 20
+    flow:
+      - get:
+          url: "/src/index.css"
+      - get:
+          url: "/src/main.tsx"
+
+  - name: "Admin Endpoints (Unauthenticated)"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/admin/users"
+          expect:
+            - statusCode:
+                - 200
+                - 401
+                - 403
+                - 429
+
+  - name: "Rate Limit Test"
+    weight: 10
+    flow:
+      - loop:
+        - get:
+            url: "/api/user"
+        count: 5

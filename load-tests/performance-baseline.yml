@@ -1,0 +1,28 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 20
+      arrivalRate: 10
+      name: "Baseline (10 req/s)"
+    - duration: 20
+      arrivalRate: 25
+      name: "Moderate (25 req/s)"
+    - duration: 20
+      arrivalRate: 50
+      name: "High (50 req/s)"
+    - duration: 20
+      arrivalRate: 100
+      name: "Peak (100 req/s)"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "API Performance Test"
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/user"
+      - get:
+          url: "/api/fit-questions"

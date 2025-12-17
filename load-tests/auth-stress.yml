@@ -1,0 +1,40 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Auth endpoint stress (should hit rate limits)"
+    - duration: 30
+      arrivalRate: 5
+      name: "Increase auth load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Login Attempts"
+    flow:
+      - post:
+          url: "/api/login"
+          json:
+            email: "loadtest@example.com"
+            password: "wrongpassword123"
+          expect:
+            - statusCode:
+                - 401
+                - 429
+
+  - name: "Signup Attempts"
+    flow:
+      - post:
+          url: "/api/signup"
+          json:
+            email: "loadtest{{ $randomNumber(1, 99999) }}@example.com"
+            password: "TestPassword123!"
+            firstName: "Load"
+            lastName: "Test"
+          expect:
+            - statusCode:
+                - 201
+                - 400
+                - 429
