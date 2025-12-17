@@ -1,0 +1,36 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 100
+      name: "Warm up (100 users/sec)"
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 500
+      name: "Ramp to 500 users/sec"
+    - duration: 60
+      arrivalRate: 500
+      rampTo: 1000
+      name: "Ramp to 1000 users/sec"
+    - duration: 60
+      arrivalRate: 1000
+      name: "Sustained 1000 users/sec (simulating 10K concurrent)"
+    - duration: 30
+      arrivalRate: 500
+      name: "Cool down"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  http:
+    timeout: 30
+    pool: 100
+
+scenarios:
+  - name: "Heavy Mixed Load"
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/user"
+      - get:
+          url: "/api/fit-questions"
