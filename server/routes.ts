@@ -263,12 +263,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           !clientIP;
       
       if (isPrivateIP) {
-        // Default to GB for development
+        // Default to GB for development - no VPN assumed for private IPs
         return res.json({ 
           countryCode: 'GB',
           country: 'United Kingdom',
           detected: false,
-          source: 'default'
+          source: 'default',
+          isVPN: false,
         });
       }
 
