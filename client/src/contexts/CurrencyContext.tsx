@@ -41,9 +41,10 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const initialize = async () => {
       try {
         // Fetch both geolocation and exchange rates in parallel
+        // Use cache: 'no-store' to force fresh requests (critical for VPN detection)
         const [geoResponse, ratesResponse] = await Promise.all([
-          fetch('/api/geolocation'),
-          fetch('/api/exchange-rates')
+          fetch('/api/geolocation', { cache: 'no-store' }),
+          fetch('/api/exchange-rates', { cache: 'no-store' })
         ]);
         
         // Process exchange rates
