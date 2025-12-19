@@ -40,11 +40,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Cache-busting timestamp to bypass ALL caching (CDN, service worker, browser)
+        const cacheBuster = `_t=${Date.now()}`;
+        
         // Fetch both geolocation and exchange rates in parallel
-        // Use cache: 'no-store' to force fresh requests (critical for VPN detection)
+        // Use cache: 'no-store' AND query param to force completely fresh requests
         const [geoResponse, ratesResponse] = await Promise.all([
-          fetch('/api/geolocation', { cache: 'no-store' }),
-          fetch('/api/exchange-rates', { cache: 'no-store' })
+          fetch(`/api/geolocation?${cacheBuster}`, { cache: 'no-store' }),
+          fetch(`/api/exchange-rates?${cacheBuster}`, { cache: 'no-store' })
         ]);
         
         // Process exchange rates
