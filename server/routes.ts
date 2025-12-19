@@ -179,6 +179,50 @@ function getAssessmentTimeLimit(assessmentType: string): number {
   return 1200;
 }
 
+// VPN/Proxy detection by organization name
+// Common VPN providers, hosting companies, and datacenter operators
+function detectVPNFromOrg(orgLower: string): boolean {
+  const vpnKeywords = [
+    'vpn', 'proxy', 'private internet', 'nordvpn', 'expressvpn', 'surfshark',
+    'mullvad', 'protonvpn', 'cyberghost', 'tunnelbear', 'windscribe', 'ipvanish',
+    'hide.me', 'purevpn', 'privatevpn', 'zenmate', 'hotspot shield',
+    'hosting', 'server', 'datacenter', 'data center', 'cloud', 'vps',
+    'digitalocean', 'linode', 'vultr', 'hetzner', 'ovh', 'aws', 'amazon',
+    'google cloud', 'microsoft azure', 'azure', 'alibaba', 'tencent',
+    'colocation', 'colo', 'dedicated', 'virtual private', 'anonymous',
+    'tor', 'relay', 'exit node'
+  ];
+  
+  return vpnKeywords.some(keyword => orgLower.includes(keyword));
+}
+
+// VPN/Proxy detection by ASN (Autonomous System Number)
+// Known datacenter and VPN provider ASNs
+function detectVPNFromASN(asn: string | undefined): boolean {
+  if (!asn) return false;
+  
+  // Common datacenter/VPN ASNs (format: AS12345 or just 12345)
+  const vpnASNs = [
+    '14061', // DigitalOcean
+    '16276', // OVH
+    '24940', // Hetzner
+    '20473', // Vultr
+    '63949', // Linode
+    '16509', // Amazon AWS
+    '15169', // Google
+    '8075',  // Microsoft Azure
+    '13335', // Cloudflare
+    '9009',  // M247 (VPN provider hosting)
+    '60068', // Datacamp (VPN/Proxy)
+    '202425', // Private Internet Access
+    '136787', // NordVPN
+  ];
+  
+  // Extract numeric part of ASN
+  const asnNumber = asn.replace(/^AS/i, '');
+  return vpnASNs.includes(asnNumber);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
@@ -244,11 +288,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
       
       if (data.country_code && !data.error) {
+        // Detect VPN/Proxy/Datacenter by checking organization name
+        // Common VPN/hosting providers have identifiable org names
+        const orgLower = (data.org || '').toLowerCase();
+        const isVPN = detectVPNFromOrg(orgLower) || 
+                      detectVPNFromASN(data.asn) ||
+                      data.country_code === 'A1' || // Anonymous proxy
+                      data.country_code === 'A2';   // Satellite provider
+        
         const result = {
           countryCode: data.country_code,
           country: data.country_name,
           detected: true,
-          source: 'ipapi'
+          source: 'ipapi',
+          isVPN,
         };
         
         // Cache the result
@@ -261,17 +314,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           countryCode: 'GB',
           country: 'United Kingdom',
           detected: false,
-          source: 'fallback'
+          source: 'fallback',
+          isVPN: false,
         });
       }
     } catch (error: any) {
       console.error('[Geolocation] Error:', error.message);
-      // Return default on error
+      // Return default on error - treat as potential VPN (charge full price)
       res.json({
         countryCode: 'GB',
         country: 'United Kingdom',
         detected: false,
-        source: 'error'
+        source: 'error',
+        isVPN: true, // Assume VPN on error to prevent discount abuse
       });
     }
   });
