@@ -242,12 +242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Geolocation cache (5-minute TTL, keyed by IP)
+  // Geolocation cache (1-minute TTL, keyed by IP) - shorter TTL for faster VPN detection updates
   const geoCache = new Map<string, { data: any; expires: number }>();
-  const GEO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const GEO_CACHE_TTL = 60 * 1000; // 1 minute
 
   // Geolocation endpoint for currency detection
   app.get("/api/geolocation", async (req, res) => {
+    // Prevent browser caching - geolocation must always be fresh for accurate VPN detection
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     try {
       // Get client IP - handle proxies
       const forwardedFor = req.headers['x-forwarded-for'];
