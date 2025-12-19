@@ -661,15 +661,19 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
 }
 
 // Round price UP based on magnitude for cleaner display
-// - Under 1,000: round up to nearest whole number
+// - Under 100: round up to nearest whole number
+// - 100 - 999: round up to nearest 10
 // - 1,000 - 9,999: round up to nearest 100
 // - 10,000 - 99,999: round up to nearest 1,000
 // - 100,000 - 999,999: round up to nearest 10,000
 // - 1,000,000+: round up to nearest 100,000
 function roundPriceUp(price: number, _currency: CurrencyConfig): number {
-  if (price < 1000) {
-    // Small prices: round up to nearest whole number
+  if (price < 100) {
+    // Under 100: round up to nearest whole number
     return Math.ceil(price);
+  } else if (price < 1000) {
+    // Hundreds: round up to nearest 10 (e.g. 317 → 320)
+    return Math.ceil(price / 10) * 10;
   } else if (price < 10000) {
     // Thousands: round up to nearest 100
     return Math.ceil(price / 100) * 100;
