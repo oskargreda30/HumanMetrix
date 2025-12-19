@@ -35,9 +35,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [isVPN, setIsVPN] = useState(false);
   const [liveExchangeRates, setLiveExchangeRates] = useState<Record<string, number> | null>(null);
+  const [userManuallySelectedCurrency, setUserManuallySelectedCurrency] = useState(false);
 
   // Fetch location and exchange rates - reusable for network change detection
-  const fetchLocationAndRates = async (isRetry = false) => {
+  // updateCurrency: if false, only updates country/VPN/rates but preserves user's currency selection
+  const fetchLocationAndRates = async (isRetry = false, updateCurrency = true) => {
     try {
       // Cache-busting timestamp to bypass ALL caching (CDN, service worker, browser)
       const cacheBuster = `_t=${Date.now()}`;
@@ -67,14 +69,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         if (data.countryCode && data.detected) {
           // Use detected country for PPP pricing (not from localStorage)
           setCountryCode(data.countryCode);
-          
-          // Get currency for the detected country
-          const detectedCurrency = getCurrencyForCountry(data.countryCode);
-          setCurrencyState(detectedCurrency);
-          
-          // Save to localStorage (but geolocation always takes priority on next visit)
-          localStorage.setItem(STORAGE_KEY, detectedCurrency.code);
           localStorage.setItem(COUNTRY_STORAGE_KEY, data.countryCode);
+          
+          // Only update display currency if allowed (not when user manually selected)
+          if (updateCurrency) {
+            const detectedCurrency = getCurrencyForCountry(data.countryCode);
+            setCurrencyState(detectedCurrency);
+            localStorage.setItem(STORAGE_KEY, detectedCurrency.code);
+          }
         } else if (!isRetry) {
           // Geolocation failed - use saved preferences as fallback (only on initial load)
           const savedCurrency = localStorage.getItem(STORAGE_KEY);
@@ -120,11 +122,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   // Auto-reload on network change (detects VPN toggle)
   useEffect(() => {
-    // Handler for network changes
+    // Handler for network changes - updates currency since network changed
     const handleNetworkChange = () => {
+      // Reset manual selection flag on network change (VPN toggle should update currency)
+      setUserManuallySelectedCurrency(false);
       // Small delay to let the new network connection stabilise
       setTimeout(() => {
-        fetchLocationAndRates(true);
+        fetchLocationAndRates(true, true); // Update currency on network change
       }, 1000);
     };
 
@@ -137,11 +141,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       connection.addEventListener('change', handleNetworkChange);
     }
 
-    // Also check periodically for IP changes (fallback for when network events don't fire)
+    // Periodic check only updates country/VPN/rates, NOT the display currency
+    // This preserves user's manual currency selection
     const intervalId = setInterval(() => {
       // Only re-check if the page is visible
       if (!document.hidden) {
-        fetchLocationAndRates(true);
+        // Don't update currency if user manually selected one
+        fetchLocationAndRates(true, !userManuallySelectedCurrency);
       }
     }, 30000); // Check every 30 seconds
 
@@ -152,7 +158,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       }
       clearInterval(intervalId);
     };
-  }, []);
+  }, [userManuallySelectedCurrency]);
 
   // setCurrency only changes the DISPLAY currency, not the country code
   // Country code (for PPP) is determined solely by geolocation
@@ -161,6 +167,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     if (newCurrency) {
       setCurrencyState(newCurrency);
       localStorage.setItem(STORAGE_KEY, currencyCode);
+      // Mark that user manually selected a currency - don't override on periodic checks
+      setUserManuallySelectedCurrency(true);
       // Note: We intentionally do NOT update countryCode here
       // PPP pricing is based on geolocation, not user-selected currency
     }
