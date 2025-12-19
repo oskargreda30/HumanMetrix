@@ -11,6 +11,7 @@ import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
+import { getExchangeRates, initExchangeRates } from "./exchange-rates";
 import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
@@ -341,6 +342,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         source: 'error',
         isVPN: false, // Network error, not a VPN indicator
       });
+    }
+  });
+
+  // Exchange rates endpoint - provides live exchange rates for the frontend
+  app.get("/api/exchange-rates", async (req, res) => {
+    try {
+      const rates = await getExchangeRates();
+      res.json(rates);
+    } catch (error: any) {
+      console.error('[Exchange Rates] Error fetching rates:', error.message);
+      res.status(500).json({ error: 'Failed to fetch exchange rates' });
     }
   });
 

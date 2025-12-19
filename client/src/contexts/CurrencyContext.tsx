@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { 
   CURRENCIES, 
   getCurrencyForCountry, 
-  formatPrice, 
+  formatPriceWithRate, 
   type CurrencyConfig,
   SUPPORTED_CURRENCIES,
   getPPPMultiplier,
@@ -34,15 +34,29 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [isVPN, setIsVPN] = useState(false);
+  const [liveExchangeRates, setLiveExchangeRates] = useState<Record<string, number> | null>(null);
 
-  // Detect user's location on mount - ALWAYS use geolocation for PPP pricing
+  // Fetch live exchange rates and detect location on mount
   useEffect(() => {
-    const detectLocation = async () => {
+    const initialize = async () => {
       try {
-        // ALWAYS fetch geolocation first - this determines PPP pricing
-        const response = await fetch('/api/geolocation');
-        if (response.ok) {
-          const data = await response.json();
+        // Fetch both geolocation and exchange rates in parallel
+        const [geoResponse, ratesResponse] = await Promise.all([
+          fetch('/api/geolocation'),
+          fetch('/api/exchange-rates')
+        ]);
+        
+        // Process exchange rates
+        if (ratesResponse.ok) {
+          const ratesData = await ratesResponse.json();
+          if (ratesData.rates) {
+            setLiveExchangeRates(ratesData.rates);
+          }
+        }
+        
+        // Process geolocation
+        if (geoResponse.ok) {
+          const data = await geoResponse.json();
           
           // Set VPN status
           setIsVPN(data.isVPN === true);
@@ -83,7 +97,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Failed to detect location:', error);
+        console.error('Failed to initialize currency context:', error);
         // On error, use saved preferences but assume no VPN
         const savedCurrency = localStorage.getItem(STORAGE_KEY);
         if (savedCurrency && CURRENCIES[savedCurrency]) {
@@ -94,7 +108,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    detectLocation();
+    initialize();
   }, []);
 
   // setCurrency only changes the DISPLAY currency, not the country code
@@ -109,14 +123,17 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Format price with PPP adjustment applied
+  // Format price with PPP adjustment and live exchange rates
   // VPN users see full price (no PPP discount)
   const formatLocalPrice = (priceInPence: number): string => {
+    // Get the exchange rate - prefer live rates, fallback to hardcoded
+    const exchangeRate = liveExchangeRates?.[currency.code] ?? currency.exchangeRate;
+    
     if (isVPN) {
       // VPN users get full price - use GB for no discount
-      return formatPrice(priceInPence, currency, { countryCode: 'GB' });
+      return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: 'GB' });
     }
-    return formatPrice(priceInPence, currency, { countryCode: countryCode || 'GB' });
+    return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: countryCode || 'GB' });
   };
 
   // Get PPP-adjusted price in pence (for Stripe checkout)

@@ -699,6 +699,46 @@ export function formatPrice(
   return result;
 }
 
+// Format a price using a specific exchange rate (for live rates)
+export function formatPriceWithRate(
+  priceInPence: number,
+  currency: CurrencyConfig,
+  exchangeRate: number,
+  options?: { showCode?: boolean; countryCode?: string }
+): string {
+  // Apply PPP multiplier if country code is provided
+  const pppMultiplier = options?.countryCode ? getPPPMultiplier(options.countryCode) : 1.0;
+  const adjustedPriceInPence = priceInPence * pppMultiplier;
+  
+  // Convert from GBP pence to target currency using provided rate
+  const priceInGBP = adjustedPriceInPence / 100;
+  const convertedPrice = priceInGBP * exchangeRate;
+  
+  // Round based on decimal places
+  const roundedPrice = currency.decimalPlaces === 0
+    ? Math.round(convertedPrice)
+    : Number(convertedPrice.toFixed(currency.decimalPlaces));
+  
+  // Format the number
+  const parts = roundedPrice.toFixed(currency.decimalPlaces).split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
+  const formattedNumber = currency.decimalPlaces > 0
+    ? `${integerPart}${currency.decimalSeparator}${parts[1]}`
+    : integerPart;
+  
+  // Add symbol
+  let result = currency.symbolPosition === 'before'
+    ? `${currency.symbol}${formattedNumber}`
+    : `${formattedNumber}${currency.symbol}`;
+  
+  // Optionally add currency code
+  if (options?.showCode) {
+    result += ` ${currency.code}`;
+  }
+  
+  return result;
+}
+
 // Get price in pence after PPP adjustment (for Stripe checkout)
 export function getPPPAdjustedPriceInPence(priceInPence: number, countryCode: string): number {
   const pppMultiplier = getPPPMultiplier(countryCode);
