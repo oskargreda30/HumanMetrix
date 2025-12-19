@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Sparkles, Code2, Shield, Compass, Languages, Users2, Rocket, UsersRound } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, Compass, Languages, Users2, Rocket, UsersRound, Handshake, Wrench, Lightbulb, ShieldAlert, TrendingUp } from "lucide-react";
 
 interface RoadmapItem {
   date: string;
@@ -52,6 +52,41 @@ const roadmapItems: RoadmapItem[] = [
     title: "Social Influence Assessment",
     description: "Measure workplace influence, persuasion skills, and ability to drive consensus in team environments",
     icon: Users2,
+  },
+  {
+    date: "Q3 2026",
+    status: "planned",
+    title: "Human-AI Collaboration Style",
+    description: "Evaluate how effectively you partner with AI systems - knowing when to trust AI, when to override it, and how to iterate effectively",
+    icon: Handshake,
+  },
+  {
+    date: "Q3 2026",
+    status: "planned",
+    title: "AI Tool Fluency",
+    description: "Practical assessment of navigating common AI tools (ChatGPT, Claude, Copilot) - workflow integration, multi-tool orchestration, and output optimisation",
+    icon: Wrench,
+  },
+  {
+    date: "Q4 2026",
+    status: "planned",
+    title: "AI-Assisted Problem Solving",
+    description: "Cognitive assessment where candidates solve complex problems with AI assistance available - measuring how well you leverage AI as a thinking partner",
+    icon: Lightbulb,
+  },
+  {
+    date: "Q4 2026",
+    status: "planned",
+    title: "AI Risk Awareness",
+    description: "Identify security vulnerabilities, data leakage risks, compliance issues, and reputational hazards in real-world AI implementations",
+    icon: ShieldAlert,
+  },
+  {
+    date: "2027",
+    status: "planned",
+    title: "Adaptability Quotient (AQ)",
+    description: "Measure capacity to learn and adapt as AI tools rapidly evolve - predicting who will thrive as technology changes",
+    icon: TrendingUp,
   },
 ];
 
