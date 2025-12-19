@@ -2324,7 +2324,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           console.log(`Assigned existing user ${validatedData.candidateEmail} to organization ${organizationId}`);
         }
-        console.log(`User ${validatedData.candidateEmail} already exists - invitation created`);
+        
+        // Send invitation email to existing user
+        console.log(`Sending invitation email to existing user ${validatedData.candidateEmail}`);
+        await sendInvitationEmail(invitation, user!.firstName || 'HumanMetrix');
+        
+        console.log(`User ${validatedData.candidateEmail} already exists - invitation created and email sent`);
       }
 
       res.json({
