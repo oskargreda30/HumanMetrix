@@ -151,7 +151,7 @@ export const CURRENCIES: Record<string, CurrencyConfig> = {
     code: 'JPY',
     symbol: '¥',
     name: 'Japanese Yen',
-    exchangeRate: 192,
+    exchangeRate: 208,
     symbolPosition: 'before',
     decimalSeparator: '.',
     thousandsSeparator: ',',
