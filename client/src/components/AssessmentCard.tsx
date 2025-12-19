@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, FileText, CheckCircle2, Lock, Check, ShoppingCart, X } from "lucide-react";
 import { type LucideIcon } from "lucide-react";
 import { useBasket } from "@/contexts/BasketContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { ASSESSMENT_PRICES, normalizeAssessmentId } from "@shared/schema";
 
 export interface AssessmentCardProps {
@@ -35,6 +36,7 @@ export default function AssessmentCard({
   comingSoon = false,
 }: AssessmentCardProps) {
   const { addToBasket, removeFromBasket, isInBasket } = useBasket();
+  const { formatLocalPrice, currency } = useCurrency();
   const [justAdded, setJustAdded] = useState(false);
   const isAvailable = status === "available" || status === "completed";
   const isComingSoon = status === "coming-soon" || comingSoon;
@@ -54,9 +56,9 @@ export default function AssessmentCard({
     const pricePence = ASSESSMENT_PRICES[normalizedId] || 0;
     
     addToBasket({
-      id: normalizedId, // Store normalized ID
+      id: normalizedId,
       name: title,
-      price: pricePence, // Price in pence
+      price: pricePence,
     });
     setJustAdded(true);
   };
@@ -65,6 +67,19 @@ export default function AssessmentCard({
     if (!id) return;
     const normalizedId = normalizeAssessmentId(id);
     removeFromBasket(normalizedId);
+  };
+
+  // Get the price to display - use localized format
+  const getDisplayPrice = () => {
+    if (free) return "FREE";
+    if (!id) return price || "";
+    
+    const normalizedId = normalizeAssessmentId(id);
+    const pricePence = ASSESSMENT_PRICES[normalizedId];
+    if (pricePence) {
+      return formatLocalPrice(pricePence);
+    }
+    return price || "";
   };
 
   return (
@@ -107,12 +122,9 @@ export default function AssessmentCard({
 
         <div className="flex items-center justify-between pt-2 md:pt-4 border-t border-cyan-400/20">
           <div>
-            {free && (
-              <span className="text-sm md:text-lg lg:text-xl font-bold text-cyan-400" data-testid="text-price">FREE</span>
-            )}
-            {!free && price && (
-              <span className="text-sm md:text-lg lg:text-xl font-bold font-mono text-cyan-400" data-testid="text-price">{price}</span>
-            )}
+            <span className="text-sm md:text-lg lg:text-xl font-bold font-mono text-cyan-400" data-testid="text-price">
+              {getDisplayPrice()}
+            </span>
           </div>
           {isComingSoon ? (
             <Badge variant="secondary" data-testid="badge-coming-soon">Coming Soon</Badge>

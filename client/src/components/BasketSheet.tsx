@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShoppingBag, X, Trash2, ShoppingCart } from "lucide-react";
 import { useBasket } from "@/contexts/BasketContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { BASE_FEE } from "@shared/schema";
 import CheckoutModal from "@/components/CheckoutModal";
 
 export default function BasketSheet() {
@@ -19,16 +21,17 @@ export default function BasketSheet() {
     basketItems,
     removeFromBasket,
     clearBasket,
-    getTotalPricePounds,
+    getTotalPricePence,
     getBasketCount,
   } = useBasket();
+  
+  const { formatLocalPrice, currency } = useCurrency();
 
   const [open, setOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  const BASE_FEE = 15.00; // £15.00
-  const itemsTotalPounds = basketItems.reduce((sum, item) => sum + (item.price / 100), 0); // Convert pence to pounds
-  const total = getTotalPricePounds();
+  const itemsTotalPence = basketItems.reduce((sum, item) => sum + item.price, 0);
+  const totalPence = getTotalPricePence();
   const count = getBasketCount();
 
   const handleGoToCheckout = () => {
@@ -96,8 +99,8 @@ export default function BasketSheet() {
                         <h4 className="font-medium mb-1" data-testid={`text-basket-item-name-${item.id}`}>
                           {item.name}
                         </h4>
-                        <p className="text-sm font-mono text-cyan-400" data-testid={`text-basket-item-price-${item.id}`}>
-                          £{(item.price / 100).toFixed(2)}
+                        <p className="text-sm font-mono text-cyan-600 dark:text-cyan-400" data-testid={`text-basket-item-price-${item.id}`}>
+                          {formatLocalPrice(item.price)}
                         </p>
                       </div>
                       <Button
@@ -120,13 +123,13 @@ export default function BasketSheet() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-medium" data-testid="text-subtotal">
-                        £{itemsTotalPounds.toFixed(2)}
+                        {formatLocalPrice(itemsTotalPence)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Base computation fee</span>
                       <span className="font-medium" data-testid="text-base-fee">
-                        £{BASE_FEE.toFixed(2)}
+                        {formatLocalPrice(BASE_FEE)}
                       </span>
                     </div>
                   </div>
@@ -135,9 +138,16 @@ export default function BasketSheet() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold">Total</span>
-                    <span className="text-2xl font-bold font-mono text-cyan-400" data-testid="text-basket-total">
-                      £{total.toFixed(2)}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400" data-testid="text-basket-total">
+                        {formatLocalPrice(totalPence)}
+                      </span>
+                      {currency.code !== 'GBP' && (
+                        <div className="text-xs text-muted-foreground">
+                          (£{(totalPence / 100).toFixed(2)} GBP)
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex gap-2">

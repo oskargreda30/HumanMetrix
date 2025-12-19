@@ -5,6 +5,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BasketProvider } from "@/contexts/BasketContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { OrganizationSchema } from "@/lib/seo";
@@ -144,12 +145,14 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <BasketProvider>
-            <OrganizationSchema />
-            <ScrollToTop />
-            <Toaster />
-            <Router />
-          </BasketProvider>
+          <CurrencyProvider>
+            <BasketProvider>
+              <OrganizationSchema />
+              <ScrollToTop />
+              <Toaster />
+              <Router />
+            </BasketProvider>
+          </CurrencyProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </HelmetProvider>

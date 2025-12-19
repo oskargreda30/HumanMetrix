@@ -1,7 +1,19 @@
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { ASSESSMENT_PRICES, BASE_FEE } from "@shared/schema";
+import CurrencySelector from "@/components/CurrencySelector";
 
 export default function PricingSection() {
+  const { formatLocalPrice, currency } = useCurrency();
+
+  // Calculate total for all 4 assessments
+  const totalPence = BASE_FEE + 
+    ASSESSMENT_PRICES.fit + 
+    ASSESSMENT_PRICES.ai_readiness + 
+    ASSESSMENT_PRICES.prompt_architecture + 
+    ASSESSMENT_PRICES.aiq;
+
   return (
     <section className="py-12 md:py-24 bg-[#0a1628]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
@@ -19,21 +31,31 @@ export default function PricingSection() {
             <div className="grid md:grid-cols-2 gap-6 md:gap-12">
               {/* Pricing Breakdown */}
               <div className="space-y-3 md:space-y-6">
-                <div>
-                  <h3 className="text-sm md:text-xl lg:text-2xl font-semibold mb-1 md:mb-2 text-white">How Pricing Works</h3>
-                  <p className="text-xs md:text-base text-blue-100/60">
-                    Simple, transparent pricing based on what you need
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm md:text-xl lg:text-2xl font-semibold mb-1 md:mb-2 text-white">How Pricing Works</h3>
+                    <p className="text-xs md:text-base text-blue-100/60">
+                      Simple, transparent pricing based on what you need
+                    </p>
+                  </div>
+                  <CurrencySelector />
                 </div>
 
                 <div className="space-y-2 md:space-y-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl md:text-4xl font-bold font-mono text-cyan-400">£15</span>
+                    <span className="text-2xl md:text-4xl font-bold font-mono text-cyan-400" data-testid="text-base-fee-local">
+                      {formatLocalPrice(BASE_FEE)}
+                    </span>
                     <span className="text-[11px] md:text-sm text-blue-100/60">base computation fee</span>
                   </div>
                   <div className="text-[11px] md:text-sm text-blue-100/60">
                     One-time fee covers platform access and result processing
                   </div>
+                  {currency.code !== 'GBP' && (
+                    <div className="text-[10px] md:text-xs text-blue-100/40">
+                      (£{(BASE_FEE / 100).toFixed(2)} GBP)
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3 pt-2 md:pt-4 border-t border-cyan-400/20">
@@ -41,19 +63,27 @@ export default function PricingSection() {
                   <div className="space-y-1.5 md:space-y-2 text-[11px] md:text-sm">
                     <div className="flex justify-between gap-2">
                       <span className="text-blue-100/60">FIT Assessment (15 questions)</span>
-                      <span className="font-mono font-medium text-white">£3.50</span>
+                      <span className="font-mono font-medium text-white" data-testid="text-price-fit">
+                        {formatLocalPrice(ASSESSMENT_PRICES.fit)}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
                       <span className="text-blue-100/60">AIQ Assessment (8 questions)</span>
-                      <span className="font-mono font-medium text-white">£4.00</span>
+                      <span className="font-mono font-medium text-white" data-testid="text-price-aiq">
+                        {formatLocalPrice(ASSESSMENT_PRICES.aiq)}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
                       <span className="text-blue-100/60">AI Readiness (21 questions)</span>
-                      <span className="font-mono font-medium text-white">£4.50</span>
+                      <span className="font-mono font-medium text-white" data-testid="text-price-ai-readiness">
+                        {formatLocalPrice(ASSESSMENT_PRICES.ai_readiness)}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
                       <span className="text-blue-100/60">Prompt Architecture (7 levels)</span>
-                      <span className="font-mono font-medium text-white">£5.00</span>
+                      <span className="font-mono font-medium text-white" data-testid="text-price-prompt">
+                        {formatLocalPrice(ASSESSMENT_PRICES.prompt_architecture)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -61,8 +91,15 @@ export default function PricingSection() {
                 <div className="pt-2 md:pt-4 border-t border-cyan-400/20">
                   <div className="flex items-baseline gap-2">
                     <span className="text-[11px] md:text-sm text-blue-100/60">Example: All 4 assessments =</span>
-                    <span className="text-lg md:text-2xl font-bold font-mono text-cyan-400">£32</span>
+                    <span className="text-lg md:text-2xl font-bold font-mono text-cyan-400" data-testid="text-total-example">
+                      {formatLocalPrice(totalPence)}
+                    </span>
                   </div>
+                  {currency.code !== 'GBP' && (
+                    <div className="text-[10px] md:text-xs text-blue-100/40 mt-1">
+                      (£{(totalPence / 100).toFixed(2)} GBP)
+                    </div>
+                  )}
                 </div>
               </div>
 

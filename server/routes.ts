@@ -196,6 +196,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Geolocation cache (5-minute TTL, keyed by IP)
+  const geoCache = new Map<string, { data: any; expires: number }>();
+  const GEO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Geolocation endpoint for currency detection
+  app.get("/api/geolocation", async (req, res) => {
+    try {
+      // Get client IP - handle proxies
+      const forwardedFor = req.headers['x-forwarded-for'];
+      const clientIP = typeof forwardedFor === 'string' 
+        ? forwardedFor.split(',')[0].trim() 
+        : req.ip || req.socket.remoteAddress || '';
+      
+      // Skip geolocation for localhost/private IPs
+      const isPrivateIP = clientIP === '127.0.0.1' || 
+                          clientIP === '::1' || 
+                          clientIP.startsWith('192.168.') ||
+                          clientIP.startsWith('10.') ||
+                          clientIP.startsWith('172.') ||
+                          !clientIP;
+      
+      if (isPrivateIP) {
+        // Default to GB for development
+        return res.json({ 
+          countryCode: 'GB',
+          country: 'United Kingdom',
+          detected: false,
+          source: 'default'
+        });
+      }
+
+      // Check cache first
+      const cached = geoCache.get(clientIP);
+      if (cached && cached.expires > Date.now()) {
+        return res.json({ ...cached.data, source: 'cache' });
+      }
+
+      // Use ipapi.co (free tier with HTTPS, 1000 req/day)
+      const response = await fetch(`https://ipapi.co/${clientIP}/json/`);
+      
+      if (!response.ok) {
+        throw new Error('Geolocation service unavailable');
+      }
+      
+      const data = await response.json();
+      
+      if (data.country_code && !data.error) {
+        const result = {
+          countryCode: data.country_code,
+          country: data.country_name,
+          detected: true,
+          source: 'ipapi'
+        };
+        
+        // Cache the result
+        geoCache.set(clientIP, { data: result, expires: Date.now() + GEO_CACHE_TTL });
+        
+        return res.json(result);
+      } else {
+        // Fallback to GB if geolocation fails
+        return res.json({
+          countryCode: 'GB',
+          country: 'United Kingdom',
+          detected: false,
+          source: 'fallback'
+        });
+      }
+    } catch (error: any) {
+      console.error('[Geolocation] Error:', error.message);
+      // Return default on error
+      res.json({
+        countryCode: 'GB',
+        country: 'United Kingdom',
+        detected: false,
+        source: 'error'
+      });
+    }
+  });
+
   // Contact form endpoint with rate limiting
   app.post("/api/contact", async (req, res) => {
     try {

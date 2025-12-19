@@ -1,29 +1,38 @@
 import { CheckSquare, CreditCard, ClipboardCheck, Download } from "lucide-react";
-
-const steps = [
-  {
-    icon: CheckSquare,
-    title: "Select Assessments",
-    description: "Choose from our range of AI-focused assessments tailored to your needs and career goals.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Complete Tests",
-    description: "Take assessments at your own pace with our intuitive interface and real-time AI evaluation.",
-  },
-  {
-    icon: CreditCard,
-    title: "Secure Payment",
-    description: "Pay once with our transparent pricing: £15 base fee plus £3.50-£5.00 per assessment.",
-  },
-  {
-    icon: Download,
-    title: "Download Results",
-    description: "Get professional PDF reports with detailed breakdowns, perfect for your CV or employer review.",
-  },
-];
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
 
 export default function HowItWorks() {
+  const { formatLocalPrice, currency } = useCurrency();
+  
+  // Calculate price range for assessments
+  const prices = Object.values(ASSESSMENT_PRICES);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  
+  const steps = [
+    {
+      icon: CheckSquare,
+      title: "Select Assessments",
+      description: "Choose from our range of AI-focused assessments tailored to your needs and career goals.",
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Complete Tests",
+      description: "Take assessments at your own pace with our intuitive interface and real-time AI evaluation.",
+    },
+    {
+      icon: CreditCard,
+      title: "Secure Payment",
+      description: `Pay once with our transparent pricing: ${formatLocalPrice(BASE_FEE)} base fee plus ${formatLocalPrice(minPrice)}-${formatLocalPrice(maxPrice)} per assessment.`,
+    },
+    {
+      icon: Download,
+      title: "Download Results",
+      description: "Get professional PDF reports with detailed breakdowns, perfect for your CV or employer review.",
+    },
+  ];
+
   return (
     <section id="how-it-works" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
       {/* Animated neural network background decoration - circular pattern extended */}
