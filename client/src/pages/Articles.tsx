@@ -25,6 +25,42 @@ const articles = [
     date: "November 28, 2025",
     featured: true,
   },
+  {
+    id: "humanmetrix-ai-assessment-suite",
+    title: "Introducing HumanMetrix: The Complete AI-Era Assessment Platform",
+    description: "Discover how HumanMetrix's four core assessments—FIT, AI Readiness, Prompt Architecture, and AIQ—provide comprehensive insights into candidates' readiness for the AI-driven workplace.",
+    category: "Product",
+    readTime: "6 min read",
+    date: "December 2025",
+    featured: true,
+  },
+  {
+    id: "future-of-ai-assessments-2026-roadmap",
+    title: "The Future of AI Talent Assessment: Our 2026-2027 Product Roadmap",
+    description: "From Human-AI Collaboration Style to Adaptability Quotient—explore the upcoming assessments that will help organisations identify talent ready to thrive as AI transforms the workplace.",
+    category: "Product Roadmap",
+    readTime: "5 min read",
+    date: "December 2025",
+    featured: false,
+  },
+  {
+    id: "why-ai-literacy-matters-recruitment",
+    title: "Why AI Literacy Is the New Must-Have Skill for Every Role",
+    description: "As AI tools become ubiquitous across industries, employers are prioritising candidates who can effectively collaborate with AI. Learn why AI literacy assessments are becoming essential in modern hiring.",
+    category: "Industry Insights",
+    readTime: "7 min read",
+    date: "December 2025",
+    featured: false,
+  },
+  {
+    id: "prompt-engineering-skills-workplace",
+    title: "Prompt Engineering: The Skill That Separates AI-Ready Workers from the Rest",
+    description: "Explore why prompt engineering has become a critical workplace skill, how it's assessed, and what makes an effective AI communicator in today's professional environment.",
+    category: "Skills",
+    readTime: "6 min read",
+    date: "December 2025",
+    featured: false,
+  },
 ];
 
 const whitePapers = [
@@ -66,9 +102,9 @@ export default function Articles() {
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             {articles.map((article) => (
-              <Link key={article.id} href={`/articles/${article.id}`}>
+              <Link key={article.id} href={`/articles/${article.id}`} className="block">
                 <Card 
                   className="group cursor-pointer border-slate-200 hover-elevate transition-all duration-300"
                   data-testid={`card-article-${article.id}`}
@@ -133,7 +169,7 @@ export default function Articles() {
 
             <div className="grid md:grid-cols-2 gap-6">
               {whitePapers.map((paper) => (
-                <Link key={paper.id} href={`/articles/${paper.id}`}>
+                <Link key={paper.id} href={`/articles/${paper.id}`} className="block">
                   <Card 
                     className="group cursor-pointer border-slate-200 hover-elevate transition-all duration-300 h-full"
                     data-testid={`card-whitepaper-${paper.id}`}
