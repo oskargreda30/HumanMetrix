@@ -283,12 +283,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(`https://ipapi.co/${clientIP}/json/`);
       
       if (!response.ok) {
-        throw new Error('Geolocation service unavailable');
+        console.error(`[Geolocation] ipapi.co returned status ${response.status} for IP ${clientIP}`);
+        // For 429 rate limit or 5xx server errors, don't assume VPN
+        // Just fallback to GB with no VPN flag
+        return res.json({
+          countryCode: 'GB',
+          country: 'United Kingdom',
+          detected: false,
+          source: 'service_error',
+          isVPN: false, // Service error, not necessarily a VPN
+        });
       }
       
       const data = await response.json();
       
-      if (data.country_code && !data.error) {
+      // Check for rate limit or error in response body
+      if (data.error) {
+        console.error(`[Geolocation] ipapi.co error: ${data.reason || data.error}`);
+        return res.json({
+          countryCode: 'GB',
+          country: 'United Kingdom',
+          detected: false,
+          source: 'api_error',
+          isVPN: false, // API error, not necessarily a VPN
+        });
+      }
+      
+      if (data.country_code) {
         // Detect VPN/Proxy/Datacenter by checking organization name
         // Common VPN/hosting providers have identifiable org names
         const orgLower = (data.org || '').toLowerCase();
@@ -321,13 +342,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error('[Geolocation] Error:', error.message);
-      // Return default on error - treat as potential VPN (charge full price)
+      // Network/timeout errors - don't assume VPN, just fallback gracefully
       res.json({
         countryCode: 'GB',
         country: 'United Kingdom',
         detected: false,
         source: 'error',
-        isVPN: true, // Assume VPN on error to prevent discount abuse
+        isVPN: false, // Network error, not a VPN indicator
       });
     }
   });

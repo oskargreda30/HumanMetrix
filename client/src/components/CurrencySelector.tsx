@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { CURRENCIES } from "@shared/currencies";
+import { CURRENCIES, CURRENCY_TO_COUNTRY } from "@shared/currencies";
 import { Globe } from "lucide-react";
 
 export default function CurrencySelector() {
@@ -18,8 +18,14 @@ export default function CurrencySelector() {
     );
   }
 
+  // When user selects a currency, also update the country code for PPP pricing
+  const handleCurrencyChange = (currencyCode: string) => {
+    const countryCode = CURRENCY_TO_COUNTRY[currencyCode];
+    setCurrency(currencyCode, countryCode);
+  };
+
   return (
-    <Select value={currency.code} onValueChange={setCurrency}>
+    <Select value={currency.code} onValueChange={handleCurrencyChange}>
       <SelectTrigger 
         className="w-auto min-w-[100px] bg-transparent border-cyan-400/30 text-white hover:border-cyan-400/50"
         data-testid="select-currency"

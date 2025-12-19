@@ -728,6 +728,40 @@ export const SUPPORTED_CURRENCIES = [
   'ZAR', 'BRL', 'MXN', 'PLN', 'TRY', 'HKD', 'TWD'
 ] as const;
 
+// Reverse mapping: currency to representative country (for PPP tier lookup when manually selecting currency)
+export const CURRENCY_TO_COUNTRY: Record<string, string> = {
+  GBP: 'GB',
+  USD: 'US',
+  EUR: 'DE', // Use Germany as representative for Eurozone (tier1)
+  THB: 'TH',
+  PHP: 'PH',
+  INR: 'IN',
+  JPY: 'JP',
+  CNY: 'CN',
+  KRW: 'KR',
+  SGD: 'SG',
+  MYR: 'MY',
+  IDR: 'ID',
+  AUD: 'AU',
+  NZD: 'NZ',
+  CAD: 'CA',
+  CHF: 'CH',
+  AED: 'AE',
+  SAR: 'SA',
+  ZAR: 'ZA',
+  BRL: 'BR',
+  MXN: 'MX',
+  PLN: 'PL',
+  TRY: 'TR',
+  HKD: 'HK',
+  TWD: 'TW',
+  VND: 'VN',
+  PKR: 'PK',
+  BDT: 'BD',
+  LKR: 'LK',
+  NPR: 'NP',
+};
+
 export type SupportedCurrencyCode = typeof SUPPORTED_CURRENCIES[number];
 
 // Zero-decimal currencies for Stripe (no cents/pence subdivision)
