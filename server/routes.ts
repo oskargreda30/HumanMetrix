@@ -279,11 +279,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ ...cached.data, source: 'cache' });
       }
 
-      // Use geolocation-db.com (no rate limits, reliable)
-      const response = await fetch(`https://geolocation-db.com/json/${clientIP}`);
+      // Use ip-api.com (provides org/ISP data for VPN detection, 45 req/min limit)
+      // We cache for 5 minutes so effective rate is much lower
+      const response = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,message,countryCode,country,isp,org,as,proxy,hosting`);
       
       if (!response.ok) {
-        console.error(`[Geolocation] geolocation-db.com returned status ${response.status} for IP ${clientIP}`);
+        console.error(`[Geolocation] ip-api.com returned status ${response.status} for IP ${clientIP}`);
         return res.json({
           countryCode: 'GB',
           country: 'United Kingdom',
@@ -295,18 +296,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const data = await response.json();
       
-      if (data.country_code && data.country_code !== 'Not found') {
-        // geolocation-db.com doesn't provide org/ASN data for VPN detection
-        // We'll need to use a secondary check or accept this limitation
-        // For now, check if country code is suspicious
-        const isVPN = data.country_code === 'A1' || // Anonymous proxy
-                      data.country_code === 'A2';   // Satellite provider
+      if (data.status === 'success' && data.countryCode) {
+        // ip-api.com provides proxy/hosting detection and org data
+        const orgLower = (data.org || data.isp || '').toLowerCase();
+        const isVPN = data.proxy === true || 
+                      data.hosting === true ||
+                      detectVPNFromOrg(orgLower) || 
+                      detectVPNFromASN(data.as) ||
+                      data.countryCode === 'A1' || // Anonymous proxy
+                      data.countryCode === 'A2';   // Satellite provider
+        
+        console.log(`[Geolocation] IP ${clientIP}: country=${data.countryCode}, org="${data.org}", isp="${data.isp}", proxy=${data.proxy}, hosting=${data.hosting}, isVPN=${isVPN}`);
         
         const result = {
-          countryCode: data.country_code,
-          country: data.country_name,
+          countryCode: data.countryCode,
+          country: data.country,
           detected: true,
-          source: 'geolocation-db',
+          source: 'ip-api',
           isVPN,
         };
         
@@ -315,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return res.json(result);
       } else {
+        console.error(`[Geolocation] ip-api.com error: ${data.message}`);
         // Fallback to GB if geolocation fails
         return res.json({
           countryCode: 'GB',
