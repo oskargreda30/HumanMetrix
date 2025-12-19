@@ -660,19 +660,29 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
   return CURRENCIES[currencyCode] || CURRENCIES.USD;
 }
 
-// Large denomination currencies that should round to nearest 100k
-const LARGE_DENOMINATION_CURRENCIES = ['IDR', 'VND'];
-
-// Round price appropriately based on currency
-function roundPriceUp(price: number, currency: CurrencyConfig): number {
-  // For large denomination currencies (IDR, VND), round UP to nearest 100,000
-  if (LARGE_DENOMINATION_CURRENCIES.includes(currency.code)) {
+// Round price UP based on magnitude for cleaner display
+// - Under 1,000: round up to nearest whole number
+// - 1,000 - 9,999: round up to nearest 100
+// - 10,000 - 99,999: round up to nearest 1,000
+// - 100,000 - 999,999: round up to nearest 10,000
+// - 1,000,000+: round up to nearest 100,000
+function roundPriceUp(price: number, _currency: CurrencyConfig): number {
+  if (price < 1000) {
+    // Small prices: round up to nearest whole number
+    return Math.ceil(price);
+  } else if (price < 10000) {
+    // Thousands: round up to nearest 100
+    return Math.ceil(price / 100) * 100;
+  } else if (price < 100000) {
+    // Ten thousands: round up to nearest 1,000
+    return Math.ceil(price / 1000) * 1000;
+  } else if (price < 1000000) {
+    // Hundred thousands: round up to nearest 10,000
+    return Math.ceil(price / 10000) * 10000;
+  } else {
+    // Millions+: round up to nearest 100,000
     return Math.ceil(price / 100000) * 100000;
   }
-  
-  // For all currencies, round UP to nearest whole number
-  // This gives cleaner prices like A$31 instead of A$30.42
-  return Math.ceil(price);
 }
 
 // Format a price in a specific currency with PPP adjustment
