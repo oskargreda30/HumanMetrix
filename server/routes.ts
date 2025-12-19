@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -903,17 +903,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, create Stripe checkout session for results payment with PPP-adjusted price
+      // Charge in user's local currency
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      const stripeAmount = convertToStripeCurrencyAmount(finalPriceInPence, currencyCode, userCountry);
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
-              currency: 'gbp',
+              currency: stripeCurrency,
               product_data: {
                 name: 'Assessment Results Access',
                 description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
               },
-              unit_amount: finalPriceInPence,
+              unit_amount: stripeAmount,
             },
             quantity: 1,
           },
@@ -928,6 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isResultsPayment: 'true',
           countryCode: userCountry,
           pricingTier,
+          localCurrency: currencyCode,
         },
       });
       
@@ -1143,18 +1149,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get pricing tier and apply PPP adjustment
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
-      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      
+      // Get user's local currency for Stripe checkout
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      // Convert base fee to local currency with PPP adjustment
+      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
 
-      // Create line items for Stripe with PPP-adjusted prices
+      // Create line items for Stripe with PPP-adjusted prices in local currency
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
           price_data: {
-            currency: "gbp",
+            currency: stripeCurrency,
             product_data: {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: adjustedBaseFee,
+            unit_amount: baseFeeInLocalCurrency,
           },
           quantity: 1,
         },
@@ -1174,12 +1186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
-        // Apply PPP pricing adjustment
-        const adjustedPrice = getPPPAdjustedPriceInPence(ASSESSMENT_PRICES[normalizedId], userCountry);
+        // Apply PPP pricing adjustment and convert to local currency
+        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
         
         lineItems.push({
           price_data: {
-            currency: "gbp",
+            currency: stripeCurrency,
             product_data: {
               name: assessmentNames[normalizedId] || normalizedId,
             },
@@ -1189,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create checkout session
+      // Create checkout session with local currency
       const session = await stripe.checkout.sessions.create({
         customer_email: customerEmail,
         line_items: lineItems,
@@ -1205,6 +1217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isGuestCheckout: "true",
           countryCode: userCountry,
           pricingTier,
+          localCurrency: localCurrencyCode,
         },
       });
 
@@ -1357,18 +1370,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get pricing tier and apply PPP adjustment
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
-      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      
+      // Get user's local currency for Stripe checkout
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      // Convert base fee to local currency with PPP adjustment
+      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
 
-      // Create line items for Stripe with PPP-adjusted prices
+      // Create line items for Stripe with PPP-adjusted prices in local currency
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
           price_data: {
-            currency: "gbp",
+            currency: stripeCurrency,
             product_data: {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: adjustedBaseFee,
+            unit_amount: baseFeeInLocalCurrency,
           },
           quantity: 1,
         },
@@ -1388,12 +1407,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
-        // Apply PPP pricing adjustment
-        const adjustedPrice = getPPPAdjustedPriceInPence(ASSESSMENT_PRICES[normalizedId], userCountry);
+        // Apply PPP pricing adjustment and convert to local currency
+        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
         
         lineItems.push({
           price_data: {
-            currency: "gbp",
+            currency: stripeCurrency,
             product_data: {
               name: assessmentNames[normalizedId] || normalizedId,
             },
@@ -1403,7 +1422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create checkout session
+      // Create checkout session with local currency
       const session = await stripe.checkout.sessions.create({
         customer_email: user.email,
         line_items: lineItems,
@@ -1415,6 +1434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           assessmentIds: JSON.stringify(assessmentIds),
           countryCode: userCountry,
           pricingTier,
+          localCurrency: localCurrencyCode,
         },
       });
 

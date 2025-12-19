@@ -729,3 +729,49 @@ export const SUPPORTED_CURRENCIES = [
 ] as const;
 
 export type SupportedCurrencyCode = typeof SUPPORTED_CURRENCIES[number];
+
+// Zero-decimal currencies for Stripe (no cents/pence subdivision)
+// These currencies don't use decimal amounts in Stripe
+export const ZERO_DECIMAL_CURRENCIES = [
+  'JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA',
+  'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF', 'KHR'
+] as const;
+
+// Convert GBP pence to local currency amount for Stripe
+// Handles zero-decimal currencies correctly
+export function convertToStripeCurrencyAmount(
+  priceInGBPPence: number,
+  currencyCode: string,
+  countryCode?: string
+): number {
+  const currency = CURRENCIES[currencyCode.toUpperCase()];
+  if (!currency) {
+    // Fallback to GBP if currency not found
+    return priceInGBPPence;
+  }
+  
+  // Apply PPP adjustment if country code provided
+  const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
+  const adjustedPriceInPence = priceInGBPPence * pppMultiplier;
+  
+  // Convert from GBP pence to target currency
+  const priceInGBP = adjustedPriceInPence / 100;
+  const convertedPrice = priceInGBP * currency.exchangeRate;
+  
+  // Check if this is a zero-decimal currency
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
+  
+  if (isZeroDecimal) {
+    // For zero-decimal currencies, Stripe expects the whole unit amount
+    return Math.round(convertedPrice);
+  } else {
+    // For standard currencies, Stripe expects the smallest unit (cents/pence)
+    return Math.round(convertedPrice * 100);
+  }
+}
+
+// Get the Stripe currency code (lowercase) for a country
+export function getStripeCurrencyCode(countryCode: string): string {
+  const currencyCode = COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP';
+  return currencyCode.toLowerCase();
+}
