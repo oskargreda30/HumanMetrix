@@ -36,60 +36,47 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [isVPN, setIsVPN] = useState(false);
   const [liveExchangeRates, setLiveExchangeRates] = useState<Record<string, number> | null>(null);
 
-  // Fetch live exchange rates and detect location on mount
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        // Cache-busting timestamp to bypass ALL caching (CDN, service worker, browser)
-        const cacheBuster = `_t=${Date.now()}`;
-        
-        // Fetch both geolocation and exchange rates in parallel
-        // Use cache: 'no-store' AND query param to force completely fresh requests
-        const [geoResponse, ratesResponse] = await Promise.all([
-          fetch(`/api/geolocation?${cacheBuster}`, { cache: 'no-store' }),
-          fetch(`/api/exchange-rates?${cacheBuster}`, { cache: 'no-store' })
-        ]);
-        
-        // Process exchange rates
-        if (ratesResponse.ok) {
-          const ratesData = await ratesResponse.json();
-          if (ratesData.rates) {
-            setLiveExchangeRates(ratesData.rates);
-          }
+  // Fetch location and exchange rates - reusable for network change detection
+  const fetchLocationAndRates = async (isRetry = false) => {
+    try {
+      // Cache-busting timestamp to bypass ALL caching (CDN, service worker, browser)
+      const cacheBuster = `_t=${Date.now()}`;
+      
+      // Fetch both geolocation and exchange rates in parallel
+      // Use cache: 'no-store' AND query param to force completely fresh requests
+      const [geoResponse, ratesResponse] = await Promise.all([
+        fetch(`/api/geolocation?${cacheBuster}`, { cache: 'no-store' }),
+        fetch(`/api/exchange-rates?${cacheBuster}`, { cache: 'no-store' })
+      ]);
+      
+      // Process exchange rates
+      if (ratesResponse.ok) {
+        const ratesData = await ratesResponse.json();
+        if (ratesData.rates) {
+          setLiveExchangeRates(ratesData.rates);
         }
+      }
+      
+      // Process geolocation
+      if (geoResponse.ok) {
+        const data = await geoResponse.json();
         
-        // Process geolocation
-        if (geoResponse.ok) {
-          const data = await geoResponse.json();
+        // Set VPN status
+        setIsVPN(data.isVPN === true);
+        
+        if (data.countryCode && data.detected) {
+          // Use detected country for PPP pricing (not from localStorage)
+          setCountryCode(data.countryCode);
           
-          // Set VPN status
-          setIsVPN(data.isVPN === true);
+          // Get currency for the detected country
+          const detectedCurrency = getCurrencyForCountry(data.countryCode);
+          setCurrencyState(detectedCurrency);
           
-          if (data.countryCode && data.detected) {
-            // Use detected country for PPP pricing (not from localStorage)
-            setCountryCode(data.countryCode);
-            
-            // Get currency for the detected country
-            const detectedCurrency = getCurrencyForCountry(data.countryCode);
-            setCurrencyState(detectedCurrency);
-            
-            // Save to localStorage (but geolocation always takes priority on next visit)
-            localStorage.setItem(STORAGE_KEY, detectedCurrency.code);
-            localStorage.setItem(COUNTRY_STORAGE_KEY, data.countryCode);
-          } else {
-            // Geolocation failed - use saved preferences as fallback
-            const savedCurrency = localStorage.getItem(STORAGE_KEY);
-            const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
-            
-            if (savedCurrency && CURRENCIES[savedCurrency]) {
-              setCurrencyState(CURRENCIES[savedCurrency]);
-            }
-            if (savedCountry) {
-              setCountryCode(savedCountry);
-            }
-          }
-        } else {
-          // API error - use saved preferences
+          // Save to localStorage (but geolocation always takes priority on next visit)
+          localStorage.setItem(STORAGE_KEY, detectedCurrency.code);
+          localStorage.setItem(COUNTRY_STORAGE_KEY, data.countryCode);
+        } else if (!isRetry) {
+          // Geolocation failed - use saved preferences as fallback (only on initial load)
           const savedCurrency = localStorage.getItem(STORAGE_KEY);
           const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
           
@@ -100,19 +87,71 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
             setCountryCode(savedCountry);
           }
         }
-      } catch (error) {
-        console.error('Failed to initialize currency context:', error);
-        // On error, use saved preferences but assume no VPN
+      } else if (!isRetry) {
+        // API error - use saved preferences (only on initial load)
+        const savedCurrency = localStorage.getItem(STORAGE_KEY);
+        const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
+        
+        if (savedCurrency && CURRENCIES[savedCurrency]) {
+          setCurrencyState(CURRENCIES[savedCurrency]);
+        }
+        if (savedCountry) {
+          setCountryCode(savedCountry);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch location/rates:', error);
+      // On error during initial load, use saved preferences
+      if (!isRetry) {
         const savedCurrency = localStorage.getItem(STORAGE_KEY);
         if (savedCurrency && CURRENCIES[savedCurrency]) {
           setCurrencyState(CURRENCIES[savedCurrency]);
         }
-      } finally {
-        setIsLoading(false);
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchLocationAndRates(false);
+  }, []);
+
+  // Auto-reload on network change (detects VPN toggle)
+  useEffect(() => {
+    // Handler for network changes
+    const handleNetworkChange = () => {
+      // Small delay to let the new network connection stabilise
+      setTimeout(() => {
+        fetchLocationAndRates(true);
+      }, 1000);
     };
 
-    initialize();
+    // Listen for online event (fires when connection is restored)
+    window.addEventListener('online', handleNetworkChange);
+    
+    // Listen for Network Information API changes (more granular, catches VPN toggles)
+    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (connection) {
+      connection.addEventListener('change', handleNetworkChange);
+    }
+
+    // Also check periodically for IP changes (fallback for when network events don't fire)
+    const intervalId = setInterval(() => {
+      // Only re-check if the page is visible
+      if (!document.hidden) {
+        fetchLocationAndRates(true);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      window.removeEventListener('online', handleNetworkChange);
+      if (connection) {
+        connection.removeEventListener('change', handleNetworkChange);
+      }
+      clearInterval(intervalId);
+    };
   }, []);
 
   // setCurrency only changes the DISPLAY currency, not the country code
