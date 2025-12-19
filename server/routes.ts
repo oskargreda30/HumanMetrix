@@ -279,50 +279,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ ...cached.data, source: 'cache' });
       }
 
-      // Use ipapi.co (free tier with HTTPS, 1000 req/day)
-      const response = await fetch(`https://ipapi.co/${clientIP}/json/`);
+      // Use geolocation-db.com (no rate limits, reliable)
+      const response = await fetch(`https://geolocation-db.com/json/${clientIP}`);
       
       if (!response.ok) {
-        console.error(`[Geolocation] ipapi.co returned status ${response.status} for IP ${clientIP}`);
-        // For 429 rate limit or 5xx server errors, don't assume VPN
-        // Just fallback to GB with no VPN flag
+        console.error(`[Geolocation] geolocation-db.com returned status ${response.status} for IP ${clientIP}`);
         return res.json({
           countryCode: 'GB',
           country: 'United Kingdom',
           detected: false,
           source: 'service_error',
-          isVPN: false, // Service error, not necessarily a VPN
+          isVPN: false,
         });
       }
       
       const data = await response.json();
       
-      // Check for rate limit or error in response body
-      if (data.error) {
-        console.error(`[Geolocation] ipapi.co error: ${data.reason || data.error}`);
-        return res.json({
-          countryCode: 'GB',
-          country: 'United Kingdom',
-          detected: false,
-          source: 'api_error',
-          isVPN: false, // API error, not necessarily a VPN
-        });
-      }
-      
-      if (data.country_code) {
-        // Detect VPN/Proxy/Datacenter by checking organization name
-        // Common VPN/hosting providers have identifiable org names
-        const orgLower = (data.org || '').toLowerCase();
-        const isVPN = detectVPNFromOrg(orgLower) || 
-                      detectVPNFromASN(data.asn) ||
-                      data.country_code === 'A1' || // Anonymous proxy
+      if (data.country_code && data.country_code !== 'Not found') {
+        // geolocation-db.com doesn't provide org/ASN data for VPN detection
+        // We'll need to use a secondary check or accept this limitation
+        // For now, check if country code is suspicious
+        const isVPN = data.country_code === 'A1' || // Anonymous proxy
                       data.country_code === 'A2';   // Satellite provider
         
         const result = {
           countryCode: data.country_code,
           country: data.country_name,
           detected: true,
-          source: 'ipapi',
+          source: 'geolocation-db',
           isVPN,
         };
         
