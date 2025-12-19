@@ -25,7 +25,7 @@ export default function BasketSheet() {
     getBasketCount,
   } = useBasket();
   
-  const { formatLocalPrice, currency } = useCurrency();
+  const { formatLocalPrice } = useCurrency();
 
   const [open, setOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -142,11 +142,6 @@ export default function BasketSheet() {
                       <span className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400" data-testid="text-basket-total">
                         {formatLocalPrice(totalPence)}
                       </span>
-                      {currency.code !== 'GBP' && (
-                        <div className="text-xs text-muted-foreground">
-                          (£{(totalPence / 100).toFixed(2)} GBP)
-                        </div>
-                      )}
                     </div>
                   </div>
 

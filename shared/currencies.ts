@@ -1,6 +1,7 @@
-// Multi-currency configuration for global pricing
+// Multi-currency configuration for global pricing with PPP (Purchasing Power Parity)
 // Base currency is GBP (British Pound Sterling)
 // Exchange rates are approximate and should be updated periodically
+// PPP multipliers adjust prices for local purchasing power
 
 export interface CurrencyConfig {
   code: string;
@@ -11,6 +12,77 @@ export interface CurrencyConfig {
   decimalSeparator: string;
   thousandsSeparator: string;
   decimalPlaces: number;
+}
+
+// PPP Pricing Tiers - adjust prices based on local purchasing power
+export type PricingTier = 'tier1' | 'tier2' | 'tier3';
+
+export const PPP_MULTIPLIERS: Record<PricingTier, number> = {
+  tier1: 1.0,   // Western markets - full price (UK, US, EU, Australia, etc.)
+  tier2: 0.7,  // Middle markets - 30% discount (Eastern Europe, Latin America, Middle East)
+  tier3: 0.5,  // Emerging markets - 50% discount (Southeast Asia, South Asia, Africa)
+};
+
+// Map countries to their pricing tier
+export const COUNTRY_PRICING_TIER: Record<string, PricingTier> = {
+  // Tier 1: Western/High-income markets (1.0x - full price)
+  GB: 'tier1', UK: 'tier1',
+  US: 'tier1',
+  CA: 'tier1',
+  AU: 'tier1',
+  NZ: 'tier1',
+  DE: 'tier1', FR: 'tier1', IT: 'tier1', ES: 'tier1', NL: 'tier1', BE: 'tier1',
+  AT: 'tier1', IE: 'tier1', PT: 'tier1', FI: 'tier1', LU: 'tier1',
+  CH: 'tier1', LI: 'tier1',
+  SE: 'tier1', NO: 'tier1', DK: 'tier1',
+  JP: 'tier1',
+  SG: 'tier1',
+  HK: 'tier1',
+  IL: 'tier1',
+  AE: 'tier1', SA: 'tier1', QA: 'tier1', KW: 'tier1', BH: 'tier1', OM: 'tier1',
+  KR: 'tier1',
+  TW: 'tier1',
+  
+  // Tier 2: Middle markets (0.7x - 30% discount)
+  PL: 'tier2', CZ: 'tier2', HU: 'tier2', RO: 'tier2', BG: 'tier2', HR: 'tier2',
+  GR: 'tier2', SK: 'tier2', SI: 'tier2', LT: 'tier2', LV: 'tier2', EE: 'tier2',
+  MT: 'tier2', CY: 'tier2',
+  RU: 'tier2', UA: 'tier2',
+  TR: 'tier2',
+  BR: 'tier2', MX: 'tier2', AR: 'tier2', CL: 'tier2', CO: 'tier2', PE: 'tier2',
+  ZA: 'tier2',
+  CN: 'tier2',
+  MY: 'tier2',
+  
+  // Tier 3: Emerging markets (0.5x - 50% discount)
+  TH: 'tier3',
+  PH: 'tier3',
+  ID: 'tier3',
+  VN: 'tier3',
+  IN: 'tier3',
+  PK: 'tier3',
+  BD: 'tier3',
+  LK: 'tier3',
+  NP: 'tier3',
+  NG: 'tier3',
+  EG: 'tier3',
+  KE: 'tier3',
+  GH: 'tier3',
+  TZ: 'tier3',
+  UG: 'tier3',
+  MA: 'tier3',
+  EC: 'tier3',
+};
+
+// Get pricing tier for a country (defaults to tier1 for unlisted countries)
+export function getPricingTier(countryCode: string): PricingTier {
+  return COUNTRY_PRICING_TIER[countryCode.toUpperCase()] || 'tier1';
+}
+
+// Get PPP multiplier for a country
+export function getPPPMultiplier(countryCode: string): number {
+  const tier = getPricingTier(countryCode);
+  return PPP_MULTIPLIERS[tier];
 }
 
 // Comprehensive currency configurations
@@ -588,14 +660,18 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
   return CURRENCIES[currencyCode] || CURRENCIES.USD;
 }
 
-// Format a price in a specific currency
+// Format a price in a specific currency with PPP adjustment
 export function formatPrice(
   priceInPence: number,
   currency: CurrencyConfig,
-  options?: { showCode?: boolean }
+  options?: { showCode?: boolean; countryCode?: string }
 ): string {
+  // Apply PPP multiplier if country code is provided
+  const pppMultiplier = options?.countryCode ? getPPPMultiplier(options.countryCode) : 1.0;
+  const adjustedPriceInPence = priceInPence * pppMultiplier;
+  
   // Convert from GBP pence to target currency
-  const priceInGBP = priceInPence / 100;
+  const priceInGBP = adjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * currency.exchangeRate;
   
   // Round based on decimal places
@@ -621,6 +697,12 @@ export function formatPrice(
   }
   
   return result;
+}
+
+// Get price in pence after PPP adjustment (for Stripe checkout)
+export function getPPPAdjustedPriceInPence(priceInPence: number, countryCode: string): number {
+  const pppMultiplier = getPPPMultiplier(countryCode);
+  return Math.round(priceInPence * pppMultiplier);
 }
 
 // Get display price with both local and GBP

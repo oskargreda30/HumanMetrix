@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
+import { getPPPAdjustedPriceInPence, getPricingTier } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -719,7 +720,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { discountCode, purchaseId } = req.body;
+      const { discountCode, purchaseId, countryCode } = req.body;
+      
+      // Get pricing tier and PPP multiplier for the user's country
+      const userCountry = countryCode || 'GB';
+      const pricingTier = getPricingTier(userCountry);
       
       let unpaidPurchase: any;
       
@@ -825,11 +830,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate price based ONLY on required assessments for this purchase cycle
       // Business logic: Pay per purchase cycle - don't charge for previously paid assessments
       // Price = base fee + assessments in current unpaid purchase/invitation
+      // Apply PPP adjustment for user's country
+      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
       const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
         const normalizedType = normalizeAssessmentId(type);
-        return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
+        const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        return sum + getPPPAdjustedPriceInPence(originalPrice, userCountry);
       }, 0);
-      const priceInPence = BASE_FEE + assessmentsTotal;
+      const priceInPence = adjustedBaseFee + assessmentsTotal;
       const totalAssessmentCount = requiredAssessmentTypes.length;
       
       // Apply discount codes
@@ -894,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Otherwise, create Stripe checkout session for results payment
+      // Otherwise, create Stripe checkout session for results payment with PPP-adjusted price
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -918,6 +926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: userId.toString(),
           purchaseId: unpaidPurchase.id.toString(),
           isResultsPayment: 'true',
+          countryCode: userCountry,
+          pricingTier,
         },
       });
       
@@ -1112,7 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe checkout session for guest (before signup)
   app.post("/api/create-checkout-session-guest", async (req, res) => {
     try {
-      const { assessmentIds, customerEmail, customerName, firstName, lastName } = req.body;
+      const { assessmentIds, customerEmail, customerName, firstName, lastName, countryCode } = req.body;
       
       if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
         return res.status(400).json({ message: "Invalid assessment selection" });
@@ -1130,7 +1140,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create line items for Stripe
+      // Get pricing tier and apply PPP adjustment
+      const userCountry = countryCode || 'GB';
+      const pricingTier = getPricingTier(userCountry);
+      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+
+      // Create line items for Stripe with PPP-adjusted prices
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
           price_data: {
@@ -1139,7 +1154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: BASE_FEE,
+            unit_amount: adjustedBaseFee,
           },
           quantity: 1,
         },
@@ -1159,13 +1174,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
+        // Apply PPP pricing adjustment
+        const adjustedPrice = getPPPAdjustedPriceInPence(ASSESSMENT_PRICES[normalizedId], userCountry);
+        
         lineItems.push({
           price_data: {
             currency: "gbp",
             product_data: {
               name: assessmentNames[normalizedId] || normalizedId,
             },
-            unit_amount: ASSESSMENT_PRICES[normalizedId], // Already in pence
+            unit_amount: adjustedPrice,
           },
           quantity: 1,
         });
@@ -1185,6 +1203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName,
           assessmentIds: JSON.stringify(assessmentIds),
           isGuestCheckout: "true",
+          countryCode: userCountry,
+          pricingTier,
         },
       });
 
@@ -1321,7 +1341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe checkout session
   app.post("/api/create-checkout-session", isAuthenticated, async (req: any, res) => {
     try {
-      const { assessmentIds } = req.body;
+      const { assessmentIds, countryCode } = req.body;
       
       if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
         return res.status(400).json({ message: "Invalid assessment selection" });
@@ -1334,7 +1354,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Create line items for Stripe
+      // Get pricing tier and apply PPP adjustment
+      const userCountry = countryCode || 'GB';
+      const pricingTier = getPricingTier(userCountry);
+      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+
+      // Create line items for Stripe with PPP-adjusted prices
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
         {
           price_data: {
@@ -1343,7 +1368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: "Base Computation Fee",
               description: "One-time platform access fee",
             },
-            unit_amount: BASE_FEE,
+            unit_amount: adjustedBaseFee,
           },
           quantity: 1,
         },
@@ -1363,13 +1388,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
         
+        // Apply PPP pricing adjustment
+        const adjustedPrice = getPPPAdjustedPriceInPence(ASSESSMENT_PRICES[normalizedId], userCountry);
+        
         lineItems.push({
           price_data: {
             currency: "gbp",
             product_data: {
               name: assessmentNames[normalizedId] || normalizedId,
             },
-            unit_amount: ASSESSMENT_PRICES[normalizedId], // Already in pence
+            unit_amount: adjustedPrice,
           },
           quantity: 1,
         });
@@ -1385,6 +1413,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           userId: userId,
           assessmentIds: JSON.stringify(assessmentIds),
+          countryCode: userCountry,
+          pricingTier,
         },
       });
 

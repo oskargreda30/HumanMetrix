@@ -6,10 +6,12 @@ import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { formatLocalPrice, countryCode, getAdjustedPriceInPence } = useCurrency();
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -43,13 +45,15 @@ export function ResultsPaymentGate() {
   });
   
   // Calculate price based ONLY on assessments in current unpaid purchase batch
+  // Apply PPP adjustment for user's country
   const assessmentTypesInBatch = purchaseItems?.map((item: any) => item.assessmentType) || [];
   const assessmentsTotalPence = assessmentTypesInBatch.reduce((sum: number, type: string) => {
     const normalizedType = normalizeAssessmentId(type);
-    return sum + (ASSESSMENT_PRICES[normalizedType] || 0);
+    const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+    return sum + getAdjustedPriceInPence(originalPrice);
   }, 0);
-  const totalPence = BASE_FEE + assessmentsTotalPence;
-  const price = (totalPence / 100).toFixed(2); // Convert pence to pounds
+  const totalPence = getAdjustedPriceInPence(BASE_FEE) + assessmentsTotalPence;
+  const formattedPrice = formatLocalPrice(totalPence / 1); // formatLocalPrice expects pence
   
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
@@ -58,6 +62,7 @@ export function ResultsPaymentGate() {
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/unlock-results", {
         purchaseId: currentPurchase?.id, // Pass the specific purchase ID
+        countryCode, // Pass for PPP pricing
       });
       
       if (!response.ok) {
@@ -167,7 +172,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results (£{price})
+                Unlock Results ({formattedPrice})
               </>
             )}
           </Button>

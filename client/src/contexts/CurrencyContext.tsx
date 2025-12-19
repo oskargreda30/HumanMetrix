@@ -4,17 +4,23 @@ import {
   getCurrencyForCountry, 
   formatPrice, 
   type CurrencyConfig,
-  SUPPORTED_CURRENCIES 
+  SUPPORTED_CURRENCIES,
+  getPPPMultiplier,
+  getPricingTier,
+  type PricingTier,
+  getPPPAdjustedPriceInPence
 } from "@shared/currencies";
 
 interface CurrencyContextType {
   currency: CurrencyConfig;
-  setCurrency: (currencyCode: string) => void;
+  setCurrency: (currencyCode: string, newCountryCode?: string) => void;
   formatLocalPrice: (priceInPence: number) => string;
-  formatPriceWithGBP: (priceInPence: number) => { local: string; gbp: string; isGBP: boolean };
   isLoading: boolean;
   countryCode: string | null;
   availableCurrencies: typeof SUPPORTED_CURRENCIES;
+  pricingTier: PricingTier;
+  pppMultiplier: number;
+  getAdjustedPriceInPence: (priceInPence: number) => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -71,28 +77,32 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     detectCurrency();
   }, []);
 
-  const setCurrency = (currencyCode: string) => {
+  const setCurrency = (currencyCode: string, newCountryCode?: string) => {
     const newCurrency = CURRENCIES[currencyCode];
     if (newCurrency) {
       setCurrencyState(newCurrency);
       localStorage.setItem(STORAGE_KEY, currencyCode);
+      // Update country code if provided (for PPP pricing tier)
+      if (newCountryCode) {
+        setCountryCode(newCountryCode);
+        localStorage.setItem(COUNTRY_STORAGE_KEY, newCountryCode);
+      }
     }
   };
 
+  // Format price with PPP adjustment applied
   const formatLocalPrice = (priceInPence: number): string => {
-    return formatPrice(priceInPence, currency);
+    return formatPrice(priceInPence, currency, { countryCode: countryCode || 'GB' });
   };
 
-  const formatPriceWithGBP = (priceInPence: number) => {
-    const localPrice = formatPrice(priceInPence, currency);
-    const gbpPrice = `£${(priceInPence / 100).toFixed(2)}`;
-    
-    return {
-      local: localPrice,
-      gbp: gbpPrice,
-      isGBP: currency.code === 'GBP',
-    };
+  // Get PPP-adjusted price in pence (for Stripe checkout)
+  const getAdjustedPriceInPence = (priceInPence: number): number => {
+    return getPPPAdjustedPriceInPence(priceInPence, countryCode || 'GB');
   };
+
+  // Get pricing tier and multiplier for the current country
+  const pricingTier = getPricingTier(countryCode || 'GB');
+  const pppMultiplier = getPPPMultiplier(countryCode || 'GB');
 
   return (
     <CurrencyContext.Provider
@@ -100,10 +110,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         currency,
         setCurrency,
         formatLocalPrice,
-        formatPriceWithGBP,
         isLoading,
         countryCode,
         availableCurrencies: SUPPORTED_CURRENCIES,
+        pricingTier,
+        pppMultiplier,
+        getAdjustedPriceInPence,
       }}
     >
       {children}

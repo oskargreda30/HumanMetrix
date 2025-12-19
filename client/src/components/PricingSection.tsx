@@ -5,7 +5,7 @@ import { ASSESSMENT_PRICES, BASE_FEE } from "@shared/schema";
 import CurrencySelector from "@/components/CurrencySelector";
 
 export default function PricingSection() {
-  const { formatLocalPrice, currency } = useCurrency();
+  const { formatLocalPrice } = useCurrency();
 
   // Calculate total for all 4 assessments
   const totalPence = BASE_FEE + 
@@ -51,11 +51,6 @@ export default function PricingSection() {
                   <div className="text-[11px] md:text-sm text-blue-100/60">
                     One-time fee covers platform access and result processing
                   </div>
-                  {currency.code !== 'GBP' && (
-                    <div className="text-[10px] md:text-xs text-blue-100/40">
-                      (£{(BASE_FEE / 100).toFixed(2)} GBP)
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3 pt-2 md:pt-4 border-t border-cyan-400/20">
@@ -95,11 +90,6 @@ export default function PricingSection() {
                       {formatLocalPrice(totalPence)}
                     </span>
                   </div>
-                  {currency.code !== 'GBP' && (
-                    <div className="text-[10px] md:text-xs text-blue-100/40 mt-1">
-                      (£{(totalPence / 100).toFixed(2)} GBP)
-                    </div>
-                  )}
                 </div>
               </div>
 
