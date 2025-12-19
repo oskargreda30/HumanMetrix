@@ -13,7 +13,7 @@ import {
 
 interface CurrencyContextType {
   currency: CurrencyConfig;
-  setCurrency: (currencyCode: string, newCountryCode?: string) => void;
+  setCurrency: (currencyCode: string) => void; // Only changes display currency, not PPP tier
   formatLocalPrice: (priceInPence: number) => string;
   isLoading: boolean;
   countryCode: string | null;
@@ -35,70 +35,77 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [isVPN, setIsVPN] = useState(false);
 
-  // Detect user's location on mount
+  // Detect user's location on mount - ALWAYS use geolocation for PPP pricing
   useEffect(() => {
-    const detectCurrency = async () => {
+    const detectLocation = async () => {
       try {
-        // Check if user has a saved preference
-        const savedCurrency = localStorage.getItem(STORAGE_KEY);
-        const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
-        
-        if (savedCurrency && CURRENCIES[savedCurrency]) {
-          setCurrencyState(CURRENCIES[savedCurrency]);
-          if (savedCountry) {
-            setCountryCode(savedCountry);
-          }
-          // Still fetch geolocation to check for VPN even if currency is saved
-          const response = await fetch('/api/geolocation');
-          if (response.ok) {
-            const data = await response.json();
-            setIsVPN(data.isVPN === true);
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        // Fetch geolocation from our API
+        // ALWAYS fetch geolocation first - this determines PPP pricing
         const response = await fetch('/api/geolocation');
         if (response.ok) {
           const data = await response.json();
-          // Check if VPN/proxy detected
+          
+          // Set VPN status
           setIsVPN(data.isVPN === true);
           
-          if (data.countryCode) {
+          if (data.countryCode && data.detected) {
+            // Use detected country for PPP pricing (not from localStorage)
             setCountryCode(data.countryCode);
-            localStorage.setItem(COUNTRY_STORAGE_KEY, data.countryCode);
             
             // Get currency for the detected country
             const detectedCurrency = getCurrencyForCountry(data.countryCode);
             setCurrencyState(detectedCurrency);
             
-            // Save to localStorage for future visits
+            // Save to localStorage (but geolocation always takes priority on next visit)
             localStorage.setItem(STORAGE_KEY, detectedCurrency.code);
+            localStorage.setItem(COUNTRY_STORAGE_KEY, data.countryCode);
+          } else {
+            // Geolocation failed - use saved preferences as fallback
+            const savedCurrency = localStorage.getItem(STORAGE_KEY);
+            const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
+            
+            if (savedCurrency && CURRENCIES[savedCurrency]) {
+              setCurrencyState(CURRENCIES[savedCurrency]);
+            }
+            if (savedCountry) {
+              setCountryCode(savedCountry);
+            }
+          }
+        } else {
+          // API error - use saved preferences
+          const savedCurrency = localStorage.getItem(STORAGE_KEY);
+          const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
+          
+          if (savedCurrency && CURRENCIES[savedCurrency]) {
+            setCurrencyState(CURRENCIES[savedCurrency]);
+          }
+          if (savedCountry) {
+            setCountryCode(savedCountry);
           }
         }
       } catch (error) {
-        console.error('Failed to detect currency:', error);
-        // Keep default GBP and assume VPN on error
-        setIsVPN(true);
+        console.error('Failed to detect location:', error);
+        // On error, use saved preferences but assume no VPN
+        const savedCurrency = localStorage.getItem(STORAGE_KEY);
+        if (savedCurrency && CURRENCIES[savedCurrency]) {
+          setCurrencyState(CURRENCIES[savedCurrency]);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    detectCurrency();
+    detectLocation();
   }, []);
 
-  const setCurrency = (currencyCode: string, newCountryCode?: string) => {
+  // setCurrency only changes the DISPLAY currency, not the country code
+  // Country code (for PPP) is determined solely by geolocation
+  const setCurrency = (currencyCode: string) => {
     const newCurrency = CURRENCIES[currencyCode];
     if (newCurrency) {
       setCurrencyState(newCurrency);
       localStorage.setItem(STORAGE_KEY, currencyCode);
-      // Update country code if provided (for PPP pricing tier)
-      if (newCountryCode) {
-        setCountryCode(newCountryCode);
-        localStorage.setItem(COUNTRY_STORAGE_KEY, newCountryCode);
-      }
+      // Note: We intentionally do NOT update countryCode here
+      // PPP pricing is based on geolocation, not user-selected currency
     }
   };
 
