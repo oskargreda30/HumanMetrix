@@ -660,6 +660,21 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
   return CURRENCIES[currencyCode] || CURRENCIES.USD;
 }
 
+// Large denomination currencies that should round to nearest 100k
+const LARGE_DENOMINATION_CURRENCIES = ['IDR', 'VND'];
+
+// Round price appropriately based on currency
+function roundPriceUp(price: number, currency: CurrencyConfig): number {
+  // For large denomination currencies (IDR, VND), round UP to nearest 100,000
+  if (LARGE_DENOMINATION_CURRENCIES.includes(currency.code)) {
+    return Math.ceil(price / 100000) * 100000;
+  }
+  
+  // For all currencies, round UP to nearest whole number
+  // This gives cleaner prices like A$31 instead of A$30.42
+  return Math.ceil(price);
+}
+
 // Format a price in a specific currency with PPP adjustment
 export function formatPrice(
   priceInPence: number,
@@ -674,22 +689,16 @@ export function formatPrice(
   const priceInGBP = adjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * currency.exchangeRate;
   
-  // Round based on decimal places
-  const roundedPrice = currency.decimalPlaces === 0
-    ? Math.round(convertedPrice)
-    : Number(convertedPrice.toFixed(currency.decimalPlaces));
+  // Round UP appropriately for the currency
+  const roundedPrice = roundPriceUp(convertedPrice, currency);
   
-  // Format the number
-  const parts = roundedPrice.toFixed(currency.decimalPlaces).split('.');
-  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
-  const formattedNumber = currency.decimalPlaces > 0
-    ? `${integerPart}${currency.decimalSeparator}${parts[1]}`
-    : integerPart;
+  // Format the number (always as whole number since we round up)
+  const integerPart = roundedPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
   
   // Add symbol
   let result = currency.symbolPosition === 'before'
-    ? `${currency.symbol}${formattedNumber}`
-    : `${formattedNumber}${currency.symbol}`;
+    ? `${currency.symbol}${integerPart}`
+    : `${integerPart}${currency.symbol}`;
   
   // Optionally add currency code
   if (options?.showCode) {
@@ -714,22 +723,16 @@ export function formatPriceWithRate(
   const priceInGBP = adjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * exchangeRate;
   
-  // Round based on decimal places
-  const roundedPrice = currency.decimalPlaces === 0
-    ? Math.round(convertedPrice)
-    : Number(convertedPrice.toFixed(currency.decimalPlaces));
+  // Round UP appropriately for the currency
+  const roundedPrice = roundPriceUp(convertedPrice, currency);
   
-  // Format the number
-  const parts = roundedPrice.toFixed(currency.decimalPlaces).split('.');
-  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
-  const formattedNumber = currency.decimalPlaces > 0
-    ? `${integerPart}${currency.decimalSeparator}${parts[1]}`
-    : integerPart;
+  // Format the number (always as whole number since we round up)
+  const integerPart = roundedPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
   
   // Add symbol
   let result = currency.symbolPosition === 'before'
-    ? `${currency.symbol}${formattedNumber}`
-    : `${formattedNumber}${currency.symbol}`;
+    ? `${currency.symbol}${integerPart}`
+    : `${integerPart}${currency.symbol}`;
   
   // Optionally add currency code
   if (options?.showCode) {
