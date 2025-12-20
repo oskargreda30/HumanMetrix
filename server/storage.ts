@@ -53,7 +53,7 @@ import {
   type UserRole,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -78,6 +78,7 @@ export interface IStorage {
   // Purchase item operations
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
   getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]>;
+  getPurchaseItemsBulk(purchaseIds: string[]): Promise<Map<string, PurchaseItem[]>>;
   updatePurchaseItemStatus(id: string, status: string): Promise<void>;
   
   // Assessment result operations
@@ -369,6 +370,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(purchaseItems.purchaseId, purchaseId));
   }
 
+  async getPurchaseItemsBulk(purchaseIds: string[]): Promise<Map<string, PurchaseItem[]>> {
+    if (purchaseIds.length === 0) return new Map();
+    
+    const allItems = await db
+      .select()
+      .from(purchaseItems)
+      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+    
+    // Group by purchaseId in memory
+    const itemsMap = new Map<string, PurchaseItem[]>();
+    allItems.forEach(item => {
+      if (!itemsMap.has(item.purchaseId)) itemsMap.set(item.purchaseId, []);
+      itemsMap.get(item.purchaseId)!.push(item);
+    });
+    
+    return itemsMap;
+  }
+
   async updatePurchaseItemStatus(id: string, status: string): Promise<void> {
     await db
       .update(purchaseItems)
@@ -550,30 +569,57 @@ export class DatabaseStorage implements IStorage {
     notes: CandidateNote[];
     invitations: Invitation[];
   }>> {
-    // Get all users who have taken at least one assessment or been invited
-    // NOTE: Temporarily including admins for testing purposes
-    const allUsers = await db
-      .select()
-      .from(users); // Include all users (including admins for testing)
-
-    const candidatesData = await Promise.all(
-      allUsers.map(async (user) => {
-        const [results, tags, notes, userInvitations] = await Promise.all([
-          this.getResultsByUser(user.id),
-          this.getTagsByCandidate(user.id),
-          this.getNotesByCandidate(user.id),
-          db.select().from(invitations).where(eq(invitations.candidateEmail, user.email)),
-        ]);
-
-        return {
-          user,
-          results,
-          tags,
-          notes,
-          invitations: userInvitations,
-        };
-      })
-    );
+    // OPTIMIZED: Bulk fetch all data in 5 queries instead of N*4 queries
+    const allUsers = await db.select().from(users);
+    
+    if (allUsers.length === 0) return [];
+    
+    const userIds = allUsers.map(u => u.id);
+    const userEmails = allUsers.map(u => u.email);
+    
+    // Bulk fetch all related data in parallel
+    const [allResults, allTags, allNotes, allInvitations] = await Promise.all([
+      db.select().from(assessmentResults).where(inArray(assessmentResults.userId, userIds)),
+      db.select().from(candidateTags).where(inArray(candidateTags.userId, userIds)),
+      db.select().from(candidateNotes).where(inArray(candidateNotes.userId, userIds)),
+      db.select().from(invitations).where(inArray(invitations.candidateEmail, userEmails)),
+    ]);
+    
+    // Group data by user ID/email in memory (O(n) instead of O(n*m))
+    const resultsMap = new Map<string, AssessmentResult[]>();
+    const tagsMap = new Map<string, CandidateTag[]>();
+    const notesMap = new Map<string, CandidateNote[]>();
+    const invitationsMap = new Map<string, Invitation[]>();
+    
+    allResults.forEach(r => {
+      if (!resultsMap.has(r.userId)) resultsMap.set(r.userId, []);
+      resultsMap.get(r.userId)!.push(r);
+    });
+    
+    allTags.forEach(t => {
+      if (!tagsMap.has(t.userId)) tagsMap.set(t.userId, []);
+      tagsMap.get(t.userId)!.push(t);
+    });
+    
+    allNotes.forEach(n => {
+      if (!notesMap.has(n.userId)) notesMap.set(n.userId, []);
+      notesMap.get(n.userId)!.push(n);
+    });
+    
+    allInvitations.forEach(i => {
+      const emailLower = i.candidateEmail.toLowerCase();
+      if (!invitationsMap.has(emailLower)) invitationsMap.set(emailLower, []);
+      invitationsMap.get(emailLower)!.push(i);
+    });
+    
+    // Assemble results
+    const candidatesData = allUsers.map(user => ({
+      user,
+      results: resultsMap.get(user.id) || [],
+      tags: tagsMap.get(user.id) || [],
+      notes: notesMap.get(user.id) || [],
+      invitations: invitationsMap.get(user.email.toLowerCase()) || [],
+    }));
 
     // Filter to only include candidates with results or invitations
     return candidatesData.filter(
@@ -1026,6 +1072,7 @@ export class DatabaseStorage implements IStorage {
     notes: CandidateNote[];
     invitations: Invitation[];
   }>> {
+    // OPTIMIZED: Bulk fetch all data in 5 queries instead of N*4 queries
     let allUsers: User[];
     
     if (organizationId === null) {
@@ -1039,24 +1086,54 @@ export class DatabaseStorage implements IStorage {
         .where(eq(users.organizationId, organizationId));
     }
 
-    const candidatesData = await Promise.all(
-      allUsers.map(async (user) => {
-        const [results, tags, notes, userInvitations] = await Promise.all([
-          this.getResultsByUser(user.id),
-          this.getTagsByCandidate(user.id),
-          this.getNotesByCandidate(user.id),
-          db.select().from(invitations).where(eq(invitations.candidateEmail, user.email)),
-        ]);
-
-        return {
-          user,
-          results,
-          tags,
-          notes,
-          invitations: userInvitations,
-        };
-      })
-    );
+    if (allUsers.length === 0) return [];
+    
+    const userIds = allUsers.map(u => u.id);
+    const userEmails = allUsers.map(u => u.email);
+    
+    // Bulk fetch all related data in parallel
+    const [allResults, allTags, allNotes, allInvitations] = await Promise.all([
+      db.select().from(assessmentResults).where(inArray(assessmentResults.userId, userIds)),
+      db.select().from(candidateTags).where(inArray(candidateTags.userId, userIds)),
+      db.select().from(candidateNotes).where(inArray(candidateNotes.userId, userIds)),
+      db.select().from(invitations).where(inArray(invitations.candidateEmail, userEmails)),
+    ]);
+    
+    // Group data by user ID/email in memory (O(n) instead of O(n*m))
+    const resultsMap = new Map<string, AssessmentResult[]>();
+    const tagsMap = new Map<string, CandidateTag[]>();
+    const notesMap = new Map<string, CandidateNote[]>();
+    const invitationsMap = new Map<string, Invitation[]>();
+    
+    allResults.forEach(r => {
+      if (!resultsMap.has(r.userId)) resultsMap.set(r.userId, []);
+      resultsMap.get(r.userId)!.push(r);
+    });
+    
+    allTags.forEach(t => {
+      if (!tagsMap.has(t.userId)) tagsMap.set(t.userId, []);
+      tagsMap.get(t.userId)!.push(t);
+    });
+    
+    allNotes.forEach(n => {
+      if (!notesMap.has(n.userId)) notesMap.set(n.userId, []);
+      notesMap.get(n.userId)!.push(n);
+    });
+    
+    allInvitations.forEach(i => {
+      const emailLower = i.candidateEmail.toLowerCase();
+      if (!invitationsMap.has(emailLower)) invitationsMap.set(emailLower, []);
+      invitationsMap.get(emailLower)!.push(i);
+    });
+    
+    // Assemble results
+    const candidatesData = allUsers.map(user => ({
+      user,
+      results: resultsMap.get(user.id) || [],
+      tags: tagsMap.get(user.id) || [],
+      notes: notesMap.get(user.id) || [],
+      invitations: invitationsMap.get(user.email.toLowerCase()) || [],
+    }));
 
     // Filter to only include candidates with results or invitations
     return candidatesData.filter(

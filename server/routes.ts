@@ -1583,16 +1583,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       
-      // Get all purchase items in bulk
-      const allPurchaseItems = await Promise.all(
-        purchases.map(p => storage.getPurchaseItems(p.id))
-      );
-      
-      // Flatten and create a map of purchaseId -> items
-      const purchaseItemsMap = new Map<string, any[]>();
-      allPurchaseItems.forEach((items, index) => {
-        purchaseItemsMap.set(purchases[index].id, items);
-      });
+      // Get all purchase items in bulk (single query instead of N queries)
+      const purchaseIds = purchases.map(p => p.id);
+      const purchaseItemsMap = await storage.getPurchaseItemsBulk(purchaseIds);
       
       // Create map of purchaseItemId -> results[] (supports multiple results per item)
       const resultsMap = new Map<string, any[]>();

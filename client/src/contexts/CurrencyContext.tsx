@@ -143,13 +143,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
     // Periodic check only updates country/VPN/rates, NOT the display currency
     // This preserves user's manual currency selection
+    // 5 minutes is sufficient - VPN changes are caught by Network Information API
     const intervalId = setInterval(() => {
       // Only re-check if the page is visible
       if (!document.hidden) {
         // Don't update currency if user manually selected one
         fetchLocationAndRates(true, !userManuallySelectedCurrency);
       }
-    }, 30000); // Check every 30 seconds
+    }, 300000); // Check every 5 minutes (reduced from 30s for performance)
 
     return () => {
       window.removeEventListener('online', handleNetworkChange);
