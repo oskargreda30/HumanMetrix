@@ -488,3 +488,130 @@ export function normalizeAssessmentId(id: string): keyof typeof ASSESSMENT_PRICE
   
   return normalized;
 }
+
+// ============================================
+// B2B Partner Integration Tables
+// ============================================
+
+// Partner accounts - B2B clients who embed assessments
+export const partnerAccounts = pgTable("partner_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  email: varchar("email").unique().notNull(),
+  companyName: varchar("company_name").notNull(),
+  website: varchar("website"),
+  logoUrl: varchar("logo_url"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  billingEmail: varchar("billing_email"),
+  monthlyQuota: integer("monthly_quota").default(1000),
+  pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_accounts_email").on(table.email),
+  index("idx_partner_accounts_stripe").on(table.stripeCustomerId),
+]);
+
+export const insertPartnerAccountSchema = createInsertSchema(partnerAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPartnerAccount = z.infer<typeof insertPartnerAccountSchema>;
+export type PartnerAccount = typeof partnerAccounts.$inferSelect;
+
+// Partner API keys - for authentication
+export const partnerApiKeys = pgTable("partner_api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  keyPrefix: varchar("key_prefix", { length: 8 }).notNull(), // First 8 chars for lookup (e.g., "pk_live_")
+  keyHash: varchar("key_hash").notNull(), // Hashed full key
+  keyHint: varchar("key_hint", { length: 8 }).notNull(), // Last 4 chars for display
+  name: varchar("name").notNull().default("Default"),
+  environment: varchar("environment").notNull().default("test"), // "test" or "live"
+  permissions: jsonb("permissions").notNull().$type<string[]>().default(["assessments:read", "assessments:write", "results:read"]),
+  rateLimit: integer("rate_limit").default(100), // requests per minute
+  isActive: boolean("is_active").notNull().default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_api_keys_partner").on(table.partnerId),
+  index("idx_partner_api_keys_prefix").on(table.keyPrefix),
+]);
+
+export const insertPartnerApiKeySchema = createInsertSchema(partnerApiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type InsertPartnerApiKey = z.infer<typeof insertPartnerApiKeySchema>;
+export type PartnerApiKey = typeof partnerApiKeys.$inferSelect;
+
+// Assessment sessions - tracks each embedded assessment instance
+export const assessmentSessions = pgTable("assessment_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  apiKeyId: varchar("api_key_id").notNull().references(() => partnerApiKeys.id, { onDelete: "cascade" }),
+  externalUserId: varchar("external_user_id"), // Partner's user ID
+  externalEmail: varchar("external_email"),
+  assessmentType: varchar("assessment_type").notNull(),
+  status: varchar("status").notNull().default("created"), // created, started, completed, expired
+  answers: jsonb("answers").$type<Record<string, any>>(),
+  scores: jsonb("scores").$type<Record<string, number>>(),
+  totalScore: integer("total_score"),
+  percentile: integer("percentile"),
+  evaluations: jsonb("evaluations").$type<any[]>(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(), // Custom data from partner
+  webhookUrl: varchar("webhook_url"), // Optional callback URL
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_assessment_sessions_partner").on(table.partnerId),
+  index("idx_assessment_sessions_status").on(table.status),
+  index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
+]);
+
+export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({
+  id: true,
+  createdAt: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export type InsertAssessmentSession = z.infer<typeof insertAssessmentSessionSchema>;
+export type AssessmentSession = typeof assessmentSessions.$inferSelect;
+
+// Usage events - for billing and analytics
+export const usageEvents = pgTable("usage_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  apiKeyId: varchar("api_key_id").references(() => partnerApiKeys.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
+  eventType: varchar("event_type").notNull(), // session_created, session_started, session_completed, results_fetched
+  assessmentType: varchar("assessment_type"),
+  billable: boolean("billable").notNull().default(false),
+  billedAmount: integer("billed_amount"), // Amount in pence
+  stripeUsageRecordId: varchar("stripe_usage_record_id"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_usage_events_partner").on(table.partnerId),
+  index("idx_usage_events_type").on(table.eventType),
+  index("idx_usage_events_created").on(table.createdAt),
+  index("idx_usage_events_billable").on(table.partnerId, table.billable, table.createdAt),
+]);
+
+export const insertUsageEventSchema = createInsertSchema(usageEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertUsageEvent = z.infer<typeof insertUsageEventSchema>;
+export type UsageEvent = typeof usageEvents.$inferSelect;

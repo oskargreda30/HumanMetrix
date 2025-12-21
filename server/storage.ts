@@ -16,6 +16,10 @@ import {
   goldenSetPrompts,
   goldenSetResults,
   organizations,
+  partnerAccounts,
+  partnerApiKeys,
+  assessmentSessions,
+  usageEvents,
   type User,
   type UpsertUser,
   type Purchase,
@@ -51,6 +55,14 @@ import {
   type Organization,
   type InsertOrganization,
   type UserRole,
+  type PartnerAccount,
+  type InsertPartnerAccount,
+  type PartnerApiKey,
+  type InsertPartnerApiKey,
+  type AssessmentSession,
+  type InsertAssessmentSession,
+  type UsageEvent,
+  type InsertUsageEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
@@ -189,6 +201,33 @@ export interface IStorage {
     notes: CandidateNote[];
     invitations: Invitation[];
   }>>;
+  
+  // B2B Partner operations
+  createPartnerAccount(partner: InsertPartnerAccount): Promise<PartnerAccount>;
+  getPartnerAccount(id: string): Promise<PartnerAccount | undefined>;
+  getPartnerAccountByEmail(email: string): Promise<PartnerAccount | undefined>;
+  getAllPartnerAccounts(): Promise<PartnerAccount[]>;
+  updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void>;
+  deletePartnerAccount(id: string): Promise<void>;
+  
+  // Partner API key operations
+  createPartnerApiKey(key: InsertPartnerApiKey): Promise<PartnerApiKey>;
+  getPartnerApiKey(id: string): Promise<PartnerApiKey | undefined>;
+  getPartnerApiKeyByPrefix(prefix: string): Promise<PartnerApiKey | undefined>;
+  getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
+  updatePartnerApiKeyLastUsed(id: string): Promise<void>;
+  revokePartnerApiKey(id: string): Promise<void>;
+  
+  // Assessment session operations (for embedded assessments)
+  createAssessmentSession(session: InsertAssessmentSession): Promise<AssessmentSession>;
+  getAssessmentSession(id: string): Promise<AssessmentSession | undefined>;
+  getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
+  updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
+  
+  // Usage event operations
+  createUsageEvent(event: InsertUsageEvent): Promise<UsageEvent>;
+  getUsageEventsByPartner(partnerId: string, startDate?: Date, endDate?: Date): Promise<UsageEvent[]>;
+  getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1139,6 +1178,140 @@ export class DatabaseStorage implements IStorage {
     return candidatesData.filter(
       (candidate) => candidate.results.length > 0 || candidate.invitations.length > 0
     );
+  }
+
+  // B2B Partner operations
+  async createPartnerAccount(partner: InsertPartnerAccount): Promise<PartnerAccount> {
+    const [result] = await db.insert(partnerAccounts).values(partner).returning();
+    return result;
+  }
+
+  async getPartnerAccount(id: string): Promise<PartnerAccount | undefined> {
+    const [result] = await db.select().from(partnerAccounts).where(eq(partnerAccounts.id, id));
+    return result;
+  }
+
+  async getPartnerAccountByEmail(email: string): Promise<PartnerAccount | undefined> {
+    const [result] = await db.select().from(partnerAccounts).where(eq(partnerAccounts.email, email));
+    return result;
+  }
+
+  async getAllPartnerAccounts(): Promise<PartnerAccount[]> {
+    return await db.select().from(partnerAccounts).orderBy(desc(partnerAccounts.createdAt));
+  }
+
+  async updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void> {
+    await db.update(partnerAccounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerAccounts.id, id));
+  }
+
+  async deletePartnerAccount(id: string): Promise<void> {
+    await db.delete(partnerAccounts).where(eq(partnerAccounts.id, id));
+  }
+
+  // Partner API key operations
+  async createPartnerApiKey(key: InsertPartnerApiKey): Promise<PartnerApiKey> {
+    const [result] = await db.insert(partnerApiKeys).values(key).returning();
+    return result;
+  }
+
+  async getPartnerApiKey(id: string): Promise<PartnerApiKey | undefined> {
+    const [result] = await db.select().from(partnerApiKeys).where(eq(partnerApiKeys.id, id));
+    return result;
+  }
+
+  async getPartnerApiKeyByPrefix(prefix: string): Promise<PartnerApiKey | undefined> {
+    const [result] = await db.select().from(partnerApiKeys)
+      .where(and(
+        eq(partnerApiKeys.keyPrefix, prefix),
+        eq(partnerApiKeys.isActive, true)
+      ));
+    return result;
+  }
+
+  async getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {
+    return await db.select().from(partnerApiKeys)
+      .where(eq(partnerApiKeys.partnerId, partnerId))
+      .orderBy(desc(partnerApiKeys.createdAt));
+  }
+
+  async updatePartnerApiKeyLastUsed(id: string): Promise<void> {
+    await db.update(partnerApiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(partnerApiKeys.id, id));
+  }
+
+  async revokePartnerApiKey(id: string): Promise<void> {
+    await db.update(partnerApiKeys)
+      .set({ isActive: false })
+      .where(eq(partnerApiKeys.id, id));
+  }
+
+  // Assessment session operations
+  async createAssessmentSession(session: InsertAssessmentSession): Promise<AssessmentSession> {
+    const [result] = await db.insert(assessmentSessions).values(session).returning();
+    return result;
+  }
+
+  async getAssessmentSession(id: string): Promise<AssessmentSession | undefined> {
+    const [result] = await db.select().from(assessmentSessions).where(eq(assessmentSessions.id, id));
+    return result;
+  }
+
+  async getSessionsByPartner(partnerId: string, limit: number = 100): Promise<AssessmentSession[]> {
+    return await db.select().from(assessmentSessions)
+      .where(eq(assessmentSessions.partnerId, partnerId))
+      .orderBy(desc(assessmentSessions.createdAt))
+      .limit(limit);
+  }
+
+  async updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void> {
+    await db.update(assessmentSessions)
+      .set(updates)
+      .where(eq(assessmentSessions.id, id));
+  }
+
+  // Usage event operations
+  async createUsageEvent(event: InsertUsageEvent): Promise<UsageEvent> {
+    const [result] = await db.insert(usageEvents).values(event).returning();
+    return result;
+  }
+
+  async getUsageEventsByPartner(partnerId: string, startDate?: Date, endDate?: Date): Promise<UsageEvent[]> {
+    let query = db.select().from(usageEvents).where(eq(usageEvents.partnerId, partnerId));
+    
+    if (startDate && endDate) {
+      query = db.select().from(usageEvents).where(
+        and(
+          eq(usageEvents.partnerId, partnerId),
+          sql`${usageEvents.createdAt} >= ${startDate}`,
+          sql`${usageEvents.createdAt} <= ${endDate}`
+        )
+      );
+    }
+    
+    return await query.orderBy(desc(usageEvents.createdAt));
+  }
+
+  async getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]> {
+    const result = await db
+      .select({
+        eventType: usageEvents.eventType,
+        count: sql<number>`count(*)::int`,
+        totalAmount: sql<number>`coalesce(sum(${usageEvents.billedAmount}), 0)::int`,
+      })
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.partnerId, partnerId),
+          sql`${usageEvents.createdAt} >= ${startDate}`,
+          sql`${usageEvents.createdAt} <= ${endDate}`
+        )
+      )
+      .groupBy(usageEvents.eventType);
+    
+    return result;
   }
 }
 
