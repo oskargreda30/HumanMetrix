@@ -4237,6 +4237,118 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Get partner billing info
+  app.get("/api/admin/partners/:id/billing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Import billing functions dynamically to avoid circular dependencies
+      const { getPartnerBillingInfo, getMonthlyUsageSummary } = await import("./partner-billing");
+      
+      const [billingInfo, usageSummary] = await Promise.all([
+        getPartnerBillingInfo(partner.id),
+        getMonthlyUsageSummary(partner.id),
+      ]);
+      
+      res.json({
+        partner: {
+          id: partner.id,
+          name: partner.name,
+          companyName: partner.companyName,
+          pricePerAssessment: partner.pricePerAssessment,
+          stripeCustomerId: partner.stripeCustomerId,
+          stripeSubscriptionId: partner.stripeSubscriptionId,
+        },
+        billing: billingInfo,
+        usage: usageSummary,
+      });
+    } catch (error) {
+      console.error("Error fetching partner billing:", error);
+      res.status(500).json({ message: "Failed to fetch billing information" });
+    }
+  });
+
+  // Super Admin: Create Stripe customer for partner
+  app.post("/api/admin/partners/:id/stripe-customer", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { createStripeCustomerForPartner } = await import("./partner-billing");
+      const result = await createStripeCustomerForPartner(partner);
+      
+      if (!result) {
+        return res.status(500).json({ message: "Failed to create Stripe customer" });
+      }
+      
+      res.json({ 
+        success: true, 
+        customerId: result.customerId,
+        message: "Stripe customer created successfully" 
+      });
+    } catch (error) {
+      console.error("Error creating Stripe customer:", error);
+      res.status(500).json({ message: "Failed to create Stripe customer" });
+    }
+  });
+
+  // Super Admin: Create metered subscription for partner
+  app.post("/api/admin/partners/:id/subscription", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { priceId } = req.body;
+      if (!priceId) {
+        return res.status(400).json({ message: "Price ID is required" });
+      }
+      
+      const { createMeteredSubscription } = await import("./partner-billing");
+      const result = await createMeteredSubscription(partner, priceId);
+      
+      if (!result) {
+        return res.status(500).json({ message: "Failed to create subscription" });
+      }
+      
+      res.json({ 
+        success: true, 
+        subscriptionId: result.subscriptionId,
+        message: "Subscription created successfully" 
+      });
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts
