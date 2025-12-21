@@ -15,6 +15,7 @@ import GoldenSetTab from "@/components/admin/GoldenSetTab";
 import OrganizationsTab from "@/components/admin/OrganizationsTab";
 import PlatformStatsTab from "@/components/admin/PlatformStatsTab";
 import InvitationsTab from "@/components/admin/InvitationsTab";
+import PartnersTab from "@/components/admin/PartnersTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -141,6 +142,11 @@ export default function AdminDashboard() {
               <TabsTrigger value="golden-set" data-testid="tab-golden-set" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Scoring QA
               </TabsTrigger>
+              {isSuperAdmin && (
+                <TabsTrigger value="partners" data-testid="tab-partners" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  B2B Partners
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {isSuperAdmin && (
@@ -176,6 +182,12 @@ export default function AdminDashboard() {
             <TabsContent value="golden-set" className="space-y-4">
               <GoldenSetTab />
             </TabsContent>
+
+            {isSuperAdmin && (
+              <TabsContent value="partners" className="space-y-4">
+                <PartnersTab />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>
