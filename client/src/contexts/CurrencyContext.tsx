@@ -8,20 +8,27 @@ import {
   getPPPMultiplier,
   getPricingTier,
   type PricingTier,
-  getPPPAdjustedPriceInPence
+  getPPPAdjustedPriceInPence,
+  hasSEALaunchPricing,
+  getSEALaunchPricing,
+  type SEALaunchPricing
 } from "@shared/currencies";
 
 interface CurrencyContextType {
   currency: CurrencyConfig;
   setCurrency: (currencyCode: string) => void; // Only changes display currency, not PPP tier
   formatLocalPrice: (priceInPence: number) => string;
+  formatSuitePrice: (priceInPence: number) => string; // For full suite pricing (SEA launch)
   isLoading: boolean;
   countryCode: string | null;
   availableCurrencies: typeof SUPPORTED_CURRENCIES;
   pricingTier: PricingTier;
   pppMultiplier: number;
   getAdjustedPriceInPence: (priceInPence: number) => number;
+  getSuiteAdjustedPriceInPence: (priceInPence: number) => number; // For full suite (SEA launch)
   isVPN: boolean;
+  isSEALaunchCountry: boolean; // Whether user is in a SEA launch country
+  seaLaunchPricing: SEALaunchPricing | null; // SEA launch pricing details if applicable
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -188,6 +195,34 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: countryCode || 'GB' });
   };
 
+  // Format full suite price (handles SEA launch pricing)
+  // For SEA launch countries, shows the fixed USD price converted to local currency
+  const formatSuitePrice = (priceInPence: number): string => {
+    const exchangeRate = liveExchangeRates?.[currency.code] ?? currency.exchangeRate;
+    const effectiveCountry = isVPN ? 'GB' : (countryCode || 'GB');
+    
+    // Check if this is a SEA launch country
+    if (!isVPN && countryCode && hasSEALaunchPricing(countryCode)) {
+      // For SEA launch countries, use fixed USD pricing
+      const seaPricing = getSEALaunchPricing(countryCode);
+      if (seaPricing) {
+        // Convert USD cents to local currency
+        const usdRate = liveExchangeRates?.['USD'] ?? CURRENCIES.USD.exchangeRate;
+        const priceInUSD = seaPricing.priceUSDCents / 100;
+        const localPrice = priceInUSD * (exchangeRate / usdRate);
+        // Return formatted price
+        const roundedPrice = Math.ceil(localPrice);
+        const formattedNum = roundedPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
+        return currency.symbolPosition === 'before' 
+          ? `${currency.symbol}${formattedNum}`
+          : `${formattedNum}${currency.symbol}`;
+      }
+    }
+    
+    // Non-SEA countries use PPP multiplier
+    return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: effectiveCountry });
+  };
+
   // Get PPP-adjusted price in pence (for Stripe checkout)
   // VPN users get full price (no PPP adjustment)
   const getAdjustedPriceInPence = (priceInPence: number): number => {
@@ -197,10 +232,23 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return getPPPAdjustedPriceInPence(priceInPence, countryCode || 'GB');
   };
 
+  // Get full suite adjusted price in pence (for SEA launch countries)
+  const getSuiteAdjustedPriceInPence = (priceInPence: number): number => {
+    if (isVPN) {
+      return priceInPence; // Full price for VPN users
+    }
+    // getPPPAdjustedPriceInPence already handles SEA launch pricing
+    return getPPPAdjustedPriceInPence(priceInPence, countryCode || 'GB');
+  };
+
   // Get pricing tier and multiplier for the current country
   // VPN users always get tier1 (full price)
   const pricingTier: PricingTier = isVPN ? 'tier1' : getPricingTier(countryCode || 'GB');
   const pppMultiplier = isVPN ? 1.0 : getPPPMultiplier(countryCode || 'GB');
+  
+  // SEA launch country detection
+  const isSEALaunchCountry = !isVPN && countryCode ? hasSEALaunchPricing(countryCode) : false;
+  const seaLaunchPricing = !isVPN && countryCode ? getSEALaunchPricing(countryCode) : null;
 
   return (
     <CurrencyContext.Provider
@@ -208,13 +256,17 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         currency,
         setCurrency,
         formatLocalPrice,
+        formatSuitePrice,
         isLoading,
         countryCode,
         availableCurrencies: SUPPORTED_CURRENCIES,
         pricingTier,
         pppMultiplier,
         getAdjustedPriceInPence,
+        getSuiteAdjustedPriceInPence,
         isVPN,
+        isSEALaunchCountry,
+        seaLaunchPricing,
       }}
     >
       {children}

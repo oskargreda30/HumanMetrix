@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, convertSEALaunchPriceToStripeAmount, convertUSDCentsToGBPPence } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -918,15 +918,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate price based ONLY on required assessments for this purchase cycle
       // Business logic: Pay per purchase cycle - don't charge for previously paid assessments
-      // Price = base fee + assessments in current unpaid purchase/invitation
-      // Apply PPP adjustment for user's country
-      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
-        const normalizedType = normalizeAssessmentId(type);
-        const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        return sum + getPPPAdjustedPriceInPence(originalPrice, userCountry);
-      }, 0);
-      const priceInPence = adjustedBaseFee + assessmentsTotal;
+      // Apply SEA launch pricing or PPP adjustment for user's country
+      let priceInPence: number;
+      let isSEALaunch = false;
+      let seaPricingUSDCents = 0;
+      
+      // Check if this is a SEA launch country with fixed pricing
+      if (hasSEALaunchPricing(userCountry)) {
+        // SEA launch countries pay a flat rate for the full suite in USD
+        const seaPricing = getSEALaunchPricing(userCountry);
+        if (seaPricing) {
+          isSEALaunch = true;
+          seaPricingUSDCents = seaPricing.priceUSDCents;
+          // For internal calculations/discount codes, convert to GBP pence using shared helper
+          priceInPence = convertUSDCentsToGBPPence(seaPricing.priceUSDCents);
+        } else {
+          priceInPence = 79; // Fallback to ~$1.00 if not found
+        }
+      } else {
+        // Standard pricing: base fee + assessments with PPP adjustment
+        const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+        const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
+          const normalizedType = normalizeAssessmentId(type);
+          const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+          return sum + getPPPAdjustedPriceInPence(originalPrice, userCountry);
+        }, 0);
+        priceInPence = adjustedBaseFee + assessmentsTotal;
+      }
       const totalAssessmentCount = requiredAssessmentTypes.length;
       
       // Apply discount codes
@@ -991,11 +1009,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Otherwise, create Stripe checkout session for results payment with PPP-adjusted price
+      // Otherwise, create Stripe checkout session for results payment
       // Charge in user's local currency
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
-      const stripeAmount = convertToStripeCurrencyAmount(finalPriceInPence, currencyCode, userCountry);
+      
+      // Calculate Stripe amount based on pricing model
+      let stripeAmount: number;
+      if (isSEALaunch && !discountApplied) {
+        // SEA launch: convert fixed USD price directly to local currency (no PPP)
+        stripeAmount = convertSEALaunchPriceToStripeAmount(seaPricingUSDCents, currencyCode);
+      } else if (isSEALaunch && discountApplied) {
+        // SEA launch with discount: apply discount to USD cents first, then convert
+        const discountedUSDCents = Math.round(seaPricingUSDCents * (finalPriceInPence / priceInPence));
+        stripeAmount = convertSEALaunchPriceToStripeAmount(discountedUSDCents, currencyCode);
+      } else {
+        // Standard pricing: convert GBP pence with PPP to local currency
+        // Note: for non-SEA, don't pass countryCode to avoid double PPP application
+        stripeAmount = convertToStripeCurrencyAmount(finalPriceInPence, currencyCode);
+      }
       
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -1235,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get pricing tier and apply PPP adjustment
+      // Get pricing tier and apply PPP/SEA launch adjustment
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
       
@@ -1243,12 +1275,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
-      // Convert base fee to local currency with PPP adjustment
-      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-
-      // Create line items for Stripe with PPP-adjusted prices in local currency
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-        {
+      // Create line items for Stripe
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+      
+      // Check if this is a SEA launch country with fixed pricing
+      if (hasSEALaunchPricing(userCountry)) {
+        // SEA launch countries pay a flat rate for the full assessment suite in USD
+        const seaPricing = getSEALaunchPricing(userCountry);
+        if (seaPricing) {
+          // Convert fixed USD price to local currency (bypassing PPP adjustment)
+          const seaPriceInLocalCurrency = convertSEALaunchPriceToStripeAmount(seaPricing.priceUSDCents, localCurrencyCode);
+          
+          lineItems.push({
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: "HumanMetrix Assessment Suite",
+                description: `Complete AI-era assessment package (${assessmentIds.length} assessments)`,
+              },
+              unit_amount: seaPriceInLocalCurrency,
+            },
+            quantity: 1,
+          });
+        }
+      } else {
+        // Standard pricing: base fee + individual assessments with PPP adjustment
+        const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
+        
+        lineItems.push({
           price_data: {
             currency: stripeCurrency,
             product_data: {
@@ -1258,36 +1312,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             unit_amount: baseFeeInLocalCurrency,
           },
           quantity: 1,
-        },
-      ];
-
-      // Add assessment line items
-      const assessmentNames: Record<string, string> = {
-        "fit": "FIT Assessment (15Q)",
-        "ai_readiness": "AI Readiness Assessment (21Q)",
-        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
-      };
-
-      for (const assessmentId of assessmentIds) {
-        const normalizedId = normalizeAssessmentId(assessmentId);
-        if (!ASSESSMENT_PRICES[normalizedId]) {
-          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
-        }
-        
-        // Apply PPP pricing adjustment and convert to local currency
-        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        
-        lineItems.push({
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: assessmentNames[normalizedId] || normalizedId,
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
         });
+
+        // Add assessment line items
+        const assessmentNames: Record<string, string> = {
+          "fit": "FIT Assessment (15Q)",
+          "ai_readiness": "AI Readiness Assessment (21Q)",
+          "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
+          "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
+        };
+
+        for (const assessmentId of assessmentIds) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          if (!ASSESSMENT_PRICES[normalizedId]) {
+            return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+          }
+          
+          // Apply PPP pricing adjustment and convert to local currency
+          const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
+          
+          lineItems.push({
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: assessmentNames[normalizedId] || normalizedId,
+              },
+              unit_amount: adjustedPrice,
+            },
+            quantity: 1,
+          });
+        }
       }
 
       // Create checkout session with local currency
@@ -1456,7 +1510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Get pricing tier and apply PPP adjustment
+      // Get pricing tier and apply PPP/SEA launch adjustment
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
       
@@ -1464,12 +1518,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
-      // Convert base fee to local currency with PPP adjustment
-      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-
-      // Create line items for Stripe with PPP-adjusted prices in local currency
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-        {
+      // Create line items for Stripe
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+      
+      // Check if this is a SEA launch country with fixed pricing
+      if (hasSEALaunchPricing(userCountry)) {
+        // SEA launch countries pay a flat rate for the full assessment suite in USD
+        const seaPricing = getSEALaunchPricing(userCountry);
+        if (seaPricing) {
+          // Convert fixed USD price to local currency (bypassing PPP adjustment)
+          const seaPriceInLocalCurrency = convertSEALaunchPriceToStripeAmount(seaPricing.priceUSDCents, localCurrencyCode);
+          
+          lineItems.push({
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: "HumanMetrix Assessment Suite",
+                description: `Complete AI-era assessment package (${assessmentIds.length} assessments)`,
+              },
+              unit_amount: seaPriceInLocalCurrency,
+            },
+            quantity: 1,
+          });
+        }
+      } else {
+        // Standard pricing: base fee + individual assessments with PPP adjustment
+        const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
+        
+        lineItems.push({
           price_data: {
             currency: stripeCurrency,
             product_data: {
@@ -1479,36 +1555,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             unit_amount: baseFeeInLocalCurrency,
           },
           quantity: 1,
-        },
-      ];
-
-      // Add assessment line items
-      const assessmentNames: Record<string, string> = {
-        "fit": "FIT Assessment (15Q)",
-        "ai_readiness": "AI Readiness Assessment (21Q)",
-        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
-      };
-
-      for (const assessmentId of assessmentIds) {
-        const normalizedId = normalizeAssessmentId(assessmentId);
-        if (!ASSESSMENT_PRICES[normalizedId]) {
-          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
-        }
-        
-        // Apply PPP pricing adjustment and convert to local currency
-        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        
-        lineItems.push({
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: assessmentNames[normalizedId] || normalizedId,
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
         });
+
+        // Add assessment line items
+        const assessmentNames: Record<string, string> = {
+          "fit": "FIT Assessment (15Q)",
+          "ai_readiness": "AI Readiness Assessment (21Q)",
+          "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
+          "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
+        };
+
+        for (const assessmentId of assessmentIds) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          if (!ASSESSMENT_PRICES[normalizedId]) {
+            return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+          }
+          
+          // Apply PPP pricing adjustment and convert to local currency
+          const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
+          
+          lineItems.push({
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: assessmentNames[normalizedId] || normalizedId,
+              },
+              unit_amount: adjustedPrice,
+            },
+            quantity: 1,
+          });
+        }
       }
 
       // Create checkout session with local currency

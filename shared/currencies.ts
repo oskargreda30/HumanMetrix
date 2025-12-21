@@ -14,17 +14,74 @@ export interface CurrencyConfig {
   decimalPlaces: number;
 }
 
+// ============================================
+// SEA Launch Pricing (December 2025)
+// ============================================
+// Strategic flat-rate pricing for Southeast Asia market entry
+// Prices are in USD cents for the FULL assessment suite (all 4 assessments)
+// This replaces PPP-based pricing for these specific countries
+
+export interface SEALaunchPricing {
+  priceUSDCents: number;  // Total price in USD cents for full suite
+  pricingNote: string;    // Description for admin/debug
+}
+
+export const SEA_LAUNCH_COUNTRIES: Record<string, SEALaunchPricing> = {
+  PH: { priceUSDCents: 100, pricingNote: 'Philippines Pilot - $1.00 USD' },
+  VN: { priceUSDCents: 120, pricingNote: 'Vietnam Expansion - $1.20 USD' },
+  ID: { priceUSDCents: 110, pricingNote: 'Indonesia Expansion - $1.10 USD' },
+  MY: { priceUSDCents: 180, pricingNote: 'Malaysia Expansion - $1.80 USD' },
+};
+
+// Check if a country uses SEA launch pricing
+export function hasSEALaunchPricing(countryCode: string): boolean {
+  return countryCode.toUpperCase() in SEA_LAUNCH_COUNTRIES;
+}
+
+// Get SEA launch pricing for a country (null if not a SEA launch country)
+export function getSEALaunchPricing(countryCode: string): SEALaunchPricing | null {
+  return SEA_LAUNCH_COUNTRIES[countryCode.toUpperCase()] || null;
+}
+
+// Convert USD cents to GBP pence using current exchange rate
+export function convertUSDCentsToGBPPence(usdCents: number): number {
+  // USD exchange rate is stored as: 1 GBP = X USD
+  // So to convert USD to GBP: divide by exchange rate
+  const usdToGbpRate = 1 / CURRENCIES.USD.exchangeRate;
+  return Math.round(usdCents * usdToGbpRate);
+}
+
+// Get the full suite price in GBP pence for SEA launch countries
+// Uses USD/GBP exchange rate to convert
+export function getSEALaunchPriceInPence(countryCode: string): number | null {
+  const pricing = getSEALaunchPricing(countryCode);
+  if (!pricing) return null;
+  
+  return convertUSDCentsToGBPPence(pricing.priceUSDCents);
+}
+
+// ============================================
+// PPP Pricing Tiers (for non-SEA countries)
+// ============================================
+
 // PPP Pricing Tiers - adjust prices based on local purchasing power
-export type PricingTier = 'tier1' | 'tier2' | 'tier3';
+export type PricingTier = 'tier1' | 'tier2' | 'tier3' | 'sea_launch';
 
 export const PPP_MULTIPLIERS: Record<PricingTier, number> = {
   tier1: 1.0,   // Western markets - full price (UK, US, EU, Australia, etc.)
   tier2: 0.7,  // Middle markets - 30% discount (Eastern Europe, Latin America, Middle East)
+  sea_launch: 0, // SEA launch countries use fixed pricing, not multipliers
   tier3: 0.5,  // Emerging markets - 50% discount (Southeast Asia, South Asia, Africa)
 };
 
 // Map countries to their pricing tier
 export const COUNTRY_PRICING_TIER: Record<string, PricingTier> = {
+  // SEA Launch Countries (Dec 2025) - Use fixed USD pricing
+  PH: 'sea_launch', // Philippines Pilot - $1.00
+  VN: 'sea_launch', // Vietnam - $1.20
+  ID: 'sea_launch', // Indonesia - $1.10
+  MY: 'sea_launch', // Malaysia - $1.80
+  
   // Tier 1: Western/High-income markets (1.0x - full price)
   GB: 'tier1', UK: 'tier1',
   US: 'tier1',
@@ -52,13 +109,9 @@ export const COUNTRY_PRICING_TIER: Record<string, PricingTier> = {
   BR: 'tier2', MX: 'tier2', AR: 'tier2', CL: 'tier2', CO: 'tier2', PE: 'tier2',
   ZA: 'tier2',
   CN: 'tier2',
-  MY: 'tier2',
   
   // Tier 3: Emerging markets (0.5x - 50% discount)
-  TH: 'tier3',
-  PH: 'tier3',
-  ID: 'tier3',
-  VN: 'tier3',
+  TH: 'tier3', // Thailand - not a launch country
   IN: 'tier3',
   PK: 'tier3',
   BD: 'tier3',
@@ -690,14 +743,32 @@ function roundPriceUp(price: number, _currency: CurrencyConfig): number {
 }
 
 // Format a price in a specific currency with PPP adjustment
+// For SEA launch countries, the price is calculated from USD pricing
 export function formatPrice(
   priceInPence: number,
   currency: CurrencyConfig,
-  options?: { showCode?: boolean; countryCode?: string }
+  options?: { showCode?: boolean; countryCode?: string; isFullSuite?: boolean }
 ): string {
-  // Apply PPP multiplier if country code is provided
-  const pppMultiplier = options?.countryCode ? getPPPMultiplier(options.countryCode) : 1.0;
-  const adjustedPriceInPence = priceInPence * pppMultiplier;
+  let adjustedPriceInPence: number;
+  
+  // Check if this is a SEA launch country with fixed pricing
+  if (options?.countryCode && options?.isFullSuite) {
+    const seaPriceInPence = getSEALaunchPriceInPence(options.countryCode);
+    if (seaPriceInPence !== null) {
+      // SEA launch countries use fixed USD-based pricing
+      adjustedPriceInPence = seaPriceInPence;
+    } else {
+      // Apply PPP multiplier for non-SEA countries
+      const pppMultiplier = getPPPMultiplier(options.countryCode);
+      adjustedPriceInPence = priceInPence * pppMultiplier;
+    }
+  } else if (options?.countryCode) {
+    // Individual assessment price - apply PPP multiplier
+    const pppMultiplier = getPPPMultiplier(options.countryCode);
+    adjustedPriceInPence = priceInPence * pppMultiplier;
+  } else {
+    adjustedPriceInPence = priceInPence;
+  }
   
   // Convert from GBP pence to target currency
   const priceInGBP = adjustedPriceInPence / 100;
@@ -757,9 +828,33 @@ export function formatPriceWithRate(
 }
 
 // Get price in pence after PPP adjustment (for Stripe checkout)
+// For SEA launch countries, this returns the fixed SEA price (ignores priceInPence input)
 export function getPPPAdjustedPriceInPence(priceInPence: number, countryCode: string): number {
+  // Check if this is a SEA launch country with fixed pricing
+  const seaPriceInPence = getSEALaunchPriceInPence(countryCode);
+  if (seaPriceInPence !== null) {
+    // SEA launch countries use fixed pricing regardless of input
+    return seaPriceInPence;
+  }
+  
+  // Non-SEA countries use PPP multiplier
   const pppMultiplier = getPPPMultiplier(countryCode);
   return Math.round(priceInPence * pppMultiplier);
+}
+
+// Get the full assessment suite price for a country (in USD cents for display)
+// This is used when showing prices to users in SEA launch countries
+export function getSEALaunchDisplayPrice(countryCode: string): { priceUSD: string; isLaunchCountry: boolean } {
+  const pricing = getSEALaunchPricing(countryCode);
+  if (!pricing) {
+    return { priceUSD: '', isLaunchCountry: false };
+  }
+  
+  const priceInDollars = pricing.priceUSDCents / 100;
+  return {
+    priceUSD: `$${priceInDollars.toFixed(2)} USD`,
+    isLaunchCountry: true,
+  };
 }
 
 // Get display price with both local and GBP
@@ -865,4 +960,48 @@ export function convertToStripeCurrencyAmount(
 export function getStripeCurrencyCode(countryCode: string): string {
   const currencyCode = COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP';
   return currencyCode.toLowerCase();
+}
+
+// Convert SEA launch USD cents price to local currency amount for Stripe
+// This bypasses PPP adjustment since SEA launch uses fixed USD pricing
+// Conversion: USD → Target currency (direct cross-rate)
+export function convertSEALaunchPriceToStripeAmount(
+  priceUSDCents: number,
+  targetCurrencyCode: string
+): number {
+  const targetCurrency = CURRENCIES[targetCurrencyCode.toUpperCase()];
+  const usdCurrency = CURRENCIES.USD;
+  
+  if (!targetCurrency || !usdCurrency) {
+    // Fallback to USD cents if currency not found
+    return priceUSDCents;
+  }
+  
+  // If target is USD, just return the cents
+  if (targetCurrencyCode.toUpperCase() === 'USD') {
+    return priceUSDCents;
+  }
+  
+  // Convert USD cents to USD dollars
+  const priceUSD = priceUSDCents / 100;
+  
+  // Cross-rate conversion: USD → Target
+  // Our exchange rates are GBP-based (1 GBP = X currency)
+  // USD rate: 1 GBP = 1.27 USD
+  // PHP rate: 1 GBP = 71.5 PHP
+  // So: 1 USD = 71.5/1.27 = 56.3 PHP
+  // Formula: priceInTarget = priceUSD * (targetRate / usdRate)
+  const crossRate = targetCurrency.exchangeRate / usdCurrency.exchangeRate;
+  const priceInTargetCurrency = priceUSD * crossRate;
+  
+  // Check if this is a zero-decimal currency
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(targetCurrencyCode.toUpperCase() as any);
+  
+  if (isZeroDecimal) {
+    // For zero-decimal currencies, Stripe expects the whole unit amount
+    return Math.round(priceInTargetCurrency);
+  } else {
+    // For standard currencies, Stripe expects the smallest unit (cents/pence)
+    return Math.round(priceInTargetCurrency * 100);
+  }
 }
