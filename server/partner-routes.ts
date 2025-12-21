@@ -482,6 +482,19 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Serve embed test page
+  app.get("/embed-test.html", (req, res) => {
+    try {
+      const filePath = path.join(process.cwd(), "public", "embed-test.html");
+      const content = fs.readFileSync(filePath, "utf-8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(content);
+    } catch (error) {
+      console.error("Error serving embed-test.html:", error);
+      res.status(404).send("Test page not found");
+    }
+  });
+
   // Serve embed widget.js
   app.get("/embed/widget.js", (req, res) => {
     try {
