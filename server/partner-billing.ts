@@ -35,8 +35,9 @@ export async function reportUsageToStripe(
       return { success: false, error: "No metered subscription item found" };
     }
 
-    // Report usage using the billing meter event API
-    const usageRecord = await (stripe as any).billing.meterEvents.create({
+    // Report usage via Billing Meter Events (2025 API)
+    // This requires a meter to be configured in Stripe Dashboard with event_name: "assessment_completed"
+    const meterEvent = await (stripe.billing as any).meterEvents.create({
       event_name: "assessment_completed",
       payload: {
         stripe_customer_id: partner.stripeCustomerId,
@@ -45,9 +46,9 @@ export async function reportUsageToStripe(
       timestamp: Math.floor(Date.now() / 1000),
     });
 
-    console.log(`[Partner Billing] Reported ${quantity} usage for partner ${partner.id}`);
+    console.log(`[Partner Billing] Reported ${quantity} usage for partner ${partner.id}: ${meterEvent?.id || 'recorded'}`);
 
-    return { success: true, usageRecordId: usageRecord?.id };
+    return { success: true, usageRecordId: meterEvent?.id };
   } catch (error: any) {
     console.error(`[Partner Billing] Failed to report usage for partner ${partner.id}:`, error.message);
     return { success: false, error: error.message };

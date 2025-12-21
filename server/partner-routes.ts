@@ -349,6 +349,29 @@ export function registerPartnerRoutes(app: Express) {
       try {
         const { sessionId } = req.params;
         
+        // Validate origin for CORS protection
+        const origin = req.headers.origin || req.headers.referer;
+        const session = await storage.getAssessmentSession(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Check if partner has a configured website and validate origin
+        const partner = await storage.getPartnerAccount(session.partnerId);
+        if (partner?.website && origin) {
+          try {
+            const originUrl = new URL(origin);
+            const partnerUrl = new URL(partner.website.startsWith("http") ? partner.website : `https://${partner.website}`);
+            if (originUrl.hostname !== partnerUrl.hostname) {
+              console.warn(`[Partner Embed] Origin mismatch: expected ${partnerUrl.hostname}, got ${originUrl.hostname}`);
+              // Log but don't block - some legitimate cases like local dev environments
+            }
+          } catch {
+            // URL parsing failed, continue anyway
+          }
+        }
+        
         const parseResult = submitAnswersSchema.safeParse(req.body);
         if (!parseResult.success) {
           return res.status(400).json({
@@ -357,16 +380,18 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        const session = await storage.getAssessmentSession(sessionId);
-        
-        if (!session) {
-          return res.status(404).json({ error: "Session not found" });
-        }
-        
         if (session.status !== "started") {
           return res.status(400).json({
             error: "Session not in progress",
             status: session.status,
+          });
+        }
+        
+        // Additional security: Verify session hasn't expired
+        if (session.expiresAt && new Date(session.expiresAt) < new Date()) {
+          return res.status(400).json({
+            error: "Session has expired",
+            status: "expired",
           });
         }
         
@@ -385,8 +410,6 @@ export function registerPartnerRoutes(app: Express) {
           evaluations,
           completedAt: new Date(),
         } as any);
-        
-        const partner = await storage.getPartnerAccount(session.partnerId);
         
         await trackUsage(
           session.partnerId,
