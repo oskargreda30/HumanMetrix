@@ -3,6 +3,8 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey } from "./partner-auth";
 import { ASSESSMENT_TYPES, normalizeAssessmentId } from "@shared/schema";
 import { z } from "zod";
+import * as fs from "fs";
+import * as path from "path";
 
 const createSessionSchema = z.object({
   assessmentType: z.enum(["fit", "ai_readiness", "prompt_architecture", "aiq"]),
@@ -166,7 +168,7 @@ export function registerPartnerRoutes(app: Express) {
           "results_fetched",
           session.assessmentType,
           true,
-          partner.pricePerAssessment
+          partner.pricePerAssessment ?? undefined
         );
         
         res.json({
@@ -292,6 +294,41 @@ export function registerPartnerRoutes(app: Express) {
       ],
     });
   });
+
+  app.get(
+    "/api/embed/session/:sessionId",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        if (new Date(session.expiresAt) < new Date() && session.status !== "completed") {
+          await storage.updateAssessmentSession(sessionId, { status: "expired" });
+          return res.status(400).json({ error: "Session has expired" });
+        }
+        
+        const partner = await storage.getPartnerAccount(session.partnerId);
+        
+        res.json({
+          sessionId: session.id,
+          assessmentType: session.assessmentType,
+          status: session.status,
+          externalUserId: session.externalUserId,
+          externalEmail: session.externalEmail,
+          partnerName: partner?.companyName || partner?.name,
+          expiresAt: session.expiresAt,
+        });
+      } catch (error) {
+        console.error("Error fetching session:", error);
+        res.status(500).json({ error: "Failed to fetch session" });
+      }
+    }
+  );
 
   app.post(
     "/api/embed/session/:sessionId/start",
@@ -444,6 +481,36 @@ export function registerPartnerRoutes(app: Express) {
       }
     }
   );
+
+  // Serve embed widget.js
+  app.get("/embed/widget.js", (req, res) => {
+    try {
+      const filePath = path.join(process.cwd(), "server", "embed", "widget.js");
+      const content = fs.readFileSync(filePath, "utf-8");
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.send(content);
+    } catch (error) {
+      console.error("Error serving widget.js:", error);
+      res.status(404).send("// Widget not found");
+    }
+  });
+
+  // Serve embed sdk.js
+  app.get("/embed/sdk.js", (req, res) => {
+    try {
+      const filePath = path.join(process.cwd(), "server", "embed", "sdk.js");
+      const content = fs.readFileSync(filePath, "utf-8");
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.send(content);
+    } catch (error) {
+      console.error("Error serving sdk.js:", error);
+      res.status(404).send("// SDK not found");
+    }
+  });
 }
 
 function getBaseUrl(req: Request): string {

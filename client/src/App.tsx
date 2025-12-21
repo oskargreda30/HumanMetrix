@@ -36,6 +36,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
 import Subscribe from "@/pages/Subscribe";
 import Developers from "@/pages/Developers";
+import EmbedAssessment from "@/pages/EmbedAssessment";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -89,6 +90,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/news" component={Subscribe} />
       <Route path="/developers" component={Developers} />
+      <Route path="/embed/assessment" component={EmbedAssessment} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>
