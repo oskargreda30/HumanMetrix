@@ -20,7 +20,7 @@ const assessments = [
     duration: "20 min",
     icon: Brain,
     status: "available" as const,
-    price: "£3.50",
+    price: "£4",
   },
   {
     id: "ai_readiness",
@@ -30,7 +30,7 @@ const assessments = [
     duration: "30 min",
     icon: Sparkles,
     status: "available" as const,
-    price: "£4.50",
+    price: "£5",
   },
   {
     id: "prompt_architecture",
@@ -40,7 +40,7 @@ const assessments = [
     duration: "14 min",
     icon: Code2,
     status: "available" as const,
-    price: "£5.00",
+    price: "£5",
   },
   {
     id: "aiq",
@@ -50,7 +50,7 @@ const assessments = [
     duration: "20 min",
     icon: Shield,
     status: "available" as const,
-    price: "£4.00",
+    price: "£4",
   },
 ];
 
@@ -135,7 +135,7 @@ export default function Assessments() {
                 )}
               </Button>
               <p className="text-xs md:text-sm text-blue-100/60 italic">
-                £15 one-time platform fee + assessments from £3.50 each
+                £15 one-time platform fee + assessments from £4 each
               </p>
             </div>
           </div>

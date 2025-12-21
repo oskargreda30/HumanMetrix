@@ -214,7 +214,7 @@ export default function HeroSection() {
             
             {/* Desktop only: Pricing disclosure */}
             <p className="hidden lg:block text-xs md:text-sm text-blue-100/60 italic">
-              Tests from £3.50 (plus one-time £15 computation price)
+              Tests from £4 (plus one-time £15 computation price)
             </p>
 
             {/* Desktop only: Feature highlights - horizontal */}
@@ -275,7 +275,7 @@ export default function HeroSection() {
 
             {/* Mobile only: Pricing disclosure - after images */}
             <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-12">
-              Tests from £3.50 (plus one-time £15 computation price)
+              Tests from £4 (plus one-time £15 computation price)
             </p>
 
             {/* Mobile only: Feature highlights - after pricing */}

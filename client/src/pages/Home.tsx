@@ -20,7 +20,7 @@ const homeFAQs = [
   },
   {
     question: "How much do HumanMetrix psychometric tests cost?",
-    answer: "Individual psychometric assessments are priced from £3.50, with our complete bundle of all four tests available at a discounted rate. You take assessments for free and only pay to unlock your human metrics results."
+    answer: "Individual psychometric assessments are priced from £4, with our complete bundle of all four tests available at a discounted rate. You take assessments for free and only pay to unlock your human metrics results."
   },
   {
     question: "Can I use HumanMetrix results on my CV?",

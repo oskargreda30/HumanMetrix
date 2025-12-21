@@ -10,7 +10,7 @@ export default function AssessmentCardExample() {
         description="Measure 6 core behavioral skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility."
         questionCount={15}
         duration="20 min"
-        price="£3.50"
+        price="£4"
         icon={Brain}
         status="available"
         onSelect={() => console.log('FIT Assessment selected')}
@@ -21,7 +21,7 @@ export default function AssessmentCardExample() {
         description="Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage."
         questionCount={21}
         duration="30 min"
-        price="£4.50"
+        price="£5"
         icon={Sparkles}
         status="completed"
         onSelect={() => console.log('AI Readiness selected')}
@@ -32,7 +32,7 @@ export default function AssessmentCardExample() {
         description="Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by an AI model."
         questionCount={7}
         duration="25 min"
-        price="£5.00"
+        price="£5"
         icon={Code2}
         status="available"
         onSelect={() => console.log('Prompt Architecture selected')}
@@ -43,7 +43,7 @@ export default function AssessmentCardExample() {
         description="Evaluate your understanding of AI ethics, bias, fairness, and responsible deployment practices."
         questionCount={8}
         duration="20 min"
-        price="£4.00"
+        price="£4"
         icon={Shield}
         status="coming-soon"
       />

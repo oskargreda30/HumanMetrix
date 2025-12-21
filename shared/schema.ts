@@ -462,8 +462,8 @@ export const ASSESSMENT_TYPES = {
 } as const;
 
 export const ASSESSMENT_PRICES = {
-  [ASSESSMENT_TYPES.FIT]: 350, // £3.50 in pence
-  [ASSESSMENT_TYPES.AI_READINESS]: 450, // £4.50 in pence
+  [ASSESSMENT_TYPES.FIT]: 400, // £4.00 in pence
+  [ASSESSMENT_TYPES.AI_READINESS]: 500, // £5.00 in pence
   [ASSESSMENT_TYPES.PROMPT_ARCHITECTURE]: 500, // £5.00 in pence
   [ASSESSMENT_TYPES.AIQ]: 400, // £4.00 in pence
 } as const;
