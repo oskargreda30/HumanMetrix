@@ -57,6 +57,8 @@ function EndpointCard({ method, path, description, auth = true }: { method: stri
 }
 
 export default function Developers() {
+  const [activeTab, setActiveTab] = useState("quickstart");
+
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
@@ -88,7 +90,7 @@ export default function Developers() {
             </p>
           </div>
 
-          <Tabs defaultValue="quickstart" className="w-full max-w-5xl mx-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl mx-auto">
             <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 border border-slate-700 mb-8">
               <TabsTrigger value="quickstart" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400" data-testid="tab-quickstart">
                 <Zap className="w-4 h-4 mr-2" />
@@ -134,21 +136,33 @@ export default function Developers() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-white">2. Choose Your Integration Method</h3>
                     <div className="grid md:grid-cols-3 gap-4">
-                      <Card className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer">
+                      <Card 
+                        className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer"
+                        onClick={() => setActiveTab("widget")}
+                        data-testid="card-integration-widget"
+                      >
                         <CardContent className="p-4">
                           <Puzzle className="w-8 h-8 text-cyan-400 mb-2" />
                           <h4 className="font-semibold text-white mb-1">Widget</h4>
                           <p className="text-sm text-slate-400">Embed a ready-made UI with one script tag</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer">
+                      <Card 
+                        className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer"
+                        onClick={() => setActiveTab("sdk")}
+                        data-testid="card-integration-sdk"
+                      >
                         <CardContent className="p-4">
                           <Code2 className="w-8 h-8 text-cyan-400 mb-2" />
                           <h4 className="font-semibold text-white mb-1">SDK</h4>
                           <p className="text-sm text-slate-400">Full control with our JavaScript client</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer">
+                      <Card 
+                        className="bg-slate-900/50 border-slate-600 hover-elevate cursor-pointer"
+                        onClick={() => setActiveTab("api")}
+                        data-testid="card-integration-api"
+                      >
                         <CardContent className="p-4">
                           <Book className="w-8 h-8 text-cyan-400 mb-2" />
                           <h4 className="font-semibold text-white mb-1">REST API</h4>
