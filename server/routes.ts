@@ -4035,7 +4035,7 @@ Format your response as JSON with this structure:
 
   // ==================== B2B PARTNER ADMIN API ====================
 
-  // Super Admin: List all partners
+  // Super Admin: List all partners with comprehensive analytics
   app.get("/api/admin/partners", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -4047,17 +4047,41 @@ Format your response as JSON with this structure:
       
       const partners = await storage.getAllPartnerAccounts();
       
-      // Get usage stats for each partner
+      // Get comprehensive stats for each partner
       const partnersWithStats = await Promise.all(partners.map(async (partner) => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        const usage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
-        const completedSessions = usage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        // Current month usage
+        const currentMonthUsage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
+        const currentMonthSessions = currentMonthUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        // All time usage
+        const allTimeUsage = await storage.getUsageSummaryByPartner(partner.id, new Date(2020, 0, 1), endOfMonth);
+        const totalTestsCompleted = allTimeUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        // Billable events for current month
+        const billableEvents = await storage.getBillableEventsForPeriod(partner.id, startOfMonth, endOfMonth);
+        const currentMonthBillable = billableEvents.reduce((sum: number, e: any) => sum + (e.billedAmount || 0), 0);
+        
+        // Get API keys count
+        const apiKeys = await storage.getApiKeysByPartner(partner.id);
+        const activeApiKeys = apiKeys.filter(k => k.isActive).length;
+        const lastApiActivity = apiKeys.reduce((latest: Date | null, k: any) => {
+          if (!k.lastUsedAt) return latest;
+          const d = new Date(k.lastUsedAt);
+          return !latest || d > latest ? d : latest;
+        }, null);
         
         return {
           ...partner,
-          currentMonthSessions: completedSessions,
+          currentMonthSessions,
+          totalTestsCompleted,
+          currentMonthBillable,
+          activeApiKeys,
+          totalApiKeys: apiKeys.length,
+          lastApiActivity,
         };
       }));
       

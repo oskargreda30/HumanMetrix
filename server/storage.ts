@@ -229,6 +229,7 @@ export interface IStorage {
   getUsageEventsByPartner(partnerId: string, startDate?: Date, endDate?: Date): Promise<UsageEvent[]>;
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
+  getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
   
   // Alias for consistency
   getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
@@ -1329,6 +1330,21 @@ export class DatabaseStorage implements IStorage {
 
   async getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {
     return this.getPartnerApiKeysByPartner(partnerId);
+  }
+
+  async getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]> {
+    return await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.partnerId, partnerId),
+          eq(usageEvents.billable, true),
+          sql`${usageEvents.createdAt} >= ${startDate}`,
+          sql`${usageEvents.createdAt} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(usageEvents.createdAt));
   }
 }
 
