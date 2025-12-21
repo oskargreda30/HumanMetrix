@@ -8,11 +8,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import networkBg from "@assets/image_1761537286469.png";
 import resultsImage from "@assets/image_1765688061458.png";
 import resultsImage2 from "@assets/image_1765687714401.png";
 
 export default function HeroSection() {
+  const { formatLocalPrice } = useCurrency();
   const [isVisible, setIsVisible] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false); // Start hidden for animation
   const [scrollY, setScrollY] = useState(0);
@@ -214,7 +216,7 @@ export default function HeroSection() {
             
             {/* Desktop only: Pricing disclosure */}
             <p className="hidden lg:block text-xs md:text-sm text-blue-100/60 italic">
-              Tests from £4 (plus one-time £15 computation price)
+              Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
             </p>
 
             {/* Desktop only: Feature highlights - horizontal */}
@@ -275,7 +277,7 @@ export default function HeroSection() {
 
             {/* Mobile only: Pricing disclosure - after images */}
             <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-12">
-              Tests from £4 (plus one-time £15 computation price)
+              Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
             </p>
 
             {/* Mobile only: Feature highlights - after pricing */}
