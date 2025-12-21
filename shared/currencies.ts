@@ -18,19 +18,25 @@ export interface CurrencyConfig {
 // SEA Launch Pricing (December 2025)
 // ============================================
 // Strategic flat-rate pricing for Southeast Asia market entry
-// Prices are in USD cents for the FULL assessment suite (all 4 assessments)
-// This replaces PPP-based pricing for these specific countries
+// Prices are in LOCAL CURRENCY smallest units for the FULL assessment suite (all 4 assessments)
+// Each country charges in their native currency for better user experience
 
 export interface SEALaunchPricing {
-  priceUSDCents: number;  // Total price in USD cents for full suite
-  pricingNote: string;    // Description for admin/debug
+  priceLocalUnits: number;  // Total price in local currency smallest units (e.g. PHP centavos, VND dong)
+  currencyCode: string;     // Local currency code (PHP, VND, IDR, MYR)
+  pricingNote: string;      // Description for admin/debug
+  isZeroDecimal: boolean;   // Whether currency has no decimal places (VND, IDR)
 }
 
 export const SEA_LAUNCH_COUNTRIES: Record<string, SEALaunchPricing> = {
-  PH: { priceUSDCents: 100, pricingNote: 'Philippines Pilot - $1.00 USD' },
-  VN: { priceUSDCents: 120, pricingNote: 'Vietnam Expansion - $1.20 USD' },
-  ID: { priceUSDCents: 110, pricingNote: 'Indonesia Expansion - $1.10 USD' },
-  MY: { priceUSDCents: 180, pricingNote: 'Malaysia Expansion - $1.80 USD' },
+  // Philippines: ₱59 PHP (~$1.00 USD) - PHP uses centavos, so 5900 centavos = ₱59
+  PH: { priceLocalUnits: 5900, currencyCode: 'PHP', pricingNote: 'Philippines Pilot - ₱59 PHP', isZeroDecimal: false },
+  // Vietnam: 30,000₫ VND (~$1.20 USD) - VND is zero-decimal, so 30000 = 30,000₫
+  VN: { priceLocalUnits: 30000, currencyCode: 'VND', pricingNote: 'Vietnam Expansion - 30,000₫ VND', isZeroDecimal: true },
+  // Indonesia: Rp18,000 IDR (~$1.10 USD) - IDR uses 2 decimals in Stripe, so 1800000 = Rp18,000.00
+  ID: { priceLocalUnits: 1800000, currencyCode: 'IDR', pricingNote: 'Indonesia Expansion - Rp18,000 IDR', isZeroDecimal: false },
+  // Malaysia: RM8 MYR (~$1.80 USD) - MYR uses sen, so 800 sen = RM8
+  MY: { priceLocalUnits: 800, currencyCode: 'MYR', pricingNote: 'Malaysia Expansion - RM8 MYR', isZeroDecimal: false },
 };
 
 // Check if a country uses SEA launch pricing
@@ -51,13 +57,38 @@ export function convertUSDCentsToGBPPence(usdCents: number): number {
   return Math.round(usdCents * usdToGbpRate);
 }
 
-// Get the full suite price in GBP pence for SEA launch countries
-// Uses USD/GBP exchange rate to convert
+// Get the full suite price in GBP pence for SEA launch countries (for display purposes)
+// Converts local currency price to approximate GBP pence
 export function getSEALaunchPriceInPence(countryCode: string): number | null {
   const pricing = getSEALaunchPricing(countryCode);
   if (!pricing) return null;
   
-  return convertUSDCentsToGBPPence(pricing.priceUSDCents);
+  const currency = CURRENCIES[pricing.currencyCode];
+  if (!currency) return null;
+  
+  // Convert local currency to GBP pence
+  // For zero-decimal currencies, priceLocalUnits = actual amount (e.g. 30000 VND = 30000)
+  // For decimal currencies, priceLocalUnits = smallest unit (e.g. 5900 centavos = ₱59)
+  const priceInLocalCurrency = pricing.isZeroDecimal 
+    ? pricing.priceLocalUnits 
+    : pricing.priceLocalUnits / 100;
+  
+  // Convert to GBP: local / exchangeRate = GBP
+  const priceInGBP = priceInLocalCurrency / currency.exchangeRate;
+  
+  // Return in pence
+  return Math.round(priceInGBP * 100);
+}
+
+// Get the Stripe unit amount for SEA launch countries in their local currency
+export function getSEALaunchStripeAmount(countryCode: string): { amount: number; currency: string } | null {
+  const pricing = getSEALaunchPricing(countryCode);
+  if (!pricing) return null;
+  
+  return {
+    amount: pricing.priceLocalUnits,
+    currency: pricing.currencyCode.toLowerCase()
+  };
 }
 
 // ============================================
@@ -76,11 +107,11 @@ export const PPP_MULTIPLIERS: Record<PricingTier, number> = {
 
 // Map countries to their pricing tier
 export const COUNTRY_PRICING_TIER: Record<string, PricingTier> = {
-  // SEA Launch Countries (Dec 2025) - Use fixed USD pricing
-  PH: 'sea_launch', // Philippines Pilot - $1.00
-  VN: 'sea_launch', // Vietnam - $1.20
-  ID: 'sea_launch', // Indonesia - $1.10
-  MY: 'sea_launch', // Malaysia - $1.80
+  // SEA Launch Countries (Dec 2025) - Use fixed LOCAL CURRENCY pricing
+  PH: 'sea_launch', // Philippines Pilot - ₱59 PHP
+  VN: 'sea_launch', // Vietnam - 30,000₫ VND
+  ID: 'sea_launch', // Indonesia - Rp18,000 IDR
+  MY: 'sea_launch', // Malaysia - RM8 MYR
   
   // Tier 1: Western/High-income markets (1.0x - full price)
   GB: 'tier1', UK: 'tier1',
@@ -842,17 +873,36 @@ export function getPPPAdjustedPriceInPence(priceInPence: number, countryCode: st
   return Math.round(priceInPence * pppMultiplier);
 }
 
-// Get the full assessment suite price for a country (in USD cents for display)
+// Get the full assessment suite price for a country (formatted for display)
 // This is used when showing prices to users in SEA launch countries
-export function getSEALaunchDisplayPrice(countryCode: string): { priceUSD: string; isLaunchCountry: boolean } {
+export function getSEALaunchDisplayPrice(countryCode: string): { priceDisplay: string; currencyCode: string; isLaunchCountry: boolean } {
   const pricing = getSEALaunchPricing(countryCode);
   if (!pricing) {
-    return { priceUSD: '', isLaunchCountry: false };
+    return { priceDisplay: '', currencyCode: '', isLaunchCountry: false };
   }
   
-  const priceInDollars = pricing.priceUSDCents / 100;
+  const currency = CURRENCIES[pricing.currencyCode];
+  if (!currency) {
+    return { priceDisplay: '', currencyCode: '', isLaunchCountry: false };
+  }
+  
+  // Format the local currency price
+  const displayAmount = pricing.isZeroDecimal 
+    ? pricing.priceLocalUnits 
+    : pricing.priceLocalUnits / 100;
+  
+  const formattedAmount = displayAmount.toLocaleString('en-US', {
+    minimumFractionDigits: pricing.isZeroDecimal ? 0 : 0,
+    maximumFractionDigits: pricing.isZeroDecimal ? 0 : 2,
+  });
+  
+  const priceDisplay = currency.symbolPosition === 'before'
+    ? `${currency.symbol}${formattedAmount}`
+    : `${formattedAmount}${currency.symbol}`;
+  
   return {
-    priceUSD: `$${priceInDollars.toFixed(2)} USD`,
+    priceDisplay,
+    currencyCode: pricing.currencyCode,
     isLaunchCountry: true,
   };
 }

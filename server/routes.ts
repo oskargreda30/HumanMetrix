@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, convertSEALaunchPriceToStripeAmount, convertUSDCentsToGBPPence } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -37,14 +37,6 @@ async function initializeStripeCoupons() {
       name: 'Free Access (100% off)'
     },
     {
-      id: 'COMPOFF_15_OFF',
-      code: 'COMPOFF',
-      amount_off: 1500, // £15 in pence
-      currency: 'gbp',
-      duration: 'once' as const, // Fixed amount coupons must use 'once'
-      name: 'Company Offer (£15 off)'
-    },
-    {
       id: '20OFFPRICE_20_OFF',
       code: '20OFFPRICE',
       percent_off: 20,
@@ -68,14 +60,8 @@ async function initializeStripeCoupons() {
             id: couponData.id,
             name: couponData.name,
             duration: couponData.duration,
+            percent_off: couponData.percent_off,
           };
-          
-          if (couponData.percent_off) {
-            couponParams.percent_off = couponData.percent_off;
-          } else if (couponData.amount_off) {
-            couponParams.amount_off = couponData.amount_off;
-            couponParams.currency = couponData.currency;
-          }
           
           await stripe.coupons.create(couponParams);
           couponExists = true;
@@ -921,19 +907,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply SEA launch pricing or PPP adjustment for user's country
       let priceInPence: number;
       let isSEALaunch = false;
-      let seaPricingUSDCents = 0;
+      let seaLocalPricing: { priceLocalUnits: number; currencyCode: string } | null = null;
       
-      // Check if this is a SEA launch country with fixed pricing
+      // Check if this is a SEA launch country with fixed local currency pricing
       if (hasSEALaunchPricing(userCountry)) {
-        // SEA launch countries pay a flat rate for the full suite in USD
+        // SEA launch countries pay a flat rate in their LOCAL CURRENCY
         const seaPricing = getSEALaunchPricing(userCountry);
         if (seaPricing) {
           isSEALaunch = true;
-          seaPricingUSDCents = seaPricing.priceUSDCents;
-          // For internal calculations/discount codes, convert to GBP pence using shared helper
-          priceInPence = convertUSDCentsToGBPPence(seaPricing.priceUSDCents);
+          seaLocalPricing = { 
+            priceLocalUnits: seaPricing.priceLocalUnits, 
+            currencyCode: seaPricing.currencyCode 
+          };
+          // For discount code calculations, estimate in GBP pence
+          // This is approximate - actual charge is in local currency
+          const currency = CURRENCIES[seaPricing.currencyCode];
+          const localAmount = seaPricing.isZeroDecimal 
+            ? seaPricing.priceLocalUnits 
+            : seaPricing.priceLocalUnits / 100;
+          priceInPence = currency ? Math.round((localAmount / currency.exchangeRate) * 100) : 79;
         } else {
-          priceInPence = 79; // Fallback to ~$1.00 if not found
+          priceInPence = 79; // Fallback if not found
         }
       } else {
         // Standard pricing: base fee + assessments with PPP adjustment
@@ -967,27 +961,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // COMPOFF - £15 off
-      if (normalizedCode === "COMPOFF") {
-        const discountAmount = 1500; // £15 in pence
-        finalPriceInPence = Math.max(0, priceInPence - discountAmount);
-        discountApplied = true;
-        discountDescription = ' (£15 discount applied)';
-        
-        // If discount makes it free, grant access immediately
-        if (finalPriceInPence === 0) {
-          await storage.updatePurchase(unpaidPurchase.id.toString(), {
-            resultsAccessPaid: true,
-          });
-          
-          return res.json({ 
-            success: true, 
-            message: "Results unlocked successfully with COMPOFF discount",
-            free: true 
-          });
-        }
-      }
-      
       // 20OFFPRICE - 20% off
       if (normalizedCode === "20OFFPRICE") {
         const discountAmount = Math.round(priceInPence * 0.20);
@@ -1011,18 +984,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Otherwise, create Stripe checkout session for results payment
       // Charge in user's local currency
-      const stripeCurrency = getStripeCurrencyCode(userCountry);
-      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      let stripeCurrency = getStripeCurrencyCode(userCountry);
+      let currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
       // Calculate Stripe amount based on pricing model
       let stripeAmount: number;
-      if (isSEALaunch && !discountApplied) {
-        // SEA launch: convert fixed USD price directly to local currency (no PPP)
-        stripeAmount = convertSEALaunchPriceToStripeAmount(seaPricingUSDCents, currencyCode);
-      } else if (isSEALaunch && discountApplied) {
-        // SEA launch with discount: apply discount to USD cents first, then convert
-        const discountedUSDCents = Math.round(seaPricingUSDCents * (finalPriceInPence / priceInPence));
-        stripeAmount = convertSEALaunchPriceToStripeAmount(discountedUSDCents, currencyCode);
+      if (isSEALaunch && seaLocalPricing && !discountApplied) {
+        // SEA launch: use local currency directly (PHP, VND, IDR, MYR)
+        stripeAmount = seaLocalPricing.priceLocalUnits;
+        stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
+        currencyCode = seaLocalPricing.currencyCode;
+      } else if (isSEALaunch && seaLocalPricing && discountApplied) {
+        // SEA launch with discount: apply discount ratio to local currency amount
+        const discountRatio = finalPriceInPence / priceInPence;
+        stripeAmount = Math.round(seaLocalPricing.priceLocalUnits * discountRatio);
+        stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
+        currencyCode = seaLocalPricing.currencyCode;
       } else {
         // Standard pricing: convert GBP pence with PPP to local currency
         // Note: for non-SEA, don't pass countryCode to avoid double PPP application
@@ -1278,22 +1255,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
       
-      // Check if this is a SEA launch country with fixed pricing
+      // Check if this is a SEA launch country with fixed local currency pricing
       if (hasSEALaunchPricing(userCountry)) {
-        // SEA launch countries pay a flat rate for the full assessment suite in USD
+        // SEA launch countries pay a flat rate in their LOCAL CURRENCY (PHP, VND, IDR, MYR)
         const seaPricing = getSEALaunchPricing(userCountry);
         if (seaPricing) {
-          // Convert fixed USD price to local currency (bypassing PPP adjustment)
-          const seaPriceInLocalCurrency = convertSEALaunchPriceToStripeAmount(seaPricing.priceUSDCents, localCurrencyCode);
-          
+          // Use local currency directly - no conversion needed
           lineItems.push({
             price_data: {
-              currency: stripeCurrency,
+              currency: seaPricing.currencyCode.toLowerCase(),
               product_data: {
                 name: "HumanMetrix Assessment Suite",
                 description: `Complete AI-era assessment package (${assessmentIds.length} assessments)`,
               },
-              unit_amount: seaPriceInLocalCurrency,
+              unit_amount: seaPricing.priceLocalUnits,
             },
             quantity: 1,
           });
@@ -1521,22 +1496,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create line items for Stripe
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
       
-      // Check if this is a SEA launch country with fixed pricing
+      // Check if this is a SEA launch country with fixed local currency pricing
       if (hasSEALaunchPricing(userCountry)) {
-        // SEA launch countries pay a flat rate for the full assessment suite in USD
+        // SEA launch countries pay a flat rate in their LOCAL CURRENCY (PHP, VND, IDR, MYR)
         const seaPricing = getSEALaunchPricing(userCountry);
         if (seaPricing) {
-          // Convert fixed USD price to local currency (bypassing PPP adjustment)
-          const seaPriceInLocalCurrency = convertSEALaunchPriceToStripeAmount(seaPricing.priceUSDCents, localCurrencyCode);
-          
+          // Use local currency directly - no conversion needed
           lineItems.push({
             price_data: {
-              currency: stripeCurrency,
+              currency: seaPricing.currencyCode.toLowerCase(),
               product_data: {
                 name: "HumanMetrix Assessment Suite",
                 description: `Complete AI-era assessment package (${assessmentIds.length} assessments)`,
               },
-              unit_amount: seaPriceInLocalCurrency,
+              unit_amount: seaPricing.priceLocalUnits,
             },
             quantity: 1,
           });
