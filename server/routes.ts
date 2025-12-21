@@ -3957,6 +3957,286 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== B2B PARTNER ADMIN API ====================
+
+  // Super Admin: List all partners
+  app.get("/api/admin/partners", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partners = await storage.getAllPartnerAccounts();
+      
+      // Get usage stats for each partner
+      const partnersWithStats = await Promise.all(partners.map(async (partner) => {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        const usage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
+        const completedSessions = usage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        return {
+          ...partner,
+          currentMonthSessions: completedSessions,
+        };
+      }));
+      
+      res.json(partnersWithStats);
+    } catch (error) {
+      console.error("Error fetching partners:", error);
+      res.status(500).json({ message: "Failed to fetch partners" });
+    }
+  });
+
+  // Super Admin: Create new partner
+  app.post("/api/admin/partners", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId } = req.body;
+      
+      if (!name || !email) {
+        return res.status(400).json({ message: "Name and email are required" });
+      }
+      
+      // Check for existing partner with same email
+      const existing = await storage.getPartnerAccountByEmail(email);
+      if (existing) {
+        return res.status(400).json({ message: "A partner with this email already exists" });
+      }
+      
+      const partner = await storage.createPartnerAccount({
+        name,
+        companyName,
+        email,
+        monthlyQuota: monthlyQuota || null,
+        pricePerAssessment: pricePerAssessment || 500, // Default £5
+        stripeCustomerId: stripeCustomerId || null,
+        isActive: true,
+      });
+      
+      res.status(201).json(partner);
+    } catch (error) {
+      console.error("Error creating partner:", error);
+      res.status(500).json({ message: "Failed to create partner" });
+    }
+  });
+
+  // Super Admin: Update partner
+  app.put("/api/admin/partners/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId } = req.body;
+      
+      await storage.updatePartnerAccount(req.params.id, {
+        name: name ?? partner.name,
+        companyName: companyName ?? partner.companyName,
+        email: email ?? partner.email,
+        monthlyQuota: monthlyQuota !== undefined ? monthlyQuota : partner.monthlyQuota,
+        pricePerAssessment: pricePerAssessment ?? partner.pricePerAssessment,
+        isActive: isActive !== undefined ? isActive : partner.isActive,
+        stripeCustomerId: stripeCustomerId ?? partner.stripeCustomerId,
+      });
+      
+      const updated = await storage.getPartnerAccount(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating partner:", error);
+      res.status(500).json({ message: "Failed to update partner" });
+    }
+  });
+
+  // Super Admin: Get partner API keys
+  app.get("/api/admin/partners/:id/keys", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const keys = await storage.getApiKeysByPartner(req.params.id);
+      
+      // Don't expose the full hash, just metadata
+      const safeKeys = keys.map(k => ({
+        id: k.id,
+        name: k.name,
+        keyPrefix: k.keyPrefix,
+        keyHint: k.keyHint,
+        environment: k.environment,
+        permissions: k.permissions,
+        rateLimit: k.rateLimit,
+        isActive: k.isActive,
+        lastUsedAt: k.lastUsedAt,
+        expiresAt: k.expiresAt,
+        createdAt: k.createdAt,
+      }));
+      
+      res.json(safeKeys);
+    } catch (error) {
+      console.error("Error fetching partner API keys:", error);
+      res.status(500).json({ message: "Failed to fetch API keys" });
+    }
+  });
+
+  // Super Admin: Create new API key for partner
+  app.post("/api/admin/partners/:id/keys", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { name, environment, permissions, rateLimit, expiresAt } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Key name is required" });
+      }
+      
+      const env = environment === 'live' ? 'live' : 'test';
+      const { generateApiKey } = await import("./partner-auth");
+      const { fullKey, prefix, hash, hint } = generateApiKey(env as 'test' | 'live');
+      
+      const key = await storage.createPartnerApiKey({
+        partnerId: partner.id,
+        name,
+        keyHash: hash,
+        keyPrefix: prefix,
+        keyHint: hint,
+        environment: env,
+        permissions: permissions || ['assessments:read', 'assessments:write', 'results:read'],
+        rateLimit: rateLimit || 100,
+        isActive: true,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+      
+      // Return the full key ONLY on creation - it won't be retrievable again
+      res.status(201).json({
+        ...key,
+        fullKey, // Include full key only on creation!
+        message: "IMPORTANT: Save this API key securely. It will not be shown again.",
+      });
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      res.status(500).json({ message: "Failed to create API key" });
+    }
+  });
+
+  // Super Admin: Revoke API key
+  app.delete("/api/admin/partners/:id/keys/:keyId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const key = await storage.getPartnerApiKey(req.params.keyId);
+      if (!key || key.partnerId !== req.params.id) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      await storage.revokePartnerApiKey(req.params.keyId);
+      
+      res.json({ success: true, message: "API key revoked" });
+    } catch (error) {
+      console.error("Error revoking API key:", error);
+      res.status(500).json({ message: "Failed to revoke API key" });
+    }
+  });
+
+  // Super Admin: Get partner usage details
+  app.get("/api/admin/partners/:id/usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      const usage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
+      const recentEvents = await storage.getRecentUsageEvents(partner.id, 100);
+      
+      res.json({
+        period: { start: startOfMonth, end: endOfMonth },
+        summary: usage,
+        recentEvents,
+      });
+    } catch (error) {
+      console.error("Error fetching partner usage:", error);
+      res.status(500).json({ message: "Failed to fetch usage" });
+    }
+  });
+
+  // Super Admin: Get partner sessions
+  app.get("/api/admin/partners/:id/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
+      const sessions = await storage.getSessionsByPartner(partner.id, limit);
+      
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching partner sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts
