@@ -23,7 +23,7 @@ export default function CurrencySelector() {
   return (
     <Select value={currency.code} onValueChange={(code) => setCurrency(code)}>
       <SelectTrigger 
-        className="w-auto min-w-[100px] bg-transparent border-cyan-400/30 text-white hover:border-cyan-400/50"
+        className="w-auto min-w-[130px] bg-transparent border-cyan-400/30 text-white hover:border-cyan-400/50"
         data-testid="select-currency"
       >
         <div className="flex items-center gap-2">
