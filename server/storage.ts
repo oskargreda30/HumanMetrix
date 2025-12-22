@@ -20,6 +20,8 @@ import {
   partnerApiKeys,
   assessmentSessions,
   usageEvents,
+  partnerTestPackages,
+  partnerQuotaLedger,
   type User,
   type UpsertUser,
   type Purchase,
@@ -63,6 +65,10 @@ import {
   type InsertAssessmentSession,
   type UsageEvent,
   type InsertUsageEvent,
+  type PartnerTestPackage,
+  type InsertPartnerTestPackage,
+  type PartnerQuotaLedger,
+  type InsertPartnerQuotaLedger,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
@@ -230,6 +236,21 @@ export interface IStorage {
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
   getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
+  
+  // Partner quota operations
+  createPartnerTestPackage(pkg: InsertPartnerTestPackage): Promise<PartnerTestPackage>;
+  getPartnerTestPackage(id: string): Promise<PartnerTestPackage | undefined>;
+  getPartnerTestPackageByStripeSession(sessionId: string): Promise<PartnerTestPackage | undefined>;
+  getPartnerTestPackages(partnerId: string): Promise<PartnerTestPackage[]>;
+  updatePartnerTestPackage(id: string, updates: Partial<InsertPartnerTestPackage>): Promise<void>;
+  createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
+  getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
+  getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }>;
+  consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean }>;
+  creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
+  updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
+  suspendPartnerApiAccess(partnerId: string): Promise<void>;
+  reactivatePartnerApiAccess(partnerId: string): Promise<void>;
   
   // Alias for consistency
   getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
@@ -1345,6 +1366,174 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(usageEvents.createdAt));
+  }
+
+  // Partner quota operations
+  async createPartnerTestPackage(pkg: InsertPartnerTestPackage): Promise<PartnerTestPackage> {
+    const [result] = await db.insert(partnerTestPackages).values(pkg).returning();
+    return result;
+  }
+
+  async getPartnerTestPackage(id: string): Promise<PartnerTestPackage | undefined> {
+    const [result] = await db.select().from(partnerTestPackages).where(eq(partnerTestPackages.id, id));
+    return result;
+  }
+
+  async getPartnerTestPackageByStripeSession(sessionId: string): Promise<PartnerTestPackage | undefined> {
+    const [result] = await db.select().from(partnerTestPackages)
+      .where(eq(partnerTestPackages.stripeCheckoutSessionId, sessionId));
+    return result;
+  }
+
+  async getPartnerTestPackages(partnerId: string): Promise<PartnerTestPackage[]> {
+    return await db.select().from(partnerTestPackages)
+      .where(eq(partnerTestPackages.partnerId, partnerId))
+      .orderBy(desc(partnerTestPackages.createdAt));
+  }
+
+  async updatePartnerTestPackage(id: string, updates: Partial<InsertPartnerTestPackage>): Promise<void> {
+    await db.update(partnerTestPackages).set(updates).where(eq(partnerTestPackages.id, id));
+  }
+
+  async createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger> {
+    const [result] = await db.insert(partnerQuotaLedger).values(entry).returning();
+    return result;
+  }
+
+  async getQuotaLedger(partnerId: string, limit: number = 100): Promise<PartnerQuotaLedger[]> {
+    return await db.select().from(partnerQuotaLedger)
+      .where(eq(partnerQuotaLedger.partnerId, partnerId))
+      .orderBy(desc(partnerQuotaLedger.createdAt))
+      .limit(limit);
+  }
+
+  async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }> {
+    const [partner] = await db.select({
+      testsPurchased: partnerAccounts.testsPurchased,
+      testsConsumed: partnerAccounts.testsConsumed,
+    }).from(partnerAccounts).where(eq(partnerAccounts.id, partnerId));
+    
+    if (!partner) {
+      return { testsPurchased: 0, testsConsumed: 0, remaining: 0 };
+    }
+    
+    return {
+      testsPurchased: partner.testsPurchased,
+      testsConsumed: partner.testsConsumed,
+      remaining: partner.testsPurchased - partner.testsConsumed,
+    };
+  }
+
+  async consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean }> {
+    // Get current balance
+    const balance = await this.getPartnerQuotaBalance(partnerId);
+    
+    if (balance.remaining <= 0) {
+      // No credits remaining - suspend access
+      await this.suspendPartnerApiAccess(partnerId);
+      return { success: false, remaining: 0, suspended: true };
+    }
+    
+    const newConsumed = balance.testsConsumed + 1;
+    const newRemaining = balance.testsPurchased - newConsumed;
+    
+    // Update partner account
+    await db.update(partnerAccounts).set({
+      testsConsumed: newConsumed,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Create ledger entry
+    await this.createQuotaLedgerEntry({
+      partnerId,
+      sessionId,
+      entryType: 'debit',
+      amount: -1,
+      balanceAfter: newRemaining,
+      description,
+    });
+    
+    // Check if we need to suspend (hit 100%)
+    if (newRemaining <= 0) {
+      await this.suspendPartnerApiAccess(partnerId);
+      return { success: true, remaining: 0, suspended: true };
+    }
+    
+    return { success: true, remaining: newRemaining, suspended: false };
+  }
+
+  async creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }> {
+    // Get current balance
+    const balance = await this.getPartnerQuotaBalance(partnerId);
+    const newPurchased = balance.testsPurchased + amount;
+    const newRemaining = newPurchased - balance.testsConsumed;
+    
+    // Update partner account
+    await db.update(partnerAccounts).set({
+      testsPurchased: newPurchased,
+      // Clear suspension if they had remaining credits = 0 before
+      apiAccessSuspendedAt: null,
+      last70NoticeAt: null,
+      last90NoticeAt: null,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Create ledger entry
+    await this.createQuotaLedgerEntry({
+      partnerId,
+      packageId,
+      entryType: 'credit',
+      amount,
+      balanceAfter: newRemaining,
+      description,
+    });
+    
+    // Reactivate API keys if they were suspended
+    await this.reactivatePartnerApiAccess(partnerId);
+    
+    return { success: true, newBalance: newRemaining };
+  }
+
+  async updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void> {
+    const updateField = notificationType === '70' ? { last70NoticeAt: new Date() } : { last90NoticeAt: new Date() };
+    await db.update(partnerAccounts).set({
+      ...updateField,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+  }
+
+  async suspendPartnerApiAccess(partnerId: string): Promise<void> {
+    // Mark partner as suspended
+    await db.update(partnerAccounts).set({
+      apiAccessSuspendedAt: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Deactivate all API keys
+    await db.update(partnerApiKeys).set({
+      isActive: false,
+    }).where(eq(partnerApiKeys.partnerId, partnerId));
+  }
+
+  async reactivatePartnerApiAccess(partnerId: string): Promise<void> {
+    // Clear suspension
+    await db.update(partnerAccounts).set({
+      apiAccessSuspendedAt: null,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Reactivate API keys (only those that haven't expired)
+    await db.update(partnerApiKeys).set({
+      isActive: true,
+    }).where(
+      and(
+        eq(partnerApiKeys.partnerId, partnerId),
+        or(
+          sql`${partnerApiKeys.expiresAt} IS NULL`,
+          sql`${partnerApiKeys.expiresAt} > NOW()`
+        )
+      )
+    );
   }
 }
 

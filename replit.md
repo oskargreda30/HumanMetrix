@@ -57,6 +57,13 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
   - **JavaScript SDK** (`/embed/sdk.js`): UMD module supporting npm and CDN usage. HumanMetrixClient class with session creation, widget launching, and results retrieval.
   - **Usage-Based Billing**: Events tracked in usage_events table with billable flag. Stripe metered billing integration for subscription-based invoicing. Admin endpoints for billing info, Stripe customer creation, and subscription management.
   - **Developer Documentation** (`/developers`): Comprehensive docs with Quick Start, Widget integration, SDK reference, and REST API documentation.
+  - **Prepaid Test Package Quota System** (Dec 2025): B2B partners purchase prepaid test packages with tiered pricing. Features:
+    - **Package Tiers**: 10 tests (£5/test), 25 (£4.50), 50 (£4), 100 (£3.50), 250 (£3), 500 (£2.50). Minimum purchase is 10 tests.
+    - **Quota Tracking**: `partner_test_packages` table stores purchases, `partner_quota_ledger` provides detailed transaction history (credits/debits).
+    - **Automatic Suspension**: When quota reaches 100%, partner API access is suspended (apiAccessSuspendedAt field set). Automatic reactivation when new tests purchased.
+    - **Email Notifications**: Warning at 70% usage, urgent warning at 90%, suspension notice at 100%. Notification tracking prevents duplicate emails.
+    - **Admin UI**: Quota tab in partner detail view shows usage progress bar, quota stats, ledger history, and package purchases. Manual credit and reactivation buttons for admin actions.
+    - **API Endpoints**: GET `/api/admin/partners/:id/quota`, GET `/api/admin/partners/:id/ledger`, GET `/api/admin/partners/:id/packages`, POST `/api/admin/partners/:id/credit`, POST `/api/admin/partners/:id/reactivate`.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.

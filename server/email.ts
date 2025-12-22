@@ -571,3 +571,323 @@ This is an automated receipt for your records.
     // Don't throw error - payment already succeeded, email failure shouldn't break flow
   }
 }
+
+// Send quota warning email to partner at 70% usage
+export async function sendPartnerQuotaWarning70(
+  partnerEmail: string,
+  companyName: string,
+  testsUsed: number,
+  testsTotal: number,
+  testsRemaining: number
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Quota warning email not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `⚠️ Test Quota Alert: 70% Used - ${companyName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .stats { background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+            .stat-number { font-size: 24px; font-weight: bold; color: #d97706; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">⚠️ Quota Alert</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">HumanMetrix Partner Notification</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              <p>This is a friendly reminder that you've used <strong>${usagePercentage}%</strong> of your HumanMetrix test quota.</p>
+              
+              <div class="stats">
+                <p style="margin: 0;"><strong>Current Usage:</strong></p>
+                <p style="margin: 10px 0;">
+                  <span class="stat-number">${testsUsed}</span> / ${testsTotal} tests used
+                </p>
+                <p style="margin: 0;">
+                  <strong>${testsRemaining} tests remaining</strong>
+                </p>
+              </div>
+              
+              <p>To ensure uninterrupted service for your platform, we recommend purchasing additional test credits before your quota runs out.</p>
+              
+              <div style="text-align: center;">
+                <a href="${topUpUrl}" class="button">Top Up Your Tests</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                <strong>What happens when you run out?</strong><br>
+                When your quota reaches 100%, your API access will be temporarily suspended until you purchase more tests.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+              <p>Questions? Contact us at assessments@humanmetrix.co.uk</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Quota Alert - HumanMetrix
+
+Hello ${companyName},
+
+This is a friendly reminder that you've used ${usagePercentage}% of your HumanMetrix test quota.
+
+CURRENT USAGE:
+${testsUsed} / ${testsTotal} tests used
+${testsRemaining} tests remaining
+
+To ensure uninterrupted service, we recommend purchasing additional test credits before your quota runs out.
+
+Visit ${topUpUrl} to top up your tests.
+
+What happens when you run out?
+When your quota reaches 100%, your API access will be temporarily suspended until you purchase more tests.
+
+Questions? Contact us at assessments@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ 70% quota warning email sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send 70% quota warning to ${partnerEmail}:`, error.message);
+  }
+}
+
+// Send urgent quota warning email to partner at 90% usage
+export async function sendPartnerQuotaWarning90(
+  partnerEmail: string,
+  companyName: string,
+  testsUsed: number,
+  testsTotal: number,
+  testsRemaining: number
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Urgent quota warning email not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `🚨 URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .stats { background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
+            .stat-number { font-size: 28px; font-weight: bold; color: #dc2626; }
+            .urgent { background: #fef2f2; border: 2px solid #dc2626; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">🚨 URGENT: Quota Critical</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Immediate Action Required</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              
+              <div class="urgent">
+                <p style="margin: 0; font-size: 18px; font-weight: bold; color: #dc2626;">
+                  ⚠️ Your test quota is almost exhausted!
+                </p>
+              </div>
+              
+              <div class="stats">
+                <p style="margin: 0;"><strong>Critical Usage Level:</strong></p>
+                <p style="margin: 10px 0;">
+                  <span class="stat-number">${usagePercentage}%</span> used
+                </p>
+                <p style="margin: 0; font-size: 18px;">
+                  Only <strong>${testsRemaining} tests</strong> remaining!
+                </p>
+              </div>
+              
+              <p><strong>Please top up immediately to avoid service interruption.</strong></p>
+              <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more tests.</p>
+              
+              <div style="text-align: center;">
+                <a href="${topUpUrl}" class="button">🛒 Top Up Now</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Need help? Our team is available at assessments@humanmetrix.co.uk
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+🚨 URGENT: Quota Critical - HumanMetrix
+
+Hello ${companyName},
+
+⚠️ YOUR TEST QUOTA IS ALMOST EXHAUSTED!
+
+CRITICAL USAGE LEVEL:
+${usagePercentage}% used
+Only ${testsRemaining} tests remaining!
+
+PLEASE TOP UP IMMEDIATELY TO AVOID SERVICE INTERRUPTION.
+
+When your quota reaches 100%, your API access will be automatically suspended and your embedded assessments will stop working until you purchase more tests.
+
+Visit ${topUpUrl} to top up now.
+
+Need help? Contact us at assessments@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ 90% URGENT quota warning email sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send 90% quota warning to ${partnerEmail}:`, error.message);
+  }
+}
+
+// Send notification when API access is suspended
+export async function sendPartnerAccessSuspendedEmail(
+  partnerEmail: string,
+  companyName: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Access suspended email not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `🔴 API Access Suspended - Quota Exhausted`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .suspended { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1f2937; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">🔴 Access Suspended</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Your Test Quota Has Been Exhausted</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              
+              <div class="suspended">
+                <p style="margin: 0; font-size: 18px; font-weight: bold;">
+                  Your API access has been temporarily suspended.
+                </p>
+                <p style="margin: 10px 0 0 0; color: #6b7280;">
+                  All embedded assessments are currently inactive.
+                </p>
+              </div>
+              
+              <p>Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.</p>
+              
+              <div style="text-align: center;">
+                <a href="${topUpUrl}" class="button">✅ Restore Access - Purchase Tests</a>
+              </div>
+              
+              <p>Once you purchase additional tests, your API access will be <strong>automatically restored</strong> and your embedded assessments will resume working immediately.</p>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Need immediate assistance? Contact us at assessments@humanmetrix.co.uk
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+API Access Suspended - HumanMetrix
+
+Hello ${companyName},
+
+Your API access has been temporarily suspended.
+All embedded assessments are currently inactive.
+
+Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.
+
+Visit ${topUpUrl} to restore access.
+
+Once you purchase additional tests, your API access will be automatically restored and your embedded assessments will resume working immediately.
+
+Need immediate assistance? Contact us at assessments@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Access suspended email sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send access suspended email to ${partnerEmail}:`, error.message);
+  }
+}

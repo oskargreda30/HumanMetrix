@@ -4422,6 +4422,275 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== PARTNER QUOTA & PACKAGES API ====================
+
+  // Admin: Get partner quota balance
+  app.get("/api/admin/partners/:id/quota", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const balance = await storage.getPartnerQuotaBalance(req.params.id);
+      const usagePercentage = balance.testsPurchased > 0 
+        ? Math.round((balance.testsConsumed / balance.testsPurchased) * 100)
+        : 0;
+      
+      res.json({
+        ...balance,
+        usagePercentage,
+        isSuspended: partner.apiAccessSuspendedAt !== null,
+        suspendedAt: partner.apiAccessSuspendedAt,
+        last70NoticeAt: partner.last70NoticeAt,
+        last90NoticeAt: partner.last90NoticeAt,
+      });
+    } catch (error) {
+      console.error("Error fetching partner quota:", error);
+      res.status(500).json({ message: "Failed to fetch partner quota" });
+    }
+  });
+
+  // Admin: Get partner package history
+  app.get("/api/admin/partners/:id/packages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const packages = await storage.getPartnerTestPackages(req.params.id);
+      const ledger = await storage.getQuotaLedger(req.params.id, 50);
+      
+      res.json({ packages, ledger });
+    } catch (error) {
+      console.error("Error fetching partner packages:", error);
+      res.status(500).json({ message: "Failed to fetch partner packages" });
+    }
+  });
+
+  // Admin: Get partner quota ledger
+  app.get("/api/admin/partners/:id/ledger", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 100;
+      const ledger = await storage.getQuotaLedger(req.params.id, limit);
+      
+      res.json(ledger);
+    } catch (error) {
+      console.error("Error fetching partner ledger:", error);
+      res.status(500).json({ message: "Failed to fetch partner ledger" });
+    }
+  });
+
+  // Partner package pricing tiers (minimum 10 tests)
+  const PACKAGE_TIERS = [
+    { size: 10, pricePerTest: 500, name: "Starter" },      // £5 per test = £50 total
+    { size: 25, pricePerTest: 450, name: "Growth" },       // £4.50 per test = £112.50 total
+    { size: 50, pricePerTest: 400, name: "Professional" }, // £4 per test = £200 total
+    { size: 100, pricePerTest: 350, name: "Business" },    // £3.50 per test = £350 total
+    { size: 250, pricePerTest: 300, name: "Enterprise" },  // £3 per test = £750 total
+    { size: 500, pricePerTest: 250, name: "Enterprise+" }, // £2.50 per test = £1,250 total
+  ];
+
+  // Get available package tiers
+  app.get("/api/partners/packages/tiers", async (req, res) => {
+    const tiers = PACKAGE_TIERS.map(tier => ({
+      ...tier,
+      totalPrice: tier.size * tier.pricePerTest,
+      displayPrice: `£${(tier.size * tier.pricePerTest / 100).toFixed(2)}`,
+      displayPricePerTest: `£${(tier.pricePerTest / 100).toFixed(2)}`,
+    }));
+    res.json(tiers);
+  });
+
+  // Admin: Create checkout session for partner package purchase
+  app.post("/api/admin/partners/:id/packages/checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { packageSize } = req.body;
+      if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
+        return res.status(400).json({ message: "Package size must be at least 10 tests" });
+      }
+      
+      // Find matching tier or use custom pricing
+      const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
+      const pricePerTest = tier?.pricePerTest || 500; // Default to £5 per test for custom sizes
+      const totalPrice = packageSize * pricePerTest;
+      
+      // Create package record (pending)
+      const pkg = await storage.createPartnerTestPackage({
+        partnerId: partner.id,
+        packageSize,
+        pricePerTest,
+        totalPrice,
+        currency: 'gbp',
+        status: 'pending',
+      });
+      
+      // Create Stripe checkout session
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+      
+      const session = await stripeClient.checkout.sessions.create({
+        mode: 'payment',
+        customer: partner.stripeCustomerId || undefined,
+        customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
+        line_items: [{
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: `HumanMetrix Test Package - ${packageSize} Tests`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at £${(pricePerTest / 100).toFixed(2)} per test`,
+            },
+            unit_amount: totalPrice,
+          },
+          quantity: 1,
+        }],
+        metadata: {
+          type: 'partner_package',
+          partnerId: partner.id,
+          packageId: pkg.id,
+          packageSize: packageSize.toString(),
+        },
+        success_url: `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'}/admin/partners/${partner.id}?package_success=true`,
+        cancel_url: `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'}/admin/partners/${partner.id}?package_cancelled=true`,
+      });
+      
+      // Update package with Stripe session ID
+      await storage.updatePartnerTestPackage(pkg.id, {
+        stripeCheckoutSessionId: session.id,
+      });
+      
+      res.json({ 
+        success: true, 
+        sessionUrl: session.url,
+        packageId: pkg.id,
+      });
+    } catch (error) {
+      console.error("Error creating package checkout:", error);
+      res.status(500).json({ message: "Failed to create package checkout" });
+    }
+  });
+
+  // Admin: Manually credit tests to partner (for refunds, credits, etc.)
+  app.post("/api/admin/partners/:id/credit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { amount, description } = req.body;
+      if (!amount || typeof amount !== 'number' || amount < 1) {
+        return res.status(400).json({ message: "Amount must be at least 1" });
+      }
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      
+      // Create a manual package record
+      const pkg = await storage.createPartnerTestPackage({
+        partnerId: partner.id,
+        packageSize: amount,
+        pricePerTest: 0,
+        totalPrice: 0,
+        currency: 'gbp',
+        status: 'completed',
+      });
+      
+      // Credit the tests
+      const result = await storage.creditPartnerTests(
+        partner.id,
+        pkg.id,
+        amount,
+        `Manual credit by admin: ${description}`
+      );
+      
+      res.json({ 
+        success: true, 
+        newBalance: result.newBalance,
+        message: `Successfully credited ${amount} tests to ${partner.companyName}`,
+      });
+    } catch (error) {
+      console.error("Error crediting partner tests:", error);
+      res.status(500).json({ message: "Failed to credit tests" });
+    }
+  });
+
+  // Admin: Reactivate suspended partner access
+  app.post("/api/admin/partners/:id/reactivate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      await storage.reactivatePartnerApiAccess(partner.id);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully reactivated API access for ${partner.companyName}`,
+      });
+    } catch (error) {
+      console.error("Error reactivating partner:", error);
+      res.status(500).json({ message: "Failed to reactivate partner" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts

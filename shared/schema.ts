@@ -507,6 +507,12 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
+  // Quota tracking fields
+  testsPurchased: integer("tests_purchased").notNull().default(0),
+  testsConsumed: integer("tests_consumed").notNull().default(0),
+  last70NoticeAt: timestamp("last_70_notice_at"),
+  last90NoticeAt: timestamp("last_90_notice_at"),
+  apiAccessSuspendedAt: timestamp("api_access_suspended_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -615,3 +621,56 @@ export const insertUsageEventSchema = createInsertSchema(usageEvents).omit({
 
 export type InsertUsageEvent = z.infer<typeof insertUsageEventSchema>;
 export type UsageEvent = typeof usageEvents.$inferSelect;
+
+// Partner test packages - prepaid test credits
+export const partnerTestPackages = pgTable("partner_test_packages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  packageSize: integer("package_size").notNull(), // Number of tests in package
+  pricePerTest: integer("price_per_test").notNull(), // Price per test in pence
+  totalPrice: integer("total_price").notNull(), // Total price in pence
+  currency: varchar("currency").notNull().default("gbp"),
+  stripeCheckoutSessionId: varchar("stripe_checkout_session_id"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  status: varchar("status").notNull().default("pending"), // pending, completed, failed, refunded
+  purchasedAt: timestamp("purchased_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_packages_partner").on(table.partnerId),
+  index("idx_partner_packages_status").on(table.status),
+  index("idx_partner_packages_stripe").on(table.stripeCheckoutSessionId),
+]);
+
+export const insertPartnerTestPackageSchema = createInsertSchema(partnerTestPackages).omit({
+  id: true,
+  createdAt: true,
+  purchasedAt: true,
+});
+
+export type InsertPartnerTestPackage = z.infer<typeof insertPartnerTestPackageSchema>;
+export type PartnerTestPackage = typeof partnerTestPackages.$inferSelect;
+
+// Partner quota ledger - tracks all credit/debit transactions
+export const partnerQuotaLedger = pgTable("partner_quota_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  packageId: varchar("package_id").references(() => partnerTestPackages.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
+  entryType: varchar("entry_type").notNull(), // credit (package purchase) or debit (test consumed)
+  amount: integer("amount").notNull(), // Positive for credits, negative for debits
+  balanceAfter: integer("balance_after").notNull(), // Running balance after this entry
+  description: varchar("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_quota_ledger_partner").on(table.partnerId),
+  index("idx_quota_ledger_type").on(table.entryType),
+  index("idx_quota_ledger_created").on(table.createdAt),
+]);
+
+export const insertPartnerQuotaLedgerSchema = createInsertSchema(partnerQuotaLedger).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPartnerQuotaLedger = z.infer<typeof insertPartnerQuotaLedgerSchema>;
+export type PartnerQuotaLedger = typeof partnerQuotaLedger.$inferSelect;

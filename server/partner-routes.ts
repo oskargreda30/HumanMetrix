@@ -1,6 +1,7 @@
 import { Express, Request, Response } from "express";
 import { storage } from "./storage";
-import { partnerAuth, PartnerRequest, trackUsage, generateApiKey } from "./partner-auth";
+import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId } from "@shared/schema";
 import { z } from "zod";
 import * as fs from "fs";
@@ -52,6 +53,32 @@ export function registerPartnerRoutes(app: Express) {
       try {
         const partner = req.partner!;
         const apiKey = req.apiKey!;
+        
+        // Check if partner has remaining quota before creating a session
+        // Partners MUST have purchased test credits to use the API
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        if (quotaBalance.testsPurchased <= 0) {
+          return res.status(402).json({
+            error: "No Credits Purchased",
+            message: "You must purchase test credits before creating assessment sessions. Please visit the partner portal to purchase a test package.",
+            quotaStatus: {
+              testsPurchased: quotaBalance.testsPurchased,
+              testsConsumed: quotaBalance.testsConsumed,
+              remaining: quotaBalance.remaining,
+            },
+          });
+        }
+        if (quotaBalance.remaining <= 0) {
+          return res.status(402).json({
+            error: "Quota Exhausted",
+            message: "Your test quota has been exhausted. Please purchase additional test credits to continue.",
+            quotaStatus: {
+              testsPurchased: quotaBalance.testsPurchased,
+              testsConsumed: quotaBalance.testsConsumed,
+              remaining: quotaBalance.remaining,
+            },
+          });
+        }
         
         const parseResult = createSessionSchema.safeParse(req.body);
         if (!parseResult.success) {
@@ -457,6 +484,54 @@ export function registerPartnerRoutes(app: Express) {
           true,
           partner?.pricePerAssessment || 500
         );
+        
+        // Consume a test credit from the partner's prepaid quota
+        const quotaResult = await consumeTestCredit(
+          session.partnerId,
+          sessionId,
+          session.assessmentType
+        );
+        
+        // Handle quota consumption failure - block result delivery if quota couldn't be deducted
+        if (!quotaResult.success) {
+          console.error(`Failed to consume test credit for session ${sessionId}:`, quotaResult.reason);
+          // Return error but assessment data is saved - admin can add credits for retry
+          return res.status(402).json({
+            error: "Quota Consumption Failed",
+            message: quotaResult.reason || "Unable to deduct test credit. Please ensure you have available quota.",
+            sessionId: session.id,
+            status: "billing_pending",
+          });
+        }
+        
+        // Send quota warning emails if thresholds are crossed
+        if (partner) {
+          const balance = await storage.getPartnerQuotaBalance(session.partnerId);
+          if (quotaResult.shouldNotify70) {
+            await sendPartnerQuotaWarning70(
+              partner.billingEmail || partner.email,
+              partner.companyName || partner.name,
+              balance.testsConsumed,
+              balance.testsPurchased,
+              balance.remaining
+            );
+          }
+          if (quotaResult.shouldNotify90) {
+            await sendPartnerQuotaWarning90(
+              partner.billingEmail || partner.email,
+              partner.companyName || partner.name,
+              balance.testsConsumed,
+              balance.testsPurchased,
+              balance.remaining
+            );
+          }
+          if (quotaResult.suspended) {
+            await sendPartnerAccessSuspendedEmail(
+              partner.billingEmail || partner.email,
+              partner.companyName || partner.name
+            );
+          }
+        }
         
         if (session.webhookUrl) {
           sendWebhook(session.webhookUrl, {

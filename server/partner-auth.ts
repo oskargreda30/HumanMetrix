@@ -69,6 +69,14 @@ export async function validateApiKey(apiKey: string): Promise<{
     return { valid: false, error: "Partner account is inactive" };
   }
   
+  // Check if partner is suspended due to quota exhaustion
+  if (partner.apiAccessSuspendedAt) {
+    return { 
+      valid: false, 
+      error: "API access suspended: Test quota exhausted. Please purchase more tests to continue." 
+    };
+  }
+  
   await storage.updatePartnerApiKeyLastUsed(keyRecord.id);
   
   return { valid: true, partner, keyRecord };
@@ -173,4 +181,76 @@ export async function trackUsage(
   } catch (error) {
     console.error("Failed to track usage event:", error);
   }
+}
+
+// Check quota and consume a test credit when an assessment is completed
+export async function consumeTestCredit(
+  partnerId: string,
+  sessionId: string,
+  assessmentType: string
+): Promise<{ success: boolean; remaining: number; suspended: boolean; shouldNotify70?: boolean; shouldNotify90?: boolean }> {
+  try {
+    const result = await storage.consumePartnerTest(
+      partnerId,
+      sessionId,
+      `Assessment completed: ${assessmentType}`
+    );
+    
+    if (!result.success) {
+      return result;
+    }
+    
+    // Check if we need to send notifications
+    const partner = await storage.getPartnerAccount(partnerId);
+    if (!partner) {
+      return result;
+    }
+    
+    const balance = await storage.getPartnerQuotaBalance(partnerId);
+    const usagePercentage = balance.testsPurchased > 0 
+      ? (balance.testsConsumed / balance.testsPurchased) * 100 
+      : 0;
+    
+    let shouldNotify70 = false;
+    let shouldNotify90 = false;
+    
+    // Check 70% threshold
+    if (usagePercentage >= 70 && usagePercentage < 90 && !partner.last70NoticeAt) {
+      shouldNotify70 = true;
+      await storage.updatePartnerQuotaNotification(partnerId, '70');
+    }
+    
+    // Check 90% threshold
+    if (usagePercentage >= 90 && usagePercentage < 100 && !partner.last90NoticeAt) {
+      shouldNotify90 = true;
+      await storage.updatePartnerQuotaNotification(partnerId, '90');
+    }
+    
+    return { ...result, shouldNotify70, shouldNotify90 };
+  } catch (error) {
+    console.error("Failed to consume test credit:", error);
+    return { success: false, remaining: 0, suspended: false };
+  }
+}
+
+// Get current quota status for a partner
+export async function getQuotaStatus(partnerId: string): Promise<{
+  testsPurchased: number;
+  testsConsumed: number;
+  remaining: number;
+  usagePercentage: number;
+  isSuspended: boolean;
+}> {
+  const partner = await storage.getPartnerAccount(partnerId);
+  const balance = await storage.getPartnerQuotaBalance(partnerId);
+  
+  const usagePercentage = balance.testsPurchased > 0 
+    ? Math.round((balance.testsConsumed / balance.testsPurchased) * 100) 
+    : 0;
+  
+  return {
+    ...balance,
+    usagePercentage,
+    isSuspended: partner?.apiAccessSuspendedAt !== null,
+  };
 }

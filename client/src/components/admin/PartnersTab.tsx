@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -63,6 +64,40 @@ interface PartnerUsage {
   recentEvents: UsageEvent[];
 }
 
+interface PartnerQuota {
+  testsPurchased: number;
+  testsConsumed: number;
+  remaining: number;
+  usagePercentage: number;
+  isSuspended: boolean;
+  last70NoticeAt: string | null;
+  last90NoticeAt: string | null;
+  apiAccessSuspendedAt: string | null;
+}
+
+interface QuotaLedgerEntry {
+  id: string;
+  transactionType: string;
+  quantity: number;
+  balanceAfter: number;
+  description: string | null;
+  referenceType: string | null;
+  referenceId: string | null;
+  createdAt: string;
+}
+
+interface TestPackage {
+  id: string;
+  partnerId: string;
+  packageSize: number;
+  pricePerTest: number;
+  totalPrice: number;
+  stripeSessionId: string | null;
+  status: string;
+  purchasedAt: string | null;
+  createdAt: string;
+}
+
 type SortField = "name" | "currentMonthSessions" | "totalTestsCompleted" | "currentMonthBillable" | "createdAt";
 type SortDirection = "asc" | "desc";
 type StatusFilter = "all" | "active" | "inactive";
@@ -92,6 +127,21 @@ export default function PartnersTab() {
 
   const { data: partnerUsage, isLoading: usageLoading } = useQuery<PartnerUsage>({
     queryKey: ["/api/admin/partners", detailPartner?.id, "usage"],
+    enabled: !!detailPartner,
+  });
+
+  const { data: partnerQuota, isLoading: quotaLoading, refetch: refetchQuota } = useQuery<PartnerQuota>({
+    queryKey: ["/api/admin/partners", detailPartner?.id, "quota"],
+    enabled: !!detailPartner,
+  });
+
+  const { data: quotaLedger, isLoading: ledgerLoading } = useQuery<QuotaLedgerEntry[]>({
+    queryKey: ["/api/admin/partners", detailPartner?.id, "ledger"],
+    enabled: !!detailPartner,
+  });
+
+  const { data: testPackages, isLoading: packagesLoading } = useQuery<TestPackage[]>({
+    queryKey: ["/api/admin/partners", detailPartner?.id, "packages"],
     enabled: !!detailPartner,
   });
 
@@ -190,6 +240,41 @@ export default function PartnersTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+    },
+  });
+
+  const [creditAmount, setCreditAmount] = useState(10);
+  const [creditReason, setCreditReason] = useState("");
+
+  const manualCreditMutation = useMutation({
+    mutationFn: async (data: { partnerId: string; quantity: number; reason: string }) => {
+      const res = await apiRequest("POST", `/api/admin/partners/${data.partnerId}/credit`, { quantity: data.quantity, reason: data.reason });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "quota"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "ledger"] });
+      setCreditAmount(10);
+      setCreditReason("");
+      toast({ title: "Credits added", description: `${creditAmount} test credits added successfully.` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to add credits", variant: "destructive" });
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: async (partnerId: string) => {
+      const res = await apiRequest("POST", `/api/admin/partners/${partnerId}/reactivate`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "quota"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+      toast({ title: "Partner reactivated", description: "API access has been restored." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to reactivate partner", variant: "destructive" });
     },
   });
 
@@ -305,6 +390,10 @@ export default function PartnersTab() {
                   <Activity className="h-4 w-4 mr-2" />
                   Recent Activity
                 </TabsTrigger>
+                <TabsTrigger value="quota" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
+                  <Package className="h-4 w-4 mr-2" />
+                  Test Quota
+                </TabsTrigger>
                 <TabsTrigger value="billing" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
                   <CreditCard className="h-4 w-4 mr-2" />
                   Billing
@@ -357,6 +446,212 @@ export default function PartnersTab() {
                   <div className="text-center py-8 text-white/50">
                     <Activity className="h-10 w-10 mx-auto mb-2 opacity-40" />
                     <p>No recent activity</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="quota">
+                {quotaLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-cyan-400" /></div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Quota Status */}
+                    {partnerQuota?.isSuspended && (
+                      <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-red-300 font-medium">API Access Suspended</div>
+                          <div className="text-red-400/80 text-sm">This partner's API access has been suspended due to quota exhaustion. Add test credits or reactivate to restore access.</div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => reactivateMutation.mutate(detailPartner.id)}
+                          disabled={reactivateMutation.isPending}
+                          className="border-red-400 text-red-300 hover:bg-red-500/20"
+                          data-testid="button-reactivate-partner"
+                        >
+                          {reactivateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                          Reactivate
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Quota Overview Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-white/60 text-sm mb-1">Tests Purchased</div>
+                        <div className="text-2xl font-bold text-white">{partnerQuota?.testsPurchased || 0}</div>
+                        <div className="text-white/50 text-xs">total credits</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-white/60 text-sm mb-1">Tests Consumed</div>
+                        <div className="text-2xl font-bold text-amber-400">{partnerQuota?.testsConsumed || 0}</div>
+                        <div className="text-white/50 text-xs">used so far</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-white/60 text-sm mb-1">Remaining</div>
+                        <div className="text-2xl font-bold text-green-400">{partnerQuota?.remaining || 0}</div>
+                        <div className="text-white/50 text-xs">available tests</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-white/60 text-sm mb-1">Usage</div>
+                        <div className="text-2xl font-bold text-cyan-400">{partnerQuota?.usagePercentage || 0}%</div>
+                        <div className="text-white/50 text-xs">of quota</div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-white/80 font-medium">Quota Usage</div>
+                        <div className="text-sm text-white/60">{partnerQuota?.testsConsumed || 0} / {partnerQuota?.testsPurchased || 0} tests</div>
+                      </div>
+                      <Progress 
+                        value={partnerQuota?.usagePercentage || 0} 
+                        className="h-3"
+                      />
+                      <div className="flex justify-between mt-2 text-xs text-white/50">
+                        <span>0%</span>
+                        <span className="text-amber-400">70% Warning</span>
+                        <span className="text-red-400">90% Critical</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+
+                    {/* Manual Credit Form */}
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="text-white/80 font-medium mb-4">Add Manual Credits</div>
+                      <div className="flex items-end gap-4">
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor="creditAmount" className="text-white/70">Number of Tests</Label>
+                          <Input 
+                            id="creditAmount"
+                            type="number" 
+                            min={1}
+                            value={creditAmount}
+                            onChange={(e) => setCreditAmount(parseInt(e.target.value) || 1)}
+                            className="bg-slate-800 border-slate-600"
+                            data-testid="input-credit-amount"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor="creditReason" className="text-white/70">Reason</Label>
+                          <Input 
+                            id="creditReason"
+                            value={creditReason}
+                            onChange={(e) => setCreditReason(e.target.value)}
+                            placeholder="e.g., Promotional credit"
+                            className="bg-slate-800 border-slate-600"
+                            data-testid="input-credit-reason"
+                          />
+                        </div>
+                        <Button 
+                          onClick={() => manualCreditMutation.mutate({ 
+                            partnerId: detailPartner.id, 
+                            quantity: creditAmount, 
+                            reason: creditReason || "Manual admin credit" 
+                          })}
+                          disabled={manualCreditMutation.isPending || creditAmount < 1}
+                          data-testid="button-add-credit"
+                        >
+                          {manualCreditMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                          Add Credits
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Quota Ledger */}
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <History className="h-5 w-5 text-cyan-400" />
+                        <div className="text-white/80 font-medium">Quota Ledger</div>
+                      </div>
+                      {ledgerLoading ? (
+                        <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-cyan-400" /></div>
+                      ) : quotaLedger && quotaLedger.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-white/20">
+                              <TableHead className="text-white/70">Date</TableHead>
+                              <TableHead className="text-white/70">Type</TableHead>
+                              <TableHead className="text-white/70">Quantity</TableHead>
+                              <TableHead className="text-white/70">Balance After</TableHead>
+                              <TableHead className="text-white/70">Description</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {quotaLedger.slice(0, 20).map((entry) => (
+                              <TableRow key={entry.id} className="border-white/10">
+                                <TableCell className="text-white/60 text-sm">{formatDate(entry.createdAt)}</TableCell>
+                                <TableCell>
+                                  <Badge className={entry.transactionType === 'credit' ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"}>
+                                    {entry.transactionType}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className={entry.quantity >= 0 ? "text-green-400" : "text-red-400"}>
+                                  {entry.quantity >= 0 ? "+" : ""}{entry.quantity}
+                                </TableCell>
+                                <TableCell className="text-white/80">{entry.balanceAfter}</TableCell>
+                                <TableCell className="text-white/60 text-sm">{entry.description || "-"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-center py-6 text-white/50">
+                          <History className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                          <p>No quota transactions yet</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Package Purchase History */}
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Package className="h-5 w-5 text-cyan-400" />
+                        <div className="text-white/80 font-medium">Test Package Purchases</div>
+                      </div>
+                      {packagesLoading ? (
+                        <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-cyan-400" /></div>
+                      ) : testPackages && testPackages.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-white/20">
+                              <TableHead className="text-white/70">Date</TableHead>
+                              <TableHead className="text-white/70">Package Size</TableHead>
+                              <TableHead className="text-white/70">Price/Test</TableHead>
+                              <TableHead className="text-white/70">Total</TableHead>
+                              <TableHead className="text-white/70">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {testPackages.map((pkg) => (
+                              <TableRow key={pkg.id} className="border-white/10">
+                                <TableCell className="text-white/60 text-sm">{formatDate(pkg.purchasedAt || pkg.createdAt)}</TableCell>
+                                <TableCell className="text-white/80 font-medium">{pkg.packageSize} tests</TableCell>
+                                <TableCell className="text-white/80">{formatCurrency(pkg.pricePerTest)}</TableCell>
+                                <TableCell className="text-cyan-400 font-medium">{formatCurrency(pkg.totalPrice)}</TableCell>
+                                <TableCell>
+                                  <Badge className={
+                                    pkg.status === 'completed' ? "bg-green-500/20 text-green-300" :
+                                    pkg.status === 'pending' ? "bg-amber-500/20 text-amber-300" :
+                                    "bg-red-500/20 text-red-300"
+                                  }>
+                                    {pkg.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-center py-6 text-white/50">
+                          <Package className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                          <p>No test packages purchased yet</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </TabsContent>
