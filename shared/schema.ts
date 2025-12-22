@@ -504,6 +504,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   billingEmail: varchar("billing_email"),
+  organizationId: varchar("organization_id").references(() => organizations.id), // Link to organisation for admin dashboard access
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
@@ -518,6 +519,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
 }, (table) => [
   index("idx_partner_accounts_email").on(table.email),
   index("idx_partner_accounts_stripe").on(table.stripeCustomerId),
+  index("idx_partner_accounts_org").on(table.organizationId),
 ]);
 
 export const insertPartnerAccountSchema = createInsertSchema(partnerAccounts).omit({

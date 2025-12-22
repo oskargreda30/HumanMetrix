@@ -3666,6 +3666,145 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Admin: Get platform-wide B2B partner usage stats (super admin only)
+  app.get("/api/admin/usage/platform", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partners = await storage.getAllPartnerAccounts();
+      
+      // Get usage stats for each partner
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      const partnerStats = await Promise.all(partners.map(async (partner) => {
+        const quota = await storage.getPartnerQuotaBalance(partner.id);
+        const currentMonthUsage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
+        const currentMonthSessions = currentMonthUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        // All time completed sessions
+        const allTimeUsage = await storage.getUsageSummaryByPartner(partner.id, new Date(2020, 0, 1), endOfMonth);
+        const totalTestsCompleted = allTimeUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        const usagePercentage = quota.testsPurchased > 0 
+          ? Math.round((quota.testsConsumed / quota.testsPurchased) * 100) 
+          : 0;
+        
+        return {
+          partnerId: partner.id,
+          partnerName: partner.name,
+          companyName: partner.companyName,
+          testsPurchased: quota.testsPurchased,
+          testsConsumed: quota.testsConsumed,
+          remaining: quota.remaining,
+          usagePercentage,
+          isSuspended: !!partner.apiAccessSuspendedAt,
+          currentMonthSessions,
+          totalTestsCompleted,
+        };
+      }));
+      
+      // Calculate totals
+      const totals = {
+        totalPartners: partners.length,
+        activePartners: partners.filter(p => !p.apiAccessSuspendedAt && p.isActive).length,
+        suspendedPartners: partners.filter(p => !!p.apiAccessSuspendedAt).length,
+        totalTestsPurchased: partnerStats.reduce((sum, p) => sum + p.testsPurchased, 0),
+        totalTestsConsumed: partnerStats.reduce((sum, p) => sum + p.testsConsumed, 0),
+        totalRemaining: partnerStats.reduce((sum, p) => sum + p.remaining, 0),
+        currentMonthSessions: partnerStats.reduce((sum, p) => sum + p.currentMonthSessions, 0),
+      };
+      
+      res.json({ totals, partners: partnerStats });
+    } catch (error) {
+      console.error("Error fetching platform usage stats:", error);
+      res.status(500).json({ message: "Failed to fetch platform usage stats" });
+    }
+  });
+
+  // Admin: Get organization's B2B partner usage stats
+  app.get("/api/admin/usage/organization", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      // Priority: 1) Direct organizationId FK link, 2) Email match, 3) Company name match
+      let matchingPartner = null;
+      
+      // First try the canonical organizationId FK relationship
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      // Fallback to email match if no FK link found
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      // Final fallback: company name matching (for backwards compatibility)
+      if (!matchingPartner && user?.organizationId) {
+        const org = await storage.getOrganization(user.organizationId);
+        if (org) {
+          const partners = await storage.getAllPartnerAccounts();
+          matchingPartner = partners.find(p => 
+            p.companyName?.toLowerCase() === org.name.toLowerCase()
+          ) || null;
+        }
+      }
+      
+      if (!matchingPartner) {
+        return res.json({ hasPartnerAccount: false });
+      }
+      
+      const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
+      
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      const currentMonthUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, startOfMonth, endOfMonth);
+      const currentMonthSessions = currentMonthUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+      
+      const allTimeUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, new Date(2020, 0, 1), endOfMonth);
+      const totalTestsCompleted = allTimeUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+      
+      const usagePercentage = quota.testsPurchased > 0 
+        ? Math.round((quota.testsConsumed / quota.testsPurchased) * 100) 
+        : 0;
+      
+      res.json({
+        hasPartnerAccount: true,
+        partner: {
+          partnerId: matchingPartner.id,
+          partnerName: matchingPartner.name,
+          companyName: matchingPartner.companyName,
+          testsPurchased: quota.testsPurchased,
+          testsConsumed: quota.testsConsumed,
+          remaining: quota.remaining,
+          usagePercentage,
+          isSuspended: !!matchingPartner.apiAccessSuspendedAt,
+          currentMonthSessions,
+          totalTestsCompleted,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching organization usage stats:", error);
+      res.status(500).json({ message: "Failed to fetch organization usage stats" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
@@ -4075,7 +4214,7 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
-      const { name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId } = req.body;
+      const { name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId } = req.body;
       
       if (!name || !email) {
         return res.status(400).json({ message: "Name and email are required" });
@@ -4087,6 +4226,19 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
       
+      // If organizationId provided, verify it exists
+      if (organizationId) {
+        const org = await storage.getOrganization(organizationId);
+        if (!org) {
+          return res.status(400).json({ message: "Organisation not found" });
+        }
+        // Check no other partner is already linked to this org
+        const existingOrgPartner = await storage.getPartnerAccountByOrganizationId(organizationId);
+        if (existingOrgPartner) {
+          return res.status(400).json({ message: "This organisation is already linked to another partner account" });
+        }
+      }
+      
       const partner = await storage.createPartnerAccount({
         name,
         companyName,
@@ -4094,6 +4246,7 @@ Format your response as JSON with this structure:
         monthlyQuota: monthlyQuota || null,
         pricePerAssessment: pricePerAssessment || 500, // Default £5
         stripeCustomerId: stripeCustomerId || null,
+        organizationId: organizationId || null,
         isActive: true,
       });
       
@@ -4119,7 +4272,21 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      const { name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId } = req.body;
+      const { name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId } = req.body;
+      
+      // If organizationId is being changed, verify it's valid and not already linked
+      if (organizationId !== undefined && organizationId !== partner.organizationId) {
+        if (organizationId) {
+          const org = await storage.getOrganization(organizationId);
+          if (!org) {
+            return res.status(400).json({ message: "Organisation not found" });
+          }
+          const existingOrgPartner = await storage.getPartnerAccountByOrganizationId(organizationId);
+          if (existingOrgPartner && existingOrgPartner.id !== partner.id) {
+            return res.status(400).json({ message: "This organisation is already linked to another partner account" });
+          }
+        }
+      }
       
       await storage.updatePartnerAccount(req.params.id, {
         name: name ?? partner.name,
@@ -4129,6 +4296,7 @@ Format your response as JSON with this structure:
         pricePerAssessment: pricePerAssessment ?? partner.pricePerAssessment,
         isActive: isActive !== undefined ? isActive : partner.isActive,
         stripeCustomerId: stripeCustomerId ?? partner.stripeCustomerId,
+        organizationId: organizationId !== undefined ? organizationId : partner.organizationId,
       });
       
       const updated = await storage.getPartnerAccount(req.params.id);

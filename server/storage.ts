@@ -212,6 +212,7 @@ export interface IStorage {
   createPartnerAccount(partner: InsertPartnerAccount): Promise<PartnerAccount>;
   getPartnerAccount(id: string): Promise<PartnerAccount | undefined>;
   getPartnerAccountByEmail(email: string): Promise<PartnerAccount | undefined>;
+  getPartnerAccountByOrganizationId(organizationId: string): Promise<PartnerAccount | undefined>;
   getAllPartnerAccounts(): Promise<PartnerAccount[]>;
   updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void>;
   deletePartnerAccount(id: string): Promise<void>;
@@ -1219,6 +1220,11 @@ export class DatabaseStorage implements IStorage {
 
   async getPartnerAccountByEmail(email: string): Promise<PartnerAccount | undefined> {
     const [result] = await db.select().from(partnerAccounts).where(eq(partnerAccounts.email, email));
+    return result;
+  }
+
+  async getPartnerAccountByOrganizationId(organizationId: string): Promise<PartnerAccount | undefined> {
+    const [result] = await db.select().from(partnerAccounts).where(eq(partnerAccounts.organizationId, organizationId));
     return result;
   }
 

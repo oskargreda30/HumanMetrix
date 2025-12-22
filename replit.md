@@ -64,6 +64,11 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professi
     - **Email Notifications**: Warning at 70% usage, urgent warning at 90%, suspension notice at 100%. Notification tracking prevents duplicate emails.
     - **Admin UI**: Quota tab in partner detail view shows usage progress bar, quota stats, ledger history, and package purchases. Manual credit and reactivation buttons for admin actions.
     - **API Endpoints**: GET `/api/admin/partners/:id/quota`, GET `/api/admin/partners/:id/ledger`, GET `/api/admin/partners/:id/packages`, POST `/api/admin/partners/:id/credit`, POST `/api/admin/partners/:id/reactivate`.
+    - **Organisation Linkage**: Partners can be linked to organisations via `organizationId` FK in `partner_accounts` table. This enables org admins to view their partner usage in the Usage dashboard tab. Super admins can link partners to organisations when creating/editing partner accounts.
+  - **Usage Dashboard Tab** (Dec 2025): Admin dashboard tab showing B2B partner usage statistics.
+    - **Super Admin View**: Platform-wide usage statistics including total partners, tests purchased/consumed, active vs suspended partners, and per-partner breakdown with progress bars.
+    - **Org Admin View**: Organisation-specific usage showing linked partner account quota, consumption, and remaining tests. Displays warning banners for low quota (90%+) and suspended status.
+    - **API Endpoints**: GET `/api/admin/usage/platform` (super admin), GET `/api/admin/usage/organization` (org admin). Organisation endpoint uses FK linkage with fallbacks to email/company name matching for backwards compatibility.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.

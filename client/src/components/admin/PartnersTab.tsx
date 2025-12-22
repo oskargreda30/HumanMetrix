@@ -115,9 +115,15 @@ export default function PartnersTab() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortField, setSortField] = useState<SortField>("currentMonthSessions");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("");
 
   const { data: partners, isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
+  });
+  
+  // Fetch organizations for linking partner accounts
+  const { data: organizations } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ["/api/admin/organizations"],
   });
 
   const { data: partnerKeys, isLoading: keysLoading } = useQuery<ApiKey[]>({
@@ -193,13 +199,14 @@ export default function PartnersTab() {
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
   const createPartnerMutation = useMutation({
-    mutationFn: async (data: { name: string; companyName: string; email: string; pricePerAssessment: number }) => {
+    mutationFn: async (data: { name: string; companyName: string; email: string; pricePerAssessment: number; organizationId?: string }) => {
       const res = await apiRequest("POST", "/api/admin/partners", data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       setIsCreateOpen(false);
+      setSelectedOrganizationId("");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -291,6 +298,7 @@ export default function PartnersTab() {
       companyName: formData.get("companyName") as string,
       email: formData.get("email") as string,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
+      organizationId: selectedOrganizationId || undefined,
     });
   };
 
@@ -863,6 +871,23 @@ export default function PartnersTab() {
                   <Label htmlFor="pricePerAssessment">Price Per Assessment (pence)</Label>
                   <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
                   <p className="text-xs text-slate-400">500 pence = £5.00</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="organizationId">Link to Organisation (Optional)</Label>
+                  <Select value={selectedOrganizationId} onValueChange={setSelectedOrganizationId}>
+                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-organization">
+                      <SelectValue placeholder="Select an organisation..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectItem value="" className="text-slate-400">None</SelectItem>
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id} className="text-white">
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-400">Linking allows org admins to view their partner usage in the dashboard</p>
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={createPartnerMutation.isPending} data-testid="button-submit-partner">
