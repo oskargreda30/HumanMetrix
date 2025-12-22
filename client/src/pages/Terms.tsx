@@ -286,7 +286,7 @@ export default function Terms() {
                   If you have questions about these Terms & Conditions, please contact us at:
                 </p>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  Email: assessments@humanmetrix.co.uk<br />
+                  Email: info@humanmetrix.co.uk<br />
                   Website: humanmetrix.co.uk
                 </p>
               </section>

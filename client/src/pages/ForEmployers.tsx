@@ -243,7 +243,7 @@ export default function ForEmployers() {
                     Contact Sales for Enterprise Pricing
                   </Button>
                   <p className="text-xs text-muted-foreground mt-4">
-                    Email us at assessments@humanmetrix.co.uk
+                    Email us at info@humanmetrix.co.uk
                   </p>
                 </div>
               </Card>
