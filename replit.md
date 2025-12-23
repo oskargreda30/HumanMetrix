@@ -54,6 +54,13 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
     - **OpenAPI/Swagger Documentation**: Full OpenAPI 3.0 specification at `/api/partner/openapi.json` with Swagger UI.
     - **Prepaid Test Package Quota System**: Partners purchase tiered test packages. Features quota tracking, automatic API suspension, email notifications, and admin UI management.
     - **Usage Dashboard Tab**: Admin dashboard tab for platform-wide and organization-specific B2B partner usage statistics.
+    - **Partner Invoice System**: Admins can send professional invoices to invoice-billed partners directly from the dashboard. Features include:
+        - Invoice generation with automatic invoice number sequencing (INV-YYYY-NNNN format).
+        - Period selection for billing cycles.
+        - VAT calculation (0% or 20% UK standard).
+        - Professional HTML email template with HumanMetrix branding.
+        - Invoice history tracking with status management (sent, paid, overdue, cancelled).
+        - Due date calculation based on partner payment terms.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
