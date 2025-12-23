@@ -4882,7 +4882,7 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      const apiKey = await storage.getPartnerApiKey(parseInt(apiKeyId));
+      const apiKey = await storage.getPartnerApiKey(apiKeyId);
       if (!apiKey || apiKey.partnerId !== partner.id) {
         return res.status(404).json({ message: "API key not found or doesn't belong to this partner" });
       }
