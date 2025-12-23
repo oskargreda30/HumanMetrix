@@ -37,6 +37,7 @@ import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
 import Subscribe from "@/pages/Subscribe";
 import Developers from "@/pages/Developers";
 import EmbedAssessment from "@/pages/EmbedAssessment";
+import WidgetTest from "@/pages/WidgetTest";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -115,6 +116,7 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      <Route path="/admin/widget-test" component={WidgetTest} />
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
       <Route path="/candidate-portal">

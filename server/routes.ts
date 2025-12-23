@@ -4859,6 +4859,64 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== WIDGET TEST LAB (Super Admin Only) ====================
+  
+  // Admin: Create test session for widget/SDK testing
+  app.post("/api/admin/widget-test/session", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { partnerId, apiKeyId, assessmentType, email } = req.body;
+      
+      if (!partnerId || !apiKeyId || !assessmentType) {
+        return res.status(400).json({ message: "Missing required fields: partnerId, apiKeyId, assessmentType" });
+      }
+      
+      const partner = await storage.getPartnerAccount(partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const apiKey = await storage.getPartnerApiKey(parseInt(apiKeyId));
+      if (!apiKey || apiKey.partnerId !== partner.id) {
+        return res.status(404).json({ message: "API key not found or doesn't belong to this partner" });
+      }
+      
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      const session = await storage.createAssessmentSession({
+        partnerId: partner.id,
+        apiKeyId: apiKey.id,
+        assessmentType,
+        externalUserId: `test-${Date.now()}`,
+        externalEmail: email || "test@example.com",
+        metadata: { testMode: true, createdBy: user.email },
+        expiresAt,
+        status: "created",
+      });
+      
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const widgetUrl = `${baseUrl}/embed/assessment?session=${session.id}`;
+      
+      res.status(201).json({
+        sessionId: session.id,
+        assessmentType: session.assessmentType,
+        status: session.status,
+        widgetUrl,
+        expiresAt: session.expiresAt,
+      });
+    } catch (error) {
+      console.error("Error creating test session:", error);
+      res.status(500).json({ message: "Failed to create test session" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts

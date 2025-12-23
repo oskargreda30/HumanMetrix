@@ -115,7 +115,7 @@ export default function PartnersTab() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortField, setSortField] = useState<SortField>("currentMonthSessions");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("");
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("none");
 
   const { data: partners, isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
@@ -298,7 +298,7 @@ export default function PartnersTab() {
       companyName: formData.get("companyName") as string,
       email: formData.get("email") as string,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
-      organizationId: selectedOrganizationId || undefined,
+      organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
     });
   };
 
@@ -879,7 +879,7 @@ export default function PartnersTab() {
                       <SelectValue placeholder="Select an organisation..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
-                      <SelectItem value="" className="text-slate-400">None</SelectItem>
+                      <SelectItem value="none" className="text-slate-400">None</SelectItem>
                       {organizations?.map((org) => (
                         <SelectItem key={org.id} value={org.id} className="text-white">
                           {org.name}
