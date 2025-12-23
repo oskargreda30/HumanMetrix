@@ -681,3 +681,39 @@ export const insertPartnerQuotaLedgerSchema = createInsertSchema(partnerQuotaLed
 
 export type InsertPartnerQuotaLedger = z.infer<typeof insertPartnerQuotaLedgerSchema>;
 export type PartnerQuotaLedger = typeof partnerQuotaLedger.$inferSelect;
+
+// Partner invoices - tracks invoices sent to enterprise clients
+export const partnerInvoices = pgTable("partner_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  invoiceNumber: varchar("invoice_number").notNull().unique(), // e.g., INV-2024-0001
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  testsUsed: integer("tests_used").notNull().default(0),
+  pricePerTest: integer("price_per_test").notNull(), // In pence
+  subtotal: integer("subtotal").notNull(), // In pence
+  vatRate: integer("vat_rate").notNull().default(20), // VAT percentage (20% default)
+  vatAmount: integer("vat_amount").notNull().default(0), // In pence
+  totalAmount: integer("total_amount").notNull(), // In pence (subtotal + VAT)
+  currency: varchar("currency").notNull().default("gbp"),
+  status: varchar("status").notNull().default("sent"), // sent, paid, overdue, cancelled
+  dueDate: timestamp("due_date").notNull(),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  sentToEmail: varchar("sent_to_email").notNull(),
+  sentByUserId: varchar("sent_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_invoices_partner").on(table.partnerId),
+  index("idx_partner_invoices_status").on(table.status),
+  index("idx_partner_invoices_number").on(table.invoiceNumber),
+  index("idx_partner_invoices_created").on(table.createdAt),
+]);
+
+export const insertPartnerInvoiceSchema = createInsertSchema(partnerInvoices).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPartnerInvoice = z.infer<typeof insertPartnerInvoiceSchema>;
+export type PartnerInvoice = typeof partnerInvoices.$inferSelect;

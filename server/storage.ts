@@ -69,6 +69,9 @@ import {
   type InsertPartnerTestPackage,
   type PartnerQuotaLedger,
   type InsertPartnerQuotaLedger,
+  partnerInvoices,
+  type PartnerInvoice,
+  type InsertPartnerInvoice,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
@@ -255,6 +258,13 @@ export interface IStorage {
   
   // Alias for consistency
   getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
+  
+  // Partner invoice operations
+  createPartnerInvoice(invoice: InsertPartnerInvoice): Promise<PartnerInvoice>;
+  getPartnerInvoice(id: string): Promise<PartnerInvoice | undefined>;
+  getPartnerInvoices(partnerId: string): Promise<PartnerInvoice[]>;
+  updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void>;
+  getNextInvoiceNumber(): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1540,6 +1550,47 @@ export class DatabaseStorage implements IStorage {
         )
       )
     );
+  }
+
+  // Partner invoice operations
+  async createPartnerInvoice(invoice: InsertPartnerInvoice): Promise<PartnerInvoice> {
+    const [result] = await db.insert(partnerInvoices).values(invoice).returning();
+    return result;
+  }
+
+  async getPartnerInvoice(id: string): Promise<PartnerInvoice | undefined> {
+    const [result] = await db.select().from(partnerInvoices).where(eq(partnerInvoices.id, id));
+    return result;
+  }
+
+  async getPartnerInvoices(partnerId: string): Promise<PartnerInvoice[]> {
+    return await db.select().from(partnerInvoices)
+      .where(eq(partnerInvoices.partnerId, partnerId))
+      .orderBy(desc(partnerInvoices.createdAt));
+  }
+
+  async updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void> {
+    await db.update(partnerInvoices).set(updates).where(eq(partnerInvoices.id, id));
+  }
+
+  async getNextInvoiceNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `INV-${year}-`;
+    
+    // Get the highest invoice number for this year
+    const result = await db.select({ invoiceNumber: partnerInvoices.invoiceNumber })
+      .from(partnerInvoices)
+      .where(sql`${partnerInvoices.invoiceNumber} LIKE ${prefix + '%'}`)
+      .orderBy(desc(partnerInvoices.invoiceNumber))
+      .limit(1);
+    
+    let nextNumber = 1;
+    if (result.length > 0) {
+      const lastNumber = parseInt(result[0].invoiceNumber.replace(prefix, ''), 10);
+      nextNumber = lastNumber + 1;
+    }
+    
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`;
   }
 }
 

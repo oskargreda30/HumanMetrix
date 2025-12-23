@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -102,6 +103,26 @@ interface TestPackage {
   createdAt: string;
 }
 
+interface PartnerInvoice {
+  id: string;
+  invoiceNumber: string;
+  periodStart: string;
+  periodEnd: string;
+  testsUsed: number;
+  pricePerTest: number;
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  dueDate: string;
+  paidAt: string | null;
+  notes: string | null;
+  sentToEmail: string;
+  createdAt: string;
+}
+
 type SortField = "name" | "currentMonthSessions" | "totalTestsCompleted" | "currentMonthBillable" | "createdAt";
 type SortDirection = "asc" | "desc";
 type StatusFilter = "all" | "active" | "inactive";
@@ -153,6 +174,71 @@ export default function PartnersTab() {
   const { data: testPackages, isLoading: packagesLoading } = useQuery<TestPackage[]>({
     queryKey: ["/api/admin/partners", detailPartner?.id, "packages"],
     enabled: !!detailPartner,
+  });
+
+  const { data: partnerInvoices, isLoading: invoicesLoading, refetch: refetchInvoices } = useQuery<PartnerInvoice[]>({
+    queryKey: ["/api/admin/partners", detailPartner?.id, "invoices"],
+    enabled: !!detailPartner && detailPartner.billingType === 'invoice',
+  });
+
+  // Invoice creation state
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [invoicePeriodStart, setInvoicePeriodStart] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+    date.setDate(1);
+    return date.toISOString().split('T')[0];
+  });
+  const [invoicePeriodEnd, setInvoicePeriodEnd] = useState(() => {
+    const date = new Date();
+    date.setDate(0); // Last day of previous month
+    return date.toISOString().split('T')[0];
+  });
+  const [invoiceTestsUsed, setInvoiceTestsUsed] = useState("");
+  const [invoiceVatRate, setInvoiceVatRate] = useState("20");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
+
+  const sendInvoiceMutation = useMutation({
+    mutationFn: async (data: { periodStart: string; periodEnd: string; testsUsed: number; vatRate: number; notes: string }) => {
+      const response = await apiRequest("POST", `/api/admin/partners/${detailPartner?.id}/invoices`, data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Invoice Sent",
+        description: data.message || `Invoice sent successfully to ${detailPartner?.email}`,
+      });
+      setIsInvoiceDialogOpen(false);
+      refetchInvoices();
+      // Reset form
+      setInvoiceTestsUsed("");
+      setInvoiceNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send Invoice",
+        description: error.message || "Could not send invoice",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateInvoiceStatusMutation = useMutation({
+    mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/invoices/${invoiceId}`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Invoice Updated", description: "Invoice status updated successfully" });
+      refetchInvoices();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Invoice",
+        description: error.message || "Could not update invoice",
+        variant: "destructive",
+      });
+    },
   });
 
   // Filtered and sorted partners
@@ -768,6 +854,102 @@ export default function PartnersTab() {
                       <Badge className="bg-amber-500/20 text-amber-300">Not Connected</Badge>
                     )}
                   </div>
+
+                  {/* Invoice Management Section - Only for Invoice-billed Partners */}
+                  {detailPartner.billingType === 'invoice' && (
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-purple-400" />
+                          <span className="text-white font-medium">Invoice Management</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                          onClick={() => setIsInvoiceDialogOpen(true)}
+                          data-testid="button-send-invoice"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Send Invoice
+                        </Button>
+                      </div>
+
+                      {/* Invoice History */}
+                      {invoicesLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-white/40" />
+                        </div>
+                      ) : partnerInvoices && partnerInvoices.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-white/60 text-sm mb-2">Invoice History</div>
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="border-white/10">
+                                <TableHead className="text-white/60">Invoice</TableHead>
+                                <TableHead className="text-white/60">Period</TableHead>
+                                <TableHead className="text-white/60">Tests</TableHead>
+                                <TableHead className="text-white/60">Total</TableHead>
+                                <TableHead className="text-white/60">Status</TableHead>
+                                <TableHead className="text-white/60">Due</TableHead>
+                                <TableHead className="text-white/60"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {partnerInvoices.map((invoice) => (
+                                <TableRow key={invoice.id} className="border-white/10" data-testid={`row-invoice-${invoice.id}`}>
+                                  <TableCell className="text-white font-mono text-sm" data-testid={`text-invoice-number-${invoice.id}`}>
+                                    {invoice.invoiceNumber}
+                                  </TableCell>
+                                  <TableCell className="text-white/80 text-sm" data-testid={`text-invoice-period-${invoice.id}`}>
+                                    {new Date(invoice.periodStart).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} - {new Date(invoice.periodEnd).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </TableCell>
+                                  <TableCell className="text-white/80" data-testid={`text-invoice-tests-${invoice.id}`}>{invoice.testsUsed}</TableCell>
+                                  <TableCell className="text-white font-medium" data-testid={`text-invoice-total-${invoice.id}`}>
+                                    {invoice.currency === 'gbp' ? '£' : invoice.currency === 'usd' ? '$' : '€'}{invoice.totalAmount.toFixed(2)}
+                                  </TableCell>
+                                  <TableCell data-testid={`text-invoice-status-${invoice.id}`}>
+                                    <Badge className={
+                                      invoice.status === 'paid' ? 'bg-green-500/20 text-green-300' :
+                                      invoice.status === 'overdue' ? 'bg-red-500/20 text-red-300' :
+                                      invoice.status === 'cancelled' ? 'bg-gray-500/20 text-gray-300' :
+                                      'bg-amber-500/20 text-amber-300'
+                                    }>
+                                      {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-white/60 text-sm" data-testid={`text-invoice-due-${invoice.id}`}>
+                                    {new Date(invoice.dueDate).toLocaleDateString('en-GB')}
+                                  </TableCell>
+                                  <TableCell>
+                                    {invoice.status === 'sent' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-400 hover:text-green-300"
+                                        onClick={() => updateInvoiceStatusMutation.mutate({ invoiceId: invoice.id, status: 'paid' })}
+                                        disabled={updateInvoiceStatusMutation.isPending}
+                                        data-testid={`button-mark-paid-${invoice.id}`}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Mark Paid
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-white/40">
+                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p>No invoices sent yet</p>
+                          <p className="text-sm mt-1">Send an invoice to start billing this partner</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -897,6 +1079,166 @@ export default function PartnersTab() {
                 <p>No API keys yet. Create a test or live key above.</p>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Send Invoice Dialog */}
+        <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-400" />
+                Send Invoice
+              </DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Create and send an invoice to {detailPartner.companyName || detailPartner.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="periodStart">Period Start</Label>
+                  <Input
+                    id="periodStart"
+                    type="date"
+                    value={invoicePeriodStart}
+                    onChange={(e) => setInvoicePeriodStart(e.target.value)}
+                    className="bg-slate-800 border-slate-600"
+                    data-testid="input-invoice-period-start"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="periodEnd">Period End</Label>
+                  <Input
+                    id="periodEnd"
+                    type="date"
+                    value={invoicePeriodEnd}
+                    onChange={(e) => setInvoicePeriodEnd(e.target.value)}
+                    className="bg-slate-800 border-slate-600"
+                    data-testid="input-invoice-period-end"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="testsUsed">Number of Tests Used</Label>
+                <Input
+                  id="testsUsed"
+                  type="number"
+                  min="1"
+                  value={invoiceTestsUsed}
+                  onChange={(e) => setInvoiceTestsUsed(e.target.value)}
+                  placeholder="Enter number of tests to invoice"
+                  className="bg-slate-800 border-slate-600"
+                  data-testid="input-invoice-tests-used"
+                />
+                {invoiceTestsUsed && detailPartner.pricePerAssessment && (
+                  <p className="text-sm text-slate-400">
+                    Subtotal: £{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vatRate">VAT Rate (%)</Label>
+                <Select value={invoiceVatRate} onValueChange={setInvoiceVatRate}>
+                  <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-invoice-vat-rate">
+                    <SelectValue placeholder="Select VAT rate..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="0" className="text-white">0% (Exempt/Non-UK)</SelectItem>
+                    <SelectItem value="20" className="text-white">20% (Standard UK)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invoiceNotesField">Notes (Optional)</Label>
+                <Textarea
+                  id="invoiceNotesField"
+                  value={invoiceNotes}
+                  onChange={(e) => setInvoiceNotes(e.target.value)}
+                  placeholder="Additional notes for this invoice..."
+                  className="bg-slate-800 border-slate-600 min-h-[80px]"
+                  data-testid="input-invoice-notes-field"
+                />
+              </div>
+
+              {/* Invoice Preview */}
+              {invoiceTestsUsed && parseInt(invoiceTestsUsed) > 0 && (
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                  <div className="text-sm text-slate-400 mb-2">Invoice Preview</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-white/70">{invoiceTestsUsed} tests @ £{(detailPartner.pricePerAssessment / 100).toFixed(2)}</span>
+                      <span className="text-white">£{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}</span>
+                    </div>
+                    {parseInt(invoiceVatRate) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-white/70">VAT ({invoiceVatRate}%)</span>
+                        <span className="text-white">£{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (parseInt(invoiceVatRate) / 100)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t border-slate-600 font-medium">
+                      <span className="text-white">Total</span>
+                      <span className="text-cyan-400">
+                        £{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (1 + parseInt(invoiceVatRate) / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-white/50 text-xs mt-2">
+                      Due: {new Date(new Date().getTime() + (detailPartner.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
+                      {' '}(Net {detailPartner.paymentTermsDays || 30})
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsInvoiceDialogOpen(false)}
+                className="bg-slate-800 border-slate-600"
+                data-testid="button-cancel-send-invoice"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!invoiceTestsUsed || parseInt(invoiceTestsUsed) <= 0) {
+                    toast({
+                      title: "Invalid Input",
+                      description: "Please enter a valid number of tests",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  sendInvoiceMutation.mutate({
+                    periodStart: invoicePeriodStart,
+                    periodEnd: invoicePeriodEnd,
+                    testsUsed: parseInt(invoiceTestsUsed),
+                    vatRate: parseInt(invoiceVatRate),
+                    notes: invoiceNotes,
+                  });
+                }}
+                disabled={sendInvoiceMutation.isPending || !invoiceTestsUsed || parseInt(invoiceTestsUsed) <= 0}
+                className="bg-purple-600 hover:bg-purple-500"
+                data-testid="button-confirm-send-invoice"
+              >
+                {sendInvoiceMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Invoice
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

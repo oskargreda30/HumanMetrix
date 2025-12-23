@@ -4894,6 +4894,153 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== PARTNER INVOICE API ====================
+
+  // Super Admin: Get partner invoices
+  app.get("/api/admin/partners/:id/invoices", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const invoices = await storage.getPartnerInvoices(partner.id);
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching partner invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  // Super Admin: Create and send invoice to partner
+  app.post("/api/admin/partners/:id/invoices", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Verify partner is invoice-billed
+      if (partner.billingType !== 'invoice') {
+        return res.status(400).json({ message: "Partner is not configured for invoice billing" });
+      }
+      
+      const { periodStart, periodEnd, testsUsed, vatRate = 20, notes } = req.body;
+      
+      if (!periodStart || !periodEnd) {
+        return res.status(400).json({ message: "Missing required fields: periodStart, periodEnd" });
+      }
+      
+      // Calculate invoice amounts
+      const pricePerTest = partner.pricePerAssessment; // In pence
+      const actualTestsUsed = testsUsed !== undefined ? testsUsed : 0;
+      const subtotal = actualTestsUsed * pricePerTest;
+      const vatAmount = Math.round(subtotal * (vatRate / 100));
+      const totalAmount = subtotal + vatAmount;
+      
+      // Calculate due date based on payment terms
+      const paymentTermsDays = partner.paymentTermsDays || 30;
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+      
+      // Generate invoice number
+      const invoiceNumber = await storage.getNextInvoiceNumber();
+      
+      // Create invoice record
+      const invoice = await storage.createPartnerInvoice({
+        partnerId: partner.id,
+        invoiceNumber,
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        testsUsed: actualTestsUsed,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        currency: 'gbp',
+        status: 'sent',
+        dueDate,
+        notes: notes || partner.invoiceNotes,
+        sentToEmail: partner.email,
+        sentByUserId: user.id,
+      });
+      
+      // Send invoice email
+      const { sendPartnerInvoiceEmail } = await import('./email');
+      await sendPartnerInvoiceEmail({
+        invoiceNumber,
+        companyName: partner.companyName,
+        partnerEmail: partner.email,
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        testsUsed: actualTestsUsed,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        dueDate,
+        paymentTermsDays,
+        invoiceNotes: notes || partner.invoiceNotes || undefined,
+      });
+      
+      res.status(201).json({
+        success: true,
+        invoice,
+        message: `Invoice ${invoiceNumber} sent to ${partner.email}`,
+      });
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      res.status(500).json({ message: "Failed to create and send invoice" });
+    }
+  });
+
+  // Super Admin: Update invoice status (mark as paid, etc.)
+  app.patch("/api/admin/invoices/:invoiceId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      const { status, paidAt } = req.body;
+      
+      const updates: any = {};
+      if (status) updates.status = status;
+      if (status === 'paid') updates.paidAt = paidAt ? new Date(paidAt) : new Date();
+      
+      await storage.updatePartnerInvoice(invoice.id, updates);
+      
+      const updatedInvoice = await storage.getPartnerInvoice(invoice.id);
+      res.json(updatedInvoice);
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      res.status(500).json({ message: "Failed to update invoice" });
+    }
+  });
+
   // ==================== WIDGET TEST LAB (Super Admin Only) ====================
   
   // Admin: Create test session for widget/SDK testing

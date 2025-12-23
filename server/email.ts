@@ -891,3 +891,231 @@ Need immediate assistance? Contact us at info@humanmetrix.co.uk
     console.error(`❌ Failed to send access suspended email to ${partnerEmail}:`, error.message);
   }
 }
+
+// Interface for invoice details
+interface InvoiceDetails {
+  invoiceNumber: string;
+  companyName: string;
+  partnerEmail: string;
+  periodStart: Date;
+  periodEnd: Date;
+  testsUsed: number;
+  pricePerTest: number; // In pence
+  subtotal: number; // In pence
+  vatRate: number; // Percentage (e.g., 20)
+  vatAmount: number; // In pence
+  totalAmount: number; // In pence
+  dueDate: Date;
+  paymentTermsDays: number;
+  invoiceNotes?: string;
+}
+
+// Send invoice email to enterprise partner
+export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Invoice email not sent to ${details.partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const formatCurrency = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+  const formatDate = (date: Date) => date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+  
+  const mailOptions = {
+    from: `"HumanMetrix Finance" <${process.env.GMAIL_USER}>`,
+    to: details.partnerEmail,
+    subject: `Invoice ${details.invoiceNumber} - HumanMetrix Assessment Services`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; }
+            .header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+            .logo { font-size: 28px; font-weight: bold; margin: 0; }
+            .invoice-title { text-align: right; }
+            .invoice-number { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
+            .meta-section { }
+            .meta-label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 5px; }
+            .meta-value { font-weight: 600; }
+            .line-items { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .line-items th { background: #f9fafb; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+            .line-items td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+            .line-items .amount { text-align: right; }
+            .totals { margin-left: auto; width: 300px; margin-top: 20px; }
+            .totals-row { display: flex; justify-content: space-between; padding: 8px 0; }
+            .totals-row.subtotal { border-top: 1px solid #e5e7eb; padding-top: 15px; }
+            .totals-row.total { font-size: 20px; font-weight: bold; color: #0a1628; border-top: 2px solid #0a1628; padding-top: 15px; margin-top: 10px; }
+            .payment-info { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #06b6d4; }
+            .due-date { background: #fef3c7; padding: 15px 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; margin-top: 30px; }
+            .notes { background: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <h1 class="logo">HumanMetrix</h1>
+                  <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 14px;">AI Assessment Platform</p>
+                </div>
+                <div class="invoice-title">
+                  <p style="font-size: 24px; margin: 0; font-weight: 600;">INVOICE</p>
+                  <p class="invoice-number">${details.invoiceNumber}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="content">
+              <div class="invoice-meta">
+                <div class="meta-section">
+                  <p class="meta-label">Bill To</p>
+                  <p class="meta-value" style="font-size: 18px;">${details.companyName}</p>
+                  <p style="color: #6b7280; margin: 5px 0 0 0;">${details.partnerEmail}</p>
+                </div>
+                <div class="meta-section" style="text-align: right;">
+                  <p class="meta-label">Invoice Date</p>
+                  <p class="meta-value">${formatDate(new Date())}</p>
+                  <p class="meta-label" style="margin-top: 15px;">Service Period</p>
+                  <p class="meta-value">${formatDate(details.periodStart)} - ${formatDate(details.periodEnd)}</p>
+                </div>
+              </div>
+              
+              <table class="line-items">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th style="text-align: center;">Quantity</th>
+                    <th style="text-align: right;">Unit Price</th>
+                    <th style="text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <strong>HumanMetrix Assessment Services</strong><br>
+                      <span style="color: #6b7280; font-size: 14px;">AI-powered assessments for ${formatDate(details.periodStart)} - ${formatDate(details.periodEnd)}</span>
+                    </td>
+                    <td style="text-align: center;">${details.testsUsed}</td>
+                    <td class="amount">${formatCurrency(details.pricePerTest)}</td>
+                    <td class="amount"><strong>${formatCurrency(details.subtotal)}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <div class="totals">
+                <div class="totals-row subtotal">
+                  <span>Subtotal</span>
+                  <span>${formatCurrency(details.subtotal)}</span>
+                </div>
+                <div class="totals-row">
+                  <span>VAT (${details.vatRate}%)</span>
+                  <span>${formatCurrency(details.vatAmount)}</span>
+                </div>
+                <div class="totals-row total">
+                  <span>Total Due</span>
+                  <span>${formatCurrency(details.totalAmount)}</span>
+                </div>
+              </div>
+              
+              <div class="due-date">
+                <strong>⏰ Payment Due: ${formatDate(details.dueDate)}</strong>
+                <p style="margin: 5px 0 0 0; color: #92400e;">Payment terms: Net ${details.paymentTermsDays} days</p>
+              </div>
+              
+              <div class="payment-info">
+                <h3 style="margin: 0 0 15px 0; color: #0369a1;">Payment Details</h3>
+                <p style="margin: 0;">
+                  <strong>Bank:</strong> [Bank Name]<br>
+                  <strong>Account Name:</strong> HumanMetrix Ltd<br>
+                  <strong>Sort Code:</strong> XX-XX-XX<br>
+                  <strong>Account Number:</strong> XXXXXXXX<br>
+                  <strong>Reference:</strong> ${details.invoiceNumber}
+                </p>
+              </div>
+              
+              ${details.invoiceNotes ? `
+              <div class="notes">
+                <h4 style="margin: 0 0 10px 0; color: #374151;">Notes</h4>
+                <p style="margin: 0; color: #6b7280;">${details.invoiceNotes}</p>
+              </div>
+              ` : ''}
+            </div>
+            
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
+              <p style="margin-top: 10px;">
+                Questions about this invoice? Contact us at <a href="mailto:info@humanmetrix.co.uk" style="color: #06b6d4;">info@humanmetrix.co.uk</a>
+              </p>
+              <p style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
+                HumanMetrix Ltd | Company Registration: [Number] | VAT Registration: [Number]
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+INVOICE - HumanMetrix
+
+Invoice Number: ${details.invoiceNumber}
+Invoice Date: ${formatDate(new Date())}
+
+BILL TO:
+${details.companyName}
+${details.partnerEmail}
+
+SERVICE PERIOD:
+${formatDate(details.periodStart)} - ${formatDate(details.periodEnd)}
+
+LINE ITEMS:
+-------------------------------------------
+HumanMetrix Assessment Services
+Quantity: ${details.testsUsed} tests
+Unit Price: ${formatCurrency(details.pricePerTest)}
+Amount: ${formatCurrency(details.subtotal)}
+-------------------------------------------
+
+TOTALS:
+Subtotal: ${formatCurrency(details.subtotal)}
+VAT (${details.vatRate}%): ${formatCurrency(details.vatAmount)}
+-------------------------------------------
+TOTAL DUE: ${formatCurrency(details.totalAmount)}
+-------------------------------------------
+
+PAYMENT DUE: ${formatDate(details.dueDate)}
+Payment terms: Net ${details.paymentTermsDays} days
+
+PAYMENT DETAILS:
+Bank: [Bank Name]
+Account Name: HumanMetrix Ltd
+Sort Code: XX-XX-XX
+Account Number: XXXXXXXX
+Reference: ${details.invoiceNumber}
+
+${details.invoiceNotes ? `NOTES:\n${details.invoiceNotes}\n` : ''}
+Questions about this invoice? Contact us at info@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Invoice email sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send invoice to ${details.partnerEmail}:`, error.message);
+    throw new Error(`Failed to send invoice email: ${error.message}`);
+  }
+}
