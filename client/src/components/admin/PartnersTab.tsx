@@ -32,6 +32,10 @@ interface Partner {
   activeApiKeys: number;
   totalApiKeys: number;
   lastApiActivity: string | null;
+  billingType: string;
+  freeTestsAllocated: number;
+  paymentTermsDays: number | null;
+  invoiceNotes: string | null;
 }
 
 interface ApiKey {
@@ -198,8 +202,22 @@ export default function PartnersTab() {
     return result;
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
+  const [billingType, setBillingType] = useState<"platform" | "invoice">("platform");
+  const [freeTests, setFreeTests] = useState<number>(0);
+  const [paymentTerms, setPaymentTerms] = useState<number>(30);
+
   const createPartnerMutation = useMutation({
-    mutationFn: async (data: { name: string; companyName: string; email: string; pricePerAssessment: number; organizationId?: string }) => {
+    mutationFn: async (data: { 
+      name: string; 
+      companyName: string; 
+      email: string; 
+      pricePerAssessment: number; 
+      organizationId?: string;
+      billingType: string;
+      freeTestsAllocated: number;
+      paymentTermsDays?: number;
+      invoiceNotes?: string;
+    }) => {
       const res = await apiRequest("POST", "/api/admin/partners", data);
       return res.json();
     },
@@ -207,6 +225,9 @@ export default function PartnersTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       setIsCreateOpen(false);
       setSelectedOrganizationId("");
+      setBillingType("platform");
+      setFreeTests(0);
+      setPaymentTerms(30);
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -313,6 +334,10 @@ export default function PartnersTab() {
       email: formData.get("email") as string,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
+      billingType,
+      freeTestsAllocated: freeTests,
+      paymentTermsDays: billingType === "invoice" ? paymentTerms : undefined,
+      invoiceNotes: billingType === "invoice" ? (formData.get("invoiceNotes") as string) : undefined,
     });
   };
 
@@ -690,6 +715,41 @@ export default function PartnersTab() {
                       <div className="text-xl font-bold text-white">{detailPartner.monthlyQuota || "Unlimited"}</div>
                     </div>
                   </div>
+                  
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <div className="text-white/60 text-sm mb-2">Payment Configuration</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-white/60 text-sm">Payment Method:</span>
+                        {detailPartner.billingType === 'invoice' ? (
+                          <Badge className="bg-purple-500/20 text-purple-300">Invoice (Enterprise)</Badge>
+                        ) : (
+                          <Badge className="bg-cyan-500/20 text-cyan-300">Platform Payments</Badge>
+                        )}
+                      </div>
+                      {detailPartner.freeTestsAllocated > 0 && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-white/60 text-sm">Welcome Package:</span>
+                          <Badge className="bg-green-500/20 text-green-300">{detailPartner.freeTestsAllocated} Free Tests</Badge>
+                        </div>
+                      )}
+                      {detailPartner.billingType === 'invoice' && (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <span className="text-white/60 text-sm">Payment Terms:</span>
+                            <span className="text-white">Net {detailPartner.paymentTermsDays || 30}</span>
+                          </div>
+                          {detailPartner.invoiceNotes && (
+                            <div className="pt-2 border-t border-white/10">
+                              <span className="text-white/60 text-sm">Invoice Notes:</span>
+                              <p className="text-white/80 text-sm mt-1">{detailPartner.invoiceNotes}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="bg-white/5 rounded-lg p-4">
                     <div className="text-white/60 text-sm mb-2">Stripe Integration</div>
                     {detailPartner.stripeCustomerId ? (
@@ -886,6 +946,74 @@ export default function PartnersTab() {
                   <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
                   <p className="text-xs text-slate-400">500 pence = £5.00</p>
                 </div>
+                
+                <div className="border-t border-slate-700 pt-4 mt-4">
+                  <h4 className="text-sm font-medium text-cyan-400 mb-3">Deal Configuration</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="freeTests">Free Tests Allocation</Label>
+                    <Input 
+                      id="freeTests" 
+                      type="number" 
+                      min={0} 
+                      max={500}
+                      value={freeTests} 
+                      onChange={(e) => setFreeTests(parseInt(e.target.value) || 0)}
+                      className="bg-slate-800 border-slate-600" 
+                      data-testid="input-partner-free-tests" 
+                    />
+                    <p className="text-xs text-slate-400">Complimentary tests to get the partner started (0-500)</p>
+                  </div>
+
+                  <div className="space-y-2 mt-4">
+                    <Label>Payment Method</Label>
+                    <Select value={billingType} onValueChange={(v) => setBillingType(v as "platform" | "invoice")}>
+                      <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-billing-type">
+                        <SelectValue placeholder="Select payment method..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectItem value="platform" className="text-white">Platform Payments (Stripe)</SelectItem>
+                        <SelectItem value="invoice" className="text-white">Invoice (Enterprise)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-400">
+                      {billingType === "platform" 
+                        ? "Partner purchases test packages via Stripe checkout" 
+                        : "Partner receives invoices for test packages"}
+                    </p>
+                  </div>
+
+                  {billingType === "invoice" && (
+                    <>
+                      <div className="space-y-2 mt-4">
+                        <Label>Payment Terms</Label>
+                        <Select value={String(paymentTerms)} onValueChange={(v) => setPaymentTerms(parseInt(v))}>
+                          <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-payment-terms">
+                            <SelectValue placeholder="Select payment terms..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-700">
+                            <SelectItem value="15" className="text-white">Net 15</SelectItem>
+                            <SelectItem value="30" className="text-white">Net 30</SelectItem>
+                            <SelectItem value="45" className="text-white">Net 45</SelectItem>
+                            <SelectItem value="60" className="text-white">Net 60</SelectItem>
+                            <SelectItem value="90" className="text-white">Net 90</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2 mt-4">
+                        <Label htmlFor="invoiceNotes">Invoice Notes (Optional)</Label>
+                        <Input 
+                          id="invoiceNotes" 
+                          name="invoiceNotes" 
+                          placeholder="Special terms or notes..."
+                          className="bg-slate-800 border-slate-600" 
+                          data-testid="input-invoice-notes" 
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="organizationId">Link to Organisation (Optional)</Label>
                   <Select value={selectedOrganizationId} onValueChange={setSelectedOrganizationId}>

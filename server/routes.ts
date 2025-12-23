@@ -4214,7 +4214,10 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
-      const { name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId } = req.body;
+      const { 
+        name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
+        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes
+      } = req.body;
       
       if (!name || !email) {
         return res.status(400).json({ message: "Name and email are required" });
@@ -4248,7 +4251,39 @@ Format your response as JSON with this structure:
         stripeCustomerId: stripeCustomerId || null,
         organizationId: organizationId || null,
         isActive: true,
+        billingType: billingType || 'platform',
+        freeTestsAllocated: freeTestsAllocated || 0,
+        paymentTermsDays: billingType === 'invoice' ? (paymentTermsDays || 30) : null,
+        invoiceNotes: billingType === 'invoice' ? invoiceNotes : null,
       });
+      
+      // Auto-credit free tests if allocated
+      if (freeTestsAllocated && freeTestsAllocated > 0) {
+        try {
+          // Create a complimentary package record
+          const pkg = await storage.createPartnerTestPackage({
+            partnerId: partner.id,
+            packageSize: freeTestsAllocated,
+            pricePerTest: 0,
+            totalPrice: 0,
+            currency: 'gbp',
+            status: 'completed',
+          });
+          
+          // Credit the free tests to the partner's quota
+          await storage.creditPartnerTests(
+            partner.id,
+            pkg.id,
+            freeTestsAllocated,
+            `Welcome package: ${freeTestsAllocated} complimentary tests`
+          );
+          
+          console.log(`Credited ${freeTestsAllocated} free tests to partner ${partner.id}`);
+        } catch (creditError) {
+          console.error("Error crediting free tests:", creditError);
+          // Don't fail partner creation, just log the error
+        }
+      }
       
       res.status(201).json(partner);
     } catch (error) {

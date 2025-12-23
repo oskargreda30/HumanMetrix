@@ -508,6 +508,11 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
+  // Billing configuration
+  billingType: varchar("billing_type").notNull().default("platform"), // 'platform' (Stripe) or 'invoice' (manual invoicing)
+  freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
+  paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 30, Net 60, etc.
+  invoiceNotes: varchar("invoice_notes"), // Special terms or notes for invoiced clients
   // Quota tracking fields
   testsPurchased: integer("tests_purchased").notNull().default(0),
   testsConsumed: integer("tests_consumed").notNull().default(0),

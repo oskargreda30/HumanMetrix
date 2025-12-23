@@ -40,6 +40,11 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Active Discount Codes**: `FREE` (100% off) and `20OFFPRICE` (20% off).
 - **B2B Partner Integration**: Enterprise integration for clients to embed assessments.
     - **Partner Accounts**: Managed via admin dashboard.
+    - **Flexible Deal Configuration**: Customisable partner deals with:
+        - Free test allocation (0-500 complimentary tests) auto-credited on registration.
+        - Billing type options: Platform Payments (Stripe) or Invoice (Enterprise).
+        - Payment terms for invoiced clients (Net 15/30/45/60/90).
+        - Invoice notes for special terms.
     - **API Key Authentication**: Secure key pairs with rate limiting and permissions.
     - **Assessment Sessions**: Partners create sessions via REST API; results returned via API or webhook.
     - **Embeddable Widget**: JavaScript widget using Shadow DOM for style isolation.
