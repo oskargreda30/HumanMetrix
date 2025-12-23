@@ -1,7 +1,7 @@
 # HumanMetrix - AI Assessment Platform
 
 ## Overview
-HumanMetrix is an AI assessment platform for recruitment and career development, offering enterprise-grade assessments to measure behavioral skills and AI literacy. It provides comprehensive insights into a candidate's fit for roles in the AI-driven economy, aiming to streamline hiring processes and support career growth through objective AI-powered skill evaluation. Key assessment types include FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ).
+HumanMetrix is an AI assessment platform for recruitment and career development. It offers enterprise-grade assessments to measure behavioral skills and AI literacy, providing insights into candidate fit for AI-driven roles. The platform aims to streamline hiring and support career growth through objective AI-powered skill evaluation, focusing on assessment types like FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ).
 
 ## User Preferences
 I prefer detailed explanations.
@@ -11,94 +11,57 @@ Do not make changes to the file `replit.nix`.
 ## System Architecture
 
 ### UI/UX Decisions
-The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS for a professional aesthetic. Wouter handles navigation, and TanStack Query manages data fetching. UI components include a responsive landing page, assessment selection, results pages, and an admin dashboard. Branding features a new HM monogram logo with a cyan/blue gradient. PDF reports are designed for professional readability with consistent branding and support overlapping radar charts for multi-candidate comparison. Hero section animations are scroll-triggered and accessibility-supported. Product roadmap timeline visualization displays upcoming assessment releases with status badges and timeline connector.
-
-**Background Design System**: Network tech background image (50% opacity) with gradient overlays creates a cohesive visual identity across key pages:
-- **Dashboard & MyResults**: Dark navy overlay (rgba(13,29,51,0.85-0.75-0.85)) with white text for premium, sophisticated feel
-- **About & ForEmployers**: Light grey overlay (rgba(241,245,249,0.92-0.88-0.92)) with black text for professional readability
-- All backgrounds use fixed positioning for smooth scrolling and consistent brand presence
+The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is handled by Wouter, and data fetching by TanStack Query. UI components include a responsive landing page, assessment selection, results pages, and an admin dashboard. Branding features a new HM monogram logo with a cyan/blue gradient. PDF reports are designed for professional readability with consistent branding, supporting overlapping radar charts. Hero section animations are scroll-triggered, and accessibility-supported. A product roadmap visualizes upcoming assessment releases. A network tech background image with gradient overlays creates a cohesive visual identity across key pages (Dashboard, MyResults, About, ForEmployers).
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript, Wouter, TanStack Query, Shadcn UI, Tailwind CSS.
 - **Backend**: Express, TypeScript.
 - **Database**: PostgreSQL (Neon) with Drizzle ORM.
-- **Authentication**: Email/Password using bcryptjs for hashing and session-based authentication.
+- **Authentication**: Email/Password with bcryptjs and session-based authentication.
 - **Payment**: Stripe integration for guest checkout.
-- **AI Integration**: OpenAI API (GPT-5) for advanced assessment evaluations and AI-powered role alignment analysis.
-- **Email Services**: Nodemailer with Gmail for transactional emails.
-- **PDF Generation**: `jsPDF` and `html2canvas` for dynamic, comprehensive PDF reports.
+- **AI Integration**: OpenAI API (GPT-5) for assessment evaluations and role alignment.
+- **Email Services**: Nodemailer with Gmail.
+- **PDF Generation**: `jsPDF` and `html2canvas`.
 
 ### Feature Specifications
-- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture (GPT-5 evaluated), AIQ (AI ethics with graded scoring).
-- **Enhanced Score Differentiation**: FIT and AI Readiness use a curved scoring formula to create meaningful differentiation while maintaining a 50% floor. Formula: `50 + (raw * 0.4) + (raw^2 * 0.05)` results in: Average performers (~50% raw) → ~71%, Strong performers (~80% raw) → ~85%, Exceptional performers (100% raw) → 95%. Creates ~25pt spread in top half vs old ~10pt spread.
-- **AIQ Graded Scoring System**: Uses weighted option scores (Best Answer 100%, Acceptable 65-75%, Suboptimal 30-50%, Poor 0-25%) to capture nuanced ethical reasoning. Results display 20% band interpretations: Exemplary (80-100%), Strong (60-79%), Developing (40-59%), Significant Gaps (20-39%), Critical Concerns (0-19%). Colors are consistent across all surfaces (green/blue/amber/orange/red). Centralized via `getAIQBandInterpretation` helper in aiq-questions.ts.
-- **Payment Flow**: Payment-deferred model where candidates take assessments for free and pay only to unlock results. A "FREE" discount code (100% off) is supported.
-- **User Flows**: Self-service for candidates and admin-invited users, both following the pay-after-completion model.
-- **Admin Dashboard**: Features candidate management, multi-candidate comparison (radar charts), AI-powered role fit analysis, and Scoring QA (Golden Set monitoring).
-- **Enhanced PDF Export System**: Generates multi-page, visually organized PDF reports with dynamic content, including individual and comparison reports.
-- **Results Access Gating**: Requires completion of all four distinct assessments before results can be viewed or unlocked.
-- **Product Roadmap**: Visual timeline showing December 2025 platform launch (current assessments), February 2026 Perfect Role Finder, March 2026 AI Output Translator, May 2026 Team Analysis & Building Tool, TBC 2026 Social Influence Assessment, Q3 2026 Human-AI Collaboration Style & AI Tool Fluency, Q4 2026 AI-Assisted Problem Solving & AI Risk Awareness, and 2027 Adaptability Quotient (AQ).
-- **Marketing Email Opt-in**: Subscribe page (/news) with popup-style centered card for capturing job seeker emails from job ad links. Data stored in marketing_optins table for targeting campaigns. Redirects to landing page after submission.
-- **Golden Set Benchmark System**: GPT-5 scoring consistency verification using 10 benchmark prompts across all 7 difficulty levels. Runs daily at midnight UTC. Features **smoothed evaluation** (5 runs per prompt, averaged) to eliminate LLM variance and provide stable drift measurements. Uses 2% drift threshold to detect true model changes. Admin UI shows pass/fail status, expected vs actual scores, and drift percentage. "Reset & Recalibrate" button runs smoothed calibration to establish new baseline.
-- **Multi-Currency Pricing System**: Automatic location detection displays prices in users' local currencies (50+ currencies including THB, PHP, INR, JPY, USD, EUR, etc.). Uses ipapi.co (HTTPS, free tier) for secure IP geolocation with 5-minute server-side caching. CurrencyContext provides global state with localStorage persistence for both currency and country preferences. Manual currency selector dropdown allows override. All prices stored in GBP pence, converted using exchange rates in `shared/currencies.ts`.
-- **PPP (Purchasing Power Parity) Pricing**: 3-tier regional pricing system - Tier 1 (Western markets, 1.0x), Tier 2 (Middle markets, 0.7x), Tier 3 (Emerging markets, 0.5x). Stripe checkout sessions charge users in their local currency using `convertToStripeCurrencyAmount()` helper which handles zero-decimal currencies (JPY, KRW, VND, IDR, etc.) correctly. Metadata includes countryCode, pricingTier, and localCurrency for analytics.
-- **SEA Launch Pricing (Dec 2025)**: Strategic flat-rate pricing for Southeast Asia market entry. SEA launch countries bypass PPP multipliers and pay fixed LOCAL CURRENCY amounts for the complete assessment suite:
-  - **Philippines**: ₱59 PHP (~$1.00 USD) - Pilot market
-  - **Vietnam**: 30,000₫ VND (~$1.20 USD) - Tech & software hub expansion  
-  - **Indonesia**: Rp18,000 IDR (~$1.10 USD) - E-commerce & retail expansion
-  - **Malaysia**: RM8 MYR (~$1.80 USD) - Shared services & finance expansion
-  - Implementation in `shared/currencies.ts` with `SEA_LAUNCH_COUNTRIES` config storing `priceLocalUnits`, `currencyCode`, and `isZeroDecimal` for each country. Stripe checkout uses local currency directly (php, vnd, idr, myr) instead of USD conversion. VND is zero-decimal (30000 = 30,000₫), IDR uses 2 decimals (1800000 = Rp18,000).
-- **Active Discount Codes**: FREE (100% off) and 20OFFPRICE (20% off) - both percent-based and work with ALL currencies globally.
-- **B2B Partner Integration System**: Complete enterprise integration enabling clients to embed assessments on their platforms. Features:
-  - **Partner Accounts**: Managed via admin dashboard (super_admin only) with company details, pricing tiers, and Stripe billing configuration.
-  - **API Key Authentication**: Secure key pairs (hm_live_*/hm_test_*) with bcrypt hashing, prefix-based lookup, rate limiting (100 req/min default), and configurable permissions.
-  - **Assessment Sessions**: Partners create sessions via REST API, candidates complete via embedded widget or redirect, results returned via API or webhook.
-  - **Embeddable Widget** (`/embed/widget.js`): Drop-in JavaScript widget using Shadow DOM for style isolation. Supports all assessment types with customisable theming.
-  - **JavaScript SDK** (`/embed/sdk.js`): UMD module supporting npm and CDN usage. HumanMetrixClient class with session creation, widget launching, and results retrieval.
-  - **Usage-Based Billing**: Events tracked in usage_events table with billable flag. Stripe metered billing integration for subscription-based invoicing. Admin endpoints for billing info, Stripe customer creation, and subscription management.
-  - **Developer Documentation** (`/developers`): Comprehensive docs with Quick Start, Widget integration, SDK reference, and REST API documentation.
-  - **Prepaid Test Package Quota System** (Dec 2025): B2B partners purchase prepaid test packages with tiered pricing. Features:
-    - **Package Tiers**: 10 tests (£5/test), 25 (£4.50), 50 (£4), 100 (£3.50), 250 (£3), 500 (£2.50). Minimum purchase is 10 tests.
-    - **Quota Tracking**: `partner_test_packages` table stores purchases, `partner_quota_ledger` provides detailed transaction history (credits/debits).
-    - **Automatic Suspension**: When quota reaches 100%, partner API access is suspended (apiAccessSuspendedAt field set). Automatic reactivation when new tests purchased.
-    - **Email Notifications**: Warning at 70% usage, urgent warning at 90%, suspension notice at 100%. Notification tracking prevents duplicate emails.
-    - **Admin UI**: Quota tab in partner detail view shows usage progress bar, quota stats, ledger history, and package purchases. Manual credit and reactivation buttons for admin actions.
-    - **API Endpoints**: GET `/api/admin/partners/:id/quota`, GET `/api/admin/partners/:id/ledger`, GET `/api/admin/partners/:id/packages`, POST `/api/admin/partners/:id/credit`, POST `/api/admin/partners/:id/reactivate`.
-    - **Organisation Linkage**: Partners can be linked to organisations via `organizationId` FK in `partner_accounts` table. This enables org admins to view their partner usage in the Usage dashboard tab. Super admins can link partners to organisations when creating/editing partner accounts.
-  - **Usage Dashboard Tab** (Dec 2025): Admin dashboard tab showing B2B partner usage statistics.
-    - **Super Admin View**: Platform-wide usage statistics including total partners, tests purchased/consumed, active vs suspended partners, and per-partner breakdown with progress bars.
-    - **Org Admin View**: Organisation-specific usage showing linked partner account quota, consumption, and remaining tests. Displays warning banners for low quota (90%+) and suspended status.
-    - **API Endpoints**: GET `/api/admin/usage/platform` (super admin), GET `/api/admin/usage/organization` (org admin). Organisation endpoint uses FK linkage with fallbacks to email/company name matching for backwards compatibility.
+- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture, AIQ (AI ethics).
+- **Enhanced Scoring**: FIT and AI Readiness use a curved scoring formula for better differentiation; AIQ uses a weighted graded scoring system with 20% band interpretations.
+- **Payment Flow**: Pay-deferred model; candidates complete assessments for free and pay to unlock results. Supports 100% off discount codes.
+- **User Flows**: Self-service for candidates and admin-invited users.
+- **Admin Dashboard**: Candidate management, multi-candidate comparison, AI-powered role fit analysis, and Scoring QA (Golden Set monitoring).
+- **Enhanced PDF Export System**: Generates multi-page, dynamic PDF reports.
+- **Results Access Gating**: Requires completion of all four distinct assessments to view results.
+- **Product Roadmap**: Visual timeline of future assessment releases (e.g., Perfect Role Finder, AI Output Translator).
+- **Marketing Email Opt-in**: Subscribe page for capturing job seeker emails.
+- **Golden Set Benchmark System**: GPT-5 scoring consistency verification using benchmark prompts, daily runs with smoothed evaluation to detect drift. Admin UI for monitoring.
+- **Multi-Currency Pricing**: Automatic location detection displays prices in local currencies using `ipapi.co` with server-side caching and `CurrencyContext` for state.
+- **PPP Pricing**: 3-tier regional pricing (Tier 1: 1.0x, Tier 2: 0.7x, Tier 3: 0.5x). Stripe checkout handles local currency conversion.
+- **SEA Launch Pricing**: Strategic flat-rate local currency pricing for specific Southeast Asian countries (Philippines, Vietnam, Indonesia, Malaysia).
+- **Active Discount Codes**: `FREE` (100% off) and `20OFFPRICE` (20% off).
+- **B2B Partner Integration**: Enterprise integration for clients to embed assessments.
+    - **Partner Accounts**: Managed via admin dashboard.
+    - **API Key Authentication**: Secure key pairs with rate limiting and permissions.
+    - **Assessment Sessions**: Partners create sessions via REST API; results returned via API or webhook.
+    - **Embeddable Widget**: JavaScript widget using Shadow DOM for style isolation.
+    - **JavaScript SDK**: UMD module for session creation, widget launching, and results retrieval.
+    - **Usage-Based Billing**: Stripe metered billing for subscription-based invoicing.
+    - **Developer Documentation**: Comprehensive `/developers` docs, including OpenAPI/Swagger.
+    - **OpenAPI/Swagger Documentation**: Full OpenAPI 3.0 specification at `/api/partner/openapi.json` with Swagger UI.
+    - **Prepaid Test Package Quota System**: Partners purchase tiered test packages. Features quota tracking, automatic API suspension, email notifications, and admin UI management.
+    - **Usage Dashboard Tab**: Admin dashboard tab for platform-wide and organization-specific B2B partner usage statistics.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
-- **Scalable Database Schema**: Supports users, assessments, results, invitations, and AI evaluation data.
-- **Secure Authentication**: Robust session-based authentication with explicit session persistence.
-- **API-driven**: Comprehensive API endpoints for all functionalities.
-- **Content-Aware PDF Rendering**: Dynamic layout ensures readability and visual consistency.
-- **Cache Refresh Pattern**: All data-changing flows use cache invalidation + refetch + refresh URL parameter.
-
-### Scalability Optimizations (Dec 2025)
-- **Database Indexes**: Comprehensive indexes on frequently queried columns (users.email/role, purchases.userId/status, assessment_results.userId/type/status, invitations.token/email).
-- **Connection Pool Tuning**: 20 connections dev / 50 production with extended timeouts.
-- **API Rate Limiting**: Memory-based per-IP rate limiting (100 req/min general, 10/15min auth, 20/min Stripe).
-- **Request Deduplication**: Prevents duplicate POST/PUT/DELETE within 500ms window.
-- **Lazy Module Loading**: OpenAI, Stripe, jsPDF loaded on-demand with production preloading.
-- **Static Asset Caching**: Immutable assets cached 1 year (hashed), static 1 day.
-- **HTTP Keep-Alive**: 65s timeout reduces TCP handshake overhead.
-- **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy.
-- **Trust Proxy**: Enabled in production for correct IP detection behind load balancers.
-
-### Bug Fixes Applied (Nov 2025)
-- **Session Race Condition**: Added explicit `await req.session.save()` in login/signup to ensure session is persisted to PostgreSQL before responding.
-- **Dashboard Refresh**: Implemented refresh URL parameter pattern (`?refresh=timestamp`) for data-changing flows (Purchase, Assessment, PurchaseSuccess, CheckoutModal).
-- **Assessment Status Display**: Fixed API to return actual result status (`in_progress`, `ready`) instead of purchase item status; Dashboard now shows "In Progress" with yellow badge and "Continue Assessment" button.
-- **Cache Invalidation**: Added proper refetch after invalidation in all mutation handlers to ensure fresh data.
-- **Multiple Testing Series**: Fixed `/api/available-assessments` to use purchase-item-specific tracking (`purchase::${item.id}`) instead of assessment type tracking, allowing users to have multiple testing series with the same assessment types.
+- **Scalable Database Schema**: Supports users, assessments, results, and AI data.
+- **Secure Authentication**: Robust session-based authentication.
+- **API-driven**: Comprehensive API endpoints.
+- **Content-Aware PDF Rendering**: Dynamic layout for readability.
+- **Cache Refresh Pattern**: Cache invalidation + refetch + refresh URL parameter for data changes.
+- **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
 - **Stripe**: Payment gateway.
-- **OpenAI API**: For GPT-5 based assessment evaluations and AI role alignment.
-- **Gmail (via Nodemailer)**: For transactional emails.
+- **OpenAI API**: AI-powered assessment and role alignment.
+- **Gmail (via Nodemailer)**: Transactional email service.
 - **Replit Auth**: User management.

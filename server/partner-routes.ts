@@ -6,6 +6,11 @@ import { ASSESSMENT_TYPES, normalizeAssessmentId } from "@shared/schema";
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const createSessionSchema = z.object({
   assessmentType: z.enum(["fit", "ai_readiness", "prompt_architecture", "aiq"]),
@@ -286,6 +291,48 @@ export function registerPartnerRoutes(app: Express) {
       }
     }
   );
+
+  app.get(
+    "/api/partner/quota",
+    partnerAuth(),
+    async (req: PartnerRequest, res) => {
+      try {
+        const partner = req.partner!;
+        const balance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        const percentageUsed = balance.testsPurchased > 0
+          ? (balance.testsConsumed / balance.testsPurchased) * 100
+          : 0;
+        
+        res.json({
+          testsPurchased: balance.testsPurchased,
+          testsConsumed: balance.testsConsumed,
+          remaining: balance.remaining,
+          percentageUsed: Math.round(percentageUsed * 10) / 10,
+        });
+      } catch (error) {
+        console.error("Error fetching quota:", error);
+        res.status(500).json({ error: "Failed to fetch quota data" });
+      }
+    }
+  );
+
+  app.get("/api/partner/openapi.json", async (req, res) => {
+    try {
+      const openApiPath = path.resolve(__dirname, "../shared/openapi.json");
+      const openApiContent = fs.readFileSync(openApiPath, "utf-8");
+      const openApiSpec = JSON.parse(openApiContent);
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const spec = {
+        ...openApiSpec,
+        servers: [{ url: baseUrl, description: "Current server" }],
+      };
+      res.json(spec);
+    } catch (error) {
+      console.error("Error serving OpenAPI spec:", error);
+      res.status(500).json({ error: "Failed to load OpenAPI specification" });
+    }
+  });
 
   app.get("/api/partner/assessment-types", (req, res) => {
     res.json({
