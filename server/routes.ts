@@ -2353,14 +2353,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Send welcome email with credentials
         console.log(`Sending welcome email to ${validatedData.candidateEmail}`);
-        await sendWelcomeEmailWithPassword(
-          validatedData.candidateEmail,
-          validatedData.candidateName,
-          temporaryPassword,
-          validatedData.message ?? undefined
-        );
-        
-        console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
+        try {
+          await sendWelcomeEmailWithPassword(
+            validatedData.candidateEmail,
+            validatedData.candidateName,
+            temporaryPassword,
+            validatedData.message ?? undefined
+          );
+          console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
+        } catch (emailError: any) {
+          console.error(`✗ Failed to send welcome email to ${validatedData.candidateEmail}:`, emailError.message);
+          // Don't fail invitation - account is created, user can use password reset
+        }
       } else {
         // If user exists but has no organization, assign them to the invitation's org
         if (organizationId && !existingUser.organizationId) {
@@ -2373,9 +2377,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Send invitation email to existing user
         console.log(`Sending invitation email to existing user ${validatedData.candidateEmail}`);
-        await sendInvitationEmail(invitation, user!.firstName || 'HumanMetrix');
-        
-        console.log(`User ${validatedData.candidateEmail} already exists - invitation created and email sent`);
+        try {
+          await sendInvitationEmail(invitation, user!.firstName || 'HumanMetrix');
+          console.log(`User ${validatedData.candidateEmail} already exists - invitation created and email sent`);
+        } catch (emailError: any) {
+          console.error(`✗ Failed to send invitation email to ${validatedData.candidateEmail}:`, emailError.message);
+          // Don't fail invitation - user can still access via link
+        }
       }
 
       res.json({
@@ -2465,12 +2473,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`📧 Sending welcome email to ${email} with temporary password`);
           // Send welcome email with credentials
-          await sendWelcomeEmailWithPassword(
-            email,
-            `${firstName} ${lastName}`,
-            temporaryPassword
-          );
-          console.log(`✅ Created new user ${email} and sent welcome email`);
+          try {
+            await sendWelcomeEmailWithPassword(
+              email,
+              `${firstName} ${lastName}`,
+              temporaryPassword
+            );
+            console.log(`✅ Created new user ${email} and sent welcome email`);
+          } catch (emailError: any) {
+            console.error(`✗ Failed to send welcome email to ${email}:`, emailError.message);
+            // Don't fail registration - account is created, user can use password reset
+          }
         } else {
           // User already exists - they should log in instead of creating new assessments
           console.log(`⚠️  User ${email} already exists - rejecting checkout, they should log in`);
