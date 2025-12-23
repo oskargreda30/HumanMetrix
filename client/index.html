@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Polyfill for libraries that expect Node.js globals -->
+    <script>
+      window.global = window;
+      window.process = window.process || { env: {} };
+      window.Buffer = window.Buffer || { isBuffer: () => false };
+    </script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XMV28MSXR2"></script>
     <script>

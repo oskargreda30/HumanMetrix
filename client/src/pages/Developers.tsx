@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -6,8 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Code2, Puzzle, Zap, Book, ExternalLink, FileJson } from "lucide-react";
+import { Copy, Check, Code2, Puzzle, Zap, Book, ExternalLink, FileJson, Loader2 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
+import "swagger-ui-react/swagger-ui.css";
+
+const SwaggerUI = lazy(() => import("swagger-ui-react"));
 
 function CodeBlock({ code, language = "javascript" }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -629,133 +632,40 @@ X-API-Key: hm_live_xxxxxxxxxxxx
                     Interactive API documentation with try-it-out functionality
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Swagger UI</h3>
-                    <p className="text-slate-300">
-                      Explore and test the HumanMetrix Partner API using the interactive Swagger UI interface.
-                      This provides a complete reference of all available endpoints with request/response examples.
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-4 items-center">
+                    <a
+                      href="/api/partner/openapi.json"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" data-testid="button-openapi-json">
+                        <FileJson className="w-4 h-4 mr-2" />
+                        Download OpenAPI Spec
+                      </Button>
+                    </a>
+                    <p className="text-slate-400 text-sm">
+                      Use the OpenAPI spec to generate client SDKs or import into Postman
                     </p>
-                    <div className="flex gap-4">
-                      <a
-                        href={`https://petstore.swagger.io/?url=${encodeURIComponent(window.location.origin + '/api/partner/openapi.json')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button className="bg-green-600 hover:bg-green-700" data-testid="button-swagger-ui">
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Open Swagger UI
-                        </Button>
-                      </a>
-                      <a
-                        href="/api/partner/openapi.json"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" data-testid="button-openapi-json">
-                          <FileJson className="w-4 h-4 mr-2" />
-                          Download OpenAPI Spec
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">OpenAPI Specification</h3>
-                    <p className="text-slate-300">
-                      The OpenAPI 3.0 specification is available at:
-                    </p>
-                    <CodeBlock code={`GET /api/partner/openapi.json`} />
-                    <p className="text-slate-300 text-sm">
-                      You can use this specification to:
-                    </p>
-                    <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
-                      <li>Generate client SDKs in any programming language</li>
-                      <li>Import into Postman or other API testing tools</li>
-                      <li>Set up automated API testing</li>
-                      <li>Generate documentation for your internal teams</li>
-                    </ul>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Import into Postman</h3>
-                    <p className="text-slate-300">
-                      To import the API specification into Postman:
-                    </p>
-                    <ol className="list-decimal list-inside text-slate-300 text-sm space-y-2">
-                      <li>Open Postman and click <strong>Import</strong></li>
-                      <li>Select <strong>Link</strong> tab</li>
-                      <li>Enter the OpenAPI URL:</li>
-                    </ol>
-                    <CodeBlock code={`${window.location.origin}/api/partner/openapi.json`} />
-                    <p className="text-slate-300 text-sm">
-                      Postman will automatically create a collection with all endpoints configured.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Generate Client SDK</h3>
-                    <p className="text-slate-300">
-                      Use OpenAPI Generator to create a client SDK in your preferred language:
-                    </p>
-                    <CodeBlock code={`# Install OpenAPI Generator
-npm install @openapitools/openapi-generator-cli -g
-
-# Generate TypeScript client
-openapi-generator-cli generate \\
-  -i ${window.location.origin}/api/partner/openapi.json \\
-  -g typescript-fetch \\
-  -o ./humanmetrix-client
-
-# Or generate Python client
-openapi-generator-cli generate \\
-  -i ${window.location.origin}/api/partner/openapi.json \\
-  -g python \\
-  -o ./humanmetrix-client-python`} />
-                  </div>
-
-                  <div className="border border-slate-700 rounded-lg p-4 bg-slate-900/50">
-                    <h4 className="text-sm font-semibold text-cyan-400 mb-2">Available Endpoints</h4>
-                    <div className="grid gap-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 font-mono text-xs">POST</Badge>
-                        <code className="text-slate-300">/api/partner/sessions</code>
-                        <span className="text-slate-500">- Create assessment session</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/sessions/:id</code>
-                        <span className="text-slate-500">- Get session status</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/sessions/:id/results</code>
-                        <span className="text-slate-500">- Get results</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/sessions</code>
-                        <span className="text-slate-500">- List all sessions</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/quota</code>
-                        <span className="text-slate-500">- Get quota balance</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/usage</code>
-                        <span className="text-slate-500">- Get usage stats</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-xs">GET</Badge>
-                        <code className="text-slate-300">/api/partner/assessment-types</code>
-                        <span className="text-slate-500">- List assessment types</span>
-                      </div>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
+
+              <div className="rounded-lg overflow-hidden border border-slate-700 bg-white" data-testid="swagger-ui-container">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center p-12 bg-white">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
+                    <span className="ml-3 text-slate-600">Loading API documentation...</span>
+                  </div>
+                }>
+                  <SwaggerUI 
+                    url="/api/partner/openapi.json"
+                    docExpansion="list"
+                    defaultModelsExpandDepth={1}
+                    displayRequestDuration={true}
+                  />
+                </Suspense>
+              </div>
             </TabsContent>
           </Tabs>
 
