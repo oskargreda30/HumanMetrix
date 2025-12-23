@@ -85,41 +85,22 @@ export default function WidgetTest() {
   const loadWidget = () => {
     if (!currentSession || !widgetContainerRef.current) return;
 
-    widgetContainerRef.current.innerHTML = `
+    const container = widgetContainerRef.current;
+    container.innerHTML = `
       <div class="flex items-center justify-center p-8 text-slate-400">
         <div class="animate-spin w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full mr-3"></div>
         Loading widget...
       </div>
     `;
 
-    const existingScript = document.querySelector('script[src*="widget.js"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    const existingStyles = document.getElementById("hm-widget-styles");
-    if (existingStyles) {
-      existingStyles.remove();
-    }
-
-    if ((window as any).HumanMetrix) {
-      delete (window as any).HumanMetrix;
-    }
-    if ((window as any).hmWidget) {
-      delete (window as any).hmWidget;
-    }
-
     (window as any).HM_BASE_URL = window.location.origin;
 
-    const script = document.createElement("script");
-    script.src = "/embed/widget.js";
-    script.dataset.sessionId = currentSession.sessionId;
-    script.dataset.theme = widgetTheme;
-    script.onload = () => {
+    const initWidget = () => {
       if ((window as any).HumanMetrix) {
+        container.innerHTML = '';
         (window as any).HumanMetrix.init({
           sessionId: currentSession.sessionId,
-          container: widgetContainerRef.current,
+          container: container,
           theme: widgetTheme,
           onComplete: (result: any) => {
             toast({
@@ -137,7 +118,20 @@ export default function WidgetTest() {
         });
       }
     };
-    document.head.appendChild(script);
+
+    if ((window as any).HumanMetrix) {
+      initWidget();
+    } else {
+      const existingScript = document.querySelector('script[src*="widget.js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const script = document.createElement("script");
+      script.src = "/embed/widget.js?" + Date.now();
+      script.onload = initWidget;
+      document.head.appendChild(script);
+    }
   };
 
   useEffect(() => {
