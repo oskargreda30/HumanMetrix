@@ -245,7 +245,21 @@ export default function PartnersTab() {
       const res = await apiRequest("PUT", `/api/admin/partners/${data.id}`, { isActive: data.isActive });
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/partners"] });
+      const previousPartners = queryClient.getQueryData<Partner[]>(["/api/admin/partners"]);
+      queryClient.setQueryData<Partner[]>(["/api/admin/partners"], (old) =>
+        old?.map((p) => (p.id === data.id ? { ...p, isActive: data.isActive } : p))
+      );
+      return { previousPartners };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previousPartners) {
+        queryClient.setQueryData(["/api/admin/partners"], context.previousPartners);
+      }
+      toast({ title: "Error", description: "Failed to update partner status", variant: "destructive" });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
     },
   });
