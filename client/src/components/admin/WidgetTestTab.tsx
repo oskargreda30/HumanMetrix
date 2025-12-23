@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Play, RefreshCw, Code2, Puzzle, Copy, Check, ExternalLink } from "lucide-react";
+import { Loader2, Play, Code2, Puzzle, Copy, Check, ExternalLink } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,7 +44,6 @@ export default function WidgetTestTab() {
   const [currentSession, setCurrentSession] = useState<TestSession | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [widgetTheme, setWidgetTheme] = useState<string>("light");
-  const widgetContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: partners, isLoading: partnersLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
@@ -76,63 +75,10 @@ export default function WidgetTestTab() {
     },
   });
 
-  const loadWidget = () => {
-    if (!currentSession || !widgetContainerRef.current) return;
-
-    const container = widgetContainerRef.current;
-    container.innerHTML = `
-      <div class="flex items-center justify-center p-8 text-slate-400">
-        <div class="animate-spin w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full mr-3"></div>
-        Loading widget...
-      </div>
-    `;
-
-    (window as any).HM_BASE_URL = window.location.origin;
-
-    const initWidget = () => {
-      if ((window as any).HumanMetrix) {
-        container.innerHTML = '';
-        (window as any).HumanMetrix.init({
-          sessionId: currentSession.sessionId,
-          container: container,
-          theme: widgetTheme,
-          onComplete: (result: any) => {
-            toast({
-              title: "Assessment Completed",
-              description: `Score: ${result.totalScore || "N/A"}%`,
-            });
-          },
-          onError: (error: any) => {
-            toast({
-              title: "Widget Error",
-              description: error.message,
-              variant: "destructive",
-            });
-          },
-        });
-      }
-    };
-
-    if ((window as any).HumanMetrix) {
-      initWidget();
-    } else {
-      const existingScript = document.querySelector('script[src*="widget.js"]');
-      if (existingScript) {
-        existingScript.remove();
-      }
-
-      const script = document.createElement("script");
-      script.src = "/embed/widget.js?" + Date.now();
-      script.onload = initWidget;
-      document.head.appendChild(script);
-    }
+  const getEmbedUrl = () => {
+    if (!currentSession) return "";
+    return `/embed/assessment?session=${currentSession.sessionId}`;
   };
-
-  useEffect(() => {
-    if (currentSession && widgetContainerRef.current) {
-      loadWidget();
-    }
-  }, [currentSession, widgetTheme]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -334,29 +280,17 @@ export default function WidgetTestTab() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <a href={currentSession.widgetUrl} target="_blank" rel="noopener noreferrer">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => loadWidget()}
                     className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    data-testid="button-reload-widget-tab"
+                    data-testid="button-open-external-tab"
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Reload Widget
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open in New Tab
                   </Button>
-                  <a href={currentSession.widgetUrl} target="_blank" rel="noopener noreferrer">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                      data-testid="button-open-external-tab"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Open External
-                    </Button>
-                  </a>
-                </div>
+                </a>
               </CardContent>
             </Card>
           )}
@@ -424,19 +358,25 @@ export default function WidgetTestTab() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div
-                ref={widgetContainerRef}
-                className="min-h-[400px] bg-slate-900/50 rounded-lg border border-slate-700 flex items-center justify-center"
-                data-testid="widget-preview-container-tab"
-              >
-                {!currentSession && (
+              {currentSession ? (
+                <iframe
+                  src={getEmbedUrl()}
+                  className="w-full min-h-[500px] bg-white rounded-lg border border-slate-700"
+                  data-testid="widget-preview-iframe"
+                  title="Assessment Widget Preview"
+                />
+              ) : (
+                <div
+                  className="min-h-[400px] bg-slate-900/50 rounded-lg border border-slate-700 flex items-center justify-center"
+                  data-testid="widget-preview-container-tab"
+                >
                   <div className="text-center text-slate-500 p-8">
                     <Puzzle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Select a partner and create a test session</p>
                     <p className="text-sm mt-2">The widget will appear here</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
