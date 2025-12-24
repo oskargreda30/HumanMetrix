@@ -353,7 +353,6 @@ export async function sendContactFormEmail(
   const mailOptions = {
     from: `"HumanMetrix Contact Form" <${process.env.GMAIL_USER}>`,
     to: salesEmail,
-    cc: process.env.GMAIL_USER, // CC to main inbox as backup
     replyTo: email,
     subject: `${intentLabel} from ${name} - ${company}`,
     html: `
