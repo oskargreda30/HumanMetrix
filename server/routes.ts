@@ -5470,7 +5470,7 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     "8-C": { "High Agency": 4, "Empathy & Ethics": 4 },
     "8-D": { "Intellectual Curiosity": 4, "Resilience": 4, "Growth Mindset": 4 },
     
-    "9-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "9-A": { "Resilience": 4, "Empathy & Ethics": 4, "Growth Mindset": 4 },
     "9-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
     "9-C": { "High Agency": 4, "Interpersonal Agility": 4 },
     "9-D": { "High Agency": 4, "Intellectual Curiosity": 4, "Resilience": 4 },
@@ -5490,8 +5490,8 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     "12-C": { "High Agency": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
     "12-D": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
     
-    "13-A": { "High Agency": 4, "Intellectual Curiosity": 4 },
-    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "13-A": { "High Agency": 4, "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
+    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Empathy & Ethics": 4 },
     "13-C": { "Resilience": 4, "Growth Mindset": 4 },
     "13-D": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
     

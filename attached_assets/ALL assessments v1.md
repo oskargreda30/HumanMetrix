@@ -772,7 +772,7 @@ Question-Option: { Skill: Points }
 8-C: { HA: 4, EE: 4 }
 8-D: { IC: 4, RA: 4, GM: 4 }
 
-9-A: { RA: 4, EE: 4 }
+9-A: { RA: 4, EE: 4, GM: 4 }
 9-B: { IC: 4, EE: 4 }
 9-C: { HA: 4, IA: 4 }
 9-D: { HA: 4, IC: 4, RA: 4 }
@@ -792,8 +792,8 @@ Question-Option: { Skill: Points }
 12-C: { HA: 4, GM: 4, IA: 4 }
 12-D: { IC: 4, GM: 4, IA: 4 }
 
-13-A: { HA: 4, IC: 4 }
-13-B: { IC: 4, GM: 4 }
+13-A: { HA: 4, IC: 4, IA: 4 }
+13-B: { IC: 4, GM: 4, EE: 4 }
 13-C: { RA: 4, GM: 4 }
 13-D: { HA: 4, RA: 4, GM: 4 }
 
