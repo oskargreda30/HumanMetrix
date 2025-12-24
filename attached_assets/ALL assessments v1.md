@@ -273,7 +273,7 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them. | CT/PS: 4, ACL: 4 |
+| A | Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them. | CT/PS: 4, ACL: 4, DE: 4 |
 | B | Implement a new data collection process to capture high-resolution, real-time data related to the decline. | DF: 4, CI: 4 |
 | C | Challenge the team to creatively explore solutions that violate current market assumptions. | DF: 4, RAI: 4, AL/PE: 4 |
 | D | Facilitate a collaborative session to map the customer journey and pinpoint potential failure points. | ACL: 4, CC: 4, CI: 4 |
@@ -287,10 +287,10 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Research the specific encryption standard and document its technical implementation requirements. | TF: 4, DE: 4 |
-| B | Immediately train the team on the proper procedures for using the new encryption tools. | DF: 4, CI: 4 |
+| B | Immediately train the team on the proper procedures for using the new encryption tools. | ACL: 4, CC: 4, DF: 4 |
 | C | Analyze the security risks associated with not using encryption to justify the process change to skeptical colleagues. | RAI: 4, CT/PS: 4 |
 | D | Update all data storage and transfer workflows to reflect the new policy, focusing on consistent compliance. | ACL: 4, DE: 4 |
-| E | Use an AI to generate a detailed compliance checklist for the entire team to follow. | AL/PE: 4, CC: 4 |
+| E | Use an AI to generate a detailed compliance checklist for the entire team to follow. | AL/PE: 4, CC: 4, CI: 4 |
 
 ---
 
@@ -339,7 +339,7 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Break the process down into its logical steps, documenting the precise sequence required for automation. | CT/PS: 4, ACL: 4 |
-| B | Search for a no-code/low-code solution that allows you to automate the task without requiring programming skills. | AL/PE: 4, CI: 4, CC: 4 |
+| B | Search for a no-code/low-code solution that allows you to automate the task without requiring programming skills. | AL/PE: 4, CI: 4, CC: 4, RAI: 4 |
 | C | Proactively learn the necessary programming language by taking an introductory online course. | TF: 4, DE: 4 |
 | D | Focus your analysis on quantifying the financial losses caused by the human errors to justify investment in automation. | DF: 4, CI: 4 |
 | E | Collaborate with an engineer to translate your process documentation into functional, automated code. | TF: 4, ACL: 4 |
@@ -481,7 +481,7 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Use critical thinking to map all exceptions and create a decision tree that handles each one logically. | CT/PS: 4, ACL: 4 |
+| A | Use critical thinking to map all exceptions and create a decision tree that handles each one logically. | CT/PS: 4, ACL: 4, DE: 4 |
 | B | Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first. | TF: 4, DF: 4 |
 | C | Use an AI to generate the complex conditional logic required to handle the edge cases in the code. | AL/PE: 4, CI: 4 |
 | D | Collaborate with process owners to redefine the process and eliminate unnecessary exceptions. | CC: 4, CI: 4 |

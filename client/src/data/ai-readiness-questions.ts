@@ -248,17 +248,17 @@ export const AI_READINESS_SCORING = {
   "2-D": { "DF": 4, "CT/PS": 4 },
   "2-E": { "AL/PE": 4, "ACL": 4 },
   
-  "3-A": { "CT/PS": 4, "ACL": 4 },
+  "3-A": { "CT/PS": 4, "ACL": 4, "DE": 4 },
   "3-B": { "DF": 4, "CI": 4 },
   "3-C": { "DF": 4, "RAI": 4, "AL/PE": 4 },
   "3-D": { "ACL": 4, "CC": 4, "CI": 4 },
   "3-E": { "TF": 4, "CT/PS": 4 },
   
   "4-A": { "TF": 4, "DE": 4 },
-  "4-B": { "DF": 4, "CI": 4 },
+  "4-B": { "ACL": 4, "CC": 4, "DF": 4 },
   "4-C": { "RAI": 4, "CT/PS": 4 },
   "4-D": { "ACL": 4, "DE": 4 },
-  "4-E": { "AL/PE": 4, "CC": 4 },
+  "4-E": { "AL/PE": 4, "CC": 4, "CI": 4 },
   
   "5-A": { "AL/PE": 4, "DF": 4 },
   "5-B": { "TF": 4, "DF": 4 },
@@ -279,7 +279,7 @@ export const AI_READINESS_SCORING = {
   "7-E": { "CI": 4, "CC": 4 },
   
   "8-A": { "CT/PS": 4, "ACL": 4 },
-  "8-B": { "AL/PE": 4, "CI": 4, "CC": 4 },
+  "8-B": { "AL/PE": 4, "CI": 4, "CC": 4, "RAI": 4 },
   "8-C": { "TF": 4, "DE": 4 },
   "8-D": { "DF": 4, "CI": 4 },
   "8-E": { "TF": 4, "ACL": 4 },
@@ -344,7 +344,7 @@ export const AI_READINESS_SCORING = {
   "18-D": { "AL/PE": 4, "CI": 4 },
   "18-E": { "DF": 4, "ACL": 4 },
   
-  "19-A": { "CT/PS": 4, "ACL": 4 },
+  "19-A": { "CT/PS": 4, "ACL": 4, "DE": 4 },
   "19-B": { "TF": 4, "DF": 4 },
   "19-C": { "AL/PE": 4, "CI": 4 },
   "19-D": { "CC": 4, "CI": 4 },
