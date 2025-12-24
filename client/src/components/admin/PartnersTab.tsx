@@ -1265,7 +1265,7 @@ export default function PartnersTab() {
                 Add Partner
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-700 text-white">
+            <DialogContent className="bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Partner Account</DialogTitle>
                 <DialogDescription className="text-slate-400">Add a new enterprise partner for B2B integrations.</DialogDescription>
