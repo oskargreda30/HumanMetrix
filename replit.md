@@ -31,6 +31,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Admin Dashboard**: Candidate management, multi-candidate comparison, AI-powered role fit analysis, and Scoring QA (Golden Set monitoring).
 - **Enhanced PDF Export System**: Generates multi-page, dynamic PDF reports.
 - **Results Access Gating**: Requires completion of all four distinct assessments to view results.
+- **Results Retention Consent**: Popup after completing all assessments asking users to share results with employers or keep private. Explicit button choice required; consent stored with timestamp.
 - **Product Roadmap**: Visual timeline of future assessment releases (e.g., Perfect Role Finder, AI Output Translator).
 - **Marketing Email Opt-in**: Subscribe page for capturing job seeker emails.
 - **Golden Set Benchmark System**: GPT-5 scoring consistency verification using benchmark prompts, daily runs with smoothed evaluation to detect drift. Admin UI for monitoring.
