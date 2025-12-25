@@ -829,10 +829,6 @@ Semantically validated - each answer option maps to skills that genuinely reflec
 Each answer awards 4 points to skills it maps to.
 PERFECTLY BALANCED: All 9 skills have exactly 23 occurrences each = 207 total mappings.
 All skills have 92 max points (23 × 4 points).
-Note: 3 answers have only 1 skill to achieve perfect balance:
-  - 14-B: CC only [DE removed]
-  - 17-A: DE only [DF removed]
-  - 18-D: AL/PE only [TF removed]
 Final distribution: AL/PE: 23, TF: 23, DF: 23, CT/PS: 23, ACL: 23, RAI: 23, DE: 23, CI: 23, CC: 23
 
 ```
