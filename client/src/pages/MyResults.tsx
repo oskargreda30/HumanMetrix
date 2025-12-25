@@ -42,8 +42,9 @@ export default function MyResults() {
   });
 
   // Find the specific purchase batch if purchaseId is provided
+  // Convert p.id to string for comparison since URL params are always strings
   const selectedBatch = purchaseId 
-    ? purchaseBatches?.find((p: any) => p.id === purchaseId)
+    ? purchaseBatches?.find((p: any) => String(p.id) === purchaseId)
     : null;
 
   // Check if user has paid for results access
