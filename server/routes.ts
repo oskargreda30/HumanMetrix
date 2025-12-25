@@ -5653,29 +5653,39 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // Find min and max raw percentages for relative scaling
+  // Find min and max raw percentages for hybrid scaling
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // Relative scaling with strong differentiation:
-  // - Candidate's strongest skill → 90-95 range
-  // - Candidate's weakest skill → 50-55 range
-  // - Creates ~40 point spread to clearly show strong vs weak skills
+  // HYBRID SCORING: Combines absolute performance with relative differentiation
+  // - Maximum score is capped based on candidate's best absolute raw percentage
+  // - Relative scaling creates spread within the candidate's profile
+  // - Floor at 50, ceiling based on actual performance (not always 95)
+  //
+  // Example outcomes:
+  // - High performer (80% raw best): ceiling ~86, spread 50-86
+  // - Average performer (50% raw best): ceiling ~73, spread 50-73
+  // - Low performer (30% raw best): ceiling ~64, spread 50-64
   const normalizedScores: Record<string, number> = {};
+  
+  // Calculate the ceiling based on the candidate's best absolute performance
+  // At 100% raw → ceiling 95, at 50% raw → ceiling 73, at 0% raw → ceiling 50
+  const ceiling = 50 + (maxPct / 100) * 45;
+  const scoreRange = ceiling - 50;
+
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0) {
+    if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Map to 50-95 range with curve for extra differentiation at top
-      const baseScore = 50 + (relativePosition * 40); // 50-90 linear
-      const bonusScore = Math.pow(relativePosition, 2) * 5; // 0-5 bonus for top skills
+      // Map from 50 to ceiling with slight curve for top skill emphasis
+      const baseScore = 50 + (relativePosition * scoreRange * 0.9);
+      const bonusScore = Math.pow(relativePosition, 2) * (scoreRange * 0.1);
       normalizedScores[skill] = Math.round(baseScore + bonusScore);
     } else {
-      // All skills have same raw score - give them all a neutral score
-      // Based on how high the absolute raw percentage is
-      const absoluteScore = 50 + (rawPct * 0.45);
+      // All skills have same raw score - use absolute scaling
+      const absoluteScore = 50 + (rawPct / 100) * 45;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
@@ -5905,29 +5915,39 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Find min and max raw percentages for relative scaling
+  // Find min and max raw percentages for hybrid scaling
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // Relative scaling with strong differentiation:
-  // - Candidate's strongest skill → 90-95 range
-  // - Candidate's weakest skill → 50-55 range
-  // - Creates ~40 point spread to clearly show strong vs weak skills
+  // HYBRID SCORING: Combines absolute performance with relative differentiation
+  // - Maximum score is capped based on candidate's best absolute raw percentage
+  // - Relative scaling creates spread within the candidate's profile
+  // - Floor at 50, ceiling based on actual performance (not always 95)
+  //
+  // Example outcomes:
+  // - High performer (80% raw best): ceiling ~86, spread 50-86
+  // - Average performer (50% raw best): ceiling ~73, spread 50-73
+  // - Low performer (30% raw best): ceiling ~64, spread 50-64
   const normalizedScores: Record<string, number> = {};
+  
+  // Calculate the ceiling based on the candidate's best absolute performance
+  // At 100% raw → ceiling 95, at 50% raw → ceiling 73, at 0% raw → ceiling 50
+  const ceiling = 50 + (maxPct / 100) * 45;
+  const scoreRange = ceiling - 50;
+
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0) {
+    if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Map to 50-95 range with curve for extra differentiation at top
-      const baseScore = 50 + (relativePosition * 40); // 50-90 linear
-      const bonusScore = Math.pow(relativePosition, 2) * 5; // 0-5 bonus for top skills
+      // Map from 50 to ceiling with slight curve for top skill emphasis
+      const baseScore = 50 + (relativePosition * scoreRange * 0.9);
+      const bonusScore = Math.pow(relativePosition, 2) * (scoreRange * 0.1);
       normalizedScores[skill] = Math.round(baseScore + bonusScore);
     } else {
-      // All skills have same raw score - give them all a neutral score
-      // Based on how high the absolute raw percentage is
-      const absoluteScore = 50 + (rawPct * 0.45);
+      // All skills have same raw score - use absolute scaling
+      const absoluteScore = 50 + (rawPct / 100) * 45;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
