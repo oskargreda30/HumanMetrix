@@ -226,15 +226,14 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH EXTREME VARIANCE:
+  // HYBRID SCORING WITH MAXIMUM VARIANCE:
   // - Floor at 50 (weakest skill always)
-  // - Ceiling based on absolute performance with extreme aggressive scaling
-  // - Low performers can reach 85+, high performers reach 90s
-  // - Uses power of 0.3 for ceiling to push scores very high
+  // - Ceiling at 100 for 100% raw, scaled down for lower performers
+  // - Uses power of 0.25 for aggressive ceiling scaling
   const normalizedScores: Record<string, number> = {};
   
-  // Extreme ceiling - allows even low performers to show strong differentiation
-  const ceiling = 50 + Math.pow(maxPct / 100, 0.3) * 45;
+  // Aggressive ceiling with 100 max - allows wide differentiation
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
   const scoreRange = ceiling - 50;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
@@ -245,7 +244,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
       normalizedScores[skill] = Math.round(50 + (relativePosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.3) * 45;
+      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.25) * 50;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
