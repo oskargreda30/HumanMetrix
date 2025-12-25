@@ -220,30 +220,34 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Find min and max raw percentages for relative scaling
+  // Find min and max raw percentages for hybrid scaling
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // RELATIVE SCORING WITH WIDE VARIANCE:
-  // - Floor at 50 (weakest skill)
-  // - Ceiling at 95 (strongest skill)
-  // - Creates 45-point spread to make rockstars pop
-  // - Uses square root curve to push more skills toward higher scores
+  // HYBRID SCORING WITH WIDE VARIANCE:
+  // - Floor at 50 (weakest skill always)
+  // - Ceiling based on absolute performance with aggressive scaling
+  // - High performers (80%+ raw) can reach 90s
+  // - Low performers (30% raw) cap around 70
   const normalizedScores: Record<string, number> = {};
+  
+  // Aggressive ceiling calculation - power of 0.6 makes it easier to reach higher scores
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.6) * 45;
+  const scoreRange = ceiling - 50;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0) {
+    if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Square root curve pushes scores higher, making top skills really stand out
+      // Square root curve pushes scores higher within the available range
       const curvedPosition = Math.sqrt(relativePosition);
-      // Map from 50 to 95
-      normalizedScores[skill] = Math.round(50 + (curvedPosition * 45));
+      // Map from 50 to ceiling
+      normalizedScores[skill] = Math.round(50 + (curvedPosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + (rawPct / 100) * 45;
+      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.6) * 45;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
