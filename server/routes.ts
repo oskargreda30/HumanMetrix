@@ -5659,31 +5659,29 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH WIDE VARIANCE:
+  // HYBRID SCORING WITH MAXIMUM VARIANCE:
   // - Floor at 50 (weakest skill always)
-  // - Ceiling based on absolute performance with aggressive scaling
-  // - High performers (80%+ raw) can reach 90s
-  // - Low performers (30% raw) cap around 70
+  // - Ceiling based on absolute performance with very aggressive scaling
+  // - Even moderate performers can reach 80s
+  // - Uses cube root (^0.4) for ceiling to push scores higher
   //
-  // Ceiling formula: 50 + (maxPct/100)^0.6 * 50
-  // Examples: 100% → 95, 80% → 91, 50% → 81, 30% → 70
+  // Ceiling formula: 50 + (maxPct/100)^0.4 * 45
+  // Examples: 100% → 95, 80% → 92, 50% → 85, 30% → 79, 20% → 74
   const normalizedScores: Record<string, number> = {};
   
-  // Aggressive ceiling calculation - square root makes it easier to reach higher scores
-  const ceiling = 50 + Math.pow(maxPct / 100, 0.6) * 45;
+  // Very aggressive ceiling - cube root allows even low performers to show differentiation
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.4) * 45;
   const scoreRange = ceiling - 50;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Square root curve pushes scores higher within the available range
-      const curvedPosition = Math.sqrt(relativePosition);
-      // Map from 50 to ceiling
-      normalizedScores[skill] = Math.round(50 + (curvedPosition * scoreRange));
+      // Linear scaling to maximize spread from floor to ceiling
+      normalizedScores[skill] = Math.round(50 + (relativePosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.6) * 45;
+      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.4) * 45;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
@@ -5919,31 +5917,29 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH WIDE VARIANCE:
+  // HYBRID SCORING WITH MAXIMUM VARIANCE:
   // - Floor at 50 (weakest skill always)
-  // - Ceiling based on absolute performance with aggressive scaling
-  // - High performers (80%+ raw) can reach 90s
-  // - Low performers (30% raw) cap around 70
+  // - Ceiling based on absolute performance with very aggressive scaling
+  // - Even moderate performers can reach 80s
+  // - Uses cube root (^0.4) for ceiling to push scores higher
   //
-  // Ceiling formula: 50 + (maxPct/100)^0.6 * 45
-  // Examples: 100% → 95, 80% → 91, 50% → 81, 30% → 70
+  // Ceiling formula: 50 + (maxPct/100)^0.4 * 45
+  // Examples: 100% → 95, 80% → 92, 50% → 85, 30% → 79, 20% → 74
   const normalizedScores: Record<string, number> = {};
   
-  // Aggressive ceiling calculation - power of 0.6 makes it easier to reach higher scores
-  const ceiling = 50 + Math.pow(maxPct / 100, 0.6) * 45;
+  // Very aggressive ceiling - cube root allows even low performers to show differentiation
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.4) * 45;
   const scoreRange = ceiling - 50;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Square root curve pushes scores higher within the available range
-      const curvedPosition = Math.sqrt(relativePosition);
-      // Map from 50 to ceiling
-      normalizedScores[skill] = Math.round(50 + (curvedPosition * scoreRange));
+      // Linear scaling to maximize spread from floor to ceiling
+      normalizedScores[skill] = Math.round(50 + (relativePosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.6) * 45;
+      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.4) * 45;
       normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
