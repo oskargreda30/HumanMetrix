@@ -210,15 +210,40 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     });
   });
 
-  // Normalize to 50-100 scale
-  const normalizedScores: Record<string, number> = {};
+  // Calculate raw percentages for each skill
+  const rawPercentages: Record<string, number> = {};
   Object.entries(skills).forEach(([skill, score]) => {
     if (maxScores[skill] > 0) {
-      const rawNormalized = (score / maxScores[skill]) * 100;
-      // Scale to 50-100 range: 50 + (normalized * 0.5)
-      normalizedScores[skill] = Math.round(50 + (rawNormalized * 0.5));
+      rawPercentages[skill] = (score / maxScores[skill]) * 100;
     } else {
-      normalizedScores[skill] = 50; // Minimum score is 50
+      rawPercentages[skill] = 0;
+    }
+  });
+
+  // Find min and max raw percentages for relative scaling
+  const percentageValues = Object.values(rawPercentages);
+  const minPct = Math.min(...percentageValues);
+  const maxPct = Math.max(...percentageValues);
+  const pctRange = maxPct - minPct;
+
+  // Relative scaling with strong differentiation:
+  // - Candidate's strongest skill → 90-95 range
+  // - Candidate's weakest skill → 50-55 range
+  // - Creates ~40 point spread to clearly show strong vs weak skills
+  const normalizedScores: Record<string, number> = {};
+  Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
+    if (pctRange > 0) {
+      // Relative position within candidate's own range (0 to 1)
+      const relativePosition = (rawPct - minPct) / pctRange;
+      // Map to 50-95 range with curve for extra differentiation at top
+      const baseScore = 50 + (relativePosition * 40); // 50-90 linear
+      const bonusScore = Math.pow(relativePosition, 2) * 5; // 0-5 bonus for top skills
+      normalizedScores[skill] = Math.round(baseScore + bonusScore);
+    } else {
+      // All skills have same raw score - give them all a neutral score
+      // Based on how high the absolute raw percentage is
+      const absoluteScore = 50 + (rawPct * 0.45);
+      normalizedScores[skill] = Math.round(absoluteScore);
     }
   });
 
