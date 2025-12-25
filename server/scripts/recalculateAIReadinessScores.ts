@@ -220,31 +220,27 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Find min and max raw percentages for hybrid scaling
+  // Find min and max raw percentages for relative scaling
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING: Combines absolute performance with relative differentiation
-  // - Maximum score is capped based on candidate's best absolute raw percentage
-  // - Relative scaling creates spread within the candidate's profile
-  // - Floor at 50, ceiling based on actual performance (not always 95)
+  // RELATIVE SCORING WITH WIDE VARIANCE:
+  // - Floor at 50 (weakest skill)
+  // - Ceiling at 95 (strongest skill)
+  // - Creates 45-point spread to make rockstars pop
+  // - Uses square root curve to push more skills toward higher scores
   const normalizedScores: Record<string, number> = {};
-  
-  // Calculate the ceiling based on the candidate's best absolute performance
-  // At 100% raw → ceiling 95, at 50% raw → ceiling 73, at 0% raw → ceiling 50
-  const ceiling = 50 + (maxPct / 100) * 45;
-  const scoreRange = ceiling - 50;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0 && scoreRange > 0) {
+    if (pctRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Map from 50 to ceiling with slight curve for top skill emphasis
-      const baseScore = 50 + (relativePosition * scoreRange * 0.9);
-      const bonusScore = Math.pow(relativePosition, 2) * (scoreRange * 0.1);
-      normalizedScores[skill] = Math.round(baseScore + bonusScore);
+      // Square root curve pushes scores higher, making top skills really stand out
+      const curvedPosition = Math.sqrt(relativePosition);
+      // Map from 50 to 95
+      normalizedScores[skill] = Math.round(50 + (curvedPosition * 45));
     } else {
       // All skills have same raw score - use absolute scaling
       const absoluteScore = 50 + (rawPct / 100) * 45;
