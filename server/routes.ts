@@ -2393,10 +2393,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // If user exists but has no organization, assign them to the invitation's org
         if (organizationId && !existingUser.organizationId) {
-          await storage.updateUser(existingUser.id, { 
-            organizationId,
-            role: 'candidate'
-          });
+          await storage.updateUserOrganization(existingUser.id, organizationId);
+          await storage.updateUserRole(existingUser.id, 'candidate');
           console.log(`Assigned existing user ${validatedData.candidateEmail} to organization ${organizationId}`);
         }
         
