@@ -5428,82 +5428,99 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     'Interpersonal Agility': 0,
   };
 
-  // Scoring matrix - each question-option maps to 1-3 skills with 4 points each
+  // Scoring matrix - BALANCED: each skill appears exactly ONCE per question
+  // Skills: HA (High Agency), IC (Intellectual Curiosity), RA (Resilience), 
+  //         EE (Empathy & Ethics), GM (Growth Mindset), IA (Interpersonal Agility)
   const scoringMatrix: Record<string, Record<string, number>> = {
-    "1-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
-    "1-B": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
+    // Q1: Dinner party - missing ingredient
+    "1-A": { "High Agency": 4, "Resilience": 4 },
+    "1-B": { "Intellectual Curiosity": 4 },
     "1-C": { "Empathy & Ethics": 4, "Growth Mindset": 4 },
-    "1-D": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "1-D": { "Interpersonal Agility": 4 },
     
+    // Q2: Friend failed driving test
     "2-A": { "High Agency": 4, "Growth Mindset": 4 },
     "2-B": { "Resilience": 4, "Empathy & Ethics": 4 },
-    "2-C": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "2-D": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    "2-C": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
+    "2-D": { },
     
+    // Q3: Antique furniture repair
     "3-A": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "3-B": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
-    "3-C": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "3-D": { "Resilience": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "3-B": { "High Agency": 4, "Resilience": 4 },
+    "3-C": { "Empathy & Ethics": 4 },
+    "3-D": { "Interpersonal Agility": 4 },
     
-    "4-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
-    "4-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "4-C": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "4-D": { "High Agency": 4, "Empathy & Ethics": 4, "Growth Mindset": 4 },
+    // Q4: Vacation deposit conflict
+    "4-A": { "High Agency": 4, "Resilience": 4 },
+    "4-B": { "Intellectual Curiosity": 4 },
+    "4-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "4-D": { "Growth Mindset": 4 },
     
+    // Q5: Helping elderly at bus stop
     "5-A": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "5-B": { "Resilience": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "5-C": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "5-D": { "Intellectual Curiosity": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    "5-B": { "Resilience": 4, "Growth Mindset": 4 },
+    "5-C": { "High Agency": 4, "Interpersonal Agility": 4 },
+    "5-D": { },
     
+    // Q6: Blog critique response
     "6-A": { "High Agency": 4, "Intellectual Curiosity": 4 },
     "6-B": { "Resilience": 4, "Growth Mindset": 4 },
     "6-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "6-D": { "High Agency": 4, "Resilience": 4, "Empathy & Ethics": 4 },
+    "6-D": { },
     
-    "7-A": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "7-B": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
-    "7-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "7-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    // Q7: Co-signing risky loan
+    "7-A": { "Intellectual Curiosity": 4 },
+    "7-B": { "High Agency": 4, "Resilience": 4 },
+    "7-C": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "7-D": { "Empathy & Ethics": 4 },
     
-    "8-A": { "High Agency": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "8-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "8-C": { "High Agency": 4, "Empathy & Ethics": 4 },
-    "8-D": { "Intellectual Curiosity": 4, "Resilience": 4, "Growth Mindset": 4 },
+    // Q8: Volunteer group election bias
+    "8-A": { "High Agency": 4, "Interpersonal Agility": 4 },
+    "8-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
+    "8-C": { },
+    "8-D": { "Resilience": 4, "Growth Mindset": 4 },
     
-    "9-A": { "Resilience": 4, "Empathy & Ethics": 4, "Growth Mindset": 4 },
-    "9-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "9-C": { "High Agency": 4, "Interpersonal Agility": 4 },
-    "9-D": { "High Agency": 4, "Intellectual Curiosity": 4, "Resilience": 4 },
+    // Q9: Concert heckler
+    "9-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "9-B": { "Intellectual Curiosity": 4 },
+    "9-C": { "Interpersonal Agility": 4 },
+    "9-D": { "High Agency": 4, "Growth Mindset": 4 },
     
-    "10-A": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    // Q10: Roof repair emergency
+    "10-A": { "High Agency": 4, "Resilience": 4 },
     "10-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "10-C": { "Intellectual Curiosity": 4, "Resilience": 4, "Growth Mindset": 4 },
-    "10-D": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "10-C": { },
+    "10-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
     
-    "11-A": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
-    "11-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "11-C": { "High Agency": 4, "Empathy & Ethics": 4 },
-    "11-D": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    // Q11: Friend exclusion from group
+    "11-A": { "High Agency": 4, "Resilience": 4 },
+    "11-B": { "Intellectual Curiosity": 4 },
+    "11-C": { "Empathy & Ethics": 4 },
+    "11-D": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
     
-    "12-A": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "12-B": { "High Agency": 4, "Resilience": 4, "Empathy & Ethics": 4 },
-    "12-C": { "High Agency": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "12-D": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    // Q12: Family reunion planning
+    "12-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "12-B": { "High Agency": 4 },
+    "12-C": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "12-D": { "Intellectual Curiosity": 4 },
     
-    "13-A": { "High Agency": 4, "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
-    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Empathy & Ethics": 4 },
-    "13-C": { "Resilience": 4, "Growth Mindset": 4 },
-    "13-D": { "High Agency": 4, "Resilience": 4, "Growth Mindset": 4 },
+    // Q13: Difficult personal challenge
+    "13-A": { "High Agency": 4 },
+    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "13-C": { "Resilience": 4 },
+    "13-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
     
-    "14-A": { "Resilience": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "14-B": { "High Agency": 4, "Empathy & Ethics": 4 },
-    "14-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "14-D": { "High Agency": 4, "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    // Q14: Harsh public criticism
+    "14-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "14-B": { "High Agency": 4 },
+    "14-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    "14-D": { "Interpersonal Agility": 4 },
     
-    "15-A": { "High Agency": 4, "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "15-B": { "Intellectual Curiosity": 4, "Resilience": 4, "Interpersonal Agility": 4 },
-    "15-C": { "Empathy & Ethics": 4, "Growth Mindset": 4 },
-    "15-D": { "High Agency": 4, "Resilience": 4, "Interpersonal Agility": 4 },
+    // Q15: Household budget conflict
+    "15-A": { "High Agency": 4, "Growth Mindset": 4 },
+    "15-B": { "Intellectual Curiosity": 4, "Resilience": 4 },
+    "15-C": { "Empathy & Ethics": 4 },
+    "15-D": { "Interpersonal Agility": 4 },
   };
 
   // Calculate raw scores based on answers
