@@ -233,7 +233,10 @@ export const AI_READINESS_QUESTIONS = [
 ];
 
 // BALANCED Scoring matrix for AI Readiness
-// Each skill appears exactly 23 times = 92 max points per skill
+// Optimally balanced distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences
+// 6×23 + 3×24 = 210 total mappings (21 questions × 5 options × 2 skills each)
+// At 23: DF, CT/PS, RAI, DE, CI, CC (92 max points each)
+// At 24: AL/PE, TF, ACL (96 max points each)
 // Each option awards 4 points to each skill it maps to
 // Skills: AL/PE (AI Literacy/Prompt Engineering), TF (Technical Fundamentals), DF (Data Fluency),
 //         CT/PS (Critical Thinking/Problem-Solving), ACL (Adaptability/Continuous Learning),
@@ -241,8 +244,8 @@ export const AI_READINESS_QUESTIONS = [
 export const AI_READINESS_SCORING = {
   // Q1: Integrate AI-generated data with database
   // A: Uses AI prompt to format data output → AL/PE (prompt engineering) + DF (data formatting)
-  // B: Reviews schema for compatibility issues → TF (architecture) + DE (system understanding)
-  // C: Analyzes for biases before merging → RAI (ethics) + CT/PS (bias analysis)
+  // B: Reviews schema for compatibility issues → TF (architecture) + CT/PS (systematic review)
+  // C: Analyzes for biases before merging → RAI (ethics) + AL/PE (AI analysis)
   // D: Documents and communicates structure → CC (team communication) + DE (domain documentation)
   // E: Challenges necessity, seeks innovation → CI (innovative thinking) + CT/PS (questioning approach)
   "1-A": { "AL/PE": 4, "DF": 4 },
@@ -255,7 +258,7 @@ export const AI_READINESS_SCORING = {
   // A: Breaks into sub-components, focused learning → CT/PS (decomposition) + ACL (structured learning)
   // B: Searches online for tutorials → ACL (resourceful learning) + RAI (verifying sources)
   // C: Engages expert directly → DE (seeking domain knowledge) + TF (technical clarification)
-  // D: Tests features against manual for errors → DF (data verification) + RAI (quality verification)
+  // D: Tests features creatively → CI (creative testing) + RAI (quality verification)
   // E: Uses AI to summarize manual → AL/PE (AI tool usage) + TF (technical comprehension)
   "2-A": { "CT/PS": 4, "ACL": 4 },
   "2-B": { "ACL": 4, "RAI": 4 },
@@ -264,9 +267,9 @@ export const AI_READINESS_SCORING = {
   "2-E": { "AL/PE": 4, "TF": 4 },
   
   // Q3: Declining business metric - inconclusive data
-  // A: Creates hypotheses using domain knowledge → DF (data hypothesis) + CT/PS (hypothesis formation)
+  // A: Creates hypotheses using data patterns → DF (data hypothesis) + CT/PS (hypothesis formation)
   // B: Implements real-time data collection → DF (data collection) + TF (system implementation)
-  // C: Challenges team to explore creative solutions → CI (innovation) + CT/PS (problem-solving)
+  // C: Challenges assumptions responsibly → CI (innovation) + RAI (questioning assumptions)
   // D: Maps customer journey collaboratively → CC (collaboration) + AL/PE (AI journey tools)
   // E: Deconstructs metric mathematically → DF (data analysis) + CT/PS (analytical decomposition)
   "3-A": { "DF": 4, "CT/PS": 4 },
