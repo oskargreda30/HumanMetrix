@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +12,7 @@ import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdf
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
+import { ResultsRetentionConsentDialog } from "@/components/ResultsRetentionConsentDialog";
 import { format } from "date-fns";
 import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import {
@@ -26,6 +28,8 @@ import dashboardBg from "@assets/image_1763608498774.png";
 export default function MyResults() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [consentHandled, setConsentHandled] = useState(false);
 
   // Check if viewing a specific purchase batch
   const urlParams = new URLSearchParams(window.location.search);
@@ -154,6 +158,17 @@ export default function MyResults() {
   if (needsPayment) {
     return <ResultsPaymentGate />;
   }
+
+  // THIRD: Check if user needs to respond to results retention consent
+  // Show dialog if user hasn't answered yet (resultsRetentionConsent is null/undefined)
+  const needsConsentResponse = user?.resultsRetentionConsent === undefined || user?.resultsRetentionConsent === null;
+  
+  // Show consent dialog automatically if user hasn't responded and hasn't handled it this session
+  useEffect(() => {
+    if (needsConsentResponse && !consentHandled && !needsPayment && allAssessmentsCompleted) {
+      setShowConsentDialog(true);
+    }
+  }, [needsConsentResponse, consentHandled, needsPayment, allAssessmentsCompleted]);
 
   // Calculate aggregate statistics
   const totalAssessments = completedResults.length;
@@ -453,6 +468,14 @@ export default function MyResults() {
       <div className="relative z-10">
         <Footer />
       </div>
+      
+      <ResultsRetentionConsentDialog
+        open={showConsentDialog}
+        onOpenChange={setShowConsentDialog}
+        onComplete={() => {
+          setConsentHandled(true);
+        }}
+      />
     </div>
   );
 }

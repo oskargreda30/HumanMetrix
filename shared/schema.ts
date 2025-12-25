@@ -57,6 +57,8 @@ export const users = pgTable("users", {
   organizationId: varchar("organization_id").references(() => organizations.id, { onDelete: "set null" }),
   resetToken: varchar("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
+  resultsRetentionConsent: boolean("results_retention_consent"),
+  resultsRetentionConsentDate: timestamp("results_retention_consent_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

@@ -124,11 +124,23 @@ async function sendWelcomeEmailSync(emailTransporter: any, payload: { email: str
   return { messageId: info.messageId };
 }
 
-async function sendReceiptEmailSync(emailTransporter: any, payload: { email: string; name: string; assessments: string[]; totalAmount: number; sessionId: string }) {
-  const { email, name, assessments, totalAmount, sessionId } = payload;
+// Format amount with currency symbol
+function formatCurrencyAmount(amountInCents: number, currency: string): string {
+  const currencySymbols: Record<string, string> = {
+    'gbp': '£', 'usd': '$', 'eur': '€', 'aud': 'A$', 'cad': 'C$', 'nzd': 'NZ$',
+    'sgd': 'S$', 'hkd': 'HK$', 'jpy': '¥', 'cny': '¥', 'inr': '₹', 'php': '₱',
+    'vnd': '₫', 'idr': 'Rp', 'myr': 'RM', 'thb': '฿', 'krw': '₩', 'zar': 'R',
+    'brl': 'R$', 'mxn': 'MX$', 'chf': 'CHF ', 'sek': 'kr', 'nok': 'kr', 'dkk': 'kr', 'pln': 'zł',
+  };
+  const symbol = currencySymbols[currency.toLowerCase()] || currency.toUpperCase() + ' ';
+  return `${symbol}${(amountInCents / 100).toFixed(2)}`;
+}
+
+async function sendReceiptEmailSync(emailTransporter: any, payload: { email: string; name: string; assessments: string[]; totalAmount: number; sessionId: string; currency?: string }) {
+  const { email, name, assessments, totalAmount, sessionId, currency = 'gbp' } = payload;
   const formattedAssessments = assessments.map(formatAssessmentName);
   const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
-  const amountFormatted = `£${(totalAmount / 100).toFixed(2)}`;
+  const amountFormatted = formatCurrencyAmount(totalAmount, currency);
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -174,8 +186,8 @@ export async function sendWelcomeEmailAsync(email: string, name: string, tempora
   return emailQueue.enqueue('email', { type: 'welcome', payload: { email, name, temporaryPassword, note } });
 }
 
-export async function sendPaymentReceiptEmailAsync(email: string, name: string, assessments: string[], totalAmount: number, sessionId: string): Promise<string> {
-  return emailQueue.enqueue('email', { type: 'receipt', payload: { email, name, assessments, totalAmount, sessionId } });
+export async function sendPaymentReceiptEmailAsync(email: string, name: string, assessments: string[], totalAmount: number, sessionId: string, currency: string = 'gbp'): Promise<string> {
+  return emailQueue.enqueue('email', { type: 'receipt', payload: { email, name, assessments, totalAmount, sessionId, currency } });
 }
 
 export async function sendContactFormEmailAsync(name: string, email: string, company: string, message: string, intent: 'demo' | 'sales'): Promise<string> {

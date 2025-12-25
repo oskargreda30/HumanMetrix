@@ -85,6 +85,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   setResetToken(userId: string, token: string, expiry: Date): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
+  updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void>;
   
   // Purchase operations
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
@@ -1131,6 +1132,17 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({ organizationId, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        resultsRetentionConsent: consent, 
+        resultsRetentionConsentDate: new Date(),
+        updatedAt: new Date() 
+      })
       .where(eq(users.id, userId));
   }
 

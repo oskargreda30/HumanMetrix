@@ -451,12 +451,48 @@ Reply directly to this email to respond to ${name}
   console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
 }
 
+// Format amount with currency symbol
+function formatCurrencyAmount(amountInCents: number, currency: string): string {
+  const currencySymbols: Record<string, string> = {
+    'gbp': '£',
+    'usd': '$',
+    'eur': '€',
+    'aud': 'A$',
+    'cad': 'C$',
+    'nzd': 'NZ$',
+    'sgd': 'S$',
+    'hkd': 'HK$',
+    'jpy': '¥',
+    'cny': '¥',
+    'inr': '₹',
+    'php': '₱',
+    'vnd': '₫',
+    'idr': 'Rp',
+    'myr': 'RM',
+    'thb': '฿',
+    'krw': '₩',
+    'zar': 'R',
+    'brl': 'R$',
+    'mxn': 'MX$',
+    'chf': 'CHF ',
+    'sek': 'kr',
+    'nok': 'kr',
+    'dkk': 'kr',
+    'pln': 'zł',
+  };
+  
+  const symbol = currencySymbols[currency.toLowerCase()] || currency.toUpperCase() + ' ';
+  const amount = (amountInCents / 100).toFixed(2);
+  return `${symbol}${amount}`;
+}
+
 export async function sendPaymentReceiptEmail(
   email: string,
   name: string,
   assessments: string[],
   totalAmount: number,
-  sessionId: string
+  sessionId: string,
+  currency: string = 'gbp'
 ) {
   const emailTransporter = getTransporter();
   
@@ -469,7 +505,7 @@ export async function sendPaymentReceiptEmail(
   const formattedAssessments = assessments.map(formatAssessmentName);
   const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
   const assessmentListText = formattedAssessments.join(', ');
-  const amountFormatted = `£${(totalAmount / 100).toFixed(2)}`;
+  const amountFormatted = formatCurrencyAmount(totalAmount, currency);
 
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,

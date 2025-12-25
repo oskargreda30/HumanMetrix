@@ -539,7 +539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userName,
             assessmentDisplayNames,
             session.amount_total || 0,
-            session.id
+            session.id,
+            session.currency || 'gbp'
           );
         }
         
@@ -618,7 +619,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           existingUserName,
           assessmentDisplayNames,
           session.amount_total || 0,
-          session.id
+          session.id,
+          session.currency || 'gbp'
         );
         
         return res.json({
@@ -707,7 +709,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `${firstName} ${lastName}`,
           assessmentDisplayNames,
           session.amount_total || 0,
-          session.id
+          session.id,
+          session.currency || 'gbp'
         );
         console.log(`✓ Payment receipt sent successfully to ${customerEmail}`);
       } catch (emailError: any) {
@@ -1125,14 +1128,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (user) {
           const amount = session.amount_total ?? 0; // Handle 0 for FREE orders
+          const currency = session.currency || 'gbp';
           await sendPaymentReceiptEmail(
             user.email,
             user.firstName || 'Customer',
             assessmentTypes,
             amount,
-            sessionId
+            sessionId,
+            currency
           );
-          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: £${(amount / 100).toFixed(2)})`);
+          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${currency.toUpperCase()} ${(amount / 100).toFixed(2)})`);
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
@@ -1216,10 +1221,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: user.role,
         organizationId: user.organizationId,
         isInvitationOnly: !hasCompletedPurchase,
+        resultsRetentionConsent: user.resultsRetentionConsent,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Update results retention consent
+  app.post('/api/results-retention-consent', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { consent } = req.body;
+      
+      if (typeof consent !== 'boolean') {
+        return res.status(400).json({ message: "Consent must be a boolean value" });
+      }
+      
+      await storage.updateResultsRetentionConsent(userId, consent);
+      
+      res.json({ success: true, consent });
+    } catch (error) {
+      console.error("Error updating results retention consent:", error);
+      res.status(500).json({ message: "Failed to update consent" });
     }
   });
 
