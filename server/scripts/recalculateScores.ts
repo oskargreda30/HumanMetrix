@@ -123,19 +123,15 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // Apply relative scaling: make highest score = 100, scale others proportionally
-  const scoreValues = Object.values(normalizedScores);
-  const highestScore = Math.max(...scoreValues);
-  
-  if (highestScore > 0) {
-    const relativeScores: Record<string, number> = {};
-    Object.entries(normalizedScores).forEach(([skill, score]) => {
-      relativeScores[skill] = Math.round((score / highestScore) * 100);
-    });
-    return relativeScores;
-  }
+  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
+  // Preserves proportional differences between skills
+  // Formula: scaledScore = 50 + (rawPct / 100) * 50
+  const compressedScores: Record<string, number> = {};
+  Object.entries(normalizedScores).forEach(([skill, score]) => {
+    compressedScores[skill] = Math.round(50 + (score / 100) * 50);
+  });
 
-  return normalizedScores;
+  return compressedScores;
 }
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
@@ -293,19 +289,15 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Apply relative scaling: make highest score = 100, scale others proportionally
-  const scoreValues = Object.values(normalizedScores);
-  const highestScore = Math.max(...scoreValues);
-  
-  if (highestScore > 0) {
-    const relativeScores: Record<string, number> = {};
-    Object.entries(normalizedScores).forEach(([skill, score]) => {
-      relativeScores[skill] = Math.round((score / highestScore) * 100);
-    });
-    return relativeScores;
-  }
+  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
+  // Preserves proportional differences between skills
+  // Formula: scaledScore = 50 + (rawPct / 100) * 50
+  const compressedScores: Record<string, number> = {};
+  Object.entries(normalizedScores).forEach(([skill, score]) => {
+    compressedScores[skill] = Math.round(50 + (score / 100) * 50);
+  });
 
-  return normalizedScores;
+  return compressedScores;
 }
 
 async function recalculateUserScores(userEmail: string) {
