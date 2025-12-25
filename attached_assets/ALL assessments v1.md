@@ -538,11 +538,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Criterion | Weight | Max Points | Description |
 |-----------|--------|------------|-------------|
-| Clarity | 25% | 25 | Is the prompt clear, unambiguous, and easy to understand? |
+| Clarity | 20% | 20 | Is the prompt clear, unambiguous, and easy to understand? |
 | Structure | 20% | 20 | Is the prompt well-organized with logical flow? |
 | Context Relevance | 20% | 20 | Does the prompt provide necessary context and constraints? |
 | Creativity | 20% | 20 | Does the prompt encourage thoughtful, creative responses? |
-| Iterative Improvement | 15% | 15 | Does the prompt include mechanisms for refinement or building upon concepts? |
+| Iterative Improvement | 20% | 20 | Does the prompt include mechanisms for refinement or building upon concepts? |
 
 **Total**: 100 points per level (700 points maximum, averaged to 100)
 
