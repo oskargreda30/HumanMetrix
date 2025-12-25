@@ -5659,25 +5659,28 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH MAXIMUM VARIANCE:
-  // - Floor at 50 (weakest skill always)
+  // HYBRID SCORING WITH MAXIMUM VARIANCE AND DYNAMIC FLOOR:
+  // - Dynamic floor based on minimum raw % (not always stuck at 50)
   // - Ceiling at 100 for 100% raw, scaled down for lower performers
   // - Uses power of 0.25 for aggressive ceiling scaling
   //
-  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50
-  // Examples: 100% → 100, 80% → 97, 50% → 92, 40% → 90, 30% → 87
+  // Floor formula: 50 + (minPct/100)^0.5 * 10 (gives 50-60 range)
+  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50 (gives up to 100)
+  // Examples: minPct 20% → floor 54, minPct 40% → floor 56
   const normalizedScores: Record<string, number> = {};
   
+  // Dynamic floor - rewards even the weakest skill based on raw performance
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
   // Aggressive ceiling with 100 max - allows wide differentiation
   const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
-  const scoreRange = ceiling - 50;
+  const scoreRange = ceiling - floor;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Linear scaling to maximize spread from floor to ceiling
-      normalizedScores[skill] = Math.round(50 + (relativePosition * scoreRange));
+      // Linear scaling from dynamic floor to ceiling
+      normalizedScores[skill] = Math.round(floor + (relativePosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
       const absoluteScore = 50 + Math.pow(rawPct / 100, 0.25) * 50;
@@ -5916,25 +5919,28 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH MAXIMUM VARIANCE:
-  // - Floor at 50 (weakest skill always)
+  // HYBRID SCORING WITH MAXIMUM VARIANCE AND DYNAMIC FLOOR:
+  // - Dynamic floor based on minimum raw % (not always stuck at 50)
   // - Ceiling at 100 for 100% raw, scaled down for lower performers
   // - Uses power of 0.25 for aggressive ceiling scaling
   //
-  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50
-  // Examples: 100% → 100, 80% → 97, 50% → 92, 40% → 90, 30% → 87
+  // Floor formula: 50 + (minPct/100)^0.5 * 10 (gives 50-60 range)
+  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50 (gives up to 100)
+  // Examples: minPct 20% → floor 54, minPct 40% → floor 56
   const normalizedScores: Record<string, number> = {};
   
+  // Dynamic floor - rewards even the weakest skill based on raw performance
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
   // Aggressive ceiling with 100 max - allows wide differentiation
   const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
-  const scoreRange = ceiling - 50;
+  const scoreRange = ceiling - floor;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0 && scoreRange > 0) {
       // Relative position within candidate's own range (0 to 1)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Linear scaling to maximize spread from floor to ceiling
-      normalizedScores[skill] = Math.round(50 + (relativePosition * scoreRange));
+      // Linear scaling from dynamic floor to ceiling
+      normalizedScores[skill] = Math.round(floor + (relativePosition * scoreRange));
     } else {
       // All skills have same raw score - use absolute scaling
       const absoluteScore = 50 + Math.pow(rawPct / 100, 0.25) * 50;
