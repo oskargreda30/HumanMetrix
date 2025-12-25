@@ -810,35 +810,37 @@ Question-Option: { Skill: Points }
 
 ## AI Readiness Scoring Matrix
 
+Each skill appears exactly once per question for balanced scoring (21 questions × 4 points = 84 max per skill).
+
 ```
 Question-Option: { Skill: Points }
 
 1-A: { AL/PE: 4, DF: 4 }
 1-B: { TF: 4, DE: 4 }
-1-C: { TF: 4, RAI: 4, CT/PS: 4 }
+1-C: { RAI: 4, CT/PS: 4 }
 1-D: { ACL: 4, CC: 4 }
-1-E: { AL/PE: 4, CI: 4 }
+1-E: { CI: 4 }
 
 2-A: { TF: 4, CI: 4 }
-2-B: { TF: 4, CC: 4 }
+2-B: { CC: 4 }
 2-C: { RAI: 4, DE: 4 }
 2-D: { DF: 4, CT/PS: 4 }
 2-E: { AL/PE: 4, ACL: 4 }
 
-3-A: { CT/PS: 4, ACL: 4, DE: 4 }
+3-A: { CT/PS: 4, DE: 4 }
 3-B: { DF: 4, CI: 4 }
-3-C: { DF: 4, RAI: 4, AL/PE: 4 }
-3-D: { ACL: 4, CC: 4, CI: 4 }
-3-E: { TF: 4, CT/PS: 4 }
+3-C: { RAI: 4, AL/PE: 4 }
+3-D: { ACL: 4, CC: 4 }
+3-E: { TF: 4 }
 
 4-A: { TF: 4, DE: 4 }
-4-B: { ACL: 4, CC: 4, DF: 4 }
+4-B: { CC: 4, DF: 4 }
 4-C: { RAI: 4, CT/PS: 4 }
-4-D: { ACL: 4, DE: 4 }
-4-E: { AL/PE: 4, CC: 4, CI: 4 }
+4-D: { ACL: 4 }
+4-E: { AL/PE: 4, CI: 4 }
 
 5-A: { AL/PE: 4, DF: 4 }
-5-B: { TF: 4, DF: 4 }
+5-B: { TF: 4 }
 5-C: { RAI: 4, DE: 4 }
 5-D: { CT/PS: 4, CI: 4 }
 5-E: { ACL: 4, CC: 4 }
@@ -846,98 +848,98 @@ Question-Option: { Skill: Points }
 6-A: { RAI: 4, CT/PS: 4, ACL: 4 }
 6-B: { AL/PE: 4, CI: 4 }
 6-C: { TF: 4, CC: 4 }
-6-D: { DF: 4, ACL: 4 }
-6-E: { DE: 4, DF: 4 }
+6-D: { DF: 4 }
+6-E: { DE: 4 }
 
 7-A: { AL/PE: 4, DF: 4 }
 7-B: { TF: 4, DE: 4 }
 7-C: { RAI: 4, ACL: 4, CC: 4 }
-7-D: { CT/PS: 4, ACL: 4 }
-7-E: { CI: 4, CC: 4 }
+7-D: { CT/PS: 4 }
+7-E: { CI: 4 }
 
-8-A: { CT/PS: 4, ACL: 4 }
+8-A: { CT/PS: 4 }
 8-B: { AL/PE: 4, CI: 4, CC: 4, RAI: 4 }
 8-C: { TF: 4, DE: 4 }
-8-D: { DF: 4, CI: 4 }
-8-E: { TF: 4, ACL: 4 }
+8-D: { DF: 4 }
+8-E: { ACL: 4 }
 
 9-A: { DF: 4, DE: 4 }
-9-B: { RAI: 4, ACL: 4 }
-9-C: { AL/PE: 4, CT/PS: 4 }
-9-D: { TF: 4, CI: 4, DE: 4 }
+9-B: { RAI: 4 }
+9-C: { AL/PE: 4 }
+9-D: { TF: 4, CI: 4 }
 9-E: { CT/PS: 4, ACL: 4, CC: 4 }
 
 10-A: { DE: 4, CT/PS: 4 }
 10-B: { AL/PE: 4, DF: 4 }
-10-C: { ACL: 4, CC: 4 }
+10-C: { ACL: 4 }
 10-D: { CI: 4, RAI: 4 }
-10-E: { TF: 4, CI: 4, CC: 4 }
+10-E: { TF: 4, CC: 4 }
 
 11-A: { RAI: 4, DE: 4 }
 11-B: { CT/PS: 4, ACL: 4 }
 11-C: { AL/PE: 4, TF: 4, DF: 4 }
-11-D: { CC: 4, ACL: 4 }
-11-E: { AL/PE: 4, CI: 4 }
+11-D: { CC: 4 }
+11-E: { CI: 4 }
 
 12-A: { CT/PS: 4, DF: 4, AL/PE: 4 }
 12-B: { TF: 4, DE: 4 }
-12-C: { DF: 4, ACL: 4 }
-12-D: { CC: 4, AL/PE: 4 }
-12-E: { RAI: 4, CT/PS: 4, CI: 4 }
+12-C: { ACL: 4 }
+12-D: { CC: 4 }
+12-E: { RAI: 4, CI: 4 }
 
 13-A: { TF: 4, CI: 4 }
-13-B: { ACL: 4, DF: 4 }
+13-B: { DF: 4 }
 13-C: { CC: 4, RAI: 4 }
 13-D: { DE: 4, AL/PE: 4 }
-13-E: { CT/PS: 4, ACL: 4, CI: 4 }
+13-E: { CT/PS: 4, ACL: 4 }
 
-14-A: { TF: 4, ACL: 4 }
+14-A: { ACL: 4 }
 14-B: { CC: 4, CI: 4 }
 14-C: { AL/PE: 4, DF: 4 }
 14-D: { CT/PS: 4, RAI: 4 }
-14-E: { TF: 4, ACL: 4, DE: 4 }
+14-E: { TF: 4, DE: 4 }
 
 15-A: { RAI: 4, CI: 4 }
-15-B: { DF: 4, CT/PS: 4 }
+15-B: { CT/PS: 4 }
 15-C: { AL/PE: 4, ACL: 4 }
 15-D: { DE: 4, CC: 4 }
-15-E: { TF: 4, DF: 4, CT/PS: 4 }
+15-E: { TF: 4, DF: 4 }
 
 16-A: { TF: 4, CT/PS: 4 }
 16-B: { CI: 4, CC: 4 }
-16-C: { ACL: 4, DE: 4, CC: 4 }
+16-C: { ACL: 4, DE: 4 }
 16-D: { RAI: 4, DF: 4 }
-16-E: { AL/PE: 4, TF: 4 }
+16-E: { AL/PE: 4 }
 
 17-A: { DE: 4, CT/PS: 4 }
-17-B: { TF: 4, DF: 4 }
+17-B: { TF: 4 }
 17-C: { AL/PE: 4, ACL: 4 }
 17-D: { RAI: 4, CC: 4 }
-17-E: { DF: 4, CI: 4, CT/PS: 4 }
+17-E: { DF: 4, CI: 4 }
 
 18-A: { ACL: 4, DE: 4 }
 18-B: { CT/PS: 4, CC: 4 }
 18-C: { TF: 4, RAI: 4 }
 18-D: { AL/PE: 4, CI: 4 }
-18-E: { DF: 4, ACL: 4 }
+18-E: { DF: 4 }
 
 19-A: { CT/PS: 4, ACL: 4, DE: 4 }
 19-B: { TF: 4, DF: 4 }
 19-C: { AL/PE: 4, CI: 4 }
-19-D: { CC: 4, CI: 4 }
-19-E: { TF: 4, DF: 4, RAI: 4 }
+19-D: { CC: 4 }
+19-E: { RAI: 4 }
 
 20-A: { RAI: 4, DE: 4 }
 20-B: { CI: 4, TF: 4 }
-20-C: { AL/PE: 4, DE: 4 }
+20-C: { AL/PE: 4 }
 20-D: { ACL: 4, CC: 4 }
-20-E: { DF: 4, CT/PS: 4, AL/PE: 4 }
+20-E: { DF: 4, CT/PS: 4 }
 
 21-A: { CT/PS: 4, DE: 4 }
 21-B: { TF: 4, DF: 4 }
-21-C: { RAI: 4, DF: 4 }
+21-C: { RAI: 4 }
 21-D: { ACL: 4, CI: 4 }
-21-E: { AL/PE: 4, CC: 4, TF: 4 }
+21-E: { AL/PE: 4, CC: 4 }
 ```
 
 ---
