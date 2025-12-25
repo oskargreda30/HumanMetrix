@@ -251,7 +251,7 @@ This document contains all original questions, answer options, and scoring logic
 | B | Immediately review the database schema and architecture for potential data incompatibility issues. | TF: 4, CT/PS: 4 |
 | C | Analyze the AI-generated data for potential biases or ethical violations before merging it. | RAI: 4, DF: 4 |
 | D | Document the new data's structure and communicate with the team on how to access and use it effectively. | CC: 4, TF: 4 |
-| E | Challenge the necessity of merging the data, seeking a more innovative solution to the analysis problem. | CI: 4, CT/PS: 4 |
+| E | Challenge the necessity of merging the data, using AI to explore alternative analytical approaches. | CI: 4, AL/PE: 4 |
 
 ---
 
@@ -260,10 +260,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Break down the system's function into logical sub-components and devise a focused learning plan for each. | CT/PS: 4, TF: 4 |
-| B | Search online communities for practical demonstrations and user-generated tutorials to bypass the manual. | ACL: 4, CI: 4 |
-| C | Engage a technical expert or vendor directly to clarify the most critical functional aspects. | DE: 4, RAI: 4 |
-| D | Systematically test the system's features against the manual to pinpoint and document all factual errors. | DF: 4, TF: 4 |
+| A | Break down the system's function into logical sub-components and devise a focused learning plan for each. | CT/PS: 4, ACL: 4 |
+| B | Search online communities for practical demonstrations and user-generated tutorials, verifying their credibility. | CI: 4, RAI: 4 |
+| C | Engage a technical expert or vendor directly to clarify the most critical functional aspects. | DE: 4, TF: 4 |
+| D | Systematically test the system's features against the manual to pinpoint and document all factual errors. | DF: 4, CT/PS: 4 |
 | E | Use an AI to summarize the manual, extract key technical terms, and explain the core concepts simply. | AL/PE: 4, TF: 4 |
 
 ---
@@ -273,10 +273,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them. | CT/PS: 4, CI: 4 |
+| A | Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them. | DE: 4, CT/PS: 4 |
 | B | Implement a new data collection process to capture high-resolution, real-time data related to the decline. | DF: 4, TF: 4 |
-| C | Challenge the team to creatively explore solutions that violate current market assumptions. | CI: 4, RAI: 4 |
-| D | Facilitate a collaborative session to map the customer journey and pinpoint potential failure points. | CC: 4, CT/PS: 4 |
+| C | Challenge the team to creatively explore solutions that violate current market assumptions. | CI: 4, CT/PS: 4 |
+| D | Facilitate a collaborative session using AI journey mapping tools to pinpoint potential failure points. | CC: 4, AL/PE: 4 |
 | E | Deconstruct the declining metric into its fundamental mathematical components to isolate the variable causing the drop. | DF: 4, CT/PS: 4 |
 
 ---
@@ -286,11 +286,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Research the specific encryption standard and document its technical implementation requirements. | TF: 4, CT/PS: 4 |
-| B | Immediately train the team on the proper procedures for using the new encryption tools. | CC: 4, ACL: 4 |
+| A | Research the specific encryption standard and document its technical implementation requirements. | DF: 4, ACL: 4 |
+| B | Immediately train the team on the proper procedures for using the new encryption tools. | CC: 4, TF: 4 |
 | C | Analyze the security risks associated with not using encryption to justify the process change to skeptical colleagues. | RAI: 4, CT/PS: 4 |
-| D | Update all data storage and transfer workflows to reflect the new policy, focusing on consistent compliance. | ACL: 4, RAI: 4 |
-| E | Use an AI to generate a detailed compliance checklist for the entire team to follow. | AL/PE: 4, RAI: 4 |
+| D | Update all data storage and transfer workflows to reflect the new policy, focusing on consistent compliance. | DE: 4, RAI: 4 |
+| E | Use an AI to generate a detailed compliance checklist for the entire team to follow. | AL/PE: 4, DF: 4 |
 
 ---
 
@@ -299,11 +299,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Develop a detailed justification based on performance metrics and efficiency gains compared to standard solutions. | DF: 4, RAI: 4 |
+| A | Develop a detailed justification based on performance metrics and efficiency gains compared to standard solutions. | DF: 4, CT/PS: 4 |
 | B | Clearly document the solution's architecture and underlying technical logic for review. | TF: 4, CI: 4 |
 | C | Facilitate a transparent discussion with the team, explaining the rationale and seeking buy-in. | CC: 4, RAI: 4 |
 | D | Create a minimalist, innovative prototype of the feature to demonstrate its viability and effectiveness. | CI: 4, TF: 4 |
-| E | Research and share case studies of other leading companies successfully using the unusual technology. | ACL: 4, CT/PS: 4 |
+| E | Research and share case studies of other leading companies successfully using the unusual technology. | ACL: 4, DE: 4 |
 
 ---
 
@@ -314,9 +314,9 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Research the model's specific open-source license and its implications for commercial use. | RAI: 4, ACL: 4 |
 | B | Prompt the AI with a hypothetical scenario to test its ethical guardrails and behavior. | AL/PE: 4, RAI: 4 |
-| C | Collaborate with the legal team to draft internal usage guidelines for the model. | CC: 4, RAI: 4 |
-| D | Challenge the colleague to find a completely proprietary and licensed solution instead. | CI: 4, DE: 4 |
-| E | Study the model's limitations based on its training data to understand potential factual or domain errors. | DF: 4, AL/PE: 4 |
+| C | Collaborate with the legal team to draft internal usage guidelines for the model. | CC: 4, TF: 4 |
+| D | Challenge the colleague to find a completely proprietary and licensed solution instead. | CI: 4, ACL: 4 |
+| E | Study the model's limitations based on its training data to understand potential factual or domain errors. | DF: 4, RAI: 4 |
 
 ---
 
@@ -327,8 +327,8 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Use an AI tool to rapidly generate a preliminary draft, focusing your time on refining and validating its content. | AL/PE: 4, DF: 4 |
 | B | Leverage deep domain knowledge to filter external data sources, focusing only on the most relevant, high-impact trends. | DE: 4, CT/PS: 4 |
-| C | Negotiate an extended deadline, clearly explaining the need for data validation and quality control. | CC: 4, RAI: 4 |
-| D | Restructure the report to focus only on 3-4 key, evidence-backed findings rather than a comprehensive overview. | CT/PS: 4, DE: 4 |
+| C | Negotiate an extended deadline, clearly explaining the need for data validation and quality control. | CC: 4, ACL: 4 |
+| D | Use AI to identify the 3-4 most impactful findings, then restructure the report around these key insights. | AL/PE: 4, RAI: 4 |
 | E | Search for innovative, quick-turnaround data visualization tools to present the findings with maximum clarity. | CI: 4, TF: 4 |
 
 ---
@@ -339,10 +339,10 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Break the process down into its logical steps, documenting the precise sequence required for automation. | CT/PS: 4, TF: 4 |
-| B | Search for a no-code/low-code solution that allows you to automate the task without requiring programming skills. | AL/PE: 4, CI: 4 |
+| B | Search for an AI-powered no-code platform that allows you to automate the task without requiring programming skills. | AL/PE: 4, CI: 4 |
 | C | Proactively learn the necessary programming language by taking an introductory online course. | ACL: 4, TF: 4 |
-| D | Focus your analysis on quantifying the financial losses caused by the human errors to justify investment in automation. | DF: 4, CT/PS: 4 |
-| E | Collaborate with an engineer to translate your process documentation into functional, automated code. | CC: 4, TF: 4 |
+| D | Focus your analysis on quantifying the financial losses caused by the human errors to justify investment in automation. | DF: 4, RAI: 4 |
+| E | Collaborate with an engineer to translate your process documentation into functional, automated code. | CC: 4, DE: 4 |
 
 ---
 
@@ -351,9 +351,9 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Use statistical methods to impute missing values and assess the overall quality of the data. | DF: 4, CT/PS: 4 |
+| A | Use statistical methods to impute missing values and assess the overall quality of the data. | DF: 4, TF: 4 |
 | B | Consult with data owners or experts to understand the cause of the inconsistencies. | CC: 4, DE: 4 |
-| C | Research advanced data cleaning and validation techniques to apply to the dataset. | ACL: 4, DF: 4 |
+| C | Research advanced data cleaning and validation techniques to apply to the dataset. | ACL: 4, RAI: 4 |
 | D | Redefine the project's problem statement to work around the inconsistencies, focusing on a subset of reliable data. | CI: 4, CT/PS: 4 |
 | E | Use an AI to analyze the data and suggest the most appropriate cleaning and imputation strategies. | AL/PE: 4, DF: 4 |
 
@@ -366,9 +366,9 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Use your domain expertise to articulate the exact conflict between the AI's logic and the company's value system. | DE: 4, RAI: 4 |
 | B | Prompt the AI to identify potential negative PR or long-term reputation risks associated with the decision. | AL/PE: 4, RAI: 4 |
-| C | Conduct an internal review with stakeholders to assess the ethical implications and potential damage to customer trust. | CC: 4, RAI: 4 |
-| D | Propose an innovative, hybrid decision that captures some of the financial gain while adhering to company values. | CI: 4, DE: 4 |
-| E | Research the company's compliance history and ethical guidelines related to the decision area. | ACL: 4, RAI: 4 |
+| C | Facilitate a creative stakeholder workshop to explore ethical implications and brainstorm values-aligned alternatives. | CC: 4, CI: 4 |
+| D | Propose an innovative, hybrid decision that captures some of the financial gain while adhering to company values. | CI: 4, CT/PS: 4 |
+| E | Research the company's compliance history and ethical guidelines related to the decision area. | ACL: 4, TF: 4 |
 
 ---
 
@@ -377,10 +377,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Facilitate a knowledge-sharing session where senior engineers explain the technical architecture simply. | CC: 4, DE: 4 |
-| B | Research best practices for project scoping and risk identification to help them define the constraints. | ACL: 4, TF: 4 |
+| A | Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply. | CC: 4, AL/PE: 4 |
+| B | Research best practices for project scoping and risk identification to help them define the constraints. | ACL: 4, DE: 4 |
 | C | Use an AI to generate a simplified technical overview of the project's components and limitations. | AL/PE: 4, TF: 4 |
-| D | Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually. | CC: 4, CI: 4 |
+| D | Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually. | CI: 4, CT/PS: 4 |
 | E | Review the project plan and use your domain knowledge to pre-emptively identify and flag major technical risks. | DE: 4, RAI: 4 |
 
 ---
@@ -391,9 +391,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Use creative experimental design techniques (e.g., fractional factorial designs) to maximize insights from minimal data. | CI: 4, CT/PS: 4 |
-| B | Analyze the current resource allocation to identify potential efficiency gains or cost savings for the experiment. | DF: 4, CT/PS: 4 |
+| B | Analyze the current resource allocation to identify potential efficiency gains or cost savings for the experiment. | DF: 4, DE: 4 |
 | C | Research existing public data sources that might serve as a proxy or baseline for your experiment. | ACL: 4, DF: 4 |
-| D | Collaborate with other teams to pool resources or leverage their existing data collection infrastructure. | CC: 4, CI: 4 |
+| D | Collaborate with other teams to pool resources or leverage their existing data collection infrastructure. | CC: 4, ACL: 4 |
 | E | Use an AI to design the statistical model and recommend the minimum sample size needed. | AL/PE: 4, DF: 4 |
 
 ---
@@ -404,10 +404,10 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Research the new system's technical documentation to understand all functional and operational changes. | TF: 4, ACL: 4 |
-| B | Design a structured training curriculum, breaking down the changes into manageable learning modules. | CC: 4, CT/PS: 4 |
+| B | Collaborate with subject matter experts to design a structured training curriculum with manageable learning modules. | CC: 4, ACL: 4 |
 | C | Create a document outlining the ROI or strategic necessity of the system update for the team. | DE: 4, DF: 4 |
-| D | Facilitate a Q&A session with the developers to clarify any technical ambiguity for the team. | CC: 4, TF: 4 |
-| E | Propose an innovative use case for the new system's features that was not previously considered. | CI: 4, AL/PE: 4 |
+| D | Facilitate a Q&A session with developers, using AI to generate clarifying questions about technical ambiguities. | CC: 4, AL/PE: 4 |
+| E | Propose an innovative use case for the new system's features that was not previously considered. | CI: 4, CT/PS: 4 |
 
 ---
 
@@ -417,10 +417,10 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Break down the tool's usage into a step-by-step process, focusing only on the most critical features first. | TF: 4, ACL: 4 |
-| B | Collaborate with the colleague to work through a real-world project, offering hands-on support. | CC: 4, CT/PS: 4 |
+| B | Collaborate with the colleague to work through a real-world project, offering hands-on support. | CC: 4, DE: 4 |
 | C | Use an AI to generate practice data sets and exercises tailored to their specific learning needs. | AL/PE: 4, DF: 4 |
-| D | Dedicate time to research foundational data concepts and create simple analogies for them. | CT/PS: 4, CC: 4 |
-| E | Challenge the colleague to solve a simplified version of a problem using the tool to encourage creative learning. | CI: 4, ACL: 4 |
+| D | Dedicate time to research foundational data concepts and create simple analogies for them. | CT/PS: 4, ACL: 4 |
+| E | Challenge the colleague to solve a simplified version of a problem using the tool to encourage creative learning. | CI: 4, CT/PS: 4 |
 
 ---
 
@@ -429,11 +429,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Immediately report the non-compliance and recommend quarantining the model until the data is remediated. | RAI: 4, DE: 4 |
-| B | Research the specific regulatory requirements the model's data is violating. | RAI: 4, ACL: 4 |
-| C | Use an AI to analyze the dataset and identify all instances of non-compliant data points for removal. | AL/PE: 4, RAI: 4 |
-| D | Use your domain knowledge to explain the operational and legal risks of using the outdated data to leadership. | CC: 4, DE: 4 |
-| E | Facilitate a cross-functional discussion to redesign the data pipeline to ensure future compliance. | TF: 4, DF: 4 |
+| A | Immediately report the non-compliance and recommend quarantining the model until the data is remediated. | RAI: 4, CT/PS: 4 |
+| B | Research the specific regulatory requirements the model's data is violating. | ACL: 4, TF: 4 |
+| C | Use an AI to analyze the dataset and identify all instances of non-compliant data points for removal. | AL/PE: 4, DF: 4 |
+| D | Use your domain knowledge to explain the operational and legal risks of using the outdated data to leadership. | DE: 4, CC: 4 |
+| E | Facilitate a cross-functional discussion to redesign the data pipeline to ensure future compliance. | CC: 4, RAI: 4 |
 
 ---
 
@@ -442,11 +442,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Analyze the policy's purpose and logic to determine if the creative idea can be legally adapted or exempted. | TF: 4, CT/PS: 4 |
+| A | Analyze the policy's purpose and logic to determine if the creative idea can be legally adapted or exempted. | CT/PS: 4, RAI: 4 |
 | B | Challenge the policy itself, proposing an innovative change that would allow the creative idea to proceed. | CI: 4, CC: 4 |
-| C | Collaborate with legal or management to negotiate a temporary waiver or exception for the project. | ACL: 4, DE: 4 |
-| D | Use an AI to generate alternative, compliance-friendly ideas based on the core creative concept. | RAI: 4, DF: 4 |
-| E | Redefine the problem to generate entirely new ideas that inherently operate outside the scope of the limiting policy. | AL/PE: 4, TF: 4 |
+| C | Collaborate with legal or management to negotiate a temporary waiver or exception for the project. | DE: 4, ACL: 4 |
+| D | Use an AI to generate alternative, compliance-friendly ideas based on the core creative concept. | AL/PE: 4, RAI: 4 |
+| E | Redefine the problem to generate entirely new ideas that inherently operate outside the scope of the limiting policy. | CI: 4, CT/PS: 4 |
 
 ---
 
@@ -468,7 +468,7 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Research the fundamental principles of visual design and data storytelling to create clearer charts. | ACL: 4, CT/PS: 4 |
+| A | Research the fundamental principles of visual design and data storytelling to create clearer charts. | ACL: 4, TF: 4 |
 | B | Propose an innovative new chart type or visualization approach that simplifies the complex data. | CI: 4, DF: 4 |
 | C | Facilitate a collaborative session to gather feedback on which charts are confusing and why. | CC: 4, CT/PS: 4 |
 | D | Use an AI to generate alternative text descriptions for the charts to explain the findings simply. | AL/PE: 4, DF: 4 |
@@ -482,7 +482,7 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Use critical thinking to map all exceptions and create a decision tree that handles each one logically. | CT/PS: 4, TF: 4 |
-| B | Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first. | DF: 4, CT/PS: 4 |
+| B | Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first. | DF: 4, DE: 4 |
 | C | Use an AI to generate the complex conditional logic required to handle the edge cases in the code. | AL/PE: 4, TF: 4 |
 | D | Collaborate with process owners to redefine the process and eliminate unnecessary exceptions. | CC: 4, CI: 4 |
 | E | Research advanced programming techniques for managing complex conditional logic efficiently. | ACL: 4, TF: 4 |
@@ -814,124 +814,124 @@ Question-Option: { Skill: Points }
 ## AI Readiness Scoring Matrix
 
 Semantically validated - each answer option maps to skills that genuinely reflect the described behaviour.
-Each answer awards 4 points to exactly 2 skills (except where noted).
-Target distribution: ~23 occurrences per skill (210 total mappings / 9 skills).
-Final distribution: AL/PE: 21, TF: 27, DF: 26, CT/PS: 28, ACL: 21, RAI: 25, DE: 18, CI: 24, CC: 25
+Each answer awards 4 points to exactly 2 skills.
+Optimal distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences (210 total mappings / 9 skills).
+Final distribution: AL/PE: 23, TF: 24, DF: 24, CT/PS: 23, ACL: 23, RAI: 23, DE: 24, CI: 23, CC: 23
 
 ```
 Question-Option: { Skill: Points } // Behavioural Rationale
 
 Q1: Integrate AI-generated data with database
 1-A: { AL/PE: 4, DF: 4 }    // Uses AI prompt to format data output → prompt engineering + data formatting
-1-B: { TF: 4, CT/PS: 4 }    // Reviews schema for compatibility issues → architecture + diagnostic analysis
-1-C: { RAI: 4, DF: 4 }      // Analyzes for biases before merging → ethics + data quality analysis
-1-D: { CC: 4, TF: 4 }       // Documents and communicates structure → team communication + technical documentation
-1-E: { CI: 4, CT/PS: 4 }    // Challenges necessity, seeks innovation → innovative thinking + questioning approach
+1-B: { TF: 4, DE: 4 }       // Reviews schema for compatibility issues → architecture + system understanding
+1-C: { RAI: 4, CT/PS: 4 }   // Analyzes for biases before merging → ethics + analytical assessment
+1-D: { CC: 4, RAI: 4 }      // Documents and communicates structure → team communication + transparent documentation
+1-E: { CI: 4, AL/PE: 4 }    // Challenges necessity, uses AI for alternatives → innovative thinking + AI exploration
 
 Q2: Learn system from poor technical manual
-2-A: { CT/PS: 4, TF: 4 }    // Breaks into sub-components, focused learning → decomposition + technical analysis
-2-B: { ACL: 4, CI: 4 }      // Searches online for tutorials → resourceful learning + finding alternatives
-2-C: { DE: 4, RAI: 4 }      // Engages expert to clarify critical aspects → domain expertise + due diligence
-2-D: { DF: 4, TF: 4 }       // Tests system against manual to document errors → data analysis + technical testing
+2-A: { CT/PS: 4, ACL: 4 }   // Breaks into sub-components, focused learning → decomposition + structured learning
+2-B: { CI: 4, RAI: 4 }      // Searches online for tutorials, verifying credibility → resourceful approach + source verification
+2-C: { DE: 4, TF: 4 }       // Engages expert to clarify critical aspects → domain expertise + technical clarification
+2-D: { DF: 4, CT/PS: 4 }    // Tests system against manual to document errors → data verification + systematic testing
 2-E: { AL/PE: 4, TF: 4 }    // Uses AI to summarize and explain → AI tool usage + technical comprehension
 
 Q3: Declining business metric - inconclusive data
-3-A: { CT/PS: 4, CI: 4 }    // Creates hypotheses using domain knowledge → hypothesis formation + creative hypothesis
+3-A: { DE: 4, CT/PS: 4 }    // Creates hypotheses using domain knowledge → domain expertise + hypothesis formation
 3-B: { DF: 4, TF: 4 }       // Implements real-time data collection → data collection + system implementation
-3-C: { CI: 4, RAI: 4 }      // Challenges team to explore creative solutions → innovation + questioning assumptions
-3-D: { CC: 4, CT/PS: 4 }    // Maps customer journey collaboratively → collaboration + root-cause analysis
+3-C: { CI: 4, CT/PS: 4 }    // Challenges team to explore creative solutions → innovation + problem-solving
+3-D: { CC: 4, AL/PE: 4 }    // Collaborative session with AI journey mapping → collaboration + AI journey tools
 3-E: { DF: 4, CT/PS: 4 }    // Deconstructs metric mathematically → data analysis + analytical decomposition
 
 Q4: New encryption protocol introduced
-4-A: { TF: 4, CT/PS: 4 }    // Researches encryption standard documentation → technical research + spec analysis
-4-B: { CC: 4, ACL: 4 }      // Trains team on procedures → knowledge sharing + enabling adaptation
+4-A: { DF: 4, ACL: 4 }      // Researches encryption standard documentation → data security + learning new protocol
+4-B: { CC: 4, TF: 4 }       // Trains team on procedures → knowledge sharing + technical training
 4-C: { RAI: 4, CT/PS: 4 }   // Analyzes security risks to justify change → risk awareness + risk analysis
-4-D: { ACL: 4, RAI: 4 }     // Updates workflows for compliance → adapting processes + compliance focus
-4-E: { AL/PE: 4, RAI: 4 }   // Uses AI for compliance checklist → AI tool usage + compliance assurance
+4-D: { DE: 4, RAI: 4 }      // Updates workflows for compliance → process domain knowledge + compliance focus
+4-E: { AL/PE: 4, DF: 4 }    // Uses AI for compliance checklist → AI tool usage + compliance data
 
 Q5: Proposing unusual technical solution
-5-A: { DF: 4, RAI: 4 }      // Justifies with performance metrics → data-driven argument + evidence-based justification
+5-A: { DF: 4, CT/PS: 4 }    // Justifies with performance metrics → data-driven argument + analytical justification
 5-B: { TF: 4, CI: 4 }       // Documents architecture and logic → technical documentation + novel approach
 5-C: { CC: 4, RAI: 4 }      // Transparent discussion seeking buy-in → stakeholder engagement + open communication
 5-D: { CI: 4, TF: 4 }       // Creates innovative prototype → prototyping + technical implementation
-5-E: { ACL: 4, CT/PS: 4 }   // Researches case studies → research learning + evaluating evidence
+5-E: { ACL: 4, DE: 4 }      // Researches case studies → research learning + industry knowledge
 
 Q6: Concern about AI model licensing
 6-A: { RAI: 4, ACL: 4 }     // Researches license implications → compliance + legal research
 6-B: { AL/PE: 4, RAI: 4 }   // Tests ethical guardrails → AI testing + ethical validation
-6-C: { CC: 4, RAI: 4 }      // Collaborates with legal team → collaboration + compliance documentation
-6-D: { CI: 4, DE: 4 }       // Challenges to find proprietary solution → alternative seeking + domain judgment
-6-E: { DF: 4, AL/PE: 4 }    // Studies model's training data limitations → data understanding + AI understanding
+6-C: { CC: 4, TF: 4 }       // Collaborates with legal team → collaboration + technical policy
+6-D: { CI: 4, ACL: 4 }      // Challenges to find proprietary solution → seeking alternatives + exploring options
+6-E: { DF: 4, RAI: 4 }      // Studies model's training data limitations → data understanding + risk assessment
 
 Q7: Tight deadline for industry trends report
-7-A: { AL/PE: 4, DF: 4 }    // Uses AI for preliminary draft → AI tool usage + data synthesis
+7-A: { AL/PE: 4, DF: 4 }    // Uses AI for preliminary draft → AI tool usage + report generation
 7-B: { DE: 4, CT/PS: 4 }    // Leverages domain knowledge to filter sources → domain expertise + prioritisation
-7-C: { CC: 4, RAI: 4 }      // Negotiates extended deadline → stakeholder communication + quality control
-7-D: { CT/PS: 4, DE: 4 }    // Restructures to focus on evidence-backed findings → prioritisation + domain judgment
-7-E: { CI: 4, TF: 4 }       // Searches for innovative visualization tools → creative tooling + technical execution
+7-C: { CC: 4, ACL: 4 }      // Negotiates extended deadline → stakeholder negotiation + adaptive planning
+7-D: { AL/PE: 4, RAI: 4 }   // Uses AI to identify key findings → AI analysis + quality focus
+7-E: { CI: 4, TF: 4 }       // Searches for innovative visualization tools → tool discovery + tool evaluation
 
 Q8: Automation requires skill you don't possess
 8-A: { CT/PS: 4, TF: 4 }    // Documents process steps for automation → process decomposition + technical preparation
-8-B: { AL/PE: 4, CI: 4 }    // Searches for no-code solution → tool discovery + alternative approach
+8-B: { AL/PE: 4, CI: 4 }    // Searches for AI-powered no-code platform → AI platform discovery + alternative approach
 8-C: { ACL: 4, TF: 4 }      // Learns programming language → self-directed learning + technical skill
-8-D: { DF: 4, CT/PS: 4 }    // Quantifies financial losses → data analysis + financial analysis
-8-E: { CC: 4, TF: 4 }       // Collaborates with engineer → cross-functional collaboration + leveraging technical help
+8-D: { DF: 4, RAI: 4 }      // Quantifies financial losses → data analysis + risk-based justification
+8-E: { CC: 4, DE: 4 }       // Collaborates with engineer → cross-functional collaboration + domain requirements
 
 Q9: Dataset with missing values and inconsistencies
-9-A: { DF: 4, CT/PS: 4 }    // Uses statistical methods to impute → statistical analysis + methodical approach
+9-A: { DF: 4, TF: 4 }       // Uses statistical methods to impute → statistical analysis + methodical approach
 9-B: { CC: 4, DE: 4 }       // Consults data owners → collaboration + understanding context
-9-C: { ACL: 4, DF: 4 }      // Researches cleaning techniques → learning + data quality methods
+9-C: { ACL: 4, RAI: 4 }     // Researches cleaning techniques → learning + data integrity
 9-D: { CI: 4, CT/PS: 4 }    // Redefines problem for reliable subset → creative workaround + problem reframing
 9-E: { AL/PE: 4, DF: 4 }    // Uses AI to suggest strategies → AI tool usage + data strategy
 
 Q10: AI suggests decision contradicting company values
 10-A: { DE: 4, RAI: 4 }     // Articulates conflict using domain knowledge → domain expertise + values analysis
-10-B: { AL/PE: 4, RAI: 4 }  // Prompts AI to identify risks → AI prompting + risk assessment
-10-C: { CC: 4, RAI: 4 }     // Conducts stakeholder review → collaboration + ethical assessment
-10-D: { CI: 4, DE: 4 }      // Proposes innovative hybrid decision → innovation + domain judgment
-10-E: { ACL: 4, RAI: 4 }    // Researches compliance history → research + compliance focus
+10-B: { AL/PE: 4, RAI: 4 }  // Prompts AI to identify risks → AI prompting + risk identification
+10-C: { CC: 4, CI: 4 }      // Creative stakeholder workshop → collaboration + creative brainstorming
+10-D: { CI: 4, CT/PS: 4 }   // Proposes hybrid decision → creative solution + balanced analysis
+10-E: { ACL: 4, TF: 4 }     // Researches compliance history → research + technical compliance
 
 Q11: Team member struggling with technical constraints
-11-A: { CC: 4, DE: 4 }      // Facilitates knowledge-sharing session → facilitation + domain expertise sharing
-11-B: { ACL: 4, TF: 4 }     // Researches best practices for scoping → learning + technical scoping
-11-C: { AL/PE: 4, TF: 4 }   // Uses AI for simplified technical overview → AI tool usage + technical simplification
-11-D: { CC: 4, CI: 4 }      // Encourages milestone breakdown → mentoring + adaptive approach
-11-E: { DE: 4, RAI: 4 }     // Reviews plan using domain knowledge → domain expertise + risk flagging
+11-A: { CC: 4, AL/PE: 4 }   // Knowledge-sharing with AI-generated visuals → knowledge transfer + AI visual generation
+11-B: { ACL: 4, DE: 4 }     // Researches best practices for scoping → learning + scope expertise
+11-C: { AL/PE: 4, DE: 4 }   // Uses AI for simplified technical overview → AI tool usage + domain simplification
+11-D: { CI: 4, CT/PS: 4 }   // Encourages smaller milestones → creative breakdown + milestone planning
+11-E: { DE: 4, RAI: 4 }     // Reviews plan using domain knowledge → domain expertise + risk identification
 
 Q12: Design experiment with limited resources
 12-A: { CI: 4, CT/PS: 4 }   // Uses creative experimental design → creative methods + experimental logic
-12-B: { DF: 4, CT/PS: 4 }   // Analyzes resource allocation → data analysis + trade-off analysis
+12-B: { DF: 4, DE: 4 }      // Analyzes resource allocation → data analysis + resource understanding
 12-C: { ACL: 4, DF: 4 }     // Researches public data sources → resourceful research + data sourcing
-12-D: { CC: 4, CI: 4 }      // Pools resources with other teams → collaboration + creative resourcing
+12-D: { CC: 4, ACL: 4 }     // Pools resources with other teams → collaboration + coordination logic
 12-E: { AL/PE: 4, DF: 4 }   // Uses AI to design model → AI tool usage + statistical modeling
 
 Q13: Technical system update preparation
 13-A: { TF: 4, ACL: 4 }     // Researches documentation for changes → technical learning + proactive learning
-13-B: { CC: 4, CT/PS: 4 }   // Designs training curriculum → knowledge sharing + instructional design
+13-B: { CC: 4, ACL: 4 }     // Collaborates with SMEs to design training → collaboration with experts + learning design
 13-C: { DE: 4, DF: 4 }      // Documents ROI for team → business context + metrics-based justification
-13-D: { CC: 4, TF: 4 }      // Q&A session with developers → collaboration + technical clarification
-13-E: { CI: 4, AL/PE: 4 }   // Proposes innovative use case → innovation + AI opportunity identification
+13-D: { CC: 4, AL/PE: 4 }   // Q&A with AI-generated clarifying questions → collaborative discussion + AI question generation
+13-E: { CI: 4, CT/PS: 4 }   // Proposes innovative use case → innovation + use case analysis
 
 Q14: Teach colleague complex analytics tool
 14-A: { TF: 4, ACL: 4 }     // Step-by-step on critical features → technical instruction + teaching approach
-14-B: { CC: 4, CT/PS: 4 }   // Works through real project together → collaborative learning + guided practice
+14-B: { CC: 4, DE: 4 }      // Works through real project together → collaborative learning + applied knowledge
 14-C: { AL/PE: 4, DF: 4 }   // Uses AI for practice datasets → AI tool usage + data generation
-14-D: { CT/PS: 4, CC: 4 }   // Researches foundational concepts, creates analogies → conceptual explanation + effective communication
-14-E: { CI: 4, ACL: 4 }     // Challenges with simplified problem → creative teaching approach + scaffolded learning
+14-D: { CT/PS: 4, ACL: 4 }  // Researches foundational concepts, creates analogies → conceptual explanation + learning approach
+14-E: { CI: 4, CT/PS: 4 }   // Challenges with simplified problem → creative teaching approach + problem design
 
 Q15: AI model trained on non-compliant data
-15-A: { RAI: 4, DE: 4 }     // Reports and recommends quarantine → compliance action + domain judgment
-15-B: { RAI: 4, ACL: 4 }    // Researches regulatory requirements → regulatory focus + research learning
-15-C: { AL/PE: 4, RAI: 4 }  // Uses AI to assess data → AI analysis + compliance assessment
-15-D: { CC: 4, DE: 4 }      // Explains risks to leadership → collaboration + domain expertise
-15-E: { TF: 4, DF: 4 }      // Facilitates pipeline redesign → technical documentation + data remediation
+15-A: { RAI: 4, CT/PS: 4 }  // Reports and recommends quarantine → compliance action + analytical response
+15-B: { ACL: 4, TF: 4 }     // Researches regulatory requirements → regulatory learning + technical understanding
+15-C: { AL/PE: 4, DF: 4 }   // Uses AI to assess data → AI analysis + data assessment
+15-D: { DE: 4, CC: 4 }      // Explains risks to leadership → domain expertise + stakeholder communication
+15-E: { CC: 4, RAI: 4 }     // Facilitates pipeline redesign → collaboration + compliance focus
 
 Q16: Creative solution blocked by internal policy
-16-A: { TF: 4, CT/PS: 4 }   // Analyzes policy purpose and logic → technical analysis + problem resolution
+16-A: { CT/PS: 4, RAI: 4 }  // Analyzes policy purpose and logic → problem resolution + responsible approach
 16-B: { CI: 4, CC: 4 }      // Challenges policy, proposes innovative change → innovation + communication
-16-C: { ACL: 4, DE: 4 }     // Negotiates waiver with legal/management → adaptation + domain expertise
-16-D: { RAI: 4, DF: 4 }     // Uses AI for compliance-friendly alternatives → responsible approach + data analysis
-16-E: { AL/PE: 4, TF: 4 }   // Redefines problem outside policy scope → prompt engineering + technical adjustment
+16-C: { DE: 4, ACL: 4 }     // Negotiates waiver with legal/management → domain expertise + adaptation
+16-D: { AL/PE: 4, RAI: 4 }  // Uses AI for compliance-friendly alternatives → AI usage + responsible approach
+16-E: { CI: 4, CT/PS: 4 }   // Redefines problem outside policy scope → creative reframing + problem-solving
 
 Q17: Review technical specification with tight deadline
 17-A: { DE: 4, CT/PS: 4 }   // Focuses on strategic alignment → domain expertise + critical evaluation
@@ -941,7 +941,7 @@ Q17: Review technical specification with tight deadline
 17-E: { ACL: 4, DE: 4 }     // Researches industry standards → learning + domain research
 
 Q18: Team struggling with data visualisation
-18-A: { ACL: 4, CT/PS: 4 }  // Researches visual design principles → learning + design thinking
+18-A: { ACL: 4, TF: 4 }     // Researches visual design principles → learning + technical design
 18-B: { CI: 4, DF: 4 }      // Proposes innovative chart type → innovation + visualisation approach
 18-C: { CC: 4, CT/PS: 4 }   // Facilitates feedback session → collaboration + diagnosing confusion
 18-D: { AL/PE: 4, DF: 4 }   // Uses AI for alternative text descriptions → AI tool usage + data accessibility
@@ -949,7 +949,7 @@ Q18: Team struggling with data visualisation
 
 Q19: Automate task with many exceptions
 19-A: { CT/PS: 4, TF: 4 }   // Maps exceptions with decision tree → logical mapping + process design
-19-B: { DF: 4, CT/PS: 4 }   // Analyzes frequency of exceptions → data analysis + prioritisation analysis
+19-B: { DF: 4, DE: 4 }      // Analyzes frequency of exceptions → data analysis + domain understanding
 19-C: { AL/PE: 4, TF: 4 }   // Uses AI for conditional logic → AI tool usage + code generation
 19-D: { CC: 4, CI: 4 }      // Collaborates to redefine process → process collaboration + process improvement
 19-E: { ACL: 4, TF: 4 }     // Researches programming techniques → technical learning + programming knowledge
