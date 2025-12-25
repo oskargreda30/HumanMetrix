@@ -5676,38 +5676,22 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // Find min and max raw percentages for hybrid scaling
+  // FLOOR-BASED SCALING: Lowest skill = 50, highest = 100, others proportional
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH MAXIMUM VARIANCE AND DYNAMIC FLOOR:
-  // - Dynamic floor based on minimum raw % (not always stuck at 50)
-  // - Ceiling at 100 for 100% raw, scaled down for lower performers
-  // - Uses power of 0.25 for aggressive ceiling scaling
-  //
-  // Floor formula: 50 + (minPct/100)^0.5 * 10 (gives 50-60 range)
-  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50 (gives up to 100)
-  // Examples: minPct 20% → floor 54, minPct 40% → floor 56
   const normalizedScores: Record<string, number> = {};
-  
-  // Dynamic floor - rewards even the weakest skill based on raw performance
-  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
-  // Aggressive ceiling with 100 max - allows wide differentiation
-  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
-  const scoreRange = ceiling - floor;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0 && scoreRange > 0) {
-      // Relative position within candidate's own range (0 to 1)
+    if (pctRange > 0) {
+      // Scale from 50 (lowest) to 100 (highest)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Linear scaling from dynamic floor to ceiling
-      normalizedScores[skill] = Math.round(floor + (relativePosition * scoreRange));
+      normalizedScores[skill] = Math.round(50 + (relativePosition * 50));
     } else {
-      // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.25) * 50;
-      normalizedScores[skill] = Math.round(absoluteScore);
+      // All skills have same raw score - use 75 as midpoint
+      normalizedScores[skill] = 75;
     }
   });
 
@@ -5936,38 +5920,22 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // Find min and max raw percentages for hybrid scaling
+  // FLOOR-BASED SCALING: Lowest skill = 50, highest = 100, others proportional
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
 
-  // HYBRID SCORING WITH MAXIMUM VARIANCE AND DYNAMIC FLOOR:
-  // - Dynamic floor based on minimum raw % (not always stuck at 50)
-  // - Ceiling at 100 for 100% raw, scaled down for lower performers
-  // - Uses power of 0.25 for aggressive ceiling scaling
-  //
-  // Floor formula: 50 + (minPct/100)^0.5 * 10 (gives 50-60 range)
-  // Ceiling formula: 50 + (maxPct/100)^0.25 * 50 (gives up to 100)
-  // Examples: minPct 20% → floor 54, minPct 40% → floor 56
   const normalizedScores: Record<string, number> = {};
-  
-  // Dynamic floor - rewards even the weakest skill based on raw performance
-  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
-  // Aggressive ceiling with 100 max - allows wide differentiation
-  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
-  const scoreRange = ceiling - floor;
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    if (pctRange > 0 && scoreRange > 0) {
-      // Relative position within candidate's own range (0 to 1)
+    if (pctRange > 0) {
+      // Scale from 50 (lowest) to 100 (highest)
       const relativePosition = (rawPct - minPct) / pctRange;
-      // Linear scaling from dynamic floor to ceiling
-      normalizedScores[skill] = Math.round(floor + (relativePosition * scoreRange));
+      normalizedScores[skill] = Math.round(50 + (relativePosition * 50));
     } else {
-      // All skills have same raw score - use absolute scaling
-      const absoluteScore = 50 + Math.pow(rawPct / 100, 0.25) * 50;
-      normalizedScores[skill] = Math.round(absoluteScore);
+      // All skills have same raw score - use 75 as midpoint
+      normalizedScores[skill] = 75;
     }
   });
 
