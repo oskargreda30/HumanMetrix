@@ -5676,14 +5676,24 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
-  // Preserves proportional differences between skills
-  // Formula: scaledScore = 50 + (rawPct / 100) * 50
-  // Examples: 0% → 50, 20% → 60, 50% → 75, 100% → 100
+  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
+  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  // This preserves relative gaps while stretching the display range
+  const percentageValues = Object.values(rawPercentages);
+  const minPct = Math.min(...percentageValues);
+  const maxPct = Math.max(...percentageValues);
+  const pctRange = maxPct - minPct;
+
   const normalizedScores: Record<string, number> = {};
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    normalizedScores[skill] = Math.round(50 + (rawPct / 100) * 50);
+    if (pctRange > 0) {
+      const relativePosition = (rawPct - minPct) / pctRange; // 0 to 1
+      normalizedScores[skill] = Math.round(50 + relativePosition * 49); // 50-99 range
+    } else {
+      // All skills have same raw score - use 75 as midpoint
+      normalizedScores[skill] = 75;
+    }
   });
 
   return normalizedScores;
@@ -5911,14 +5921,24 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
-  // Preserves proportional differences between skills
-  // Formula: scaledScore = 50 + (rawPct / 100) * 50
-  // Examples: 0% → 50, 20% → 60, 50% → 75, 100% → 100
+  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
+  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  // This preserves relative gaps while stretching the display range
+  const percentageValues = Object.values(rawPercentages);
+  const minPct = Math.min(...percentageValues);
+  const maxPct = Math.max(...percentageValues);
+  const pctRange = maxPct - minPct;
+
   const normalizedScores: Record<string, number> = {};
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
-    normalizedScores[skill] = Math.round(50 + (rawPct / 100) * 50);
+    if (pctRange > 0) {
+      const relativePosition = (rawPct - minPct) / pctRange; // 0 to 1
+      normalizedScores[skill] = Math.round(50 + relativePosition * 49); // 50-99 range
+    } else {
+      // All skills have same raw score - use 75 as midpoint
+      normalizedScores[skill] = 75;
+    }
   });
 
   return normalizedScores;

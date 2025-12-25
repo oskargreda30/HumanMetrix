@@ -123,15 +123,24 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
-  // Preserves proportional differences between skills
-  // Formula: scaledScore = 50 + (rawPct / 100) * 50
-  const compressedScores: Record<string, number> = {};
+  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
+  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  const scoreValues = Object.values(normalizedScores);
+  const minScore = Math.min(...scoreValues);
+  const maxScore = Math.max(...scoreValues);
+  const scoreRange = maxScore - minScore;
+
+  const stretchedScores: Record<string, number> = {};
   Object.entries(normalizedScores).forEach(([skill, score]) => {
-    compressedScores[skill] = Math.round(50 + (score / 100) * 50);
+    if (scoreRange > 0) {
+      const relativePosition = (score - minScore) / scoreRange;
+      stretchedScores[skill] = Math.round(50 + relativePosition * 49);
+    } else {
+      stretchedScores[skill] = 75;
+    }
   });
 
-  return compressedScores;
+  return stretchedScores;
 }
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
@@ -289,15 +298,24 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // COMPRESSED SCALING: Compress 0-100 raw range into 50-100 display range
-  // Preserves proportional differences between skills
-  // Formula: scaledScore = 50 + (rawPct / 100) * 50
-  const compressedScores: Record<string, number> = {};
+  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
+  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  const scoreValues = Object.values(normalizedScores);
+  const minScore = Math.min(...scoreValues);
+  const maxScore = Math.max(...scoreValues);
+  const scoreRange = maxScore - minScore;
+
+  const stretchedScores: Record<string, number> = {};
   Object.entries(normalizedScores).forEach(([skill, score]) => {
-    compressedScores[skill] = Math.round(50 + (score / 100) * 50);
+    if (scoreRange > 0) {
+      const relativePosition = (score - minScore) / scoreRange;
+      stretchedScores[skill] = Math.round(50 + relativePosition * 49);
+    } else {
+      stretchedScores[skill] = 75;
+    }
   });
 
-  return compressedScores;
+  return stretchedScores;
 }
 
 async function recalculateUserScores(userEmail: string) {
