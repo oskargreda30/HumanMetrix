@@ -76,6 +76,24 @@ export default function MyResults() {
   // Find Prompt Architecture result for later fetching
   const promptArchResult = allResults?.find((r: any) => r.assessmentType === 'prompt_architecture');
 
+  // Pre-calculate values needed for useEffect (must be before any conditional returns)
+  const completedResultsForEffect = allResults?.filter((r: any) => r.status === 'completed') || [];
+  const uniqueTypesForEffect = new Set(completedResultsForEffect.map((r: any) => r.assessmentType));
+  const allAssessmentsCompletedForEffect = selectedBatch 
+    ? selectedBatch?.allItemsCompleted
+    : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueTypesForEffect.has(type)));
+  const needsPaymentForEffect = selectedBatch 
+    ? !selectedBatch?.resultsAccessPaid 
+    : !hasPaidForResults;
+  const needsConsentResponseForEffect = user?.resultsRetentionConsent === undefined || user?.resultsRetentionConsent === null;
+
+  // useEffect must be called BEFORE any conditional returns (React Rules of Hooks)
+  useEffect(() => {
+    if (needsConsentResponseForEffect && !consentHandled && !needsPaymentForEffect && allAssessmentsCompletedForEffect) {
+      setShowConsentDialog(true);
+    }
+  }, [needsConsentResponseForEffect, consentHandled, needsPaymentForEffect, allAssessmentsCompletedForEffect]);
+
   if (resultsLoading || assessmentsLoading || batchesLoading || purchasesLoading || !allResults) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -159,17 +177,6 @@ export default function MyResults() {
   if (needsPayment) {
     return <ResultsPaymentGate />;
   }
-
-  // THIRD: Check if user needs to respond to results retention consent
-  // Show dialog if user hasn't answered yet (resultsRetentionConsent is null/undefined)
-  const needsConsentResponse = user?.resultsRetentionConsent === undefined || user?.resultsRetentionConsent === null;
-  
-  // Show consent dialog automatically if user hasn't responded and hasn't handled it this session
-  useEffect(() => {
-    if (needsConsentResponse && !consentHandled && !needsPayment && allAssessmentsCompleted) {
-      setShowConsentDialog(true);
-    }
-  }, [needsConsentResponse, consentHandled, needsPayment, allAssessmentsCompleted]);
 
   // Calculate aggregate statistics
   const totalAssessments = completedResults.length;
