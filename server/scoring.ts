@@ -317,19 +317,34 @@ export function calculateFITScores(answers: Record<string, string>): Record<stri
 
   // Calculate raw scores based on answers
   // Normalize answer format: "q1": "a" -> "1-A" for matrix lookup
+  let matchedCount = 0;
   Object.entries(answers).forEach(([questionId, answer]) => {
-    // Strip 'q' prefix if present, uppercase the answer
-    const normalizedQ = questionId.toLowerCase().replace(/^q/, '');
-    const normalizedA = answer.toUpperCase();
+    // Skip empty/invalid answers
+    if (!answer || typeof answer !== 'string') {
+      console.warn(`[FIT Scoring] Skipping invalid answer for question ${questionId}:`, answer);
+      return;
+    }
+    
+    // Strip 'q'/'question' prefix if present, extract digits, uppercase the answer
+    const normalizedQ = questionId.toLowerCase().replace(/^(question|q)/, '').trim();
+    const normalizedA = answer.toUpperCase().trim();
     const key = `${normalizedQ}-${normalizedA}`;
     const skillPoints = FIT_SCORING_MATRIX[key];
     
     if (skillPoints) {
+      matchedCount++;
       Object.entries(skillPoints).forEach(([skill, points]) => {
         rawScores[skill] = (rawScores[skill] || 0) + points;
       });
+    } else {
+      console.warn(`[FIT Scoring] No matrix match for key "${key}" (original: ${questionId}=${answer})`);
     }
   });
+  
+  // Warn if no answers matched - likely a data format issue
+  if (matchedCount === 0 && Object.keys(answers).length > 0) {
+    console.error(`[FIT Scoring] WARNING: No answers matched! Check data format. Answers:`, Object.keys(answers).slice(0, 3));
+  }
 
   // Calculate maximum possible scores for each skill using per-question max approach
   const questionScores: Record<number, Record<string, Record<string, number>>> = {};
@@ -407,19 +422,34 @@ export function calculateAIReadinessScores(answers: Record<string, string>): Rec
 
   // Calculate raw scores based on answers
   // Normalize answer format: "q1": "a" -> "1-A" for matrix lookup
+  let matchedCount = 0;
   Object.entries(answers).forEach(([questionId, answer]) => {
-    // Strip 'q' prefix if present, uppercase the answer
-    const normalizedQ = questionId.toLowerCase().replace(/^q/, '');
-    const normalizedA = answer.toUpperCase();
+    // Skip empty/invalid answers
+    if (!answer || typeof answer !== 'string') {
+      console.warn(`[AIR Scoring] Skipping invalid answer for question ${questionId}:`, answer);
+      return;
+    }
+    
+    // Strip 'q'/'question' prefix if present, extract digits, uppercase the answer
+    const normalizedQ = questionId.toLowerCase().replace(/^(question|q)/, '').trim();
+    const normalizedA = answer.toUpperCase().trim();
     const key = `${normalizedQ}-${normalizedA}`;
     const skillPoints = AI_READINESS_SCORING_MATRIX[key];
     
     if (skillPoints) {
+      matchedCount++;
       Object.entries(skillPoints).forEach(([skill, points]) => {
         skills[skill] += points;
       });
+    } else {
+      console.warn(`[AIR Scoring] No matrix match for key "${key}" (original: ${questionId}=${answer})`);
     }
   });
+  
+  // Warn if no answers matched - likely a data format issue
+  if (matchedCount === 0 && Object.keys(answers).length > 0) {
+    console.error(`[AIR Scoring] WARNING: No answers matched! Check data format. Answers:`, Object.keys(answers).slice(0, 3));
+  }
 
   // Calculate maximum possible scores for each skill using per-question max approach
   const questionScores: Record<number, Record<string, Record<string, number>>> = {};
