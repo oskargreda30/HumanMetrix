@@ -5764,7 +5764,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     "13-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
     // Q14: Teach colleague complex analytics tool
     "14-A": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
-    "14-B": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
+    "14-B": { "Collaboration & Communication": 4 },  // DE removed for perfect balance
     "14-C": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
     "14-D": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
     "14-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
@@ -5781,7 +5781,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     "16-D": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
     "16-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
     // Q17: Review technical specification with tight deadline
-    "17-A": { "Domain Expertise": 4, "Data Fluency": 4 },
+    "17-A": { "Domain Expertise": 4 },  // DF removed for perfect balance
     "17-B": { "Technical Fundamentals": 4, "Responsible AI & Ethical Awareness": 4 },
     "17-C": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
     "17-D": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
@@ -5790,7 +5790,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     "18-A": { "Adaptability & Continuous Learning": 4, "Data Fluency": 4 },
     "18-B": { "Creativity & Innovation": 4, "Data Fluency": 4 },
     "18-C": { "Collaboration & Communication": 4, "Critical Thinking & Problem-Solving": 4 },
-    "18-D": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
+    "18-D": { "AI Literacy & Prompt Engineering": 4 },  // TF removed for perfect balance
     "18-E": { "Technical Fundamentals": 4, "Domain Expertise": 4 },
     // Q19: Automate task with many exceptions
     "19-A": { "Critical Thinking & Problem-Solving": 4, "Technical Fundamentals": 4 },

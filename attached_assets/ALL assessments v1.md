@@ -814,9 +814,14 @@ Question-Option: { Skill: Points }
 ## AI Readiness Scoring Matrix
 
 Semantically validated - each answer option maps to skills that genuinely reflect the described behaviour.
-Each answer awards 4 points to exactly 2 skills.
-Optimal distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences (210 total mappings / 9 skills).
-Final distribution: AL/PE: 23, TF: 24, DF: 24, CT/PS: 23, ACL: 23, RAI: 23, DE: 24, CI: 23, CC: 23
+Each answer awards 4 points to skills it maps to.
+PERFECTLY BALANCED: All 9 skills have exactly 23 occurrences each = 207 total mappings.
+All skills have 92 max points (23 × 4 points).
+Note: 3 answers have only 1 skill to achieve perfect balance:
+  - 14-B: CC only [DE removed]
+  - 17-A: DE only [DF removed]
+  - 18-D: AL/PE only [TF removed]
+Final distribution: AL/PE: 23, TF: 23, DF: 23, CT/PS: 23, ACL: 23, RAI: 23, DE: 23, CI: 23, CC: 23
 
 ```
 Question-Option: { Skill: Points } // Behavioural Rationale
@@ -914,58 +919,58 @@ Q13: Technical system update preparation
 
 Q14: Teach colleague complex analytics tool
 14-A: { TF: 4, ACL: 4 }     // Step-by-step on critical features → technical instruction + teaching approach
-14-B: { CC: 4, DE: 4 }      // Works through real project together → collaborative learning + applied knowledge
+14-B: { CC: 4 }             // Works through real project together → collaborative learning [DE REMOVED for perfect balance]
 14-C: { AL/PE: 4, DF: 4 }   // Uses AI for practice datasets → AI tool usage + data generation
 14-D: { CT/PS: 4, ACL: 4 }  // Researches foundational concepts, creates analogies → conceptual explanation + learning approach
 14-E: { CI: 4, CT/PS: 4 }   // Challenges with simplified problem → creative teaching approach + problem design
 
 Q15: AI model trained on non-compliant data
 15-A: { RAI: 4, CT/PS: 4 }  // Reports and recommends quarantine → compliance action + analytical response
-15-B: { ACL: 4, TF: 4 }     // Researches regulatory requirements → regulatory learning + technical understanding
+15-B: { RAI: 4, ACL: 4 }    // Researches regulatory requirements → regulatory compliance + learning
 15-C: { AL/PE: 4, DF: 4 }   // Uses AI to assess data → AI analysis + data assessment
 15-D: { DE: 4, CC: 4 }      // Explains risks to leadership → domain expertise + stakeholder communication
-15-E: { CC: 4, RAI: 4 }     // Facilitates pipeline redesign → collaboration + compliance focus
+15-E: { CC: 4, TF: 4 }      // Facilitates pipeline redesign → collaboration + technical implementation
 
 Q16: Creative solution blocked by internal policy
 16-A: { CT/PS: 4, RAI: 4 }  // Analyzes policy purpose and logic → problem resolution + responsible approach
-16-B: { CI: 4, CC: 4 }      // Challenges policy, proposes innovative change → innovation + communication
-16-C: { DE: 4, ACL: 4 }     // Negotiates waiver with legal/management → domain expertise + adaptation
-16-D: { AL/PE: 4, RAI: 4 }  // Uses AI for compliance-friendly alternatives → AI usage + responsible approach
+16-B: { CI: 4, DE: 4 }      // Challenges policy, proposes innovative change → innovation + domain expertise
+16-C: { CC: 4, ACL: 4 }     // Negotiates waiver with legal/management → collaboration + adaptation
+16-D: { AL/PE: 4, CI: 4 }   // Uses AI for compliance-friendly alternatives → AI usage + creative approach
 16-E: { CI: 4, CT/PS: 4 }   // Redefines problem outside policy scope → creative reframing + problem-solving
 
 Q17: Review technical specification with tight deadline
-17-A: { DE: 4, CT/PS: 4 }   // Focuses on strategic alignment → domain expertise + critical evaluation
-17-B: { TF: 4, DF: 4 }      // Analyzes for architectural flaws → technical assessment + data requirements
+17-A: { DE: 4 }             // Focuses on strategic alignment → domain expertise [DF REMOVED for perfect balance]
+17-B: { TF: 4, RAI: 4 }     // Analyzes for architectural flaws → technical assessment + risk awareness
 17-C: { AL/PE: 4, TF: 4 }   // Uses AI for automated review → AI tool usage + technical iteration
 17-D: { CC: 4, RAI: 4 }     // Communicates risks to stakeholders → collaboration + responsible communication
 17-E: { ACL: 4, DE: 4 }     // Researches industry standards → learning + domain research
 
 Q18: Team struggling with data visualisation
-18-A: { ACL: 4, TF: 4 }     // Researches visual design principles → learning + technical design
+18-A: { ACL: 4, DF: 4 }     // Researches visual design principles → learning + data fluency
 18-B: { CI: 4, DF: 4 }      // Proposes innovative chart type → innovation + visualisation approach
 18-C: { CC: 4, CT/PS: 4 }   // Facilitates feedback session → collaboration + diagnosing confusion
-18-D: { AL/PE: 4, DF: 4 }   // Uses AI for alternative text descriptions → AI tool usage + data accessibility
-18-E: { DF: 4, TF: 4 }      // Creates standardised style guide → data standards + technical standardisation
+18-D: { AL/PE: 4 }          // Uses AI for alternative text descriptions → AI tool usage [TF REMOVED for perfect balance]
+18-E: { TF: 4, DE: 4 }      // Creates standardised style guide → technical standards + domain knowledge
 
 Q19: Automate task with many exceptions
 19-A: { CT/PS: 4, TF: 4 }   // Maps exceptions with decision tree → logical mapping + process design
-19-B: { DF: 4, DE: 4 }      // Analyzes frequency of exceptions → data analysis + domain understanding
-19-C: { AL/PE: 4, TF: 4 }   // Uses AI for conditional logic → AI tool usage + code generation
-19-D: { CC: 4, CI: 4 }      // Collaborates to redefine process → process collaboration + process improvement
+19-B: { DF: 4, RAI: 4 }     // Analyzes frequency of exceptions → data analysis + responsible prioritisation
+19-C: { AL/PE: 4, CI: 4 }   // Uses AI for conditional logic → AI tool usage + creative coding
+19-D: { CC: 4, DE: 4 }      // Collaborates to redefine process → collaboration + domain expertise
 19-E: { ACL: 4, TF: 4 }     // Researches programming techniques → technical learning + programming knowledge
 
 Q20: Colleague proposes obsolete technology
 20-A: { DE: 4, RAI: 4 }     // Explains risks using domain knowledge → domain expertise + risk communication
-20-B: { DF: 4, CT/PS: 4 }   // Analyzes throughput requirements → data analysis + technical analysis
+20-B: { DF: 4, TF: 4 }      // Analyzes throughput requirements → data analysis + technical analysis
 20-C: { CI: 4, AL/PE: 4 }   // Proposes modern alternative → innovation + AI-enabled solution
-20-D: { ACL: 4, TF: 4 }     // Researches lifecycle and EOL → research + technical lifecycle knowledge
+20-D: { ACL: 4, RAI: 4 }    // Researches lifecycle and EOL → research + responsible due diligence
 20-E: { CC: 4, CI: 4 }      // Facilitates collaborative discussion → collaboration + constructive solution
 
 Q21: Write proposal for senior leadership
 21-A: { AL/PE: 4, CC: 4 }   // Uses AI to analyze reports for language → AI tool usage + communication alignment
 21-B: { DF: 4, CT/PS: 4 }   // Focuses on measurable ROI → data-driven + persuasive logic
 21-C: { DE: 4, CI: 4 }      // Positions as industry solution using expertise → domain expertise + innovative positioning
-21-D: { ACL: 4, CC: 4 }     // Researches successful proposals → learning from examples + communication patterns
+21-D: { ACL: 4, TF: 4 }     // Researches successful proposals → learning + technical documentation patterns
 21-E: { CC: 4, DE: 4 }      // Collaborates with mentor → mentorship + strategic guidance
 ```
 

@@ -232,11 +232,11 @@ export const AI_READINESS_QUESTIONS = [
   },
 ];
 
-// BALANCED Scoring matrix for AI Readiness
-// Optimally balanced distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences
-// 6×23 + 3×24 = 210 total mappings (21 questions × 5 options × 2 skills each)
-// At 23: AL/PE, CT/PS, ACL, RAI, CI, CC (92 max points each)
-// At 24: TF, DF, DE (96 max points each)
+// PERFECTLY BALANCED Scoring matrix for AI Readiness
+// All 9 skills have exactly 23 occurrences each = 207 total mappings
+// All skills: 92 max points each (23 × 4 points)
+// Skills: AL/PE, TF, DF, CT/PS, ACL, RAI, DE, CI, CC
+// Note: 3 answers have only 1 skill (14-B, 17-A, 18-D) to achieve perfect balance
 // Each option awards 4 points to each skill it maps to
 // Skills: AL/PE (AI Literacy/Prompt Engineering), TF (Technical Fundamentals), DF (Data Fluency),
 //         CT/PS (Critical Thinking/Problem-Solving), ACL (Adaptability/Continuous Learning),
@@ -405,7 +405,7 @@ export const AI_READINESS_SCORING = {
   // D: Researches foundational concepts, creates analogies → CT/PS (conceptual explanation) + ACL (learning approach)
   // E: Challenges with simplified problem → CI (creative teaching approach) + CT/PS (problem design)
   "14-A": { "TF": 4, "ACL": 4 },
-  "14-B": { "CC": 4, "DE": 4 },
+  "14-B": { "CC": 4 },  // DE removed for perfect balance
   "14-C": { "AL/PE": 4, "DF": 4 },
   "14-D": { "CT/PS": 4, "ACL": 4 },
   "14-E": { "CI": 4, "CT/PS": 4 },
@@ -440,7 +440,7 @@ export const AI_READINESS_SCORING = {
   // C: Uses AI for automated review → AL/PE (AI tool usage) + TF (technical review)
   // D: Communicates risks to stakeholders → CC (stakeholder communication) + RAI (risk disclosure)
   // E: Researches industry standards → ACL (research learning) + DE (industry context)
-  "17-A": { "DE": 4, "DF": 4 },
+  "17-A": { "DE": 4 },  // DF removed for perfect balance
   "17-B": { "TF": 4, "RAI": 4 },
   "17-C": { "AL/PE": 4, "TF": 4 },
   "17-D": { "CC": 4, "RAI": 4 },
@@ -455,7 +455,7 @@ export const AI_READINESS_SCORING = {
   "18-A": { "ACL": 4, "DF": 4 },
   "18-B": { "CI": 4, "DF": 4 },
   "18-C": { "CC": 4, "CT/PS": 4 },
-  "18-D": { "AL/PE": 4, "TF": 4 },
+  "18-D": { "AL/PE": 4 },  // TF removed for perfect balance
   "18-E": { "TF": 4, "DE": 4 },
   
   // Q19: Automate task with many exceptions
