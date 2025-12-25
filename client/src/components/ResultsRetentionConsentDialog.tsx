@@ -60,7 +60,7 @@ export function ResultsRetentionConsentDialog({
             Your Results Are Ready
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            Well done on completing all four assessments.
+            Well done on completing your assessments.
           </DialogDescription>
         </DialogHeader>
 
