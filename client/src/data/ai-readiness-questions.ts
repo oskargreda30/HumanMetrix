@@ -7,7 +7,7 @@ export const AI_READINESS_QUESTIONS = [
       { value: "B", text: "Immediately review the database schema and architecture for potential data incompatibility issues." },
       { value: "C", text: "Analyze the AI-generated data for potential biases or ethical violations before merging it." },
       { value: "D", text: "Document the new data's structure and communicate with the team on how to access and use it effectively." },
-      { value: "E", text: "Challenge the necessity of merging the data, seeking a more innovative solution to the analysis problem." },
+      { value: "E", text: "Challenge the necessity of merging the data, using AI to explore alternative analytical approaches." },
     ],
   },
   {
@@ -28,7 +28,7 @@ export const AI_READINESS_QUESTIONS = [
       { value: "A", text: "Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them." },
       { value: "B", text: "Implement a new data collection process to capture high-resolution, real-time data related to the decline." },
       { value: "C", text: "Challenge the team to creatively explore solutions that violate current market assumptions." },
-      { value: "D", text: "Facilitate a collaborative session to map the customer journey and pinpoint potential failure points." },
+      { value: "D", text: "Facilitate a collaborative session using AI journey mapping tools to pinpoint potential failure points." },
       { value: "E", text: "Deconstruct the declining metric into its fundamental mathematical components to isolate the variable causing the drop." },
     ],
   },
@@ -72,7 +72,7 @@ export const AI_READINESS_QUESTIONS = [
       { value: "A", text: "Use an AI tool to rapidly generate a preliminary draft, focusing your time on refining and validating its content." },
       { value: "B", text: "Leverage deep domain knowledge to filter external data sources, focusing only on the most relevant, high-impact trends." },
       { value: "C", text: "Negotiate an extended deadline, clearly explaining the need for data validation and quality control." },
-      { value: "D", text: "Restructure the report to focus only on 3-4 key, evidence-backed findings rather than a comprehensive overview." },
+      { value: "D", text: "Use AI to identify the 3-4 most impactful findings, then restructure the report around these key insights." },
       { value: "E", text: "Search for innovative, quick-turnaround data visualization tools to present the findings with maximum clarity." },
     ],
   },
@@ -81,7 +81,7 @@ export const AI_READINESS_QUESTIONS = [
     text: "A routine process is repetitive and prone to human error, but automation requires a skill you don't possess.",
     options: [
       { value: "A", text: "Break the process down into its logical steps, documenting the precise sequence required for automation." },
-      { value: "B", text: "Search for a no-code/low-code solution that allows you to automate the task without requiring programming skills." },
+      { value: "B", text: "Search for an AI-powered no-code platform that allows you to automate the task without requiring programming skills." },
       { value: "C", text: "Proactively learn the necessary programming language by taking an introductory online course." },
       { value: "D", text: "Focus your analysis on quantifying the financial losses caused by the human errors to justify investment in automation." },
       { value: "E", text: "Collaborate with an engineer to translate your process documentation into functional, automated code." },
@@ -104,7 +104,7 @@ export const AI_READINESS_QUESTIONS = [
     options: [
       { value: "A", text: "Use your domain expertise to articulate the exact conflict between the AI's logic and the company's value system." },
       { value: "B", text: "Prompt the AI to identify potential negative PR or long-term reputation risks associated with the decision." },
-      { value: "C", text: "Conduct an internal review with stakeholders to assess the ethical implications and potential damage to customer trust." },
+      { value: "C", text: "Facilitate a creative stakeholder workshop to explore ethical implications and brainstorm values-aligned alternatives." },
       { value: "D", text: "Propose an innovative, hybrid decision that captures some of the financial gain while adhering to company values." },
       { value: "E", text: "Research the company's compliance history and ethical guidelines related to the decision area." },
     ],
@@ -113,7 +113,7 @@ export const AI_READINESS_QUESTIONS = [
     id: "11",
     text: "A team member is struggling to understand the technical constraints of a new project they are leading.",
     options: [
-      { value: "A", text: "Facilitate a knowledge-sharing session where senior engineers explain the technical architecture simply." },
+      { value: "A", text: "Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply." },
       { value: "B", text: "Research best practices for project scoping and risk identification to help them define the constraints." },
       { value: "C", text: "Use an AI to generate a simplified technical overview of the project's components and limitations." },
       { value: "D", text: "Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually." },
@@ -136,9 +136,9 @@ export const AI_READINESS_QUESTIONS = [
     text: "A technical system update is happening next month, and you need to prepare the team.",
     options: [
       { value: "A", text: "Research the new system's technical documentation to understand all functional and operational changes." },
-      { value: "B", text: "Design a structured training curriculum, breaking down the changes into manageable learning modules." },
+      { value: "B", text: "Collaborate with subject matter experts to design a structured training curriculum with manageable learning modules." },
       { value: "C", text: "Create a document outlining the ROI or strategic necessity of the system update for the team." },
-      { value: "D", text: "Facilitate a Q&A session with the developers to clarify any technical ambiguity for the team." },
+      { value: "D", text: "Facilitate a Q&A session with developers, using AI to generate clarifying questions about technical ambiguities." },
       { value: "E", text: "Propose an innovative use case for the new system's features that was not previously considered." },
     ],
   },
@@ -235,8 +235,8 @@ export const AI_READINESS_QUESTIONS = [
 // BALANCED Scoring matrix for AI Readiness
 // Optimally balanced distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences
 // 6×23 + 3×24 = 210 total mappings (21 questions × 5 options × 2 skills each)
-// At 23: DF, CT/PS, RAI, DE, CI, CC (92 max points each)
-// At 24: AL/PE, TF, ACL (96 max points each)
+// At 23: AL/PE, CT/PS, ACL, RAI, CI, CC (92 max points each)
+// At 24: TF, DF, DE (96 max points each)
 // Each option awards 4 points to each skill it maps to
 // Skills: AL/PE (AI Literacy/Prompt Engineering), TF (Technical Fundamentals), DF (Data Fluency),
 //         CT/PS (Critical Thinking/Problem-Solving), ACL (Adaptability/Continuous Learning),
@@ -244,37 +244,37 @@ export const AI_READINESS_QUESTIONS = [
 export const AI_READINESS_SCORING = {
   // Q1: Integrate AI-generated data with database
   // A: Uses AI prompt to format data output → AL/PE (prompt engineering) + DF (data formatting)
-  // B: Reviews schema for compatibility issues → TF (architecture) + CT/PS (systematic review)
-  // C: Analyzes for biases before merging → RAI (ethics) + AL/PE (AI analysis)
-  // D: Documents and communicates structure → CC (team communication) + DE (domain documentation)
-  // E: Challenges necessity, seeks innovation → CI (innovative thinking) + CT/PS (questioning approach)
+  // B: Reviews schema for compatibility issues → TF (architecture) + DE (system understanding)
+  // C: Analyzes for biases before merging → RAI (ethics) + CT/PS (analytical assessment)
+  // D: Documents and communicates structure transparently → CC (team communication) + RAI (transparent documentation)
+  // E: Challenges necessity, uses AI for alternatives → CI (innovative thinking) + AL/PE (AI exploration)
   "1-A": { "AL/PE": 4, "DF": 4 },
-  "1-B": { "TF": 4, "CT/PS": 4 },
-  "1-C": { "RAI": 4, "AL/PE": 4 },
-  "1-D": { "CC": 4, "DE": 4 },
-  "1-E": { "CI": 4, "CT/PS": 4 },
+  "1-B": { "TF": 4, "DE": 4 },
+  "1-C": { "RAI": 4, "CT/PS": 4 },
+  "1-D": { "CC": 4, "RAI": 4 },
+  "1-E": { "CI": 4, "AL/PE": 4 },
   
   // Q2: Learn system from poor technical manual
   // A: Breaks into sub-components, focused learning → CT/PS (decomposition) + ACL (structured learning)
-  // B: Searches online for tutorials → ACL (resourceful learning) + RAI (verifying sources)
+  // B: Searches online for tutorials, verifying credibility → CI (resourceful approach) + RAI (source verification)
   // C: Engages expert directly → DE (seeking domain knowledge) + TF (technical clarification)
-  // D: Tests features creatively → CI (creative testing) + RAI (quality verification)
+  // D: Systematically tests features against manual → DF (data verification) + CT/PS (systematic testing)
   // E: Uses AI to summarize manual → AL/PE (AI tool usage) + TF (technical comprehension)
   "2-A": { "CT/PS": 4, "ACL": 4 },
-  "2-B": { "ACL": 4, "RAI": 4 },
+  "2-B": { "CI": 4, "RAI": 4 },
   "2-C": { "DE": 4, "TF": 4 },
-  "2-D": { "CI": 4, "RAI": 4 },
+  "2-D": { "DF": 4, "CT/PS": 4 },
   "2-E": { "AL/PE": 4, "TF": 4 },
   
   // Q3: Declining business metric - inconclusive data
-  // A: Creates hypotheses using data patterns → DF (data hypothesis) + CT/PS (hypothesis formation)
+  // A: Creates hypotheses using domain knowledge → DE (domain expertise) + CT/PS (hypothesis formation)
   // B: Implements real-time data collection → DF (data collection) + TF (system implementation)
-  // C: Challenges assumptions responsibly → CI (innovation) + RAI (questioning assumptions)
-  // D: Maps customer journey collaboratively → CC (collaboration) + AL/PE (AI journey tools)
+  // C: Challenges team to explore creative solutions → CI (innovation) + CT/PS (problem-solving)
+  // D: Collaborative session with AI journey mapping → CC (collaboration) + AL/PE (AI journey tools)
   // E: Deconstructs metric mathematically → DF (data analysis) + CT/PS (analytical decomposition)
-  "3-A": { "DF": 4, "CT/PS": 4 },
+  "3-A": { "DE": 4, "CT/PS": 4 },
   "3-B": { "DF": 4, "TF": 4 },
-  "3-C": { "CI": 4, "RAI": 4 },
+  "3-C": { "CI": 4, "CT/PS": 4 },
   "3-D": { "CC": 4, "AL/PE": 4 },
   "3-E": { "DF": 4, "CT/PS": 4 },
   
@@ -307,28 +307,28 @@ export const AI_READINESS_SCORING = {
   // B: Tests ethical guardrails → AL/PE (AI testing) + RAI (ethical validation)
   // C: Drafts usage guidelines with legal → CC (collaboration) + TF (technical policy)
   // D: Challenges to find proprietary solution → CI (seeking alternatives) + ACL (exploring options)
-  // E: Studies model limitations from training data → DF (data understanding) + AL/PE (AI understanding)
+  // E: Studies model limitations from training data → DF (data understanding) + RAI (risk assessment)
   "6-A": { "RAI": 4, "ACL": 4 },
   "6-B": { "AL/PE": 4, "RAI": 4 },
   "6-C": { "CC": 4, "TF": 4 },
   "6-D": { "CI": 4, "ACL": 4 },
-  "6-E": { "CI": 4, "AL/PE": 4 },
+  "6-E": { "DF": 4, "RAI": 4 },
   
   // Q7: Tight deadline industry trends report
   // A: Uses AI for preliminary draft → AL/PE (AI tool usage) + DF (report generation)
   // B: Filters using domain knowledge → DE (domain expertise) + CT/PS (prioritization)
   // C: Negotiates extended deadline → CC (stakeholder negotiation) + ACL (adaptive planning)
-  // D: Focuses on 3-4 key findings → CT/PS (prioritization) + RAI (quality focus)
+  // D: Uses AI to identify key findings → AL/PE (AI analysis) + RAI (quality focus)
   // E: Searches for visualization tools → CI (tool discovery) + TF (tool evaluation)
   "7-A": { "AL/PE": 4, "DF": 4 },
-  "7-B": { "DE": 4, "AL/PE": 4 },
+  "7-B": { "DE": 4, "CT/PS": 4 },
   "7-C": { "CC": 4, "ACL": 4 },
-  "7-D": { "CT/PS": 4, "RAI": 4 },
+  "7-D": { "AL/PE": 4, "RAI": 4 },
   "7-E": { "CI": 4, "TF": 4 },
   
   // Q8: Automation requires skill you don't possess
   // A: Documents process steps for automation → CT/PS (process decomposition) + TF (technical preparation)
-  // B: Searches for no-code solution → AL/PE (tool discovery) + CI (alternative approach)
+  // B: Searches for AI-powered no-code platform → AL/PE (AI platform discovery) + CI (alternative approach)
   // C: Learns programming language → ACL (self-directed learning) + TF (technical skill)
   // D: Quantifies financial losses → DF (data analysis) + RAI (risk-based justification)
   // E: Collaborates with engineer → CC (cross-functional collaboration) + DE (domain requirements)
@@ -353,17 +353,17 @@ export const AI_READINESS_SCORING = {
   // Q10: AI suggests decision contradicting company values
   // A: Articulates conflict using domain knowledge → DE (domain expertise) + RAI (values analysis)
   // B: Prompts AI to identify risks → AL/PE (AI prompting) + RAI (risk identification)
-  // C: Internal stakeholder review → CC (collaboration) + DE (domain context)
+  // C: Creative stakeholder workshop → CC (collaboration) + CI (creative brainstorming)
   // D: Proposes hybrid decision → CI (creative solution) + CT/PS (balanced analysis)
   // E: Researches compliance history → ACL (research) + TF (technical compliance)
   "10-A": { "DE": 4, "RAI": 4 },
   "10-B": { "AL/PE": 4, "RAI": 4 },
-  "10-C": { "CC": 4, "CT/PS": 4 },
+  "10-C": { "CC": 4, "CI": 4 },
   "10-D": { "CI": 4, "CT/PS": 4 },
   "10-E": { "ACL": 4, "TF": 4 },
   
   // Q11: Team member struggling with technical constraints
-  // A: Facilitates knowledge-sharing session → CC (knowledge transfer) + CT/PS (structured sharing)
+  // A: Knowledge-sharing with AI-generated visuals → CC (knowledge transfer) + AL/PE (AI visual generation)
   // B: Researches scoping best practices → ACL (learning) + DE (scope expertise)
   // C: Uses AI for simplified overview → AL/PE (AI tool usage) + DE (domain simplification)
   // D: Encourages smaller milestones → CI (creative breakdown) + CT/PS (milestone planning)
@@ -388,9 +388,9 @@ export const AI_READINESS_SCORING = {
   
   // Q13: Technical system update preparation
   // A: Researches documentation for changes → TF (technical learning) + ACL (proactive learning)
-  // B: Designs training curriculum → CC (knowledge sharing) + CT/PS (instructional design)
+  // B: Collaborates with SMEs to design training → CC (collaboration with experts) + ACL (learning design)
   // C: Documents ROI for team → DE (business context) + DF (metrics-based justification)
-  // D: Q&A session with developers → CC (collaborative discussion) + AL/PE (AI-assisted questions)
+  // D: Q&A with AI-generated clarifying questions → CC (collaborative discussion) + AL/PE (AI question generation)
   // E: Proposes innovative use case → CI (innovation) + CT/PS (use case analysis)
   "13-A": { "TF": 4, "ACL": 4 },
   "13-B": { "CC": 4, "ACL": 4 },
