@@ -123,24 +123,30 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
-  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  // HYBRID SCORING with Dynamic Floor and Ceiling
+  // Floor Formula: floor = 50 + (minRawPct / 100)^0.5 × 10
+  // Ceiling Formula: ceiling = 50 + (maxRawPct / 100)^0.25 × 50
+  // Final Score: floor + (relativePosition × scoreRange)
   const scoreValues = Object.values(normalizedScores);
-  const minScore = Math.min(...scoreValues);
-  const maxScore = Math.max(...scoreValues);
-  const scoreRange = maxScore - minScore;
+  const minPct = Math.min(...scoreValues);
+  const maxPct = Math.max(...scoreValues);
+  const pctRange = maxPct - minPct;
 
-  const stretchedScores: Record<string, number> = {};
-  Object.entries(normalizedScores).forEach(([skill, score]) => {
-    if (scoreRange > 0) {
-      const relativePosition = (score - minScore) / scoreRange;
-      stretchedScores[skill] = Math.round(50 + relativePosition * 49);
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
+  const scoreRange = ceiling - floor;
+
+  const hybridScores: Record<string, number> = {};
+  Object.entries(normalizedScores).forEach(([skill, rawPct]) => {
+    if (pctRange > 0) {
+      const relativePosition = (rawPct - minPct) / pctRange;
+      hybridScores[skill] = Math.round(floor + relativePosition * scoreRange);
     } else {
-      stretchedScores[skill] = 75;
+      hybridScores[skill] = Math.round((floor + ceiling) / 2);
     }
   });
 
-  return stretchedScores;
+  return hybridScores;
 }
 
 function calculateAIReadinessScores(answers: Record<string, string>): Record<string, number> {
@@ -298,24 +304,30 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
-  // Lowest skill → 50, Highest skill → 99, others proportionally in between
+  // HYBRID SCORING with Dynamic Floor and Ceiling
+  // Floor Formula: floor = 50 + (minRawPct / 100)^0.5 × 10
+  // Ceiling Formula: ceiling = 50 + (maxRawPct / 100)^0.25 × 50
+  // Final Score: floor + (relativePosition × scoreRange)
   const scoreValues = Object.values(normalizedScores);
-  const minScore = Math.min(...scoreValues);
-  const maxScore = Math.max(...scoreValues);
-  const scoreRange = maxScore - minScore;
+  const minPct = Math.min(...scoreValues);
+  const maxPct = Math.max(...scoreValues);
+  const pctRange = maxPct - minPct;
 
-  const stretchedScores: Record<string, number> = {};
-  Object.entries(normalizedScores).forEach(([skill, score]) => {
-    if (scoreRange > 0) {
-      const relativePosition = (score - minScore) / scoreRange;
-      stretchedScores[skill] = Math.round(50 + relativePosition * 49);
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
+  const scoreRange = ceiling - floor;
+
+  const hybridScores: Record<string, number> = {};
+  Object.entries(normalizedScores).forEach(([skill, rawPct]) => {
+    if (pctRange > 0) {
+      const relativePosition = (rawPct - minPct) / pctRange;
+      hybridScores[skill] = Math.round(floor + relativePosition * scoreRange);
     } else {
-      stretchedScores[skill] = 75;
+      hybridScores[skill] = Math.round((floor + ceiling) / 2);
     }
   });
 
-  return stretchedScores;
+  return hybridScores;
 }
 
 async function recalculateUserScores(userEmail: string) {

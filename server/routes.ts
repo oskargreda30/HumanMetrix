@@ -5676,23 +5676,28 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     }
   });
 
-  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
-  // Lowest skill → 50, Highest skill → 99, others proportionally in between
-  // This preserves relative gaps while stretching the display range
+  // HYBRID SCORING with Dynamic Floor and Ceiling
+  // Floor Formula: floor = 50 + (minRawPct / 100)^0.5 × 10
+  // Ceiling Formula: ceiling = 50 + (maxRawPct / 100)^0.25 × 50
+  // Final Score: floor + (relativePosition × scoreRange)
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
+
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
+  const scoreRange = ceiling - floor;
 
   const normalizedScores: Record<string, number> = {};
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0) {
       const relativePosition = (rawPct - minPct) / pctRange; // 0 to 1
-      normalizedScores[skill] = Math.round(50 + relativePosition * 49); // 50-99 range
+      normalizedScores[skill] = Math.round(floor + relativePosition * scoreRange);
     } else {
-      // All skills have same raw score - use 75 as midpoint
-      normalizedScores[skill] = 75;
+      // All skills have same raw score - use midpoint between floor and ceiling
+      normalizedScores[skill] = Math.round((floor + ceiling) / 2);
     }
   });
 
@@ -5921,23 +5926,28 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     }
   });
 
-  // STRETCHED RELATIVE SCALING: Map candidate's range to 50-99 for max differentiation
-  // Lowest skill → 50, Highest skill → 99, others proportionally in between
-  // This preserves relative gaps while stretching the display range
+  // HYBRID SCORING with Dynamic Floor and Ceiling
+  // Floor Formula: floor = 50 + (minRawPct / 100)^0.5 × 10
+  // Ceiling Formula: ceiling = 50 + (maxRawPct / 100)^0.25 × 50
+  // Final Score: floor + (relativePosition × scoreRange)
   const percentageValues = Object.values(rawPercentages);
   const minPct = Math.min(...percentageValues);
   const maxPct = Math.max(...percentageValues);
   const pctRange = maxPct - minPct;
+
+  const floor = 50 + Math.pow(minPct / 100, 0.5) * 10;
+  const ceiling = 50 + Math.pow(maxPct / 100, 0.25) * 50;
+  const scoreRange = ceiling - floor;
 
   const normalizedScores: Record<string, number> = {};
 
   Object.entries(rawPercentages).forEach(([skill, rawPct]) => {
     if (pctRange > 0) {
       const relativePosition = (rawPct - minPct) / pctRange; // 0 to 1
-      normalizedScores[skill] = Math.round(50 + relativePosition * 49); // 50-99 range
+      normalizedScores[skill] = Math.round(floor + relativePosition * scoreRange);
     } else {
-      // All skills have same raw score - use 75 as midpoint
-      normalizedScores[skill] = 75;
+      // All skills have same raw score - use midpoint between floor and ceiling
+      normalizedScores[skill] = Math.round((floor + ceiling) / 2);
     }
   });
 
