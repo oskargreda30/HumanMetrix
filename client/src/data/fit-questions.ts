@@ -151,84 +151,100 @@ export const FIT_QUESTIONS = [
   },
 ];
 
-// Scoring matrix for FIT Assessment
+// Scoring matrix for FIT Assessment - BALANCED VERSION
 // Each entry maps: "questionId-optionValue": { skill: points }
-// Each option awards 4 points to each skill it maps to
+// Each skill appears exactly once per question = 15 questions × 4 points = 60 max per skill
+// Skills: HA (High Agency), IC (Intellectual Curiosity), RA (Resilience), EE (Empathy & Ethics), GM (Growth Mindset), IA (Interpersonal Agility)
 export const FIT_SCORING = {
-  "1-A": { "HA": 4, "RA": 4, "GM": 4 },
-  "1-B": { "IC": 4, "IA": 4 },
-  "1-C": { "EE": 4, "GM": 4 },
-  "1-D": { "HA": 4, "EE": 4, "IA": 4 },
+  // Q1: Hosting dinner party, missing ingredient
+  "1-A": { "HA": 4, "RA": 4 },   // Takes charge + adapts
+  "1-B": { "IC": 4 },            // Seeks creative alternatives
+  "1-C": { "GM": 4 },            // Views as learning opportunity
+  "1-D": { "IA": 4, "EE": 4 },   // Coordinates + fair exchange
   
-  "2-A": { "HA": 4, "GM": 4 },
-  "2-B": { "RA": 4, "EE": 4 },
-  "2-C": { "IC": 4, "EE": 4, "IA": 4 },
-  "2-D": { "HA": 4, "RA": 4, "IA": 4 },
+  // Q2: Friend failed driving test
+  "2-A": { "HA": 4 },            // Takes charge of solution
+  "2-B": { "RA": 4, "GM": 4 },   // Emotional regulation + normalises failure
+  "2-C": { "EE": 4, "IC": 4 },   // Empathy + understanding feelings
+  "2-D": { "IA": 4 },            // Coordinates social network
   
-  "3-A": { "IC": 4, "GM": 4 },
-  "3-B": { "HA": 4, "RA": 4, "IA": 4 },
-  "3-C": { "IC": 4, "EE": 4 },
-  "3-D": { "RA": 4, "GM": 4, "IA": 4 },
+  // Q3: Repairing antique furniture
+  "3-A": { "IC": 4 },            // Deep research
+  "3-B": { "RA": 4 },            // Patience, methodical
+  "3-C": { "EE": 4, "IA": 4 },   // Fair dealing + expert network
+  "3-D": { "GM": 4, "HA": 4 },   // Learning + proactive investment
   
-  "4-A": { "HA": 4, "RA": 4, "GM": 4 },
-  "4-B": { "IC": 4, "GM": 4 },
-  "4-C": { "RA": 4, "EE": 4, "IA": 4 },
-  "4-D": { "HA": 4, "EE": 4, "GM": 4 },
+  // Q4: Vacation deposit conflict
+  "4-A": { "HA": 4, "RA": 4 },   // Takes control + absorbs stress
+  "4-B": { "IC": 4 },            // Researches options
+  "4-C": { "EE": 4 },            // Honest communication
+  "4-D": { "IA": 4, "GM": 4 },   // Honours commitments + adapts
   
-  "5-A": { "IC": 4, "EE": 4 },
-  "5-B": { "RA": 4, "GM": 4, "IA": 4 },
-  "5-C": { "HA": 4, "EE": 4, "IA": 4 },
-  "5-D": { "IC": 4, "RA": 4, "IA": 4 },
+  // Q5: Helping elderly with groceries
+  "5-A": { "IC": 4, "EE": 4 },   // Thoughtful inquiry + compassion
+  "5-B": { "RA": 4 },            // Commitment to completion
+  "5-C": { "HA": 4, "GM": 4 },   // Maximum initiative + beyond expectation
+  "5-D": { "IA": 4 },            // Coordinates group effort
   
-  "6-A": { "HA": 4, "IC": 4 },
-  "6-B": { "RA": 4, "GM": 4 },
-  "6-C": { "EE": 4, "IA": 4 },
-  "6-D": { "HA": 4, "RA": 4, "EE": 4 },
+  // Q6: Hateful blog critique
+  "6-A": { "HA": 4, "IC": 4 },   // Assertive response + intellectual engagement
+  "6-B": { "GM": 4 },            // Uses criticism for growth
+  "6-C": { "EE": 4, "IA": 4 },   // Cares about readers + coordinates community
+  "6-D": { "RA": 4 },            // Emotional regulation and persistence
   
-  "7-A": { "IC": 4, "GM": 4 },
-  "7-B": { "HA": 4, "RA": 4, "GM": 4 },
-  "7-C": { "IC": 4, "GM": 4, "IA": 4 },
-  "7-D": { "EE": 4, "IA": 4 },
+  // Q7: Co-signing risky loan
+  "7-A": { "IC": 4 },            // Thorough investigation
+  "7-B": { "HA": 4, "RA": 4 },   // Firm decision + self-preservation
+  "7-C": { "GM": 4, "IA": 4 },   // Promotes growth + maintains relationship
+  "7-D": { "EE": 4 },            // Generous alternative
   
-  "8-A": { "HA": 4, "GM": 4, "IA": 4 },
-  "8-B": { "IC": 4, "EE": 4, "IA": 4 },
-  "8-C": { "HA": 4, "EE": 4 },
-  "8-D": { "IC": 4, "RA": 4, "GM": 4 },
+  // Q8: Confusing election process
+  "8-A": { "HA": 4, "IA": 4 },   // Takes initiative + helps participation
+  "8-B": { "IC": 4 },            // Root cause analysis
+  "8-C": { "EE": 4 },            // Fairness and inclusion
+  "8-D": { "GM": 4, "RA": 4 },   // Equality through learning + patience
   
-  "9-A": { "RA": 4, "EE": 4 },
-  "9-B": { "IC": 4, "EE": 4 },
-  "9-C": { "HA": 4, "IA": 4 },
-  "9-D": { "HA": 4, "IC": 4, "RA": 4 },
+  // Q9: Drunk heckler at concert
+  "9-A": { "RA": 4 },            // Patience, emotional control
+  "9-B": { "IC": 4, "EE": 4 },   // Thoughtful engagement + considering others
+  "9-C": { "IA": 4 },            // Appropriate delegation
+  "9-D": { "HA": 4, "GM": 4 },   // Takes charge + confronts challenge
   
-  "10-A": { "HA": 4, "RA": 4, "GM": 4 },
-  "10-B": { "IC": 4, "GM": 4 },
-  "10-C": { "IC": 4, "RA": 4, "GM": 4 },
-  "10-D": { "RA": 4, "EE": 4, "IA": 4 },
+  // Q10: Major roof repair
+  "10-A": { "HA": 4, "RA": 4 },  // Immediate action + crisis handling
+  "10-B": { "IC": 4 },           // Deep understanding
+  "10-C": { "GM": 4 },           // Long-term skill development
+  "10-D": { "EE": 4, "IA": 4 },  // Self-care + coordinating with pros
   
-  "11-A": { "HA": 4, "RA": 4, "IA": 4 },
-  "11-B": { "IC": 4, "EE": 4 },
-  "11-C": { "HA": 4, "EE": 4 },
-  "11-D": { "IC": 4, "GM": 4, "IA": 4 },
+  // Q11: Friend excluded by group
+  "11-A": { "HA": 4 },           // Direct action
+  "11-B": { "IC": 4 },           // Understanding patterns
+  "11-C": { "EE": 4, "RA": 4 },  // Empathy + patience/indirect
+  "11-D": { "IA": 4, "GM": 4 },  // Group dynamics + constructive solution
   
-  "12-A": { "RA": 4, "EE": 4, "IA": 4 },
-  "12-B": { "HA": 4, "RA": 4, "EE": 4 },
-  "12-C": { "HA": 4, "GM": 4, "IA": 4 },
-  "12-D": { "IC": 4, "GM": 4, "IA": 4 },
+  // Q12: Huge family reunion planning
+  "12-A": { "IC": 4, "RA": 4 },  // Analytical breakdown + methodical
+  "12-B": { "HA": 4 },           // Assertive control
+  "12-C": { "GM": 4, "EE": 4 },  // Learning from others + respecting expertise
+  "12-D": { "IA": 4 },           // Coordination/delegation
   
-  "13-A": { "HA": 4, "IC": 4 },
-  "13-B": { "IC": 4, "GM": 4 },
-  "13-C": { "RA": 4, "GM": 4 },
-  "13-D": { "HA": 4, "RA": 4, "GM": 4 },
+  // Q13: Stuck on difficult personal challenge
+  "13-A": { "HA": 4, "IA": 4 },  // Takes action + leverages expertise
+  "13-B": { "IC": 4 },           // Deep research
+  "13-C": { "RA": 4, "EE": 4 },  // Patience + self-compassion
+  "13-D": { "GM": 4 },           // Long-term skill investment
   
-  "14-A": { "RA": 4, "EE": 4, "IA": 4 },
-  "14-B": { "HA": 4, "EE": 4 },
-  "14-C": { "IC": 4, "GM": 4, "IA": 4 },
-  "14-D": { "HA": 4, "EE": 4, "IA": 4 },
+  // Q14: Harsh unfair criticism online
+  "14-A": { "RA": 4, "IC": 4 },  // Emotional regulation + logical engagement
+  "14-B": { "EE": 4 },           // Respectful approach
+  "14-C": { "GM": 4, "HA": 4 },  // Learning + proactive investment
+  "14-D": { "IA": 4 },           // Leveraging support network
   
-  "15-A": { "HA": 4, "IC": 4, "GM": 4 },
-  "15-B": { "IC": 4, "RA": 4, "IA": 4 },
-  "15-C": { "EE": 4, "GM": 4 },
-  "15-D": { "HA": 4, "RA": 4, "IA": 4 },
+  // Q15: Defining household budget with conflict
+  "15-A": { "HA": 4, "GM": 4 },  // Takes charge + data-driven
+  "15-B": { "IC": 4, "IA": 4 },  // Understands perspectives + facilitates
+  "15-C": { "EE": 4 },           // Considers others' wellbeing
+  "15-D": { "RA": 4 },           // Patience through process
 };
 
 export const FIT_SKILL_NAMES = {
