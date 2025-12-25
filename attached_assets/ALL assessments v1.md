@@ -25,8 +25,14 @@ This document contains all original questions, answer options, and scoring logic
 
 ## Scoring Formula
 - Each answer awards 4 points to each associated skill
-- Raw scores are converted using a curved formula: `50 + (raw * 0.4) + (raw^2 * 0.05)`
-- This creates meaningful differentiation while maintaining a 50% floor
+- **Hybrid Scoring with Maximum Variance:**
+  - Floor at 50 (weakest skill always gets 50)
+  - Ceiling at 100 for 100% raw performance, scaled down for lower performers
+  - Uses power of 0.25 for aggressive ceiling scaling
+  - **Ceiling Formula:** `ceiling = 50 + (maxRawPct / 100)^0.25 × 50`
+  - **Final Score:** `50 + (relativePosition × scoreRange)`
+  - Examples: 100% raw → ceiling 100, 80% → 97, 50% → 92, 40% → 90, 30% → 87
+- This creates 37-40 point spreads for meaningful differentiation
 
 ---
 
@@ -235,8 +241,14 @@ This document contains all original questions, answer options, and scoring logic
 
 ## Scoring Formula
 - Each answer awards 4 points to each associated skill
-- Raw scores are converted using a curved formula: `50 + (raw * 0.4) + (raw^2 * 0.05)`
-- This creates meaningful differentiation while maintaining a 50% floor
+- **Hybrid Scoring with Maximum Variance:**
+  - Floor at 50 (weakest skill always gets 50)
+  - Ceiling at 100 for 100% raw performance, scaled down for lower performers
+  - Uses power of 0.25 for aggressive ceiling scaling
+  - **Ceiling Formula:** `ceiling = 50 + (maxRawPct / 100)^0.25 × 50`
+  - **Final Score:** `50 + (relativePosition × scoreRange)`
+  - Examples: 100% raw → ceiling 100, 80% → 97, 50% → 92, 40% → 90, 30% → 87
+- This creates 37-40 point spreads for meaningful differentiation
 
 ---
 
