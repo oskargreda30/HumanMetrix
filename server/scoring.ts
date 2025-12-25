@@ -316,8 +316,12 @@ export function calculateFITScores(answers: Record<string, string>): Record<stri
   };
 
   // Calculate raw scores based on answers
+  // Normalize answer format: "q1": "a" -> "1-A" for matrix lookup
   Object.entries(answers).forEach(([questionId, answer]) => {
-    const key = `${questionId}-${answer}`;
+    // Strip 'q' prefix if present, uppercase the answer
+    const normalizedQ = questionId.toLowerCase().replace(/^q/, '');
+    const normalizedA = answer.toUpperCase();
+    const key = `${normalizedQ}-${normalizedA}`;
     const skillPoints = FIT_SCORING_MATRIX[key];
     
     if (skillPoints) {
@@ -402,8 +406,12 @@ export function calculateAIReadinessScores(answers: Record<string, string>): Rec
   };
 
   // Calculate raw scores based on answers
+  // Normalize answer format: "q1": "a" -> "1-A" for matrix lookup
   Object.entries(answers).forEach(([questionId, answer]) => {
-    const key = `${questionId}-${answer}`;
+    // Strip 'q' prefix if present, uppercase the answer
+    const normalizedQ = questionId.toLowerCase().replace(/^q/, '');
+    const normalizedA = answer.toUpperCase();
+    const key = `${normalizedQ}-${normalizedA}`;
     const skillPoints = AI_READINESS_SCORING_MATRIX[key];
     
     if (skillPoints) {

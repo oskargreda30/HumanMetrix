@@ -13,9 +13,12 @@
  */
 
 import { storage } from "../storage";
+import { calculateFITScores, calculateAIReadinessScores } from "../scoring";
 
-// Copy of scoring functions from server/routes.ts
-// These represent the CURRENT/CORRECT scoring logic
+// Scoring functions imported from shared scoring module (server/scoring.ts)
+// This ensures consistency between live scoring and recalculation
+
+/* OLD LOCAL FUNCTIONS REMOVED - Now using imports from ../scoring
 function calculateFITScores(answers: Record<string, string>): Record<string, number> {
   const rawScores: Record<string, number> = {
     'High Agency': 0, 
@@ -329,6 +332,7 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
 
   return hybridScores;
 }
+END OF OLD LOCAL FUNCTIONS */
 
 async function recalculateUserScores(userEmail: string) {
   console.log(`\n${'='.repeat(60)}`);
