@@ -5428,99 +5428,160 @@ function calculateFITScores(answers: Record<string, string>): Record<string, num
     'Interpersonal Agility': 0,
   };
 
-  // Scoring matrix - BALANCED: each skill appears exactly ONCE per question
+  // Scoring matrix - BALANCED & SEMANTICALLY VALIDATED
+  // Each skill appears exactly ONCE per question, mapped to the most appropriate answer
   // Skills: HA (High Agency), IC (Intellectual Curiosity), RA (Resilience), 
   //         EE (Empathy & Ethics), GM (Growth Mindset), IA (Interpersonal Agility)
   const scoringMatrix: Record<string, Record<string, number>> = {
     // Q1: Dinner party - missing ingredient
+    // A: Takes charge (HA) + adapts to constraint (RA)
+    // B: Seeks creative knowledge/alternatives (IC)
+    // C: Views challenge as learning opportunity (GM)
+    // D: Coordinates with others (IA) + fair exchange/offer to pay (EE)
     "1-A": { "High Agency": 4, "Resilience": 4 },
     "1-B": { "Intellectual Curiosity": 4 },
-    "1-C": { "Empathy & Ethics": 4, "Growth Mindset": 4 },
-    "1-D": { "Interpersonal Agility": 4 },
+    "1-C": { "Growth Mindset": 4 },
+    "1-D": { "Interpersonal Agility": 4, "Empathy & Ethics": 4 },
     
-    // Q2: Friend failed driving test
-    "2-A": { "High Agency": 4, "Growth Mindset": 4 },
-    "2-B": { "Resilience": 4, "Empathy & Ethics": 4 },
-    "2-C": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
-    "2-D": { },
+    // Q2: Friend failed driving test (third time)
+    // A: Takes charge of solution immediately (HA)
+    // B: Promotes emotional regulation (RA) + normalises failure as growth (GM)
+    // C: Shows empathy by validating (EE) + seeks to understand feelings (IC)
+    // D: Coordinates social network for varied feedback (IA)
+    "2-A": { "High Agency": 4 },
+    "2-B": { "Resilience": 4, "Growth Mindset": 4 },
+    "2-C": { "Empathy & Ethics": 4, "Intellectual Curiosity": 4 },
+    "2-D": { "Interpersonal Agility": 4 },
     
-    // Q3: Antique furniture repair
-    "3-A": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "3-B": { "High Agency": 4, "Resilience": 4 },
-    "3-C": { "Empathy & Ethics": 4 },
-    "3-D": { "Interpersonal Agility": 4 },
+    // Q3: Antique furniture repair (unfamiliar language)
+    // A: Deep research and exploration (IC)
+    // B: Patience, methodical approach under difficulty (RA)
+    // C: Fair dealing (EE) + leveraging expert network (IA)
+    // D: Learning opportunity (GM) + proactive investment (HA)
+    "3-A": { "Intellectual Curiosity": 4 },
+    "3-B": { "Resilience": 4 },
+    "3-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    "3-D": { "Growth Mindset": 4, "High Agency": 4 },
     
     // Q4: Vacation deposit conflict
+    // A: Takes control immediately (HA) + absorbs financial stress (RA)
+    // B: Researches options systematically (IC)
+    // C: Honest communication, self-protection ethics (EE)
+    // D: Honours commitments (IA) + adapts plan (GM)
     "4-A": { "High Agency": 4, "Resilience": 4 },
     "4-B": { "Intellectual Curiosity": 4 },
-    "4-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "4-D": { "Growth Mindset": 4 },
+    "4-C": { "Empathy & Ethics": 4 },
+    "4-D": { "Interpersonal Agility": 4, "Growth Mindset": 4 },
     
     // Q5: Helping elderly at bus stop
+    // A: Thoughtful inquiry (IC) + compassionate help (EE)
+    // B: Commitment, seeing through to completion (RA)
+    // C: Maximum initiative (HA) + going above and beyond (GM)
+    // D: Coordinates group effort (IA)
     "5-A": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "5-B": { "Resilience": 4, "Growth Mindset": 4 },
-    "5-C": { "High Agency": 4, "Interpersonal Agility": 4 },
-    "5-D": { },
+    "5-B": { "Resilience": 4 },
+    "5-C": { "High Agency": 4, "Growth Mindset": 4 },
+    "5-D": { "Interpersonal Agility": 4 },
     
-    // Q6: Blog critique response
+    // Q6: Blog critique - hateful reader comment
+    // A: Takes assertive action to defend choices (HA) + intellectually engages with critique points (IC)
+    // B: Uses criticism as opportunity to improve and grow (GM)
+    // C: Cares about readers' perspective by checking if critique is valid (EE) + coordinates with community (IA)
+    // D: Emotional regulation and persistence despite negativity (RA)
     "6-A": { "High Agency": 4, "Intellectual Curiosity": 4 },
-    "6-B": { "Resilience": 4, "Growth Mindset": 4 },
+    "6-B": { "Growth Mindset": 4 },
     "6-C": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
-    "6-D": { },
+    "6-D": { "Resilience": 4 },
     
-    // Q7: Co-signing risky loan
+    // Q7: Friend asks to co-sign risky loan
+    // A: Thorough investigation (IC)
+    // B: Takes firm decision (HA) + self-preservation (RA)
+    // C: Promotes growth (GM) + maintains relationship diplomatically (IA)
+    // D: Generous, ethical alternative (EE)
     "7-A": { "Intellectual Curiosity": 4 },
     "7-B": { "High Agency": 4, "Resilience": 4 },
     "7-C": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
     "7-D": { "Empathy & Ethics": 4 },
     
     // Q8: Volunteer group election bias
+    // A: Takes initiative (HA) + helps everyone participate (IA)
+    // B: Root cause analysis (IC)
+    // C: Caring about fairness and inclusion (EE)
+    // D: Equality through learning (GM) + systemic patience (RA)
     "8-A": { "High Agency": 4, "Interpersonal Agility": 4 },
-    "8-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-    "8-C": { },
-    "8-D": { "Resilience": 4, "Growth Mindset": 4 },
+    "8-B": { "Intellectual Curiosity": 4 },
+    "8-C": { "Empathy & Ethics": 4 },
+    "8-D": { "Growth Mindset": 4, "Resilience": 4 },
     
-    // Q9: Concert heckler
-    "9-A": { "Resilience": 4, "Empathy & Ethics": 4 },
-    "9-B": { "Intellectual Curiosity": 4 },
+    // Q9: Concert heckler situation
+    // A: Patience and emotional control under provocation (RA)
+    // B: Seeks to understand and articulate impact (IC) + considers others' experience (EE)
+    // C: Delegates to appropriate authority (IA)
+    // D: Takes direct action (HA) + faces uncomfortable confrontation (GM)
+    "9-A": { "Resilience": 4 },
+    "9-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
     "9-C": { "Interpersonal Agility": 4 },
     "9-D": { "High Agency": 4, "Growth Mindset": 4 },
     
-    // Q10: Roof repair emergency
+    // Q10: Sudden roof repair emergency
+    // A: Immediate action (HA) + dealing with crisis (RA)
+    // B: Deep understanding approach (IC)
+    // C: Long-term skill development (GM)
+    // D: Self-care/rational approach (EE) + coordinating with pros (IA)
     "10-A": { "High Agency": 4, "Resilience": 4 },
-    "10-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "10-C": { },
+    "10-B": { "Intellectual Curiosity": 4 },
+    "10-C": { "Growth Mindset": 4 },
     "10-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
     
-    // Q11: Friend exclusion from group
-    "11-A": { "High Agency": 4, "Resilience": 4 },
+    // Q11: Friend excluded by group joke
+    // A: Direct action to address issue (HA)
+    // B: Data-gathering, understanding patterns (IC)
+    // C: Empathy for excluded friend (EE) + patience/indirect approach (RA)
+    // D: Group dynamics solution (IA) + constructive new approach (GM)
+    "11-A": { "High Agency": 4 },
     "11-B": { "Intellectual Curiosity": 4 },
-    "11-C": { "Empathy & Ethics": 4 },
-    "11-D": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
+    "11-C": { "Empathy & Ethics": 4, "Resilience": 4 },
+    "11-D": { "Interpersonal Agility": 4, "Growth Mindset": 4 },
     
-    // Q12: Family reunion planning
-    "12-A": { "Resilience": 4, "Empathy & Ethics": 4 },
+    // Q12: Complex family reunion planning
+    // A: Analytical breakdown (IC) + methodical approach (RA)
+    // B: Assertive, takes control of situation (HA)
+    // C: Learning from others (GM) + respecting expertise (EE)
+    // D: Pure interpersonal coordination/delegation (IA)
+    "12-A": { "Intellectual Curiosity": 4, "Resilience": 4 },
     "12-B": { "High Agency": 4 },
-    "12-C": { "Growth Mindset": 4, "Interpersonal Agility": 4 },
-    "12-D": { "Intellectual Curiosity": 4 },
+    "12-C": { "Growth Mindset": 4, "Empathy & Ethics": 4 },
+    "12-D": { "Interpersonal Agility": 4 },
     
-    // Q13: Difficult personal challenge
-    "13-A": { "High Agency": 4 },
-    "13-B": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
-    "13-C": { "Resilience": 4 },
-    "13-D": { "Empathy & Ethics": 4, "Interpersonal Agility": 4 },
+    // Q13: Stuck on difficult personal challenge
+    // A: Takes action (HA) + leverages external expertise (IA)
+    // B: Deep research (IC)
+    // C: Patience (RA) + self-compassion (EE)
+    // D: Long-term skill investment (GM)
+    "13-A": { "High Agency": 4, "Interpersonal Agility": 4 },
+    "13-B": { "Intellectual Curiosity": 4 },
+    "13-C": { "Resilience": 4, "Empathy & Ethics": 4 },
+    "13-D": { "Growth Mindset": 4 },
     
-    // Q14: Harsh public criticism
-    "14-A": { "Resilience": 4, "Empathy & Ethics": 4 },
-    "14-B": { "High Agency": 4 },
-    "14-C": { "Intellectual Curiosity": 4, "Growth Mindset": 4 },
+    // Q14: Harsh online criticism from public figure
+    // A: Emotional regulation (RA) + logical engagement (IC)
+    // B: Respectful, ethical approach (EE)
+    // C: Learning (GM) + proactive investment (HA)
+    // D: Leveraging support network (IA)
+    "14-A": { "Resilience": 4, "Intellectual Curiosity": 4 },
+    "14-B": { "Empathy & Ethics": 4 },
+    "14-C": { "Growth Mindset": 4, "High Agency": 4 },
     "14-D": { "Interpersonal Agility": 4 },
     
-    // Q15: Household budget conflict
+    // Q15: Household budget with conflicting opinions
+    // A: Takes charge (HA) + data-driven improvement (GM)
+    // B: Understands perspectives (IC) + facilitates (IA)
+    // C: Considers others' wellbeing (EE)
+    // D: Patience through structured process (RA)
     "15-A": { "High Agency": 4, "Growth Mindset": 4 },
-    "15-B": { "Intellectual Curiosity": 4, "Resilience": 4 },
+    "15-B": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
     "15-C": { "Empathy & Ethics": 4 },
-    "15-D": { "Interpersonal Agility": 4 },
+    "15-D": { "Resilience": 4 },
   };
 
   // Calculate raw scores based on answers

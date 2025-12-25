@@ -39,8 +39,8 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Quickly change the recipe to use only what's on hand and start cooking immediately, focusing on saving time. | HA: 4, RA: 4 |
 | B | Call a foodie friend to find the most interesting, surprising thing you could use to replace the missing ingredient. | IC: 4 |
-| C | Take a few minutes to quickly look up advanced techniques for making the dish work with fewer ingredients, viewing it as a new skill challenge. | EE: 4, GM: 4 |
-| D | Send a quick text to guests to see if one is passing a store and can grab the item, offering to pay them back. | IA: 4 |
+| C | Take a few minutes to quickly look up advanced techniques for making the dish work with fewer ingredients, viewing it as a new skill challenge. | GM: 4 |
+| D | Send a quick text to guests to see if one is passing a store and can grab the item, offering to pay them back. | IA: 4, EE: 4 |
 
 ---
 
@@ -49,10 +49,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Insist on driving practice right away, identifying their key mistakes and personally coaching them until the flaw is fixed. | HA: 4, GM: 4 |
-| B | Remind them that failure is normal and encourage them to take a short break before getting back to their routine. | RA: 4, EE: 4 |
-| C | Focus entirely on validating their frustration and offer to listen as long as they need, avoiding judgment or practical advice. | IC: 4, IA: 4 |
-| D | Suggest setting up practice sessions with several different, patient friends to get varied feedback and make the process more fun. | |
+| A | Insist on driving practice right away, identifying their key mistakes and personally coaching them until the flaw is fixed. | HA: 4 |
+| B | Remind them that failure is normal and encourage them to take a short break before getting back to their routine. | RA: 4, GM: 4 |
+| C | Focus entirely on validating their frustration and offer to listen as long as they need, avoiding judgment or practical advice. | EE: 4, IC: 4 |
+| D | Suggest setting up practice sessions with several different, patient friends to get varied feedback and make the process more fun. | IA: 4 |
 
 ---
 
@@ -61,10 +61,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Focus time on translating the original documents and researching the specific construction methods used during that time period. | IC: 4, GM: 4 |
-| B | Accept that it will take longer, and start working on the simpler parts first, slowly tackling the hardest piece last. | HA: 4, RA: 4 |
-| C | Find a highly specialized artisan in the field and offer them a fair price just to explain the key technique needed for the fix. | EE: 4 |
-| D | Enrol in a weekend class on that specific period of furniture restoration, seeing it as a long-term investment. | IA: 4 |
+| A | Focus time on translating the original documents and researching the specific construction methods used during that time period. | IC: 4 |
+| B | Accept that it will take longer, and start working on the simpler parts first, slowly tackling the hardest piece last. | RA: 4 |
+| C | Find a highly specialized artisan in the field and offer them a fair price just to explain the key technique needed for the fix. | EE: 4, IA: 4 |
+| D | Enrol in a weekend class on that specific period of furniture restoration, seeing it as a long-term investment. | GM: 4, HA: 4 |
 
 ---
 
@@ -75,8 +75,8 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Pay the full deposit yourself immediately, then deal with the non-paying friends privately to secure their commitment and money later. | HA: 4, RA: 4 |
 | B | Analyse the detailed cancellation rules and timeline for the trip to understand exactly what options are available if the friends drop out completely. | IC: 4 |
-| C | Politely tell the travel agent that the trip might need to be delayed or cancelled, focusing on protecting your own financial stability first. | EE: 4, IA: 4 |
-| D | Tell the travel agent to move forward with the trip for the two paying friends only, focusing on honouring their commitment. | GM: 4 |
+| C | Politely tell the travel agent that the trip might need to be delayed or cancelled, focusing on protecting your own financial stability first. | EE: 4 |
+| D | Tell the travel agent to move forward with the trip for the two paying friends only, focusing on honouring their commitment. | IA: 4, GM: 4 |
 
 ---
 
@@ -86,9 +86,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Step in and ask which bags are heaviest and most awkwardly shaped so you can choose the ones that offer the most relief. | IC: 4, EE: 4 |
-| B | Offer to help carry the bags and stay with the person until the bus arrives, protecting them from the stress of being alone with the load. | RA: 4, GM: 4 |
-| C | Offer to carry the bags all the way to their final destination, as this provides the maximum amount of support. | HA: 4, IA: 4 |
-| D | Ask two other people waiting at the stop to help, dividing the load among several individuals to make it lighter for everyone. | |
+| B | Offer to help carry the bags and stay with the person until the bus arrives, protecting them from the stress of being alone with the load. | RA: 4 |
+| C | Offer to carry the bags all the way to their final destination, as this provides the maximum amount of support. | HA: 4, GM: 4 |
+| D | Ask two other people waiting at the stop to help, dividing the load among several individuals to make it lighter for everyone. | IA: 4 |
 
 ---
 
@@ -98,9 +98,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Write and publish a point-by-point factual response that defends your creative choices and corrects any misinterpretations in the critique. | HA: 4, IC: 4 |
-| B | Take the negative critique as a challenge and immediately start seeking mentorship or courses to improve the specific flaws mentioned. | RA: 4, GM: 4 |
+| B | Take the negative critique as a challenge and immediately start seeking mentorship or courses to improve the specific flaws mentioned. | GM: 4 |
 | C | Reach out privately to several other readers to find out if the critique has merit and coordinate a group response to the public comment. | EE: 4, IA: 4 |
-| D | Delete the hateful comment and decide to continue working on your project exactly as before, focusing on the joy of creating. | |
+| D | Delete the hateful comment and decide to continue working on your project exactly as before, focusing on the joy of creating. | RA: 4 |
 
 ---
 
@@ -122,9 +122,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Immediately draft and circulate a new, simpler election form and host a pop-up station to help every member register correctly. | HA: 4, IA: 4 |
-| B | Spend time analysing the old form and historical voter data to pinpoint exactly which sections created the subtle barrier to entry. | IC: 4, EE: 4 |
-| C | Offer dedicated time to reach out to younger, less wealthy members and ensure they are personally guided through the registration process. | |
-| D | Propose a rule change that mandates training for all potential candidates, ensuring everyone starts with the same knowledge base. | RA: 4, GM: 4 |
+| B | Spend time analysing the old form and historical voter data to pinpoint exactly which sections created the subtle barrier to entry. | IC: 4 |
+| C | Offer dedicated time to reach out to younger, less wealthy members and ensure they are personally guided through the registration process. | EE: 4 |
+| D | Propose a rule change that mandates training for all potential candidates, ensuring everyone starts with the same knowledge base. | GM: 4, RA: 4 |
 
 ---
 
@@ -133,8 +133,8 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Remain quiet and adjust your attention to ignore the person, waiting patiently for the event staff to handle the issue. | RA: 4, EE: 4 |
-| B | Speak to the heckler in a calm, low voice, expressing concern for their behaviour's impact on everyone else's experience. | IC: 4 |
+| A | Remain quiet and adjust your attention to ignore the person, waiting patiently for the event staff to handle the issue. | RA: 4 |
+| B | Speak to the heckler in a calm, low voice, expressing concern for their behaviour's impact on everyone else's experience. | IC: 4, EE: 4 |
 | C | Discreetly alert the event staff and point out the heckler, allowing the professionals to manage the conflict. | IA: 4 |
 | D | Directly ask the heckler to leave the area, telling them their behaviour is disrupting the entire section. | HA: 4, GM: 4 |
 
@@ -146,8 +146,8 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Start tearing out the damaged ceiling/walls yourself to stop the water and isolate the problem before calling a professional. | HA: 4, RA: 4 |
-| B | Research temporary fixes and the science of water damage and mold growth to ensure any quick repair avoids long-term damage. | IC: 4, GM: 4 |
-| C | Immediately seek out online courses or videos on home repair to learn the necessary skill, guaranteeing you can handle similar future problems. | |
+| B | Research temporary fixes and the science of water damage and mold growth to ensure any quick repair avoids long-term damage. | IC: 4 |
+| C | Immediately seek out online courses or videos on home repair to learn the necessary skill, guaranteeing you can handle similar future problems. | GM: 4 |
 | D | Take a moment to calm down, then call three highly rated professionals to get quotes, ensuring you don't panic-hire the wrong service. | EE: 4, IA: 4 |
 
 ---
@@ -157,10 +157,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Immediately confront the main instigator privately, demanding that they stop the joke/ritual for the sake of the group dynamic. | HA: 4, RA: 4 |
+| A | Immediately confront the main instigator privately, demanding that they stop the joke/ritual for the sake of the group dynamic. | HA: 4 |
 | B | Observe the group interactions closely for a week, logging exactly when the exclusion happens to determine its root cause. | IC: 4 |
-| C | Stop participating in the joke/ritual yourself and ensure the excluded friend is included in other, separate activities you plan. | EE: 4 |
-| D | Initiate a casual conversation with the entire group, suggesting a completely new, shared activity or joke that everyone can enjoy equally. | GM: 4, IA: 4 |
+| C | Stop participating in the joke/ritual yourself and ensure the excluded friend is included in other, separate activities you plan. | EE: 4, RA: 4 |
+| D | Initiate a casual conversation with the entire group, suggesting a completely new, shared activity or joke that everyone can enjoy equally. | IA: 4, GM: 4 |
 
 ---
 
@@ -169,10 +169,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Spend the first day breaking the event into 100 small, dependent tasks (invites, menu, travel) to create a concrete, manageable checklist. | RA: 4, EE: 4 |
+| A | Spend the first day breaking the event into 100 small, dependent tasks (invites, menu, travel) to create a concrete, manageable checklist. | IC: 4, RA: 4 |
 | B | Communicate clearly to the main family contact that the time frame is impossible and propose a revised, achievable schedule for next year. | HA: 4 |
-| C | Find an event planner or experienced family member who has successfully done this before and ask for their advice on how to structure the starting phase. | GM: 4, IA: 4 |
-| D | Identify two capable family members and delegate the non-critical initial tasks (like creating the guest list) while defining the core budget. | IC: 4 |
+| C | Find an event planner or experienced family member who has successfully done this before and ask for their advice on how to structure the starting phase. | GM: 4, EE: 4 |
+| D | Identify two capable family members and delegate the non-critical initial tasks (like creating the guest list) while defining the core budget. | IA: 4 |
 
 ---
 
@@ -181,10 +181,10 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Immediately order specialized tools or hire an expert to solve the problem, bypassing the need to learn the detailed subject matter. | HA: 4 |
-| B | Spend focused time reading technical guides and forums related to the problem until discovering a unique solution. | IC: 4, GM: 4 |
-| C | Accept the difficulty for now and deal with the minor inconvenience until a simpler solution or external aid appears later. | RA: 4 |
-| D | Enrol in a targeted course to learn the skill needed, ensuring this kind of problem can be solved for good. | EE: 4, IA: 4 |
+| A | Immediately order specialized tools or hire an expert to solve the problem, bypassing the need to learn the detailed subject matter. | HA: 4, IA: 4 |
+| B | Spend focused time reading technical guides and forums related to the problem until discovering a unique solution. | IC: 4 |
+| C | Accept the difficulty for now and deal with the minor inconvenience until a simpler solution or external aid appears later. | RA: 4, EE: 4 |
+| D | Enrol in a targeted course to learn the skill needed, ensuring this kind of problem can be solved for good. | GM: 4 |
 
 ---
 
@@ -193,9 +193,9 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Write a calm, factual response that addresses only the verifiable points, completely avoiding emotional defence. | RA: 4, EE: 4 |
-| B | Send a kind, professional message stating that while respecting their platform, the harsh tone prevents constructive discussion. | HA: 4 |
-| C | Seek coaching on public relations and crisis communication to learn how to deal with aggressive public figures effectively. | IC: 4, GM: 4 |
+| A | Write a calm, factual response that addresses only the verifiable points, completely avoiding emotional defence. | RA: 4, IC: 4 |
+| B | Send a kind, professional message stating that while respecting their platform, the harsh tone prevents constructive discussion. | EE: 4 |
+| C | Seek coaching on public relations and crisis communication to learn how to deal with aggressive public figures effectively. | GM: 4, HA: 4 |
 | D | Talk to trusted peers and ask them to act as a buffer for future comments or to take over the public-facing response. | IA: 4 |
 
 ---
@@ -206,9 +206,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Implement a budget you deem most effective, then proactively track data to show everyone that your method is superior. | HA: 4, GM: 4 |
-| B | Talk to all family members, focusing on the reasons behind their opinions to synthesize a completely new, hybrid solution. | IC: 4, RA: 4 |
+| B | Talk to all family members, focusing on the reasons behind their opinions to synthesize a completely new, hybrid solution. | IC: 4, IA: 4 |
 | C | Focus on designing a routine that equally minimizes the workload and maximizes the personal time for the two most critical people involved. | EE: 4 |
-| D | Talk to all family and lead them through a structured exercise to build consensus on the way forward. | IA: 4 |
+| D | Talk to all family and lead them through a structured exercise to build consensus on the way forward. | RA: 4 |
 
 ---
 
@@ -729,85 +729,86 @@ Unlike other assessments, AIQ uses **weighted option scores**:
 
 ## FIT Scoring Matrix
 
-Each skill appears exactly once per question for balanced scoring (15 questions × 4 points = 60 max per skill).
+Semantically validated - each skill appears exactly once per question, mapped to the most appropriate answer option.
+Balanced scoring: 15 questions × 4 points = 60 max per skill.
 
 ```
 Question-Option: { Skill: Points }
 
-1-A: { HA: 4, RA: 4 }
-1-B: { IC: 4 }
-1-C: { EE: 4, GM: 4 }
-1-D: { IA: 4 }
+1-A: { HA: 4, RA: 4 }   // Takes charge + adapts
+1-B: { IC: 4 }          // Seeks creative alternatives
+1-C: { GM: 4 }          // Views as learning opportunity
+1-D: { IA: 4, EE: 4 }   // Coordinates + fair exchange
 
-2-A: { HA: 4, GM: 4 }
-2-B: { RA: 4, EE: 4 }
-2-C: { IC: 4, IA: 4 }
-2-D: { }
+2-A: { HA: 4 }          // Takes charge of solution
+2-B: { RA: 4, GM: 4 }   // Emotional regulation + normalises failure
+2-C: { EE: 4, IC: 4 }   // Empathy + understanding feelings
+2-D: { IA: 4 }          // Coordinates social network
 
-3-A: { IC: 4, GM: 4 }
-3-B: { HA: 4, RA: 4 }
-3-C: { EE: 4 }
-3-D: { IA: 4 }
+3-A: { IC: 4 }          // Deep research
+3-B: { RA: 4 }          // Patience, methodical
+3-C: { EE: 4, IA: 4 }   // Fair dealing + expert network
+3-D: { GM: 4, HA: 4 }   // Learning + proactive investment
 
-4-A: { HA: 4, RA: 4 }
-4-B: { IC: 4 }
-4-C: { EE: 4, IA: 4 }
-4-D: { GM: 4 }
+4-A: { HA: 4, RA: 4 }   // Takes control + absorbs stress
+4-B: { IC: 4 }          // Researches options
+4-C: { EE: 4 }          // Honest communication
+4-D: { IA: 4, GM: 4 }   // Honours commitments + adapts
 
-5-A: { IC: 4, EE: 4 }
-5-B: { RA: 4, GM: 4 }
-5-C: { HA: 4, IA: 4 }
-5-D: { }
+5-A: { IC: 4, EE: 4 }   // Thoughtful inquiry + compassion
+5-B: { RA: 4 }          // Commitment to completion
+5-C: { HA: 4, GM: 4 }   // Maximum initiative + beyond expectation
+5-D: { IA: 4 }          // Coordinates group effort
 
-6-A: { HA: 4, IC: 4 }
-6-B: { RA: 4, GM: 4 }
-6-C: { EE: 4, IA: 4 }
-6-D: { }
+6-A: { HA: 4, IC: 4 }   // Assertive response + intellectual engagement with critique
+6-B: { GM: 4 }          // Uses criticism for growth
+6-C: { EE: 4, IA: 4 }   // Cares about readers' perspective + coordinates community
+6-D: { RA: 4 }          // Emotional regulation and persistence
 
-7-A: { IC: 4 }
-7-B: { HA: 4, RA: 4 }
-7-C: { GM: 4, IA: 4 }
-7-D: { EE: 4 }
+7-A: { IC: 4 }          // Thorough investigation
+7-B: { HA: 4, RA: 4 }   // Firm decision + self-preservation
+7-C: { GM: 4, IA: 4 }   // Promotes growth + maintains relationship
+7-D: { EE: 4 }          // Generous alternative
 
-8-A: { HA: 4, IA: 4 }
-8-B: { IC: 4, EE: 4 }
-8-C: { }
-8-D: { RA: 4, GM: 4 }
+8-A: { HA: 4, IA: 4 }   // Takes initiative + helps participation
+8-B: { IC: 4 }          // Root cause analysis
+8-C: { EE: 4 }          // Fairness and inclusion
+8-D: { GM: 4, RA: 4 }   // Equality through learning + patience
 
-9-A: { RA: 4, EE: 4 }
-9-B: { IC: 4 }
-9-C: { IA: 4 }
-9-D: { HA: 4, GM: 4 }
+9-A: { RA: 4 }          // Patience, emotional control
+9-B: { IC: 4, EE: 4 }   // Thoughtful engagement + considering others
+9-C: { IA: 4 }          // Appropriate delegation
+9-D: { HA: 4, GM: 4 }   // Takes charge + confronts challenge
 
-10-A: { HA: 4, RA: 4 }
-10-B: { IC: 4, GM: 4 }
-10-C: { }
-10-D: { EE: 4, IA: 4 }
+10-A: { HA: 4, RA: 4 }  // Immediate action + crisis handling
+10-B: { IC: 4 }         // Deep understanding
+10-C: { GM: 4 }         // Long-term skill development
+10-D: { EE: 4, IA: 4 }  // Self-care + coordinating with pros
 
-11-A: { HA: 4, RA: 4 }
-11-B: { IC: 4 }
-11-C: { EE: 4 }
-11-D: { GM: 4, IA: 4 }
+11-A: { HA: 4 }         // Direct action
+11-B: { IC: 4 }         // Understanding patterns
+11-C: { EE: 4, RA: 4 }  // Empathy + patience/indirect
+11-D: { IA: 4, GM: 4 }  // Group dynamics + constructive solution
 
-12-A: { RA: 4, EE: 4 }
-12-B: { HA: 4 }
-12-C: { GM: 4, IA: 4 }
-12-D: { IC: 4 }
+12-A: { IC: 4, RA: 4 }  // Analytical breakdown + methodical
+12-B: { HA: 4 }         // Assertive control
+12-C: { GM: 4, EE: 4 }  // Learning from others + respecting expertise
+12-D: { IA: 4 }         // Coordination/delegation
 
-13-A: { HA: 4 }
-13-B: { IC: 4, GM: 4 }
-13-C: { RA: 4 }
-13-D: { EE: 4, IA: 4 }
+13-A: { HA: 4, IA: 4 }  // Takes action + leverages expertise
+13-B: { IC: 4 }         // Deep research
+13-C: { RA: 4, EE: 4 }  // Patience + self-compassion
+13-D: { GM: 4 }         // Long-term skill investment
 
-14-A: { RA: 4, EE: 4 }
-14-B: { HA: 4 }
-14-C: { IC: 4, GM: 4 }
-14-D: { IA: 4 }
+14-A: { RA: 4, IC: 4 }  // Emotional regulation + logical engagement
+14-B: { EE: 4 }         // Respectful approach
+14-C: { GM: 4, HA: 4 }  // Learning + proactive investment
+14-D: { IA: 4 }         // Leveraging support network
 
-15-A: { HA: 4, GM: 4 }
-15-B: { IC: 4, RA: 4 }
-15-C: { EE: 4 }
-15-D: { IA: 4 }
+15-A: { HA: 4, GM: 4 }  // Takes charge + data-driven
+15-B: { IC: 4, IA: 4 }  // Understands perspectives + facilitates
+15-C: { EE: 4 }         // Considers others' wellbeing
+15-D: { RA: 4 }         // Patience through process
 ```
 
 ## AI Readiness Scoring Matrix
