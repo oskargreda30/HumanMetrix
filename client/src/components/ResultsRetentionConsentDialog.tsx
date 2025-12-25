@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { PartyPopper, Shield, Sparkles, Users, Lock } from "lucide-react";
+import { CheckCircle2, Shield, Briefcase, Users, Lock } from "lucide-react";
 
 interface ResultsRetentionConsentDialogProps {
   open: boolean;
@@ -52,21 +52,21 @@ export function ResultsRetentionConsentDialog({
         <DialogHeader>
           <div className="mx-auto mb-4">
             <div className="relative">
-              <PartyPopper className="h-16 w-16 text-amber-500" />
-              <Sparkles className="absolute -right-2 -bottom-2 h-8 w-8 text-primary bg-background rounded-full p-1" />
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <Briefcase className="absolute -right-2 -bottom-2 h-8 w-8 text-primary bg-background rounded-full p-1" />
             </div>
           </div>
           <DialogTitle className="text-center text-2xl" data-testid="title-results-ready">
-            Congratulations! You did it!
+            Your Results Are Ready
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            Your assessment results are ready to view. Nice work completing all four assessments!
+            Well done on completing all four assessments.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
           <p className="text-sm text-center">
-            One quick thing before you dive in - would you like employers to see your results?
+            Would you like to make your results visible to employers on HumanMetrix?
           </p>
           
           <div className="space-y-3">
@@ -74,9 +74,9 @@ export function ResultsRetentionConsentDialog({
               <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Yes, show me off!</p>
+                  <p className="text-sm font-medium">Share with Employers</p>
                   <p className="text-xs text-muted-foreground">
-                    Companies using HumanMetrix can discover your profile and might just slide into your inbox with exciting opportunities. Your next role could be a click away!
+                    Companies using HumanMetrix can view your assessment results and may contact you about future opportunities. Many candidates have been discovered this way.
                   </p>
                 </div>
               </div>
@@ -86,9 +86,9 @@ export function ResultsRetentionConsentDialog({
               <div className="flex items-start gap-3">
                 <Lock className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Keep it between us</p>
+                  <p className="text-sm font-medium">Keep Private</p>
                   <p className="text-xs text-muted-foreground">
-                    No worries - your results stay private. You can always change your mind later in settings.
+                    Your results remain visible only to you. You can change this preference at any time.
                   </p>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export function ResultsRetentionConsentDialog({
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-4 w-4 flex-shrink-0" />
-            <span>Your data is always protected under our privacy policy.</span>
+            <span>Your data is protected under our privacy policy.</span>
           </div>
         </div>
 
@@ -109,7 +109,7 @@ export function ResultsRetentionConsentDialog({
             className="w-full sm:w-auto"
             data-testid="button-decline-sharing"
           >
-            {consentMutation.isPending ? "Saving..." : "Keep it Private"}
+            {consentMutation.isPending ? "Saving..." : "Keep Private"}
           </Button>
           <Button 
             onClick={() => handleConsent(true)} 
@@ -117,7 +117,7 @@ export function ResultsRetentionConsentDialog({
             className="w-full sm:w-auto"
             data-testid="button-accept-sharing"
           >
-            {consentMutation.isPending ? "Saving..." : "Yes, Show Me Off!"}
+            {consentMutation.isPending ? "Saving..." : "Share with Employers"}
           </Button>
         </DialogFooter>
       </DialogContent>
