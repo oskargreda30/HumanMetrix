@@ -430,10 +430,10 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Immediately report the non-compliance and recommend quarantining the model until the data is remediated. | RAI: 4, CT/PS: 4 |
-| B | Research the specific regulatory requirements the model's data is violating. | ACL: 4, TF: 4 |
+| B | Research the specific regulatory requirements the model's data is violating. | RAI: 4, ACL: 4 |
 | C | Use an AI to analyze the dataset and identify all instances of non-compliant data points for removal. | AL/PE: 4, DF: 4 |
 | D | Use your domain knowledge to explain the operational and legal risks of using the outdated data to leadership. | DE: 4, CC: 4 |
-| E | Facilitate a cross-functional discussion to redesign the data pipeline to ensure future compliance. | CC: 4, RAI: 4 |
+| E | Facilitate a cross-functional discussion to redesign the data pipeline to ensure future compliance. | CC: 4, TF: 4 |
 
 ---
 
@@ -443,9 +443,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Analyze the policy's purpose and logic to determine if the creative idea can be legally adapted or exempted. | CT/PS: 4, RAI: 4 |
-| B | Challenge the policy itself, proposing an innovative change that would allow the creative idea to proceed. | CI: 4, CC: 4 |
-| C | Collaborate with legal or management to negotiate a temporary waiver or exception for the project. | DE: 4, ACL: 4 |
-| D | Use an AI to generate alternative, compliance-friendly ideas based on the core creative concept. | AL/PE: 4, RAI: 4 |
+| B | Challenge the policy itself, proposing an innovative change that would allow the creative idea to proceed. | CI: 4, DE: 4 |
+| C | Collaborate with legal or management to negotiate a temporary waiver or exception for the project. | CC: 4, ACL: 4 |
+| D | Use an AI to generate alternative, compliance-friendly ideas based on the core creative concept. | AL/PE: 4, CI: 4 |
 | E | Redefine the problem to generate entirely new ideas that inherently operate outside the scope of the limiting policy. | CI: 4, CT/PS: 4 |
 
 ---
@@ -455,8 +455,8 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Focus the review entirely on the product's alignment with high-level strategic goals and market needs. | DE: 4, CT/PS: 4 |
-| B | Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues. | TF: 4, DF: 4 |
+| A | Focus the review entirely on the product's alignment with high-level strategic goals and market needs. | DE: 4, DF: 4 |
+| B | Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues. | TF: 4, RAI: 4 |
 | C | Use an AI to perform an automated code or specification review to catch obvious errors. | AL/PE: 4, TF: 4 |
 | D | Proactively communicate any concerns and potential risks discovered during the hurried review to the relevant stakeholders. | CC: 4, RAI: 4 |
 | E | Research industry standards for similar products to benchmark the technical specifications' quality and completeness. | ACL: 4, DE: 4 |
@@ -468,11 +468,11 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Research the fundamental principles of visual design and data storytelling to create clearer charts. | ACL: 4, TF: 4 |
+| A | Research the fundamental principles of visual design and data storytelling to create clearer charts. | ACL: 4, DF: 4 |
 | B | Propose an innovative new chart type or visualization approach that simplifies the complex data. | CI: 4, DF: 4 |
 | C | Facilitate a collaborative session to gather feedback on which charts are confusing and why. | CC: 4, CT/PS: 4 |
-| D | Use an AI to generate alternative text descriptions for the charts to explain the findings simply. | AL/PE: 4, DF: 4 |
-| E | Create a standardized style guide for all charts, ensuring consistency and ease of interpretation. | DF: 4, TF: 4 |
+| D | Use an AI to generate alternative text descriptions for the charts to explain the findings simply. | AL/PE: 4, TF: 4 |
+| E | Create a standardized style guide for all charts, ensuring consistency and ease of interpretation. | TF: 4, DE: 4 |
 
 ---
 
@@ -482,9 +482,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Use critical thinking to map all exceptions and create a decision tree that handles each one logically. | CT/PS: 4, TF: 4 |
-| B | Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first. | DF: 4, DE: 4 |
-| C | Use an AI to generate the complex conditional logic required to handle the edge cases in the code. | AL/PE: 4, TF: 4 |
-| D | Collaborate with process owners to redefine the process and eliminate unnecessary exceptions. | CC: 4, CI: 4 |
+| B | Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first. | DF: 4, RAI: 4 |
+| C | Use an AI to generate the complex conditional logic required to handle the edge cases in the code. | AL/PE: 4, CI: 4 |
+| D | Collaborate with process owners to redefine the process and eliminate unnecessary exceptions. | CC: 4, DE: 4 |
 | E | Research advanced programming techniques for managing complex conditional logic efficiently. | ACL: 4, TF: 4 |
 
 ---
@@ -495,9 +495,9 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Use your domain knowledge to explain the contemporary risks (e.g., security, maintenance) associated with the obsolete technology. | DE: 4, RAI: 4 |
-| B | Analyze the project's data requirements to show how the obsolete technology cannot meet modern throughput needs. | DF: 4, CT/PS: 4 |
+| B | Analyze the project's data requirements to show how the obsolete technology cannot meet modern throughput needs. | DF: 4, TF: 4 |
 | C | Propose a modern, innovative alternative that fulfills the same goals without the technical debt. | CI: 4, AL/PE: 4 |
-| D | Research the lifecycle and End-of-Life date of the obsolete technology to provide factual backing for your objection. | ACL: 4, TF: 4 |
+| D | Research the lifecycle and End-of-Life date of the obsolete technology to provide factual backing for your objection. | ACL: 4, RAI: 4 |
 | E | Facilitate a discussion to respectfully challenge the proposal and collaboratively find a forward-looking technical solution. | CC: 4, CI: 4 |
 
 ---
@@ -510,7 +510,7 @@ This document contains all original questions, answer options, and scoring logic
 | A | Use an AI to analyze the company's annual reports and suggest language aligned with strategic priorities. | AL/PE: 4, CC: 4 |
 | B | Focus the proposal on core data metrics that demonstrate clear and measurable ROI. | DF: 4, CT/PS: 4 |
 | C | Leverage your domain expertise to position the proposal as a solution to a critical, long-standing industry problem. | DE: 4, CI: 4 |
-| D | Research successful proposals in the company archive to adopt proven framing and structure. | ACL: 4, CC: 4 |
+| D | Research successful proposals in the company archive to adopt proven framing and structure. | ACL: 4, TF: 4 |
 | E | Collaborate with a senior leader or mentor to refine the proposal's strategic narrative. | CC: 4, DE: 4 |
 
 ---

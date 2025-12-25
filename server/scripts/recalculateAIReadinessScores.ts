@@ -16,82 +16,135 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     'Domain Expertise': 0,
   };
 
-  // Same scoring matrix as in routes.ts
+  // BALANCED Scoring matrix - each question-option maps to exactly 2 skills with 4 points each
+  // Matches routes.ts calculateAIReadinessScores function exactly
   const scoringMatrix: Record<string, Record<string, number>> = {
-    "1-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4, "Data Fluency": 4 },
-    "1-B": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    "1-C": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
-    "1-D": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4, "Domain Expertise": 4 },
-    
-    "2-A": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
-    "2-B": { "Technical Fundamentals": 4, "Critical Thinking & Problem-Solving": 4 },
-    "2-C": { "Adaptability & Continuous Learning": 4, "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
-    "2-D": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4, "Domain Expertise": 4 },
-    
-    "3-A": { "Technical Fundamentals": 4, "Data Fluency": 4 },
-    "3-B": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Creativity & Innovation": 4 },
-    "3-C": { "Adaptability & Continuous Learning": 4, "Responsible AI & Ethical Awareness": 4 },
-    "3-D": { "Technical Fundamentals": 4, "Collaboration & Communication": 4, "Domain Expertise": 4 },
-    
-    "4-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4, "Data Fluency": 4 },
-    "4-B": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    "4-C": { "Technical Fundamentals": 4, "Responsible AI & Ethical Awareness": 4, "Creativity & Innovation": 4 },
-    "4-D": { "AI Literacy & Prompt Engineering": 4, "Collaboration & Communication": 4, "Domain Expertise": 4 },
-    
+    // Q1: Integrate AI-generated data with database
+    "1-A": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    "1-B": { "Technical Fundamentals": 4, "Domain Expertise": 4 },
+    "1-C": { "Responsible AI & Ethical Awareness": 4, "Critical Thinking & Problem-Solving": 4 },
+    "1-D": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
+    "1-E": { "Creativity & Innovation": 4, "AI Literacy & Prompt Engineering": 4 },
+    // Q2: Learn system from poor technical manual
+    "2-A": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
+    "2-B": { "Creativity & Innovation": 4, "Responsible AI & Ethical Awareness": 4 },
+    "2-C": { "Domain Expertise": 4, "Technical Fundamentals": 4 },
+    "2-D": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4 },
+    "2-E": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
+    // Q3: Declining business metric - inconclusive data
+    "3-A": { "Domain Expertise": 4, "Critical Thinking & Problem-Solving": 4 },
+    "3-B": { "Data Fluency": 4, "Technical Fundamentals": 4 },
+    "3-C": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    "3-D": { "Collaboration & Communication": 4, "AI Literacy & Prompt Engineering": 4 },
+    "3-E": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4 },
+    // Q4: New encryption protocol introduced
+    "4-A": { "Data Fluency": 4, "Adaptability & Continuous Learning": 4 },
+    "4-B": { "Collaboration & Communication": 4, "Technical Fundamentals": 4 },
+    "4-C": { "Responsible AI & Ethical Awareness": 4, "Critical Thinking & Problem-Solving": 4 },
+    "4-D": { "Domain Expertise": 4, "Responsible AI & Ethical Awareness": 4 },
+    "4-E": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    // Q5: Proposing unusual technical solution
     "5-A": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4 },
-    "5-B": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4, "Creativity & Innovation": 4 },
-    "5-C": { "AI Literacy & Prompt Engineering": 4, "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
-    "5-D": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4, "Domain Expertise": 4 },
-    
-    "6-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
-    "6-B": { "Data Fluency": 4, "Adaptability & Continuous Learning": 4 },
-    "6-C": { "Collaboration & Communication": 4, "Creativity & Innovation": 4 },
-    "6-D": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Responsible AI & Ethical Awareness": 4 },
-    
-    "7-A": { "Technical Fundamentals": 4, "Data Fluency": 4 },
-    "7-B": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    "7-C": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
-    "7-D": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
-    
-    "8-A": { "AI Literacy & Prompt Engineering": 4, "Adaptability & Continuous Learning": 4, "Creativity & Innovation": 4 },
-    "8-B": { "Technical Fundamentals": 4, "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
-    "8-C": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
-    "8-D": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4, "Domain Expertise": 4 },
-    
-    "9-A": { "Critical Thinking & Problem-Solving": 4, "Responsible AI & Ethical Awareness": 4 },
-    "9-B": { "Technical Fundamentals": 4, "Collaboration & Communication": 4 },
-    "9-C": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
-    "9-D": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4 },
-    
-    "10-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
-    "10-B": { "Data Fluency": 4, "Adaptability & Continuous Learning": 4 },
-    "10-C": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    "10-D": { "Critical Thinking & Problem-Solving": 4, "Collaboration & Communication": 4, "Domain Expertise": 4 },
-    
-    "11-A": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Creativity & Innovation": 4 },
-    "11-B": { "Technical Fundamentals": 4, "Collaboration & Communication": 4 },
-    "11-C": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
-    "11-D": { "Data Fluency": 4, "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
-    
-    "12-A": { "Critical Thinking & Problem-Solving": 4, "Collaboration & Communication": 4, "Creativity & Innovation": 4 },
-    "12-B": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Responsible AI & Ethical Awareness": 4 },
-    "12-C": { "AI Literacy & Prompt Engineering": 4, "Adaptability & Continuous Learning": 4, "Creativity & Innovation": 4 },
-    "12-D": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
-    
-    "13-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
-    "13-B": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
-    "13-C": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    "13-D": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
-    
-    "14-A": { "Critical Thinking & Problem-Solving": 4, "Collaboration & Communication": 4, "Creativity & Innovation": 4 },
-    "14-B": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
-    "14-C": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4, "Creativity & Innovation": 4 },
-    "14-D": { "AI Literacy & Prompt Engineering": 4, "Collaboration & Communication": 4, "Domain Expertise": 4 },
-    
-    "15-A": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
-    "15-B": { "Technical Fundamentals": 4, "Critical Thinking & Problem-Solving": 4, "Creativity & Innovation": 4 },
-    "15-C": { "Collaboration & Communication": 4, "Adaptability & Continuous Learning": 4 },
-    "15-D": { "AI Literacy & Prompt Engineering": 4, "Critical Thinking & Problem-Solving": 4, "Domain Expertise": 4 },
+    "5-B": { "Technical Fundamentals": 4, "Creativity & Innovation": 4 },
+    "5-C": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
+    "5-D": { "Creativity & Innovation": 4, "Technical Fundamentals": 4 },
+    "5-E": { "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
+    // Q6: Concern about AI model licensing
+    "6-A": { "Responsible AI & Ethical Awareness": 4, "Adaptability & Continuous Learning": 4 },
+    "6-B": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
+    "6-C": { "Collaboration & Communication": 4, "Technical Fundamentals": 4 },
+    "6-D": { "Creativity & Innovation": 4, "Adaptability & Continuous Learning": 4 },
+    "6-E": { "Data Fluency": 4, "Responsible AI & Ethical Awareness": 4 },
+    // Q7: Tight deadline for industry trends report
+    "7-A": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    "7-B": { "Domain Expertise": 4, "Critical Thinking & Problem-Solving": 4 },
+    "7-C": { "Collaboration & Communication": 4, "Adaptability & Continuous Learning": 4 },
+    "7-D": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
+    "7-E": { "Creativity & Innovation": 4, "Technical Fundamentals": 4 },
+    // Q8: Automation requires skill you don't possess
+    "8-A": { "Critical Thinking & Problem-Solving": 4, "Technical Fundamentals": 4 },
+    "8-B": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
+    "8-C": { "Adaptability & Continuous Learning": 4, "Technical Fundamentals": 4 },
+    "8-D": { "Data Fluency": 4, "Responsible AI & Ethical Awareness": 4 },
+    "8-E": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
+    // Q9: Dataset with missing values and inconsistencies
+    "9-A": { "Data Fluency": 4, "Technical Fundamentals": 4 },
+    "9-B": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
+    "9-C": { "Adaptability & Continuous Learning": 4, "Responsible AI & Ethical Awareness": 4 },
+    "9-D": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    "9-E": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    // Q10: AI suggests decision contradicting company values
+    "10-A": { "Domain Expertise": 4, "Responsible AI & Ethical Awareness": 4 },
+    "10-B": { "AI Literacy & Prompt Engineering": 4, "Responsible AI & Ethical Awareness": 4 },
+    "10-C": { "Collaboration & Communication": 4, "Creativity & Innovation": 4 },
+    "10-D": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    "10-E": { "Adaptability & Continuous Learning": 4, "Technical Fundamentals": 4 },
+    // Q11: Team member struggling with technical constraints
+    "11-A": { "Collaboration & Communication": 4, "AI Literacy & Prompt Engineering": 4 },
+    "11-B": { "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
+    "11-C": { "AI Literacy & Prompt Engineering": 4, "Domain Expertise": 4 },
+    "11-D": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    "11-E": { "Domain Expertise": 4, "Responsible AI & Ethical Awareness": 4 },
+    // Q12: Design experiment with limited resources
+    "12-A": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    "12-B": { "Data Fluency": 4, "Domain Expertise": 4 },
+    "12-C": { "Adaptability & Continuous Learning": 4, "Data Fluency": 4 },
+    "12-D": { "Collaboration & Communication": 4, "Adaptability & Continuous Learning": 4 },
+    "12-E": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    // Q13: Technical system update preparation
+    "13-A": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
+    "13-B": { "Collaboration & Communication": 4, "Adaptability & Continuous Learning": 4 },
+    "13-C": { "Domain Expertise": 4, "Data Fluency": 4 },
+    "13-D": { "Collaboration & Communication": 4, "AI Literacy & Prompt Engineering": 4 },
+    "13-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    // Q14: Teach colleague complex analytics tool
+    "14-A": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
+    "14-B": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
+    "14-C": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    "14-D": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
+    "14-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    // Q15: AI model trained on non-compliant data
+    "15-A": { "Responsible AI & Ethical Awareness": 4, "Critical Thinking & Problem-Solving": 4 },
+    "15-B": { "Responsible AI & Ethical Awareness": 4, "Adaptability & Continuous Learning": 4 },
+    "15-C": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
+    "15-D": { "Domain Expertise": 4, "Collaboration & Communication": 4 },
+    "15-E": { "Collaboration & Communication": 4, "Technical Fundamentals": 4 },
+    // Q16: Creative solution blocked by internal policy
+    "16-A": { "Critical Thinking & Problem-Solving": 4, "Responsible AI & Ethical Awareness": 4 },
+    "16-B": { "Creativity & Innovation": 4, "Domain Expertise": 4 },
+    "16-C": { "Collaboration & Communication": 4, "Adaptability & Continuous Learning": 4 },
+    "16-D": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
+    "16-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
+    // Q17: Review technical specification with tight deadline
+    "17-A": { "Domain Expertise": 4, "Data Fluency": 4 },
+    "17-B": { "Technical Fundamentals": 4, "Responsible AI & Ethical Awareness": 4 },
+    "17-C": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
+    "17-D": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
+    "17-E": { "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
+    // Q18: Team struggling with data visualisation
+    "18-A": { "Adaptability & Continuous Learning": 4, "Data Fluency": 4 },
+    "18-B": { "Creativity & Innovation": 4, "Data Fluency": 4 },
+    "18-C": { "Collaboration & Communication": 4, "Critical Thinking & Problem-Solving": 4 },
+    "18-D": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
+    "18-E": { "Technical Fundamentals": 4, "Domain Expertise": 4 },
+    // Q19: Automate task with many exceptions
+    "19-A": { "Critical Thinking & Problem-Solving": 4, "Technical Fundamentals": 4 },
+    "19-B": { "Data Fluency": 4, "Responsible AI & Ethical Awareness": 4 },
+    "19-C": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
+    "19-D": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
+    "19-E": { "Adaptability & Continuous Learning": 4, "Technical Fundamentals": 4 },
+    // Q20: Colleague proposes obsolete technology
+    "20-A": { "Domain Expertise": 4, "Responsible AI & Ethical Awareness": 4 },
+    "20-B": { "Data Fluency": 4, "Technical Fundamentals": 4 },
+    "20-C": { "Creativity & Innovation": 4, "AI Literacy & Prompt Engineering": 4 },
+    "20-D": { "Adaptability & Continuous Learning": 4, "Responsible AI & Ethical Awareness": 4 },
+    "20-E": { "Collaboration & Communication": 4, "Creativity & Innovation": 4 },
+    // Q21: Write proposal for senior leadership
+    "21-A": { "AI Literacy & Prompt Engineering": 4, "Collaboration & Communication": 4 },
+    "21-B": { "Data Fluency": 4, "Critical Thinking & Problem-Solving": 4 },
+    "21-C": { "Domain Expertise": 4, "Creativity & Innovation": 4 },
+    "21-D": { "Adaptability & Continuous Learning": 4, "Technical Fundamentals": 4 },
+    "21-E": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
   };
 
   // Calculate raw scores based on answers
