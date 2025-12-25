@@ -16,7 +16,9 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     'Domain Expertise': 0,
   };
 
-  // BALANCED Scoring matrix - each question-option maps to exactly 2 skills with 4 points each
+  // PERFECTLY BALANCED Scoring matrix - All 9 skills have exactly 23 occurrences each = 207 total mappings
+  // All skills have 92 max points (23 × 4 points each)
+  // Note: 3 answers have only 1 skill: 14-B (CC), 17-A (DE), 18-D (AL/PE)
   // Matches routes.ts calculateAIReadinessScores function exactly
   const scoringMatrix: Record<string, Record<string, number>> = {
     // Q1: Integrate AI-generated data with database

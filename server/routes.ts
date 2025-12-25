@@ -5679,10 +5679,10 @@ function calculateAIReadinessScores(answers: Record<string, string>): Record<str
     'Domain Expertise': 0,
   };
 
-  // BALANCED Scoring matrix - each question-option maps to exactly 2 skills with 4 points each
-  // Optimal distribution: 6 skills at 23 occurrences, 3 skills at 24 occurrences (210 total mappings)
-  // At 23: AL/PE, CT/PS, ACL, RAI, CI, CC (92 max points each)
-  // At 24: TF, DF, DE (96 max points each)
+  // PERFECTLY BALANCED Scoring matrix - All 9 skills have exactly 23 occurrences each = 207 total mappings
+  // All skills have 92 max points (23 × 4 points each)
+  // Note: 3 answers have only 1 skill to achieve perfect balance:
+  // - 14-B: CC only [DE removed], 17-A: DE only [DF removed], 18-D: AL/PE only [TF removed]
   const scoringMatrix: Record<string, Record<string, number>> = {
     // Q1: Integrate AI-generated data with database
     "1-A": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
