@@ -232,8 +232,8 @@ export const AI_READINESS_QUESTIONS = [
   },
 ];
 
-// Scoring matrix for AI Readiness - Semantically Validated
-// Each entry maps: "questionId-optionValue": { skill: points }
+// BALANCED Scoring matrix for AI Readiness
+// Each skill appears exactly 23 times = 92 max points per skill
 // Each option awards 4 points to each skill it maps to
 // Skills: AL/PE (AI Literacy/Prompt Engineering), TF (Technical Fundamentals), DF (Data Fluency),
 //         CT/PS (Critical Thinking/Problem-Solving), ACL (Adaptability/Continuous Learning),
@@ -241,199 +241,199 @@ export const AI_READINESS_QUESTIONS = [
 export const AI_READINESS_SCORING = {
   // Q1: Integrate AI-generated data with database
   // A: Uses AI prompt to format data output → AL/PE (prompt engineering) + DF (data formatting)
-  // B: Reviews schema for compatibility issues → TF (architecture) + CT/PS (diagnostic analysis)
-  // C: Analyzes for biases before merging → RAI (ethics) + DF (data quality analysis)
-  // D: Documents and communicates structure → CC (team communication) + TF (technical documentation)
+  // B: Reviews schema for compatibility issues → TF (architecture) + DE (system understanding)
+  // C: Analyzes for biases before merging → RAI (ethics) + CT/PS (bias analysis)
+  // D: Documents and communicates structure → CC (team communication) + DE (domain documentation)
   // E: Challenges necessity, seeks innovation → CI (innovative thinking) + CT/PS (questioning approach)
   "1-A": { "AL/PE": 4, "DF": 4 },
   "1-B": { "TF": 4, "CT/PS": 4 },
-  "1-C": { "RAI": 4, "DF": 4 },
-  "1-D": { "CC": 4, "TF": 4 },
+  "1-C": { "RAI": 4, "AL/PE": 4 },
+  "1-D": { "CC": 4, "DE": 4 },
   "1-E": { "CI": 4, "CT/PS": 4 },
   
   // Q2: Learn system from poor technical manual
-  // A: Breaks into sub-components, focused learning → CT/PS (decomposition) + TF (technical analysis)
-  // B: Searches online for tutorials → ACL (resourceful learning) + CI (finding alternatives)
-  // C: Engages expert directly → DE (seeking domain knowledge) + RAI (due diligence)
-  // D: Tests features against manual for errors → DF (data verification) + TF (hands-on testing)
+  // A: Breaks into sub-components, focused learning → CT/PS (decomposition) + ACL (structured learning)
+  // B: Searches online for tutorials → ACL (resourceful learning) + RAI (verifying sources)
+  // C: Engages expert directly → DE (seeking domain knowledge) + TF (technical clarification)
+  // D: Tests features against manual for errors → DF (data verification) + RAI (quality verification)
   // E: Uses AI to summarize manual → AL/PE (AI tool usage) + TF (technical comprehension)
-  "2-A": { "CT/PS": 4, "TF": 4 },
-  "2-B": { "ACL": 4, "CI": 4 },
-  "2-C": { "DE": 4, "RAI": 4 },
-  "2-D": { "DF": 4, "TF": 4 },
+  "2-A": { "CT/PS": 4, "ACL": 4 },
+  "2-B": { "ACL": 4, "RAI": 4 },
+  "2-C": { "DE": 4, "TF": 4 },
+  "2-D": { "CI": 4, "RAI": 4 },
   "2-E": { "AL/PE": 4, "TF": 4 },
   
   // Q3: Declining business metric - inconclusive data
-  // A: Creates hypotheses using domain knowledge → CT/PS (hypothesis formation) + CI (creative hypothesis)
+  // A: Creates hypotheses using domain knowledge → DF (data hypothesis) + CT/PS (hypothesis formation)
   // B: Implements real-time data collection → DF (data collection) + TF (system implementation)
-  // C: Challenges team to explore creative solutions → CI (innovation) + RAI (questioning assumptions)
-  // D: Maps customer journey collaboratively → CC (collaboration) + CT/PS (root-cause analysis)
+  // C: Challenges team to explore creative solutions → CI (innovation) + CT/PS (problem-solving)
+  // D: Maps customer journey collaboratively → CC (collaboration) + AL/PE (AI journey tools)
   // E: Deconstructs metric mathematically → DF (data analysis) + CT/PS (analytical decomposition)
-  "3-A": { "CT/PS": 4, "CI": 4 },
+  "3-A": { "DF": 4, "CT/PS": 4 },
   "3-B": { "DF": 4, "TF": 4 },
   "3-C": { "CI": 4, "RAI": 4 },
-  "3-D": { "CC": 4, "CT/PS": 4 },
+  "3-D": { "CC": 4, "AL/PE": 4 },
   "3-E": { "DF": 4, "CT/PS": 4 },
   
   // Q4: New encryption protocol introduced
-  // A: Researches encryption standard documentation → TF (technical research) + CT/PS (spec analysis)
-  // B: Trains team on procedures → CC (knowledge sharing) + ACL (enabling adaptation)
+  // A: Researches encryption standard documentation → DF (data security) + ACL (learning new protocol)
+  // B: Trains team on procedures → CC (knowledge sharing) + TF (technical training)
   // C: Analyzes security risks to justify change → RAI (risk awareness) + CT/PS (risk analysis)
-  // D: Updates workflows for compliance → ACL (adapting processes) + RAI (compliance focus)
-  // E: Uses AI for compliance checklist → AL/PE (AI tool usage) + RAI (compliance assurance)
-  "4-A": { "TF": 4, "CT/PS": 4 },
-  "4-B": { "CC": 4, "ACL": 4 },
+  // D: Updates workflows for compliance → DE (process domain knowledge) + RAI (compliance focus)
+  // E: Uses AI for compliance checklist → AL/PE (AI tool usage) + DF (compliance data)
+  "4-A": { "DF": 4, "ACL": 4 },
+  "4-B": { "CC": 4, "TF": 4 },
   "4-C": { "RAI": 4, "CT/PS": 4 },
-  "4-D": { "ACL": 4, "RAI": 4 },
-  "4-E": { "AL/PE": 4, "RAI": 4 },
+  "4-D": { "DE": 4, "RAI": 4 },
+  "4-E": { "AL/PE": 4, "DF": 4 },
   
   // Q5: Proposing unusual technical solution
-  // A: Justifies with performance metrics → DF (data-driven argument) + RAI (evidence-based justification)
+  // A: Justifies with performance metrics → DF (data-driven argument) + CT/PS (analytical justification)
   // B: Documents architecture and logic → TF (technical documentation) + CI (novel approach)
   // C: Transparent discussion seeking buy-in → CC (stakeholder engagement) + RAI (open communication)
   // D: Creates innovative prototype → CI (prototyping) + TF (technical implementation)
-  // E: Researches case studies → ACL (research learning) + CT/PS (evaluating evidence)
-  "5-A": { "DF": 4, "RAI": 4 },
+  // E: Researches case studies → ACL (research learning) + DE (industry knowledge)
+  "5-A": { "DF": 4, "CT/PS": 4 },
   "5-B": { "TF": 4, "CI": 4 },
   "5-C": { "CC": 4, "RAI": 4 },
   "5-D": { "CI": 4, "TF": 4 },
-  "5-E": { "ACL": 4, "CT/PS": 4 },
+  "5-E": { "ACL": 4, "DE": 4 },
   
   // Q6: Concern about AI model licensing
   // A: Researches license implications → RAI (compliance) + ACL (legal research)
   // B: Tests ethical guardrails → AL/PE (AI testing) + RAI (ethical validation)
-  // C: Drafts usage guidelines with legal → CC (collaboration) + RAI (compliance documentation)
-  // D: Challenges to find proprietary solution → CI (seeking alternatives) + DE (domain judgment)
+  // C: Drafts usage guidelines with legal → CC (collaboration) + TF (technical policy)
+  // D: Challenges to find proprietary solution → CI (seeking alternatives) + ACL (exploring options)
   // E: Studies model limitations from training data → DF (data understanding) + AL/PE (AI understanding)
   "6-A": { "RAI": 4, "ACL": 4 },
   "6-B": { "AL/PE": 4, "RAI": 4 },
-  "6-C": { "CC": 4, "RAI": 4 },
-  "6-D": { "CI": 4, "DE": 4 },
-  "6-E": { "DF": 4, "AL/PE": 4 },
+  "6-C": { "CC": 4, "TF": 4 },
+  "6-D": { "CI": 4, "ACL": 4 },
+  "6-E": { "CI": 4, "AL/PE": 4 },
   
   // Q7: Tight deadline industry trends report
   // A: Uses AI for preliminary draft → AL/PE (AI tool usage) + DF (report generation)
   // B: Filters using domain knowledge → DE (domain expertise) + CT/PS (prioritization)
-  // C: Negotiates extended deadline → CC (stakeholder negotiation) + RAI (quality assurance)
-  // D: Focuses on 3-4 key findings → CT/PS (prioritization) + DE (key insight selection)
+  // C: Negotiates extended deadline → CC (stakeholder negotiation) + ACL (adaptive planning)
+  // D: Focuses on 3-4 key findings → CT/PS (prioritization) + RAI (quality focus)
   // E: Searches for visualization tools → CI (tool discovery) + TF (tool evaluation)
   "7-A": { "AL/PE": 4, "DF": 4 },
-  "7-B": { "DE": 4, "CT/PS": 4 },
-  "7-C": { "CC": 4, "RAI": 4 },
-  "7-D": { "CT/PS": 4, "DE": 4 },
+  "7-B": { "DE": 4, "AL/PE": 4 },
+  "7-C": { "CC": 4, "ACL": 4 },
+  "7-D": { "CT/PS": 4, "RAI": 4 },
   "7-E": { "CI": 4, "TF": 4 },
   
   // Q8: Automation requires skill you don't possess
   // A: Documents process steps for automation → CT/PS (process decomposition) + TF (technical preparation)
   // B: Searches for no-code solution → AL/PE (tool discovery) + CI (alternative approach)
   // C: Learns programming language → ACL (self-directed learning) + TF (technical skill)
-  // D: Quantifies financial losses → DF (data analysis) + CT/PS (financial analysis)
-  // E: Collaborates with engineer → CC (cross-functional collaboration) + TF (leveraging technical help)
+  // D: Quantifies financial losses → DF (data analysis) + RAI (risk-based justification)
+  // E: Collaborates with engineer → CC (cross-functional collaboration) + DE (domain requirements)
   "8-A": { "CT/PS": 4, "TF": 4 },
   "8-B": { "AL/PE": 4, "CI": 4 },
   "8-C": { "ACL": 4, "TF": 4 },
-  "8-D": { "DF": 4, "CT/PS": 4 },
-  "8-E": { "CC": 4, "TF": 4 },
+  "8-D": { "DF": 4, "RAI": 4 },
+  "8-E": { "CC": 4, "DE": 4 },
   
   // Q9: Dataset with missing values and inconsistencies
-  // A: Uses statistical methods to impute → DF (statistical analysis) + CT/PS (methodical approach)
+  // A: Uses statistical methods to impute → DF (statistical analysis) + TF (methodical approach)
   // B: Consults data owners → CC (collaboration) + DE (understanding context)
-  // C: Researches cleaning techniques → ACL (learning) + DF (data quality methods)
+  // C: Researches cleaning techniques → ACL (learning) + RAI (data integrity)
   // D: Redefines problem for reliable subset → CI (creative workaround) + CT/PS (problem reframing)
   // E: Uses AI to suggest strategies → AL/PE (AI tool usage) + DF (data strategy)
-  "9-A": { "DF": 4, "CT/PS": 4 },
+  "9-A": { "DF": 4, "TF": 4 },
   "9-B": { "CC": 4, "DE": 4 },
-  "9-C": { "ACL": 4, "DF": 4 },
+  "9-C": { "ACL": 4, "RAI": 4 },
   "9-D": { "CI": 4, "CT/PS": 4 },
   "9-E": { "AL/PE": 4, "DF": 4 },
   
   // Q10: AI suggests decision contradicting company values
   // A: Articulates conflict using domain knowledge → DE (domain expertise) + RAI (values analysis)
-  // B: Prompts AI to identify risks → AL/PE (AI prompting) + RAI (risk assessment)
-  // C: Internal stakeholder review → CC (collaboration) + RAI (ethical review)
-  // D: Proposes hybrid decision → CI (creative solution) + DE (domain judgment)
-  // E: Researches compliance history → ACL (research) + RAI (compliance focus)
+  // B: Prompts AI to identify risks → AL/PE (AI prompting) + RAI (risk identification)
+  // C: Internal stakeholder review → CC (collaboration) + DE (domain context)
+  // D: Proposes hybrid decision → CI (creative solution) + CT/PS (balanced analysis)
+  // E: Researches compliance history → ACL (research) + TF (technical compliance)
   "10-A": { "DE": 4, "RAI": 4 },
   "10-B": { "AL/PE": 4, "RAI": 4 },
-  "10-C": { "CC": 4, "RAI": 4 },
-  "10-D": { "CI": 4, "DE": 4 },
-  "10-E": { "ACL": 4, "RAI": 4 },
+  "10-C": { "CC": 4, "CT/PS": 4 },
+  "10-D": { "CI": 4, "CT/PS": 4 },
+  "10-E": { "ACL": 4, "TF": 4 },
   
   // Q11: Team member struggling with technical constraints
-  // A: Facilitates knowledge-sharing session → CC (knowledge transfer) + DE (sharing expertise)
-  // B: Researches scoping best practices → ACL (learning) + TF (technical scoping)
-  // C: Uses AI for simplified overview → AL/PE (AI tool usage) + TF (technical simplification)
-  // D: Encourages smaller milestones → CC (coaching) + CI (adaptive approach)
+  // A: Facilitates knowledge-sharing session → CC (knowledge transfer) + CT/PS (structured sharing)
+  // B: Researches scoping best practices → ACL (learning) + DE (scope expertise)
+  // C: Uses AI for simplified overview → AL/PE (AI tool usage) + DE (domain simplification)
+  // D: Encourages smaller milestones → CI (creative breakdown) + CT/PS (milestone planning)
   // E: Reviews plan, flags risks using expertise → DE (domain expertise) + RAI (risk identification)
-  "11-A": { "CC": 4, "DE": 4 },
-  "11-B": { "ACL": 4, "TF": 4 },
-  "11-C": { "AL/PE": 4, "TF": 4 },
-  "11-D": { "CC": 4, "CI": 4 },
+  "11-A": { "CC": 4, "AL/PE": 4 },
+  "11-B": { "ACL": 4, "DE": 4 },
+  "11-C": { "AL/PE": 4, "DE": 4 },
+  "11-D": { "CI": 4, "CT/PS": 4 },
   "11-E": { "DE": 4, "RAI": 4 },
   
   // Q12: Design experiment with limited resources
   // A: Uses creative experimental design → CI (creative methods) + CT/PS (experimental logic)
-  // B: Analyzes resource allocation → DF (data analysis) + CT/PS (trade-off analysis)
+  // B: Analyzes resource allocation → DF (data analysis) + DE (resource understanding)
   // C: Researches public data sources → ACL (resourceful research) + DF (data sourcing)
-  // D: Pools resources with other teams → CC (collaboration) + CI (creative resourcing)
+  // D: Pools resources with other teams → CC (collaboration) + CT/PS (coordination logic)
   // E: Uses AI to design model → AL/PE (AI tool usage) + DF (statistical modeling)
   "12-A": { "CI": 4, "CT/PS": 4 },
-  "12-B": { "DF": 4, "CT/PS": 4 },
+  "12-B": { "DF": 4, "DE": 4 },
   "12-C": { "ACL": 4, "DF": 4 },
-  "12-D": { "CC": 4, "CI": 4 },
+  "12-D": { "CC": 4, "ACL": 4 },
   "12-E": { "AL/PE": 4, "DF": 4 },
   
   // Q13: Technical system update preparation
   // A: Researches documentation for changes → TF (technical learning) + ACL (proactive learning)
   // B: Designs training curriculum → CC (knowledge sharing) + CT/PS (instructional design)
   // C: Documents ROI for team → DE (business context) + DF (metrics-based justification)
-  // D: Q&A session with developers → CC (collaboration) + TF (technical clarification)
-  // E: Proposes innovative use case → CI (innovation) + AL/PE (AI opportunity identification)
+  // D: Q&A session with developers → CC (collaborative discussion) + AL/PE (AI-assisted questions)
+  // E: Proposes innovative use case → CI (innovation) + CT/PS (use case analysis)
   "13-A": { "TF": 4, "ACL": 4 },
-  "13-B": { "CC": 4, "CT/PS": 4 },
+  "13-B": { "CC": 4, "ACL": 4 },
   "13-C": { "DE": 4, "DF": 4 },
-  "13-D": { "CC": 4, "TF": 4 },
-  "13-E": { "CI": 4, "AL/PE": 4 },
+  "13-D": { "CC": 4, "AL/PE": 4 },
+  "13-E": { "CI": 4, "CT/PS": 4 },
   
   // Q14: Teach colleague complex analytics tool
   // A: Step-by-step on critical features → TF (technical instruction) + ACL (teaching approach)
-  // B: Works through real project together → CC (collaborative learning) + CT/PS (guided practice)
+  // B: Works through real project together → CC (collaborative learning) + DE (applied knowledge)
   // C: Uses AI for practice datasets → AL/PE (AI tool usage) + DF (data generation)
-  // D: Researches foundational concepts, creates analogies → CT/PS (conceptual explanation) + CC (effective communication)
-  // E: Challenges with simplified problem → CI (creative teaching approach) + ACL (scaffolded learning)
+  // D: Researches foundational concepts, creates analogies → CT/PS (conceptual explanation) + ACL (learning approach)
+  // E: Challenges with simplified problem → CI (creative teaching approach) + CT/PS (problem design)
   "14-A": { "TF": 4, "ACL": 4 },
-  "14-B": { "CC": 4, "CT/PS": 4 },
+  "14-B": { "CC": 4, "DE": 4 },
   "14-C": { "AL/PE": 4, "DF": 4 },
-  "14-D": { "CT/PS": 4, "CC": 4 },
-  "14-E": { "CI": 4, "ACL": 4 },
+  "14-D": { "CT/PS": 4, "ACL": 4 },
+  "14-E": { "CI": 4, "CT/PS": 4 },
   
   // Q15: AI model trained on non-compliant data
-  // A: Reports and recommends quarantine → RAI (compliance action) + DE (domain judgment)
+  // A: Reports and recommends quarantine → RAI (compliance action) + CT/PS (risk assessment)
   // B: Researches regulatory requirements → RAI (regulatory focus) + ACL (research learning)
   // C: Uses AI to identify non-compliant data → AL/PE (AI tool usage) + DF (data identification)
   // D: Explains risks using domain knowledge → DE (domain expertise) + CC (stakeholder communication)
-  // E: Redesigns data pipeline collaboratively → TF (technical redesign) + RAI (compliance design)
-  "15-A": { "RAI": 4, "DE": 4 },
+  // E: Redesigns data pipeline collaboratively → CC (collaborative redesign) + TF (technical redesign)
+  "15-A": { "RAI": 4, "CT/PS": 4 },
   "15-B": { "RAI": 4, "ACL": 4 },
   "15-C": { "AL/PE": 4, "DF": 4 },
   "15-D": { "DE": 4, "CC": 4 },
-  "15-E": { "TF": 4, "RAI": 4 },
+  "15-E": { "CC": 4, "TF": 4 },
   
   // Q16: Creative solution blocked by policy
   // A: Analyzes policy purpose for adaptation → CT/PS (policy analysis) + RAI (compliance understanding)
   // B: Challenges policy, proposes change → CI (change advocacy) + DE (domain rationale)
-  // C: Negotiates waiver with legal → CC (negotiation) + RAI (compliance navigation)
+  // C: Negotiates waiver with legal → CC (negotiation) + ACL (navigating process)
   // D: Uses AI for compliant alternatives → AL/PE (AI tool usage) + CI (creative alternatives)
-  // E: Redefines problem outside policy scope → CI (creative reframing) + ACL (adaptive thinking)
+  // E: Redefines problem outside policy scope → CI (creative reframing) + CT/PS (strategic thinking)
   "16-A": { "CT/PS": 4, "RAI": 4 },
   "16-B": { "CI": 4, "DE": 4 },
-  "16-C": { "CC": 4, "RAI": 4 },
+  "16-C": { "CC": 4, "ACL": 4 },
   "16-D": { "AL/PE": 4, "CI": 4 },
-  "16-E": { "CI": 4, "ACL": 4 },
+  "16-E": { "CI": 4, "CT/PS": 4 },
   
   // Q17: Review technical spec with tight deadline
   // A: Focuses on strategic alignment → DE (strategic context) + DF (metrics alignment)
-  // B: Analyzes for architectural flaws → TF (technical analysis) + RAI (quality assurance)
+  // B: Analyzes for architectural flaws → TF (technical analysis) + CT/PS (flaw detection)
   // C: Uses AI for automated review → AL/PE (AI tool usage) + TF (technical review)
   // D: Communicates risks to stakeholders → CC (stakeholder communication) + RAI (risk disclosure)
   // E: Researches industry standards → ACL (research learning) + DE (industry context)
@@ -444,51 +444,51 @@ export const AI_READINESS_SCORING = {
   "17-E": { "ACL": 4, "DE": 4 },
   
   // Q18: Team struggling with data visualization
-  // A: Researches visual design principles → ACL (learning) + CT/PS (design thinking)
+  // A: Researches visual design principles → ACL (learning) + DF (visualization techniques)
   // B: Proposes innovative chart type → CI (innovation) + DF (visualization approach)
   // C: Facilitates feedback session → CC (collaboration) + CT/PS (diagnosing confusion)
-  // D: Uses AI for text descriptions → AL/PE (AI tool usage) + DF (data accessibility)
-  // E: Creates standardized style guide → DF (data standards) + TF (technical standardization)
-  "18-A": { "ACL": 4, "CT/PS": 4 },
+  // D: Uses AI for text descriptions → AL/PE (AI tool usage) + TF (technical accessibility)
+  // E: Creates standardized style guide → TF (technical standards) + DE (organizational knowledge)
+  "18-A": { "ACL": 4, "DF": 4 },
   "18-B": { "CI": 4, "DF": 4 },
   "18-C": { "CC": 4, "CT/PS": 4 },
-  "18-D": { "AL/PE": 4, "DF": 4 },
-  "18-E": { "DF": 4, "TF": 4 },
+  "18-D": { "AL/PE": 4, "TF": 4 },
+  "18-E": { "TF": 4, "DE": 4 },
   
   // Q19: Automate task with many exceptions
   // A: Maps exceptions with decision tree → CT/PS (logical mapping) + TF (process design)
-  // B: Analyzes frequency of exceptions → DF (data analysis) + CT/PS (prioritization analysis)
-  // C: Uses AI for conditional logic → AL/PE (AI tool usage) + TF (code generation)
-  // D: Collaborates to eliminate exceptions → CC (process collaboration) + CI (process improvement)
+  // B: Analyzes frequency of exceptions → DF (data analysis) + RAI (prioritization integrity)
+  // C: Uses AI for conditional logic → AL/PE (AI tool usage) + CI (creative automation)
+  // D: Collaborates to eliminate exceptions → CC (process collaboration) + DE (domain process knowledge)
   // E: Researches programming techniques → ACL (technical learning) + TF (programming knowledge)
   "19-A": { "CT/PS": 4, "TF": 4 },
-  "19-B": { "DF": 4, "CT/PS": 4 },
-  "19-C": { "AL/PE": 4, "TF": 4 },
-  "19-D": { "CC": 4, "CI": 4 },
+  "19-B": { "DF": 4, "RAI": 4 },
+  "19-C": { "AL/PE": 4, "CI": 4 },
+  "19-D": { "CC": 4, "DE": 4 },
   "19-E": { "ACL": 4, "TF": 4 },
   
   // Q20: Colleague proposes obsolete technology
   // A: Explains risks using domain knowledge → DE (domain expertise) + RAI (risk communication)
-  // B: Analyzes throughput requirements → DF (data analysis) + CT/PS (technical analysis)
+  // B: Analyzes throughput requirements → DF (data analysis) + TF (technical analysis)
   // C: Proposes modern alternative → CI (innovation) + AL/PE (modern tech awareness)
-  // D: Researches lifecycle dates → ACL (research) + TF (technical lifecycle)
+  // D: Researches lifecycle dates → ACL (research) + RAI (risk awareness)
   // E: Facilitates collaborative discussion → CC (facilitation) + CI (collaborative innovation)
   "20-A": { "DE": 4, "RAI": 4 },
-  "20-B": { "DF": 4, "CT/PS": 4 },
+  "20-B": { "DF": 4, "TF": 4 },
   "20-C": { "CI": 4, "AL/PE": 4 },
-  "20-D": { "ACL": 4, "TF": 4 },
+  "20-D": { "ACL": 4, "RAI": 4 },
   "20-E": { "CC": 4, "CI": 4 },
   
   // Q21: Write proposal for senior leadership
   // A: Uses AI to analyze reports for language → AL/PE (AI tool usage) + CC (communication alignment)
   // B: Focuses on measurable ROI → DF (data-driven) + CT/PS (persuasive logic)
   // C: Positions as industry solution using expertise → DE (domain expertise) + CI (innovative positioning)
-  // D: Researches successful proposals → ACL (learning from examples) + CC (communication patterns)
+  // D: Researches successful proposals → ACL (learning from examples) + TF (structured approach)
   // E: Collaborates with mentor → CC (mentorship) + DE (strategic guidance)
   "21-A": { "AL/PE": 4, "CC": 4 },
   "21-B": { "DF": 4, "CT/PS": 4 },
   "21-C": { "DE": 4, "CI": 4 },
-  "21-D": { "ACL": 4, "CC": 4 },
+  "21-D": { "ACL": 4, "TF": 4 },
   "21-E": { "CC": 4, "DE": 4 },
 };
 
