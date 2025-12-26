@@ -81,6 +81,16 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Rate Limiting**: In-memory rate limiting using express-rate-limit. Note: In-memory storage is acceptable for single-instance deployments but would require Redis or similar for horizontal scaling across multiple instances.
 - **Logging Security**: API response logging sanitises sensitive fields (password, email, names, tokens, etc.) and is disabled in production to prevent PII exposure.
 
+## Testing
+- **Framework**: Vitest (v1.6.0) with Supertest for API testing.
+- **Configuration**: `vitest.config.ts` at project root.
+- **Run Tests**: `npx vitest run` (all tests) or `npx vitest` (watch mode).
+- **Test Coverage**:
+    - **Scoring Algorithms** (`tests/unit/scoring.test.ts`): Tests FIT and AI Readiness scoring matrices, hybrid scoring formula, score bounds validation, and regression guards.
+    - **Billing Logic** (`tests/unit/billing.test.ts`): Tests prepaid deductions, auto-bill usage tracking, invoice calculations, and month-key generation.
+    - **CSRF Middleware** (`tests/integration/csrf.test.ts`): Tests token generation, double-submit validation, exempt paths, and API key bypass.
+- **Total Tests**: 70 passing tests across 3 test files.
+
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
 - **Stripe**: Payment gateway.
