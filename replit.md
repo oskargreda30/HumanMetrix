@@ -72,7 +72,8 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
 - **Scalable Database Schema**: Supports users, assessments, results, and AI data.
-- **Secure Authentication**: Robust session-based authentication.
+- **Secure Authentication**: Robust session-based authentication with CSRF protection.
+- **CSRF Protection**: Double-submit cookie pattern protects all state-changing endpoints. Exempt routes: login, signup, Stripe webhooks, partner API (uses API key auth). Frontend automatically includes `x-csrf-token` header on POST/PUT/PATCH/DELETE requests.
 - **API-driven**: Comprehensive API endpoints.
 - **Content-Aware PDF Rendering**: Dynamic layout for readability.
 - **Cache Refresh Pattern**: Cache invalidation + refetch + refresh URL parameter for data changes.
