@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Loader2, XCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { queryClient } from "@/lib/queryClient";
 
 export default function PaymentCancelCallback() {
   const [, setLocation] = useLocation();
@@ -12,9 +11,7 @@ export default function PaymentCancelCallback() {
     if (processedRef.current) return;
     processedRef.current = true;
 
-    // Clear cache and redirect immediately to dashboard
-    queryClient.clear();
-    
+    // Redirect to dashboard after a brief delay - do NOT clear cache to preserve session
     setTimeout(() => {
       setLocation("/dashboard");
     }, 1500);

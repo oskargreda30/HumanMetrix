@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -1009,27 +1009,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
         currencyCode = seaLocalPricing.currencyCode;
       } else {
-        // Standard pricing: convert each component to local currency and round SEPARATELY
-        // This matches the frontend display logic where each price is rounded individually
-        // Then sum the rounded components to get the total
-        const baseFeeLocal = convertAndRoundToLocalCurrency(BASE_FEE, currencyCode, liveExchangeRate);
-        const assessmentsTotalLocal = requiredAssessmentTypes.reduce((sum, type) => {
-          const normalizedType = normalizeAssessmentId(type);
-          const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-          return sum + convertAndRoundToLocalCurrency(originalPrice, currencyCode, liveExchangeRate);
-        }, 0);
-        let totalLocalCurrency = baseFeeLocal + assessmentsTotalLocal;
-        
-        // Apply discount if applicable
-        if (discountApplied) {
-          const discountRatio = finalPriceInPence / priceInPence;
-          totalLocalCurrency = Math.ceil(totalLocalCurrency * discountRatio);
-        }
-        
-        // For zero-decimal currencies, Stripe expects the whole unit amount
-        // For standard currencies, Stripe expects the smallest unit (cents/pence)
-        const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-        stripeAmount = isZeroDecimal ? totalLocalCurrency : totalLocalCurrency * 100;
+        // Standard pricing: convert to local currency with roundPriceUp
+        // Matches frontend's formatLocalPrice which applies PPP twice:
+        // 1. getAdjustedPriceInPence pre-adjusts the pence values
+        // 2. formatPriceWithRate applies PPP again during conversion
+        // Our helper replicates this double-application to match displayed price
+        stripeAmount = calculateStripeAmountFromTotalPence(
+          finalPriceInPence,
+          currencyCode,
+          liveExchangeRate,
+          userCountry  // Pass country to apply PPP (matching frontend's double-application)
+        );
       }
       
       const session = await stripe.checkout.sessions.create({
