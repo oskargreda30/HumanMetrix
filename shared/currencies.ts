@@ -744,6 +744,33 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
   return CURRENCIES[currencyCode] || CURRENCIES.USD;
 }
 
+// Convert a single GBP pence amount to local currency and round up
+// This matches the frontend display logic (formatPriceWithRate)
+// Used to calculate Stripe amounts by summing individually-rounded components
+export function convertAndRoundToLocalCurrency(
+  priceInGBPPence: number,
+  currencyCode: string,
+  exchangeRate?: number,
+  countryCode?: string
+): number {
+  const currency = CURRENCIES[currencyCode.toUpperCase()];
+  if (!currency) return Math.ceil(priceInGBPPence / 100);
+  
+  // Apply PPP adjustment if country code provided
+  const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
+  const adjustedPriceInPence = priceInGBPPence * pppMultiplier;
+  
+  // Use provided exchange rate or fall back to hardcoded rate
+  const effectiveRate = exchangeRate ?? currency.exchangeRate;
+  
+  // Convert from GBP pence to local currency units
+  const priceInGBP = adjustedPriceInPence / 100;
+  const convertedPrice = priceInGBP * effectiveRate;
+  
+  // Round up to nearest whole number (same as roundPriceUp for < 100)
+  return Math.ceil(convertedPrice);
+}
+
 // Round price UP based on magnitude for cleaner display
 // - Under 100: round up to nearest whole number
 // - 100 - 999: round up to nearest 10
@@ -975,10 +1002,12 @@ export const ZERO_DECIMAL_CURRENCIES = [
 
 // Convert GBP pence to local currency amount for Stripe
 // Uses the same rounding logic as formatPrice for consistency
+// Optional exchangeRate parameter allows using live rates instead of hardcoded fallbacks
 export function convertToStripeCurrencyAmount(
   priceInGBPPence: number,
   currencyCode: string,
-  countryCode?: string
+  countryCode?: string,
+  exchangeRate?: number
 ): number {
   const currency = CURRENCIES[currencyCode.toUpperCase()];
   if (!currency) {
@@ -990,9 +1019,12 @@ export function convertToStripeCurrencyAmount(
   const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
   const adjustedPriceInPence = priceInGBPPence * pppMultiplier;
   
+  // Use provided exchange rate or fall back to hardcoded rate
+  const effectiveRate = exchangeRate ?? currency.exchangeRate;
+  
   // Convert from GBP pence to target currency (same as formatPrice)
   const priceInGBP = adjustedPriceInPence / 100;
-  const convertedPrice = priceInGBP * currency.exchangeRate;
+  const convertedPrice = priceInGBP * effectiveRate;
   
   // Apply the same rounding as display (roundPriceUp)
   const roundedDisplayPrice = roundPriceUp(convertedPrice, currency);

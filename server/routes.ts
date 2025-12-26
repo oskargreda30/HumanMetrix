@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -991,6 +991,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let stripeCurrency = getStripeCurrencyCode(userCountry);
       let currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
+      // Fetch live exchange rates to match frontend display prices
+      const exchangeRatesData = await getExchangeRates();
+      const liveExchangeRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      
       // Calculate Stripe amount based on pricing model
       let stripeAmount: number;
       if (isSEALaunch && seaLocalPricing && !discountApplied) {
@@ -1005,9 +1009,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
         currencyCode = seaLocalPricing.currencyCode;
       } else {
-        // Standard pricing: convert GBP pence with PPP to local currency
-        // Note: for non-SEA, don't pass countryCode to avoid double PPP application
-        stripeAmount = convertToStripeCurrencyAmount(finalPriceInPence, currencyCode);
+        // Standard pricing: convert each component to local currency and round SEPARATELY
+        // This matches the frontend display logic where each price is rounded individually
+        // Then sum the rounded components to get the total
+        const baseFeeLocal = convertAndRoundToLocalCurrency(BASE_FEE, currencyCode, liveExchangeRate);
+        const assessmentsTotalLocal = requiredAssessmentTypes.reduce((sum, type) => {
+          const normalizedType = normalizeAssessmentId(type);
+          const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+          return sum + convertAndRoundToLocalCurrency(originalPrice, currencyCode, liveExchangeRate);
+        }, 0);
+        let totalLocalCurrency = baseFeeLocal + assessmentsTotalLocal;
+        
+        // Apply discount if applicable
+        if (discountApplied) {
+          const discountRatio = finalPriceInPence / priceInPence;
+          totalLocalCurrency = Math.ceil(totalLocalCurrency * discountRatio);
+        }
+        
+        // For zero-decimal currencies, Stripe expects the whole unit amount
+        // For standard currencies, Stripe expects the smallest unit (cents/pence)
+        const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
+        stripeAmount = isZeroDecimal ? totalLocalCurrency : totalLocalCurrency * 100;
       }
       
       const session = await stripe.checkout.sessions.create({
