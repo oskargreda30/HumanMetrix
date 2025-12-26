@@ -1,5 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+function getCsrfToken(): string | null {
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split("=");
+    if (name === "csrf_token") {
+      return value;
+    }
+  }
+  return null;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -26,6 +37,11 @@ export async function apiRequest(
     
     if (data) {
       headers["Content-Type"] = "application/json";
+    }
+    
+    const csrfToken = getCsrfToken();
+    if (csrfToken && ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
+      headers["x-csrf-token"] = csrfToken;
     }
     
     const res = await fetch(url, {
