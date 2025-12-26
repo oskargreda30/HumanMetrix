@@ -296,7 +296,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                If you need help, please don't hesitate to reach out to your assessment coordinator at info@humanmetrix.co.uk
+                If you need help, please don't hesitate to reach out to your assessment coordinator at hello@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -348,7 +348,7 @@ export async function sendContactFormEmail(
   }
 
   const intentLabel = intent === 'demo' ? 'Demo Request' : 'Sales Inquiry';
-  const salesEmail = 'info@humanmetrix.co.uk';
+  const salesEmail = 'hello@humanmetrix.co.uk';
 
   const mailOptions = {
     from: `"HumanMetrix Contact Form" <${process.env.GMAIL_USER}>`,
@@ -563,7 +563,7 @@ export async function sendPaymentReceiptEmail(
               </ol>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                If you have any questions, please contact us at info@humanmetrix.co.uk
+                If you have any questions, please contact us at hello@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -592,7 +592,7 @@ NEXT STEPS:
 1. Log in to your HumanMetrix account
 2. View your comprehensive results and download your PDF report
 
-If you have any questions, please contact us at info@humanmetrix.co.uk
+If you have any questions, please contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix
 This is an automated receipt for your records.
@@ -679,7 +679,7 @@ export async function sendPartnerQuotaWarning70(
             </div>
             <div class="footer">
               <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
-              <p>Questions? Contact us at info@humanmetrix.co.uk</p>
+              <p>Questions? Contact us at hello@humanmetrix.co.uk</p>
             </div>
           </div>
         </body>
@@ -703,7 +703,7 @@ Visit ${topUpUrl} to top up your tests.
 What happens when you run out?
 When your quota reaches 100%, your API access will be temporarily suspended until you purchase more tests.
 
-Questions? Contact us at info@humanmetrix.co.uk
+Questions? Contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix
     `.trim(),
@@ -789,7 +789,7 @@ export async function sendPartnerQuotaWarning90(
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                Need help? Our team is available at info@humanmetrix.co.uk
+                Need help? Our team is available at hello@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -816,7 +816,7 @@ When your quota reaches 100%, your API access will be automatically suspended an
 
 Visit ${topUpUrl} to top up now.
 
-Need help? Contact us at info@humanmetrix.co.uk
+Need help? Contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix
     `.trim(),
@@ -890,7 +890,7 @@ export async function sendPartnerAccessSuspendedEmail(
               <p>Once you purchase additional tests, your API access will be <strong>automatically restored</strong> and your embedded assessments will resume working immediately.</p>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                Need immediate assistance? Contact us at info@humanmetrix.co.uk
+                Need immediate assistance? Contact us at hello@humanmetrix.co.uk
               </p>
             </div>
             <div class="footer">
@@ -914,7 +914,7 @@ Visit ${topUpUrl} to restore access.
 
 Once you purchase additional tests, your API access will be automatically restored and your embedded assessments will resume working immediately.
 
-Need immediate assistance? Contact us at info@humanmetrix.co.uk
+Need immediate assistance? Contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix
     `.trim(),
@@ -1091,7 +1091,7 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
             <div class="footer">
               <p>© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
               <p style="margin-top: 10px;">
-                Questions about this invoice? Contact us at <a href="mailto:info@humanmetrix.co.uk" style="color: #06b6d4;">info@humanmetrix.co.uk</a>
+                Questions about this invoice? Contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #06b6d4;">hello@humanmetrix.co.uk</a>
               </p>
               <p style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
                 HumanMetrix Ltd | Company Registration: [Number] | VAT Registration: [Number]
@@ -1140,7 +1140,7 @@ Account Number: XXXXXXXX
 Reference: ${details.invoiceNumber}
 
 ${details.invoiceNotes ? `NOTES:\n${details.invoiceNotes}\n` : ''}
-Questions about this invoice? Contact us at info@humanmetrix.co.uk
+Questions about this invoice? Contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
     `.trim(),

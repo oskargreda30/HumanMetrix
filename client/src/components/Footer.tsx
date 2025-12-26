@@ -138,12 +138,12 @@ export default function Footer() {
             <div className="mt-3 md:mt-6 space-y-1.5 md:space-y-3">
               <h4 className="font-medium text-[11px] md:text-sm text-white">Contact</h4>
               <a
-                href="mailto:info@humanmetrix.co.uk"
+                href="mailto:hello@humanmetrix.co.uk"
                 className="flex items-start gap-1 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
                 data-testid="link-email"
               >
                 <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0 mt-0.5" />
-                <span className="break-words">info@humanmetrix.co.uk</span>
+                <span className="break-words">hello@humanmetrix.co.uk</span>
               </a>
             </div>
           </div>
