@@ -453,9 +453,10 @@ export async function exportEnhancedCandidatePDF(
     pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 8, { align: 'center' });
     
     // Fit the metric value to the available width
+    // Use smaller font range (10-7) for better fit, especially for skill names
     pdf.setFont('helvetica', 'bold');
     const maxValueWidth = (boxWidth - 5) - 4; // Leave 2mm padding on each side
-    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 12, 8);
+    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 10, 7);
     
     pdf.setFontSize(fitted.fontSize);
     pdf.setTextColor(17, 24, 39);
@@ -1323,26 +1324,11 @@ export async function exportEnhancedCandidatePDF(
   pdf.setTextColor(0, 0, 0);
   
   // ========== RECOMMENDATIONS SECTION ==========
-  // Check if all 4 assessments are completed - if so, always start on a fresh last page
-  const allFourAssessmentsComplete = Boolean(
-    fitResultSummary && aiReadinessResultSummary && promptArchResultSummary && aiqResultSummary
-  );
-  
-  if (allFourAssessmentsComplete) {
-    // Force new page for final recommendations when all assessments are complete
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 45; // Start lower to give header breathing room
-  } else if (yPos > pageHeight - 60) {
-    // Only check page space if not all 4 assessments complete
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 45;
-  } else {
-    yPos += 10; // Add more spacing if continuing on same page
-  }
+  // Always start FINAL CANDIDATE RECOMMENDATIONS on a new page for better layout
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 45; // Start lower to give header breathing room
   
   // Calculate assessment-level scores for role recommendations
   const fitAvgScore = fitResultSummary?.scores 
