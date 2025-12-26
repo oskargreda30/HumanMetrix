@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Shield, Briefcase, Users, Lock } from "lucide-react";
+import { CheckCircle2, Shield, Briefcase } from "lucide-react";
 
 interface ResultsRetentionConsentDialogProps {
   open: boolean;
@@ -66,34 +66,8 @@ export function ResultsRetentionConsentDialog({
 
         <div className="py-4 space-y-4">
           <p className="text-sm text-center">
-            Would you like to make your results visible to employers on HumanMetrix?
+            We work with many employers who search our candidate database to evaluate candidates and arrange interviews if assessment scores match what they are looking for. Are you happy for your assessment results to be visible?
           </p>
-          
-          <div className="space-y-3">
-            <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-              <div className="flex items-start gap-3">
-                <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Share with Employers</p>
-                  <p className="text-xs text-muted-foreground">
-                    Companies using HumanMetrix can view your assessment results and may contact you about future opportunities. Many candidates have been discovered this way.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-muted/30 rounded-lg p-4 border">
-              <div className="flex items-start gap-3">
-                <Lock className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Keep Private</p>
-                  <p className="text-xs text-muted-foreground">
-                    Your results remain visible only to you. You can change this preference at any time.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-4 w-4 flex-shrink-0" />
@@ -109,7 +83,7 @@ export function ResultsRetentionConsentDialog({
             className="w-full sm:w-auto"
             data-testid="button-decline-sharing"
           >
-            {consentMutation.isPending ? "Saving..." : "Keep Private"}
+            {consentMutation.isPending ? "Saving..." : "No"}
           </Button>
           <Button 
             onClick={() => handleConsent(true)} 
@@ -117,7 +91,7 @@ export function ResultsRetentionConsentDialog({
             className="w-full sm:w-auto"
             data-testid="button-accept-sharing"
           >
-            {consentMutation.isPending ? "Saving..." : "Share with Employers"}
+            {consentMutation.isPending ? "Saving..." : "Yes"}
           </Button>
         </DialogFooter>
       </DialogContent>
