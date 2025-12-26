@@ -4253,7 +4253,8 @@ Format your response as JSON with this structure:
       
       const { 
         name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
-        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes
+        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
+        billingCycleAnchor, prepaidBalance
       } = req.body;
       
       if (!name || !email) {
@@ -4279,6 +4280,10 @@ Format your response as JSON with this structure:
         }
       }
       
+      // Validate billing type
+      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
+      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
+      
       const partner = await storage.createPartnerAccount({
         name,
         companyName,
@@ -4288,10 +4293,18 @@ Format your response as JSON with this structure:
         stripeCustomerId: stripeCustomerId || null,
         organizationId: organizationId || null,
         isActive: true,
-        billingType: billingType || 'platform',
+        // New billing type system: prepaid, auto_bill, or invoice
+        billingType: selectedBillingType,
         freeTestsAllocated: freeTestsAllocated || 0,
-        paymentTermsDays: billingType === 'invoice' ? (paymentTermsDays || 30) : null,
-        invoiceNotes: billingType === 'invoice' ? invoiceNotes : null,
+        // Prepaid fields
+        prepaidBalance: selectedBillingType === 'prepaid' ? (prepaidBalance || freeTestsAllocated || 0) : 0,
+        // Auto-bill fields
+        billingCycleAnchor: selectedBillingType === 'auto_bill' ? (billingCycleAnchor || 1) : null,
+        currentMonthUsage: 0,
+        // Invoice fields
+        paymentTermsDays: selectedBillingType === 'invoice' ? (paymentTermsDays || 30) : null,
+        invoiceNotes: selectedBillingType === 'invoice' ? invoiceNotes : null,
+        invoiceContact: selectedBillingType === 'invoice' ? invoiceContact : null,
       });
       
       // Auto-credit free tests if allocated
@@ -4344,7 +4357,11 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      const { name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId } = req.body;
+      const { 
+        name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
+        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
+        billingCycleAnchor, prepaidBalance, stripePaymentMethodId
+      } = req.body;
       
       // If organizationId is being changed, verify it's valid and not already linked
       if (organizationId !== undefined && organizationId !== partner.organizationId) {
@@ -4360,6 +4377,10 @@ Format your response as JSON with this structure:
         }
       }
       
+      // Validate billing type if provided
+      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
+      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : partner.billingType;
+      
       await storage.updatePartnerAccount(req.params.id, {
         name: name ?? partner.name,
         companyName: companyName ?? partner.companyName,
@@ -4369,6 +4390,18 @@ Format your response as JSON with this structure:
         isActive: isActive !== undefined ? isActive : partner.isActive,
         stripeCustomerId: stripeCustomerId ?? partner.stripeCustomerId,
         organizationId: organizationId !== undefined ? organizationId : partner.organizationId,
+        // Billing type and related fields
+        billingType: selectedBillingType,
+        freeTestsAllocated: freeTestsAllocated !== undefined ? freeTestsAllocated : partner.freeTestsAllocated,
+        // Prepaid fields
+        prepaidBalance: prepaidBalance !== undefined ? prepaidBalance : partner.prepaidBalance,
+        // Auto-bill fields
+        stripePaymentMethodId: stripePaymentMethodId !== undefined ? stripePaymentMethodId : partner.stripePaymentMethodId,
+        billingCycleAnchor: billingCycleAnchor !== undefined ? billingCycleAnchor : partner.billingCycleAnchor,
+        // Invoice fields
+        paymentTermsDays: paymentTermsDays !== undefined ? paymentTermsDays : partner.paymentTermsDays,
+        invoiceNotes: invoiceNotes !== undefined ? invoiceNotes : partner.invoiceNotes,
+        invoiceContact: invoiceContact !== undefined ? invoiceContact : partner.invoiceContact,
       });
       
       const updated = await storage.getPartnerAccount(req.params.id);
@@ -4928,6 +4961,54 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error reactivating partner:", error);
       res.status(500).json({ message: "Failed to reactivate partner" });
+    }
+  });
+
+  // ==================== PARTNER MONTHLY USAGE API ====================
+
+  // Super Admin: Get partner monthly usage history
+  app.get("/api/admin/partners/:id/monthly-usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 12;
+      const usageHistory = await storage.getMonthlyUsageHistory(partner.id, limit);
+      
+      // Get current month usage if not in history yet
+      const currentMonthKey = storage.getCurrentMonthKey();
+      const hasCurrentMonth = usageHistory.some(u => u.monthKey === currentMonthKey);
+      
+      if (!hasCurrentMonth && partner.currentMonthUsage > 0) {
+        const pricePerTest = partner.pricePerAssessment || 500;
+        usageHistory.unshift({
+          id: 'current',
+          partnerId: partner.id,
+          monthKey: currentMonthKey,
+          testsUsed: partner.currentMonthUsage,
+          totalAmountPence: partner.currentMonthUsage * pricePerTest,
+          billingStatus: 'pending',
+          stripePaymentIntentId: null,
+          invoiceId: null,
+          billedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+      
+      res.json(usageHistory);
+    } catch (error) {
+      console.error("Error fetching partner monthly usage:", error);
+      res.status(500).json({ message: "Failed to fetch monthly usage" });
     }
   });
 
