@@ -40,7 +40,9 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **SEA Launch Pricing**: Strategic flat-rate local currency pricing for specific Southeast Asian countries (Philippines, Vietnam, Indonesia, Malaysia).
 - **Active Discount Codes**: `FREE` (100% off) and `20OFFPRICE` (20% off).
 - **B2B Partner Integration**: Enterprise integration for clients to embed assessments.
-    - **Partner Accounts**: Managed via admin dashboard.
+    - **Partner Accounts**: Managed via admin dashboard with automatic admin user creation.
+        - **Automatic Admin Account Creation**: When a new partner is created, the system automatically creates an organisation (if needed), generates an admin user with cryptographically secure temporary password (128-bit entropy, format: HMx-[22 chars]), and sends a professional welcome email with login credentials.
+        - **Rollback on Failure**: If partner creation fails after creating organisation/user, the system automatically cleans up orphaned records.
     - **3-Tier Billing System**:
         - **Prepaid (Top-up)**: Partners purchase test packages upfront; balance deducted per test.
         - **Auto-Bill (Card on File)**: Monthly usage tracked; card charged automatically on billing cycle anchor day.
