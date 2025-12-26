@@ -800,6 +800,33 @@ export function roundPriceUp(price: number, _currency?: CurrencyConfig): number 
   }
 }
 
+// Convert pence to rounded local currency amount (not Stripe units)
+// Used for summing individually-rounded prices
+export function convertPenceToRoundedLocalCurrency(
+  priceInPence: number,
+  currencyCode: string,
+  exchangeRate?: number
+): number {
+  const currency = CURRENCIES[currencyCode.toUpperCase()];
+  if (!currency) return roundPriceUp(priceInPence / 100);
+  
+  const effectiveRate = exchangeRate ?? currency.exchangeRate;
+  const priceInGBP = priceInPence / 100;
+  const convertedPrice = priceInGBP * effectiveRate;
+  
+  return roundPriceUp(convertedPrice);
+}
+
+// Calculate Stripe amount from sum of individually-rounded local prices
+// This matches frontend display where each component is rounded then summed
+export function calculateStripeAmountFromRoundedTotal(
+  roundedLocalTotal: number,
+  currencyCode: string
+): number {
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
+  return isZeroDecimal ? roundedLocalTotal : roundedLocalTotal * 100;
+}
+
 // Calculate total price for Stripe in local currency units
 // Input: PPP-adjusted pence (already has PPP multiplier applied once)
 // This function converts to local currency and applies roundPriceUp

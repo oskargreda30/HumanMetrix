@@ -11,7 +11,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { formatLocalPrice, countryCode, getAdjustedPriceInPence } = useCurrency();
+  const { countryCode, getAdjustedPriceInPence, getLocalPriceNumber, formatLocalCurrency } = useCurrency();
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -45,15 +45,23 @@ export function ResultsPaymentGate() {
   });
   
   // Calculate price based ONLY on assessments in current unpaid purchase batch
-  // Apply PPP adjustment for user's country
+  // Sum individually-rounded local prices to match what's shown on Assessment page
   const assessmentTypesInBatch = purchaseItems?.map((item: any) => item.assessmentType) || [];
-  const assessmentsTotalPence = assessmentTypesInBatch.reduce((sum: number, type: string) => {
+  
+  // Get rounded local price for platform fee
+  const platformFeeLocal = getLocalPriceNumber(getAdjustedPriceInPence(BASE_FEE));
+  
+  // Sum rounded local prices for each assessment
+  const assessmentsTotalLocal = assessmentTypesInBatch.reduce((sum: number, type: string) => {
     const normalizedType = normalizeAssessmentId(type);
     const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-    return sum + getAdjustedPriceInPence(originalPrice);
+    const adjustedPence = getAdjustedPriceInPence(originalPrice);
+    return sum + getLocalPriceNumber(adjustedPence);
   }, 0);
-  const totalPence = getAdjustedPriceInPence(BASE_FEE) + assessmentsTotalPence;
-  const formattedPrice = formatLocalPrice(totalPence / 1); // formatLocalPrice expects pence
+  
+  // Total is sum of individually-rounded local prices
+  const totalLocal = platformFeeLocal + assessmentsTotalLocal;
+  const formattedPrice = formatLocalCurrency(totalLocal);
   
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;

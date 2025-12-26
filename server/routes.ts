@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -1009,14 +1009,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
         currencyCode = seaLocalPricing.currencyCode;
       } else {
-        // Standard pricing: convert PPP-adjusted pence to local currency
-        // finalPriceInPence already has PPP applied once via getPPPAdjustedPriceInPence
-        // calculateStripeAmountFromTotalPence just converts currency and applies roundPriceUp
-        stripeAmount = calculateStripeAmountFromTotalPence(
-          finalPriceInPence,
-          currencyCode,
-          liveExchangeRate
-        );
+        // Standard pricing: sum individually-rounded local prices
+        // This matches frontend display where each component is rounded then summed
+        
+        // Get rounded local price for platform fee
+        const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+        const platformFeeLocal = convertPenceToRoundedLocalCurrency(adjustedBaseFee, currencyCode, liveExchangeRate);
+        
+        // Sum rounded local prices for each assessment
+        let assessmentsTotalLocal = 0;
+        for (const type of requiredAssessmentTypes) {
+          const normalizedType = normalizeAssessmentId(type);
+          const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+          const adjustedPence = getPPPAdjustedPriceInPence(originalPrice, userCountry);
+          assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(adjustedPence, currencyCode, liveExchangeRate);
+        }
+        
+        // Apply discount ratio if applicable
+        let totalLocal = platformFeeLocal + assessmentsTotalLocal;
+        if (discountApplied) {
+          const discountRatio = finalPriceInPence / priceInPence;
+          totalLocal = Math.round(totalLocal * discountRatio);
+        }
+        
+        stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       }
       
       const session = await stripe.checkout.sessions.create({

@@ -20,6 +20,8 @@ interface CurrencyContextType {
   setCurrency: (currencyCode: string) => void; // Only changes display currency, not PPP tier
   formatLocalPrice: (priceInPence: number) => string;
   formatSuitePrice: (priceInPence: number) => string; // For full suite pricing (SEA launch)
+  getLocalPriceNumber: (priceInPence: number) => number; // Get rounded local price as number (for summing)
+  formatLocalCurrency: (amount: number) => string; // Format a local currency amount (already converted)
   isLoading: boolean;
   countryCode: string | null;
   availableCurrencies: typeof SUPPORTED_CURRENCIES;
@@ -251,6 +253,23 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const isSEALaunchCountry = !isVPN && countryCode ? hasSEALaunchPricing(countryCode) : false;
   const seaLaunchPricing = !isVPN && countryCode ? getSEALaunchPricing(countryCode) : null;
 
+  // Get rounded local price as a number (for summing individual prices)
+  // This ensures consistent rounding when totaling multiple items
+  const getLocalPriceNumber = (priceInPence: number): number => {
+    const exchangeRate = liveExchangeRates?.[currency.code] ?? currency.exchangeRate;
+    const priceInGBP = priceInPence / 100;
+    const convertedPrice = priceInGBP * exchangeRate;
+    return roundPriceUp(convertedPrice);
+  };
+
+  // Format a local currency amount (already converted and rounded)
+  const formatLocalCurrency = (amount: number): string => {
+    const formattedNum = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
+    return currency.symbolPosition === 'before' 
+      ? `${currency.symbol}${formattedNum}`
+      : `${formattedNum}${currency.symbol}`;
+  };
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -258,6 +277,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         setCurrency,
         formatLocalPrice,
         formatSuitePrice,
+        getLocalPriceNumber,
+        formatLocalCurrency,
         isLoading,
         countryCode,
         availableCurrencies: SUPPORTED_CURRENCIES,
