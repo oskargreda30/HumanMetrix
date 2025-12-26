@@ -72,9 +72,10 @@ app.use(csrfProtection());
 devLog('✅ CSRF protection enabled');
 
 const SENSITIVE_FIELDS = new Set([
-  'password', 'passwordHash', 'email', 'firstName', 'lastName', 
-  'apiKey', 'secretKey', 'token', 'accessToken', 'refreshToken',
-  'ssn', 'phoneNumber', 'address', 'dateOfBirth', 'creditCard'
+  'password', 'passwordhash', 'email', 'firstname', 'lastname', 
+  'apikey', 'secretkey', 'token', 'accesstoken', 'refreshtoken',
+  'ssn', 'phonenumber', 'address', 'dateofbirth', 'creditcard',
+  'stripeCustomerId'.toLowerCase(), 'profileimageurl'
 ]);
 
 function sanitizeForLogging(obj: any): any {
