@@ -33,6 +33,7 @@ export function csrfProtection() {
     const exemptPaths = [
       "/api/login",
       "/api/signup",
+      "/api/create-free-invitation",
       "/api/stripe/webhook",
       "/api/partner/sessions",
       "/api/partner/sessions/",
