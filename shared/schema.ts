@@ -510,11 +510,23 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
-  // Billing configuration
-  billingType: varchar("billing_type").notNull().default("platform"), // 'platform' (Stripe) or 'invoice' (manual invoicing)
+  // Billing configuration - 3 payment options:
+  // 'prepaid': Purchase test packages upfront, top up when needed
+  // 'auto_bill': Card on file, automatically billed at month-end based on usage
+  // 'invoice': Enterprise invoicing, we send invoices based on usage
+  billingType: varchar("billing_type").notNull().default("prepaid"), // 'prepaid', 'auto_bill', or 'invoice'
   freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
-  paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 30, Net 60, etc.
+  // Prepaid billing fields
+  prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
+  // Auto-bill fields
+  stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
+  billingCycleAnchor: integer("billing_cycle_anchor").default(1), // Day of month for billing (1-28)
+  lastBilledAt: timestamp("last_billed_at"), // Last successful auto-bill date
+  currentMonthUsage: integer("current_month_usage").notNull().default(0), // Tests used this billing cycle
+  // Invoice fields
+  paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 15/30/45/60/90
   invoiceNotes: varchar("invoice_notes"), // Special terms or notes for invoiced clients
+  invoiceContact: varchar("invoice_contact"), // Contact name for invoices
   // Quota tracking fields
   testsPurchased: integer("tests_purchased").notNull().default(0),
   testsConsumed: integer("tests_consumed").notNull().default(0),
@@ -719,3 +731,40 @@ export const insertPartnerInvoiceSchema = createInsertSchema(partnerInvoices).om
 
 export type InsertPartnerInvoice = z.infer<typeof insertPartnerInvoiceSchema>;
 export type PartnerInvoice = typeof partnerInvoices.$inferSelect;
+
+// Partner monthly usage - aggregated monthly usage for auto-billing and invoicing
+export const partnerMonthlyUsage = pgTable("partner_monthly_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  monthKey: varchar("month_key").notNull(), // Format: YYYY-MM (e.g., "2024-12")
+  testsUsed: integer("tests_used").notNull().default(0),
+  totalAmountPence: integer("total_amount_pence").notNull().default(0), // Calculated at pricePerAssessment
+  billingStatus: varchar("billing_status").notNull().default("pending"), // pending, billed, failed, waived
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"), // For auto-bill
+  invoiceId: varchar("invoice_id").references(() => partnerInvoices.id, { onDelete: "set null" }), // For invoice billing
+  billedAt: timestamp("billed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_monthly_usage_partner").on(table.partnerId),
+  index("idx_partner_monthly_usage_month").on(table.monthKey),
+  index("idx_partner_monthly_usage_status").on(table.billingStatus),
+]);
+
+export const insertPartnerMonthlyUsageSchema = createInsertSchema(partnerMonthlyUsage).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPartnerMonthlyUsage = z.infer<typeof insertPartnerMonthlyUsageSchema>;
+export type PartnerMonthlyUsage = typeof partnerMonthlyUsage.$inferSelect;
+
+// Billing type enum for TypeScript
+export const PARTNER_BILLING_TYPES = {
+  PREPAID: 'prepaid',
+  AUTO_BILL: 'auto_bill',
+  INVOICE: 'invoice',
+} as const;
+
+export type PartnerBillingType = typeof PARTNER_BILLING_TYPES[keyof typeof PARTNER_BILLING_TYPES];
