@@ -16,7 +16,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -141,6 +151,33 @@ export default function Dashboard() {
     }
     changePasswordMutation.mutate({ currentPassword, newPassword });
   };
+  
+  // Remove assessment state and mutation
+  const [assessmentToRemove, setAssessmentToRemove] = useState<{ id: string; name: string } | null>(null);
+  
+  const removeAssessmentMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const res = await apiRequest("DELETE", `/api/purchase-items/${itemId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Assessment Removed",
+        description: "The assessment has been removed from your dashboard.",
+      });
+      setAssessmentToRemove(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove assessment",
+        variant: "destructive",
+      });
+      setAssessmentToRemove(null);
+    },
+  });
 
   const { data: availableData, isLoading: assessmentsLoading, refetch: refetchAssessments } = useQuery<{assessments: any[], requiredAssessmentTypes: string[]}>({
     queryKey: ["/api/available-assessments"],
@@ -304,19 +341,38 @@ export default function Dashboard() {
                   const metadata = getAssessmentMetadata(assessment.assessmentType);
                   const AssessmentIcon = metadata.icon;
                   const isInProgress = assessment.status === 'in_progress';
+                  // Can only remove if: canRemove flag is true AND not in progress
+                  const canRemove = assessment.canRemove && !isInProgress;
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
-                      className="overflow-hidden hover-elevate active-elevate-2 transition-all border-2"
+                      className="overflow-visible hover-elevate active-elevate-2 transition-all border-2 relative"
                     >
+                      {/* Remove assessment button - only show if canRemove and not in progress */}
+                      {canRemove && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAssessmentToRemove({
+                              id: assessment.purchaseItemId,
+                              name: formatAssessmentName(assessment.assessmentType)
+                            });
+                          }}
+                          className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center justify-center shadow-md border"
+                          data-testid={`button-remove-${assessment.assessmentType}`}
+                          aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <div className="p-4">
                         <div className="flex items-start gap-3 mb-4">
                           <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
                             <AssessmentIcon className="h-6 w-6" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
+                            <div className="flex items-start gap-2 mb-1 flex-wrap">
                               <Badge 
                                 variant="secondary" 
                                 className={`flex-shrink-0 text-xs ${
@@ -327,6 +383,7 @@ export default function Dashboard() {
                               >
                                 {isInProgress ? 'In Progress' : 'Ready'}
                               </Badge>
+                              <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
                             </div>
                           </div>
                         </div>
@@ -510,6 +567,35 @@ export default function Dashboard() {
       <div className="relative z-10">
         <Footer />
       </div>
+      
+      {/* Remove Assessment Confirmation Dialog */}
+      <AlertDialog open={!!assessmentToRemove} onOpenChange={(open) => !open && setAssessmentToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Assessment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {assessmentToRemove?.name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => assessmentToRemove && removeAssessmentMutation.mutate(assessmentToRemove.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-remove"
+            >
+              {removeAssessmentMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                "Yes, Remove"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

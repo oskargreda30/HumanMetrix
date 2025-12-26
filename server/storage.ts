@@ -106,6 +106,8 @@ export interface IStorage {
   getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]>;
   getPurchaseItemsBulk(purchaseIds: string[]): Promise<Map<string, PurchaseItem[]>>;
   updatePurchaseItemStatus(id: string, status: string): Promise<void>;
+  deletePurchaseItem(id: string): Promise<void>;
+  getPurchaseItem(id: string): Promise<PurchaseItem | undefined>;
   
   // Assessment result operations
   createAssessmentResult(result: InsertAssessmentResult): Promise<AssessmentResult>;
@@ -479,6 +481,20 @@ export class DatabaseStorage implements IStorage {
       .update(purchaseItems)
       .set({ status })
       .where(eq(purchaseItems.id, id));
+  }
+
+  async deletePurchaseItem(id: string): Promise<void> {
+    await db
+      .delete(purchaseItems)
+      .where(eq(purchaseItems.id, id));
+  }
+
+  async getPurchaseItem(id: string): Promise<PurchaseItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.id, id));
+    return item;
   }
 
   // Assessment result operations

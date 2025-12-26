@@ -1663,6 +1663,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete (remove) a purchase item - allows users to remove an assessment from their dashboard
+  // Only allowed for self-purchased assessments, not for invited or employer-onboarded users
+  app.delete("/api/purchase-items/:itemId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { itemId } = req.params;
+      
+      // Get the user to check if they're employer-onboarded
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Employer-onboarded users cannot remove assessments
+      if (user.organizationId) {
+        return res.status(403).json({ message: "Cannot remove assessments assigned by your employer" });
+      }
+      
+      // Get the purchase item first
+      const item = await storage.getPurchaseItem(itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      // Verify purchase belongs to user
+      const purchase = await storage.getPurchase(item.purchaseId);
+      if (!purchase || purchase.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to remove this assessment" });
+      }
+      
+      // Check if this came from an invitation - invited users cannot remove assessments
+      if (purchase.invitationId) {
+        return res.status(403).json({ message: "Cannot remove assessments assigned through an invitation" });
+      }
+      
+      // Check if assessment has been started (has results)
+      const result = await storage.getResultByPurchaseItem(itemId);
+      if (result && result.status !== 'pending') {
+        return res.status(400).json({ message: "Cannot remove an assessment that has already been started" });
+      }
+      
+      // Delete the purchase item
+      await storage.deletePurchaseItem(itemId);
+      
+      res.json({ success: true, message: "Assessment removed successfully" });
+    } catch (error) {
+      console.error("Error removing assessment:", error);
+      res.status(500).json({ message: "Failed to remove assessment" });
+    }
+  });
+
   // Get user's purchases with their results grouped (for batch viewing)
   app.get("/api/purchases-with-results", isAuthenticated, async (req: any, res) => {
     try {
@@ -1757,6 +1808,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      // Check if user is employer-onboarded (has organizationId)
+      const isEmployerOnboarded = !!user.organizationId;
 
       const availableAssessments: any[] = [];
       let requiredAssessmentTypes: string[] = [];
@@ -1771,6 +1825,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (purchase.status === 'completed') {
           const items = await storage.getPurchaseItems(purchase.id);
           
+          // Check if this purchase came from an invitation
+          const isFromInvitation = !!purchase.invitationId;
+          
           for (const item of items) {
             // Normalize assessment type for consistent comparison
             const normalizedType = normalizeAssessmentId(item.assessmentType);
@@ -1784,12 +1841,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
               const purchaseItemKey = `purchase::${item.id}`;
               if (!addedAssessmentTypes.has(purchaseItemKey)) {
+                // Can only remove if: not employer-onboarded AND not from invitation
+                const canRemove = !isEmployerOnboarded && !isFromInvitation;
                 availableAssessments.push({
                   purchaseItemId: item.id,
                   assessmentType: item.assessmentType,
                   status: existing?.status || 'ready', // Use result status if exists, otherwise 'ready'
                   source: 'purchase',
                   purchaseId: purchase.id, // Include purchase ID for grouping
+                  canRemove, // Whether user can remove this assessment
                 });
                 addedAssessmentTypes.add(purchaseItemKey);
               }
@@ -1831,6 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     status: 'ready',
                     source: 'invitation',
                     invitationId: invitation.id,
+                    canRemove: false, // Invitation-based assessments cannot be removed
                   });
                   addedAssessmentTypes.add(invitationTypeKey);
                 }
