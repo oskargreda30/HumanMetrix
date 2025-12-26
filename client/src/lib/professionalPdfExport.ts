@@ -244,24 +244,38 @@ export async function exportProfessionalCandidatePDF(
   
   metricsData.forEach((metric, index) => {
     const xPos = 30 + (index * boxWidth);
+    const boxInnerWidth = boxWidth - 5;
     
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(xPos, yPos, boxWidth - 5, 25, 2, 2, 'FD');
+    pdf.roundedRect(xPos, yPos, boxInnerWidth, 28, 2, 2, 'FD');
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 8, { align: 'center' });
+    pdf.text(metric.label, xPos + boxInnerWidth / 2, yPos + 6, { align: 'center' });
     
-    // Fit the metric value to the available width
+    // For Top Skill, allow text to wrap to two lines
     pdf.setFont('helvetica', 'bold');
-    const maxValueWidth = (boxWidth - 5) - 4; // Leave 2mm padding on each side
-    const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 14, 10);
-    
-    pdf.setFontSize(fitted.fontSize);
     pdf.setTextColor(17, 24, 39);
-    pdf.text(fitted.text, xPos + (boxWidth - 5) / 2, yPos + 18, { align: 'center' });
+    
+    if (metric.label === 'Top Skill') {
+      // Use smaller font and allow wrapping to two lines
+      pdf.setFontSize(8);
+      const maxTextWidth = boxInnerWidth - 6; // Leave 3mm padding on each side
+      const lines = pdf.splitTextToSize(metric.value, maxTextWidth);
+      const lineHeight = 4;
+      const startY = lines.length > 1 ? yPos + 13 : yPos + 16;
+      lines.slice(0, 2).forEach((line: string, lineIdx: number) => {
+        pdf.text(line, xPos + boxInnerWidth / 2, startY + (lineIdx * lineHeight), { align: 'center' });
+      });
+    } else {
+      // Fit other metric values to the available width
+      const maxValueWidth = boxInnerWidth - 4; // Leave 2mm padding on each side
+      const fitted = fitMetricValue(pdf, metric.value, maxValueWidth, 14, 10);
+      pdf.setFontSize(fitted.fontSize);
+      pdf.text(fitted.text, xPos + boxInnerWidth / 2, yPos + 18, { align: 'center' });
+    }
   });
   
   pdf.setTextColor(0, 0, 0);
