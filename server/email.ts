@@ -1155,3 +1155,173 @@ Questions about this invoice? Contact us at hello@humanmetrix.co.uk
     throw new Error(`Failed to send invoice email: ${error.message}`);
   }
 }
+
+export interface PartnerWelcomeDetails {
+  partnerName: string;
+  companyName: string;
+  email: string;
+  temporaryPassword: string;
+  billingType: 'prepaid' | 'auto_bill' | 'invoice';
+  freeTestsAllocated?: number;
+}
+
+export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): Promise<{ success: boolean; messageId?: string }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Partner welcome email not sent for ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const loginUrl = domain ? `https://${domain}/login` : 'http://localhost:5000/login';
+  const developerDocsUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  
+  const billingTypeDescriptions: Record<string, string> = {
+    prepaid: 'Prepaid (purchase test packages upfront)',
+    auto_bill: 'Auto-Bill (monthly charges to card on file)',
+    invoice: 'Invoice (monthly invoicing with payment terms)'
+  };
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <hello@humanmetrix.co.uk>`,
+    to: details.email,
+    subject: `Welcome to HumanMetrix Partner Programme - Your Account Details`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f3f4f6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+            .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+            .content { background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; }
+            .welcome-badge { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; text-align: center; }
+            .welcome-badge span { color: #059669; font-weight: 600; font-size: 14px; }
+            .credentials-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 25px 0; }
+            .credentials-box h3 { margin: 0 0 15px 0; color: #92400e; font-size: 16px; }
+            .credential-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #fcd34d; }
+            .credential-row:last-child { border-bottom: none; }
+            .credential-label { color: #92400e; font-weight: 500; }
+            .credential-value { font-family: monospace; background: #fffbeb; padding: 2px 8px; border-radius: 4px; color: #78350f; }
+            .warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #991b1b; font-size: 13px; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .button:hover { background: #0e7490; }
+            .info-section { background: #f0f9ff; border-radius: 8px; padding: 20px; margin: 25px 0; }
+            .info-section h3 { margin: 0 0 12px 0; color: #0369a1; font-size: 16px; }
+            .info-section ul { margin: 0; padding-left: 20px; }
+            .info-section li { margin: 8px 0; color: #0c4a6e; }
+            .footer { text-align: center; padding: 25px; color: #6b7280; font-size: 14px; background: #f9fafb; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>HumanMetrix</h1>
+              <p>Partner Programme</p>
+            </div>
+            <div class="content">
+              <div class="welcome-badge">
+                <span>Welcome to the Partner Programme</span>
+              </div>
+              
+              <h2 style="margin-top: 0;">Hello ${details.partnerName},</h2>
+              <p>Your B2B partner account for <strong>${details.companyName}</strong> has been created. You now have admin access to manage assessments for your organisation.</p>
+              
+              <div class="credentials-box">
+                <h3>Your Login Credentials</h3>
+                <div class="credential-row">
+                  <span class="credential-label">Email:</span>
+                  <span class="credential-value">${details.email}</span>
+                </div>
+                <div class="credential-row">
+                  <span class="credential-label">Temporary Password:</span>
+                  <span class="credential-value">${details.temporaryPassword}</span>
+                </div>
+              </div>
+              
+              <div class="warning">
+                <strong>Important:</strong> Please change your password after your first login for security purposes.
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${loginUrl}" class="button">Log In to Your Account</a>
+              </div>
+              
+              <div class="info-section">
+                <h3>Your Account Details</h3>
+                <ul>
+                  <li><strong>Billing Type:</strong> ${billingTypeDescriptions[details.billingType] || details.billingType}</li>
+                  ${details.freeTestsAllocated && details.freeTestsAllocated > 0 ? `<li><strong>Complimentary Tests:</strong> ${details.freeTestsAllocated} tests credited to your account</li>` : ''}
+                  <li><strong>Role:</strong> Organisation Administrator</li>
+                </ul>
+              </div>
+              
+              <div class="info-section">
+                <h3>Getting Started</h3>
+                <ul>
+                  <li>Log in with your credentials above</li>
+                  <li>Generate API keys from your dashboard</li>
+                  <li>Review our <a href="${developerDocsUrl}" style="color: #0891b2;">Developer Documentation</a> for integration guides</li>
+                  <li>Start embedding assessments in your platform</li>
+                </ul>
+              </div>
+              
+              <p style="margin-top: 25px;">If you have any questions or need assistance getting started, please don't hesitate to contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a>.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
+              <p style="margin-top: 10px;">
+                <a href="${loginUrl}" style="color: #0891b2; text-decoration: none;">Log In</a> · 
+                <a href="${developerDocsUrl}" style="color: #0891b2; text-decoration: none;">Developer Docs</a>
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Welcome to HumanMetrix Partner Programme
+
+Hello ${details.partnerName},
+
+Your B2B partner account for ${details.companyName} has been created. You now have admin access to manage assessments for your organisation.
+
+YOUR LOGIN CREDENTIALS
+----------------------
+Email: ${details.email}
+Temporary Password: ${details.temporaryPassword}
+
+IMPORTANT: Please change your password after your first login for security purposes.
+
+Log in at: ${loginUrl}
+
+YOUR ACCOUNT DETAILS
+--------------------
+- Billing Type: ${billingTypeDescriptions[details.billingType] || details.billingType}
+${details.freeTestsAllocated && details.freeTestsAllocated > 0 ? `- Complimentary Tests: ${details.freeTestsAllocated} tests credited to your account\n` : ''}- Role: Organisation Administrator
+
+GETTING STARTED
+---------------
+1. Log in with your credentials above
+2. Generate API keys from your dashboard
+3. Review our Developer Documentation at ${developerDocsUrl}
+4. Start embedding assessments in your platform
+
+If you have any questions, contact us at hello@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Partner welcome email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send partner welcome email to ${details.email}:`, error.message);
+    return { success: false };
+  }
+}
