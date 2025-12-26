@@ -78,6 +78,8 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Content-Aware PDF Rendering**: Dynamic layout for readability.
 - **Cache Refresh Pattern**: Cache invalidation + refetch + refresh URL parameter for data changes.
 - **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
+- **Rate Limiting**: In-memory rate limiting using express-rate-limit. Note: In-memory storage is acceptable for single-instance deployments but would require Redis or similar for horizontal scaling across multiple instances.
+- **Logging Security**: API response logging sanitises sensitive fields (password, email, names, tokens, etc.) and is disabled in production to prevent PII exposure.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
