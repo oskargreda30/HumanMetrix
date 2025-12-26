@@ -86,10 +86,18 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Configuration**: `vitest.config.ts` at project root.
 - **Run Tests**: `npx vitest run` (all tests) or `npx vitest` (watch mode).
 - **Test Coverage**:
-    - **Scoring Algorithms** (`tests/unit/scoring.test.ts`): Tests FIT and AI Readiness scoring matrices, hybrid scoring formula, score bounds validation, and regression guards.
-    - **Billing Logic** (`tests/unit/billing.test.ts`): Tests prepaid deductions, auto-bill usage tracking, invoice calculations, and month-key generation.
-    - **CSRF Middleware** (`tests/integration/csrf.test.ts`): Tests token generation, double-submit validation, exempt paths, and API key bypass.
-- **Total Tests**: 70 passing tests across 3 test files.
+    - **Unit Tests**:
+        - **Scoring Algorithms** (`tests/unit/scoring.test.ts`): Tests FIT and AI Readiness scoring matrices, hybrid scoring formula, score bounds validation, and regression guards. (23 tests)
+        - **Billing Logic** (`tests/unit/billing.test.ts`): Tests prepaid deductions, auto-bill usage tracking, invoice calculations, and month-key generation. (23 tests)
+        - **Email Templates** (`tests/unit/email.test.ts`): Tests standardised sender address (hello@humanmetrix.co.uk), template rendering, PII sanitisation, and date/currency formatting. (34 tests)
+        - **Assessment Evaluation** (`tests/unit/assessment-evaluation.test.ts`): Tests time limits, question counts, answer validation, score normalisation, OpenAI retry patterns, and band interpretations. (58 tests)
+        - **Storage Layer** (`tests/unit/storage.test.ts`): Tests CRUD operations, data validation patterns, query transformations, referential integrity, and soft-fail patterns. (39 tests)
+    - **Integration Tests**:
+        - **CSRF Middleware** (`tests/integration/csrf.test.ts`): Tests token generation, double-submit validation, exempt paths, and API key bypass. (24 tests)
+        - **Authentication** (`tests/integration/auth.test.ts`): Tests signup, login, password reset, session management, and user response sanitisation. (32 tests)
+        - **Partner API** (`tests/integration/partner-api.test.ts`): Tests API key authentication, permissions, rate limiting, session management, and quota system. (40 tests)
+        - **Stripe/Purchases** (`tests/integration/stripe-purchases.test.ts`): Tests PPP pricing tiers, SEA launch pricing, discount codes, currency conversion, webhook validation, and idempotency. (49 tests)
+- **Total Tests**: 322 passing tests across 9 test files.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
