@@ -72,6 +72,9 @@ import {
   partnerInvoices,
   type PartnerInvoice,
   type InsertPartnerInvoice,
+  partnerMonthlyUsage,
+  type PartnerMonthlyUsage,
+  type InsertPartnerMonthlyUsage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
@@ -1603,6 +1606,169 @@ export class DatabaseStorage implements IStorage {
     }
     
     return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+  }
+
+  // Partner monthly usage operations
+  async getOrCreateMonthlyUsage(partnerId: string, monthKey: string): Promise<PartnerMonthlyUsage> {
+    const [existing] = await db.select().from(partnerMonthlyUsage)
+      .where(and(
+        eq(partnerMonthlyUsage.partnerId, partnerId),
+        eq(partnerMonthlyUsage.monthKey, monthKey)
+      ));
+    
+    if (existing) return existing;
+    
+    // Create new monthly usage record
+    const [result] = await db.insert(partnerMonthlyUsage).values({
+      partnerId,
+      monthKey,
+      testsUsed: 0,
+      totalAmountPence: 0,
+      billingStatus: 'pending',
+    }).returning();
+    
+    return result;
+  }
+
+  async incrementMonthlyUsage(partnerId: string, pricePerTest: number): Promise<PartnerMonthlyUsage> {
+    const monthKey = this.getCurrentMonthKey();
+    const usage = await this.getOrCreateMonthlyUsage(partnerId, monthKey);
+    
+    const [updated] = await db.update(partnerMonthlyUsage)
+      .set({
+        testsUsed: usage.testsUsed + 1,
+        totalAmountPence: usage.totalAmountPence + pricePerTest,
+        updatedAt: new Date(),
+      })
+      .where(eq(partnerMonthlyUsage.id, usage.id))
+      .returning();
+    
+    return updated;
+  }
+
+  async getMonthlyUsage(partnerId: string, monthKey: string): Promise<PartnerMonthlyUsage | undefined> {
+    const [result] = await db.select().from(partnerMonthlyUsage)
+      .where(and(
+        eq(partnerMonthlyUsage.partnerId, partnerId),
+        eq(partnerMonthlyUsage.monthKey, monthKey)
+      ));
+    return result;
+  }
+
+  async getMonthlyUsageHistory(partnerId: string, limit: number = 12): Promise<PartnerMonthlyUsage[]> {
+    return await db.select().from(partnerMonthlyUsage)
+      .where(eq(partnerMonthlyUsage.partnerId, partnerId))
+      .orderBy(desc(partnerMonthlyUsage.monthKey))
+      .limit(limit);
+  }
+
+  async updateMonthlyUsageBillingStatus(
+    id: string,
+    status: string,
+    stripePaymentIntentId?: string,
+    invoiceId?: string
+  ): Promise<void> {
+    await db.update(partnerMonthlyUsage)
+      .set({
+        billingStatus: status,
+        stripePaymentIntentId,
+        invoiceId,
+        billedAt: status === 'billed' ? new Date() : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(partnerMonthlyUsage.id, id));
+  }
+
+  async getPendingMonthlyUsageForBilling(monthKey: string): Promise<PartnerMonthlyUsage[]> {
+    return await db.select().from(partnerMonthlyUsage)
+      .where(and(
+        eq(partnerMonthlyUsage.monthKey, monthKey),
+        eq(partnerMonthlyUsage.billingStatus, 'pending')
+      ));
+  }
+
+  getCurrentMonthKey(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  getPreviousMonthKey(): string {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  // Update partner's current month usage counter and prepaid balance based on billing type
+  async recordPartnerTestUsage(partnerId: string): Promise<{ success: boolean; error?: string }> {
+    const partner = await this.getPartnerAccount(partnerId);
+    if (!partner) return { success: false, error: 'Partner not found' };
+
+    const pricePerTest = partner.pricePerAssessment || 500;
+
+    switch (partner.billingType) {
+      case 'prepaid': {
+        // Deduct from prepaid balance
+        if (partner.prepaidBalance <= 0) {
+          return { success: false, error: 'No prepaid credits remaining' };
+        }
+        await db.update(partnerAccounts).set({
+          prepaidBalance: partner.prepaidBalance - 1,
+          updatedAt: new Date(),
+        }).where(eq(partnerAccounts.id, partnerId));
+        break;
+      }
+      case 'auto_bill':
+      case 'invoice': {
+        // Track usage for month-end billing
+        await db.update(partnerAccounts).set({
+          currentMonthUsage: (partner.currentMonthUsage || 0) + 1,
+          updatedAt: new Date(),
+        }).where(eq(partnerAccounts.id, partnerId));
+        
+        // Also increment monthly usage record
+        await this.incrementMonthlyUsage(partnerId, pricePerTest);
+        break;
+      }
+      default:
+        return { success: false, error: `Unknown billing type: ${partner.billingType}` };
+    }
+
+    return { success: true };
+  }
+
+  // Add prepaid credits to partner account (after successful payment)
+  async addPrepaidCredits(partnerId: string, credits: number): Promise<{ success: boolean; newBalance: number }> {
+    const partner = await this.getPartnerAccount(partnerId);
+    if (!partner) return { success: false, newBalance: 0 };
+
+    const newBalance = (partner.prepaidBalance || 0) + credits;
+    
+    await db.update(partnerAccounts).set({
+      prepaidBalance: newBalance,
+      apiAccessSuspendedAt: null, // Reactivate if suspended
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+
+    return { success: true, newBalance };
+  }
+
+  // Reset monthly usage after billing cycle (for auto_bill and invoice)
+  async resetMonthlyUsage(partnerId: string): Promise<void> {
+    await db.update(partnerAccounts).set({
+      currentMonthUsage: 0,
+      lastBilledAt: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+  }
+
+  // Get partners needing month-end billing
+  async getPartnersForMonthEndBilling(billingType: 'auto_bill' | 'invoice'): Promise<PartnerAccount[]> {
+    return await db.select().from(partnerAccounts)
+      .where(and(
+        eq(partnerAccounts.billingType, billingType),
+        eq(partnerAccounts.isActive, true),
+        sql`${partnerAccounts.currentMonthUsage} > 0`
+      ));
   }
 }
 
