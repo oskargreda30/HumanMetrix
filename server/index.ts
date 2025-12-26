@@ -15,9 +15,15 @@ import { preloadModules } from "./lazyModules";
 const app = express();
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+function devLog(message: string) {
+  if (!isProduction) {
+    console.log(message);
+  }
+}
+
 if (isProduction) {
   app.set('trust proxy', 1);
-  console.log('✅ Trust proxy enabled for production');
 }
 
 app.use(compression({
@@ -31,24 +37,24 @@ app.use(compression({
   threshold: 1024,
 }));
 
-console.log('✅ Response compression enabled (gzip/deflate)');
+devLog('✅ Response compression enabled (gzip/deflate)');
 
 app.use(setSecurityHeaders());
 app.use(keepAliveHeaders());
 app.use(staticCacheHeaders());
-console.log('✅ Security headers, keep-alive, and cache headers configured');
+devLog('✅ Security headers, keep-alive, and cache headers configured');
 
 app.use('/api/', apiRateLimiter);
 app.use('/api/login', authRateLimiter);
 app.use('/api/signup', authRateLimiter);
 app.use('/api/stripe', stripeRateLimiter);
-console.log('✅ API rate limiting enabled');
+devLog('✅ API rate limiting enabled');
 
 app.use(requestDeduplication({
   methods: ['POST', 'PUT', 'DELETE'],
   pathPatterns: [/^\/api\//],
 }));
-console.log('✅ Request deduplication enabled');
+devLog('✅ Request deduplication enabled');
 
 declare module 'http' {
   interface IncomingMessage {
@@ -63,7 +69,31 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(csrfProtection());
-console.log('✅ CSRF protection enabled');
+devLog('✅ CSRF protection enabled');
+
+const SENSITIVE_FIELDS = new Set([
+  'password', 'passwordHash', 'email', 'firstName', 'lastName', 
+  'apiKey', 'secretKey', 'token', 'accessToken', 'refreshToken',
+  'ssn', 'phoneNumber', 'address', 'dateOfBirth', 'creditCard'
+]);
+
+function sanitizeForLogging(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.length > 3 ? `[Array(${obj.length})]` : obj.map(sanitizeForLogging);
+  }
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (SENSITIVE_FIELDS.has(key.toLowerCase())) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeForLogging(value);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -80,12 +110,17 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      
+      if (!isProduction && capturedJsonResponse) {
+        const sanitized = sanitizeForLogging(capturedJsonResponse);
+        const jsonStr = JSON.stringify(sanitized);
+        if (jsonStr.length <= 100) {
+          logLine += ` :: ${jsonStr}`;
+        }
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 120) {
+        logLine = logLine.slice(0, 119) + "…";
       }
 
       log(logLine);
