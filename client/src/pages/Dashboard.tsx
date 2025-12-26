@@ -346,27 +346,27 @@ export default function Dashboard() {
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
-                      className="overflow-visible hover-elevate active-elevate-2 transition-all border-2 relative"
+                      className="hover-elevate active-elevate-2 transition-all border-2 relative group"
                     >
-                      {/* Remove assessment button - only show if canRemove and not in progress */}
-                      {canRemove && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setAssessmentToRemove({
-                              id: assessment.purchaseItemId,
-                              name: formatAssessmentName(assessment.assessmentType)
-                            });
-                          }}
-                          className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center justify-center shadow-md border"
-                          data-testid={`button-remove-${assessment.assessmentType}`}
-                          aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
                       <div className="p-4">
+                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress */}
+                        {canRemove && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAssessmentToRemove({
+                                id: assessment.purchaseItemId,
+                                name: formatAssessmentName(assessment.assessmentType)
+                              });
+                            }}
+                            className="absolute top-2 right-2 p-1 rounded text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                            data-testid={`button-remove-${assessment.assessmentType}`}
+                            aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
                         <div className="flex items-start gap-3 mb-4">
                           <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
                             <AssessmentIcon className="h-6 w-6" />
