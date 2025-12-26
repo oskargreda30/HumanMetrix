@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Mail } from "lucide-react";
-import { SiLinkedin } from "react-icons/si";
+import { SiLinkedin, SiFacebook } from "react-icons/si";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 type FooterLink = {
@@ -76,6 +76,16 @@ export default function Footer() {
             >
               <SiLinkedin className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
               <span>Follow us on LinkedIn</span>
+            </a>
+            <a
+              href="https://www.facebook.com/profile.php?id=61585522262716"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
+              data-testid="link-facebook"
+            >
+              <SiFacebook className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+              <span>Follow us on Facebook</span>
             </a>
           </div>
 
