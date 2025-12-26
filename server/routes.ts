@@ -1009,16 +1009,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCurrency = seaLocalPricing.currencyCode.toLowerCase();
         currencyCode = seaLocalPricing.currencyCode;
       } else {
-        // Standard pricing: convert to local currency with roundPriceUp
-        // Matches frontend's formatLocalPrice which applies PPP twice:
-        // 1. getAdjustedPriceInPence pre-adjusts the pence values
-        // 2. formatPriceWithRate applies PPP again during conversion
-        // Our helper replicates this double-application to match displayed price
+        // Standard pricing: convert PPP-adjusted pence to local currency
+        // finalPriceInPence already has PPP applied once via getPPPAdjustedPriceInPence
+        // calculateStripeAmountFromTotalPence just converts currency and applies roundPriceUp
         stripeAmount = calculateStripeAmountFromTotalPence(
           finalPriceInPence,
           currencyCode,
-          liveExchangeRate,
-          userCountry  // Pass country to apply PPP (matching frontend's double-application)
+          liveExchangeRate
         );
       }
       

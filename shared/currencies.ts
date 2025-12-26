@@ -801,17 +801,13 @@ export function roundPriceUp(price: number, _currency?: CurrencyConfig): number 
 }
 
 // Calculate total price for Stripe in local currency units
-// This matches the frontend's formatLocalPrice flow which:
-// 1. Receives PPP-adjusted pence from getAdjustedPriceInPence
-// 2. Applies PPP AGAIN via formatPriceWithRate (double application for tier2/tier3)
-// 3. Converts to local currency
-// 4. Applies roundPriceUp
-// To match this behavior, we also apply PPP to the incoming (already PPP-adjusted) amount
+// Input: PPP-adjusted pence (already has PPP multiplier applied once)
+// This function converts to local currency and applies roundPriceUp
+// PPP is NOT applied here - it should already be in the input
 export function calculateStripeAmountFromTotalPence(
   pppAdjustedPriceInPence: number,
   currencyCode: string,
-  exchangeRate?: number,
-  countryCode?: string
+  exchangeRate?: number
 ): number {
   const currency = CURRENCIES[currencyCode.toUpperCase()];
   if (!currency) {
@@ -820,16 +816,11 @@ export function calculateStripeAmountFromTotalPence(
     return roundPriceUp(priceInUnits) * 100; // Return in smallest units (cents)
   }
   
-  // Apply PPP multiplier to match frontend's formatPriceWithRate behavior
-  // Note: This is intentional double-application to match what the user sees
-  const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
-  const doubleAdjustedPence = pppAdjustedPriceInPence * pppMultiplier;
-  
   // Use provided exchange rate or fall back to hardcoded rate
   const effectiveRate = exchangeRate ?? currency.exchangeRate;
   
   // Convert from GBP pence to local currency units
-  const priceInGBP = doubleAdjustedPence / 100;
+  const priceInGBP = pppAdjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * effectiveRate;
   
   // Apply the same rounding as frontend display (roundPriceUp)
@@ -899,12 +890,12 @@ export function formatPriceWithRate(
   exchangeRate: number,
   options?: { showCode?: boolean; countryCode?: string }
 ): string {
-  // Apply PPP multiplier if country code is provided
-  const pppMultiplier = options?.countryCode ? getPPPMultiplier(options.countryCode) : 1.0;
-  const adjustedPriceInPence = priceInPence * pppMultiplier;
+  // Note: priceInPence should already have PPP adjustment applied via getAdjustedPriceInPence
+  // This function only handles currency conversion and formatting, NOT PPP adjustment
+  // The countryCode option is kept for backwards compatibility but no longer applies PPP
   
   // Convert from GBP pence to target currency using provided rate
-  const priceInGBP = adjustedPriceInPence / 100;
+  const priceInGBP = priceInPence / 100;
   const convertedPrice = priceInGBP * exchangeRate;
   
   // Round UP appropriately for the currency
