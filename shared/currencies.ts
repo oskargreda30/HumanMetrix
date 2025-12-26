@@ -746,7 +746,7 @@ export function getCurrencyForCountry(countryCode: string): CurrencyConfig {
 
 // Convert a single GBP pence amount to local currency and round up
 // This matches the frontend display logic (formatPriceWithRate)
-// Used to calculate Stripe amounts by summing individually-rounded components
+// Uses roundPriceUp for consistent rounding across all currencies
 export function convertAndRoundToLocalCurrency(
   priceInGBPPence: number,
   currencyCode: string,
@@ -754,7 +754,7 @@ export function convertAndRoundToLocalCurrency(
   countryCode?: string
 ): number {
   const currency = CURRENCIES[currencyCode.toUpperCase()];
-  if (!currency) return Math.ceil(priceInGBPPence / 100);
+  if (!currency) return roundPriceUp(priceInGBPPence / 100);
   
   // Apply PPP adjustment if country code provided
   const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
@@ -767,8 +767,8 @@ export function convertAndRoundToLocalCurrency(
   const priceInGBP = adjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * effectiveRate;
   
-  // Round up to nearest whole number (same as roundPriceUp for < 100)
-  return Math.ceil(convertedPrice);
+  // Apply consistent rounding using roundPriceUp
+  return roundPriceUp(convertedPrice);
 }
 
 // Round price UP based on magnitude for cleaner display
@@ -814,7 +814,11 @@ export function calculateStripeAmountFromTotalPence(
   countryCode?: string
 ): number {
   const currency = CURRENCIES[currencyCode.toUpperCase()];
-  if (!currency) return Math.ceil(pppAdjustedPriceInPence / 100) * 100;
+  if (!currency) {
+    // Fallback: convert pence to currency units with roundPriceUp
+    const priceInUnits = pppAdjustedPriceInPence / 100;
+    return roundPriceUp(priceInUnits) * 100; // Return in smallest units (cents)
+  }
   
   // Apply PPP multiplier to match frontend's formatPriceWithRate behavior
   // Note: This is intentional double-application to match what the user sees
@@ -1119,11 +1123,14 @@ export function convertSEALaunchPriceToStripeAmount(
   // Check if this is a zero-decimal currency
   const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(targetCurrencyCode.toUpperCase() as any);
   
+  // Apply consistent rounding using roundPriceUp
+  const roundedPrice = roundPriceUp(priceInTargetCurrency);
+  
   if (isZeroDecimal) {
     // For zero-decimal currencies, Stripe expects the whole unit amount
-    return Math.round(priceInTargetCurrency);
+    return roundedPrice;
   } else {
     // For standard currencies, Stripe expects the smallest unit (cents/pence)
-    return Math.round(priceInTargetCurrency * 100);
+    return roundedPrice * 100;
   }
 }

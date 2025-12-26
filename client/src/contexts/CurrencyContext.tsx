@@ -11,7 +11,8 @@ import {
   getPPPAdjustedPriceInPence,
   hasSEALaunchPricing,
   getSEALaunchPricing,
-  type SEALaunchPricing
+  type SEALaunchPricing,
+  roundPriceUp
 } from "@shared/currencies";
 
 interface CurrencyContextType {
@@ -210,8 +211,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         const usdRate = liveExchangeRates?.['USD'] ?? CURRENCIES.USD.exchangeRate;
         const priceInUSD = seaPricing.priceUSDCents / 100;
         const localPrice = priceInUSD * (exchangeRate / usdRate);
-        // Return formatted price
-        const roundedPrice = Math.ceil(localPrice);
+        // Apply consistent rounding using roundPriceUp
+        const roundedPrice = roundPriceUp(localPrice);
         const formattedNum = roundedPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
         return currency.symbolPosition === 'before' 
           ? `${currency.symbol}${formattedNum}`
