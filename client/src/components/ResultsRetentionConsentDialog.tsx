@@ -66,7 +66,7 @@ export function ResultsRetentionConsentDialog({
 
         <div className="py-4 space-y-4">
           <p className="text-sm text-center">
-            We work with many employers who search our candidate database to evaluate candidates and arrange interviews if assessment scores match what they are looking for. Are you happy for your assessment results to be visible?
+            Would you like your assessment results to be stored in our database and available for employers who use our platform for candidate and interview selection?
           </p>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
