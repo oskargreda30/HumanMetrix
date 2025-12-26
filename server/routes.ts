@@ -6075,3 +6075,149 @@ async function runScheduledGoldenSetEvaluation() {
     console.error('[Golden Set Scheduler] Failed:', error.message);
   }
 }
+
+// ============================================================================
+// PARTNER BILLING SCHEDULER
+// ============================================================================
+let billingSchedulerStarted = false;
+
+export function startBillingScheduler() {
+  if (billingSchedulerStarted) {
+    console.log('[Billing Scheduler] Already started, skipping');
+    return;
+  }
+  
+  billingSchedulerStarted = true;
+  
+  // Calculate time until next 1am UTC (run billing checks at 1am to avoid midnight congestion)
+  const now = new Date();
+  const nextRun = new Date(now);
+  nextRun.setUTCDate(nextRun.getUTCDate() + (now.getUTCHours() >= 1 ? 1 : 0));
+  nextRun.setUTCHours(1, 0, 0, 0);
+  const timeUntilRun = nextRun.getTime() - now.getTime();
+  
+  console.log(`[Billing Scheduler] Will run first check in ${Math.round(timeUntilRun / 1000 / 60)} minutes at ${nextRun.toISOString()}`);
+  
+  // Run at next 1am UTC, then every 24 hours
+  setTimeout(() => {
+    runScheduledBillingCheck();
+    
+    // Then run every 24 hours
+    setInterval(() => {
+      runScheduledBillingCheck();
+    }, 24 * 60 * 60 * 1000);
+  }, timeUntilRun);
+}
+
+async function runScheduledBillingCheck() {
+  const today = new Date();
+  const dayOfMonth = today.getUTCDate();
+  
+  console.log(`[Billing Scheduler] Running billing check for day ${dayOfMonth} at ${today.toISOString()}`);
+  
+  try {
+    // Get all auto_bill partners whose billing cycle anchor matches today
+    const partners = await storage.getPartners();
+    const autoBillPartners = partners.filter(
+      p => p.billingType === 'auto_bill' && 
+           (p.billingCycleAnchor || 1) === dayOfMonth
+    );
+    
+    console.log(`[Billing Scheduler] Found ${autoBillPartners.length} auto-bill partners for day ${dayOfMonth}`);
+    
+    for (const partner of autoBillPartners) {
+      await processAutoBillPartner(partner);
+    }
+    
+    // Archive monthly usage for all billable partners (auto_bill and invoice)
+    const billablePartners = partners.filter(
+      p => (p.billingType === 'auto_bill' || p.billingType === 'invoice') &&
+           (p.billingCycleAnchor || 1) === dayOfMonth
+    );
+    
+    for (const partner of billablePartners) {
+      await archiveMonthlyUsage(partner);
+    }
+    
+    console.log(`[Billing Scheduler] Completed billing check for day ${dayOfMonth}`);
+  } catch (error: any) {
+    console.error('[Billing Scheduler] Failed:', error.message);
+  }
+}
+
+async function processAutoBillPartner(partner: Partner) {
+  // Get the previous month's usage record to bill (not the mutable currentMonthUsage)
+  const prevMonthKey = storage.getPreviousMonthKey();
+  const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
+  
+  if (!usageRecord) {
+    console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): No usage record for ${prevMonthKey}, skipping charge`);
+    return;
+  }
+  
+  if (usageRecord.billingStatus === 'billed') {
+    console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Already billed for ${prevMonthKey}, skipping`);
+    return;
+  }
+  
+  const usage = usageRecord.testsUsed;
+  const amountPence = usageRecord.totalAmountPence;
+  
+  if (usage === 0 || amountPence === 0) {
+    console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): No billable usage for ${prevMonthKey}, skipping charge`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed'); // Mark as billed with £0
+    return;
+  }
+  
+  if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
+    console.error(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Missing Stripe payment method, cannot charge`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
+    // TODO: Send notification email to admin about failed billing
+    return;
+  }
+  
+  console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Charging £${(amountPence / 100).toFixed(2)} for ${usage} tests (${prevMonthKey})`);
+  
+  try {
+    // Create a payment intent and charge immediately
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountPence,
+      currency: 'gbp',
+      customer: partner.stripeCustomerId,
+      payment_method: partner.stripePaymentMethodId,
+      off_session: true,
+      confirm: true,
+      description: `HumanMetrix API Usage - ${usage} assessments (${prevMonthKey})`,
+      metadata: {
+        partner_id: partner.id,
+        usage_count: usage.toString(),
+        usage_record_id: usageRecord.id,
+        billing_period: prevMonthKey,
+      },
+    });
+    
+    if (paymentIntent.status === 'succeeded') {
+      console.log(`[Billing Scheduler] Partner ${partner.id}: Payment successful - ${paymentIntent.id}`);
+      await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', paymentIntent.id);
+    } else {
+      console.error(`[Billing Scheduler] Partner ${partner.id}: Payment failed - status: ${paymentIntent.status}`);
+      await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
+      // TODO: Send notification about failed payment
+    }
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
+    // TODO: Send notification about failed payment, handle card_declined etc.
+  }
+}
+
+async function archiveMonthlyUsage(partner: Partner) {
+  const usage = partner.currentMonthUsage || 0;
+  
+  if (usage > 0) {
+    // Reset the current month usage counter
+    await storage.updatePartner(partner.id, { currentMonthUsage: 0 });
+    
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}

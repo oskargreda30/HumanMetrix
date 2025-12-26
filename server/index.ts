@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
-import { registerRoutes, startGoldenSetScheduler } from "./routes";
+import { registerRoutes, startGoldenSetScheduler, startBillingScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
@@ -132,6 +132,9 @@ app.use((req, res, next) => {
     
     // Start Golden Set scheduler for daily GPT-4o scoring consistency checks
     startGoldenSetScheduler();
+    
+    // Start billing scheduler for auto-bill partner charges
+    startBillingScheduler();
     
     // Preload heavy modules in production
     preloadModules();
