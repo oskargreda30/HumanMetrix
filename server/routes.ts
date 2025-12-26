@@ -6,7 +6,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -4286,7 +4286,7 @@ Format your response as JSON with this structure:
       
       const partner = await storage.createPartnerAccount({
         name,
-        companyName,
+        companyName: companyName || name, // Default to contact name if company not provided
         email,
         monthlyQuota: monthlyQuota || null,
         pricePerAssessment: pricePerAssessment || 500, // Default £5
@@ -6117,9 +6117,9 @@ async function runScheduledBillingCheck() {
   
   try {
     // Get all auto_bill partners whose billing cycle anchor matches today
-    const partners = await storage.getPartners();
+    const partners = await storage.getAllPartnerAccounts();
     const autoBillPartners = partners.filter(
-      p => p.billingType === 'auto_bill' && 
+      (p: PartnerAccount) => p.billingType === 'auto_bill' && 
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     
@@ -6131,7 +6131,7 @@ async function runScheduledBillingCheck() {
     
     // Archive monthly usage for all billable partners (auto_bill and invoice)
     const billablePartners = partners.filter(
-      p => (p.billingType === 'auto_bill' || p.billingType === 'invoice') &&
+      (p: PartnerAccount) => (p.billingType === 'auto_bill' || p.billingType === 'invoice') &&
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     
@@ -6145,7 +6145,7 @@ async function runScheduledBillingCheck() {
   }
 }
 
-async function processAutoBillPartner(partner: Partner) {
+async function processAutoBillPartner(partner: PartnerAccount) {
   // Get the previous month's usage record to bill (not the mutable currentMonthUsage)
   const prevMonthKey = storage.getPreviousMonthKey();
   const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
@@ -6211,12 +6211,12 @@ async function processAutoBillPartner(partner: Partner) {
   }
 }
 
-async function archiveMonthlyUsage(partner: Partner) {
+async function archiveMonthlyUsage(partner: PartnerAccount) {
   const usage = partner.currentMonthUsage || 0;
   
   if (usage > 0) {
     // Reset the current month usage counter
-    await storage.updatePartner(partner.id, { currentMonthUsage: 0 });
+    await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
     
     console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
   }
