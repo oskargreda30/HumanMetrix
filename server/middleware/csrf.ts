@@ -52,7 +52,7 @@ export function csrfProtection() {
       const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];
       
       if (!headerToken || !cookieToken || headerToken !== cookieToken) {
-        console.warn(`[CSRF] Token mismatch on ${req.method} ${req.path}`);
+        console.warn(`[CSRF] Token mismatch on ${req.method} ${req.path} - header: ${headerToken ? 'present' : 'missing'}, cookie: ${cookieToken ? 'present' : 'missing'}, match: ${headerToken === cookieToken}`);
         return res.status(403).json({ 
           message: "Invalid or missing CSRF token",
           code: "CSRF_VALIDATION_FAILED"

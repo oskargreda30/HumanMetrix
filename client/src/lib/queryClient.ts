@@ -3,7 +3,11 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 function getCsrfToken(): string | null {
   const cookies = document.cookie.split(";");
   for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split("=");
+    const trimmed = cookie.trim();
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const name = trimmed.substring(0, eqIndex);
+    const value = trimmed.substring(eqIndex + 1);
     if (name === "csrf_token") {
       return value;
     }
