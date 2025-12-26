@@ -34,6 +34,7 @@ export function csrfProtection() {
       "/api/login",
       "/api/signup",
       "/api/create-free-invitation",
+      "/api/process-results-payment",
       "/api/stripe/webhook",
       "/api/partner/sessions",
       "/api/partner/sessions/",
