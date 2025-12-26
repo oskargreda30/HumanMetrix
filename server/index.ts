@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import { registerRoutes, startGoldenSetScheduler, startBillingScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
@@ -8,6 +9,7 @@ import { apiRateLimiter, authRateLimiter, stripeRateLimiter } from "./middleware
 import { requestDeduplication } from "./middleware/requestDedup";
 import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache";
 import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
+import { csrfProtection } from "./middleware/csrf";
 import { preloadModules } from "./lazyModules";
 
 const app = express();
@@ -59,6 +61,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(csrfProtection());
+console.log('✅ CSRF protection enabled');
 
 app.use((req, res, next) => {
   const start = Date.now();
