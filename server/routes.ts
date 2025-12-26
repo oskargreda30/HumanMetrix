@@ -4336,9 +4336,16 @@ Format your response as JSON with this structure:
       }
       
       res.status(201).json(partner);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating partner:", error);
-      res.status(500).json({ message: "Failed to create partner" });
+      // Include error details for debugging (will be sanitized in production logs)
+      const errorMessage = error?.message || 'Unknown error';
+      const errorDetails = error?.code || error?.constraint || '';
+      res.status(500).json({ 
+        message: "Failed to create partner",
+        error: errorMessage,
+        details: errorDetails
+      });
     }
   });
 
