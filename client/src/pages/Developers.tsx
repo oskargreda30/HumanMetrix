@@ -677,7 +677,7 @@ X-API-Key: hm_live_xxxxxxxxxxxx
                   Our developer support team is here to help you integrate HumanMetrix into your platform.
                 </p>
                 <div className="flex gap-4 justify-center">
-                  <a href="mailto:support@humanmetrix.co.uk">
+                  <a href="mailto:hello@humanmetrix.co.uk">
                     <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700" data-testid="button-contact-support">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Contact Support
