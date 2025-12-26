@@ -973,25 +973,8 @@ export const ZERO_DECIMAL_CURRENCIES = [
   'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF', 'KHR'
 ] as const;
 
-// Round price UP to clean display values (same logic as display rounding)
-function roundStripeAmountUp(amount: number): number {
-  if (amount < 10000) {
-    // Under 100 in display currency: round up to nearest whole unit (100 cents)
-    return Math.ceil(amount / 100) * 100;
-  } else if (amount < 100000) {
-    // 100-999: round up to nearest 10 units (1000 cents)
-    return Math.ceil(amount / 1000) * 1000;
-  } else if (amount < 1000000) {
-    // 1000-9999: round up to nearest 100 units
-    return Math.ceil(amount / 10000) * 10000;
-  } else {
-    // 10000+: round up to nearest 1000 units
-    return Math.ceil(amount / 100000) * 100000;
-  }
-}
-
 // Convert GBP pence to local currency amount for Stripe
-// Handles zero-decimal currencies correctly and rounds to clean display values
+// Uses the same rounding logic as formatPrice for consistency
 export function convertToStripeCurrencyAmount(
   priceInGBPPence: number,
   currencyCode: string,
@@ -1007,31 +990,22 @@ export function convertToStripeCurrencyAmount(
   const pppMultiplier = countryCode ? getPPPMultiplier(countryCode) : 1.0;
   const adjustedPriceInPence = priceInGBPPence * pppMultiplier;
   
-  // Convert from GBP pence to target currency
+  // Convert from GBP pence to target currency (same as formatPrice)
   const priceInGBP = adjustedPriceInPence / 100;
   const convertedPrice = priceInGBP * currency.exchangeRate;
+  
+  // Apply the same rounding as display (roundPriceUp)
+  const roundedDisplayPrice = roundPriceUp(convertedPrice, currency);
   
   // Check if this is a zero-decimal currency
   const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
   
   if (isZeroDecimal) {
     // For zero-decimal currencies, Stripe expects the whole unit amount
-    // Round up to clean values for better UX
-    const rawAmount = Math.round(convertedPrice);
-    if (rawAmount < 100) {
-      return Math.ceil(convertedPrice);
-    } else if (rawAmount < 1000) {
-      return Math.ceil(convertedPrice / 10) * 10;
-    } else if (rawAmount < 10000) {
-      return Math.ceil(convertedPrice / 100) * 100;
-    } else {
-      return Math.ceil(convertedPrice / 1000) * 1000;
-    }
+    return roundedDisplayPrice;
   } else {
     // For standard currencies, Stripe expects the smallest unit (cents/pence)
-    // Round up to clean whole-number display values
-    const rawAmountInCents = convertedPrice * 100;
-    return roundStripeAmountUp(rawAmountInCents);
+    return roundedDisplayPrice * 100;
   }
 }
 

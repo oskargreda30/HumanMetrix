@@ -10,6 +10,8 @@ import { useBasket } from "@/contexts/BasketContext";
 import { useState } from "react";
 import CheckoutModal from "@/components/CheckoutModal";
 import { SEO, ProductSchema } from "@/lib/seo";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
 
 const assessments = [
   {
@@ -58,8 +60,13 @@ export default function Assessments() {
   const { isAuthenticated } = useAuth();
   const { getBasketCount, basketItems } = useBasket();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const { formatLocalPrice } = useCurrency();
 
   const basketCount = getBasketCount();
+  
+  // Get localised prices for the pricing text
+  const platformFee = formatLocalPrice(BASE_FEE);
+  const minAssessmentPrice = formatLocalPrice(Math.min(...Object.values(ASSESSMENT_PRICES)));
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
@@ -135,7 +142,7 @@ export default function Assessments() {
                 )}
               </Button>
               <p className="text-xs md:text-sm text-blue-100/60 italic">
-                £15 one-time platform fee + assessments from £4 each
+                {platformFee} one-time platform fee + assessments from {minAssessmentPrice} each
               </p>
             </div>
           </div>
