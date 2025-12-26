@@ -17,23 +17,17 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 /**
- * Generate a random temporary password
- * Format: 3 words + 2 digits (e.g., "sky-blue-moon-42")
+ * Generate a cryptographically secure random temporary password
+ * Uses 16 bytes (128 bits) of entropy encoded in URL-safe base64
+ * Format: HMx-[22 random characters] (e.g., "HMx-A7b9Kp2mNqRsT4vWxY")
  */
 export function generateTemporaryPassword(): string {
-  const words = [
-    "ocean", "mountain", "forest", "river", "cloud",
-    "storm", "dawn", "sunset", "moon", "star",
-    "wind", "rain", "snow", "fire", "earth",
-    "sky", "wave", "thunder", "lightning", "rainbow"
-  ];
-  
-  const word1 = words[Math.floor(Math.random() * words.length)];
-  const word2 = words[Math.floor(Math.random() * words.length)];
-  const word3 = words[Math.floor(Math.random() * words.length)];
-  const digits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  
-  return `${word1}-${word2}-${word3}-${digits}`;
+  // 16 bytes = 128 bits of entropy (cryptographically strong)
+  const randomBytes = crypto.randomBytes(16);
+  // Use base64url encoding (URL-safe, no special characters)
+  const encoded = randomBytes.toString('base64url');
+  // Prefix with HMx- to make it clear this is a HumanMetrix temporary password
+  return `HMx-${encoded}`;
 }
 
 /**

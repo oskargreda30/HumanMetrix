@@ -86,6 +86,7 @@ export interface IStorage {
   getUserByResetToken(token: string): Promise<User | undefined>;
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  deleteUser(id: string): Promise<void>; // For cleanup of just-created users only
   setResetToken(userId: string, token: string, expiry: Date): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
   updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void>;
@@ -291,6 +292,11 @@ export class DatabaseStorage implements IStorage {
   async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    // For cleanup of just-created users only (no cascade needed)
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {

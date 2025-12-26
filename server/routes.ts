@@ -8,7 +8,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -4243,6 +4243,10 @@ Format your response as JSON with this structure:
 
   // Super Admin: Create new partner
   app.post("/api/admin/partners", isAuthenticated, async (req: any, res) => {
+    // Track created resources for cleanup on failure
+    let createdOrgId: string | null = null;
+    let createdUserId: string | null = null;
+    
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -4267,6 +4271,14 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
       
+      // Check if user with this email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "A user with this email already exists" });
+      }
+      
+      let finalOrganizationId = organizationId;
+      
       // If organizationId provided, verify it exists
       if (organizationId) {
         const org = await storage.getOrganization(organizationId);
@@ -4278,11 +4290,48 @@ Format your response as JSON with this structure:
         if (existingOrgPartner) {
           return res.status(400).json({ message: "This organisation is already linked to another partner account" });
         }
+      } else {
+        // Create a new organisation for this partner
+        const orgName = companyName || name;
+        const orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
+        
+        const newOrg = await storage.createOrganization({
+          name: orgName,
+          slug: orgSlug,
+          maxSeats: 50, // Default max seats for partner organisations
+        });
+        
+        finalOrganizationId = newOrg.id;
+        createdOrgId = newOrg.id; // Track for cleanup
+        console.log(`Created organisation ${newOrg.id} for partner ${orgName}`);
       }
       
       // Validate billing type
       const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
+      
+      // Generate temporary password for the admin user
+      const temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Split the name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || name;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+      
+      // Create admin user for the partner's organisation
+      const partnerUser = await storage.createUser({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'admin',
+        organizationId: finalOrganizationId,
+        profileImageUrl: null,
+      });
+      
+      createdUserId = partnerUser.id; // Track for cleanup
+      console.log(`Created admin user ${partnerUser.id} for partner organisation`);
       
       const partner = await storage.createPartnerAccount({
         name,
@@ -4291,7 +4340,7 @@ Format your response as JSON with this structure:
         monthlyQuota: monthlyQuota || null,
         pricePerAssessment: pricePerAssessment || 500, // Default £5
         stripeCustomerId: stripeCustomerId || null,
-        organizationId: organizationId || null,
+        organizationId: finalOrganizationId,
         isActive: true,
         // New billing type system: prepaid, auto_bill, or invoice
         billingType: selectedBillingType,
@@ -4335,9 +4384,45 @@ Format your response as JSON with this structure:
         }
       }
       
+      // Send welcome email with login credentials
+      try {
+        await sendPartnerWelcomeEmail({
+          partnerName: name,
+          companyName: companyName || name,
+          email,
+          temporaryPassword,
+          billingType: selectedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+          freeTestsAllocated: freeTestsAllocated || 0,
+        });
+        console.log(`Sent welcome email to partner ${email}`);
+      } catch (emailError) {
+        console.error("Error sending partner welcome email:", emailError);
+        // Don't fail partner creation, just log the error
+      }
+      
       res.status(201).json(partner);
     } catch (error: any) {
       console.error("Error creating partner:", error);
+      
+      // Cleanup: remove any resources created before the failure
+      if (createdUserId) {
+        try {
+          await storage.deleteUser(createdUserId);
+          console.log(`Cleaned up user ${createdUserId} after partner creation failure`);
+        } catch (cleanupError) {
+          console.error("Error cleaning up user:", cleanupError);
+        }
+      }
+      
+      if (createdOrgId) {
+        try {
+          await storage.deleteOrganization(createdOrgId);
+          console.log(`Cleaned up organisation ${createdOrgId} after partner creation failure`);
+        } catch (cleanupError) {
+          console.error("Error cleaning up organisation:", cleanupError);
+        }
+      }
+      
       // Include error details for debugging (will be sanitized in production logs)
       const errorMessage = error?.message || 'Unknown error';
       const errorDetails = error?.code || error?.constraint || '';
