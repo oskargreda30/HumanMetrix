@@ -41,11 +41,17 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Active Discount Codes**: `FREE` (100% off) and `20OFFPRICE` (20% off).
 - **B2B Partner Integration**: Enterprise integration for clients to embed assessments.
     - **Partner Accounts**: Managed via admin dashboard.
+    - **3-Tier Billing System**:
+        - **Prepaid (Top-up)**: Partners purchase test packages upfront; balance deducted per test.
+        - **Auto-Bill (Card on File)**: Monthly usage tracked; card charged automatically on billing cycle anchor day.
+        - **Invoice (Enterprise)**: Monthly usage tracked; manual invoicing with configurable payment terms.
+    - **Billing Scheduler**: Daily job at 1am UTC processes auto-bill charges and archives monthly usage.
+    - **Monthly Usage Tracking**: `partnerMonthlyUsage` table tracks tests used, amounts, and billing status per month.
     - **Flexible Deal Configuration**: Customisable partner deals with:
         - Free test allocation (0-500 complimentary tests) auto-credited on registration.
-        - Billing type options: Platform Payments (Stripe) or Invoice (Enterprise).
+        - Billing cycle anchor (day 1-28 of month for auto-bill/invoice).
         - Payment terms for invoiced clients (Net 15/30/45/60/90).
-        - Invoice notes for special terms.
+        - Invoice contact and notes for enterprise clients.
     - **API Key Authentication**: Secure key pairs with rate limiting and permissions.
     - **Assessment Sessions**: Partners create sessions via REST API; results returned via API or webhook.
     - **Embeddable Widget**: JavaScript widget using Shadow DOM for style isolation.
