@@ -70,6 +70,14 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
         - Professional HTML email template with HumanMetrix branding.
         - Invoice history tracking with status management (sent, paid, overdue, cancelled).
         - Due date calculation based on partner payment terms.
+    - **Multi-Organisation Hierarchy**: Recruitment agencies (partners) can manage multiple client organisations, each with their own API keys for usage tracking while maintaining centralised billing through the parent partner account.
+- **Error Tracking System**: Comprehensive error monitoring for super admins to diagnose issues and identify affected clients.
+    - **Error Logging**: Database-backed error storage with fields for message, stack trace, severity, status, source, URL, method, status code, and associated user/partner/API key.
+    - **Error Fingerprinting**: Similar errors are grouped by fingerprint hash to reduce noise and track occurrence counts.
+    - **Severity Levels**: info, warning, error, critical - with visual indicators.
+    - **Status Workflow**: new, investigating, resolved, ignored - with notes and resolution tracking.
+    - **Super Admin Dashboard Tab**: ErrorsTab component showing error statistics, filterable error list, and detailed error view with stack trace and context.
+    - **API Endpoints**: GET /api/admin/errors/stats, GET /api/admin/errors, GET /api/admin/errors/:id, PATCH /api/admin/errors/:id, GET /api/admin/errors/group/:fingerprint.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.

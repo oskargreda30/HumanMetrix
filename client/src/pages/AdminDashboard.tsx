@@ -18,6 +18,7 @@ import InvitationsTab from "@/components/admin/InvitationsTab";
 import PartnersTab from "@/components/admin/PartnersTab";
 import UsageTab from "@/components/admin/UsageTab";
 import WidgetTestTab from "@/components/admin/WidgetTestTab";
+import ErrorsTab from "@/components/admin/ErrorsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -157,6 +158,11 @@ export default function AdminDashboard() {
                   Widget Test
                 </TabsTrigger>
               )}
+              {isSuperAdmin && (
+                <TabsTrigger value="errors" data-testid="tab-errors" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Errors
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {isSuperAdmin && (
@@ -206,6 +212,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="widget-test" className="space-y-4">
                 <WidgetTestTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="errors" className="space-y-4">
+                <ErrorsTab />
               </TabsContent>
             )}
           </Tabs>
