@@ -451,54 +451,21 @@ export function calculateAIReadinessScores(answers: Record<string, string>): Rec
     console.error(`[AIR Scoring] WARNING: No answers matched! Check data format. Answers:`, Object.keys(answers).slice(0, 3));
   }
 
-  // Calculate maximum possible scores for each skill using per-question max approach
-  const questionScores: Record<number, Record<string, Record<string, number>>> = {};
+  // All skills have equal max scores of 92 (23 occurrences × 4 points each)
+  // This ensures fair comparison across all skills
+  const AI_READINESS_MAX_SCORE = 92;
   
-  Object.entries(AI_READINESS_SCORING_MATRIX).forEach(([key, skillPoints]) => {
-    const [questionNum] = key.split('-');
-    const q = parseInt(questionNum);
-    
-    if (!questionScores[q]) {
-      questionScores[q] = {};
-    }
-    questionScores[q][key] = skillPoints;
-  });
-
   const maxScores: Record<string, number> = {
-    'AI Literacy & Prompt Engineering': 0,
-    'Technical Fundamentals': 0,
-    'Data Fluency': 0,
-    'Critical Thinking & Problem-Solving': 0,
-    'Adaptability & Continuous Learning': 0,
-    'Responsible AI & Ethical Awareness': 0,
-    'Domain Expertise': 0,
-    'Creativity & Innovation': 0,
-    'Collaboration & Communication': 0,
+    'AI Literacy & Prompt Engineering': AI_READINESS_MAX_SCORE,
+    'Technical Fundamentals': AI_READINESS_MAX_SCORE,
+    'Data Fluency': AI_READINESS_MAX_SCORE,
+    'Critical Thinking & Problem-Solving': AI_READINESS_MAX_SCORE,
+    'Adaptability & Continuous Learning': AI_READINESS_MAX_SCORE,
+    'Responsible AI & Ethical Awareness': AI_READINESS_MAX_SCORE,
+    'Domain Expertise': AI_READINESS_MAX_SCORE,
+    'Creativity & Innovation': AI_READINESS_MAX_SCORE,
+    'Collaboration & Communication': AI_READINESS_MAX_SCORE,
   };
-
-  Object.values(questionScores).forEach((options) => {
-    const questionMaxScores: Record<string, number> = {
-      'AI Literacy & Prompt Engineering': 0,
-      'Technical Fundamentals': 0,
-      'Data Fluency': 0,
-      'Critical Thinking & Problem-Solving': 0,
-      'Adaptability & Continuous Learning': 0,
-      'Responsible AI & Ethical Awareness': 0,
-      'Domain Expertise': 0,
-      'Creativity & Innovation': 0,
-      'Collaboration & Communication': 0,
-    };
-
-    Object.values(options).forEach((skillPoints) => {
-      Object.entries(skillPoints).forEach(([skill, points]) => {
-        questionMaxScores[skill] = Math.max(questionMaxScores[skill], points);
-      });
-    });
-
-    Object.entries(questionMaxScores).forEach(([skill, points]) => {
-      maxScores[skill] += points;
-    });
-  });
 
   // Calculate raw percentages for each skill
   const rawPercentages: Record<string, number> = {};
