@@ -381,12 +381,17 @@ export default function ErrorsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Error Tracking</h2>
-          <p className="text-muted-foreground">Monitor application errors and diagnose issues</p>
+          <h2 className="text-2xl font-bold text-white" data-testid="heading-errors">Error Tracking</h2>
+          <p className="text-white/70">Monitor application errors and diagnose issues</p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" data-testid="button-refresh-errors">
+        <Button 
+          onClick={handleRefresh} 
+          variant="outline" 
+          className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+          data-testid="button-refresh-errors"
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
