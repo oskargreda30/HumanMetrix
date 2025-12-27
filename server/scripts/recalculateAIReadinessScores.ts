@@ -278,7 +278,12 @@ async function recalculateAllAIReadinessScores() {
       
       // Convert answers from "q1":"a" format to "1":"A" format
       const convertedAnswers: Record<string, string> = {};
-      Object.entries(result.answers as Record<string, string>).forEach(([key, value]) => {
+      Object.entries(result.answers as Record<string, any>).forEach(([key, value]) => {
+        // Skip non-string values (e.g. embedded objects or nulls)
+        if (typeof value !== 'string') {
+          console.log(`  Skipping non-string answer for key ${key}:`, value);
+          return;
+        }
         // Remove 'q' prefix and convert to uppercase
         const questionNum = key.replace('q', '');
         convertedAnswers[questionNum] = value.toUpperCase();
