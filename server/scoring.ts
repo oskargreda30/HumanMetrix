@@ -510,6 +510,14 @@ export function calculateAIReadinessScores(answers: Record<string, string>): Rec
     }
   });
 
+  // Debug logging for AI Readiness scoring
+  console.log('[AIR Scoring] Raw scores:', skills);
+  console.log('[AIR Scoring] Max scores:', maxScores);
+  console.log('[AIR Scoring] Raw percentages:', rawPercentages);
+  
   // Apply hybrid scoring
-  return applyHybridScoring(rawPercentages);
+  const finalScores = applyHybridScoring(rawPercentages);
+  console.log('[AIR Scoring] Final scores after hybrid formula:', finalScores);
+  
+  return finalScores;
 }
