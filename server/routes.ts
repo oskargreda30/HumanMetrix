@@ -5772,6 +5772,130 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== ERROR TRACKING ADMIN API ====================
+
+  // Super Admin: Get error statistics
+  app.get("/api/admin/errors/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const stats = await storage.getErrorStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching error stats:", error);
+      res.status(500).json({ message: "Failed to fetch error statistics" });
+    }
+  });
+
+  // Super Admin: Get error logs with filtering
+  app.get("/api/admin/errors", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { severity, status, startDate, endDate, userId: filterUserId, partnerId, limit, offset } = req.query;
+      
+      const filters: any = {};
+      if (severity) filters.severity = severity;
+      if (status) filters.status = status;
+      if (startDate) filters.startDate = new Date(startDate);
+      if (endDate) filters.endDate = new Date(endDate);
+      if (filterUserId) filters.userId = filterUserId;
+      if (partnerId) filters.partnerId = partnerId;
+      if (limit) filters.limit = parseInt(limit);
+      if (offset) filters.offset = parseInt(offset);
+      
+      const errors = await storage.getErrorLogs(filters);
+      res.json(errors);
+    } catch (error) {
+      console.error("Error fetching error logs:", error);
+      res.status(500).json({ message: "Failed to fetch error logs" });
+    }
+  });
+
+  // Super Admin: Get single error log details
+  app.get("/api/admin/errors/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const errorLog = await storage.getErrorLog(req.params.id);
+      if (!errorLog) {
+        return res.status(404).json({ message: "Error log not found" });
+      }
+      
+      res.json(errorLog);
+    } catch (error) {
+      console.error("Error fetching error log:", error);
+      res.status(500).json({ message: "Failed to fetch error log" });
+    }
+  });
+
+  // Super Admin: Update error log status
+  app.patch("/api/admin/errors/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { status, notes } = req.body;
+      
+      const errorLog = await storage.getErrorLog(req.params.id);
+      if (!errorLog) {
+        return res.status(404).json({ message: "Error log not found" });
+      }
+      
+      if (status === 'resolved') {
+        await storage.resolveErrorLog(req.params.id, userId, notes);
+      } else {
+        await storage.updateErrorLog(req.params.id, { 
+          status, 
+          notes: notes || errorLog.notes 
+        });
+      }
+      
+      const updatedLog = await storage.getErrorLog(req.params.id);
+      res.json(updatedLog);
+    } catch (error) {
+      console.error("Error updating error log:", error);
+      res.status(500).json({ message: "Failed to update error log" });
+    }
+  });
+
+  // Super Admin: Get errors grouped by fingerprint (similar errors)
+  app.get("/api/admin/errors/group/:fingerprint", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const errors = await storage.getErrorLogsByFingerprint(req.params.fingerprint);
+      res.json(errors);
+    } catch (error) {
+      console.error("Error fetching grouped errors:", error);
+      res.status(500).json({ message: "Failed to fetch grouped errors" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts
