@@ -37,9 +37,11 @@ function recalculateScores(result: any): any {
   // Only recalculate FIT and AI Readiness (they use the hybrid formula)
   if (result.assessmentType === 'fit') {
     const recalculatedScores = calculateFITScores(result.answers as Record<string, string>);
+    console.log(`[Score Recalc] FIT result ${result.id}: old scores:`, result.scores, 'new scores:', recalculatedScores);
     return { ...result, scores: recalculatedScores };
   } else if (result.assessmentType === 'ai_readiness') {
     const recalculatedScores = calculateAIReadinessScores(result.answers as Record<string, string>);
+    console.log(`[Score Recalc] AI Readiness result ${result.id}: old scores:`, result.scores, 'new scores:', recalculatedScores);
     return { ...result, scores: recalculatedScores };
   }
   
