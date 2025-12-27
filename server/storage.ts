@@ -78,9 +78,12 @@ import {
   type InsertPartnerOrganisation,
   type PartnerMonthlyUsage,
   type InsertPartnerMonthlyUsage,
+  errorLogs,
+  type ErrorLog,
+  type InsertErrorLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -284,6 +287,33 @@ export interface IStorage {
   getPartnerInvoices(partnerId: string): Promise<PartnerInvoice[]>;
   updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void>;
   getNextInvoiceNumber(): Promise<string>;
+  
+  // Error log operations
+  createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog>;
+  getErrorLog(id: string): Promise<ErrorLog | undefined>;
+  getErrorLogs(filters?: { 
+    severity?: string; 
+    status?: string; 
+    startDate?: Date; 
+    endDate?: Date; 
+    userId?: string;
+    partnerId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ErrorLog[]>;
+  getErrorLogsByFingerprint(fingerprint: string): Promise<ErrorLog[]>;
+  updateErrorLog(id: string, updates: Partial<InsertErrorLog>): Promise<void>;
+  incrementErrorOccurrence(fingerprint: string): Promise<ErrorLog | undefined>;
+  getErrorStats(): Promise<{
+    total: number;
+    newCount: number;
+    investigatingCount: number;
+    criticalCount: number;
+    last24Hours: number;
+    affectedUsers: number;
+    affectedPartners: number;
+  }>;
+  resolveErrorLog(id: string, resolvedBy: string, notes?: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1838,6 +1868,139 @@ export class DatabaseStorage implements IStorage {
         eq(partnerAccounts.isActive, true),
         sql`${partnerAccounts.currentMonthUsage} > 0`
       ));
+  }
+
+  // Error log operations
+  async createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog> {
+    const [log] = await db.insert(errorLogs).values(errorLog).returning();
+    return log;
+  }
+
+  async getErrorLog(id: string): Promise<ErrorLog | undefined> {
+    const [log] = await db.select().from(errorLogs).where(eq(errorLogs.id, id));
+    return log;
+  }
+
+  async getErrorLogs(filters?: { 
+    severity?: string; 
+    status?: string; 
+    startDate?: Date; 
+    endDate?: Date; 
+    userId?: string;
+    partnerId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ErrorLog[]> {
+    const conditions = [];
+    
+    if (filters?.severity) {
+      conditions.push(eq(errorLogs.severity, filters.severity));
+    }
+    if (filters?.status) {
+      conditions.push(eq(errorLogs.status, filters.status));
+    }
+    if (filters?.startDate) {
+      conditions.push(gte(errorLogs.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(errorLogs.createdAt, filters.endDate));
+    }
+    if (filters?.userId) {
+      conditions.push(eq(errorLogs.userId, filters.userId));
+    }
+    if (filters?.partnerId) {
+      conditions.push(eq(errorLogs.partnerId, filters.partnerId));
+    }
+
+    let query = db.select().from(errorLogs);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as typeof query;
+    }
+    
+    query = query.orderBy(desc(errorLogs.lastOccurredAt)) as typeof query;
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as typeof query;
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as typeof query;
+    }
+
+    return await query;
+  }
+
+  async getErrorLogsByFingerprint(fingerprint: string): Promise<ErrorLog[]> {
+    return await db.select().from(errorLogs)
+      .where(eq(errorLogs.fingerprint, fingerprint))
+      .orderBy(desc(errorLogs.createdAt));
+  }
+
+  async updateErrorLog(id: string, updates: Partial<InsertErrorLog>): Promise<void> {
+    await db.update(errorLogs).set(updates).where(eq(errorLogs.id, id));
+  }
+
+  async incrementErrorOccurrence(fingerprint: string): Promise<ErrorLog | undefined> {
+    const [existing] = await db.select().from(errorLogs)
+      .where(and(
+        eq(errorLogs.fingerprint, fingerprint),
+        eq(errorLogs.status, 'new')
+      ))
+      .limit(1);
+    
+    if (existing) {
+      const [updated] = await db.update(errorLogs)
+        .set({
+          occurrenceCount: existing.occurrenceCount + 1,
+          lastOccurredAt: new Date(),
+        })
+        .where(eq(errorLogs.id, existing.id))
+        .returning();
+      return updated;
+    }
+    return undefined;
+  }
+
+  async getErrorStats(): Promise<{
+    total: number;
+    newCount: number;
+    investigatingCount: number;
+    criticalCount: number;
+    last24Hours: number;
+    affectedUsers: number;
+    affectedPartners: number;
+  }> {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [totalResult] = await db.select({ count: count() }).from(errorLogs);
+    const [newResult] = await db.select({ count: count() }).from(errorLogs).where(eq(errorLogs.status, 'new'));
+    const [investigatingResult] = await db.select({ count: count() }).from(errorLogs).where(eq(errorLogs.status, 'investigating'));
+    const [criticalResult] = await db.select({ count: count() }).from(errorLogs).where(eq(errorLogs.severity, 'critical'));
+    const [last24Result] = await db.select({ count: count() }).from(errorLogs).where(gte(errorLogs.createdAt, yesterday));
+    const [usersResult] = await db.select({ count: countDistinct(errorLogs.userId) }).from(errorLogs).where(sql`${errorLogs.userId} IS NOT NULL`);
+    const [partnersResult] = await db.select({ count: countDistinct(errorLogs.partnerId) }).from(errorLogs).where(sql`${errorLogs.partnerId} IS NOT NULL`);
+
+    return {
+      total: totalResult?.count || 0,
+      newCount: newResult?.count || 0,
+      investigatingCount: investigatingResult?.count || 0,
+      criticalCount: criticalResult?.count || 0,
+      last24Hours: last24Result?.count || 0,
+      affectedUsers: usersResult?.count || 0,
+      affectedPartners: partnersResult?.count || 0,
+    };
+  }
+
+  async resolveErrorLog(id: string, resolvedBy: string, notes?: string): Promise<void> {
+    await db.update(errorLogs)
+      .set({
+        status: 'resolved',
+        resolvedAt: new Date(),
+        resolvedBy,
+        notes: notes || null,
+      })
+      .where(eq(errorLogs.id, id));
   }
 }
 
