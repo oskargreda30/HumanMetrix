@@ -796,3 +796,76 @@ export const PARTNER_BILLING_TYPES = {
 } as const;
 
 export type PartnerBillingType = typeof PARTNER_BILLING_TYPES[keyof typeof PARTNER_BILLING_TYPES];
+
+// Error severity levels
+export const ERROR_SEVERITY = {
+  INFO: 'info',
+  WARNING: 'warning',
+  ERROR: 'error',
+  CRITICAL: 'critical',
+} as const;
+
+export type ErrorSeverity = typeof ERROR_SEVERITY[keyof typeof ERROR_SEVERITY];
+
+// Error status for tracking resolution
+export const ERROR_STATUS = {
+  NEW: 'new',
+  INVESTIGATING: 'investigating',
+  RESOLVED: 'resolved',
+  IGNORED: 'ignored',
+} as const;
+
+export type ErrorStatus = typeof ERROR_STATUS[keyof typeof ERROR_STATUS];
+
+// Error logs table - tracks application errors for debugging
+export const errorLogs = pgTable("error_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Error details
+  errorMessage: text("error_message").notNull(),
+  errorStack: text("error_stack"),
+  errorType: varchar("error_type").notNull().default("Error"), // e.g., TypeError, ValidationError
+  severity: varchar("severity").notNull().default("error"), // info, warning, error, critical
+  status: varchar("status").notNull().default("new"), // new, investigating, resolved, ignored
+  // Context
+  endpoint: varchar("endpoint"), // API endpoint if applicable
+  httpMethod: varchar("http_method"), // GET, POST, etc.
+  httpStatus: integer("http_status"), // Response status code
+  requestBody: jsonb("request_body"), // Sanitised request data
+  responseBody: jsonb("response_body"), // Sanitised response data
+  // User/Client identification
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  userEmail: varchar("user_email"), // Stored separately in case user is deleted
+  userName: varchar("user_name"), // For quick reference
+  partnerId: varchar("partner_id").references(() => partnerAccounts.id, { onDelete: "set null" }),
+  partnerName: varchar("partner_name"), // For quick reference
+  sessionId: varchar("session_id"), // Assessment session ID if applicable
+  // Environment context
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address"),
+  environment: varchar("environment").default("production"), // development, production
+  // Metadata
+  fingerprint: varchar("fingerprint"), // Hash for grouping similar errors
+  occurrenceCount: integer("occurrence_count").notNull().default(1), // How many times this error occurred
+  firstOccurredAt: timestamp("first_occurred_at").defaultNow().notNull(),
+  lastOccurredAt: timestamp("last_occurred_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by").references(() => users.id, { onDelete: "set null" }),
+  notes: text("notes"), // Admin notes for debugging
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_error_logs_severity").on(table.severity),
+  index("idx_error_logs_status").on(table.status),
+  index("idx_error_logs_user").on(table.userId),
+  index("idx_error_logs_partner").on(table.partnerId),
+  index("idx_error_logs_fingerprint").on(table.fingerprint),
+  index("idx_error_logs_created").on(table.createdAt),
+  index("idx_error_logs_last_occurred").on(table.lastOccurredAt),
+]);
+
+export const insertErrorLogSchema = createInsertSchema(errorLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
+export type ErrorLog = typeof errorLogs.$inferSelect;
