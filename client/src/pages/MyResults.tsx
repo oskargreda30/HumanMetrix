@@ -14,7 +14,7 @@ import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { ResultsRetentionConsentDialog } from "@/components/ResultsRetentionConsentDialog";
 import { format } from "date-fns";
-import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym, FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
+import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   Radar,
