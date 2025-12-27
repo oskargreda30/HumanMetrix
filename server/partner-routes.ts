@@ -101,6 +101,7 @@ export function registerPartnerRoutes(app: Express) {
         
         const session = await storage.createAssessmentSession({
           partnerId: partner.id,
+          partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
           apiKeyId: apiKey.id,
           assessmentType: normalizedType,
           externalUserId: data.externalUserId,
@@ -117,7 +118,9 @@ export function registerPartnerRoutes(app: Express) {
           session.id,
           "session_created",
           normalizedType,
-          false
+          false,
+          undefined, // billedAmount
+          apiKey.partnerOrganisationId // Track usage per organisation
         );
         
         const widgetUrl = `${getBaseUrl(req)}/embed/assessment?session=${session.id}`;

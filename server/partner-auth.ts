@@ -166,11 +166,13 @@ export async function trackUsage(
   eventType: string,
   assessmentType?: string,
   billable: boolean = false,
-  billedAmount?: number
+  billedAmount?: number,
+  partnerOrganisationId?: string | null
 ) {
   try {
     await storage.createUsageEvent({
       partnerId,
+      partnerOrganisationId: partnerOrganisationId ?? null,
       apiKeyId,
       sessionId,
       eventType,

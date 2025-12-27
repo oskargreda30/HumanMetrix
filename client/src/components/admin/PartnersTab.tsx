@@ -128,6 +128,30 @@ interface PartnerInvoice {
   createdAt: string;
 }
 
+interface PartnerOrganisation {
+  id: string;
+  partnerId: string;
+  name: string;
+  slug: string;
+  contactEmail: string | null;
+  contactName: string | null;
+  metadata: Record<string, any> | null;
+  isActive: boolean;
+  createdAt: string;
+  apiKeyCount?: number;
+  hasActiveKey?: boolean;
+  apiKeys?: ApiKey[];
+}
+
+interface NewOrgApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  keyHint: string;
+  fullKey: string;
+  message: string;
+}
+
 type SortField = "name" | "currentMonthSessions" | "totalTestsCompleted" | "currentMonthBillable" | "createdAt";
 type SortDirection = "asc" | "desc";
 type StatusFilter = "all" | "active" | "inactive";
@@ -185,6 +209,18 @@ export default function PartnersTab() {
     queryKey: ["/api/admin/partners", detailPartner?.id, "invoices"],
     enabled: !!detailPartner && detailPartner.billingType === 'invoice',
   });
+
+  // Partner organisations query
+  const { data: partnerOrgs, isLoading: orgsLoading, refetch: refetchOrgs } = useQuery<PartnerOrganisation[]>({
+    queryKey: ["/api/admin/partners", detailPartner?.id, "organisations"],
+    enabled: !!detailPartner,
+  });
+
+  // Organisation management state
+  const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
+  const [newOrgApiKey, setNewOrgApiKey] = useState<NewOrgApiKey | null>(null);
+  const [showNewOrgKey, setShowNewOrgKey] = useState(false);
+  const [deleteOrgConfirm, setDeleteOrgConfirm] = useState<PartnerOrganisation | null>(null);
 
   // Invoice creation state
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
@@ -435,6 +471,39 @@ export default function PartnersTab() {
     },
   });
 
+  // Organisation mutations
+  const createOrgMutation = useMutation({
+    mutationFn: async (data: { name: string; contactEmail?: string; contactName?: string }) => {
+      const res = await apiRequest("POST", `/api/admin/partners/${detailPartner?.id}/organisations`, data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "organisations"] });
+      setIsCreateOrgOpen(false);
+      setShowNewOrgKey(false); // Reset reveal state for new key
+      setNewOrgApiKey(data.apiKey);
+      toast({ title: "Organisation created", description: "A new API key has been generated for this organisation." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create organisation", variant: "destructive" });
+    },
+  });
+
+  const deleteOrgMutation = useMutation({
+    mutationFn: async (orgId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/partners/${detailPartner?.id}/organisations/${orgId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "organisations"] });
+      setDeleteOrgConfirm(null);
+      toast({ title: "Organisation deleted", description: "Organisation and associated API keys have been removed." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete organisation", variant: "destructive" });
+    },
+  });
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied", description: "API key copied to clipboard" });
@@ -569,6 +638,10 @@ export default function PartnersTab() {
                 <TabsTrigger value="settings" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Settings
+                </TabsTrigger>
+                <TabsTrigger value="organisations" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white" data-testid="tab-organisations">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Organisations
                 </TabsTrigger>
               </TabsList>
 
@@ -1066,9 +1139,218 @@ export default function PartnersTab() {
                   </div>
                 </div>
               </TabsContent>
+
+              <TabsContent value="organisations">
+                <div className="space-y-4">
+                  {/* New Organisation API Key Display */}
+                  {newOrgApiKey?.fullKey && (
+                    <Card className="bg-amber-900/30 border-amber-500/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-2 mb-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-amber-300">Save this API key now!</p>
+                            <p className="text-sm text-amber-400/80">It will not be displayed again.</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-800 p-3 rounded font-mono text-sm">
+                          <code className="flex-1 break-all" data-testid="text-new-org-api-key">
+                            {showNewOrgKey ? newOrgApiKey.fullKey : "•".repeat(40) + newOrgApiKey.fullKey.slice(-4)}
+                          </code>
+                          <Button variant="ghost" size="sm" onClick={() => setShowNewOrgKey(!showNewOrgKey)} data-testid="button-toggle-org-key-visibility">
+                            {showNewOrgKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => copyToClipboard(newOrgApiKey.fullKey)} data-testid="button-copy-org-key">
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2 text-white/60" 
+                          onClick={() => { setNewOrgApiKey(null); setShowNewOrgKey(false); }}
+                          data-testid="button-dismiss-new-org-key"
+                        >
+                          Dismiss
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <div className="text-white/60 text-sm">
+                      Manage client organisations for this partner. Each organisation gets its own API key for usage tracking.
+                    </div>
+                    <Button 
+                      onClick={() => setIsCreateOrgOpen(true)} 
+                      className="bg-cyan-600 hover:bg-cyan-700"
+                      data-testid="button-add-organisation"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Organisation
+                    </Button>
+                  </div>
+
+                  {orgsLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-cyan-400" /></div>
+                  ) : partnerOrgs && partnerOrgs.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/20">
+                          <TableHead className="text-white/70">Organisation Name</TableHead>
+                          <TableHead className="text-white/70">Contact</TableHead>
+                          <TableHead className="text-white/70">API Keys</TableHead>
+                          <TableHead className="text-white/70">Status</TableHead>
+                          <TableHead className="text-white/70">Created</TableHead>
+                          <TableHead className="text-white/70"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {partnerOrgs.map((org) => (
+                          <TableRow key={org.id} className="border-white/10">
+                            <TableCell className="text-white font-medium" data-testid={`text-org-name-${org.id}`}>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-cyan-400" />
+                                {org.name}
+                              </div>
+                              <div className="text-white/40 text-xs font-mono mt-1">{org.slug}</div>
+                            </TableCell>
+                            <TableCell className="text-white/70">
+                              {org.contactName && <div>{org.contactName}</div>}
+                              {org.contactEmail && <div className="text-sm text-white/50">{org.contactEmail}</div>}
+                              {!org.contactName && !org.contactEmail && <span className="text-white/40">-</span>}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={org.hasActiveKey ? "bg-green-500/20 text-green-300" : "bg-white/10 text-white/50"}>
+                                {org.apiKeyCount || 0} {org.apiKeyCount === 1 ? 'key' : 'keys'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {org.isActive ? (
+                                <Badge className="bg-green-500/20 text-green-300">Active</Badge>
+                              ) : (
+                                <Badge className="bg-red-500/20 text-red-300">Inactive</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/60 text-sm">{formatDate(org.createdAt)}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                onClick={() => setDeleteOrgConfirm(org)}
+                                data-testid={`button-delete-org-${org.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-white/50">
+                      <Building2 className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                      <p>No client organisations yet</p>
+                      <p className="text-sm mt-1">Add organisations to track usage per client company</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Create Organisation Dialog */}
+        <Dialog open={isCreateOrgOpen} onOpenChange={(open) => { setIsCreateOrgOpen(open); }}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-cyan-400" />
+                Add Client Organisation
+              </DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Create a new client organisation for {detailPartner?.companyName || detailPartner?.name}. An API key will be automatically generated.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              createOrgMutation.mutate({
+                name: formData.get("orgName") as string,
+                contactEmail: formData.get("contactEmail") as string || undefined,
+                contactName: formData.get("contactName") as string || undefined,
+              });
+            }}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-white">Organisation Name *</Label>
+                  <Input
+                    name="orgName"
+                    placeholder="e.g., Acme Corporation"
+                    required
+                    className="bg-slate-800 border-slate-600 text-white"
+                    data-testid="input-org-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white">Contact Name</Label>
+                  <Input
+                    name="contactName"
+                    placeholder="e.g., John Smith"
+                    className="bg-slate-800 border-slate-600 text-white"
+                    data-testid="input-contact-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white">Contact Email</Label>
+                  <Input
+                    name="contactEmail"
+                    type="email"
+                    placeholder="e.g., john@acme.com"
+                    className="bg-slate-800 border-slate-600 text-white"
+                    data-testid="input-contact-email"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateOrgOpen(false)} className="bg-slate-800 border-slate-600" data-testid="button-cancel-org">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createOrgMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700" data-testid="button-create-org">
+                  {createOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                  Create Organisation
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Organisation Confirmation Dialog */}
+        <Dialog open={!!deleteOrgConfirm} onOpenChange={() => setDeleteOrgConfirm(null)}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-red-400">Delete Organisation</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Are you sure you want to delete "{deleteOrgConfirm?.name}"? This will also revoke all associated API keys. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteOrgConfirm(null)} className="bg-slate-800 border-slate-600" data-testid="button-cancel-delete-org">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteOrgConfirm && deleteOrgMutation.mutate(deleteOrgConfirm.id)}
+                disabled={deleteOrgMutation.isPending}
+                data-testid="button-confirm-delete-org"
+              >
+                {deleteOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Delete Organisation
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* API Keys Dialog */}
         <Dialog open={!!selectedPartner} onOpenChange={() => { setSelectedPartner(null); setNewKeyData(null); }}>

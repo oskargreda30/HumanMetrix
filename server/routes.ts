@@ -5395,6 +5395,7 @@ Format your response as JSON with this structure:
       
       const session = await storage.createAssessmentSession({
         partnerId: partner.id,
+        partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
         apiKeyId: apiKey.id,
         assessmentType,
         externalUserId: `test-${Date.now()}`,
@@ -5417,6 +5418,357 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error creating test session:", error);
       res.status(500).json({ message: "Failed to create test session" });
+    }
+  });
+
+  // ==================== PARTNER ORGANISATIONS API ====================
+
+  // Helper function to generate a URL-friendly slug
+  function generateSlug(name: string): string {
+    return name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      + '-' + Date.now().toString(36);
+  }
+
+  // Super Admin: Get organisations for a partner
+  app.get("/api/admin/partners/:id/organisations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const organisations = await storage.getPartnerOrganisationsByPartner(partner.id);
+      
+      // Get API key info for each organisation
+      const orgsWithKeys = await Promise.all(organisations.map(async (org) => {
+        const keys = await storage.getPartnerApiKeysByPartner(partner.id);
+        const orgKeys = keys.filter(k => k.partnerOrganisationId === org.id);
+        return {
+          ...org,
+          apiKeyCount: orgKeys.length,
+          hasActiveKey: orgKeys.some(k => k.isActive),
+        };
+      }));
+      
+      res.json(orgsWithKeys);
+    } catch (error) {
+      console.error("Error fetching partner organisations:", error);
+      res.status(500).json({ message: "Failed to fetch organisations" });
+    }
+  });
+
+  // Super Admin: Create organisation for a partner (auto-generates API key)
+  app.post("/api/admin/partners/:id/organisations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const { name, contactEmail, contactName, metadata } = req.body;
+      
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: "Organisation name is required" });
+      }
+      
+      // Check for duplicate slug
+      const slug = generateSlug(name);
+      const existingOrg = await storage.getPartnerOrganisationBySlug(partner.id, slug);
+      if (existingOrg) {
+        return res.status(400).json({ message: "An organisation with a similar name already exists" });
+      }
+      
+      // Create the organisation
+      const organisation = await storage.createPartnerOrganisation({
+        partnerId: partner.id,
+        name: name.trim(),
+        slug,
+        contactEmail: contactEmail?.trim() || null,
+        contactName: contactName?.trim() || null,
+        metadata: metadata || null,
+        isActive: true,
+      });
+      
+      // Auto-generate an API key for this organisation
+      const { generateApiKey } = await import("./partner-auth");
+      const { fullKey, prefix, hash, hint } = generateApiKey('live');
+      
+      const apiKey = await storage.createPartnerApiKey({
+        partnerId: partner.id,
+        partnerOrganisationId: organisation.id,
+        name: `${name.trim()} API Key`,
+        keyHash: hash,
+        keyPrefix: prefix,
+        keyHint: hint,
+        environment: 'live',
+        permissions: ['assessments:read', 'assessments:write', 'results:read'],
+        rateLimit: 100,
+        isActive: true,
+        expiresAt: null,
+      });
+      
+      res.status(201).json({
+        organisation,
+        apiKey: {
+          id: apiKey.id,
+          name: apiKey.name,
+          keyPrefix: apiKey.keyPrefix,
+          keyHint: apiKey.keyHint,
+          fullKey, // Only returned on creation
+          message: "IMPORTANT: Save this API key securely. It will not be shown again.",
+        },
+      });
+    } catch (error) {
+      console.error("Error creating partner organisation:", error);
+      res.status(500).json({ message: "Failed to create organisation" });
+    }
+  });
+
+  // Super Admin: Update organisation
+  app.put("/api/admin/partners/:id/organisations/:orgId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const organisation = await storage.getPartnerOrganisation(req.params.orgId);
+      if (!organisation || organisation.partnerId !== req.params.id) {
+        return res.status(404).json({ message: "Organisation not found" });
+      }
+      
+      const { name, contactEmail, contactName, metadata, isActive } = req.body;
+      
+      const updates: any = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (contactEmail !== undefined) updates.contactEmail = contactEmail?.trim() || null;
+      if (contactName !== undefined) updates.contactName = contactName?.trim() || null;
+      if (metadata !== undefined) updates.metadata = metadata;
+      if (isActive !== undefined) updates.isActive = isActive;
+      
+      await storage.updatePartnerOrganisation(req.params.orgId, updates);
+      
+      const updatedOrg = await storage.getPartnerOrganisation(req.params.orgId);
+      res.json(updatedOrg);
+    } catch (error) {
+      console.error("Error updating partner organisation:", error);
+      res.status(500).json({ message: "Failed to update organisation" });
+    }
+  });
+
+  // Super Admin: Delete organisation (cascades to delete associated API keys)
+  app.delete("/api/admin/partners/:id/organisations/:orgId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const organisation = await storage.getPartnerOrganisation(req.params.orgId);
+      if (!organisation || organisation.partnerId !== req.params.id) {
+        return res.status(404).json({ message: "Organisation not found" });
+      }
+      
+      await storage.deletePartnerOrganisation(req.params.orgId);
+      
+      res.json({ success: true, message: "Organisation deleted. Associated API keys have been revoked." });
+    } catch (error) {
+      console.error("Error deleting partner organisation:", error);
+      res.status(500).json({ message: "Failed to delete organisation" });
+    }
+  });
+
+  // Partner Admin: Get own organisations
+  app.get("/api/admin/my-partner/organisations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account associated with your organisation" });
+      }
+      
+      const organisations = await storage.getPartnerOrganisationsByPartner(matchingPartner.id);
+      
+      // Get API key info for each organisation (without exposing sensitive data)
+      const orgsWithKeys = await Promise.all(organisations.map(async (org) => {
+        const keys = await storage.getPartnerApiKeysByPartner(matchingPartner!.id);
+        const orgKeys = keys.filter(k => k.partnerOrganisationId === org.id);
+        return {
+          ...org,
+          apiKeys: orgKeys.map(k => ({
+            id: k.id,
+            name: k.name,
+            keyPrefix: k.keyPrefix,
+            keyHint: k.keyHint,
+            environment: k.environment,
+            isActive: k.isActive,
+            lastUsedAt: k.lastUsedAt,
+            createdAt: k.createdAt,
+          })),
+        };
+      }));
+      
+      res.json(orgsWithKeys);
+    } catch (error) {
+      console.error("Error fetching partner organisations:", error);
+      res.status(500).json({ message: "Failed to fetch organisations" });
+    }
+  });
+
+  // Partner Admin: Create organisation for own partner account
+  app.post("/api/admin/my-partner/organisations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account associated with your organisation" });
+      }
+      
+      const { name, contactEmail, contactName, metadata } = req.body;
+      
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: "Organisation name is required" });
+      }
+      
+      const slug = generateSlug(name);
+      
+      // Create the organisation
+      const organisation = await storage.createPartnerOrganisation({
+        partnerId: matchingPartner.id,
+        name: name.trim(),
+        slug,
+        contactEmail: contactEmail?.trim() || null,
+        contactName: contactName?.trim() || null,
+        metadata: metadata || null,
+        isActive: true,
+      });
+      
+      // Auto-generate an API key for this organisation
+      const { generateApiKey } = await import("./partner-auth");
+      const { fullKey, prefix, hash, hint } = generateApiKey('live');
+      
+      const apiKey = await storage.createPartnerApiKey({
+        partnerId: matchingPartner.id,
+        partnerOrganisationId: organisation.id,
+        name: `${name.trim()} API Key`,
+        keyHash: hash,
+        keyPrefix: prefix,
+        keyHint: hint,
+        environment: 'live',
+        permissions: ['assessments:read', 'assessments:write', 'results:read'],
+        rateLimit: 100,
+        isActive: true,
+        expiresAt: null,
+      });
+      
+      res.status(201).json({
+        organisation,
+        apiKey: {
+          id: apiKey.id,
+          name: apiKey.name,
+          keyPrefix: apiKey.keyPrefix,
+          keyHint: apiKey.keyHint,
+          fullKey, // Only returned on creation
+          message: "IMPORTANT: Save this API key securely. It will not be shown again.",
+        },
+      });
+    } catch (error) {
+      console.error("Error creating partner organisation:", error);
+      res.status(500).json({ message: "Failed to create organisation" });
+    }
+  });
+
+  // Partner Admin: Delete own organisation
+  app.delete("/api/admin/my-partner/organisations/:orgId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account associated with your organisation" });
+      }
+      
+      const organisation = await storage.getPartnerOrganisation(req.params.orgId);
+      if (!organisation || organisation.partnerId !== matchingPartner.id) {
+        return res.status(404).json({ message: "Organisation not found" });
+      }
+      
+      await storage.deletePartnerOrganisation(req.params.orgId);
+      
+      res.json({ success: true, message: "Organisation deleted. Associated API keys have been revoked." });
+    } catch (error) {
+      console.error("Error deleting partner organisation:", error);
+      res.status(500).json({ message: "Failed to delete organisation" });
     }
   });
 
