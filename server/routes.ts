@@ -1673,10 +1673,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Efficient bulk queries (no N+1)
-      const [purchasesRaw, allResults] = await Promise.all([
+      const [purchasesRaw, allResultsRaw] = await Promise.all([
         storage.getPurchasesByUser(userId),
         storage.getResultsByUser(userId)
       ]);
+      
+      // Recalculate scores using current formula for FIT and AI Readiness
+      const allResults = allResultsRaw.map(recalculateScores);
       
       // Sort purchases newest first for consistent numbering
       const purchases = purchasesRaw.sort((a, b) => 
@@ -2957,9 +2960,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "At least 2 user IDs required" });
       }
 
-      // Get results for all selected candidates
-      const candidatesResults = await Promise.all(
+      // Get results for all selected candidates and recalculate scores
+      const candidatesResultsRaw = await Promise.all(
         userIds.map((id) => storage.getResultsByUser(id))
+      );
+      const candidatesResults = candidatesResultsRaw.map(results => 
+        results.map(recalculateScores)
       );
 
       // Filter to only multi-skill assessments (FIT has 6 skills, AI Readiness has 9 skills)
@@ -3390,8 +3396,9 @@ Format your response as JSON with this exact structure and skill names:
         return res.status(400).json({ message: "User ID and job role ID are required" });
       }
 
-      // Get candidate results
-      const results = await storage.getResultsByUser(userId);
+      // Get candidate results and recalculate scores
+      const resultsRaw = await storage.getResultsByUser(userId);
+      const results = resultsRaw.map(recalculateScores);
       const completedResults = results.filter((r) => r.status === 'completed');
       
       if (completedResults.length === 0) {
