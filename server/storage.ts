@@ -73,6 +73,9 @@ import {
   type PartnerInvoice,
   type InsertPartnerInvoice,
   partnerMonthlyUsage,
+  partnerOrganisations,
+  type PartnerOrganisation,
+  type InsertPartnerOrganisation,
   type PartnerMonthlyUsage,
   type InsertPartnerMonthlyUsage,
 } from "@shared/schema";
@@ -226,6 +229,15 @@ export interface IStorage {
   getAllPartnerAccounts(): Promise<PartnerAccount[]>;
   updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void>;
   deletePartnerAccount(id: string): Promise<void>;
+  
+  // Partner organisation operations (sub-accounts for B2B partners)
+  createPartnerOrganisation(org: InsertPartnerOrganisation): Promise<PartnerOrganisation>;
+  getPartnerOrganisation(id: string): Promise<PartnerOrganisation | undefined>;
+  getPartnerOrganisationBySlug(partnerId: string, slug: string): Promise<PartnerOrganisation | undefined>;
+  getPartnerOrganisationsByPartner(partnerId: string): Promise<PartnerOrganisation[]>;
+  updatePartnerOrganisation(id: string, updates: Partial<InsertPartnerOrganisation>): Promise<void>;
+  deletePartnerOrganisation(id: string): Promise<void>;
+  countPartnerOrganisations(partnerId: string): Promise<number>;
   
   // Partner API key operations
   createPartnerApiKey(key: InsertPartnerApiKey): Promise<PartnerApiKey>;
@@ -1287,6 +1299,41 @@ export class DatabaseStorage implements IStorage {
 
   async deletePartnerAccount(id: string): Promise<void> {
     await db.delete(partnerAccounts).where(eq(partnerAccounts.id, id));
+  }
+
+  // Partner organisation operations (sub-accounts for B2B partners)
+  async createPartnerOrganisation(org: InsertPartnerOrganisation): Promise<PartnerOrganisation> {
+    const [result] = await db.insert(partnerOrganisations).values(org).returning();
+    return result;
+  }
+
+  async getPartnerOrganisation(id: string): Promise<PartnerOrganisation | undefined> {
+    const [result] = await db.select().from(partnerOrganisations).where(eq(partnerOrganisations.id, id));
+    return result;
+  }
+
+  async getPartnerOrganisationBySlug(partnerId: string, slug: string): Promise<PartnerOrganisation | undefined> {
+    const [result] = await db.select().from(partnerOrganisations).where(
+      and(eq(partnerOrganisations.partnerId, partnerId), eq(partnerOrganisations.slug, slug))
+    );
+    return result;
+  }
+
+  async getPartnerOrganisationsByPartner(partnerId: string): Promise<PartnerOrganisation[]> {
+    return await db.select().from(partnerOrganisations).where(eq(partnerOrganisations.partnerId, partnerId));
+  }
+
+  async updatePartnerOrganisation(id: string, updates: Partial<InsertPartnerOrganisation>): Promise<void> {
+    await db.update(partnerOrganisations).set(updates).where(eq(partnerOrganisations.id, id));
+  }
+
+  async deletePartnerOrganisation(id: string): Promise<void> {
+    await db.delete(partnerOrganisations).where(eq(partnerOrganisations.id, id));
+  }
+
+  async countPartnerOrganisations(partnerId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(partnerOrganisations).where(eq(partnerOrganisations.partnerId, partnerId));
+    return Number(result[0]?.count || 0);
   }
 
   // Partner API key operations
