@@ -83,6 +83,11 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
     - **Refund Capability**: Issue full or partial refunds directly from the dashboard via Stripe API integration.
     - **Promo Code Management**: Create, view, and deactivate Stripe promotion codes with usage tracking.
     - **API Endpoints**: GET /api/admin/billing/stats, GET /api/admin/billing/transactions, GET/POST/PATCH /api/admin/billing/promo-codes, POST /api/admin/billing/refund.
+- **Results Retention Consent Dashboard**: Super admin tab for viewing user consent preferences.
+    - **Consent Tracking**: View users who opted in, opted out, or have pending consent status.
+    - **User Details**: Email, name, consent status, consent date, and account creation date.
+    - **Filterable View**: Filter by opted_in, opted_out, or pending status.
+    - **API Endpoint**: GET /api/admin/consent?filter={opted_in|opted_out|pending}.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.

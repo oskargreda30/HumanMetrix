@@ -5815,6 +5815,28 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== CONSENT ADMIN API ====================
+
+  // Super Admin: Get users who opted into results retention
+  app.get("/api/admin/consent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { filter } = req.query;
+      const users = await storage.getUsersWithConsentData(filter as string);
+      
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching consent data:", error);
+      res.status(500).json({ message: "Failed to fetch consent data" });
+    }
+  });
+
   // ==================== BILLING ADMIN API ====================
 
   // Super Admin: Get billing statistics

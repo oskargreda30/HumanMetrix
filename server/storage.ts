@@ -335,6 +335,17 @@ export interface IStorage {
     averageOrderValue: number;
     revenueByMonth: Array<{ month: string; revenue: number; count: number }>;
   }>;
+  
+  // Consent operations
+  getUsersWithConsentData(filter?: string): Promise<Array<{
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    resultsRetentionConsent: boolean | null;
+    resultsRetentionConsentDate: Date | null;
+    createdAt: Date | null;
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2161,6 +2172,41 @@ export class DatabaseStorage implements IStorage {
         count: m.count,
       })),
     };
+  }
+
+  async getUsersWithConsentData(filter?: string): Promise<Array<{
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    resultsRetentionConsent: boolean | null;
+    resultsRetentionConsentDate: Date | null;
+    createdAt: Date | null;
+  }>> {
+    let condition;
+    if (filter === 'opted_in') {
+      condition = eq(users.resultsRetentionConsent, true);
+    } else if (filter === 'opted_out') {
+      condition = eq(users.resultsRetentionConsent, false);
+    } else if (filter === 'pending') {
+      condition = sql`${users.resultsRetentionConsent} IS NULL`;
+    }
+    
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        resultsRetentionConsent: users.resultsRetentionConsent,
+        resultsRetentionConsentDate: users.resultsRetentionConsentDate,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(condition)
+      .orderBy(desc(users.resultsRetentionConsentDate));
+    
+    return result;
   }
 }
 
