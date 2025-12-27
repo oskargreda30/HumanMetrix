@@ -21,6 +21,7 @@ import WidgetTestTab from "@/components/admin/WidgetTestTab";
 import ErrorsTab from "@/components/admin/ErrorsTab";
 import BillingTab from "@/components/admin/BillingTab";
 import ConsentTab from "@/components/admin/ConsentTab";
+import AnalyticsTab from "@/components/admin/AnalyticsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -175,6 +176,11 @@ export default function AdminDashboard() {
                   Consent
                 </TabsTrigger>
               )}
+              {isSuperAdmin && (
+                <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Analytics
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {isSuperAdmin && (
@@ -242,6 +248,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="consent" className="space-y-4">
                 <ConsentTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="analytics" className="space-y-4">
+                <AnalyticsTab />
               </TabsContent>
             )}
           </Tabs>

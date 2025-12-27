@@ -6,7 +6,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, type PartnerAccount } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -5907,16 +5907,14 @@ Format your response as JSON with this structure:
         allResults,
         allPartners,
         allSessions,
-        allPartnerUsage,
-        recentActivity
+        allPartnerUsage
       ] = await Promise.all([
-        storage.getAllUsers(),
+        db.select().from(users),
         storage.getAllPurchasesWithDetails({ limit: 10000 }),
         db.select().from(assessmentResults),
         storage.getAllPartnerAccounts(),
         db.select().from(assessmentSessions),
-        db.select().from(partnerMonthlyUsage),
-        storage.getRecentActivity ? storage.getRecentActivity(50) : Promise.resolve([])
+        db.select().from(partnerMonthlyUsage)
       ]);
       
       // Calculate B2C metrics
