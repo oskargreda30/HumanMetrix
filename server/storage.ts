@@ -2096,15 +2096,19 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lte(purchases.createdAt, endDate));
     }
 
-    // Get completed transactions (paid)
-    const completedConditions = [...conditions, eq(purchases.resultsAccessPaid, true)];
+    // Get completed transactions (paid and NOT refunded)
+    const completedConditions = [
+      ...conditions, 
+      eq(purchases.resultsAccessPaid, true),
+      sql`${purchases.status} != 'refunded'`
+    ];
     const [completedStats] = await db
       .select({
         totalRevenue: sql<number>`COALESCE(SUM(${purchases.totalAmount}), 0)::integer`,
         count: count(),
       })
       .from(purchases)
-      .where(completedConditions.length > 0 ? and(...completedConditions) : undefined);
+      .where(and(...completedConditions));
 
     // Get all transactions count
     const [totalStats] = await db
@@ -2112,14 +2116,18 @@ export class DatabaseStorage implements IStorage {
       .from(purchases)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-    // Get pending transactions
-    const pendingConditions = [...conditions, eq(purchases.resultsAccessPaid, false)];
+    // Get pending transactions (not paid and not refunded)
+    const pendingConditions = [
+      ...conditions, 
+      eq(purchases.resultsAccessPaid, false),
+      sql`${purchases.status} != 'refunded'`
+    ];
     const [pendingStats] = await db
       .select({ count: count() })
       .from(purchases)
-      .where(pendingConditions.length > 0 ? and(...pendingConditions) : undefined);
+      .where(and(...pendingConditions));
 
-    // Get revenue by month (last 12 months)
+    // Get revenue by month (last 12 months, excluding refunded)
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     
@@ -2132,7 +2140,8 @@ export class DatabaseStorage implements IStorage {
       .from(purchases)
       .where(and(
         gte(purchases.createdAt, twelveMonthsAgo),
-        eq(purchases.resultsAccessPaid, true)
+        eq(purchases.resultsAccessPaid, true),
+        sql`${purchases.status} != 'refunded'`
       ))
       .groupBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`)
       .orderBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`);

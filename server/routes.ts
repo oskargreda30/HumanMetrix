@@ -5997,20 +5997,55 @@ Format your response as JSON with this structure:
       
       const { code, percentOff, amountOff, duration, maxRedemptions, expiresAt } = req.body;
       
-      if (!code || (!percentOff && !amountOff)) {
-        return res.status(400).json({ message: "Code and either percentOff or amountOff are required" });
+      // Validate code format
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ message: "A valid promo code is required" });
+      }
+      
+      const sanitisedCode = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (sanitisedCode.length < 3 || sanitisedCode.length > 20) {
+        return res.status(400).json({ message: "Promo code must be 3-20 alphanumeric characters" });
+      }
+      
+      // Validate discount amount
+      if (!percentOff && !amountOff) {
+        return res.status(400).json({ message: "Either percentOff or amountOff is required" });
+      }
+      
+      // Validate percentOff range
+      if (percentOff !== undefined) {
+        const parsedPercent = parseInt(String(percentOff), 10);
+        if (isNaN(parsedPercent) || parsedPercent < 1 || parsedPercent > 100) {
+          return res.status(400).json({ message: "Percent off must be between 1 and 100" });
+        }
+      }
+      
+      // Validate amountOff (must be positive)
+      if (amountOff !== undefined) {
+        const parsedAmount = parseInt(String(amountOff), 10);
+        if (isNaN(parsedAmount) || parsedAmount < 1 || parsedAmount > 10000) {
+          return res.status(400).json({ message: "Amount off must be between 1 and 10000 pence" });
+        }
+      }
+      
+      // Validate maxRedemptions
+      if (maxRedemptions !== undefined) {
+        const parsedMax = parseInt(String(maxRedemptions), 10);
+        if (isNaN(parsedMax) || parsedMax < 1) {
+          return res.status(400).json({ message: "Max redemptions must be a positive number" });
+        }
       }
       
       // Create coupon first
       const couponParams: Stripe.CouponCreateParams = {
-        name: `${code} - ${percentOff ? `${percentOff}% off` : `${(amountOff / 100).toFixed(2)} off`}`,
-        duration: duration || 'forever',
+        name: `${sanitisedCode} - ${percentOff ? `${percentOff}% off` : `£${(parseInt(String(amountOff), 10) / 100).toFixed(2)} off`}`,
+        duration: ['forever', 'once', 'repeating'].includes(duration) ? duration : 'forever',
       };
       
       if (percentOff) {
-        couponParams.percent_off = percentOff;
+        couponParams.percent_off = parseInt(String(percentOff), 10);
       } else if (amountOff) {
-        couponParams.amount_off = amountOff;
+        couponParams.amount_off = parseInt(String(amountOff), 10);
         couponParams.currency = 'gbp';
       }
       
@@ -6019,14 +6054,17 @@ Format your response as JSON with this structure:
       // Create promo code
       const promoCodeParams: Stripe.PromotionCodeCreateParams = {
         coupon: coupon.id,
-        code: code.toUpperCase(),
+        code: sanitisedCode,
       };
       
       if (maxRedemptions) {
-        promoCodeParams.max_redemptions = maxRedemptions;
+        promoCodeParams.max_redemptions = parseInt(String(maxRedemptions), 10);
       }
       if (expiresAt) {
-        promoCodeParams.expires_at = Math.floor(new Date(expiresAt).getTime() / 1000);
+        const expiresDate = new Date(expiresAt);
+        if (!isNaN(expiresDate.getTime()) && expiresDate > new Date()) {
+          promoCodeParams.expires_at = Math.floor(expiresDate.getTime() / 1000);
+        }
       }
       
       const promoCode = await stripe.promotionCodes.create(promoCodeParams);
@@ -6044,7 +6082,13 @@ Format your response as JSON with this structure:
       });
     } catch (error: any) {
       console.error("Error creating promo code:", error);
-      res.status(500).json({ message: error.message || "Failed to create promo code" });
+      // Handle specific Stripe errors
+      if (error.type === 'StripeInvalidRequestError') {
+        if (error.message?.includes('already exists')) {
+          return res.status(400).json({ message: "A promo code with this name already exists" });
+        }
+      }
+      res.status(500).json({ message: "Failed to create promo code. Please try again." });
     }
   });
 
@@ -6087,8 +6131,8 @@ Format your response as JSON with this structure:
       
       const { purchaseId, amount, reason } = req.body;
       
-      if (!purchaseId) {
-        return res.status(400).json({ message: "Purchase ID is required" });
+      if (!purchaseId || typeof purchaseId !== 'string') {
+        return res.status(400).json({ message: "Valid purchase ID is required" });
       }
       
       const purchase = await storage.getPurchase(purchaseId);
@@ -6096,24 +6140,50 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Purchase not found" });
       }
       
+      // Verify purchase state
+      if (purchase.status === 'refunded') {
+        return res.status(400).json({ message: "This purchase has already been refunded" });
+      }
+      
+      if (!purchase.resultsAccessPaid) {
+        return res.status(400).json({ message: "Cannot refund an unpaid purchase" });
+      }
+      
       if (!purchase.stripePaymentIntentId) {
         return res.status(400).json({ message: "No payment intent found for this purchase" });
       }
       
-      // Create refund in Stripe
+      // Validate and clamp refund amount
+      let refundAmountPence: number | undefined;
+      if (amount !== undefined && amount !== null) {
+        const parsedAmount = parseInt(String(amount), 10);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          return res.status(400).json({ message: "Refund amount must be a positive number" });
+        }
+        // Clamp to purchase total
+        refundAmountPence = Math.min(parsedAmount, purchase.totalAmount);
+      }
+      
+      // Create refund in Stripe with deterministic idempotency key
       const refundParams: Stripe.RefundCreateParams = {
         payment_intent: purchase.stripePaymentIntentId,
         reason: 'requested_by_customer',
       };
       
-      if (amount) {
-        refundParams.amount = amount; // Amount in pence
+      if (refundAmountPence) {
+        refundParams.amount = refundAmountPence;
       }
       
-      const refund = await stripe.refunds.create(refundParams);
+      // Use deterministic key: purchaseId + amount (or 'full' for full refund)
+      const amountKey = refundAmountPence ? refundAmountPence.toString() : 'full';
+      const idempotencyKey = `refund_${purchaseId}_${amountKey}`;
+      const refund = await stripe.refunds.create(refundParams, {
+        idempotencyKey,
+      });
       
       // Update purchase status if full refund
-      if (!amount || amount >= purchase.totalAmount) {
+      const isFullRefund = !refundAmountPence || refundAmountPence >= purchase.totalAmount;
+      if (isFullRefund) {
         await storage.updatePurchase(purchaseId, {
           status: 'refunded',
           resultsAccessPaid: false,
@@ -6125,10 +6195,15 @@ Format your response as JSON with this structure:
         amount: refund.amount,
         status: refund.status,
         reason: reason || 'Customer requested',
+        isFullRefund,
       });
     } catch (error: any) {
       console.error("Error issuing refund:", error);
-      res.status(500).json({ message: error.message || "Failed to issue refund" });
+      // Don't leak Stripe error details
+      const message = error.type === 'StripeInvalidRequestError' 
+        ? "Invalid refund request. The payment may have already been refunded."
+        : "Failed to process refund. Please try again.";
+      res.status(500).json({ message });
     }
   });
 

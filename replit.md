@@ -78,6 +78,12 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
     - **Status Workflow**: new, investigating, resolved, ignored - with notes and resolution tracking.
     - **Super Admin Dashboard Tab**: ErrorsTab component showing error statistics, filterable error list, and detailed error view with stack trace and context.
     - **API Endpoints**: GET /api/admin/errors/stats, GET /api/admin/errors, GET /api/admin/errors/:id, PATCH /api/admin/errors/:id, GET /api/admin/errors/group/:fingerprint.
+- **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue and managing payments.
+    - **Billing Statistics**: Total revenue, completed/pending transactions, average order value, and 12-month revenue trend chart.
+    - **Transaction Management**: Filterable transaction list with customer details, assessment items, discount codes, and payment status.
+    - **Refund Capability**: Issue full or partial refunds directly from the dashboard via Stripe API integration.
+    - **Promo Code Management**: Create, view, and deactivate Stripe promotion codes with usage tracking.
+    - **API Endpoints**: GET /api/admin/billing/stats, GET /api/admin/billing/transactions, GET/POST/PATCH /api/admin/billing/promo-codes, POST /api/admin/billing/refund.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
