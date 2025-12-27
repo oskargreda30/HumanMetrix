@@ -27,6 +27,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
 });
 
+// Helper function to recalculate scores using the current canonical formula
+// This ensures consistency across all API endpoints
+function recalculateScores(result: any): any {
+  if (result.status !== 'completed' || !result.answers) {
+    return result;
+  }
+  
+  // Only recalculate FIT and AI Readiness (they use the hybrid formula)
+  if (result.assessmentType === 'fit') {
+    const recalculatedScores = calculateFITScores(result.answers as Record<string, string>);
+    return { ...result, scores: recalculatedScores };
+  } else if (result.assessmentType === 'ai_readiness') {
+    const recalculatedScores = calculateAIReadinessScores(result.answers as Record<string, string>);
+    return { ...result, scores: recalculatedScores };
+  }
+  
+  return result;
+}
+
 // Initialize Stripe promotion codes
 async function initializeStripeCoupons() {
   const couponsToCreate = [
@@ -2232,7 +2251,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const results = await storage.getResultsByUser(userId);
-      res.json(results);
+      
+      // Recalculate scores using current formula for FIT and AI Readiness
+      const recalculatedResults = results.map(recalculateScores);
+      
+      res.json(recalculatedResults);
     } catch (error) {
       console.error("Error fetching results:", error);
       res.status(500).json({ message: "Failed to fetch results" });
@@ -2251,11 +2274,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Only fetch results - exclude admin-only data (tags, notes)
       const results = await storage.getResultsByUser(user.id);
+      
+      // Recalculate scores using current formula for FIT and AI Readiness
+      const recalculatedResults = results.map(recalculateScores);
 
       // Return minimal structure needed for PDF export
       res.json({
         user,
-        results,
+        results: recalculatedResults,
         tags: [],        // Empty - candidates shouldn't see admin tags
         notes: [],       // Empty - candidates shouldn't see admin notes
         invitations: [], // Empty - not needed for candidate PDF
@@ -2277,7 +2303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Result not found" });
       }
       
-      res.json(result);
+      // Recalculate scores using current formula
+      const recalculatedResult = recalculateScores(result);
+      
+      res.json(recalculatedResult);
     } catch (error) {
       console.error("Error fetching result:", error);
       res.status(500).json({ message: "Failed to fetch result" });
