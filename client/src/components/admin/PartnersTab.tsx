@@ -416,6 +416,25 @@ export default function PartnersTab() {
     },
   });
 
+  // Delete partner state and mutation
+  const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
+
+  const deletePartnerMutation = useMutation({
+    mutationFn: async (partnerId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/partners/${partnerId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+      setDeleteConfirmPartner(null);
+      setDetailPartner(null);
+      toast({ title: "Partner deleted", description: "Partner account has been permanently deleted." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete partner", variant: "destructive" });
+    },
+  });
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied", description: "API key copied to clipboard" });
@@ -1592,7 +1611,7 @@ export default function PartnersTab() {
                       </Badge>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 items-center">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPartner(partner); }} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10" data-testid={`button-manage-keys-${partner.id}`}>
                           <Key className="h-4 w-4" />
                         </Button>
@@ -1602,6 +1621,9 @@ export default function PartnersTab() {
                           onClick={(e) => e.stopPropagation()}
                           data-testid={`switch-partner-active-${partner.id}`}
                         />
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmPartner(partner); }} className="text-red-400 hover:text-red-300 hover:bg-red-500/10" data-testid={`button-delete-partner-${partner.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1714,6 +1736,56 @@ export default function PartnersTab() {
               <p>No API keys yet. Create a test or live key above.</p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Partner Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmPartner} onOpenChange={() => setDeleteConfirmPartner(null)}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Partner
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Are you sure you want to permanently delete this partner account?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+              <p className="text-white font-medium mb-2">{deleteConfirmPartner?.companyName || deleteConfirmPartner?.name}</p>
+              <p className="text-sm text-slate-400">{deleteConfirmPartner?.email}</p>
+            </div>
+            <p className="text-sm text-red-300">
+              This action cannot be undone. All associated data including API keys, sessions, usage records, and invoices will be permanently deleted.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmPartner(null)} className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700" data-testid="button-cancel-delete-partner">
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteConfirmPartner && deletePartnerMutation.mutate(deleteConfirmPartner.id)}
+              disabled={deletePartnerMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete-partner"
+            >
+              {deletePartnerMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Partner
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

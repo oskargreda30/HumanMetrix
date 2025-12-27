@@ -4590,6 +4590,31 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Delete partner
+  app.delete("/api/admin/partners/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
+      await storage.deletePartnerAccount(req.params.id);
+      
+      res.json({ message: "Partner deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting partner:", error);
+      res.status(500).json({ message: "Failed to delete partner" });
+    }
+  });
+
   // Super Admin: Get partner API keys
   app.get("/api/admin/partners/:id/keys", isAuthenticated, async (req: any, res) => {
     try {
