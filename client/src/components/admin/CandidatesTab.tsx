@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -244,7 +244,25 @@ export default function CandidatesTab() {
                         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
                         : 'No Name'}
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{candidate.user.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground">{candidate.user.email}</p>
+                      {candidate.user.resultsRetentionConsent === true ? (
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Shared
+                        </Badge>
+                      ) : candidate.user.resultsRetentionConsent === false ? (
+                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
+                          <UserX className="h-3 w-3 mr-1" />
+                          Private
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
+                          <HelpCircle className="h-3 w-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   <Dialog open={dialogOpen && selectedCandidate?.user?.id === candidate.user.id} onOpenChange={handleDialogChange}>
