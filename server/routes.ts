@@ -6,7 +6,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, type PartnerAccount } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, type PartnerAccount } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -5877,6 +5877,256 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error fetching consent data:", error);
       res.status(500).json({ message: "Failed to fetch consent data" });
+    }
+  });
+
+  // ==================== ANALYTICS ADMIN API ====================
+
+  // Super Admin: Get comprehensive real-time analytics
+  app.get("/api/admin/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      const last7DaysStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const last30DaysStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      // Get all data in parallel for efficiency
+      const [
+        allUsers,
+        allPurchases,
+        allResults,
+        allPartners,
+        allSessions,
+        allPartnerUsage,
+        recentActivity
+      ] = await Promise.all([
+        storage.getAllUsers(),
+        storage.getAllPurchasesWithDetails({ limit: 10000 }),
+        db.select().from(assessmentResults),
+        storage.getAllPartnerAccounts(),
+        db.select().from(assessmentSessions),
+        db.select().from(partnerMonthlyUsage),
+        storage.getRecentActivity ? storage.getRecentActivity(50) : Promise.resolve([])
+      ]);
+      
+      // Calculate B2C metrics
+      const b2cPurchasesToday = allPurchases.filter((p: any) => 
+        new Date(p.purchase.createdAt) >= todayStart && p.purchase.resultsAccessPaid
+      );
+      const b2cPurchasesThisMonth = allPurchases.filter((p: any) => 
+        new Date(p.purchase.createdAt) >= thisMonthStart && p.purchase.resultsAccessPaid
+      );
+      const b2cPurchasesLastMonth = allPurchases.filter((p: any) => 
+        new Date(p.purchase.createdAt) >= lastMonthStart && 
+        new Date(p.purchase.createdAt) <= lastMonthEnd && 
+        p.purchase.resultsAccessPaid
+      );
+      const b2cPurchasesLast7Days = allPurchases.filter((p: any) => 
+        new Date(p.purchase.createdAt) >= last7DaysStart && p.purchase.resultsAccessPaid
+      );
+      
+      const b2cRevenueToday = b2cPurchasesToday.reduce((sum: number, p: any) => sum + (p.purchase.totalAmount || 0), 0);
+      const b2cRevenueThisMonth = b2cPurchasesThisMonth.reduce((sum: number, p: any) => sum + (p.purchase.totalAmount || 0), 0);
+      const b2cRevenueLastMonth = b2cPurchasesLastMonth.reduce((sum: number, p: any) => sum + (p.purchase.totalAmount || 0), 0);
+      
+      // Calculate assessments completed
+      const assessmentsToday = allResults.filter(r => 
+        r.completedAt && new Date(r.completedAt) >= todayStart && r.status === 'completed'
+      );
+      const assessmentsThisMonth = allResults.filter(r => 
+        r.completedAt && new Date(r.completedAt) >= thisMonthStart && r.status === 'completed'
+      );
+      
+      // Calculate B2B metrics
+      const activePartners = allPartners.filter((p: any) => !p.isSuspended);
+      const b2bSessionsToday = allSessions.filter(s => 
+        s.createdAt && new Date(s.createdAt) >= todayStart
+      );
+      const b2bSessionsThisMonth = allSessions.filter(s => 
+        s.createdAt && new Date(s.createdAt) >= thisMonthStart
+      );
+      const b2bCompletedToday = allSessions.filter(s => 
+        s.completedAt && new Date(s.completedAt) >= todayStart && s.status === 'completed'
+      );
+      const b2bCompletedThisMonth = allSessions.filter(s => 
+        s.completedAt && new Date(s.completedAt) >= thisMonthStart && s.status === 'completed'
+      );
+      
+      // Calculate B2B revenue (from monthly usage)
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const lastMonthKey = `${lastMonthStart.getFullYear()}-${String(lastMonthStart.getMonth() + 1).padStart(2, '0')}`;
+      
+      const b2bUsageThisMonth = allPartnerUsage.filter((u: any) => u.monthKey === currentMonthKey);
+      const b2bUsageLastMonth = allPartnerUsage.filter((u: any) => u.monthKey === lastMonthKey);
+      
+      const b2bRevenueThisMonth = b2bUsageThisMonth.reduce((sum: number, u: any) => sum + (u.amountDue || 0), 0);
+      const b2bRevenueLastMonth = b2bUsageLastMonth.reduce((sum: number, u: any) => sum + (u.amountDue || 0), 0);
+      const b2bTestsThisMonth = b2bUsageThisMonth.reduce((sum: number, u: any) => sum + (u.testsUsed || 0), 0);
+      
+      // Calculate daily trends for last 30 days
+      const dailyTrends = [];
+      for (let i = 29; i >= 0; i--) {
+        const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const b2cForDay = allPurchases.filter((p: any) => {
+          const date = new Date(p.purchase.createdAt);
+          return date >= dayStart && date <= dayEnd && p.purchase.resultsAccessPaid;
+        });
+        const b2bForDay = allSessions.filter(s => {
+          if (!s.createdAt) return false;
+          const date = new Date(s.createdAt);
+          return date >= dayStart && date <= dayEnd;
+        });
+        const assessmentsForDay = allResults.filter(r => {
+          if (!r.completedAt) return false;
+          const date = new Date(r.completedAt);
+          return date >= dayStart && date <= dayEnd && r.status === 'completed';
+        });
+        
+        dailyTrends.push({
+          date: dayStart.toISOString().split('T')[0],
+          b2cRevenue: b2cForDay.reduce((sum: number, p: any) => sum + (p.purchase.totalAmount || 0), 0),
+          b2cTransactions: b2cForDay.length,
+          b2bSessions: b2bForDay.length,
+          assessmentsCompleted: assessmentsForDay.length
+        });
+      }
+      
+      // Get partner breakdown
+      const partnerBreakdown = await Promise.all(allPartners.map(async (partner: any) => {
+        const partnerSessions = allSessions.filter(s => s.partnerId === partner.id);
+        const completedSessions = partnerSessions.filter(s => s.status === 'completed');
+        const todaySessions = partnerSessions.filter(s => 
+          s.createdAt && new Date(s.createdAt) >= todayStart
+        );
+        const monthSessions = partnerSessions.filter(s => 
+          s.createdAt && new Date(s.createdAt) >= thisMonthStart
+        );
+        
+        return {
+          id: partner.id,
+          name: partner.companyName || partner.contactName || 'Unknown',
+          billingType: partner.billingType,
+          isSuspended: partner.isSuspended,
+          totalSessions: partnerSessions.length,
+          completedSessions: completedSessions.length,
+          todaySessions: todaySessions.length,
+          monthSessions: monthSessions.length,
+          testsPurchased: partner.testsPurchased || 0,
+          testsConsumed: partner.testsConsumed || 0
+        };
+      }));
+      
+      // Get assessment type breakdown
+      const assessmentBreakdown: Record<string, { started: number; completed: number; today: number }> = {};
+      for (const type of ['fit', 'ai_readiness', 'prompt_architecture', 'aiq']) {
+        const typeResults = allResults.filter(r => r.assessmentType === type);
+        const completed = typeResults.filter(r => r.status === 'completed');
+        const todayCompleted = completed.filter(r => 
+          r.completedAt && new Date(r.completedAt) >= todayStart
+        );
+        assessmentBreakdown[type] = {
+          started: typeResults.length,
+          completed: completed.length,
+          today: todayCompleted.length
+        };
+      }
+      
+      // Build recent activity feed
+      const activityFeed = [];
+      
+      // Add recent B2C purchases
+      const recentB2cPurchases = allPurchases
+        .filter((p: any) => p.purchase.resultsAccessPaid)
+        .sort((a: any, b: any) => new Date(b.purchase.completedAt || b.purchase.createdAt).getTime() - new Date(a.purchase.completedAt || a.purchase.createdAt).getTime())
+        .slice(0, 10);
+      
+      for (const purchase of recentB2cPurchases) {
+        activityFeed.push({
+          type: 'b2c_purchase',
+          timestamp: purchase.purchase.completedAt || purchase.purchase.createdAt,
+          description: `B2C purchase: £${(purchase.purchase.totalAmount / 100).toFixed(2)}`,
+          details: {
+            user: purchase.user?.email || 'Unknown',
+            items: purchase.items?.length || 0,
+            amount: purchase.purchase.totalAmount
+          }
+        });
+      }
+      
+      // Add recent B2B sessions
+      const recentB2bSessions = allSessions
+        .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+        .slice(0, 10);
+      
+      for (const session of recentB2bSessions) {
+        const partner = allPartners.find((p: any) => p.id === session.partnerId);
+        activityFeed.push({
+          type: session.status === 'completed' ? 'b2b_completion' : 'b2b_session',
+          timestamp: session.completedAt || session.createdAt,
+          description: `B2B ${session.status}: ${session.assessmentType}`,
+          details: {
+            partner: partner?.companyName || 'Unknown',
+            assessmentType: session.assessmentType,
+            status: session.status
+          }
+        });
+      }
+      
+      // Sort activity feed by timestamp
+      activityFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      res.json({
+        overview: {
+          totalUsers: allUsers.length,
+          totalAssessmentsCompleted: allResults.filter(r => r.status === 'completed').length,
+          totalB2cRevenue: allPurchases
+            .filter((p: any) => p.purchase.resultsAccessPaid)
+            .reduce((sum: number, p: any) => sum + (p.purchase.totalAmount || 0), 0),
+          totalPartners: allPartners.length,
+          activePartners: activePartners.length
+        },
+        today: {
+          b2cTransactions: b2cPurchasesToday.length,
+          b2cRevenue: b2cRevenueToday,
+          b2bSessions: b2bSessionsToday.length,
+          b2bCompletions: b2bCompletedToday.length,
+          assessmentsCompleted: assessmentsToday.length
+        },
+        thisMonth: {
+          b2cTransactions: b2cPurchasesThisMonth.length,
+          b2cRevenue: b2cRevenueThisMonth,
+          b2bSessions: b2bSessionsThisMonth.length,
+          b2bCompletions: b2bCompletedThisMonth.length,
+          b2bRevenue: b2bRevenueThisMonth,
+          b2bTests: b2bTestsThisMonth,
+          assessmentsCompleted: assessmentsThisMonth.length
+        },
+        lastMonth: {
+          b2cRevenue: b2cRevenueLastMonth,
+          b2bRevenue: b2bRevenueLastMonth
+        },
+        trends: dailyTrends,
+        partnerBreakdown,
+        assessmentBreakdown,
+        activityFeed: activityFeed.slice(0, 30)
+      });
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 
