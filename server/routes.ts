@@ -994,6 +994,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
+      console.log(`[Results Payment Debug] Country: ${userCountry}, Currency: ${currencyCode}`);
+      console.log(`[Results Payment Debug] Exchange rate: ${liveExchangeRate}`);
+      console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
+      console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
