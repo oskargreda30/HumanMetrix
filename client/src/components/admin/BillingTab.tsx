@@ -203,7 +203,13 @@ export default function BillingTab() {
           <h2 className="text-2xl font-bold text-white" data-testid="heading-billing">Payment & Billing Oversight</h2>
           <p className="text-white/70">Monitor revenue, manage transactions, and configure promo codes</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} data-testid="button-refresh-billing">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+          data-testid="button-refresh-billing"
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
