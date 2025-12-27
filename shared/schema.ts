@@ -550,10 +550,36 @@ export const insertPartnerAccountSchema = createInsertSchema(partnerAccounts).om
 export type InsertPartnerAccount = z.infer<typeof insertPartnerAccountSchema>;
 export type PartnerAccount = typeof partnerAccounts.$inferSelect;
 
+// Partner organisations - sub-accounts managed by B2B partners (e.g., client companies they work with)
+export const partnerOrganisations = pgTable("partner_organisations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  slug: varchar("slug").notNull(), // URL-friendly identifier
+  contactEmail: varchar("contact_email"),
+  contactName: varchar("contact_name"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_organisations_partner").on(table.partnerId),
+  index("idx_partner_organisations_slug").on(table.partnerId, table.slug),
+]);
+
+export const insertPartnerOrganisationSchema = createInsertSchema(partnerOrganisations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPartnerOrganisation = z.infer<typeof insertPartnerOrganisationSchema>;
+export type PartnerOrganisation = typeof partnerOrganisations.$inferSelect;
+
 // Partner API keys - for authentication
+// Keys can be either partner-level (parent key for billing) or organisation-level (for usage tracking)
 export const partnerApiKeys = pgTable("partner_api_keys", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "cascade" }), // NULL = parent key, non-NULL = organisation-specific key
   keyPrefix: varchar("key_prefix", { length: 8 }).notNull(), // First 8 chars for lookup (e.g., "pk_live_")
   keyHash: varchar("key_hash").notNull(), // Hashed full key
   keyHint: varchar("key_hint", { length: 8 }).notNull(), // Last 4 chars for display
@@ -583,6 +609,7 @@ export type PartnerApiKey = typeof partnerApiKeys.$inferSelect;
 export const assessmentSessions = pgTable("assessment_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "set null" }), // Which client organisation this session belongs to
   apiKeyId: varchar("api_key_id").notNull().references(() => partnerApiKeys.id, { onDelete: "cascade" }),
   externalUserId: varchar("external_user_id"), // Partner's user ID
   externalEmail: varchar("external_email"),
@@ -619,6 +646,7 @@ export type AssessmentSession = typeof assessmentSessions.$inferSelect;
 export const usageEvents = pgTable("usage_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "set null" }), // Which client organisation this usage belongs to
   apiKeyId: varchar("api_key_id").references(() => partnerApiKeys.id, { onDelete: "set null" }),
   sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
   eventType: varchar("event_type").notNull(), // session_created, session_started, session_completed, results_fetched
