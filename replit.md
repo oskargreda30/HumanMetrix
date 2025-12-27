@@ -36,8 +36,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
 - **Marketing Email Opt-in**: Subscribe page for capturing job seeker emails.
 - **Golden Set Benchmark System**: GPT-5 scoring consistency verification using benchmark prompts, daily runs with smoothed evaluation to detect drift. Admin UI for monitoring.
 - **Multi-Currency Pricing**: Automatic location detection displays prices in local currencies using `ipapi.co` with server-side caching and `CurrencyContext` for state.
-- **PPP Pricing**: 3-tier regional pricing (Tier 1: 1.0x, Tier 2: 0.7x, Tier 3: 0.5x). Stripe checkout handles local currency conversion.
-- **SEA Launch Pricing**: Strategic flat-rate local currency pricing for specific Southeast Asian countries (Philippines, Vietnam, Indonesia, Malaysia).
+- **PPP Pricing**: 3-tier regional pricing (Tier 1: 1.0x, Tier 2: 0.7x, Tier 3: 0.5x). Stripe checkout handles local currency conversion. All countries including SEA markets now use PPP-adjusted pricing with live exchange rates.
 - **Active Discount Codes**: `FREE` (100% off) and `20OFFPRICE` (20% off).
 - **B2B Partner Integration**: Enterprise integration for clients to embed assessments.
     - **Partner Accounts**: Managed via admin dashboard with automatic admin user creation.
