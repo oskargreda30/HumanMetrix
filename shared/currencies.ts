@@ -107,11 +107,11 @@ export const PPP_MULTIPLIERS: Record<PricingTier, number> = {
 
 // Map countries to their pricing tier
 export const COUNTRY_PRICING_TIER: Record<string, PricingTier> = {
-  // SEA Launch Countries (Dec 2025) - Use fixed LOCAL CURRENCY pricing
-  PH: 'sea_launch', // Philippines Pilot - ₱59 PHP
-  VN: 'sea_launch', // Vietnam - 30,000₫ VND
-  ID: 'sea_launch', // Indonesia - Rp18,000 IDR
-  MY: 'sea_launch', // Malaysia - RM8 MYR
+  // SEA Launch Countries (Dec 2025) - Now use PPP tier pricing (sea_launch deprecated)
+  PH: 'tier3', // Philippines - PPP tier 3 (0.5x)
+  VN: 'tier3', // Vietnam - PPP tier 3 (0.5x)
+  ID: 'tier3', // Indonesia - PPP tier 3 (0.5x)
+  MY: 'tier3', // Malaysia - PPP tier 3 (0.5x)
   
   // Tier 1: Western/High-income markets (1.0x - full price)
   GB: 'tier1', UK: 'tier1',
@@ -1054,9 +1054,10 @@ export type SupportedCurrencyCode = typeof SUPPORTED_CURRENCIES[number];
 
 // Zero-decimal currencies for Stripe (no cents/pence subdivision)
 // These currencies don't use decimal amounts in Stripe
+// Note: IDR is NOT a zero-decimal currency in Stripe - it uses 2 decimal places
 export const ZERO_DECIMAL_CURRENCIES = [
-  'JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA',
-  'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF', 'KHR'
+  'JPY', 'KRW', 'VND', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA',
+  'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF'
 ] as const;
 
 // Convert GBP pence to local currency amount for Stripe
