@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -120,15 +120,6 @@ export default function AnalyticsTab() {
     queryKey: ["/api/admin/analytics"],
     refetchInterval: autoRefresh ? 30000 : false,
   });
-
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        refetch();
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh, refetch]);
 
   if (isLoading) {
     return (
