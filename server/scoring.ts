@@ -120,10 +120,9 @@ export const FIT_SCORING_MATRIX: Record<string, Record<string, number>> = {
 };
 
 // ============================================================================
-// AI READINESS ASSESSMENT - PERFECTLY BALANCED SCORING MATRIX
-// 9 skills × 23 occurrences each = 207 total mappings
-// All skills have 92 max points (23 × 4 points each)
-// Note: 3 answers have only 1 skill to achieve perfect balance
+// AI READINESS ASSESSMENT - SCORING MATRIX (INTENTIONALLY UNBALANCED)
+// Skill occurrences vary by design: TF=26, DF=25, AL/PE/CT-PS/CC/CI/ACL=23, RAI/DE=22
+// Total: 210 mappings. Max points vary: TF=104, DF=100, others 88-92
 // ============================================================================
 
 export const AI_READINESS_SKILLS = [
@@ -143,9 +142,9 @@ export type AIReadinessSkill = typeof AI_READINESS_SKILLS[number];
 export const AI_READINESS_SCORING_MATRIX: Record<string, Record<string, number>> = {
   // Q1: Integrate AI-generated data with database
   "1-A": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
-  "1-B": { "Technical Fundamentals": 4, "Domain Expertise": 4 },
-  "1-C": { "Responsible AI & Ethical Awareness": 4, "Critical Thinking & Problem-Solving": 4 },
-  "1-D": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
+  "1-B": { "Technical Fundamentals": 4, "Critical Thinking & Problem-Solving": 4 },
+  "1-C": { "Responsible AI & Ethical Awareness": 4, "Data Fluency": 4 },
+  "1-D": { "Collaboration & Communication": 4, "Technical Fundamentals": 4 },
   "1-E": { "Creativity & Innovation": 4, "AI Literacy & Prompt Engineering": 4 },
   // Q2: Learn system from poor technical manual
   "2-A": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
@@ -204,7 +203,7 @@ export const AI_READINESS_SCORING_MATRIX: Record<string, Record<string, number>>
   // Q11: Team member struggling with technical constraints
   "11-A": { "Collaboration & Communication": 4, "AI Literacy & Prompt Engineering": 4 },
   "11-B": { "Adaptability & Continuous Learning": 4, "Domain Expertise": 4 },
-  "11-C": { "AI Literacy & Prompt Engineering": 4, "Domain Expertise": 4 },
+  "11-C": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
   "11-D": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
   "11-E": { "Domain Expertise": 4, "Responsible AI & Ethical Awareness": 4 },
   // Q12: Design experiment with limited resources
@@ -221,7 +220,7 @@ export const AI_READINESS_SCORING_MATRIX: Record<string, Record<string, number>>
   "13-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
   // Q14: Teach colleague complex analytics tool
   "14-A": { "Technical Fundamentals": 4, "Adaptability & Continuous Learning": 4 },
-  "14-B": { "Collaboration & Communication": 4 },  // DE removed for perfect balance
+  "14-B": { "Collaboration & Communication": 4, "Domain Expertise": 4 },
   "14-C": { "AI Literacy & Prompt Engineering": 4, "Data Fluency": 4 },
   "14-D": { "Critical Thinking & Problem-Solving": 4, "Adaptability & Continuous Learning": 4 },
   "14-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
@@ -238,7 +237,7 @@ export const AI_READINESS_SCORING_MATRIX: Record<string, Record<string, number>>
   "16-D": { "AI Literacy & Prompt Engineering": 4, "Creativity & Innovation": 4 },
   "16-E": { "Creativity & Innovation": 4, "Critical Thinking & Problem-Solving": 4 },
   // Q17: Review technical specification with tight deadline
-  "17-A": { "Domain Expertise": 4 },  // DF removed for perfect balance
+  "17-A": { "Domain Expertise": 4, "Data Fluency": 4 },
   "17-B": { "Technical Fundamentals": 4, "Responsible AI & Ethical Awareness": 4 },
   "17-C": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
   "17-D": { "Collaboration & Communication": 4, "Responsible AI & Ethical Awareness": 4 },
@@ -247,7 +246,7 @@ export const AI_READINESS_SCORING_MATRIX: Record<string, Record<string, number>>
   "18-A": { "Adaptability & Continuous Learning": 4, "Data Fluency": 4 },
   "18-B": { "Creativity & Innovation": 4, "Data Fluency": 4 },
   "18-C": { "Collaboration & Communication": 4, "Critical Thinking & Problem-Solving": 4 },
-  "18-D": { "AI Literacy & Prompt Engineering": 4 },  // TF removed for perfect balance
+  "18-D": { "AI Literacy & Prompt Engineering": 4, "Technical Fundamentals": 4 },
   "18-E": { "Technical Fundamentals": 4, "Domain Expertise": 4 },
   // Q19: Automate task with many exceptions
   "19-A": { "Critical Thinking & Problem-Solving": 4, "Technical Fundamentals": 4 },

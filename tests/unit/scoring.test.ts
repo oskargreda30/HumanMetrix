@@ -149,7 +149,7 @@ describe('Scoring Module', () => {
       expect(AI_READINESS_SKILLS.length).toBe(9);
     });
 
-    it('should have perfectly balanced matrix with 23 occurrences per skill', () => {
+    it('should have skill occurrences matching questions section (intentionally unbalanced)', () => {
       const skillCounts: Record<string, number> = {};
       AI_READINESS_SKILLS.forEach(skill => { skillCounts[skill] = 0; });
 
@@ -159,18 +159,30 @@ describe('Scoring Module', () => {
         });
       });
 
-      // Each skill should appear exactly 23 times
+      // Expected occurrences from questions section (intentionally unbalanced design)
+      const expectedCounts: Record<string, number> = {
+        'Technical Fundamentals': 26,
+        'Data Fluency': 25,
+        'AI Literacy & Prompt Engineering': 23,
+        'Critical Thinking & Problem-Solving': 23,
+        'Collaboration & Communication': 23,
+        'Creativity & Innovation': 23,
+        'Adaptability & Continuous Learning': 23,
+        'Responsible AI & Ethical Awareness': 22,
+        'Domain Expertise': 22,
+      };
+
       AI_READINESS_SKILLS.forEach(skill => {
-        expect(skillCounts[skill]).toBe(23);
+        expect(skillCounts[skill]).toBe(expectedCounts[skill]);
       });
     });
 
-    it('should have 207 total skill mappings (9 skills × 23 occurrences)', () => {
+    it('should have 210 total skill mappings across all questions', () => {
       let totalMappings = 0;
       Object.values(AI_READINESS_SCORING_MATRIX).forEach(skillPoints => {
         totalMappings += Object.keys(skillPoints).length;
       });
-      expect(totalMappings).toBe(207);
+      expect(totalMappings).toBe(210);
     });
 
     it('should have all skill points equal to 4', () => {
