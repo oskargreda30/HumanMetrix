@@ -7,14 +7,15 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, CheckCircle2, FileText } from "lucide-react";
+import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap } from "lucide-react";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { ResultsRetentionConsentDialog } from "@/components/ResultsRetentionConsentDialog";
 import { format } from "date-fns";
-import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
+import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym, FIT_SKILLS, AI_READINESS_SKILLS } from "@/lib/assessmentSkills";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   Radar,
   RadarChart,
@@ -408,6 +409,238 @@ export default function MyResults() {
               </div>
             </div>
           </Card>
+
+          {/* FIT Assessment Results */}
+          {(() => {
+            const fitResult = completedResults.find((r: any) => r.assessmentType === 'fit');
+            if (!fitResult?.scores) return null;
+
+            const sortedScores = Object.entries(fitResult.scores)
+              .sort(([, a], [, b]) => (b as number) - (a as number));
+
+            return (
+              <Card className="p-6 mb-6" data-testid="card-fit-results">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">FIT Assessment</h2>
+                    <p className="text-sm text-muted-foreground">Behavioural skills evaluation</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Radar Chart */}
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={sortedScores.map(([skill, score]) => ({
+                        skill: getSkillAcronym(skill),
+                        score: score as number,
+                        fullMark: 100
+                      }))}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Score"
+                          dataKey="score"
+                          stroke="#3b82f6"
+                          fill="#3b82f6"
+                          fillOpacity={0.4}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Skill Scores Table */}
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground mb-3">Individual Skill Scores</div>
+                    {sortedScores.map(([skill, score], index) => (
+                      <div key={skill} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0" data-testid={`row-fit-skill-${index}`}>
+                        <span className="text-sm">{skill}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 rounded-full transition-all"
+                              style={{ width: `${score}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium w-8 text-right">{score as number}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* AI Readiness Results */}
+          {(() => {
+            const aiResult = completedResults.find((r: any) => r.assessmentType === 'ai_readiness');
+            if (!aiResult?.scores) return null;
+
+            const sortedScores = Object.entries(aiResult.scores)
+              .sort(([, a], [, b]) => (b as number) - (a as number));
+
+            return (
+              <Card className="p-6 mb-6" data-testid="card-ai-readiness-results">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">AI Readiness Assessment</h2>
+                    <p className="text-sm text-muted-foreground">Technical AI skills evaluation</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Radar Chart */}
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={sortedScores.map(([skill, score]) => ({
+                        skill: getSkillAcronym(skill),
+                        score: score as number,
+                        fullMark: 100
+                      }))}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Score"
+                          dataKey="score"
+                          stroke="#8b5cf6"
+                          fill="#8b5cf6"
+                          fillOpacity={0.4}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Skill Scores Table */}
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-muted-foreground mb-3">Individual Skill Scores</div>
+                    {sortedScores.map(([skill, score], index) => (
+                      <div key={skill} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0" data-testid={`row-ai-skill-${index}`}>
+                        <span className="text-sm truncate mr-2">{skill}</span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-purple-500 rounded-full transition-all"
+                              style={{ width: `${score}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium w-8 text-right">{score as number}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* AIQ Results */}
+          {(() => {
+            const aiqResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
+            if (!aiqResult?.scores) return null;
+
+            const aiqScore = aiqResult.scores['Algorithmic Integrity'] || aiqResult.totalScore || 0;
+            const bandInfo = getAIQBandInterpretation(aiqScore);
+
+            return (
+              <Card className="p-6 mb-6" data-testid="card-aiq-results">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <Shield className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Algorithmic Integrity Quotient (AIQ)</h2>
+                    <p className="text-sm text-muted-foreground">AI ethics and responsible AI evaluation</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Score Display */}
+                  <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
+                    <div className="text-5xl font-bold text-green-500 mb-2" data-testid="text-aiq-score">{aiqScore}</div>
+                    <div className="text-lg font-medium mb-1">{bandInfo.title}</div>
+                    <div className="text-sm text-muted-foreground text-center">out of 100</div>
+                  </div>
+
+                  {/* Band Interpretation */}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">Score Interpretation</div>
+                      <p className="text-sm leading-relaxed">{bandInfo.description}</p>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">Band Range ({bandInfo.range})</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-green-500 rounded-full transition-all"
+                            style={{ width: `${aiqScore}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{aiqScore}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Prompt Architecture Results */}
+          {(() => {
+            const promptResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+            if (!promptResult) return null;
+
+            const totalScore = promptResult.totalScore || 0;
+            const percentile = promptResult.percentile || 0;
+
+            return (
+              <Card className="p-6 mb-6" data-testid="card-prompt-arch-results">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <Zap className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Prompt Architecture Assessment</h2>
+                    <p className="text-sm text-muted-foreground">AI prompt engineering evaluation</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Total Score */}
+                  <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-score">{totalScore}</div>
+                    <div className="text-sm text-muted-foreground">Total Score</div>
+                  </div>
+
+                  {/* Percentile */}
+                  <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-percentile">{percentile}%</div>
+                    <div className="text-sm text-muted-foreground">Percentile</div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                    <Badge 
+                      variant={totalScore >= 70 ? "default" : totalScore >= 50 ? "secondary" : "outline"}
+                      className="mb-2"
+                    >
+                      {totalScore >= 70 ? "Excellent" : totalScore >= 50 ? "Competent" : "Developing"}
+                    </Badge>
+                    <div className="text-sm text-muted-foreground">Performance</div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
         </div>
       </main>
       
