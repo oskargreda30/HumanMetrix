@@ -5896,6 +5896,242 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== BILLING ADMIN API ====================
+
+  // Super Admin: Get billing statistics
+  app.get("/api/admin/billing/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { startDate, endDate } = req.query;
+      const stats = await storage.getBillingStats(
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching billing stats:", error);
+      res.status(500).json({ message: "Failed to fetch billing stats" });
+    }
+  });
+
+  // Super Admin: Get all transactions
+  app.get("/api/admin/billing/transactions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { status, startDate, endDate, limit, offset } = req.query;
+      const transactions = await storage.getAllPurchasesWithDetails({
+        status: status as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        limit: limit ? parseInt(limit as string) : 100,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+      
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  // Super Admin: Get Stripe promo codes
+  app.get("/api/admin/billing/promo-codes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      // Fetch promo codes from Stripe
+      const promoCodes = await stripe.promotionCodes.list({ 
+        limit: 100,
+        expand: ['data.coupon'],
+      });
+      
+      res.json(promoCodes.data.map(pc => ({
+        id: pc.id,
+        code: pc.code,
+        active: pc.active,
+        coupon: {
+          id: typeof pc.coupon === 'string' ? pc.coupon : pc.coupon.id,
+          name: typeof pc.coupon === 'string' ? null : pc.coupon.name,
+          percentOff: typeof pc.coupon === 'string' ? null : pc.coupon.percent_off,
+          amountOff: typeof pc.coupon === 'string' ? null : pc.coupon.amount_off,
+          duration: typeof pc.coupon === 'string' ? null : pc.coupon.duration,
+        },
+        timesRedeemed: pc.times_redeemed,
+        createdAt: new Date(pc.created * 1000).toISOString(),
+        expiresAt: pc.expires_at ? new Date(pc.expires_at * 1000).toISOString() : null,
+        maxRedemptions: pc.max_redemptions,
+      })));
+    } catch (error) {
+      console.error("Error fetching promo codes:", error);
+      res.status(500).json({ message: "Failed to fetch promo codes" });
+    }
+  });
+
+  // Super Admin: Create new promo code
+  app.post("/api/admin/billing/promo-codes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { code, percentOff, amountOff, duration, maxRedemptions, expiresAt } = req.body;
+      
+      if (!code || (!percentOff && !amountOff)) {
+        return res.status(400).json({ message: "Code and either percentOff or amountOff are required" });
+      }
+      
+      // Create coupon first
+      const couponParams: Stripe.CouponCreateParams = {
+        name: `${code} - ${percentOff ? `${percentOff}% off` : `${(amountOff / 100).toFixed(2)} off`}`,
+        duration: duration || 'forever',
+      };
+      
+      if (percentOff) {
+        couponParams.percent_off = percentOff;
+      } else if (amountOff) {
+        couponParams.amount_off = amountOff;
+        couponParams.currency = 'gbp';
+      }
+      
+      const coupon = await stripe.coupons.create(couponParams);
+      
+      // Create promo code
+      const promoCodeParams: Stripe.PromotionCodeCreateParams = {
+        coupon: coupon.id,
+        code: code.toUpperCase(),
+      };
+      
+      if (maxRedemptions) {
+        promoCodeParams.max_redemptions = maxRedemptions;
+      }
+      if (expiresAt) {
+        promoCodeParams.expires_at = Math.floor(new Date(expiresAt).getTime() / 1000);
+      }
+      
+      const promoCode = await stripe.promotionCodes.create(promoCodeParams);
+      
+      res.json({
+        id: promoCode.id,
+        code: promoCode.code,
+        active: promoCode.active,
+        coupon: {
+          id: coupon.id,
+          name: coupon.name,
+          percentOff: coupon.percent_off,
+          amountOff: coupon.amount_off,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error creating promo code:", error);
+      res.status(500).json({ message: error.message || "Failed to create promo code" });
+    }
+  });
+
+  // Super Admin: Deactivate promo code
+  app.patch("/api/admin/billing/promo-codes/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { active } = req.body;
+      
+      const promoCode = await stripe.promotionCodes.update(req.params.id, {
+        active: active ?? false,
+      });
+      
+      res.json({
+        id: promoCode.id,
+        code: promoCode.code,
+        active: promoCode.active,
+      });
+    } catch (error: any) {
+      console.error("Error updating promo code:", error);
+      res.status(500).json({ message: error.message || "Failed to update promo code" });
+    }
+  });
+
+  // Super Admin: Issue refund
+  app.post("/api/admin/billing/refund", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { purchaseId, amount, reason } = req.body;
+      
+      if (!purchaseId) {
+        return res.status(400).json({ message: "Purchase ID is required" });
+      }
+      
+      const purchase = await storage.getPurchase(purchaseId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Purchase not found" });
+      }
+      
+      if (!purchase.stripePaymentIntentId) {
+        return res.status(400).json({ message: "No payment intent found for this purchase" });
+      }
+      
+      // Create refund in Stripe
+      const refundParams: Stripe.RefundCreateParams = {
+        payment_intent: purchase.stripePaymentIntentId,
+        reason: 'requested_by_customer',
+      };
+      
+      if (amount) {
+        refundParams.amount = amount; // Amount in pence
+      }
+      
+      const refund = await stripe.refunds.create(refundParams);
+      
+      // Update purchase status if full refund
+      if (!amount || amount >= purchase.totalAmount) {
+        await storage.updatePurchase(purchaseId, {
+          status: 'refunded',
+          resultsAccessPaid: false,
+        });
+      }
+      
+      res.json({
+        refundId: refund.id,
+        amount: refund.amount,
+        status: refund.status,
+        reason: reason || 'Customer requested',
+      });
+    } catch (error: any) {
+      console.error("Error issuing refund:", error);
+      res.status(500).json({ message: error.message || "Failed to issue refund" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts

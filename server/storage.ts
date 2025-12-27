@@ -314,6 +314,27 @@ export interface IStorage {
     affectedPartners: number;
   }>;
   resolveErrorLog(id: string, resolvedBy: string, notes?: string): Promise<void>;
+  
+  // Billing operations
+  getAllPurchasesWithDetails(filters?: {
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<Array<{
+    purchase: Purchase;
+    user: { id: string; email: string; firstName: string | null; lastName: string | null };
+    items: PurchaseItem[];
+  }>>;
+  getBillingStats(startDate?: Date, endDate?: Date): Promise<{
+    totalRevenue: number;
+    totalTransactions: number;
+    completedTransactions: number;
+    pendingTransactions: number;
+    averageOrderValue: number;
+    revenueByMonth: Array<{ month: string; revenue: number; count: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2001,6 +2022,136 @@ export class DatabaseStorage implements IStorage {
         notes: notes || null,
       })
       .where(eq(errorLogs.id, id));
+  }
+
+  // Billing operations
+  async getAllPurchasesWithDetails(filters?: {
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<Array<{
+    purchase: Purchase;
+    user: { id: string; email: string; firstName: string | null; lastName: string | null };
+    items: PurchaseItem[];
+  }>> {
+    const conditions = [];
+    
+    if (filters?.status && filters.status !== 'all') {
+      conditions.push(eq(purchases.status, filters.status));
+    }
+    if (filters?.startDate) {
+      conditions.push(gte(purchases.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(purchases.createdAt, filters.endDate));
+    }
+
+    const query = db
+      .select({
+        purchase: purchases,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        },
+      })
+      .from(purchases)
+      .innerJoin(users, eq(purchases.userId, users.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(purchases.createdAt))
+      .limit(filters?.limit || 100)
+      .offset(filters?.offset || 0);
+
+    const results = await query;
+    
+    // Get purchase items for all purchases
+    const purchaseIds = results.map(r => r.purchase.id);
+    const itemsMap = purchaseIds.length > 0 
+      ? await this.getPurchaseItemsBulk(purchaseIds)
+      : new Map<string, PurchaseItem[]>();
+
+    return results.map(r => ({
+      purchase: r.purchase,
+      user: r.user,
+      items: itemsMap.get(r.purchase.id) || [],
+    }));
+  }
+
+  async getBillingStats(startDate?: Date, endDate?: Date): Promise<{
+    totalRevenue: number;
+    totalTransactions: number;
+    completedTransactions: number;
+    pendingTransactions: number;
+    averageOrderValue: number;
+    revenueByMonth: Array<{ month: string; revenue: number; count: number }>;
+  }> {
+    const conditions = [];
+    if (startDate) {
+      conditions.push(gte(purchases.createdAt, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(purchases.createdAt, endDate));
+    }
+
+    // Get completed transactions (paid)
+    const completedConditions = [...conditions, eq(purchases.resultsAccessPaid, true)];
+    const [completedStats] = await db
+      .select({
+        totalRevenue: sql<number>`COALESCE(SUM(${purchases.totalAmount}), 0)::integer`,
+        count: count(),
+      })
+      .from(purchases)
+      .where(completedConditions.length > 0 ? and(...completedConditions) : undefined);
+
+    // Get all transactions count
+    const [totalStats] = await db
+      .select({ count: count() })
+      .from(purchases)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Get pending transactions
+    const pendingConditions = [...conditions, eq(purchases.resultsAccessPaid, false)];
+    const [pendingStats] = await db
+      .select({ count: count() })
+      .from(purchases)
+      .where(pendingConditions.length > 0 ? and(...pendingConditions) : undefined);
+
+    // Get revenue by month (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    
+    const monthlyData = await db
+      .select({
+        month: sql<string>`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`,
+        revenue: sql<number>`COALESCE(SUM(${purchases.totalAmount}), 0)::integer`,
+        count: count(),
+      })
+      .from(purchases)
+      .where(and(
+        gte(purchases.createdAt, twelveMonthsAgo),
+        eq(purchases.resultsAccessPaid, true)
+      ))
+      .groupBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`)
+      .orderBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`);
+
+    const totalRevenue = completedStats?.totalRevenue || 0;
+    const completedCount = completedStats?.count || 0;
+
+    return {
+      totalRevenue,
+      totalTransactions: totalStats?.count || 0,
+      completedTransactions: completedCount,
+      pendingTransactions: pendingStats?.count || 0,
+      averageOrderValue: completedCount > 0 ? Math.round(totalRevenue / completedCount) : 0,
+      revenueByMonth: monthlyData.map(m => ({
+        month: m.month,
+        revenue: m.revenue,
+        count: m.count,
+      })),
+    };
   }
 }
 
