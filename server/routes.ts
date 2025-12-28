@@ -4499,8 +4499,9 @@ Format your response as JSON with this structure:
     const user = await storage.getUser(userId);
     if (!user) return null;
     
-    const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
-    if (!hasAdminAccess) return null;
+    // Partner admins, org admins, and super admins can access partner features
+    const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+    if (!hasPartnerAccess) return null;
     
     let partner = null;
     if (user.organizationId) {

@@ -168,7 +168,7 @@ export default function Navigation() {
                     data-testid="button-logout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    {isInvitationOnly ? "Exit Assessment" : "Logout"}
+                    Logout
                   </Button>
                 </>
               ) : (
@@ -270,7 +270,7 @@ export default function Navigation() {
                       data-testid="button-mobile-logout"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      {isInvitationOnly ? "Exit Assessment" : "Logout"}
+                      Logout
                     </Button>
                   </>
                 ) : (
