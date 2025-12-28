@@ -18,7 +18,22 @@ function getCsrfToken(): string | null {
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    
+    // Try to parse JSON and extract human-readable message
+    let errorMessage = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.message) {
+        errorMessage = parsed.message;
+      } else if (parsed.error) {
+        errorMessage = parsed.error;
+      }
+    } catch {
+      // Not JSON, use the raw text but clean it up
+      errorMessage = text;
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
