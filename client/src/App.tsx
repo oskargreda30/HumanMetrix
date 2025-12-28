@@ -39,6 +39,7 @@ import Developers from "@/pages/Developers";
 import EmbedAssessment from "@/pages/EmbedAssessment";
 import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
+import PartnerDashboard from "@/pages/PartnerDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -119,6 +120,13 @@ function Router() {
       </Route>
       <Route path="/admin/widget-test" component={WidgetTest} />
       <Route path="/partner-package-success" component={PartnerPackageSuccess} />
+      <Route path="/partner">
+        {() => (
+          <ProtectedRoute>
+            <PartnerDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
       <Route path="/candidate-portal">

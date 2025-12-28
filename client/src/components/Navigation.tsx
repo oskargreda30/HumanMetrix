@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Building2 } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
+
+interface PartnerAccountCheck {
+  hasPartnerAccount: boolean;
+}
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
@@ -19,6 +23,14 @@ export default function Navigation() {
 
   // Check if user is invitation-only (from backend auth response)
   const isInvitationOnly = (user as any)?.isInvitationOnly;
+
+  // Check if user has a partner account
+  const { data: partnerCheck } = useQuery<PartnerAccountCheck>({
+    queryKey: ["/api/partner/me"],
+    enabled: isAuthenticated && !isInvitationOnly,
+  });
+  
+  const hasPartnerAccount = partnerCheck?.hasPartnerAccount || false;
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -145,6 +157,18 @@ export default function Navigation() {
                       Dashboard
                     </Button>
                   </Link>
+                  {hasPartnerAccount && (
+                    <Link href="/partner">
+                      <Button 
+                        variant="ghost" 
+                        className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                        data-testid="button-partner-dashboard"
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Partner
+                      </Button>
+                    </Link>
+                  )}
                   <Button 
                     variant="ghost" 
                     className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
@@ -231,6 +255,19 @@ export default function Navigation() {
                         Dashboard
                       </Button>
                     </Link>
+                    {hasPartnerAccount && (
+                      <Link href="/partner">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
+                          onClick={() => setMobileMenuOpen(false)} 
+                          data-testid="button-mobile-partner-dashboard"
+                        >
+                          <Building2 className="mr-2 h-4 w-4" />
+                          Partner Dashboard
+                        </Button>
+                      </Link>
+                    )}
                     <Button 
                       variant="ghost" 
                       className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 

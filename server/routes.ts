@@ -3893,6 +3893,229 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Get partner account info for the current user
+  app.get("/api/partner/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner && user?.organizationId) {
+        const org = await storage.getOrganization(user.organizationId);
+        if (org) {
+          const partners = await storage.getAllPartnerAccounts();
+          matchingPartner = partners.find(p => 
+            p.companyName?.toLowerCase() === org.name.toLowerCase()
+          ) || null;
+        }
+      }
+      
+      if (!matchingPartner) {
+        return res.json({ hasPartnerAccount: false });
+      }
+      
+      const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
+      const apiKeys = await storage.getApiKeysByPartner(matchingPartner.id);
+      
+      res.json({
+        hasPartnerAccount: true,
+        partner: {
+          id: matchingPartner.id,
+          name: matchingPartner.name,
+          companyName: matchingPartner.companyName,
+          billingType: matchingPartner.billingType,
+          testsPurchased: quota.testsPurchased,
+          testsConsumed: quota.testsConsumed,
+          remaining: quota.remaining,
+          isSuspended: !!matchingPartner.apiAccessSuspendedAt,
+          suspendedAt: matchingPartner.apiAccessSuspendedAt,
+          activeApiKeys: apiKeys.filter(k => k.isActive).length,
+          createdAt: matchingPartner.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching partner account:", error);
+      res.status(500).json({ message: "Failed to fetch partner account" });
+    }
+  });
+
+  // Partner self-service: Get detailed usage stats
+  app.get("/api/partner/me/usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      // Get usage stats
+      const currentMonthUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, startOfMonth, endOfMonth);
+      const currentMonthSessions = currentMonthUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+      
+      const allTimeUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, new Date(2020, 0, 1), endOfMonth);
+      const totalTestsCompleted = allTimeUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+      
+      // Get recent sessions
+      const recentEvents = await storage.getRecentUsageEvents(matchingPartner.id, 50);
+      
+      // Get last 6 months usage
+      const monthlyUsage = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+        const monthUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, monthStart, monthEnd);
+        const sessions = monthUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
+        
+        monthlyUsage.push({
+          month: monthStart.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+          sessions,
+        });
+      }
+      
+      const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
+      
+      res.json({
+        currentMonth: {
+          sessions: currentMonthSessions,
+          period: { start: startOfMonth, end: endOfMonth },
+        },
+        allTime: {
+          totalTests: totalTestsCompleted,
+        },
+        quota: {
+          purchased: quota.testsPurchased,
+          consumed: quota.testsConsumed,
+          remaining: quota.remaining,
+        },
+        monthlyUsage,
+        recentEvents: recentEvents.slice(0, 20),
+      });
+    } catch (error) {
+      console.error("Error fetching partner usage:", error);
+      res.status(500).json({ message: "Failed to fetch usage stats" });
+    }
+  });
+
+  // Partner self-service: Get billing history (invoices/receipts)
+  app.get("/api/partner/me/billing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get all test packages (completed ones are receipts)
+      const packages = await storage.getPartnerTestPackages(matchingPartner.id);
+      
+      // Get partner invoices
+      const invoices = await storage.getPartnerInvoices(matchingPartner.id);
+      
+      // Format packages as receipts
+      const receipts = packages
+        .filter(pkg => pkg.status === 'completed' && pkg.totalPrice > 0)
+        .map(pkg => ({
+          id: pkg.id,
+          type: 'receipt' as const,
+          date: pkg.purchasedAt || pkg.createdAt,
+          description: `${pkg.packageSize} Test Package`,
+          amount: pkg.totalPrice,
+          currency: pkg.currency || 'gbp',
+          status: 'paid' as const,
+          tests: pkg.packageSize,
+          pricePerTest: pkg.pricePerTest,
+        }));
+      
+      // Format invoices
+      const formattedInvoices = invoices.map(inv => ({
+        id: inv.id,
+        type: 'invoice' as const,
+        invoiceNumber: inv.invoiceNumber,
+        date: inv.invoiceDate,
+        dueDate: inv.dueDate,
+        description: `Invoice ${inv.invoiceNumber}`,
+        amount: inv.totalAmount,
+        currency: inv.currency || 'gbp',
+        status: inv.status,
+        periodStart: inv.periodStart,
+        periodEnd: inv.periodEnd,
+        testsUsed: inv.testsUsed,
+      }));
+      
+      // Combine and sort by date
+      const allBillingItems = [...receipts, ...formattedInvoices]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      // Calculate billing summary
+      const totalSpent = receipts.reduce((sum, r) => sum + r.amount, 0);
+      const pendingInvoices = formattedInvoices.filter(i => i.status === 'sent' || i.status === 'overdue');
+      const pendingAmount = pendingInvoices.reduce((sum, i) => sum + i.amount, 0);
+      
+      res.json({
+        billingType: matchingPartner.billingType,
+        summary: {
+          totalSpent,
+          pendingAmount,
+          pendingInvoices: pendingInvoices.length,
+        },
+        items: allBillingItems,
+      });
+    } catch (error) {
+      console.error("Error fetching partner billing:", error);
+      res.status(500).json({ message: "Failed to fetch billing history" });
+    }
+  });
+
   // Partner self-service: Create checkout session for test package purchase
   app.post("/api/partner/purchase/checkout", isAuthenticated, async (req: any, res) => {
     try {
