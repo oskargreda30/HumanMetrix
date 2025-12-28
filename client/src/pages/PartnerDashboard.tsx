@@ -145,7 +145,7 @@ export default function PartnerDashboard() {
   const [copiedKey, setCopiedKey] = useState(false);
 
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
-    queryKey: ["/api/partner/me"],
+    queryKey: ["/api/partner/account"],
   });
 
   const { data: usage, isLoading: usageLoading } = useQuery<UsageStats>({

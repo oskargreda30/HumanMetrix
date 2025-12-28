@@ -26,7 +26,7 @@ export default function Navigation() {
 
   // Check if user has a partner account
   const { data: partnerCheck } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/me"],
+    queryKey: ["/api/partner/account"],
     enabled: isAuthenticated && !isInvitationOnly,
   });
   

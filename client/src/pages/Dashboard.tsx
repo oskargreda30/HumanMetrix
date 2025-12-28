@@ -101,7 +101,7 @@ export default function Dashboard() {
   
   // Check if user has a partner account (for routing)
   const { data: partnerCheck, isLoading: partnerLoading } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/me"],
+    queryKey: ["/api/partner/account"],
     enabled: !!user && (user.role === 'admin'),
   });
   

@@ -42,11 +42,21 @@ export default function AdminDashboard() {
   
   // Check if user has a partner account (only for non-super_admin admins)
   const { data: partnerCheck, isLoading: partnerLoading } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/me"],
+    queryKey: ["/api/partner/account"],
     enabled: !!user && user.role === 'admin',
   });
 
-  // Loading state
+  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+  
+  // Set default partnersSubTab based on role - super admins get "accounts", others get "organisations"
+  useEffect(() => {
+    if (user && !isSuperAdmin && partnersSubTab === 'accounts') {
+      setPartnersSubTab('organisations');
+    }
+  }, [user, isSuperAdmin, partnersSubTab]);
+
+  // Loading state - must be after all hooks
   if (userLoading || (user?.role === 'admin' && partnerLoading)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a1628]">
@@ -62,16 +72,6 @@ export default function AdminDashboard() {
   if (user?.role === 'admin' && partnerCheck?.hasPartnerAccount) {
     return <Redirect to="/partner-dashboard" />;
   }
-
-  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
-  const isSuperAdmin = user?.role === 'super_admin';
-
-  // Set default partnersSubTab based on role - super admins get "accounts", others get "organisations"
-  useEffect(() => {
-    if (user && !isSuperAdmin && partnersSubTab === 'accounts') {
-      setPartnersSubTab('organisations');
-    }
-  }, [user, isSuperAdmin, partnersSubTab]);
 
   if (!hasAdminAccess) {
     return (

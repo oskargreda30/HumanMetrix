@@ -3893,8 +3893,9 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get partner account info for the current user
-  app.get("/api/partner/me", isAuthenticated, async (req: any, res) => {
+  // Partner self-service: Get partner account info for the current user (session-authenticated)
+  // Note: /api/partner/me is used by API key auth in partner-routes.ts, so we use /api/partner/account here
+  app.get("/api/partner/account", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
