@@ -104,7 +104,7 @@ export default function Dashboard() {
     
     // Partner admins go directly to Partner Dashboard
     if (user.role === 'partner_admin') {
-      return <Redirect to="/partner-dashboard" />;
+      return <Redirect to="/partner" />;
     }
     
     // Organization admins go to Admin Dashboard
