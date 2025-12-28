@@ -536,112 +536,29 @@ export default function PartnerDashboard() {
 
       <Navigation />
 
-      <main className="flex-grow relative z-10 py-8 px-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white" data-testid="text-partner-name">
+      <main className="flex-grow py-16 relative z-10">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-white" data-testid="text-partner-name">
                 {partner.companyName || partner.name}
               </h1>
-              <p className="text-white/70">Partner Dashboard</p>
-            </div>
-            <div className="flex items-center gap-3">
               {partner.isSuspended ? (
-                <Badge variant="destructive" className="gap-1">
+                <Badge variant="destructive" className="gap-1.5">
                   <AlertTriangle className="h-3 w-3" />
                   API Suspended
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="gap-1 bg-green-500/20 text-green-400 border-green-500/30">
+                <Badge variant="secondary" className="gap-1.5 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
                   <CheckCircle className="h-3 w-3" />
-                  Active
+                  Partner
                 </Badge>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/developers")}
-                className="gap-2 text-white border-white/50 hover:bg-white/10"
-                data-testid="button-api-docs"
-              >
-                <ExternalLink className="h-4 w-4" />
-                API Docs
-              </Button>
             </div>
+            <p className="text-white/80">
+              Manage your assessments, organizations, and API integrations
+            </p>
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                  {partner.testsPurchased.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Total credits
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-tests-used">
-                  {partner.testsConsumed.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Completed assessments
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-remaining">
-                  {partner.remaining.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Available credits
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-api-keys">
-                  {partner.activeApiKeys}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Connected applications
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-4 mb-2">
-                <Progress value={usagePercentage} className="flex-1 h-3" data-testid="progress-usage" />
-                <span className="text-lg font-semibold w-16 text-right" data-testid="text-usage-percent">{usagePercentage}%</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
-              </p>
-            </CardContent>
-          </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
@@ -672,12 +589,78 @@ export default function PartnerDashboard() {
             </TabsList>
 
             {/* Home Tab */}
-            <TabsContent value="home" className="space-y-4">
+            <TabsContent value="home" className="space-y-6">
+              {/* Usage Stats */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                    <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-tests-purchased">
+                      {partner.testsPurchased.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Total credits</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-tests-used">
+                      {partner.testsConsumed.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Completed assessments</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-remaining">
+                      {partner.remaining.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Available credits</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-api-keys">
+                      {partner.activeApiKeys}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Connected applications</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Usage Progress */}
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <Progress value={usagePercentage} className="flex-1 h-3" data-testid="progress-usage" />
+                    <span className="text-lg font-semibold w-16 text-right" data-testid="text-usage-percent">{usagePercentage}%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Secondary Stats */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-primary" data-testid="home-month-sessions">
@@ -693,7 +676,7 @@ export default function PartnerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="home-org-count">
-                      {organizations?.organizations.length || 0}
+                      {organizations?.organizations?.length ?? 0}
                     </div>
                     <p className="text-xs text-muted-foreground">active organizations</p>
                   </CardContent>
@@ -705,21 +688,9 @@ export default function PartnerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="home-results-count">
-                      {resultsData?.total || 0}
+                      {resultsData?.total ?? 0}
                     </div>
                     <p className="text-xs text-muted-foreground">assessment results</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Quota Remaining</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="home-remaining">
-                      {partner.remaining.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">test credits left</p>
                   </CardContent>
                 </Card>
               </div>
@@ -763,26 +734,33 @@ export default function PartnerDashboard() {
               </Card>
 
               {/* Quick Actions */}
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("results")} data-testid="card-quick-results">
                   <CardContent className="pt-6 text-center">
                     <ClipboardList className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">View Results</h3>
-                    <p className="text-sm text-muted-foreground">See candidate assessment results</p>
+                    <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
                 <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("organizations")} data-testid="card-quick-organizations">
                   <CardContent className="pt-6 text-center">
                     <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">Manage Organizations</h3>
-                    <p className="text-sm text-muted-foreground">Add or manage client organizations</p>
+                    <h3 className="font-semibold">Organizations</h3>
+                    <p className="text-sm text-muted-foreground">Manage clients</p>
                   </CardContent>
                 </Card>
                 <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("billing")} data-testid="card-quick-billing">
                   <CardContent className="pt-6 text-center">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">Buy More Tests</h3>
-                    <p className="text-sm text-muted-foreground">Purchase additional test credits</p>
+                    <h3 className="font-semibold">Buy Tests</h3>
+                    <p className="text-sm text-muted-foreground">Purchase credits</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setLocation("/developers")} data-testid="card-quick-api-docs">
+                  <CardContent className="pt-6 text-center">
+                    <ExternalLink className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">API Docs</h3>
+                    <p className="text-sm text-muted-foreground">Integration guides</p>
                   </CardContent>
                 </Card>
               </div>
