@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -12,9 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, Clock, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FIT_QUESTIONS } from "../data/fit-questions";
-import { AI_READINESS_QUESTIONS } from "../data/ai-readiness-questions";
-import { AIQ_QUESTIONS } from "../data/aiq-questions";
+import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -33,6 +32,7 @@ export default function Assessment() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { questionLocale } = useCurrency();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function Assessment() {
   const assessmentsArray = (availableAssessments as any)?.assessments || [];
   const assessment = assessmentsArray.find((a: any) => a.purchaseItemId === purchaseItemId);
   
-  // Get questions based on assessment type
+  // Get questions based on assessment type (uses locale-aware questions)
   const getQuestions = () => {
     if (!assessment) return [];
     // Normalize assessment type (handle both hyphens and underscores)
@@ -60,13 +60,13 @@ export default function Assessment() {
     
     switch (type) {
       case "fit":
-        return FIT_QUESTIONS;
+        return getFITQuestions(questionLocale);
       case "ai_readiness":
-        return AI_READINESS_QUESTIONS;
+        return getAIReadinessQuestions(questionLocale);
       case "aiq":
-        return AIQ_QUESTIONS;
+        return getAIQQuestions(questionLocale);
       case "prompt_architecture":
-        // Convert levels to question format
+        // Convert levels to question format (Prompt Architecture not localized)
         return PROMPT_ARCHITECTURE_LEVELS.map(level => ({
           id: `level-${level.level}`,
           text: level.scenario,

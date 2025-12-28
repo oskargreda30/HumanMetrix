@@ -12,7 +12,9 @@ import {
   hasSEALaunchPricing,
   getSEALaunchPricing,
   type SEALaunchPricing,
-  roundPriceUp
+  roundPriceUp,
+  getQuestionLocale,
+  type QuestionLocale
 } from "@shared/currencies";
 
 interface CurrencyContextType {
@@ -32,6 +34,7 @@ interface CurrencyContextType {
   isVPN: boolean;
   isSEALaunchCountry: boolean; // Whether user is in a SEA launch country
   seaLaunchPricing: SEALaunchPricing | null; // SEA launch pricing details if applicable
+  questionLocale: QuestionLocale; // Question locale for assessments (default or sea)
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -259,6 +262,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   // SEA launch country detection
   const isSEALaunchCountry = !isVPN && countryCode ? hasSEALaunchPricing(countryCode) : false;
   const seaLaunchPricing = !isVPN && countryCode ? getSEALaunchPricing(countryCode) : null;
+  
+  // Question locale for assessments (tier3 countries get SEA-localized questions)
+  const questionLocale: QuestionLocale = getQuestionLocale(countryCode || 'GB');
 
   // Get rounded local price as a number (for summing individual prices)
   // This ensures consistent rounding when totaling multiple items
@@ -296,6 +302,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         isVPN,
         isSEALaunchCountry,
         seaLaunchPricing,
+        questionLocale,
       }}
     >
       {children}

@@ -8,9 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
-import { FIT_QUESTIONS } from "../data/fit-questions";
-import { AI_READINESS_QUESTIONS } from "../data/ai-readiness-questions";
-import { AIQ_QUESTIONS } from "../data/aiq-questions";
+import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 
 interface SessionData {
@@ -20,6 +18,7 @@ interface SessionData {
   externalUserId?: string;
   externalEmail?: string;
   partnerName?: string;
+  questionLocale?: QuestionLocale;
 }
 
 type Question = {
@@ -33,16 +32,16 @@ type Question = {
   type?: "text-input";
 };
 
-function getQuestions(assessmentType: string): Question[] {
+function getQuestions(assessmentType: string, locale: QuestionLocale = 'default'): Question[] {
   const type = assessmentType.replace(/-/g, "_");
 
   switch (type) {
     case "fit":
-      return FIT_QUESTIONS;
+      return getFITQuestions(locale);
     case "ai_readiness":
-      return AI_READINESS_QUESTIONS;
+      return getAIReadinessQuestions(locale);
     case "aiq":
-      return AIQ_QUESTIONS;
+      return getAIQQuestions(locale);
     case "prompt_architecture":
       return PROMPT_ARCHITECTURE_LEVELS.map((level: { level: number; scenario: string; title: string; description: string; taskInstructions: string }) => ({
         id: `level-${level.level}`,
@@ -126,10 +125,10 @@ export default function EmbedAssessment() {
       } else if (data.status === "completed") {
         setStatus("completed");
       } else if (data.status === "started") {
-        setQuestions(getQuestions(data.assessmentType));
+        setQuestions(getQuestions(data.assessmentType, data.questionLocale || 'default'));
         setStatus("started");
       } else {
-        setQuestions(getQuestions(data.assessmentType));
+        setQuestions(getQuestions(data.assessmentType, data.questionLocale || 'default'));
         setStatus("ready");
       }
     } catch (err) {

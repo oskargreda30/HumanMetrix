@@ -502,6 +502,7 @@ export function registerPartnerRoutes(app: Express) {
           externalEmail: session.externalEmail,
           partnerName: partner?.companyName || partner?.name,
           expiresAt: session.expiresAt,
+          questionLocale: session.questionLocale || 'default',
         });
       } catch (error) {
         console.error("Error fetching session:", error);
