@@ -70,13 +70,15 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
         - Invoice history tracking with status management (sent, paid, overdue, cancelled).
         - Due date calculation based on partner payment terms.
     - **Multi-Organisation Hierarchy**: Recruitment agencies (partners) can manage multiple client organisations, each with their own API keys for usage tracking while maintaining centralised billing through the parent partner account.
-- **Error Tracking System**: Comprehensive error monitoring for super admins to diagnose issues and identify affected clients.
-    - **Error Logging**: Database-backed error storage with fields for message, stack trace, severity, status, source, URL, method, status code, and associated user/partner/API key.
-    - **Error Fingerprinting**: Similar errors are grouped by fingerprint hash to reduce noise and track occurrence counts.
-    - **Severity Levels**: info, warning, error, critical - with visual indicators.
+- **Health Monitoring System**: Comprehensive system health and error monitoring for super admins.
+    - **Health Tab Sub-sections**: Overview (aggregate stats), Health Checks (system components), Latency (API performance), Errors (application errors).
+    - **Severity Categorisation**: All metrics categorised as critical, error, warning, or info with colour-coded visual indicators.
+    - **Health Checks Monitored**: Database connectivity/latency, OpenAI API status, Stripe API status, Email service status, Memory usage, Process uptime.
+    - **Latency Monitoring**: API endpoint response times with 95th percentile tracking.
+    - **Error Tracking**: Database-backed error storage with message, stack trace, severity, status, source, URL, method, status code, and associated user/partner/API key.
+    - **Error Fingerprinting**: Similar errors grouped by fingerprint hash to reduce noise and track occurrence counts.
     - **Status Workflow**: new, investigating, resolved, ignored - with notes and resolution tracking.
-    - **Super Admin Dashboard Tab**: ErrorsTab component showing error statistics, filterable error list, and detailed error view with stack trace and context.
-    - **API Endpoints**: GET /api/admin/errors/stats, GET /api/admin/errors, GET /api/admin/errors/:id, PATCH /api/admin/errors/:id, GET /api/admin/errors/group/:fingerprint.
+    - **API Endpoints**: GET /api/admin/health/checks, GET /api/admin/health/latency, GET /api/admin/errors/stats, GET /api/admin/errors, GET /api/admin/errors/:id, PATCH /api/admin/errors/:id, GET /api/admin/errors/group/:fingerprint.
 - **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue and managing payments.
     - **Billing Statistics**: Total revenue, completed/pending transactions, average order value, and 12-month revenue trend chart.
     - **Transaction Management**: Filterable transaction list with customer details, assessment items, discount codes, and payment status.
