@@ -1873,7 +1873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Start an assessment (from purchase or invitation)
   app.post("/api/assessments/start", isAuthenticated, async (req: any, res) => {
     try {
-      const { purchaseItemId } = req.body;
+      const { purchaseItemId, questionLocale = 'default' } = req.body;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
 
@@ -1944,6 +1944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchaseItemId: null,
           invitationId,
           assessmentType,
+          questionLocale: questionLocale || 'default',
           answers: {},
           scores: {},
           totalScore: null,
@@ -2039,6 +2040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purchaseItemId,
         invitationId: null,
         assessmentType: item.assessmentType,
+        questionLocale: questionLocale || 'default',
         answers: {},
         scores: {},
         totalScore: null,

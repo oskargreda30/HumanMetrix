@@ -88,7 +88,7 @@ export default function Assessment() {
 
   const startMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/assessments/start", { purchaseItemId });
+      const response = await apiRequest("POST", "/api/assessments/start", { purchaseItemId, questionLocale });
       return await response.json();
     },
     onSuccess: (data: any) => {
