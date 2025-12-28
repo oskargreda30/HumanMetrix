@@ -126,6 +126,7 @@ export const assessmentResults = pgTable("assessment_results", {
   purchaseItemId: varchar("purchase_item_id").references(() => purchaseItems.id, { onDelete: "set null" }),
   invitationId: varchar("invitation_id").references(() => invitations.id, { onDelete: "set null" }),
   assessmentType: text("assessment_type").notNull(),
+  questionLocale: text("question_locale").notNull().default("default"), // 'default' or 'sea' for localized questions
   answers: jsonb("answers").notNull().$type<Record<string, any>>(),
   scores: jsonb("scores").notNull().$type<Record<string, number>>(),
   totalScore: integer("total_score"),
@@ -623,6 +624,7 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   externalUserId: varchar("external_user_id"), // Partner's user ID
   externalEmail: varchar("external_email"),
   assessmentType: varchar("assessment_type").notNull(),
+  questionLocale: varchar("question_locale").notNull().default("default"), // 'default' or 'sea' for localized questions
   status: varchar("status").notNull().default("created"), // created, started, completed, expired
   answers: jsonb("answers").$type<Record<string, any>>(),
   scores: jsonb("scores").$type<Record<string, number>>(),

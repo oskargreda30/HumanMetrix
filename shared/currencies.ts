@@ -163,6 +163,21 @@ export function getPricingTier(countryCode: string): PricingTier {
   return COUNTRY_PRICING_TIER[countryCode.toUpperCase()] || 'tier1';
 }
 
+// Question locales for assessment content localization
+export type QuestionLocale = 'default' | 'sea';
+
+// Determine question locale based on country code
+// Tier 3 countries get SEA-localized questions with culturally adjusted wording
+export function getQuestionLocale(countryCode: string): QuestionLocale {
+  const tier = getPricingTier(countryCode);
+  return tier === 'tier3' ? 'sea' : 'default';
+}
+
+// Check if a country should use SEA-localized questions
+export function usesSEAQuestions(countryCode: string): boolean {
+  return getQuestionLocale(countryCode) === 'sea';
+}
+
 // Get PPP multiplier for a country
 export function getPPPMultiplier(countryCode: string): number {
   const tier = getPricingTier(countryCode);
