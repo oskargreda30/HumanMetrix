@@ -24,10 +24,6 @@ import BillingTab from "@/components/admin/BillingTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
-interface PartnerAccountCheck {
-  hasPartnerAccount: boolean;
-}
-
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
@@ -40,12 +36,6 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
   
-  // Check if user has a partner account (only for non-super_admin admins)
-  const { data: partnerCheck, isLoading: partnerLoading } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/account"],
-    enabled: !!user && user.role === 'admin',
-  });
-
   const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
   const isSuperAdmin = user?.role === 'super_admin';
   
@@ -56,8 +46,8 @@ export default function AdminDashboard() {
     }
   }, [user, isSuperAdmin, partnersSubTab]);
 
-  // Loading state - must be after all hooks
-  if (userLoading || (user?.role === 'admin' && partnerLoading)) {
+  // Loading state
+  if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a1628]">
         <div className="text-center">
@@ -68,8 +58,8 @@ export default function AdminDashboard() {
     );
   }
   
-  // Redirect partner admins to Partner Dashboard
-  if (user?.role === 'admin' && partnerCheck?.hasPartnerAccount) {
+  // Redirect partner_admin role to Partner Dashboard
+  if (user?.role === 'partner_admin') {
     return <Redirect to="/partner-dashboard" />;
   }
 

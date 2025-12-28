@@ -4,15 +4,11 @@ import { Menu, X, LogOut, User, Building2 } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
-
-interface PartnerAccountCheck {
-  hasPartnerAccount: boolean;
-}
 
 export default function Navigation() {
   const [location, navigate] = useLocation();
@@ -24,13 +20,8 @@ export default function Navigation() {
   // Check if user is invitation-only (from backend auth response)
   const isInvitationOnly = (user as any)?.isInvitationOnly;
 
-  // Check if user has a partner account
-  const { data: partnerCheck } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/account"],
-    enabled: isAuthenticated && !isInvitationOnly,
-  });
-  
-  const hasPartnerAccount = partnerCheck?.hasPartnerAccount || false;
+  // Partner admins are identified by their role (no API call needed)
+  const isPartnerAdmin = user?.role === 'partner_admin';
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -157,7 +148,7 @@ export default function Navigation() {
                       Dashboard
                     </Button>
                   </Link>
-                  {hasPartnerAccount && (
+                  {isPartnerAdmin && (
                     <Link href="/partner">
                       <Button 
                         variant="ghost" 
@@ -255,7 +246,7 @@ export default function Navigation() {
                         Dashboard
                       </Button>
                     </Link>
-                    {hasPartnerAccount && (
+                    {isPartnerAdmin && (
                       <Link href="/partner">
                         <Button 
                           variant="ghost" 

@@ -18,6 +18,7 @@ export const sessions = pgTable(
 export const USER_ROLES = {
   CANDIDATE: "candidate",
   ADMIN: "admin",
+  PARTNER_ADMIN: "partner_admin",
   SUPER_ADMIN: "super_admin",
 } as const;
 

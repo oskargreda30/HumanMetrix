@@ -90,48 +90,25 @@ const getAssessmentMetadata = (type: string) => {
   return metadata[type] || metadata['fit'];
 };
 
-interface PartnerAccountCheck {
-  hasPartnerAccount: boolean;
-}
-
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // Check if user has a partner account (for routing)
-  const { data: partnerCheck, isLoading: partnerLoading } = useQuery<PartnerAccountCheck>({
-    queryKey: ["/api/partner/account"],
-    enabled: !!user && (user.role === 'admin'),
-  });
-  
-  // Redirect based on role and partner account status
+  // Redirect based on role
   if (!authLoading && user) {
     // Super admins always go to admin dashboard (Platform Admin Hub)
     if (user.role === 'super_admin') {
       return <Redirect to="/admin/dashboard" />;
     }
     
-    // Admins: check if they have a partner account
+    // Partner admins go directly to Partner Dashboard
+    if (user.role === 'partner_admin') {
+      return <Redirect to="/partner-dashboard" />;
+    }
+    
+    // Organization admins go to Admin Dashboard
     if (user.role === 'admin') {
-      // Wait for partner check to complete
-      if (partnerLoading) {
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-[#0a1628]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-              <p className="text-blue-100/70">Loading your dashboard...</p>
-            </div>
-          </div>
-        );
-      }
-      
-      // Partner admins go to Partner Dashboard
-      if (partnerCheck?.hasPartnerAccount) {
-        return <Redirect to="/partner-dashboard" />;
-      }
-      
-      // Organization admins (without partner account) go to Admin Dashboard
       return <Redirect to="/admin/dashboard" />;
     }
   }

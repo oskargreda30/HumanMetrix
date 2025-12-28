@@ -5411,15 +5411,15 @@ Format your response as JSON with this structure:
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
       
       if (existingUser) {
-        // Update existing user to be admin and link to partner organization
-        await storage.updateUserRole(existingUser.id, 'admin');
+        // Update existing user to be partner_admin and link to partner organization
+        await storage.updateUserRole(existingUser.id, 'partner_admin');
         if (finalOrganizationId) {
           await storage.updateUserOrganization(existingUser.id, finalOrganizationId);
         }
-        partnerUser = { ...existingUser, role: 'admin', organizationId: finalOrganizationId };
-        console.log(`Updated existing user ${existingUser.id} to admin role for partner organisation`);
+        partnerUser = { ...existingUser, role: 'partner_admin', organizationId: finalOrganizationId };
+        console.log(`Updated existing user ${existingUser.id} to partner_admin role for partner organisation`);
       } else {
-        // Generate temporary password for the admin user
+        // Generate temporary password for the partner admin user
         temporaryPassword = generateTemporaryPassword();
         const passwordHash = await bcrypt.hash(temporaryPassword, 10);
         
@@ -5428,13 +5428,13 @@ Format your response as JSON with this structure:
         const firstName = nameParts[0] || name;
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
         
-        // Create admin user for the partner's organisation
+        // Create partner_admin user for the partner's organisation
         partnerUser = await storage.createUser({
           email,
           passwordHash,
           firstName,
           lastName,
-          role: 'admin',
+          role: 'partner_admin',
           organizationId: finalOrganizationId,
           profileImageUrl: null,
         });
