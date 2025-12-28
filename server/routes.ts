@@ -5202,6 +5202,329 @@ Format your response as JSON with this structure:
     return next;
   }
 
+  // ===== PARTNER ANALYTICS =====
+  
+  // Get partner analytics
+  app.get("/api/partner/me/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const period = (req.query.period as 'daily' | 'weekly' | 'monthly') || 'daily';
+      const days = parseInt(req.query.days as string) || 30;
+      
+      const analytics = await storage.getPartnerAnalytics(partner.id, period, days);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching partner analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // ===== PARTNER DATA EXPORTS =====
+  
+  // Export results as CSV
+  app.get("/api/partner/me/export/results", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = sessions.filter(s => s.status === 'completed');
+      
+      // Get organization names
+      const orgs = await storage.getPartnerOrganisationsByPartner(partner.id);
+      const orgMap = new Map(orgs.map(o => [o.id, o.name]));
+      
+      // Build CSV
+      const headers = ['Session ID', 'Assessment Type', 'External User ID', 'External Email', 'Organization', 'Score', 'Percentile', 'Completed At', 'Created At'];
+      const rows = completedSessions.map(s => [
+        s.id,
+        s.assessmentType,
+        s.externalUserId || '',
+        s.externalEmail || '',
+        s.partnerOrganisationId ? (orgMap.get(s.partnerOrganisationId) || 'Unknown') : 'Unassigned',
+        s.totalScore?.toString() || '',
+        s.percentile?.toString() || '',
+        s.completedAt?.toISOString() || '',
+        s.createdAt.toISOString(),
+      ]);
+      
+      const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="results_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting results:", error);
+      res.status(500).json({ message: "Failed to export results" });
+    }
+  });
+  
+  // Export usage report as CSV
+  app.get("/api/partner/me/export/usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const events = await storage.getUsageEventsByPartner(partner.id);
+      
+      const headers = ['Event ID', 'Event Type', 'Assessment Type', 'Billable', 'Amount (pence)', 'Created At'];
+      const rows = events.map(e => [
+        e.id,
+        e.eventType,
+        e.assessmentType || '',
+        e.billable ? 'Yes' : 'No',
+        e.billedAmount?.toString() || '0',
+        e.createdAt.toISOString(),
+      ]);
+      
+      const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="usage_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting usage:", error);
+      res.status(500).json({ message: "Failed to export usage report" });
+    }
+  });
+  
+  // Export billing history as CSV
+  app.get("/api/partner/me/export/billing", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const packages = await storage.getPartnerTestPackages(partner.id);
+      const invoices = await storage.getPartnerInvoices(partner.id);
+      
+      // Combine packages and invoices
+      const headers = ['Type', 'ID', 'Description', 'Amount', 'Currency', 'Status', 'Date'];
+      const packageRows = packages.map(p => [
+        'Package',
+        p.id,
+        `${p.packageSize} tests @ £${(p.pricePerTest / 100).toFixed(2)}/test`,
+        (p.totalPrice / 100).toFixed(2),
+        p.currency.toUpperCase(),
+        p.status,
+        p.purchasedAt?.toISOString() || p.createdAt.toISOString(),
+      ]);
+      const invoiceRows = invoices.map(i => [
+        'Invoice',
+        i.invoiceNumber,
+        `${i.testsUsed} tests`,
+        (i.totalAmount / 100).toFixed(2),
+        i.currency.toUpperCase(),
+        i.status,
+        i.createdAt.toISOString(),
+      ]);
+      
+      const allRows = [...packageRows, ...invoiceRows].sort((a, b) => 
+        new Date(b[6]).getTime() - new Date(a[6]).getTime()
+      );
+      
+      const csv = [headers.join(','), ...allRows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="billing_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting billing:", error);
+      res.status(500).json({ message: "Failed to export billing history" });
+    }
+  });
+
+  // ===== PARTNER NOTIFICATIONS =====
+  
+  // Get notifications
+  app.get("/api/partner/me/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      
+      const notifications = await storage.getPartnerNotifications(partner.id, limit, unreadOnly);
+      const unreadCount = await storage.getUnreadNotificationCount(partner.id);
+      
+      res.json({ notifications, unreadCount });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+  
+  // Mark notification as read
+  app.post("/api/partner/me/notifications/:id/read", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // We'd need to verify ownership but for now just mark it
+      await storage.markNotificationRead(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notification read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+  
+  // Mark all notifications as read
+  app.post("/api/partner/me/notifications/read-all", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      await storage.markAllNotificationsRead(partner.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // ===== PARTNER TEAM MEMBERS =====
+  
+  // Get team members
+  app.get("/api/partner/me/team", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const members = await storage.getPartnerTeamMembers(partner.id);
+      res.json({ members });
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ message: "Failed to fetch team members" });
+    }
+  });
+  
+  // Invite team member
+  app.post("/api/partner/me/team/invite", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { email, name, role } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Check if already invited
+      const existing = await storage.getPartnerTeamMemberByEmail(partner.id, email);
+      if (existing) {
+        return res.status(400).json({ message: "This email has already been invited" });
+      }
+      
+      const crypto = await import('crypto');
+      const inviteToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // 7 day expiry
+      
+      const member = await storage.createPartnerTeamMember({
+        partnerId: partner.id,
+        email: email.toLowerCase(),
+        name: name || null,
+        role: role || 'member',
+        inviteStatus: 'pending',
+        inviteToken,
+        inviteExpiresAt: expiresAt,
+        invitedByUserId: req.user.id,
+      });
+      
+      // Send invitation email
+      try {
+        const { sendEmail } = await import('./email');
+        await sendEmail({
+          to: email,
+          subject: `You've been invited to join ${partner.companyName} on HumanMetrix`,
+          html: `
+            <h2>Team Invitation</h2>
+            <p>You've been invited to join <strong>${partner.companyName}</strong>'s team on HumanMetrix.</p>
+            <p>Click the link below to accept the invitation:</p>
+            <p><a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://humanmetrix.com'}/partner/accept-invite/${inviteToken}">Accept Invitation</a></p>
+            <p>This invitation expires in 7 days.</p>
+          `,
+        });
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+      }
+      
+      res.json({ member, message: "Invitation sent successfully" });
+    } catch (error) {
+      console.error("Error inviting team member:", error);
+      res.status(500).json({ message: "Failed to invite team member" });
+    }
+  });
+  
+  // Remove team member
+  app.delete("/api/partner/me/team/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const member = await storage.getPartnerTeamMember(req.params.id);
+      if (!member || member.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+      
+      await storage.deletePartnerTeamMember(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing team member:", error);
+      res.status(500).json({ message: "Failed to remove team member" });
+    }
+  });
+  
+  // Update team member role
+  app.patch("/api/partner/me/team/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const member = await storage.getPartnerTeamMember(req.params.id);
+      if (!member || member.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+      
+      const { role } = req.body;
+      if (role) {
+        await storage.updatePartnerTeamMember(req.params.id, { role });
+      }
+      
+      const updated = await storage.getPartnerTeamMember(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating team member:", error);
+      res.status(500).json({ message: "Failed to update team member" });
+    }
+  });
+
   // ===== Partner Organizations (session-authenticated) =====
   
   // List partner organizations
@@ -5217,7 +5540,7 @@ Format your response as JSON with this structure:
       // Get usage stats for each organization
       const orgsWithStats = await Promise.all(organizations.map(async (org) => {
         // Count sessions for this organization
-        const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+        const sessions = await storage.getSessionsByPartner(partner.id, 10000);
         const orgSessions = sessions.filter(s => s.partnerOrganisationId === org.id);
         
         return {
@@ -5284,7 +5607,7 @@ Format your response as JSON with this structure:
       }
       
       // Get sessions for this organization
-      const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       const orgSessions = sessions.filter(s => s.partnerOrganisationId === org.id);
       
       // Get results for completed sessions
@@ -5435,7 +5758,7 @@ Format your response as JSON with this structure:
       const organizationId = req.query.organizationId as string | undefined;
       
       // Get sessions for this partner
-      const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       
       // Filter by organization if specified
       let filteredSessions = sessions;

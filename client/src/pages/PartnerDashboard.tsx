@@ -180,6 +180,40 @@ interface ResultsData {
   total: number;
 }
 
+interface PartnerAnalytics {
+  testsOverTime: Array<{ date: string; count: number }>;
+  byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
+  byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+}
+
+interface PartnerNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+interface NotificationsData {
+  notifications: PartnerNotification[];
+  unreadCount: number;
+}
+
+interface TeamMember {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  inviteStatus: string;
+  createdAt: string;
+  acceptedAt: string | null;
+}
+
+interface TeamData {
+  members: TeamMember[];
+}
+
 const PACKAGE_OPTIONS = [
   { value: 'starter', label: 'Starter (10 tests)' },
   { value: 'growth', label: 'Growth (25 tests)' },
@@ -268,6 +302,38 @@ export default function PartnerDashboard() {
     queryKey: ["/api/partner/me/results"],
     enabled: !!account?.hasPartnerAccount,
   });
+
+  // Analytics state
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<PartnerAnalytics>({
+    queryKey: ['/api/partner/me/analytics', analyticsPeriod, analyticsDays],
+    queryFn: async () => {
+      const res = await fetch(`/api/partner/me/analytics?period=${analyticsPeriod}&days=${analyticsDays}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: notifications, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery<NotificationsData>({
+    queryKey: ["/api/partner/me/notifications"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: team, isLoading: teamLoading } = useQuery<TeamData>({
+    queryKey: ["/api/partner/me/team"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  // Team member state
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
 
   // Initialize settings from fetched data
   const initSettings = () => {
@@ -500,6 +566,55 @@ export default function PartnerDashboard() {
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
+  // Team member mutations
+  const inviteMemberMutation = useMutation({
+    mutationFn: async (data: { email: string; name?: string; role: string }) => {
+      const response = await apiRequest("POST", "/api/partner/me/team/invite", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
+      setShowInviteDialog(false);
+      setInviteEmail("");
+      setInviteName("");
+      setInviteRole("member");
+      toast({ title: "Invitation sent", description: "Team member has been invited." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to invite", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/partner/me/team/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
+      toast({ title: "Member removed" });
+    },
+  });
+
+  // Notification mutations
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/partner/me/notifications/${id}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/notifications"] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/partner/me/notifications/read-all");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/notifications"] });
+      toast({ title: "All notifications marked as read" });
+    },
+  });
+
   const formatCurrency = (amount: number, currency: string = 'gbp') => {
     const currencySymbols: Record<string, string> = {
       gbp: '£',
@@ -653,6 +768,20 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="integrations" data-testid="tab-integrations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Integrations
+              </TabsTrigger>
+              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
+                Notifications
+                {notifications?.unreadCount && notifications.unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Team
               </TabsTrigger>
             </TabsList>
 
@@ -1750,6 +1879,323 @@ export default function PartnerDashboard() {
 
             <TabsContent value="integrations" className="space-y-4">
               <PartnerIntegrationsTab />
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Assessment Analytics</h2>
+                  <p className="text-muted-foreground">Visualize your assessment usage and performance</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Select value={analyticsPeriod} onValueChange={(v: 'daily' | 'weekly' | 'monthly') => setAnalyticsPeriod(v)}>
+                    <SelectTrigger className="w-32" data-testid="select-analytics-period">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={analyticsDays.toString()} onValueChange={(v) => setAnalyticsDays(parseInt(v))}>
+                    <SelectTrigger className="w-32" data-testid="select-analytics-days">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">Last 7 days</SelectItem>
+                      <SelectItem value="30">Last 30 days</SelectItem>
+                      <SelectItem value="90">Last 90 days</SelectItem>
+                      <SelectItem value="365">Last year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/results', '_blank')} data-testid="button-export-results">
+                      <FileText className="h-4 w-4 mr-1.5" />
+                      Export Results
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/usage', '_blank')} data-testid="button-export-usage">
+                      <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+                      Export Usage
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/billing', '_blank')} data-testid="button-export-billing">
+                      <Receipt className="h-4 w-4 mr-1.5" />
+                      Export Billing
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {analyticsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : analytics ? (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* Tests Over Time Chart */}
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Tests Completed Over Time</CardTitle>
+                      <CardDescription>Number of assessments completed per {analyticsPeriod === 'daily' ? 'day' : analyticsPeriod === 'weekly' ? 'week' : 'month'}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-80">
+                      {analytics.testsOverTime.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analytics.testsOverTime}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="date" className="text-xs" />
+                            <YAxis className="text-xs" />
+                            <Tooltip />
+                            <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No data available for this period
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* By Assessment Type */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">By Assessment Type</CardTitle>
+                      <CardDescription>Breakdown of tests by type with average scores</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics.byAssessmentType.length > 0 ? (
+                        <div className="space-y-4">
+                          {analytics.byAssessmentType.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                                <p className="text-sm text-muted-foreground">{item.count} tests</p>
+                              </div>
+                              {item.avgScore !== null && (
+                                <Badge variant="secondary">Avg: {item.avgScore}%</Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No assessment data</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* By Organization */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">By Organization</CardTitle>
+                      <CardDescription>Test distribution across organizations</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics.byOrganization.length > 0 ? (
+                        <div className="space-y-4">
+                          {analytics.byOrganization.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <p className="font-medium">{item.orgName}</p>
+                              <Badge variant="outline">{item.count} tests</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No organization data</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    No analytics data available
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Notifications Tab */}
+            <TabsContent value="notifications" className="space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Notifications</h2>
+                  <p className="text-muted-foreground">Stay updated with your account activity</p>
+                </div>
+                {notifications?.unreadCount && notifications.unreadCount > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} data-testid="button-mark-all-read">
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Mark All Read
+                  </Button>
+                )}
+              </div>
+
+              {notificationsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : notifications?.notifications && notifications.notifications.length > 0 ? (
+                <div className="space-y-3">
+                  {notifications.notifications.map((notif) => (
+                    <Card key={notif.id} className={notif.isRead ? 'opacity-60' : ''}>
+                      <CardContent className="py-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-full ${
+                              notif.type.includes('warning') || notif.type.includes('critical') 
+                                ? 'bg-amber-500/10 text-amber-500' 
+                                : notif.type.includes('success') || notif.type.includes('purchase')
+                                  ? 'bg-green-500/10 text-green-500'
+                                  : 'bg-primary/10 text-primary'
+                            }`}>
+                              <Bell className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{notif.title}</p>
+                              <p className="text-sm text-muted-foreground">{notif.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatDate(notif.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          {!notif.isRead && (
+                            <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate(notif.id)} data-testid={`button-mark-read-${notif.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No notifications yet</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Team Tab */}
+            <TabsContent value="team" className="space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Team Members</h2>
+                  <p className="text-muted-foreground">Manage access to your partner account</p>
+                </div>
+                <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Invite Member
+                </Button>
+              </div>
+
+              {teamLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : team?.members && team.members.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {team.members.map((member) => (
+                    <Card key={member.id}>
+                      <CardContent className="py-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{member.name || member.email}</p>
+                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant={member.inviteStatus === 'accepted' ? 'secondary' : 'outline'}>
+                                {member.inviteStatus === 'accepted' ? 'Active' : 'Pending'}
+                              </Badge>
+                              <Badge variant="outline" className="capitalize">{member.role}</Badge>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => removeMemberMutation.mutate(member.id)}
+                            disabled={removeMemberMutation.isPending}
+                            data-testid={`button-remove-member-${member.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No team members yet</p>
+                    <p className="text-sm mt-1">Invite team members to help manage your account</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Invite Dialog */}
+              <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Invite Team Member</DialogTitle>
+                    <DialogDescription>
+                      Send an invitation to join your partner account
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="invite-email">Email</Label>
+                      <Input 
+                        id="invite-email" 
+                        type="email" 
+                        value={inviteEmail} 
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="colleague@company.com"
+                        data-testid="input-invite-email"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="invite-name">Name (optional)</Label>
+                      <Input 
+                        id="invite-name" 
+                        value={inviteName} 
+                        onChange={(e) => setInviteName(e.target.value)}
+                        placeholder="John Smith"
+                        data-testid="input-invite-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="invite-role">Role</Label>
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger data-testid="select-invite-role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="viewer">Viewer - View only access</SelectItem>
+                          <SelectItem value="member">Member - Can manage assessments</SelectItem>
+                          <SelectItem value="admin">Admin - Full access</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => inviteMemberMutation.mutate({ email: inviteEmail, name: inviteName || undefined, role: inviteRole })}
+                      disabled={!inviteEmail || inviteMemberMutation.isPending}
+                      data-testid="button-send-invite"
+                    >
+                      {inviteMemberMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Mail className="h-4 w-4 mr-1.5" />}
+                      Send Invitation
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
         </div>

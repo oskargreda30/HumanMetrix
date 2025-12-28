@@ -85,6 +85,8 @@ import {
   webhookDeliveryLogs,
   partnerAtsIntegrations,
   partnerScheduledExports,
+  partnerNotifications,
+  partnerTeamMembers,
   type PartnerWebhook,
   type InsertPartnerWebhook,
   type WebhookDeliveryLog,
@@ -93,6 +95,10 @@ import {
   type InsertPartnerAtsIntegration,
   type PartnerScheduledExport,
   type InsertPartnerScheduledExport,
+  type PartnerNotification,
+  type InsertPartnerNotification,
+  type PartnerTeamMember,
+  type InsertPartnerTeamMember,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
@@ -390,6 +396,30 @@ export interface IStorage {
   getDueScheduledExports(): Promise<PartnerScheduledExport[]>;
   updatePartnerScheduledExport(id: string, updates: Partial<InsertPartnerScheduledExport>): Promise<void>;
   deletePartnerScheduledExport(id: string): Promise<void>;
+
+  // Partner notification operations
+  createPartnerNotification(notification: InsertPartnerNotification): Promise<PartnerNotification>;
+  getPartnerNotifications(partnerId: string, limit?: number, unreadOnly?: boolean): Promise<PartnerNotification[]>;
+  getUnreadNotificationCount(partnerId: string): Promise<number>;
+  markNotificationRead(id: string): Promise<void>;
+  markAllNotificationsRead(partnerId: string): Promise<void>;
+  deletePartnerNotification(id: string): Promise<void>;
+
+  // Partner team member operations
+  createPartnerTeamMember(member: InsertPartnerTeamMember): Promise<PartnerTeamMember>;
+  getPartnerTeamMember(id: string): Promise<PartnerTeamMember | undefined>;
+  getPartnerTeamMemberByToken(token: string): Promise<PartnerTeamMember | undefined>;
+  getPartnerTeamMemberByEmail(partnerId: string, email: string): Promise<PartnerTeamMember | undefined>;
+  getPartnerTeamMembers(partnerId: string): Promise<PartnerTeamMember[]>;
+  updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void>;
+  deletePartnerTeamMember(id: string): Promise<void>;
+
+  // Partner analytics operations
+  getPartnerAnalytics(partnerId: string, period: 'daily' | 'weekly' | 'monthly', days?: number): Promise<{
+    testsOverTime: Array<{ date: string; count: number }>;
+    byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
+    byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2417,6 +2447,166 @@ export class DatabaseStorage implements IStorage {
 
   async deletePartnerScheduledExport(id: string): Promise<void> {
     await db.delete(partnerScheduledExports).where(eq(partnerScheduledExports.id, id));
+  }
+
+  // Partner notification operations
+  async createPartnerNotification(notification: InsertPartnerNotification): Promise<PartnerNotification> {
+    const [result] = await db.insert(partnerNotifications).values(notification).returning();
+    return result;
+  }
+
+  async getPartnerNotifications(partnerId: string, limit = 50, unreadOnly = false): Promise<PartnerNotification[]> {
+    const conditions = [eq(partnerNotifications.partnerId, partnerId)];
+    if (unreadOnly) {
+      conditions.push(eq(partnerNotifications.isRead, false));
+    }
+    return await db.select().from(partnerNotifications)
+      .where(and(...conditions))
+      .orderBy(desc(partnerNotifications.createdAt))
+      .limit(limit);
+  }
+
+  async getUnreadNotificationCount(partnerId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(partnerNotifications)
+      .where(and(
+        eq(partnerNotifications.partnerId, partnerId),
+        eq(partnerNotifications.isRead, false)
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await db.update(partnerNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(eq(partnerNotifications.id, id));
+  }
+
+  async markAllNotificationsRead(partnerId: string): Promise<void> {
+    await db.update(partnerNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(partnerNotifications.partnerId, partnerId),
+        eq(partnerNotifications.isRead, false)
+      ));
+  }
+
+  async deletePartnerNotification(id: string): Promise<void> {
+    await db.delete(partnerNotifications).where(eq(partnerNotifications.id, id));
+  }
+
+  // Partner team member operations
+  async createPartnerTeamMember(member: InsertPartnerTeamMember): Promise<PartnerTeamMember> {
+    const [result] = await db.insert(partnerTeamMembers).values(member).returning();
+    return result;
+  }
+
+  async getPartnerTeamMember(id: string): Promise<PartnerTeamMember | undefined> {
+    const [result] = await db.select().from(partnerTeamMembers).where(eq(partnerTeamMembers.id, id));
+    return result;
+  }
+
+  async getPartnerTeamMemberByToken(token: string): Promise<PartnerTeamMember | undefined> {
+    const [result] = await db.select().from(partnerTeamMembers).where(eq(partnerTeamMembers.inviteToken, token));
+    return result;
+  }
+
+  async getPartnerTeamMemberByEmail(partnerId: string, email: string): Promise<PartnerTeamMember | undefined> {
+    const [result] = await db.select().from(partnerTeamMembers)
+      .where(and(
+        eq(partnerTeamMembers.partnerId, partnerId),
+        eq(partnerTeamMembers.email, email.toLowerCase())
+      ));
+    return result;
+  }
+
+  async getPartnerTeamMembers(partnerId: string): Promise<PartnerTeamMember[]> {
+    return await db.select().from(partnerTeamMembers)
+      .where(eq(partnerTeamMembers.partnerId, partnerId))
+      .orderBy(desc(partnerTeamMembers.createdAt));
+  }
+
+  async updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void> {
+    await db.update(partnerTeamMembers).set(updates).where(eq(partnerTeamMembers.id, id));
+  }
+
+  async deletePartnerTeamMember(id: string): Promise<void> {
+    await db.delete(partnerTeamMembers).where(eq(partnerTeamMembers.id, id));
+  }
+
+  // Partner analytics operations
+  async getPartnerAnalytics(partnerId: string, period: 'daily' | 'weekly' | 'monthly', days = 30): Promise<{
+    testsOverTime: Array<{ date: string; count: number }>;
+    byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
+    byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+  }> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Determine the date truncation based on period
+    const dateTrunc = period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month';
+
+    // Tests over time
+    const testsOverTimeResult = await db.select({
+      date: sql<string>`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})::date`,
+      count: sql<number>`count(*)`,
+    })
+      .from(assessmentSessions)
+      .where(and(
+        eq(assessmentSessions.partnerId, partnerId),
+        eq(assessmentSessions.status, 'completed'),
+        gte(assessmentSessions.completedAt, startDate)
+      ))
+      .groupBy(sql`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})`)
+      .orderBy(sql`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})`);
+
+    // Breakdown by assessment type
+    const byTypeResult = await db.select({
+      type: assessmentSessions.assessmentType,
+      count: sql<number>`count(*)`,
+      avgScore: sql<number>`avg(${assessmentSessions.totalScore})`,
+    })
+      .from(assessmentSessions)
+      .where(and(
+        eq(assessmentSessions.partnerId, partnerId),
+        eq(assessmentSessions.status, 'completed'),
+        gte(assessmentSessions.completedAt, startDate)
+      ))
+      .groupBy(assessmentSessions.assessmentType)
+      .orderBy(sql`count(*) desc`);
+
+    // Breakdown by organization
+    const byOrgResult = await db.select({
+      orgId: partnerOrganisations.id,
+      orgName: partnerOrganisations.name,
+      count: sql<number>`count(${assessmentSessions.id})`,
+    })
+      .from(assessmentSessions)
+      .leftJoin(partnerOrganisations, eq(assessmentSessions.partnerOrganisationId, partnerOrganisations.id))
+      .where(and(
+        eq(assessmentSessions.partnerId, partnerId),
+        eq(assessmentSessions.status, 'completed'),
+        gte(assessmentSessions.completedAt, startDate)
+      ))
+      .groupBy(partnerOrganisations.id, partnerOrganisations.name)
+      .orderBy(sql`count(${assessmentSessions.id}) desc`);
+
+    return {
+      testsOverTime: testsOverTimeResult.map(r => ({
+        date: r.date ? new Date(r.date).toISOString().split('T')[0] : '',
+        count: Number(r.count),
+      })),
+      byAssessmentType: byTypeResult.map(r => ({
+        type: r.type,
+        count: Number(r.count),
+        avgScore: r.avgScore ? Math.round(Number(r.avgScore)) : null,
+      })),
+      byOrganization: byOrgResult.map(r => ({
+        orgId: r.orgId || 'unassigned',
+        orgName: r.orgName || 'Unassigned',
+        count: Number(r.count),
+      })),
+    };
   }
 }
 

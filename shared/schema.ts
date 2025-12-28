@@ -1091,3 +1091,59 @@ export const insertPartnerScheduledExportSchema = createInsertSchema(partnerSche
 
 export type InsertPartnerScheduledExport = z.infer<typeof insertPartnerScheduledExportSchema>;
 export type PartnerScheduledExport = typeof partnerScheduledExports.$inferSelect;
+
+// Partner notifications - in-app notifications for partners
+export const partnerNotifications = pgTable("partner_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  type: varchar("type").notNull(), // quota_warning, quota_critical, purchase_success, api_key_created, api_key_rotated, api_key_revoked, etc.
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  isRead: boolean("is_read").notNull().default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_notifications_partner").on(table.partnerId),
+  index("idx_partner_notifications_read").on(table.partnerId, table.isRead),
+  index("idx_partner_notifications_created").on(table.createdAt),
+]);
+
+export const insertPartnerNotificationSchema = createInsertSchema(partnerNotifications).omit({
+  id: true,
+  createdAt: true,
+  readAt: true,
+});
+
+export type InsertPartnerNotification = z.infer<typeof insertPartnerNotificationSchema>;
+export type PartnerNotification = typeof partnerNotifications.$inferSelect;
+
+// Partner team members - additional admins for a partner account
+export const partnerTeamMembers = pgTable("partner_team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  email: varchar("email").notNull(),
+  name: varchar("name"),
+  role: varchar("role").notNull().default("member"), // owner, admin, member, viewer
+  inviteStatus: varchar("invite_status").notNull().default("pending"), // pending, accepted, expired
+  inviteToken: varchar("invite_token"),
+  inviteExpiresAt: timestamp("invite_expires_at"),
+  invitedByUserId: varchar("invited_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  acceptedAt: timestamp("accepted_at"),
+}, (table) => [
+  index("idx_partner_team_partner").on(table.partnerId),
+  index("idx_partner_team_user").on(table.userId),
+  index("idx_partner_team_email").on(table.email),
+  index("idx_partner_team_token").on(table.inviteToken),
+]);
+
+export const insertPartnerTeamMemberSchema = createInsertSchema(partnerTeamMembers).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+});
+
+export type InsertPartnerTeamMember = z.infer<typeof insertPartnerTeamMemberSchema>;
+export type PartnerTeamMember = typeof partnerTeamMembers.$inferSelect;
