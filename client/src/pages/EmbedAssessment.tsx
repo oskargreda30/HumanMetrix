@@ -72,6 +72,8 @@ export default function EmbedAssessment() {
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
   const sessionId = params.get("session");
+  const theme = params.get("theme") || "dark";
+  const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired">("loading");
@@ -81,6 +83,16 @@ export default function EmbedAssessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedScores, setCompletedScores] = useState<any>(null);
+
+  // Theme-aware class names
+  const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
+  const bgCard = isLight ? "bg-white border-gray-200" : "bg-slate-800 border-slate-700";
+  const bgCardAlt = isLight ? "bg-gray-100" : "bg-slate-900/50";
+  const textPrimary = isLight ? "text-gray-900" : "text-white";
+  const textSecondary = isLight ? "text-gray-600" : "text-slate-300";
+  const textMuted = isLight ? "text-gray-500" : "text-slate-400";
+  const borderColor = isLight ? "border-gray-300" : "border-slate-600";
+  const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
 
   useEffect(() => {
     if (!sessionId) {
@@ -218,10 +230,10 @@ export default function EmbedAssessment() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-loading">
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-loading">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-cyan-500 mx-auto mb-4" />
-          <p className="text-slate-300">Loading assessment...</p>
+          <p className={textSecondary}>Loading assessment...</p>
         </div>
       </div>
     );
@@ -229,12 +241,12 @@ export default function EmbedAssessment() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-error">
-        <Card className="max-w-md bg-slate-800 border-red-500/30">
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-error">
+        <Card className={`max-w-md ${bgCard} border-red-500/30`}>
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">Error</h2>
-            <p className="text-slate-300">{errorMessage}</p>
+            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Error</h2>
+            <p className={textSecondary}>{errorMessage}</p>
           </CardContent>
         </Card>
       </div>
@@ -243,12 +255,12 @@ export default function EmbedAssessment() {
 
   if (status === "expired") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-expired">
-        <Card className="max-w-md bg-slate-800 border-amber-500/30">
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-expired">
+        <Card className={`max-w-md ${bgCard} border-amber-500/30`}>
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">Session Expired</h2>
-            <p className="text-slate-300">This assessment session has expired. Please request a new link.</p>
+            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Session Expired</h2>
+            <p className={textSecondary}>This assessment session has expired. Please request a new link.</p>
           </CardContent>
         </Card>
       </div>
@@ -257,14 +269,14 @@ export default function EmbedAssessment() {
 
   if (status === "completed") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-completed">
-        <Card className="max-w-md bg-slate-800 border-green-500/30">
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-completed">
+        <Card className={`max-w-md ${bgCard} border-green-500/30`}>
           <CardContent className="pt-6 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">Assessment Complete</h2>
-            <p className="text-slate-300 mb-4">Thank you for completing the assessment.</p>
+            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Assessment Complete</h2>
+            <p className={`${textSecondary} mb-4`}>Thank you for completing the assessment.</p>
             {completedScores && (
-              <div className="bg-slate-900/50 rounded-lg p-4">
+              <div className={`${bgCardAlt} rounded-lg p-4`}>
                 <p className="text-lg font-semibold text-cyan-400">
                   Score: {completedScores.totalScore}%
                 </p>
@@ -278,20 +290,20 @@ export default function EmbedAssessment() {
 
   if (status === "ready") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4" data-testid="embed-ready">
-        <Card className="max-w-lg bg-slate-800 border-slate-700">
+      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
+        <Card className={`max-w-lg ${bgCard}`}>
           <CardHeader className="text-center">
             <Badge className="mb-2 mx-auto bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
               HumanMetrix
             </Badge>
-            <CardTitle className="text-2xl text-white">
+            <CardTitle className={`text-2xl ${textPrimary}`}>
               {session && getAssessmentDisplayName(session.assessmentType)}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-slate-300 space-y-3">
+            <div className={`${textSecondary} space-y-3`}>
               <p>You are about to begin an assessment with {questions.length} questions.</p>
-              <ul className="list-disc list-inside text-sm space-y-1 text-slate-400">
+              <ul className={`list-disc list-inside text-sm space-y-1 ${textMuted}`}>
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
@@ -312,21 +324,21 @@ export default function EmbedAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4" data-testid="embed-assessment">
+    <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
               {session && getAssessmentDisplayName(session.assessmentType)}
             </Badge>
-            <span className="text-sm text-slate-400">
+            <span className={`text-sm ${textMuted}`}>
               Question {currentIndex + 1} of {questions.length}
             </span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className={bgCard}>
           <CardContent className="pt-6">
             {isPromptArchitecture && currentQ?.type === "text-input" ? (
               <div className="space-y-4">
@@ -334,30 +346,30 @@ export default function EmbedAssessment() {
                   <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
                     Level {currentQ.level}
                   </Badge>
-                  <span className="text-sm text-slate-400">{currentQ.title}</span>
+                  <span className={`text-sm ${textMuted}`}>{currentQ.title}</span>
                 </div>
-                <p className="text-slate-300 text-sm mb-4">{currentQ.description}</p>
-                <div className="bg-slate-900/50 p-4 rounded-lg mb-4">
-                  <h3 className="font-semibold text-white mb-2">Scenario</h3>
-                  <p className="text-slate-300 text-sm">{currentQ.text}</p>
+                <p className={`${textSecondary} text-sm mb-4`}>{currentQ.description}</p>
+                <div className={`${bgCardAlt} p-4 rounded-lg mb-4`}>
+                  <h3 className={`font-semibold ${textPrimary} mb-2`}>Scenario</h3>
+                  <p className={`${textSecondary} text-sm`}>{currentQ.text}</p>
                 </div>
                 {currentQ.taskInstructions && (
                   <div className="bg-cyan-900/20 border border-cyan-500/30 p-4 rounded-lg mb-4">
                     <h3 className="font-semibold text-cyan-400 mb-2">Your Task</h3>
-                    <p className="text-slate-300 text-sm">{currentQ.taskInstructions}</p>
+                    <p className={`${textSecondary} text-sm`}>{currentQ.taskInstructions}</p>
                   </div>
                 )}
                 <Textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswerChange(e.target.value)}
                   placeholder="Write your prompt here..."
-                  className="min-h-[150px] bg-slate-900 border-slate-600 text-white"
+                  className={`min-h-[150px] ${inputBg}`}
                   data-testid="textarea-prompt-response"
                 />
               </div>
             ) : (
               <div>
-                <h2 className="text-lg font-semibold text-white mb-6">{currentQ?.text}</h2>
+                <h2 className={`text-lg font-semibold ${textPrimary} mb-6`}>{currentQ?.text}</h2>
                 <RadioGroup
                   value={answers[currentQ?.id] || ""}
                   onValueChange={handleAnswerChange}
@@ -365,7 +377,7 @@ export default function EmbedAssessment() {
                   {currentQ?.options?.map((option) => (
                     <div
                       key={option.value}
-                      className="flex items-start space-x-3 mb-3 p-4 rounded-lg bg-slate-900/50 hover-elevate active-elevate-2 cursor-pointer"
+                      className={`flex items-start space-x-3 mb-3 p-4 rounded-lg ${bgCardAlt} hover-elevate active-elevate-2 cursor-pointer`}
                     >
                       <RadioGroupItem
                         value={option.value}
@@ -378,8 +390,8 @@ export default function EmbedAssessment() {
                         className="flex-1 cursor-pointer"
                       >
                         <span className="text-sm">
-                          <span className="font-medium text-white">{option.value}.</span>{" "}
-                          <span className="text-slate-300">{option.text}</span>
+                          <span className={`font-medium ${textPrimary}`}>{option.value}.</span>{" "}
+                          <span className={textSecondary}>{option.text}</span>
                         </span>
                       </Label>
                     </div>
@@ -395,7 +407,7 @@ export default function EmbedAssessment() {
             variant="outline"
             onClick={handlePrevious}
             disabled={currentIndex === 0}
-            className="border-slate-600 text-slate-300"
+            className={`${borderColor} ${textSecondary}`}
             data-testid="button-previous"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

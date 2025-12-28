@@ -110,7 +110,7 @@
 
     launchAssessment: function(sessionId) {
       var self = this;
-      var url = this.baseUrl + '/embed/assessment?session=' + sessionId;
+      var url = this.baseUrl + '/embed/assessment?session=' + sessionId + '&theme=' + this.config.theme;
 
       if (this.config.container) {
         // Embed in specified container
@@ -141,20 +141,23 @@
 
     openModal: function(url) {
       var self = this;
+      var isDark = this.config.theme === 'dark';
       
       // Create modal overlay
       this.modal = document.createElement('div');
       this.modal.id = 'humanmetrix-modal';
       this.modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;';
       
-      // Create modal content
+      // Create modal content with theme-aware styling
       var modalContent = document.createElement('div');
-      modalContent.style.cssText = 'position:relative;width:90%;max-width:800px;height:90%;max-height:700px;background:#1e293b;border-radius:12px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);';
+      var modalBg = isDark ? '#1e293b' : '#ffffff';
+      modalContent.style.cssText = 'position:relative;width:90%;max-width:800px;height:90%;max-height:700px;background:' + modalBg + ';border-radius:12px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);';
       
-      // Create close button
+      // Create close button with theme-aware color
       var closeBtn = document.createElement('button');
       closeBtn.innerHTML = '&times;';
-      closeBtn.style.cssText = 'position:absolute;top:10px;right:15px;background:none;border:none;color:#94a3b8;font-size:28px;cursor:pointer;z-index:10;line-height:1;';
+      var closeBtnColor = isDark ? '#94a3b8' : '#64748b';
+      closeBtn.style.cssText = 'position:absolute;top:10px;right:15px;background:none;border:none;color:' + closeBtnColor + ';font-size:28px;cursor:pointer;z-index:10;line-height:1;';
       closeBtn.onclick = function() { self.closeModal(); };
       closeBtn.setAttribute('data-testid', 'button-close-modal');
       

@@ -77,7 +77,7 @@ export default function WidgetTestTab() {
 
   const getEmbedUrl = () => {
     if (!currentSession) return "";
-    return `/embed/assessment?session=${currentSession.sessionId}`;
+    return `/embed/assessment?session=${currentSession.sessionId}&theme=${widgetTheme}`;
   };
 
   const copyToClipboard = (text: string, id: string) => {
