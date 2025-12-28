@@ -38,6 +38,7 @@ export function csrfProtection() {
       "/api/stripe/webhook",
       "/api/partner/sessions",
       "/api/partner/sessions/",
+      "/api/embed/session/",
     ];
     
     const isExempt = exemptPaths.some(path => {
