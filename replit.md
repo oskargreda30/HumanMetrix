@@ -24,7 +24,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **PDF Generation**: `jsPDF` and `html2canvas`.
 
 ### Feature Specifications
-- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture, AIQ (AI ethics) with enhanced scoring formulas.
+- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture, AIQ (AI ethics) with enhanced scoring formulas. Includes SEA-localized question wording for Tier 3 emerging markets (same scoring, culturally adjusted vocabulary).
 - **Payment Flow**: Pay-deferred model, allowing candidates to complete assessments before paying to unlock results. Supports discount codes.
 - **User Flows**: Self-service for candidates and admin-invited users.
 - **Admin Dashboard**: Candidate management, multi-candidate comparison, AI-powered role fit analysis, and Scoring QA.
