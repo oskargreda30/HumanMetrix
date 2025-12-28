@@ -212,9 +212,15 @@ export default function PartnerDashboard() {
   
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
+  const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
+  
+  // Create API key state
+  const [showCreateKeyDialog, setShowCreateKeyDialog] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyEnvironment, setNewKeyEnvironment] = useState<"test" | "live">("test");
   
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
@@ -413,6 +419,65 @@ export default function PartnerDashboard() {
     },
   });
 
+  // Create API key mutation
+  const createKeyMutation = useMutation({
+    mutationFn: async (data: { name: string; environment: "test" | "live" }) => {
+      const response = await apiRequest("POST", "/api/partner/me/api-keys", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+      setNewApiKey(data.apiKey.fullKey);
+      setShowCreateKeyDialog(false);
+      setShowNewKeyDialog(true);
+      setNewKeyName("");
+      setNewKeyEnvironment("test");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create API key",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Revoke API key mutation
+  const revokeKeyMutation = useMutation({
+    mutationFn: async (keyId: string) => {
+      const response = await apiRequest("DELETE", `/api/partner/me/api-keys/${keyId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+      setRevokingKeyId(null);
+      toast({
+        title: "API key revoked",
+        description: "The API key has been permanently deactivated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to revoke key",
+        description: error.message,
+        variant: "destructive",
+      });
+      setRevokingKeyId(null);
+    },
+  });
+
+  const handleCreateKey = () => {
+    if (!newKeyName) return;
+    createKeyMutation.mutate({ name: newKeyName, environment: newKeyEnvironment });
+  };
+
+  const handleRevokeKey = (keyId: string) => {
+    setRevokingKeyId(keyId);
+    revokeKeyMutation.mutate(keyId);
+  };
+
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
       quotaAlertEnabled,
@@ -582,6 +647,9 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Settings
+              </TabsTrigger>
+              <TabsTrigger value="api-keys" data-testid="tab-api-keys" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                API Keys
               </TabsTrigger>
               <TabsTrigger value="integrations" data-testid="tab-integrations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Integrations
@@ -1565,6 +1633,121 @@ export default function PartnerDashboard() {
               )}
             </TabsContent>
 
+            {/* API Keys Tab */}
+            <TabsContent value="api-keys" className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0">
+                  <div>
+                    <CardTitle>API Keys</CardTitle>
+                    <CardDescription>Manage your API keys for accessing the HumanMetrix API</CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => setShowCreateKeyDialog(true)}
+                    className="bg-cyan-600 hover:bg-cyan-700"
+                    data-testid="button-create-api-key"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Key
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {apiKeysLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : apiKeys?.apiKeys && apiKeys.apiKeys.length > 0 ? (
+                    <div className="space-y-4">
+                      {apiKeys.apiKeys.map((key) => (
+                        <div 
+                          key={key.id} 
+                          className="flex items-center justify-between p-4 border rounded-lg bg-muted/30"
+                          data-testid={`api-key-row-${key.id}`}
+                        >
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{key.name}</span>
+                              <Badge 
+                                variant={key.environment === 'live' ? 'default' : 'secondary'}
+                                className={key.environment === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}
+                              >
+                                {key.environment}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+                              <Key className="h-3 w-3" />
+                              <span>{key.displayKey}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>Created: {formatDate(key.createdAt)}</span>
+                              {key.lastUsedAt && (
+                                <span>Last used: {formatDate(key.lastUsedAt)}</span>
+                              )}
+                              <span>Rate limit: {key.rateLimit}/min</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRotateKey(key.id)}
+                              disabled={rotatingKeyId === key.id}
+                              data-testid={`button-rotate-key-${key.id}`}
+                            >
+                              {rotatingKeyId === key.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              <span className="ml-1.5">Rotate</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRevokeKey(key.id)}
+                              disabled={revokingKeyId === key.id}
+                              data-testid={`button-revoke-key-${key.id}`}
+                            >
+                              {revokingKeyId === key.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              <span className="ml-1.5">Revoke</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Key className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                      <p>No API keys found</p>
+                      <p className="text-sm">Create your first API key to get started</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-cyan-500" />
+                    Security Best Practices
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-muted-foreground">
+                  <p>Keep your API keys secure:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Never share your API keys or commit them to version control</li>
+                    <li>Use test keys during development and live keys only in production</li>
+                    <li>Rotate your keys regularly and immediately if you suspect they may be compromised</li>
+                    <li>Use environment-specific keys for different deployment environments</li>
+                    <li>Consider creating separate keys for each integration or application</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="integrations" className="space-y-4">
               <PartnerIntegrationsTab />
             </TabsContent>
@@ -1592,6 +1775,60 @@ export default function PartnerDashboard() {
             </Button>
             <Button onClick={() => setShowNewKeyDialog(false)} data-testid="button-close-key-dialog">
               Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create API Key Dialog */}
+      <Dialog open={showCreateKeyDialog} onOpenChange={setShowCreateKeyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New API Key</DialogTitle>
+            <DialogDescription>
+              Create a new API key for accessing the HumanMetrix API.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="key-name">Key Name *</Label>
+              <Input
+                id="key-name"
+                placeholder="e.g., Production Server, Development"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                data-testid="input-new-key-name"
+              />
+              <p className="text-xs text-muted-foreground">A descriptive name to identify this key</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="key-environment">Environment</Label>
+              <Select value={newKeyEnvironment} onValueChange={(v) => setNewKeyEnvironment(v as "test" | "live")}>
+                <SelectTrigger data-testid="select-key-environment">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="test">Test (hm_test_...)</SelectItem>
+                  <SelectItem value="live">Live (hm_live_...)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Test keys are for development, live keys are for production
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateKeyDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateKey} 
+              disabled={!newKeyName || createKeyMutation.isPending}
+              className="bg-cyan-600 hover:bg-cyan-700"
+              data-testid="button-confirm-create-key"
+            >
+              {createKeyMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create Key
             </Button>
           </DialogFooter>
         </DialogContent>

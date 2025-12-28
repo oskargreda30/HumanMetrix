@@ -4361,6 +4361,142 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Revoke API key
+  app.delete("/api/partner/me/api-keys/:keyId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      const { keyId } = req.params;
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required to revoke API keys" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get the existing key
+      const existingKey = await storage.getPartnerApiKey(keyId);
+      if (!existingKey || existingKey.partnerId !== matchingPartner.id) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      // Revoke the key
+      await storage.revokePartnerApiKey(keyId);
+      
+      res.json({
+        success: true,
+        message: "API key revoked successfully",
+      });
+    } catch (error) {
+      console.error("Error revoking API key:", error);
+      res.status(500).json({ message: "Failed to revoke API key" });
+    }
+  });
+
+  // Partner self-service: Create new API key
+  app.post("/api/partner/me/api-keys", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required to create API keys" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { name, environment = 'test', organisationId } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.length < 2) {
+        return res.status(400).json({ message: "Key name is required (minimum 2 characters)" });
+      }
+      
+      if (environment !== 'test' && environment !== 'live') {
+        return res.status(400).json({ message: "Environment must be 'test' or 'live'" });
+      }
+      
+      // If organisationId provided, verify it belongs to this partner
+      if (organisationId) {
+        const org = await storage.getPartnerOrganisation(organisationId);
+        if (!org || org.partnerId !== matchingPartner.id) {
+          return res.status(400).json({ message: "Invalid organisation ID" });
+        }
+      }
+      
+      // Generate the API key
+      const { generateApiKey } = await import('./partner-auth');
+      const { fullKey, prefix, hash, hint } = generateApiKey(environment);
+      
+      // Create the key record
+      const newKey = await storage.createPartnerApiKey({
+        partnerId: matchingPartner.id,
+        partnerOrganisationId: organisationId || null,
+        keyPrefix: prefix,
+        keyHash: hash,
+        keyHint: hint,
+        name,
+        environment,
+        permissions: ["assessments:read", "assessments:write", "results:read"],
+        rateLimit: 100,
+        isActive: true,
+      });
+      
+      res.json({
+        success: true,
+        message: "API key created successfully. Save this key - it won't be shown again.",
+        apiKey: {
+          id: newKey.id,
+          name: newKey.name,
+          environment: newKey.environment,
+          fullKey, // Only returned once on creation
+          displayKey: `${prefix}...${hint}`,
+          permissions: newKey.permissions,
+          rateLimit: newKey.rateLimit,
+          createdAt: newKey.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      res.status(500).json({ message: "Failed to create API key" });
+    }
+  });
+
   // Partner self-service: Create checkout session for test package purchase
   app.post("/api/partner/purchase/checkout", isAuthenticated, async (req: any, res) => {
     try {
