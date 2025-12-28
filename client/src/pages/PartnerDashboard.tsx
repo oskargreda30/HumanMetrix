@@ -216,8 +216,8 @@ export default function PartnerDashboard() {
       return response.json();
     },
     onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (data.sessionUrl) {
+        window.location.href = data.sessionUrl;
       }
     },
     onError: (error: Error) => {
