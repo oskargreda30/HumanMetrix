@@ -5858,6 +5858,250 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== HEALTH MONITORING API ====================
+
+  // Super Admin: Get system health checks with severity
+  app.get("/api/admin/health/checks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const checks: Array<{
+        name: string;
+        status: 'healthy' | 'degraded' | 'unhealthy';
+        severity: 'info' | 'warning' | 'error' | 'critical';
+        message: string;
+        latencyMs?: number;
+        lastChecked: Date;
+      }> = [];
+      
+      // Database health check
+      const dbStart = Date.now();
+      try {
+        await db.execute(sql`SELECT 1`);
+        const dbLatency = Date.now() - dbStart;
+        checks.push({
+          name: 'Database',
+          status: dbLatency < 100 ? 'healthy' : dbLatency < 500 ? 'degraded' : 'unhealthy',
+          severity: dbLatency < 100 ? 'info' : dbLatency < 500 ? 'warning' : 'critical',
+          message: `Connection ${dbLatency < 100 ? 'healthy' : dbLatency < 500 ? 'slow' : 'critically slow'}`,
+          latencyMs: dbLatency,
+          lastChecked: new Date()
+        });
+      } catch (e) {
+        checks.push({
+          name: 'Database',
+          status: 'unhealthy',
+          severity: 'critical',
+          message: 'Database connection failed',
+          lastChecked: new Date()
+        });
+      }
+      
+      // OpenAI API health check
+      const openaiStart = Date.now();
+      try {
+        // Just check if openai client is available without making a request
+        if (process.env.OPENAI_API_KEY) {
+          checks.push({
+            name: 'OpenAI API',
+            status: 'healthy',
+            severity: 'info',
+            message: 'API key configured',
+            latencyMs: Date.now() - openaiStart,
+            lastChecked: new Date()
+          });
+        } else {
+          checks.push({
+            name: 'OpenAI API',
+            status: 'unhealthy',
+            severity: 'critical',
+            message: 'API key not configured',
+            lastChecked: new Date()
+          });
+        }
+      } catch (e) {
+        checks.push({
+          name: 'OpenAI API',
+          status: 'degraded',
+          severity: 'warning',
+          message: 'Check failed',
+          lastChecked: new Date()
+        });
+      }
+      
+      // Stripe health check
+      try {
+        if (process.env.STRIPE_SECRET_KEY) {
+          checks.push({
+            name: 'Stripe',
+            status: 'healthy',
+            severity: 'info',
+            message: 'API key configured',
+            lastChecked: new Date()
+          });
+        } else {
+          checks.push({
+            name: 'Stripe',
+            status: 'unhealthy',
+            severity: 'critical',
+            message: 'API key not configured',
+            lastChecked: new Date()
+          });
+        }
+      } catch (e) {
+        checks.push({
+          name: 'Stripe',
+          status: 'degraded',
+          severity: 'warning',
+          message: 'Check failed',
+          lastChecked: new Date()
+        });
+      }
+      
+      // Email service health check
+      try {
+        if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+          checks.push({
+            name: 'Email Service',
+            status: 'healthy',
+            severity: 'info',
+            message: 'Credentials configured',
+            lastChecked: new Date()
+          });
+        } else {
+          checks.push({
+            name: 'Email Service',
+            status: 'unhealthy',
+            severity: 'error',
+            message: 'Credentials missing',
+            lastChecked: new Date()
+          });
+        }
+      } catch (e) {
+        checks.push({
+          name: 'Email Service',
+          status: 'degraded',
+          severity: 'warning',
+          message: 'Check failed',
+          lastChecked: new Date()
+        });
+      }
+      
+      // Memory usage check
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+      const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
+      const heapPercentage = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+      
+      checks.push({
+        name: 'Memory',
+        status: heapPercentage < 70 ? 'healthy' : heapPercentage < 90 ? 'degraded' : 'unhealthy',
+        severity: heapPercentage < 70 ? 'info' : heapPercentage < 90 ? 'warning' : 'critical',
+        message: `${heapUsedMB}MB / ${heapTotalMB}MB (${heapPercentage}%)`,
+        lastChecked: new Date()
+      });
+      
+      // Process uptime check
+      const uptimeHours = Math.round(process.uptime() / 3600);
+      checks.push({
+        name: 'Process Uptime',
+        status: 'healthy',
+        severity: 'info',
+        message: `Running for ${uptimeHours}h`,
+        lastChecked: new Date()
+      });
+      
+      res.json(checks);
+    } catch (error) {
+      console.error("Error fetching health checks:", error);
+      res.status(500).json({ message: "Failed to fetch health checks" });
+    }
+  });
+
+  // Super Admin: Get API latency metrics with severity
+  app.get("/api/admin/health/latency", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const latencyMetrics: Array<{
+        endpoint: string;
+        category: string;
+        avgLatencyMs: number;
+        p95LatencyMs: number;
+        requestCount: number;
+        severity: 'info' | 'warning' | 'error' | 'critical';
+        lastMeasured: Date;
+      }> = [];
+      
+      // Measure key endpoint latencies
+      const endpoints = [
+        { path: '/api/user', category: 'Auth', fn: async () => await storage.getUser(userId) },
+        { path: '/api/admin/candidates', category: 'Admin', fn: async () => await db.select().from(users).limit(1) },
+        { path: '/api/assessments', category: 'Core', fn: async () => await db.select().from(assessmentResults).limit(1) },
+      ];
+      
+      for (const ep of endpoints) {
+        const latencies: number[] = [];
+        for (let i = 0; i < 3; i++) {
+          const start = Date.now();
+          try {
+            await ep.fn();
+            latencies.push(Date.now() - start);
+          } catch {
+            latencies.push(999);
+          }
+        }
+        
+        const avgLatency = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
+        const p95Latency = Math.round(latencies.sort((a, b) => a - b)[Math.floor(latencies.length * 0.95)] || avgLatency);
+        
+        latencyMetrics.push({
+          endpoint: ep.path,
+          category: ep.category,
+          avgLatencyMs: avgLatency,
+          p95LatencyMs: p95Latency,
+          requestCount: 3,
+          severity: avgLatency < 100 ? 'info' : avgLatency < 300 ? 'warning' : avgLatency < 1000 ? 'error' : 'critical',
+          lastMeasured: new Date()
+        });
+      }
+      
+      // Add database query latency
+      const dbLatencies: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        const start = Date.now();
+        await db.execute(sql`SELECT COUNT(*) FROM users`);
+        dbLatencies.push(Date.now() - start);
+      }
+      const dbAvgLatency = Math.round(dbLatencies.reduce((a, b) => a + b, 0) / dbLatencies.length);
+      
+      latencyMetrics.push({
+        endpoint: 'Database Query',
+        category: 'Infrastructure',
+        avgLatencyMs: dbAvgLatency,
+        p95LatencyMs: Math.max(...dbLatencies),
+        requestCount: 3,
+        severity: dbAvgLatency < 50 ? 'info' : dbAvgLatency < 200 ? 'warning' : dbAvgLatency < 500 ? 'error' : 'critical',
+        lastMeasured: new Date()
+      });
+      
+      res.json(latencyMetrics);
+    } catch (error) {
+      console.error("Error fetching latency metrics:", error);
+      res.status(500).json({ message: "Failed to fetch latency metrics" });
+    }
+  });
+
   // ==================== CONSENT ADMIN API ====================
 
   // Super Admin: Get users who opted into results retention
