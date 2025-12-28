@@ -877,3 +877,216 @@ export const insertErrorLogSchema = createInsertSchema(errorLogs).omit({
 
 export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
 export type ErrorLog = typeof errorLogs.$inferSelect;
+
+// Partner webhook events enum
+export const WEBHOOK_EVENTS = {
+  ASSESSMENT_COMPLETED: 'assessment.completed',
+  ASSESSMENT_STARTED: 'assessment.started',
+  SESSION_CREATED: 'session.created',
+  SESSION_EXPIRED: 'session.expired',
+  RESULTS_READY: 'results.ready',
+} as const;
+
+export type WebhookEvent = typeof WEBHOOK_EVENTS[keyof typeof WEBHOOK_EVENTS];
+
+// Partner webhooks - configurable webhook endpoints for event notifications
+export const partnerWebhooks = pgTable("partner_webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(), // Friendly name for the webhook
+  url: varchar("url").notNull(), // Webhook endpoint URL
+  secret: varchar("secret").notNull(), // HMAC secret for signature verification
+  events: jsonb("events").notNull().$type<string[]>().default([]), // Events to subscribe to
+  isActive: boolean("is_active").notNull().default(true),
+  // Retry settings
+  maxRetries: integer("max_retries").notNull().default(3),
+  retryDelaySeconds: integer("retry_delay_seconds").notNull().default(60),
+  // Stats
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  lastSuccessAt: timestamp("last_success_at"),
+  lastFailureAt: timestamp("last_failure_at"),
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  totalDeliveries: integer("total_deliveries").notNull().default(0),
+  successfulDeliveries: integer("successful_deliveries").notNull().default(0),
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_webhooks_partner").on(table.partnerId),
+  index("idx_partner_webhooks_active").on(table.isActive),
+]);
+
+export const insertPartnerWebhookSchema = createInsertSchema(partnerWebhooks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastTriggeredAt: true,
+  lastSuccessAt: true,
+  lastFailureAt: true,
+  consecutiveFailures: true,
+  totalDeliveries: true,
+  successfulDeliveries: true,
+});
+
+export type InsertPartnerWebhook = z.infer<typeof insertPartnerWebhookSchema>;
+export type PartnerWebhook = typeof partnerWebhooks.$inferSelect;
+
+// Webhook delivery log - tracks each webhook delivery attempt
+export const webhookDeliveryLogs = pgTable("webhook_delivery_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  webhookId: varchar("webhook_id").notNull().references(() => partnerWebhooks.id, { onDelete: "cascade" }),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
+  eventType: varchar("event_type").notNull(),
+  payload: jsonb("payload").notNull().$type<Record<string, any>>(),
+  // Delivery status
+  status: varchar("status").notNull().default("pending"), // pending, delivered, failed, retrying
+  httpStatus: integer("http_status"),
+  responseBody: text("response_body"),
+  errorMessage: text("error_message"),
+  // Retry tracking
+  attemptNumber: integer("attempt_number").notNull().default(1),
+  nextRetryAt: timestamp("next_retry_at"),
+  // Timestamps
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_webhook_delivery_webhook").on(table.webhookId),
+  index("idx_webhook_delivery_partner").on(table.partnerId),
+  index("idx_webhook_delivery_status").on(table.status),
+  index("idx_webhook_delivery_retry").on(table.nextRetryAt),
+]);
+
+export const insertWebhookDeliveryLogSchema = createInsertSchema(webhookDeliveryLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertWebhookDeliveryLog = z.infer<typeof insertWebhookDeliveryLogSchema>;
+export type WebhookDeliveryLog = typeof webhookDeliveryLogs.$inferSelect;
+
+// ATS integration types
+export const ATS_PROVIDERS = {
+  GREENHOUSE: 'greenhouse',
+  LEVER: 'lever',
+  WORKDAY: 'workday',
+  SAP_SUCCESSFACTORS: 'sap_successfactors',
+  ORACLE_HCM: 'oracle_hcm',
+  CUSTOM: 'custom',
+} as const;
+
+export type AtsProvider = typeof ATS_PROVIDERS[keyof typeof ATS_PROVIDERS];
+
+// Partner ATS integrations - connects to recruitment software
+export const partnerAtsIntegrations = pgTable("partner_ats_integrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(), // Friendly name
+  provider: varchar("provider").notNull(), // greenhouse, lever, workday, etc.
+  isActive: boolean("is_active").notNull().default(true),
+  // Connection settings
+  apiBaseUrl: varchar("api_base_url"), // For custom integrations
+  apiKeyEncrypted: varchar("api_key_encrypted"), // Encrypted API key
+  oauthAccessToken: varchar("oauth_access_token"), // For OAuth-based integrations
+  oauthRefreshToken: varchar("oauth_refresh_token"),
+  oauthExpiresAt: timestamp("oauth_expires_at"),
+  // Sync settings
+  syncMode: varchar("sync_mode").notNull().default("push"), // push (send to ATS), pull (fetch from ATS), bidirectional
+  syncEvents: jsonb("sync_events").notNull().$type<string[]>().default([]), // Which events trigger syncs
+  fieldMapping: jsonb("field_mapping").$type<Record<string, string>>(), // Map HumanMetrix fields to ATS fields
+  // Stats
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: varchar("last_sync_status"), // success, partial, failed
+  totalSyncs: integer("total_syncs").notNull().default(0),
+  successfulSyncs: integer("successful_syncs").notNull().default(0),
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_ats_partner").on(table.partnerId),
+  index("idx_partner_ats_provider").on(table.provider),
+  index("idx_partner_ats_active").on(table.isActive),
+]);
+
+export const insertPartnerAtsIntegrationSchema = createInsertSchema(partnerAtsIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSyncAt: true,
+  lastSyncStatus: true,
+  totalSyncs: true,
+  successfulSyncs: true,
+});
+
+export type InsertPartnerAtsIntegration = z.infer<typeof insertPartnerAtsIntegrationSchema>;
+export type PartnerAtsIntegration = typeof partnerAtsIntegrations.$inferSelect;
+
+// Export schedule frequency
+export const EXPORT_FREQUENCIES = {
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly',
+} as const;
+
+export type ExportFrequency = typeof EXPORT_FREQUENCIES[keyof typeof EXPORT_FREQUENCIES];
+
+// Partner scheduled exports - automated CSV exports to external systems
+export const partnerScheduledExports = pgTable("partner_scheduled_exports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(), // Friendly name
+  isActive: boolean("is_active").notNull().default(true),
+  // Schedule settings
+  frequency: varchar("frequency").notNull().default("weekly"), // daily, weekly, monthly
+  dayOfWeek: integer("day_of_week"), // 0=Sunday, 6=Saturday (for weekly)
+  dayOfMonth: integer("day_of_month"), // 1-28 (for monthly)
+  timeOfDay: varchar("time_of_day").notNull().default("06:00"), // HH:mm in UTC
+  timezone: varchar("timezone").notNull().default("UTC"),
+  // Export content
+  exportType: varchar("export_type").notNull(), // assessments, billing, candidates, usage
+  includedFields: jsonb("included_fields").$type<string[]>(), // Which fields to include
+  dateRange: varchar("date_range").notNull().default("last_period"), // last_period, all_time, custom
+  customStartDate: timestamp("custom_start_date"),
+  customEndDate: timestamp("custom_end_date"),
+  // Delivery settings
+  deliveryMethod: varchar("delivery_method").notNull().default("email"), // email, sftp, s3, webhook
+  deliveryEmail: varchar("delivery_email"), // For email delivery
+  deliverySftpHost: varchar("delivery_sftp_host"), // For SFTP delivery
+  deliverySftpPath: varchar("delivery_sftp_path"),
+  deliverySftpUser: varchar("delivery_sftp_user"),
+  deliverySftpKeyEncrypted: varchar("delivery_sftp_key_encrypted"),
+  deliveryS3Bucket: varchar("delivery_s3_bucket"), // For S3 delivery
+  deliveryS3Path: varchar("delivery_s3_path"),
+  deliveryS3AccessKey: varchar("delivery_s3_access_key"),
+  deliveryS3SecretKeyEncrypted: varchar("delivery_s3_secret_key_encrypted"),
+  deliveryWebhookUrl: varchar("delivery_webhook_url"), // For webhook delivery
+  // Stats
+  lastRunAt: timestamp("last_run_at"),
+  lastRunStatus: varchar("last_run_status"), // success, partial, failed
+  lastRunRecords: integer("last_run_records"),
+  nextRunAt: timestamp("next_run_at"),
+  totalRuns: integer("total_runs").notNull().default(0),
+  successfulRuns: integer("successful_runs").notNull().default(0),
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_exports_partner").on(table.partnerId),
+  index("idx_partner_exports_active").on(table.isActive),
+  index("idx_partner_exports_next_run").on(table.nextRunAt),
+]);
+
+export const insertPartnerScheduledExportSchema = createInsertSchema(partnerScheduledExports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastRunAt: true,
+  lastRunStatus: true,
+  lastRunRecords: true,
+  nextRunAt: true,
+  totalRuns: true,
+  successfulRuns: true,
+});
+
+export type InsertPartnerScheduledExport = z.infer<typeof insertPartnerScheduledExportSchema>;
+export type PartnerScheduledExport = typeof partnerScheduledExports.$inferSelect;

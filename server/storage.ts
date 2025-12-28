@@ -81,6 +81,18 @@ import {
   errorLogs,
   type ErrorLog,
   type InsertErrorLog,
+  partnerWebhooks,
+  webhookDeliveryLogs,
+  partnerAtsIntegrations,
+  partnerScheduledExports,
+  type PartnerWebhook,
+  type InsertPartnerWebhook,
+  type WebhookDeliveryLog,
+  type InsertWebhookDeliveryLog,
+  type PartnerAtsIntegration,
+  type InsertPartnerAtsIntegration,
+  type PartnerScheduledExport,
+  type InsertPartnerScheduledExport,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
@@ -347,6 +359,37 @@ export interface IStorage {
     resultsRetentionConsentDate: Date | null;
     createdAt: Date | null;
   }>>;
+  
+  // Partner webhook operations
+  createPartnerWebhook(webhook: InsertPartnerWebhook): Promise<PartnerWebhook>;
+  getPartnerWebhook(id: string): Promise<PartnerWebhook | undefined>;
+  getPartnerWebhooks(partnerId: string): Promise<PartnerWebhook[]>;
+  getActiveWebhooksForEvent(partnerId: string, eventType: string): Promise<PartnerWebhook[]>;
+  updatePartnerWebhook(id: string, updates: Partial<InsertPartnerWebhook>): Promise<void>;
+  deletePartnerWebhook(id: string): Promise<void>;
+  updateWebhookStats(id: string, success: boolean): Promise<void>;
+  
+  // Webhook delivery log operations
+  createWebhookDeliveryLog(log: InsertWebhookDeliveryLog): Promise<WebhookDeliveryLog>;
+  getWebhookDeliveryLog(id: string): Promise<WebhookDeliveryLog | undefined>;
+  getWebhookDeliveryLogs(webhookId: string, limit?: number): Promise<WebhookDeliveryLog[]>;
+  getPendingWebhookDeliveries(): Promise<WebhookDeliveryLog[]>;
+  updateWebhookDeliveryLog(id: string, updates: Partial<InsertWebhookDeliveryLog>): Promise<void>;
+  
+  // Partner ATS integration operations
+  createPartnerAtsIntegration(integration: InsertPartnerAtsIntegration): Promise<PartnerAtsIntegration>;
+  getPartnerAtsIntegration(id: string): Promise<PartnerAtsIntegration | undefined>;
+  getPartnerAtsIntegrations(partnerId: string): Promise<PartnerAtsIntegration[]>;
+  updatePartnerAtsIntegration(id: string, updates: Partial<InsertPartnerAtsIntegration>): Promise<void>;
+  deletePartnerAtsIntegration(id: string): Promise<void>;
+  
+  // Partner scheduled export operations
+  createPartnerScheduledExport(exportConfig: InsertPartnerScheduledExport): Promise<PartnerScheduledExport>;
+  getPartnerScheduledExport(id: string): Promise<PartnerScheduledExport | undefined>;
+  getPartnerScheduledExports(partnerId: string): Promise<PartnerScheduledExport[]>;
+  getDueScheduledExports(): Promise<PartnerScheduledExport[]>;
+  updatePartnerScheduledExport(id: string, updates: Partial<InsertPartnerScheduledExport>): Promise<void>;
+  deletePartnerScheduledExport(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2214,6 +2257,163 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(users.resultsRetentionConsentDate));
     
     return result;
+  }
+
+  // Partner webhook operations
+  async createPartnerWebhook(webhook: InsertPartnerWebhook): Promise<PartnerWebhook> {
+    const [result] = await db.insert(partnerWebhooks).values(webhook).returning();
+    return result;
+  }
+
+  async getPartnerWebhook(id: string): Promise<PartnerWebhook | undefined> {
+    const [result] = await db.select().from(partnerWebhooks).where(eq(partnerWebhooks.id, id));
+    return result;
+  }
+
+  async getPartnerWebhooks(partnerId: string): Promise<PartnerWebhook[]> {
+    return await db.select().from(partnerWebhooks)
+      .where(eq(partnerWebhooks.partnerId, partnerId))
+      .orderBy(desc(partnerWebhooks.createdAt));
+  }
+
+  async getActiveWebhooksForEvent(partnerId: string, eventType: string): Promise<PartnerWebhook[]> {
+    const webhooks = await db.select().from(partnerWebhooks)
+      .where(and(
+        eq(partnerWebhooks.partnerId, partnerId),
+        eq(partnerWebhooks.isActive, true)
+      ));
+    
+    // Filter by event type (stored as JSON array)
+    return webhooks.filter(w => {
+      const events = w.events as string[];
+      return events.includes(eventType);
+    });
+  }
+
+  async updatePartnerWebhook(id: string, updates: Partial<InsertPartnerWebhook>): Promise<void> {
+    await db.update(partnerWebhooks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerWebhooks.id, id));
+  }
+
+  async deletePartnerWebhook(id: string): Promise<void> {
+    await db.delete(partnerWebhooks).where(eq(partnerWebhooks.id, id));
+  }
+
+  async updateWebhookStats(id: string, success: boolean): Promise<void> {
+    const webhook = await this.getPartnerWebhook(id);
+    if (!webhook) return;
+
+    const updates: any = {
+      lastTriggeredAt: new Date(),
+      totalDeliveries: webhook.totalDeliveries + 1,
+      updatedAt: new Date(),
+    };
+
+    if (success) {
+      updates.lastSuccessAt = new Date();
+      updates.successfulDeliveries = webhook.successfulDeliveries + 1;
+      updates.consecutiveFailures = 0;
+    } else {
+      updates.lastFailureAt = new Date();
+      updates.consecutiveFailures = webhook.consecutiveFailures + 1;
+    }
+
+    await db.update(partnerWebhooks).set(updates).where(eq(partnerWebhooks.id, id));
+  }
+
+  // Webhook delivery log operations
+  async createWebhookDeliveryLog(log: InsertWebhookDeliveryLog): Promise<WebhookDeliveryLog> {
+    const [result] = await db.insert(webhookDeliveryLogs).values(log).returning();
+    return result;
+  }
+
+  async getWebhookDeliveryLog(id: string): Promise<WebhookDeliveryLog | undefined> {
+    const [result] = await db.select().from(webhookDeliveryLogs).where(eq(webhookDeliveryLogs.id, id));
+    return result;
+  }
+
+  async getWebhookDeliveryLogs(webhookId: string, limit: number = 50): Promise<WebhookDeliveryLog[]> {
+    return await db.select().from(webhookDeliveryLogs)
+      .where(eq(webhookDeliveryLogs.webhookId, webhookId))
+      .orderBy(desc(webhookDeliveryLogs.createdAt))
+      .limit(limit);
+  }
+
+  async getPendingWebhookDeliveries(): Promise<WebhookDeliveryLog[]> {
+    return await db.select().from(webhookDeliveryLogs)
+      .where(and(
+        eq(webhookDeliveryLogs.status, 'retrying'),
+        lte(webhookDeliveryLogs.nextRetryAt, new Date())
+      ))
+      .orderBy(webhookDeliveryLogs.nextRetryAt);
+  }
+
+  async updateWebhookDeliveryLog(id: string, updates: Partial<InsertWebhookDeliveryLog>): Promise<void> {
+    await db.update(webhookDeliveryLogs).set(updates).where(eq(webhookDeliveryLogs.id, id));
+  }
+
+  // Partner ATS integration operations
+  async createPartnerAtsIntegration(integration: InsertPartnerAtsIntegration): Promise<PartnerAtsIntegration> {
+    const [result] = await db.insert(partnerAtsIntegrations).values(integration).returning();
+    return result;
+  }
+
+  async getPartnerAtsIntegration(id: string): Promise<PartnerAtsIntegration | undefined> {
+    const [result] = await db.select().from(partnerAtsIntegrations).where(eq(partnerAtsIntegrations.id, id));
+    return result;
+  }
+
+  async getPartnerAtsIntegrations(partnerId: string): Promise<PartnerAtsIntegration[]> {
+    return await db.select().from(partnerAtsIntegrations)
+      .where(eq(partnerAtsIntegrations.partnerId, partnerId))
+      .orderBy(desc(partnerAtsIntegrations.createdAt));
+  }
+
+  async updatePartnerAtsIntegration(id: string, updates: Partial<InsertPartnerAtsIntegration>): Promise<void> {
+    await db.update(partnerAtsIntegrations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerAtsIntegrations.id, id));
+  }
+
+  async deletePartnerAtsIntegration(id: string): Promise<void> {
+    await db.delete(partnerAtsIntegrations).where(eq(partnerAtsIntegrations.id, id));
+  }
+
+  // Partner scheduled export operations
+  async createPartnerScheduledExport(exportConfig: InsertPartnerScheduledExport): Promise<PartnerScheduledExport> {
+    const [result] = await db.insert(partnerScheduledExports).values(exportConfig).returning();
+    return result;
+  }
+
+  async getPartnerScheduledExport(id: string): Promise<PartnerScheduledExport | undefined> {
+    const [result] = await db.select().from(partnerScheduledExports).where(eq(partnerScheduledExports.id, id));
+    return result;
+  }
+
+  async getPartnerScheduledExports(partnerId: string): Promise<PartnerScheduledExport[]> {
+    return await db.select().from(partnerScheduledExports)
+      .where(eq(partnerScheduledExports.partnerId, partnerId))
+      .orderBy(desc(partnerScheduledExports.createdAt));
+  }
+
+  async getDueScheduledExports(): Promise<PartnerScheduledExport[]> {
+    return await db.select().from(partnerScheduledExports)
+      .where(and(
+        eq(partnerScheduledExports.isActive, true),
+        lte(partnerScheduledExports.nextRunAt, new Date())
+      ))
+      .orderBy(partnerScheduledExports.nextRunAt);
+  }
+
+  async updatePartnerScheduledExport(id: string, updates: Partial<InsertPartnerScheduledExport>): Promise<void> {
+    await db.update(partnerScheduledExports)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerScheduledExports.id, id));
+  }
+
+  async deletePartnerScheduledExport(id: string): Promise<void> {
+    await db.delete(partnerScheduledExports).where(eq(partnerScheduledExports.id, id));
   }
 }
 
