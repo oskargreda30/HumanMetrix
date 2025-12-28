@@ -406,7 +406,6 @@ export default function PartnerDashboard() {
                 </Badge>
               )}
               <Button
-                variant="outline"
                 onClick={() => setLocation("/developers")}
                 className="gap-2"
                 data-testid="button-api-docs"
