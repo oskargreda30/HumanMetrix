@@ -26,6 +26,9 @@ import dashboardBg from "@assets/image_1763608498774.png";
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
+  const [analyticsSubTab, setAnalyticsSubTab] = useState("platform");
+  const [partnersSubTab, setPartnersSubTab] = useState("organisations"); // Default to organisations (available to all admins)
+  const [analysisSubTab, setAnalysisSubTab] = useState("compare");
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
     queryKey: ["/api/admin/my-organization"],
@@ -121,40 +124,24 @@ export default function AdminDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
-              {isSuperAdmin && (
-                <TabsTrigger value="platform" data-testid="tab-platform" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Platform
-                </TabsTrigger>
-              )}
               <TabsTrigger value="overview" data-testid="tab-overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
               <TabsTrigger value="candidates" data-testid="tab-candidates" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Candidates
               </TabsTrigger>
-              <TabsTrigger value="compare" data-testid="tab-compare" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Compare
-              </TabsTrigger>
-              <TabsTrigger value="role-fit" data-testid="tab-role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Role Fit
+              <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analysis
               </TabsTrigger>
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
-              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Organisations
-              </TabsTrigger>
               <TabsTrigger value="golden-set" data-testid="tab-golden-set" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Scoring QA
               </TabsTrigger>
-              <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Usage
+              <TabsTrigger value="partners" data-testid="tab-partners" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                {isSuperAdmin ? 'B2B Partners' : 'Organisations'}
               </TabsTrigger>
-              {isSuperAdmin && (
-                <TabsTrigger value="partners" data-testid="tab-partners" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  B2B Partners
-                </TabsTrigger>
-              )}
               {isSuperAdmin && (
                 <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Analytics
@@ -177,12 +164,6 @@ export default function AdminDashboard() {
               )}
             </TabsList>
 
-            {isSuperAdmin && (
-              <TabsContent value="platform" className="space-y-4">
-                <PlatformStatsTab currentUser={user} />
-              </TabsContent>
-            )}
-
             <TabsContent value="overview" className="space-y-4">
               <OverviewTab />
             </TabsContent>
@@ -191,39 +172,84 @@ export default function AdminDashboard() {
               <CandidatesTab />
             </TabsContent>
 
-            <TabsContent value="compare" className="space-y-4">
-              <CompareTab />
-            </TabsContent>
-
-            <TabsContent value="role-fit" className="space-y-4">
-              <RoleFitTab />
+            {/* Analysis tab - consolidates Compare + Role Fit */}
+            <TabsContent value="analysis" className="space-y-4">
+              <Tabs value={analysisSubTab} onValueChange={setAnalysisSubTab}>
+                <TabsList className="bg-white/5 border border-white/10">
+                  <TabsTrigger value="compare" data-testid="subtab-compare" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Compare
+                  </TabsTrigger>
+                  <TabsTrigger value="role-fit" data-testid="subtab-role-fit" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Role Fit
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="compare" className="mt-4">
+                  <CompareTab />
+                </TabsContent>
+                <TabsContent value="role-fit" className="mt-4">
+                  <RoleFitTab />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="invitations" className="space-y-4">
               <InvitationsTab />
             </TabsContent>
 
-            <TabsContent value="organizations" className="space-y-4">
-              <OrganizationsTab />
-            </TabsContent>
-
             <TabsContent value="golden-set" className="space-y-4">
               <GoldenSetTab />
             </TabsContent>
 
-            <TabsContent value="usage" className="space-y-4">
-              <UsageTab />
+            {/* Partners/Organisations tab - consolidates Partners + Usage + Organisations */}
+            {/* Available to all admins, but Accounts sub-tab only visible to super admins */}
+            <TabsContent value="partners" className="space-y-4">
+              <Tabs value={partnersSubTab} onValueChange={setPartnersSubTab}>
+                <TabsList className="bg-white/5 border border-white/10">
+                  {isSuperAdmin && (
+                    <TabsTrigger value="accounts" data-testid="subtab-accounts" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Accounts
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="organisations" data-testid="subtab-organisations" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Organisations
+                  </TabsTrigger>
+                  <TabsTrigger value="usage" data-testid="subtab-usage" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Usage
+                  </TabsTrigger>
+                </TabsList>
+                {isSuperAdmin && (
+                  <TabsContent value="accounts" className="mt-4">
+                    <PartnersTab />
+                  </TabsContent>
+                )}
+                <TabsContent value="organisations" className="mt-4">
+                  <OrganizationsTab />
+                </TabsContent>
+                <TabsContent value="usage" className="mt-4">
+                  <UsageTab />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            {isSuperAdmin && (
-              <TabsContent value="partners" className="space-y-4">
-                <PartnersTab />
-              </TabsContent>
-            )}
-
+            {/* Analytics tab - consolidates Platform + Analytics */}
             {isSuperAdmin && (
               <TabsContent value="analytics" className="space-y-4">
-                <AnalyticsTab />
+                <Tabs value={analyticsSubTab} onValueChange={setAnalyticsSubTab}>
+                  <TabsList className="bg-white/5 border border-white/10">
+                    <TabsTrigger value="platform" data-testid="subtab-platform" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Platform
+                    </TabsTrigger>
+                    <TabsTrigger value="trends" data-testid="subtab-trends" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Trends
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="platform" className="mt-4">
+                    <PlatformStatsTab currentUser={user} />
+                  </TabsContent>
+                  <TabsContent value="trends" className="mt-4">
+                    <AnalyticsTab />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             )}
 
