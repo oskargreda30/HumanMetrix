@@ -164,6 +164,41 @@ export function ResultsPaymentGate() {
           </div>
         </div>
 
+        {/* Price Breakdown */}
+        <div className="border rounded-lg p-4 space-y-3" data-testid="price-breakdown">
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Price Breakdown</h3>
+          
+          {/* Individual assessments */}
+          {assessmentTypesInBatch.map((type: string, index: number) => {
+            const normalizedType = normalizeAssessmentId(type);
+            const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
+            const adjustedPence = getAdjustedPriceInPence(originalPrice);
+            const localPrice = getLocalPriceNumber(adjustedPence);
+            const displayName = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            
+            return (
+              <div key={index} className="flex justify-between items-center text-sm" data-testid={`price-item-${type}`}>
+                <span>{displayName} Assessment</span>
+                <span>{formatLocalCurrency(localPrice)}</span>
+              </div>
+            );
+          })}
+          
+          {/* Platform fee */}
+          <div className="flex justify-between items-center text-sm" data-testid="price-platform-fee">
+            <span>Platform Fee</span>
+            <span>{formatLocalCurrency(platformFeeLocal)}</span>
+          </div>
+          
+          {/* Divider */}
+          <div className="border-t pt-3 mt-3">
+            <div className="flex justify-between items-center font-semibold" data-testid="price-total">
+              <span>Total</span>
+              <span className="text-lg">{formattedPrice}</span>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <Button
             className="w-full"
