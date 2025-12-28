@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
   const [analyticsSubTab, setAnalyticsSubTab] = useState("platform");
-  const [partnersSubTab, setPartnersSubTab] = useState("organisations"); // Default to organisations (available to all admins)
+  const [partnersSubTab, setPartnersSubTab] = useState("accounts"); // Default to accounts for super admins
   const [analysisSubTab, setAnalysisSubTab] = useState("compare");
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
@@ -45,6 +45,13 @@ export default function AdminDashboard() {
 
   const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
   const isSuperAdmin = user?.role === 'super_admin';
+
+  // Set default partnersSubTab based on role - super admins get "accounts", others get "organisations"
+  useEffect(() => {
+    if (user && !isSuperAdmin && partnersSubTab === 'accounts') {
+      setPartnersSubTab('organisations');
+    }
+  }, [user, isSuperAdmin, partnersSubTab]);
 
   if (!hasAdminAccess) {
     return (

@@ -561,7 +561,7 @@ export default function HealthTab() {
                   </div>
                 ) : latencyMetrics?.length ? (
                   <div className="space-y-4">
-                    {['critical', 'error', 'warning', 'info'].map(severity => {
+                    {['critical', 'warning'].map(severity => {
                       const items = latencyMetrics.filter(l => l.severity === severity);
                       if (!items.length) return null;
                       return (
@@ -586,6 +586,9 @@ export default function HealthTab() {
                         </div>
                       );
                     })}
+                    {!latencyMetrics.some(l => l.severity === 'critical' || l.severity === 'warning') && (
+                      <p className="text-center text-muted-foreground py-4">All endpoints performing within normal parameters</p>
+                    )}
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-4">No latency data available</p>
