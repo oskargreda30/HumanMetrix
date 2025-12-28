@@ -1,9 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity, Plus, ShoppingCart } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface PartnerUsageStats {
   partnerId: string;
@@ -34,6 +39,15 @@ interface PlatformUsageStats {
 interface OrgUsageStats {
   hasPartnerAccount: boolean;
   partner?: PartnerUsageStats;
+}
+
+interface PackageTier {
+  size: number;
+  pricePerTest: number;
+  name: string;
+  totalPrice: number;
+  displayPrice: string;
+  displayPricePerTest: string;
 }
 
 export default function UsageTab() {
@@ -241,7 +255,47 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
   );
 }
 
+const PACKAGE_TIERS: PackageTier[] = [
+  { size: 10, pricePerTest: 5.00, name: "Starter", totalPrice: 50, displayPrice: "£50", displayPricePerTest: "£5.00" },
+  { size: 25, pricePerTest: 4.50, name: "Basic", totalPrice: 112.50, displayPrice: "£112.50", displayPricePerTest: "£4.50" },
+  { size: 50, pricePerTest: 4.00, name: "Standard", totalPrice: 200, displayPrice: "£200", displayPricePerTest: "£4.00" },
+  { size: 100, pricePerTest: 3.50, name: "Professional", totalPrice: 350, displayPrice: "£350", displayPricePerTest: "£3.50" },
+  { size: 250, pricePerTest: 3.00, name: "Enterprise", totalPrice: 750, displayPrice: "£750", displayPricePerTest: "£3.00" },
+  { size: 500, pricePerTest: 2.50, name: "Enterprise+", totalPrice: 1250, displayPrice: "£1,250", displayPricePerTest: "£2.50" },
+];
+
 function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
+  const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<PackageTier | null>(null);
+  const { toast } = useToast();
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (packageSize: number) => {
+      const response = await apiRequest("/api/partner/purchase/checkout", {
+        method: "POST",
+        body: JSON.stringify({ packageSize }),
+      });
+      return response;
+    },
+    onSuccess: (data: { success: boolean; sessionUrl: string }) => {
+      if (data.sessionUrl) {
+        window.location.href = data.sessionUrl;
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Purchase Failed",
+        description: error.message || "Failed to start checkout. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePurchase = () => {
+    if (!selectedPackage) return;
+    purchaseMutation.mutate(selectedPackage.size);
+  };
+
   if (!stats) {
     return (
       <Card>
@@ -337,30 +391,112 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Quota Usage
-            {partner.isSuspended ? (
-              <Badge variant="destructive" className="gap-1 ml-2">
-                <AlertTriangle className="h-3 w-3" />
-                API Access Suspended
-              </Badge>
-            ) : partner.usagePercentage >= 90 ? (
-              <Badge variant="secondary" className="gap-1 ml-2 bg-amber-500/20 text-amber-600 border-amber-500/30">
-                <AlertTriangle className="h-3 w-3" />
-                Low Quota Warning
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1 ml-2 bg-green-500/20 text-green-600 border-green-500/30">
-                <CheckCircle className="h-3 w-3" />
-                Active
-              </Badge>
-            )}
-          </CardTitle>
-          <CardDescription>
-            Your organisation's prepaid test package usage
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
+          <div>
+            <CardTitle className="flex items-center gap-2 flex-wrap">
+              <BarChart3 className="h-5 w-5" />
+              Quota Usage
+              {partner.isSuspended ? (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  API Access Suspended
+                </Badge>
+              ) : partner.usagePercentage >= 90 ? (
+                <Badge variant="secondary" className="gap-1 bg-amber-500/20 text-amber-600 border-amber-500/30">
+                  <AlertTriangle className="h-3 w-3" />
+                  Low Quota Warning
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1 bg-green-500/20 text-green-600 border-green-500/30">
+                  <CheckCircle className="h-3 w-3" />
+                  Active
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Your organisation's prepaid test package usage
+            </CardDescription>
+          </div>
+          <Dialog open={isPurchaseOpen} onOpenChange={setIsPurchaseOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" data-testid="button-top-up">
+                <Plus className="h-4 w-4" />
+                Top Up Tests
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Purchase Test Package
+                </DialogTitle>
+                <DialogDescription>
+                  Select a test package to add credits to your account. Larger packages offer better value.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-3 py-4">
+                {PACKAGE_TIERS.map((tier) => (
+                  <div
+                    key={tier.size}
+                    className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors hover-elevate ${
+                      selectedPackage?.size === tier.size
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
+                    onClick={() => setSelectedPackage(tier)}
+                    data-testid={`package-tier-${tier.size}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedPackage?.size === tier.size
+                          ? "border-primary"
+                          : "border-muted-foreground"
+                      }`}>
+                        {selectedPackage?.size === tier.size && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium">{tier.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {tier.size} tests at {tier.displayPricePerTest}/test
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold">{tier.displayPrice}</div>
+                      {tier.pricePerTest < 5 && (
+                        <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-600">
+                          Save {Math.round((1 - tier.pricePerTest / 5) * 100)}%
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPurchaseOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePurchase}
+                  disabled={!selectedPackage || purchaseMutation.isPending}
+                  data-testid="button-confirm-purchase"
+                >
+                  {purchaseMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Redirecting...
+                    </>
+                  ) : selectedPackage ? (
+                    `Purchase ${selectedPackage.size} Tests`
+                  ) : (
+                    "Select a Package"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-4">
@@ -385,24 +521,38 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
           </div>
           {partner.isSuspended && (
             <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="font-medium">API Access Suspended</span>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">API Access Suspended</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your test quota has been exhausted. Purchase additional credits to restore API access.
+                  </p>
+                </div>
+                <Button onClick={() => setIsPurchaseOpen(true)} data-testid="button-restore-access">
+                  Restore Access
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Your test quota has been exhausted. Please purchase additional test credits to restore API access.
-              </p>
             </div>
           )}
           {!partner.isSuspended && partner.usagePercentage >= 90 && (
             <div className="mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <div className="flex items-center gap-2 text-amber-600">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="font-medium">Low Quota Warning</span>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">Low Quota Warning</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You have only {partner.remaining} tests remaining. Consider purchasing additional credits.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setIsPurchaseOpen(true)} data-testid="button-top-up-warning">
+                  Top Up
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                You have only {partner.remaining} tests remaining. Consider purchasing additional credits to avoid service interruption.
-              </p>
             </div>
           )}
         </CardContent>

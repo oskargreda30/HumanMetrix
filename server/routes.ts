@@ -3893,6 +3893,137 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Create checkout session for test package purchase
+  app.post("/api/partner/purchase/checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      // Find partner account associated with this user's organisation
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner && user?.organizationId) {
+        const org = await storage.getOrganization(user.organizationId);
+        if (org) {
+          const partners = await storage.getAllPartnerAccounts();
+          matchingPartner = partners.find(p => 
+            p.companyName?.toLowerCase() === org.name.toLowerCase()
+          ) || null;
+        }
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found for your organisation" });
+      }
+      
+      // Only prepaid billing type partners can self-purchase
+      if (matchingPartner.billingType !== 'prepaid') {
+        return res.status(400).json({ 
+          message: "Self-service purchasing is only available for prepaid billing accounts. Please contact your account manager for billing adjustments." 
+        });
+      }
+      
+      const { packageSize } = req.body;
+      if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
+        return res.status(400).json({ message: "Package size must be at least 10 tests" });
+      }
+      
+      // Find matching tier or use custom pricing
+      const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
+      const pricePerTest = tier?.pricePerTest || 500;
+      const totalPrice = packageSize * pricePerTest;
+      
+      // Create package record (pending)
+      const pkg = await storage.createPartnerTestPackage({
+        partnerId: matchingPartner.id,
+        packageSize,
+        pricePerTest,
+        totalPrice,
+        currency: 'gbp',
+        status: 'pending',
+      });
+      
+      // Create Stripe checkout session
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+      
+      // Ensure partner has a Stripe customer ID
+      let customerId = matchingPartner.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripeClient.customers.create({
+          email: matchingPartner.billingEmail || matchingPartner.email,
+          name: matchingPartner.companyName || matchingPartner.name,
+          metadata: {
+            partnerId: matchingPartner.id,
+            partnerName: matchingPartner.name,
+          },
+        });
+        customerId = customer.id;
+        await storage.updatePartnerAccount(matchingPartner.id, {
+          stripeCustomerId: customerId,
+        });
+      }
+      
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+          : 'http://localhost:5000';
+      
+      const session = await stripeClient.checkout.sessions.create({
+        mode: 'payment',
+        customer: customerId,
+        line_items: [{
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: `HumanMetrix Test Package - ${packageSize} Tests`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at £${(pricePerTest / 100).toFixed(2)} per test`,
+            },
+            unit_amount: totalPrice,
+          },
+          quantity: 1,
+        }],
+        metadata: {
+          type: 'partner_package',
+          partnerId: matchingPartner.id,
+          packageId: pkg.id,
+          packageSize: packageSize.toString(),
+          selfService: 'true',
+        },
+        success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/admin?tab=partners&subtab=usage&purchase_cancelled=true`,
+      });
+      
+      // Update package with Stripe session ID
+      await storage.updatePartnerTestPackage(pkg.id, {
+        stripeCheckoutSessionId: session.id,
+      });
+      
+      res.json({ 
+        success: true, 
+        sessionUrl: session.url,
+        packageId: pkg.id,
+      });
+    } catch (error) {
+      console.error("Error creating partner self-service checkout:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
@@ -5050,6 +5181,99 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error creating package checkout:", error);
       res.status(500).json({ message: "Failed to create package checkout" });
+    }
+  });
+
+  // Process partner package payment callback (validates Stripe session and credits tests)
+  // This endpoint doesn't require authentication because session cookies can be lost during Stripe redirects
+  // Security is ensured by validating the Stripe session instead
+  app.post("/api/partner/package/callback", async (req: any, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ success: false, message: "Session ID required" });
+      }
+      
+      // Retrieve and validate Stripe session
+      const stripe = (await import("stripe")).default;
+      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+      
+      const session = await stripeClient.checkout.sessions.retrieve(sessionId);
+      
+      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
+        return res.status(400).json({ success: false, message: "Payment not completed" });
+      }
+      
+      const metadata = session.metadata;
+      if (!metadata || metadata.type !== 'partner_package') {
+        return res.status(400).json({ success: false, message: "Invalid session type" });
+      }
+      
+      const { partnerId, packageId, packageSize } = metadata;
+      
+      if (!partnerId || !packageId || !packageSize) {
+        return res.status(400).json({ success: false, message: "Invalid session metadata" });
+      }
+      
+      // Verify package exists and belongs to the partner from the session
+      const pkg = await storage.getPartnerTestPackage(packageId);
+      if (!pkg) {
+        return res.status(404).json({ success: false, message: "Package not found" });
+      }
+      
+      // Security: Verify package belongs to the partner in the session metadata
+      if (pkg.partnerId !== partnerId) {
+        console.warn(`[Partner Package] Package ${packageId} partner mismatch: expected ${pkg.partnerId}, got ${partnerId}`);
+        return res.status(403).json({ success: false, message: "Package does not belong to this partner" });
+      }
+      
+      // Additional security: Verify Stripe session matches the package
+      if (pkg.stripeCheckoutSessionId && pkg.stripeCheckoutSessionId !== sessionId) {
+        console.warn(`[Partner Package] Session mismatch for package ${packageId}: expected ${pkg.stripeCheckoutSessionId}, got ${sessionId}`);
+        return res.status(403).json({ success: false, message: "Invalid session for this package" });
+      }
+      
+      if (pkg.status === 'completed') {
+        console.log(`[Partner Package] Package ${packageId} already processed, skipping`);
+        return res.json({ 
+          success: true, 
+          message: "Package already credited",
+          alreadyProcessed: true
+        });
+      }
+      
+      // Update package status
+      await storage.updatePartnerTestPackage(packageId, {
+        status: 'completed',
+        stripePaymentIntentId: session.payment_intent as string,
+      } as any);
+      
+      // Credit the tests
+      const result = await storage.creditPartnerTests(
+        partnerId,
+        packageId,
+        parseInt(packageSize),
+        `Package purchase: ${packageSize} tests`
+      );
+      
+      // Reactivate API access if it was suspended
+      const partner = await storage.getPartnerAccount(partnerId);
+      if (partner?.apiAccessSuspendedAt) {
+        await storage.reactivatePartnerApiAccess(partnerId);
+        console.log(`[Partner Package] Reactivated API access for partner ${partnerId}`);
+      }
+      
+      console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully credited ${packageSize} tests`,
+        newBalance: result.newBalance
+      });
+    } catch (error) {
+      console.error("Error processing partner package callback:", error);
+      res.status(500).json({ success: false, message: "Failed to process package purchase" });
     }
   });
 

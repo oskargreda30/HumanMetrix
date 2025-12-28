@@ -38,6 +38,7 @@ import Subscribe from "@/pages/Subscribe";
 import Developers from "@/pages/Developers";
 import EmbedAssessment from "@/pages/EmbedAssessment";
 import WidgetTest from "@/pages/WidgetTest";
+import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -117,6 +118,7 @@ function Router() {
         )}
       </Route>
       <Route path="/admin/widget-test" component={WidgetTest} />
+      <Route path="/partner-package-success" component={PartnerPackageSuccess} />
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
       <Route path="/candidate-portal">
