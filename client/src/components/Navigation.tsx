@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, Building2 } from "lucide-react";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,9 +19,6 @@ export default function Navigation() {
 
   // Check if user is invitation-only (from backend auth response)
   const isInvitationOnly = (user as any)?.isInvitationOnly;
-
-  // Partner admins are identified by their role (no API call needed)
-  const isPartnerAdmin = user?.role === 'partner_admin';
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -109,8 +106,8 @@ export default function Navigation() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Hidden for logged-in non-admin users (candidates) */}
-          {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin') && (
+          {/* Desktop Navigation - Show for all users except candidates */}
+          {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin') && (
             <nav className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
                 <a
@@ -148,18 +145,6 @@ export default function Navigation() {
                       Dashboard
                     </Button>
                   </Link>
-                  {isPartnerAdmin && (
-                    <Link href="/partner">
-                      <Button 
-                        variant="ghost" 
-                        className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
-                        data-testid="button-partner-dashboard"
-                      >
-                        <Building2 className="mr-2 h-4 w-4" />
-                        Partner
-                      </Button>
-                    </Link>
-                  )}
                   <Button 
                     variant="ghost" 
                     className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
@@ -214,8 +199,8 @@ export default function Navigation() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]">
           <nav className="flex flex-col gap-4 p-4">
-            {/* Hide public nav links for logged-in non-admin users (candidates) */}
-            {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin') && navLinks.map((link) => (
+            {/* Show nav links for all users except candidates */}
+            {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin') && navLinks.map((link) => (
               <a
                 key={link.href} 
                 href={link.href}
@@ -246,19 +231,6 @@ export default function Navigation() {
                         Dashboard
                       </Button>
                     </Link>
-                    {isPartnerAdmin && (
-                      <Link href="/partner">
-                        <Button 
-                          variant="ghost" 
-                          className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
-                          onClick={() => setMobileMenuOpen(false)} 
-                          data-testid="button-mobile-partner-dashboard"
-                        >
-                          <Building2 className="mr-2 h-4 w-4" />
-                          Partner Dashboard
-                        </Button>
-                      </Link>
-                    )}
                     <Button 
                       variant="ghost" 
                       className="w-full text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10" 
