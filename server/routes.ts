@@ -298,8 +298,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use ip-api.com (provides org/ISP data for VPN detection, 45 req/min limit)
-      // We cache for 5 minutes so effective rate is much lower
-      const response = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,message,countryCode,country,isp,org,as,proxy,hosting`);
+      // We cache for 1 minute so effective rate is much lower
+      // 3 second timeout to prevent blocking if service is slow
+      const response = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,message,countryCode,country,isp,org,as,proxy,hosting`, {
+        signal: AbortSignal.timeout(3000)
+      });
       
       if (!response.ok) {
         console.error(`[Geolocation] ip-api.com returned status ${response.status} for IP ${clientIP}`);
@@ -6163,26 +6166,26 @@ Format your response as JSON with this structure:
           { info: 300, warning: 800, error: 2000 }
         ),
         
-        // Geolocation
+        // Geolocation (ip-api.com) - external service, more lenient thresholds
         measureLatency('/api/geolocation', 'External Service', 
           async () => {
-            const response = await fetch('https://ipapi.co/json/', { 
-              signal: AbortSignal.timeout(5000) 
+            const response = await fetch('http://ip-api.com/json/?fields=status', { 
+              signal: AbortSignal.timeout(3000) 
             });
             if (!response.ok) throw new Error('Failed');
           },
-          { info: 200, warning: 500, error: 2000 }
+          { info: 500, warning: 1500, error: 3000 }
         ),
         
-        // Exchange rates
+        // Exchange rates - external service, more lenient thresholds
         measureLatency('/api/exchange-rates', 'External Service', 
           async () => {
             const response = await fetch('https://api.frankfurter.app/latest?from=GBP', { 
-              signal: AbortSignal.timeout(5000) 
+              signal: AbortSignal.timeout(3000) 
             });
             if (!response.ok) throw new Error('Failed');
           },
-          { info: 300, warning: 800, error: 2000 }
+          { info: 500, warning: 1500, error: 3000 }
         ),
       ]);
       
