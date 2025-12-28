@@ -5992,17 +5992,18 @@ Format your response as JSON with this structure:
         });
       }
       
-      // Memory usage check
+      // Memory usage check - use RSS (Resident Set Size) for total process memory
       const memUsage = process.memoryUsage();
+      const rssMB = Math.round(memUsage.rss / 1024 / 1024);
       const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
-      const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
-      const heapPercentage = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
       
+      // Thresholds based on absolute memory usage (typical for Node.js apps)
+      // < 256MB = healthy, 256-512MB = warning, > 512MB = critical
       checks.push({
         name: 'Memory',
-        status: heapPercentage < 70 ? 'healthy' : heapPercentage < 90 ? 'degraded' : 'unhealthy',
-        severity: heapPercentage < 70 ? 'info' : heapPercentage < 90 ? 'warning' : 'critical',
-        message: `${heapUsedMB}MB / ${heapTotalMB}MB (${heapPercentage}%)`,
+        status: rssMB < 256 ? 'healthy' : rssMB < 512 ? 'degraded' : 'unhealthy',
+        severity: rssMB < 256 ? 'info' : rssMB < 512 ? 'warning' : 'critical',
+        message: `${rssMB}MB RSS (${heapUsedMB}MB heap)`,
         lastChecked: new Date()
       });
       
