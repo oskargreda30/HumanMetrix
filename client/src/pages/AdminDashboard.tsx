@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
   
-  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
   const isSuperAdmin = user?.role === 'super_admin';
   
   // Set default partnersSubTab based on role - super admins get "accounts", others get "organisations"

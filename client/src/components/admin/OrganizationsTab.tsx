@@ -347,7 +347,7 @@ export default function OrganizationsTab() {
                           className="flex items-center justify-between p-3 border rounded-md"
                         >
                           <div className="flex items-center gap-3">
-                            {member.role === "admin" ? (
+                            {member.role === "organization_admin" ? (
                               <Crown className="h-4 w-4 text-amber-500" />
                             ) : (
                               <User className="h-4 w-4 text-muted-foreground" />
@@ -646,7 +646,7 @@ export default function OrganizationsTab() {
                         className="flex items-center justify-between p-3 border rounded-md"
                       >
                         <div className="flex items-center gap-3">
-                          {member.role === "admin" ? (
+                          {member.role === "organization_admin" ? (
                             <Crown className="h-4 w-4 text-amber-500" />
                           ) : (
                             <User className="h-4 w-4 text-muted-foreground" />

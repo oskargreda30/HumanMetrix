@@ -465,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to get marketing opt-ins list
   app.get("/api/admin/marketing-optins", isAuthenticated, async (req: any, res) => {
     try {
-      const hasAdminAccess = req.user?.role === 'super_admin' || req.user?.role === 'admin';
+      const hasAdminAccess = req.user?.role === 'super_admin' || req.user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -2352,7 +2352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Allow super_admin or organization admin
       const isSuperAdmin = user?.role === 'super_admin';
-      const isOrgAdmin = user?.role === 'admin' && user?.organizationId;
+      const isOrgAdmin = user?.role === 'organization_admin' && user?.organizationId;
       
       if (!isSuperAdmin && !isOrgAdmin) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
@@ -2694,7 +2694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       const isSuperAdmin = user?.role === 'super_admin';
-      const isOrgAdmin = user?.role === 'admin';
+      const isOrgAdmin = user?.role === 'organization_admin';
       const hasAdminAccess = isSuperAdmin || isOrgAdmin;
       
       if (!hasAdminAccess) {
@@ -2725,7 +2725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       const isSuperAdmin = user?.role === 'super_admin';
-      const isOrgAdmin = user?.role === 'admin';
+      const isOrgAdmin = user?.role === 'organization_admin';
       const hasAdminAccess = isSuperAdmin || isOrgAdmin;
       
       if (!hasAdminAccess) {
@@ -2788,7 +2788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has admin access
       const isSuperAdmin = user?.role === 'super_admin';
-      const isOrgAdmin = user?.role === 'admin';
+      const isOrgAdmin = user?.role === 'organization_admin';
       const hasAdminAccess = isSuperAdmin || isOrgAdmin;
       
       if (!hasAdminAccess) {
@@ -2821,7 +2821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -2891,7 +2891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminId = req.user.id;
       const admin = await storage.getUser(adminId);
       
-      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'admin';
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -2921,7 +2921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminId = req.user.id;
       const admin = await storage.getUser(adminId);
       
-      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'admin';
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -2950,7 +2950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3241,7 +3241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3260,7 +3260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3360,7 +3360,7 @@ Format your response as JSON with this exact structure and skill names:
       const adminId = req.user.id;
       const admin = await storage.getUser(adminId);
       
-      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'admin';
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3388,7 +3388,7 @@ Format your response as JSON with this exact structure and skill names:
       const adminId = req.user.id;
       const admin = await storage.getUser(adminId);
       
-      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'admin';
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3609,7 +3609,7 @@ Format your response as JSON with this structure:
       const adminId = req.user.id;
       const admin = await storage.getUser(adminId);
       
-      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'admin';
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -3646,7 +3646,7 @@ Format your response as JSON with this structure:
       }
       
       const user = await storage.getUser(userId);
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (result.userId !== userId && !hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: You can only access your own assessment results" });
       }
@@ -3822,7 +3822,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -4175,7 +4175,7 @@ Format your response as JSON with this structure:
       }
       
       // Only admins can change partner settings
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required to modify settings" });
       }
@@ -4251,7 +4251,7 @@ Format your response as JSON with this structure:
       }
       
       // Only admins can view API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required to view API keys" });
       }
@@ -4310,7 +4310,7 @@ Format your response as JSON with this structure:
       }
       
       // Only admins can rotate API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required to rotate API keys" });
       }
@@ -4367,7 +4367,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -4499,7 +4499,7 @@ Format your response as JSON with this structure:
     const user = await storage.getUser(userId);
     if (!user) return null;
     
-    const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+    const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
     if (!hasAdminAccess) return null;
     
     let partner = null;
@@ -4945,7 +4945,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -4985,7 +4985,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -5015,13 +5015,13 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
       // Regular admins can only view their own organization
-      if (user?.role === 'admin' && user.organizationId !== req.params.id) {
+      if (user?.role === 'organization_admin' && user.organizationId !== req.params.id) {
         return res.status(403).json({ message: "Forbidden: You can only view your own organization" });
       }
       
@@ -5056,13 +5056,13 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
       // Regular admins can only create one organization and must not already have one
-      if (user?.role === 'admin' && user.organizationId) {
+      if (user?.role === 'organization_admin' && user.organizationId) {
         return res.status(400).json({ message: "You already belong to an organization. Only super admins can create multiple organizations." });
       }
       
@@ -5088,7 +5088,7 @@ Format your response as JSON with this structure:
       });
       
       // If admin (not super admin), automatically assign them to the new organization
-      if (user?.role === 'admin') {
+      if (user?.role === 'organization_admin') {
         await storage.updateUserOrganization(userId, org.id);
       }
       
@@ -5206,7 +5206,7 @@ Format your response as JSON with this structure:
       
       // Update user's organization and role
       await storage.updateUserOrganization(targetUser.id, org.id);
-      if (role && (role === 'candidate' || role === 'admin')) {
+      if (role && (role === 'candidate' || role === 'organization_admin')) {
         await storage.updateUserRole(targetUser.id, role);
       }
       
@@ -5258,7 +5258,7 @@ Format your response as JSON with this structure:
       }
       
       const { role } = req.body;
-      if (!role || (role !== 'candidate' && role !== 'admin')) {
+      if (!role || (role !== 'candidate' && role !== 'organization_admin')) {
         return res.status(400).json({ message: "Valid role (candidate or admin) is required" });
       }
       
@@ -5935,7 +5935,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -5970,7 +5970,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -5996,7 +5996,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -6726,7 +6726,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -6780,7 +6780,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -6860,7 +6860,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -7945,7 +7945,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -7971,7 +7971,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -8004,7 +8004,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -8061,7 +8061,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -8089,7 +8089,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -8107,7 +8107,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
@@ -8126,7 +8126,7 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }

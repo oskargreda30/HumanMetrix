@@ -12,7 +12,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
+  const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

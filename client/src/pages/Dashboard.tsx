@@ -108,7 +108,7 @@ export default function Dashboard() {
     }
     
     // Organization admins go to Admin Dashboard
-    if (user.role === 'admin') {
+    if (user.role === 'organization_admin') {
       return <Redirect to="/admin/dashboard" />;
     }
   }

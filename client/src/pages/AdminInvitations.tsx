@@ -22,7 +22,7 @@ export default function AdminInvitations() {
 
   const { data: invitations, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/invitations'],
-    enabled: user?.role === 'super_admin' || user?.role === 'admin',
+    enabled: user?.role === 'super_admin' || user?.role === 'organization_admin',
   });
 
   const createInvitation = useMutation({

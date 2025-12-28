@@ -110,7 +110,7 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Navigation - Hidden for logged-in non-admin users (candidates) */}
-          {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'admin') && (
+          {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin') && (
             <nav className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
                 <a
@@ -215,7 +215,7 @@ export default function Navigation() {
         <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]">
           <nav className="flex flex-col gap-4 p-4">
             {/* Hide public nav links for logged-in non-admin users (candidates) */}
-            {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'admin') && navLinks.map((link) => (
+            {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin') && navLinks.map((link) => (
               <a
                 key={link.href} 
                 href={link.href}

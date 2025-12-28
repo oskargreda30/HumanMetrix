@@ -20,7 +20,7 @@ async function bootstrapAdmin() {
     const existingUser = await storage.getUserByEmail(adminEmail);
     
     if (existingUser) {
-      if (existingUser.role === 'super_admin' || existingUser.role === 'admin') {
+      if (existingUser.role === 'super_admin' || existingUser.role === 'organization_admin') {
         console.log(`✅ Admin user already exists: ${adminEmail}`);
         console.log(`   Role: ${existingUser.role}`);
         console.log("   No action needed.");
