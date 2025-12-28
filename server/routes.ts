@@ -4780,10 +4780,11 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       const exports = await storage.getPartnerScheduledExports(partner.id);
-      // Mask sensitive delivery config
+      // Mask sensitive delivery credentials
       const masked = exports.map(e => ({
         ...e,
-        deliveryConfig: e.deliveryConfig ? { ...e.deliveryConfig as any, password: undefined, accessKeySecret: undefined } : null,
+        deliverySftpKeyEncrypted: e.deliverySftpKeyEncrypted ? '***' : null,
+        deliveryS3SecretKeyEncrypted: e.deliveryS3SecretKeyEncrypted ? '***' : null,
       }));
       res.json(masked);
     } catch (error) {
@@ -4800,28 +4801,27 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      const { name, schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryConfig, dataFilters, includeFields } = req.body;
+      const { name, frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryEmail, deliveryWebhookUrl } = req.body;
       
-      if (!name || !schedule || !exportType || !deliveryMethod) {
-        return res.status(400).json({ message: "Name, schedule, export type, and delivery method are required" });
+      if (!name || !frequency || !exportType || !deliveryMethod) {
+        return res.status(400).json({ message: "Name, frequency, export type, and delivery method are required" });
       }
       
       // Calculate next run time
-      const nextRunAt = calculateNextRunTime(schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone);
+      const nextRunAt = calculateNextRunTime(frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone);
       
       const exportConfig = await storage.createPartnerScheduledExport({
         partnerId: partner.id,
         name,
-        schedule,
+        frequency,
         dayOfWeek,
         dayOfMonth,
         timeOfDay: timeOfDay || '09:00',
         timezone: timezone || 'UTC',
         exportType,
         deliveryMethod,
-        deliveryConfig,
-        dataFilters,
-        includeFields,
+        deliveryEmail,
+        deliveryWebhookUrl,
         isActive: true,
         nextRunAt,
       });
@@ -4846,26 +4846,25 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Scheduled export not found" });
       }
       
-      const { name, schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryConfig, dataFilters, includeFields, isActive } = req.body;
+      const { name, frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryEmail, deliveryWebhookUrl, isActive } = req.body;
       
       const updates: any = {};
       if (name !== undefined) updates.name = name;
-      if (schedule !== undefined) updates.schedule = schedule;
+      if (frequency !== undefined) updates.frequency = frequency;
       if (dayOfWeek !== undefined) updates.dayOfWeek = dayOfWeek;
       if (dayOfMonth !== undefined) updates.dayOfMonth = dayOfMonth;
       if (timeOfDay !== undefined) updates.timeOfDay = timeOfDay;
       if (timezone !== undefined) updates.timezone = timezone;
       if (exportType !== undefined) updates.exportType = exportType;
       if (deliveryMethod !== undefined) updates.deliveryMethod = deliveryMethod;
-      if (deliveryConfig !== undefined) updates.deliveryConfig = deliveryConfig;
-      if (dataFilters !== undefined) updates.dataFilters = dataFilters;
-      if (includeFields !== undefined) updates.includeFields = includeFields;
+      if (deliveryEmail !== undefined) updates.deliveryEmail = deliveryEmail;
+      if (deliveryWebhookUrl !== undefined) updates.deliveryWebhookUrl = deliveryWebhookUrl;
       if (isActive !== undefined) updates.isActive = isActive;
       
       // Recalculate next run time if schedule changed
-      if (schedule || dayOfWeek !== undefined || dayOfMonth !== undefined || timeOfDay || timezone) {
+      if (frequency || dayOfWeek !== undefined || dayOfMonth !== undefined || timeOfDay || timezone) {
         updates.nextRunAt = calculateNextRunTime(
-          schedule || exportConfig.schedule,
+          frequency || exportConfig.frequency,
           dayOfWeek !== undefined ? dayOfWeek : exportConfig.dayOfWeek,
           dayOfMonth !== undefined ? dayOfMonth : exportConfig.dayOfMonth,
           timeOfDay || exportConfig.timeOfDay,

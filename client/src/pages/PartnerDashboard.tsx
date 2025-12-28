@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet } from "lucide-react";
+import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import dashboardBg from "@assets/image_1763608498774.png";
@@ -474,6 +475,10 @@ export default function PartnerDashboard() {
                 <Settings className="h-4 w-4" />
                 Settings
               </TabsTrigger>
+              <TabsTrigger value="integrations" className="gap-2" data-testid="tab-integrations">
+                <Webhook className="h-4 w-4" />
+                Integrations
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="usage" className="space-y-4">
@@ -933,6 +938,10 @@ export default function PartnerDashboard() {
                   </div>
                 </>
               )}
+            </TabsContent>
+
+            <TabsContent value="integrations" className="space-y-4">
+              <PartnerIntegrationsTab />
             </TabsContent>
           </Tabs>
         </div>
