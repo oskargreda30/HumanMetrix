@@ -928,6 +928,116 @@ Need immediate assistance? Contact us at hello@humanmetrix.co.uk
   }
 }
 
+// Send auto top-up confirmation email
+export async function sendPartnerAutoTopUpConfirmation(
+  partnerEmail: string,
+  companyName: string,
+  testsAdded: number,
+  amountCharged: number,
+  packageName: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Auto top-up confirmation not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const dashboardUrl = domain ? `https://${domain}/partner-dashboard` : 'http://localhost:5000/partner-dashboard';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `Auto Top-Up Complete: ${testsAdded} Tests Added`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #06b6d4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .receipt { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .receipt-row:last-child { border-bottom: none; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Auto Top-Up Complete</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Your quota has been replenished</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              
+              <p>Your auto top-up has been successfully processed. Your test quota has been replenished automatically.</p>
+              
+              <div class="receipt">
+                <h3 style="margin-top: 0;">Purchase Receipt</h3>
+                <div class="receipt-row">
+                  <span>Package:</span>
+                  <span>${packageName}</span>
+                </div>
+                <div class="receipt-row">
+                  <span>Tests Added:</span>
+                  <span>${testsAdded} credits</span>
+                </div>
+                <div class="receipt-row">
+                  <span>Amount Charged:</span>
+                  <span>£${amountCharged.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <p>Your embedded assessments will continue to work seamlessly. No action is required on your part.</p>
+              
+              <div style="text-align: center;">
+                <a href="${dashboardUrl}" class="button">View Your Dashboard</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                To manage your auto top-up settings or view your billing history, visit your Partner Dashboard.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Auto Top-Up Complete - HumanMetrix
+
+Hello ${companyName},
+
+Your auto top-up has been successfully processed.
+
+Purchase Receipt:
+- Package: ${packageName}
+- Tests Added: ${testsAdded} credits
+- Amount Charged: £${amountCharged.toFixed(2)}
+
+Your embedded assessments will continue to work seamlessly. No action is required on your part.
+
+Visit ${dashboardUrl} to view your dashboard.
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Auto top-up confirmation sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`❌ Failed to send auto top-up confirmation to ${partnerEmail}:`, error.message);
+  }
+}
+
 // Interface for invoice details
 interface InvoiceDetails {
   invoiceNumber: string;

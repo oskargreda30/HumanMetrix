@@ -190,7 +190,7 @@ export async function consumeTestCredit(
   partnerId: string,
   sessionId: string,
   assessmentType: string
-): Promise<{ success: boolean; remaining: number; suspended: boolean; shouldNotify70?: boolean; shouldNotify90?: boolean }> {
+): Promise<{ success: boolean; remaining: number; suspended: boolean; shouldNotifyFirst?: boolean; shouldNotifyUrgent?: boolean; shouldAutoTopUp?: boolean }> {
   try {
     const result = await storage.consumePartnerTest(
       partnerId,
@@ -213,22 +213,38 @@ export async function consumeTestCredit(
       ? (balance.testsConsumed / balance.testsPurchased) * 100 
       : 0;
     
-    let shouldNotify70 = false;
-    let shouldNotify90 = false;
+    let shouldNotifyFirst = false;
+    let shouldNotifyUrgent = false;
+    let shouldAutoTopUp = false;
     
-    // Check 70% threshold
-    if (usagePercentage >= 70 && usagePercentage < 90 && !partner.last70NoticeAt) {
-      shouldNotify70 = true;
-      await storage.updatePartnerQuotaNotification(partnerId, '70');
+    // Use partner's configurable thresholds (default: 80% first, 95% urgent)
+    const firstThreshold = partner.quotaAlertThreshold ?? 80;
+    const urgentThreshold = Math.min(firstThreshold + 15, 95); // Urgent threshold is 15% above first, max 95%
+    
+    // Only send notifications if quota alerts are enabled
+    if (partner.quotaAlertEnabled !== false) {
+      // Check first threshold (configurable, default 80%)
+      if (usagePercentage >= firstThreshold && usagePercentage < urgentThreshold && !partner.last70NoticeAt) {
+        shouldNotifyFirst = true;
+        await storage.updatePartnerQuotaNotification(partnerId, '70'); // Reuse existing field
+      }
+      
+      // Check urgent threshold (first + 15%, max 95%)
+      if (usagePercentage >= urgentThreshold && usagePercentage < 100 && !partner.last90NoticeAt) {
+        shouldNotifyUrgent = true;
+        await storage.updatePartnerQuotaNotification(partnerId, '90'); // Reuse existing field
+      }
     }
     
-    // Check 90% threshold
-    if (usagePercentage >= 90 && usagePercentage < 100 && !partner.last90NoticeAt) {
-      shouldNotify90 = true;
-      await storage.updatePartnerQuotaNotification(partnerId, '90');
+    // Check if auto top-up should be triggered (for prepaid partners)
+    if (partner.billingType === 'prepaid' && partner.autoTopUpEnabled) {
+      const autoTopUpThreshold = partner.autoTopUpThreshold ?? 10;
+      if (balance.remaining <= autoTopUpThreshold && partner.autoTopUpPackage) {
+        shouldAutoTopUp = true;
+      }
     }
     
-    return { ...result, shouldNotify70, shouldNotify90 };
+    return { ...result, shouldNotifyFirst, shouldNotifyUrgent, shouldAutoTopUp };
   } catch (error) {
     console.error("Failed to consume test credit:", error);
     return { success: false, remaining: 0, suspended: false };

@@ -1,16 +1,119 @@
 import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId } from "@shared/schema";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation } from "./email";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import Stripe from "stripe";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-09-30.clover" as any,
+});
+
+// Package tiers for auto top-up pricing
+const PACKAGE_TIERS = [
+  { id: 'starter', size: 10, pricePerTest: 500, name: "Starter" },
+  { id: 'growth', size: 25, pricePerTest: 450, name: "Growth" },
+  { id: 'professional', size: 50, pricePerTest: 400, name: "Professional" },
+  { id: 'business', size: 100, pricePerTest: 350, name: "Business" },
+  { id: 'enterprise', size: 250, pricePerTest: 300, name: "Enterprise" },
+  { id: 'enterprise_plus', size: 500, pricePerTest: 250, name: "Enterprise+" },
+];
+
+// Process automatic top-up for a partner when their quota falls below threshold
+async function processAutoTopUp(partner: PartnerAccount): Promise<{ success: boolean; testsAdded?: number; error?: string }> {
+  if (!partner.autoTopUpEnabled || !partner.autoTopUpPackage || !partner.stripeCustomerId) {
+    return { success: false, error: 'Auto top-up not configured' };
+  }
+  
+  // Find the package tier
+  const tier = PACKAGE_TIERS.find(t => t.id === partner.autoTopUpPackage);
+  if (!tier) {
+    console.error(`[Auto Top-Up] Invalid package tier: ${partner.autoTopUpPackage}`);
+    return { success: false, error: 'Invalid package tier' };
+  }
+  
+  const totalAmount = tier.size * tier.pricePerTest;
+  
+  try {
+    // Get customer's default payment method
+    const customer = await stripe.customers.retrieve(partner.stripeCustomerId);
+    if (!customer || customer.deleted) {
+      return { success: false, error: 'Stripe customer not found' };
+    }
+    
+    const defaultPaymentMethod = (customer as Stripe.Customer).invoice_settings?.default_payment_method;
+    if (!defaultPaymentMethod) {
+      console.log(`[Auto Top-Up] No default payment method for partner ${partner.id}`);
+      return { success: false, error: 'No payment method on file' };
+    }
+    
+    // Create and confirm payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmount,
+      currency: 'gbp',
+      customer: partner.stripeCustomerId,
+      payment_method: typeof defaultPaymentMethod === 'string' ? defaultPaymentMethod : defaultPaymentMethod.id,
+      off_session: true,
+      confirm: true,
+      description: `Auto top-up: ${tier.name} package (${tier.size} tests)`,
+      metadata: {
+        partnerId: partner.id,
+        packageTier: tier.id,
+        testsCount: tier.size.toString(),
+        autoTopUp: 'true',
+      },
+    });
+    
+    if (paymentIntent.status === 'succeeded') {
+      // Record the package purchase first to get the package ID
+      const pkg = await storage.createPartnerTestPackage({
+        partnerId: partner.id,
+        packageSize: tier.size,
+        pricePerTest: tier.pricePerTest,
+        totalPrice: totalAmount,
+        currency: 'gbp',
+        status: 'completed',
+        stripePaymentIntentId: paymentIntent.id,
+      });
+      
+      // Credit the tests to partner's account
+      await storage.creditPartnerTests(partner.id, pkg.id, tier.size, `Auto top-up: ${tier.name} package`);
+      
+      // Reset quota notifications so they can trigger again for future low-quota scenarios
+      await storage.updatePartnerAccount(partner.id, {
+        last70NoticeAt: null,
+        last90NoticeAt: null,
+      });
+      
+      // Send confirmation email
+      const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+      await sendPartnerAutoTopUpConfirmation(
+        alertEmail,
+        partner.companyName || partner.name,
+        tier.size,
+        totalAmount / 100,
+        tier.name
+      );
+      
+      console.log(`[Auto Top-Up] Successfully charged ${partner.id}: ${tier.size} tests for £${(totalAmount / 100).toFixed(2)}`);
+      return { success: true, testsAdded: tier.size };
+    } else {
+      console.error(`[Auto Top-Up] Payment intent status: ${paymentIntent.status}`);
+      return { success: false, error: `Payment ${paymentIntent.status}` };
+    }
+  } catch (error: any) {
+    console.error(`[Auto Top-Up] Failed for partner ${partner.id}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
 
 const createSessionSchema = z.object({
   assessmentType: z.enum(["fit", "ai_readiness", "prompt_architecture", "aiq"]),
@@ -544,11 +647,11 @@ export function registerPartnerRoutes(app: Express) {
         
         // Handle quota consumption failure - block result delivery if quota couldn't be deducted
         if (!quotaResult.success) {
-          console.error(`Failed to consume test credit for session ${sessionId}:`, quotaResult.reason);
+          console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
           // Return error but assessment data is saved - admin can add credits for retry
           return res.status(402).json({
             error: "Quota Consumption Failed",
-            message: quotaResult.reason || "Unable to deduct test credit. Please ensure you have available quota.",
+            message: "Unable to deduct test credit. Please ensure you have available quota.",
             sessionId: session.id,
             status: "billing_pending",
           });
@@ -557,18 +660,20 @@ export function registerPartnerRoutes(app: Express) {
         // Send quota warning emails if thresholds are crossed
         if (partner) {
           const balance = await storage.getPartnerQuotaBalance(session.partnerId);
-          if (quotaResult.shouldNotify70) {
+          const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+          
+          if (quotaResult.shouldNotifyFirst) {
             await sendPartnerQuotaWarning70(
-              partner.billingEmail || partner.email,
+              alertEmail,
               partner.companyName || partner.name,
               balance.testsConsumed,
               balance.testsPurchased,
               balance.remaining
             );
           }
-          if (quotaResult.shouldNotify90) {
+          if (quotaResult.shouldNotifyUrgent) {
             await sendPartnerQuotaWarning90(
-              partner.billingEmail || partner.email,
+              alertEmail,
               partner.companyName || partner.name,
               balance.testsConsumed,
               balance.testsPurchased,
@@ -577,9 +682,18 @@ export function registerPartnerRoutes(app: Express) {
           }
           if (quotaResult.suspended) {
             await sendPartnerAccessSuspendedEmail(
-              partner.billingEmail || partner.email,
+              alertEmail,
               partner.companyName || partner.name
             );
+          }
+          
+          // Handle auto top-up if triggered
+          if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
+            try {
+              await processAutoTopUp(partner);
+            } catch (err) {
+              console.error('Auto top-up failed:', err);
+            }
           }
         }
         
