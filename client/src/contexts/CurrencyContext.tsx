@@ -192,27 +192,29 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const exchangeRate = liveExchangeRates?.[currency.code] ?? currency.exchangeRate;
     
     if (isVPN) {
-      // VPN users get full price - use GB for no discount
-      return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: 'GB' });
+      // VPN users get full price - no PPP adjustment
+      return formatPriceWithRate(priceInPence, currency, exchangeRate);
     }
-    return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: countryCode || 'GB' });
+    
+    // Apply PPP adjustment first, then format
+    const adjustedPence = getPPPAdjustedPriceInPence(priceInPence, countryCode || 'GB');
+    return formatPriceWithRate(adjustedPence, currency, exchangeRate);
   };
 
   // Format full suite price (handles SEA launch pricing)
   // For SEA launch countries, shows the fixed USD price converted to local currency
   const formatSuitePrice = (priceInPence: number): string => {
     const exchangeRate = liveExchangeRates?.[currency.code] ?? currency.exchangeRate;
-    const effectiveCountry = isVPN ? 'GB' : (countryCode || 'GB');
     
     // Check if this is a SEA launch country
     if (!isVPN && countryCode && hasSEALaunchPricing(countryCode)) {
       // For SEA launch countries, use fixed USD pricing
       const seaPricing = getSEALaunchPricing(countryCode);
       if (seaPricing) {
-        // Convert USD cents to local currency
-        const usdRate = liveExchangeRates?.['USD'] ?? CURRENCIES.USD.exchangeRate;
-        const priceInUSD = seaPricing.priceUSDCents / 100;
-        const localPrice = priceInUSD * (exchangeRate / usdRate);
+        // Convert from local currency units to display
+        const localUnits = seaPricing.priceLocalUnits;
+        const divisor = seaPricing.isZeroDecimal ? 1 : 100;
+        const localPrice = localUnits / divisor;
         // Apply consistent rounding using roundPriceUp
         const roundedPrice = roundPriceUp(localPrice);
         const formattedNum = roundedPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
@@ -222,8 +224,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Non-SEA countries use PPP multiplier
-    return formatPriceWithRate(priceInPence, currency, exchangeRate, { countryCode: effectiveCountry });
+    // VPN users and non-SEA countries: apply PPP multiplier first, then format
+    if (isVPN) {
+      return formatPriceWithRate(priceInPence, currency, exchangeRate);
+    }
+    
+    const adjustedPence = getPPPAdjustedPriceInPence(priceInPence, countryCode || 'GB');
+    return formatPriceWithRate(adjustedPence, currency, exchangeRate);
   };
 
   // Get PPP-adjusted price in pence (for Stripe checkout)
