@@ -5369,11 +5369,10 @@ Format your response as JSON with this structure:
       
       // Check if user with this email already exists
       const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "A user with this email already exists" });
-      }
       
       let finalOrganizationId = organizationId;
+      let partnerUser = existingUser;
+      let temporaryPassword: string | null = null;
       
       // If organizationId provided, verify it exists
       if (organizationId) {
@@ -5386,6 +5385,10 @@ Format your response as JSON with this structure:
         if (existingOrgPartner) {
           return res.status(400).json({ message: "This organisation is already linked to another partner account" });
         }
+      } else if (existingUser?.organizationId) {
+        // Use existing user's organization
+        finalOrganizationId = existingUser.organizationId;
+        console.log(`Using existing user's organisation ${existingUser.organizationId} for partner`);
       } else {
         // Create a new organisation for this partner
         const orgName = companyName || name;
@@ -5406,28 +5409,38 @@ Format your response as JSON with this structure:
       const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
       
-      // Generate temporary password for the admin user
-      const temporaryPassword = generateTemporaryPassword();
-      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-      
-      // Split the name into first and last name
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0] || name;
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-      
-      // Create admin user for the partner's organisation
-      const partnerUser = await storage.createUser({
-        email,
-        passwordHash,
-        firstName,
-        lastName,
-        role: 'admin',
-        organizationId: finalOrganizationId,
-        profileImageUrl: null,
-      });
-      
-      createdUserId = partnerUser.id; // Track for cleanup
-      console.log(`Created admin user ${partnerUser.id} for partner organisation`);
+      if (existingUser) {
+        // Update existing user to be admin and link to partner organization
+        await storage.updateUserRole(existingUser.id, 'admin');
+        if (finalOrganizationId) {
+          await storage.updateUserOrganization(existingUser.id, finalOrganizationId);
+        }
+        partnerUser = { ...existingUser, role: 'admin', organizationId: finalOrganizationId };
+        console.log(`Updated existing user ${existingUser.id} to admin role for partner organisation`);
+      } else {
+        // Generate temporary password for the admin user
+        temporaryPassword = generateTemporaryPassword();
+        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+        
+        // Split the name into first and last name
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || name;
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+        
+        // Create admin user for the partner's organisation
+        partnerUser = await storage.createUser({
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          role: 'admin',
+          organizationId: finalOrganizationId,
+          profileImageUrl: null,
+        });
+        
+        createdUserId = partnerUser.id; // Track for cleanup
+        console.log(`Created admin user ${partnerUser.id} for partner organisation`);
+      }
       
       const partner = await storage.createPartnerAccount({
         name,
@@ -5480,17 +5493,22 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Send welcome email with login credentials
+      // Send welcome email with login credentials (only if new user created with temp password)
       try {
-        await sendPartnerWelcomeEmail({
-          partnerName: name,
-          companyName: companyName || name,
-          email,
-          temporaryPassword,
-          billingType: selectedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
-          freeTestsAllocated: freeTestsAllocated || 0,
-        });
-        console.log(`Sent welcome email to partner ${email}`);
+        if (temporaryPassword) {
+          await sendPartnerWelcomeEmail({
+            partnerName: name,
+            companyName: companyName || name,
+            email,
+            temporaryPassword,
+            billingType: selectedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+            freeTestsAllocated: freeTestsAllocated || 0,
+          });
+          console.log(`Sent welcome email to partner ${email}`);
+        } else {
+          // For existing users, send a simpler notification email
+          console.log(`Partner account created for existing user ${email} - no welcome email sent (they already have login credentials)`);
+        }
       } catch (emailError) {
         console.error("Error sending partner welcome email:", emailError);
         // Don't fail partner creation, just log the error
