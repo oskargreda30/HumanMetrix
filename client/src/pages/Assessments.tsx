@@ -106,6 +106,18 @@ export default function Assessments() {
                 </Link>
               )}
             </p>
+            
+            {/* Pricing info banner */}
+            <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-3 md:p-4 max-w-2xl mx-auto" data-testid="pricing-info-banner">
+              <p className="text-sm md:text-base text-cyan-100 font-medium">
+                <span className="text-cyan-400 font-semibold">{platformFee}</span> one-time platform fee
+                <span className="text-blue-100/60"> + </span>
+                assessments from <span className="text-cyan-400 font-semibold">{minAssessmentPrice}</span> each
+              </p>
+              <p className="text-xs md:text-sm text-blue-100/50 mt-1">
+                Complete assessments for free, pay only to unlock your results
+              </p>
+            </div>
           </div>
 
           <div className="mb-12 md:mb-16">
