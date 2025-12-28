@@ -4367,9 +4367,9 @@ Format your response as JSON with this structure:
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      const hasPartnerAccess = user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin';
+      if (!hasPartnerAccess) {
+        return res.status(403).json({ message: "Forbidden: Partner access required" });
       }
       
       // Find partner account associated with this user's organisation
@@ -4397,10 +4397,10 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found for your organisation" });
       }
       
-      // Only prepaid billing type partners can self-purchase
-      if (matchingPartner.billingType !== 'prepaid') {
+      // Only prepaid and auto_bill billing type partners can self-purchase
+      if (matchingPartner.billingType !== 'prepaid' && matchingPartner.billingType !== 'auto_bill') {
         return res.status(400).json({ 
-          message: "Self-service purchasing is only available for prepaid billing accounts. Please contact your account manager for billing adjustments." 
+          message: "Self-service purchasing is only available for prepaid and pay-as-you-go billing accounts. Invoice clients should contact their account manager." 
         });
       }
       

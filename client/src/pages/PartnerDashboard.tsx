@@ -209,6 +209,26 @@ export default function PartnerDashboard() {
     },
   });
 
+  // Purchase test package mutation
+  const purchaseMutation = useMutation({
+    mutationFn: async (packageSize: number) => {
+      const response = await apiRequest("POST", "/api/partner/purchase/checkout", { packageSize });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create checkout",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Rotate API key mutation
   const rotateKeyMutation = useMutation({
     mutationFn: async (keyId: string) => {
@@ -648,11 +668,64 @@ export default function PartnerDashboard() {
                     </Card>
                   </div>
 
+                  {/* Buy More Tests - Only for prepaid and auto_bill billing types */}
+                  {(account?.partner?.billingType === 'prepaid' || account?.partner?.billingType === 'auto_bill') && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Package className="h-5 w-5" />
+                          Buy More Tests
+                        </CardTitle>
+                        <CardDescription>
+                          Purchase additional assessment credits for your team
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          {[
+                            { size: 10, name: 'Starter', price: 50 },
+                            { size: 25, name: 'Growth', price: 112.50 },
+                            { size: 50, name: 'Professional', price: 200 },
+                            { size: 100, name: 'Business', price: 350 },
+                            { size: 250, name: 'Enterprise', price: 750 },
+                            { size: 500, name: 'Enterprise+', price: 1250 },
+                          ].map((pkg) => (
+                            <div 
+                              key={pkg.size} 
+                              className="border rounded-lg p-4 hover:border-primary transition-colors"
+                            >
+                              <div className="font-semibold text-lg">{pkg.name}</div>
+                              <div className="text-2xl font-bold text-primary">
+                                {pkg.size} tests
+                              </div>
+                              <div className="text-sm text-muted-foreground mb-3">
+                                £{pkg.price.toFixed(2)} (£{(pkg.price / pkg.size).toFixed(2)}/test)
+                              </div>
+                              <Button 
+                                className="w-full" 
+                                onClick={() => purchaseMutation.mutate(pkg.size)}
+                                disabled={purchaseMutation.isPending}
+                                data-testid={`button-buy-${pkg.size}`}
+                              >
+                                {purchaseMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : null}
+                                Purchase
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Billing History</CardTitle>
                       <CardDescription>
-                        Receipts and invoices
+                        {account?.partner?.billingType === 'invoice' 
+                          ? 'Invoices and payment history' 
+                          : 'Receipts and invoices'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
