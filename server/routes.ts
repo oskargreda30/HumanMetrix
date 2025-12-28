@@ -4801,6 +4801,132 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Test webhook - sends a test ping event
+  app.post("/api/partner/me/webhooks/:id/test", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const webhook = await storage.getPartnerWebhook(req.params.id);
+      if (!webhook || webhook.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      if (!webhook.isActive) {
+        return res.status(400).json({ message: "Webhook is not active" });
+      }
+      
+      // Generate test payload
+      const crypto = await import('crypto');
+      const testPayload = {
+        event: 'ping' as const,
+        timestamp: new Date().toISOString(),
+        data: {
+          message: 'This is a test webhook delivery from HumanMetrix',
+          webhookId: webhook.id,
+          webhookName: webhook.name,
+          testId: crypto.randomUUID(),
+        },
+      };
+      
+      const payloadString = JSON.stringify(testPayload);
+      const signature = crypto.createHmac('sha256', webhook.secret)
+        .update(payloadString, 'utf8')
+        .digest('hex');
+      const timestamp = Date.now().toString();
+      const deliveryId = crypto.randomUUID();
+      
+      // Create a delivery log
+      const deliveryLog = await storage.createWebhookDeliveryLog({
+        webhookId: webhook.id,
+        partnerId: partner.id,
+        eventType: 'ping',
+        payload: testPayload as any,
+        status: 'pending',
+        attemptNumber: 1,
+      });
+      
+      // Deliver the webhook
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      try {
+        const response = await fetch(webhook.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Signature': signature,
+            'X-Webhook-Timestamp': timestamp,
+            'X-Webhook-Event': 'ping',
+            'X-Webhook-Delivery-Id': deliveryId,
+            'User-Agent': 'HumanMetrix-Webhook/1.0',
+          },
+          body: payloadString,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        const responseBody = await response.text().catch(() => '');
+        
+        if (response.ok) {
+          await storage.updateWebhookDeliveryLog(deliveryLog.id, {
+            status: 'delivered',
+            httpStatus: response.status,
+            responseBody: responseBody.substring(0, 5000),
+            deliveredAt: new Date(),
+          });
+          await storage.updateWebhookStats(webhook.id, true);
+          
+          res.json({
+            success: true,
+            message: 'Test webhook delivered successfully',
+            httpStatus: response.status,
+            deliveryId: deliveryLog.id,
+          });
+        } else {
+          await storage.updateWebhookDeliveryLog(deliveryLog.id, {
+            status: 'failed',
+            httpStatus: response.status,
+            responseBody: responseBody.substring(0, 5000),
+            errorMessage: `HTTP ${response.status}`,
+          });
+          await storage.updateWebhookStats(webhook.id, false);
+          
+          res.json({
+            success: false,
+            message: `Webhook delivery failed with HTTP ${response.status}`,
+            httpStatus: response.status,
+            responseBody: responseBody.substring(0, 500),
+            deliveryId: deliveryLog.id,
+          });
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        const errorMsg = fetchError.name === 'AbortError' 
+          ? 'Request timeout (30s)' 
+          : fetchError.message || 'Network error';
+        
+        await storage.updateWebhookDeliveryLog(deliveryLog.id, {
+          status: 'failed',
+          errorMessage: errorMsg,
+        });
+        await storage.updateWebhookStats(webhook.id, false);
+        
+        res.json({
+          success: false,
+          message: `Webhook delivery failed: ${errorMsg}`,
+          deliveryId: deliveryLog.id,
+        });
+      }
+    } catch (error) {
+      console.error("Error testing webhook:", error);
+      res.status(500).json({ message: "Failed to test webhook" });
+    }
+  });
+
   // ===== ATS INTEGRATIONS =====
   
   // Get partner's ATS integrations

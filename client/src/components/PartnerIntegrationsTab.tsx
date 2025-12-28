@@ -224,6 +224,36 @@ export function PartnerIntegrationsTab() {
     },
   });
 
+  // State for test webhook
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
+
+  const testWebhookMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("POST", `/api/partner/me/webhooks/${id}/test`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/webhooks"] });
+      setTestingWebhookId(null);
+      if (data.success) {
+        toast({ 
+          title: "Test webhook sent", 
+          description: `Delivered successfully (HTTP ${data.httpStatus})` 
+        });
+      } else {
+        toast({ 
+          title: "Test webhook failed", 
+          description: data.message,
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      setTestingWebhookId(null);
+      toast({ title: "Failed to test webhook", description: error.message, variant: "destructive" });
+    },
+  });
+
   const rotateSecretMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/partner/me/webhooks/${id}/rotate-secret`);
@@ -460,10 +490,28 @@ export function PartnerIntegrationsTab() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setTestingWebhookId(webhook.id);
+                                testWebhookMutation.mutate(webhook.id);
+                              }}
+                              disabled={testingWebhookId === webhook.id || !webhook.isActive}
+                              data-testid={`button-test-webhook-${webhook.id}`}
+                            >
+                              {testingWebhookId === webhook.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                              ) : (
+                                <Webhook className="h-4 w-4 mr-1.5" />
+                              )}
+                              Test
+                            </Button>
+                            <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => setSelectedWebhookForLogs(webhook.id)}
                               data-testid={`button-webhook-logs-${webhook.id}`}
+                              title="View delivery logs"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -473,6 +521,7 @@ export function PartnerIntegrationsTab() {
                               onClick={() => rotateSecretMutation.mutate(webhook.id)}
                               disabled={rotateSecretMutation.isPending}
                               data-testid={`button-rotate-secret-${webhook.id}`}
+                              title="Rotate secret"
                             >
                               <RefreshCw className={`h-4 w-4 ${rotateSecretMutation.isPending ? "animate-spin" : ""}`} />
                             </Button>
