@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail } from "lucide-react";
 import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -116,6 +116,70 @@ interface ApiKeysData {
   apiKeys: ApiKey[];
 }
 
+interface PartnerOrganization {
+  id: string;
+  partnerId: string;
+  name: string;
+  slug: string;
+  adminEmail: string | null;
+  adminName: string | null;
+  isActive: boolean;
+  createdAt: string;
+  testsUsed: number;
+  activeTests: number;
+}
+
+interface OrganizationsData {
+  organizations: PartnerOrganization[];
+}
+
+interface OrganizationDetails {
+  organization: PartnerOrganization;
+  stats: {
+    totalTests: number;
+    completedTests: number;
+    pendingTests: number;
+    inProgressTests: number;
+  };
+  results: Array<{
+    sessionId: string;
+    assessmentType: string;
+    externalUserId: string | null;
+    externalEmail: string | null;
+    completedAt: string | null;
+    score: any;
+  }>;
+}
+
+interface ActivityLog {
+  activities: Array<{
+    id: string;
+    type: string;
+    description: string;
+    metadata?: any;
+    createdAt: string;
+    organizationId: string | null;
+  }>;
+  total: number;
+}
+
+interface PartnerResult {
+  sessionId: string;
+  assessmentType: string;
+  externalUserId: string | null;
+  externalEmail: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  organization: { id: string; name: string } | null;
+  scores: any;
+  overallScore: number | null;
+}
+
+interface ResultsData {
+  results: PartnerResult[];
+  total: number;
+}
+
 const PACKAGE_OPTIONS = [
   { value: 'starter', label: 'Starter (10 tests)' },
   { value: 'growth', label: 'Growth (25 tests)' },
@@ -127,8 +191,16 @@ const PACKAGE_OPTIONS = [
 
 export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("usage");
+  const [activeTab, setActiveTab] = useState("home");
   const { toast } = useToast();
+  
+  // Organization state
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [showAddOrgDialog, setShowAddOrgDialog] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [newOrgSlug, setNewOrgSlug] = useState("");
+  const [newOrgAdminEmail, setNewOrgAdminEmail] = useState("");
+  const [newOrgAdminName, setNewOrgAdminName] = useState("");
   
   // Settings state
   const [quotaAlertEnabled, setQuotaAlertEnabled] = useState(true);
@@ -168,6 +240,26 @@ export default function PartnerDashboard() {
 
   const { data: apiKeys, isLoading: apiKeysLoading } = useQuery<ApiKeysData>({
     queryKey: ["/api/partner/me/api-keys"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: organizations, isLoading: organizationsLoading } = useQuery<OrganizationsData>({
+    queryKey: ["/api/partner/me/organizations"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: selectedOrg, isLoading: selectedOrgLoading } = useQuery<OrganizationDetails>({
+    queryKey: ["/api/partner/me/organizations", selectedOrgId],
+    enabled: !!selectedOrgId,
+  });
+
+  const { data: activityLog, isLoading: activityLoading } = useQuery<ActivityLog>({
+    queryKey: ["/api/partner/me/activity-log"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: resultsData, isLoading: resultsLoading } = useQuery<ResultsData>({
+    queryKey: ["/api/partner/me/results"],
     enabled: !!account?.hasPartnerAccount,
   });
 
@@ -237,6 +329,66 @@ export default function PartnerDashboard() {
   const handlePurchase = (packageSize: number) => {
     setPurchasingPackageSize(packageSize);
     purchaseMutation.mutate(packageSize);
+  };
+
+  // Create organization mutation
+  const createOrgMutation = useMutation({
+    mutationFn: async (data: { name: string; slug: string; adminEmail?: string; adminName?: string }) => {
+      const response = await apiRequest("POST", "/api/partner/me/organizations", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/organizations"] });
+      setShowAddOrgDialog(false);
+      setNewOrgName("");
+      setNewOrgSlug("");
+      setNewOrgAdminEmail("");
+      setNewOrgAdminName("");
+      toast({
+        title: "Organization created",
+        description: "The organization has been added successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create organization",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete organization mutation
+  const deleteOrgMutation = useMutation({
+    mutationFn: async (orgId: string) => {
+      const response = await apiRequest("DELETE", `/api/partner/me/organizations/${orgId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/organizations"] });
+      setSelectedOrgId(null);
+      toast({
+        title: "Organization deleted",
+        description: "The organization has been removed.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete organization",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateOrg = () => {
+    if (!newOrgName || !newOrgSlug) return;
+    createOrgMutation.mutate({
+      name: newOrgName,
+      slug: newOrgSlug,
+      adminEmail: newOrgAdminEmail || undefined,
+      adminName: newOrgAdminName || undefined,
+    });
   };
 
   // Rotate API key mutation
@@ -491,25 +643,437 @@ export default function PartnerDashboard() {
             </CardContent>
           </Card>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="usage" className="gap-2" data-testid="tab-usage">
-                <BarChart3 className="h-4 w-4" />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
+              <TabsTrigger value="home" data-testid="tab-home" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Home
+              </TabsTrigger>
+              <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Results
+              </TabsTrigger>
+              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Organizations
+              </TabsTrigger>
+              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Activity Log
+              </TabsTrigger>
+              <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Usage
               </TabsTrigger>
-              <TabsTrigger value="billing" className="gap-2" data-testid="tab-billing">
-                <Receipt className="h-4 w-4" />
+              <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Billing
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-2" data-testid="tab-settings" onClick={initSettings}>
-                <Settings className="h-4 w-4" />
+              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Settings
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="gap-2" data-testid="tab-integrations">
-                <Webhook className="h-4 w-4" />
+              <TabsTrigger value="integrations" data-testid="tab-integrations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Integrations
               </TabsTrigger>
             </TabsList>
+
+            {/* Home Tab */}
+            <TabsContent value="home" className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary" data-testid="home-month-sessions">
+                      {usage?.currentMonth?.sessions ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">assessments completed</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Organizations</CardTitle>
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="home-org-count">
+                      {organizations?.organizations.length || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">active organizations</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Completed Results</CardTitle>
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="home-results-count">
+                      {resultsData?.total || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">assessment results</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Quota Remaining</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="home-remaining">
+                      {partner.remaining.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">test credits left</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recent Activity</CardTitle>
+                  <CardDescription>Latest events across your account</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {activityLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : activityLog?.activities.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No recent activity</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {activityLog?.activities.slice(0, 5).map((activity) => (
+                        <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-md bg-primary/10">
+                              <Activity className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{activity.description}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDate(activity.createdAt)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("results")} data-testid="card-quick-results">
+                  <CardContent className="pt-6 text-center">
+                    <ClipboardList className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">View Results</h3>
+                    <p className="text-sm text-muted-foreground">See candidate assessment results</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("organizations")} data-testid="card-quick-organizations">
+                  <CardContent className="pt-6 text-center">
+                    <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Manage Organizations</h3>
+                    <p className="text-sm text-muted-foreground">Add or manage client organizations</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("billing")} data-testid="card-quick-billing">
+                  <CardContent className="pt-6 text-center">
+                    <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Buy More Tests</h3>
+                    <p className="text-sm text-muted-foreground">Purchase additional test credits</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Results Tab */}
+            <TabsContent value="results" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Candidate Results</CardTitle>
+                  <CardDescription>View completed assessment results for your candidates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {resultsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : resultsData?.results.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No results yet</p>
+                      <p className="text-sm">Results will appear here when candidates complete assessments</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {resultsData?.results.map((result) => (
+                        <div key={result.sessionId} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`result-${result.sessionId}`}>
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 rounded-md bg-primary/10">
+                              <ClipboardList className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium">
+                                {result.externalEmail || result.externalUserId || 'Anonymous'}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Badge variant="outline">{result.assessmentType}</Badge>
+                                {result.organization && (
+                                  <span className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {result.organization.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {result.overallScore !== null && (
+                              <div className="text-lg font-bold text-primary">{result.overallScore}%</div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              {result.completedAt ? formatDate(result.completedAt) : 'Pending'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Organizations Tab */}
+            <TabsContent value="organizations" className="space-y-4">
+              {selectedOrgId ? (
+                // Organization Details View
+                <div className="space-y-4">
+                  <Button variant="outline" onClick={() => setSelectedOrgId(null)} className="gap-2" data-testid="button-back-orgs">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Organizations
+                  </Button>
+                  
+                  {selectedOrgLoading ? (
+                    <Card>
+                      <CardContent className="py-8 flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </CardContent>
+                    </Card>
+                  ) : selectedOrg ? (
+                    <>
+                      <Card>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{selectedOrg.organization.name}</CardTitle>
+                              <CardDescription>Organization Details</CardDescription>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteOrgMutation.mutate(selectedOrgId)}
+                              disabled={deleteOrgMutation.isPending}
+                              data-testid="button-delete-org"
+                            >
+                              {deleteOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                              <Label className="text-muted-foreground">Admin Name</Label>
+                              <p className="font-medium">{selectedOrg.organization.adminName || 'Not set'}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Admin Email</Label>
+                              <p className="font-medium">{selectedOrg.organization.adminEmail || 'Not set'}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Slug</Label>
+                              <p className="font-medium font-mono">{selectedOrg.organization.slug}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Status</Label>
+                              <Badge variant={selectedOrg.organization.isActive ? "default" : "secondary"}>
+                                {selectedOrg.organization.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{selectedOrg.stats.totalTests}</div>
+                            <p className="text-sm text-muted-foreground">Total Tests</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold text-green-500">{selectedOrg.stats.completedTests}</div>
+                            <p className="text-sm text-muted-foreground">Completed</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold text-amber-500">{selectedOrg.stats.inProgressTests}</div>
+                            <p className="text-sm text-muted-foreground">In Progress</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{selectedOrg.stats.pendingTests}</div>
+                            <p className="text-sm text-muted-foreground">Pending</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Assessment Results</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {selectedOrg.results.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <p>No completed assessments yet</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {selectedOrg.results.map((result) => (
+                                <div key={result.sessionId} className="flex items-center justify-between p-3 border rounded-lg">
+                                  <div>
+                                    <div className="font-medium">{result.externalEmail || result.externalUserId || 'Anonymous'}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      <Badge variant="outline" className="mr-2">{result.assessmentType}</Badge>
+                                      {result.completedAt && formatDate(result.completedAt)}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                // Organizations List View
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Organizations</h2>
+                      <p className="text-white/70 text-sm">Manage client organizations under your partner account</p>
+                    </div>
+                    <Button onClick={() => setShowAddOrgDialog(true)} className="gap-2" data-testid="button-add-org">
+                      <Plus className="h-4 w-4" />
+                      Add Organization
+                    </Button>
+                  </div>
+
+                  {organizationsLoading ? (
+                    <Card>
+                      <CardContent className="py-8 flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </CardContent>
+                    </Card>
+                  ) : organizations?.organizations.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No organizations yet</p>
+                        <p className="text-sm">Add organizations to track usage by client</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {organizations?.organizations.map((org) => (
+                        <Card 
+                          key={org.id} 
+                          className="cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => setSelectedOrgId(org.id)}
+                          data-testid={`org-card-${org.id}`}
+                        >
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base">{org.name}</CardTitle>
+                              <Badge variant={org.isActive ? "default" : "secondary"}>
+                                {org.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                            <CardDescription className="font-mono text-xs">{org.slug}</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Tests Used:</span>{' '}
+                                <span className="font-semibold">{org.testsUsed}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Active:</span>{' '}
+                                <span className="font-semibold">{org.activeTests}</span>
+                              </div>
+                            </div>
+                            {org.adminEmail && (
+                              <div className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {org.adminEmail}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
+            {/* Activity Log Tab */}
+            <TabsContent value="activity" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Activity Log</CardTitle>
+                  <CardDescription>Complete history of account activity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {activityLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : activityLog?.activities.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No activity recorded yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {activityLog?.activities.map((activity) => (
+                        <div key={activity.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`activity-${activity.id}`}>
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 rounded-md bg-primary/10">
+                              <Activity className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium">{activity.description}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Badge variant="outline">{activity.type}</Badge>
+                                {formatDate(activity.createdAt)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="usage" className="space-y-4">
               {usageLoading ? (
@@ -1050,6 +1614,75 @@ export default function PartnerDashboard() {
             </Button>
             <Button onClick={() => setShowNewKeyDialog(false)} data-testid="button-close-key-dialog">
               Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Organization Dialog */}
+      <Dialog open={showAddOrgDialog} onOpenChange={setShowAddOrgDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Organization</DialogTitle>
+            <DialogDescription>
+              Create a new client organization to track their assessment usage separately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="org-name">Organization Name *</Label>
+              <Input
+                id="org-name"
+                placeholder="Acme Corp"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+                data-testid="input-org-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-slug">Slug *</Label>
+              <Input
+                id="org-slug"
+                placeholder="acme-corp"
+                value={newOrgSlug}
+                onChange={(e) => setNewOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                data-testid="input-org-slug"
+              />
+              <p className="text-xs text-muted-foreground">Used for API identification (lowercase, no spaces)</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-admin-name">Admin Name</Label>
+              <Input
+                id="org-admin-name"
+                placeholder="John Smith"
+                value={newOrgAdminName}
+                onChange={(e) => setNewOrgAdminName(e.target.value)}
+                data-testid="input-org-admin-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-admin-email">Admin Email</Label>
+              <Input
+                id="org-admin-email"
+                type="email"
+                placeholder="john@acme.com"
+                value={newOrgAdminEmail}
+                onChange={(e) => setNewOrgAdminEmail(e.target.value)}
+                data-testid="input-org-admin-email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddOrgDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateOrg}
+              disabled={!newOrgName || !newOrgSlug || createOrgMutation.isPending}
+              data-testid="button-create-org"
+            >
+              {createOrgMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Create Organization
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4940,6 +4940,283 @@ Format your response as JSON with this structure:
     return next;
   }
 
+  // ===== Partner Organizations (session-authenticated) =====
+  
+  // List partner organizations
+  app.get("/api/partner/me/organizations", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const organizations = await storage.getPartnerOrganisationsByPartner(partner.id);
+      
+      // Get usage stats for each organization
+      const orgsWithStats = await Promise.all(organizations.map(async (org) => {
+        // Count sessions for this organization
+        const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+        const orgSessions = sessions.filter(s => s.partnerOrganisationId === org.id);
+        
+        return {
+          ...org,
+          testsUsed: orgSessions.filter(s => s.status === 'completed').length,
+          activeTests: orgSessions.filter(s => s.status === 'in_progress').length,
+        };
+      }));
+      
+      res.json({ organizations: orgsWithStats });
+    } catch (error) {
+      console.error("Error fetching partner organizations:", error);
+      res.status(500).json({ message: "Failed to fetch organizations" });
+    }
+  });
+
+  // Create partner organization
+  app.post("/api/partner/me/organizations", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { name, slug, adminEmail, adminName } = req.body;
+      
+      if (!name || !slug) {
+        return res.status(400).json({ message: "Name and slug are required" });
+      }
+      
+      // Check if slug already exists for this partner
+      const existing = await storage.getPartnerOrganisationBySlug(partner.id, slug);
+      if (existing) {
+        return res.status(409).json({ message: "Organization with this slug already exists" });
+      }
+      
+      const org = await storage.createPartnerOrganisation({
+        partnerId: partner.id,
+        name,
+        slug,
+        adminEmail: adminEmail || null,
+        adminName: adminName || null,
+        isActive: true,
+      });
+      
+      res.status(201).json(org);
+    } catch (error) {
+      console.error("Error creating partner organization:", error);
+      res.status(500).json({ message: "Failed to create organization" });
+    }
+  });
+
+  // Get partner organization details with tests
+  app.get("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const org = await storage.getPartnerOrganisation(req.params.id);
+      if (!org || org.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Get sessions for this organization
+      const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+      const orgSessions = sessions.filter(s => s.partnerOrganisationId === org.id);
+      
+      // Get results for completed sessions
+      const results = await Promise.all(
+        orgSessions
+          .filter(s => s.status === 'completed')
+          .map(async (session) => {
+            const result = await storage.getAssessmentResultBySessionId(session.id);
+            return {
+              sessionId: session.id,
+              assessmentType: session.assessmentType,
+              externalUserId: session.externalUserId,
+              externalEmail: session.externalEmail,
+              completedAt: session.completedAt,
+              score: result?.scores || null,
+            };
+          })
+      );
+      
+      res.json({
+        organization: org,
+        stats: {
+          totalTests: orgSessions.length,
+          completedTests: orgSessions.filter(s => s.status === 'completed').length,
+          pendingTests: orgSessions.filter(s => s.status === 'pending').length,
+          inProgressTests: orgSessions.filter(s => s.status === 'in_progress').length,
+        },
+        results,
+      });
+    } catch (error) {
+      console.error("Error fetching organization details:", error);
+      res.status(500).json({ message: "Failed to fetch organization details" });
+    }
+  });
+
+  // Update partner organization
+  app.patch("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const org = await storage.getPartnerOrganisation(req.params.id);
+      if (!org || org.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      const { name, adminEmail, adminName, isActive } = req.body;
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (adminEmail !== undefined) updates.adminEmail = adminEmail;
+      if (adminName !== undefined) updates.adminName = adminName;
+      if (isActive !== undefined) updates.isActive = isActive;
+      
+      await storage.updatePartnerOrganisation(req.params.id, updates);
+      const updated = await storage.getPartnerOrganisation(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      res.status(500).json({ message: "Failed to update organization" });
+    }
+  });
+
+  // Delete partner organization
+  app.delete("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const org = await storage.getPartnerOrganisation(req.params.id);
+      if (!org || org.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      await storage.deletePartnerOrganisation(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      res.status(500).json({ message: "Failed to delete organization" });
+    }
+  });
+
+  // Get partner activity log
+  app.get("/api/partner/me/activity-log", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      // Get partner usage logs as activity
+      const usageLogs = await storage.getPartnerUsageLogs(partner.id, limit, offset);
+      
+      // Transform into activity log format
+      const activities = usageLogs.map(log => ({
+        id: log.id,
+        type: log.eventType,
+        description: formatActivityDescription(log.eventType, log.metadata),
+        metadata: log.metadata,
+        createdAt: log.createdAt,
+        organizationId: log.partnerOrganisationId,
+      }));
+      
+      res.json({ activities, total: usageLogs.length });
+    } catch (error) {
+      console.error("Error fetching activity log:", error);
+      res.status(500).json({ message: "Failed to fetch activity log" });
+    }
+  });
+
+  // Helper to format activity descriptions
+  function formatActivityDescription(eventType: string, metadata?: any): string {
+    switch (eventType) {
+      case 'session_created':
+        return `Assessment session created${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+      case 'session_started':
+        return `Candidate started assessment${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+      case 'session_completed':
+        return `Assessment completed${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+      case 'credit_consumed':
+        return 'Test credit consumed';
+      case 'api_call':
+        return `API call${metadata?.endpoint ? ` to ${metadata.endpoint}` : ''}`;
+      case 'webhook_sent':
+        return `Webhook notification sent${metadata?.event ? ` (${metadata.event})` : ''}`;
+      case 'key_rotated':
+        return 'API key rotated';
+      default:
+        return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  }
+
+  // Get partner candidate results
+  app.get("/api/partner/me/results", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const organizationId = req.query.organizationId as string | undefined;
+      
+      // Get sessions for this partner
+      const sessions = await storage.getAssessmentSessionsByPartnerId(partner.id);
+      
+      // Filter by organization if specified
+      let filteredSessions = sessions;
+      if (organizationId) {
+        filteredSessions = sessions.filter(s => s.partnerOrganisationId === organizationId);
+      }
+      
+      // Get completed sessions with results
+      const completedSessions = filteredSessions
+        .filter(s => s.status === 'completed')
+        .slice(0, limit);
+      
+      const results = await Promise.all(
+        completedSessions.map(async (session) => {
+          const result = await storage.getAssessmentResultBySessionId(session.id);
+          const org = session.partnerOrganisationId 
+            ? await storage.getPartnerOrganisation(session.partnerOrganisationId)
+            : null;
+          
+          return {
+            sessionId: session.id,
+            assessmentType: session.assessmentType,
+            externalUserId: session.externalUserId,
+            externalEmail: session.externalEmail,
+            completedAt: session.completedAt,
+            createdAt: session.createdAt,
+            organization: org ? { id: org.id, name: org.name } : null,
+            scores: result?.scores || null,
+            overallScore: result?.overallScore || null,
+          };
+        })
+      );
+      
+      res.json({ 
+        results,
+        total: filteredSessions.filter(s => s.status === 'completed').length,
+      });
+    } catch (error) {
+      console.error("Error fetching partner results:", error);
+      res.status(500).json({ message: "Failed to fetch results" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
