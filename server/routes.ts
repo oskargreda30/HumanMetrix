@@ -7388,6 +7388,7 @@ Format your response as JSON with this structure:
         metadata: { testMode: true, createdBy: user.email },
         expiresAt,
         status: "created",
+        questionLocale: "default",
       });
       
       const baseUrl = `${req.protocol}://${req.get('host')}`;

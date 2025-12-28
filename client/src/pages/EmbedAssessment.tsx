@@ -151,6 +151,10 @@ export default function EmbedAssessment() {
         return;
       }
 
+      // Ensure questions are (re)hydrated with correct locale when starting
+      if (session) {
+        setQuestions(getQuestions(session.assessmentType, session.questionLocale || 'default'));
+      }
       setStatus("started");
     } catch (err) {
       setStatus("error");

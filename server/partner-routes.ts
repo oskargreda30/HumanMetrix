@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
+import { getQuestionLocale } from "@shared/currencies";
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
@@ -122,6 +123,7 @@ const createSessionSchema = z.object({
   metadata: z.record(z.any()).optional(),
   webhookUrl: z.string().url().optional(),
   expiresInMinutes: z.number().min(30).max(10080).default(1440),
+  country: z.string().length(2).optional(), // ISO 3166-1 alpha-2 country code for locale selection
 });
 
 const submitAnswersSchema = z.object({
@@ -202,6 +204,9 @@ export function registerPartnerRoutes(app: Express) {
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + data.expiresInMinutes);
         
+        // Determine question locale based on country code (for SEA localization)
+        const questionLocale = data.country ? getQuestionLocale(data.country) : 'default';
+        
         const session = await storage.createAssessmentSession({
           partnerId: partner.id,
           partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
@@ -213,6 +218,7 @@ export function registerPartnerRoutes(app: Express) {
           webhookUrl: data.webhookUrl,
           expiresAt,
           status: "created",
+          questionLocale,
         });
         
         await trackUsage(
