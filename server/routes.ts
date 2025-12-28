@@ -6043,57 +6043,150 @@ Format your response as JSON with this structure:
         lastMeasured: Date;
       }> = [];
       
-      // Measure key endpoint latencies
-      const endpoints = [
-        { path: '/api/user', category: 'Auth', fn: async () => await storage.getUser(userId) },
-        { path: '/api/admin/candidates', category: 'Admin', fn: async () => await db.select().from(users).limit(1) },
-        { path: '/api/assessments', category: 'Core', fn: async () => await db.select().from(assessmentResults).limit(1) },
-      ];
-      
-      for (const ep of endpoints) {
+      // Helper function to measure latency
+      const measureLatency = async (
+        name: string, 
+        category: string, 
+        fn: () => Promise<any>,
+        thresholds: { info: number; warning: number; error: number } = { info: 100, warning: 300, error: 1000 }
+      ) => {
         const latencies: number[] = [];
         for (let i = 0; i < 3; i++) {
           const start = Date.now();
           try {
-            await ep.fn();
+            await fn();
             latencies.push(Date.now() - start);
           } catch {
-            latencies.push(999);
+            latencies.push(9999);
           }
         }
         
         const avgLatency = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
-        const p95Latency = Math.round(latencies.sort((a, b) => a - b)[Math.floor(latencies.length * 0.95)] || avgLatency);
+        const sortedLatencies = [...latencies].sort((a, b) => a - b);
+        const p95Latency = Math.round(sortedLatencies[Math.floor(sortedLatencies.length * 0.95)] || avgLatency);
         
         latencyMetrics.push({
-          endpoint: ep.path,
-          category: ep.category,
+          endpoint: name,
+          category,
           avgLatencyMs: avgLatency,
           p95LatencyMs: p95Latency,
           requestCount: 3,
-          severity: avgLatency < 100 ? 'info' : avgLatency < 300 ? 'warning' : avgLatency < 1000 ? 'error' : 'critical',
+          severity: avgLatency < thresholds.info ? 'info' : avgLatency < thresholds.warning ? 'warning' : avgLatency < thresholds.error ? 'error' : 'critical',
           lastMeasured: new Date()
         });
-      }
+      };
       
-      // Add database query latency
-      const dbLatencies: number[] = [];
-      for (let i = 0; i < 3; i++) {
-        const start = Date.now();
-        await db.execute(sql`SELECT COUNT(*) FROM users`);
-        dbLatencies.push(Date.now() - start);
-      }
-      const dbAvgLatency = Math.round(dbLatencies.reduce((a, b) => a + b, 0) / dbLatencies.length);
+      // Run all measurements in parallel for speed
+      await Promise.all([
+        // Database endpoints
+        measureLatency('Database Query (users)', 'Database', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM users`),
+          { info: 50, warning: 150, error: 500 }
+        ),
+        measureLatency('Database Query (results)', 'Database', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM assessment_results`),
+          { info: 50, warning: 150, error: 500 }
+        ),
+        measureLatency('Database Query (purchases)', 'Database', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM purchases`),
+          { info: 50, warning: 150, error: 500 }
+        ),
+        measureLatency('Database Query (sessions)', 'Database', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM assessment_sessions`),
+          { info: 50, warning: 150, error: 500 }
+        ),
+        
+        // Auth endpoints
+        measureLatency('/api/user', 'Auth', 
+          async () => await storage.getUser(userId)
+        ),
+        measureLatency('/api/auth/session', 'Auth', 
+          async () => await db.execute(sql`SELECT 1`)
+        ),
+        
+        // Core API endpoints
+        measureLatency('/api/assessments', 'Core API', 
+          async () => await db.select().from(assessmentResults).limit(1)
+        ),
+        measureLatency('/api/purchases', 'Core API', 
+          async () => await db.select().from(purchases).limit(1)
+        ),
+        
+        // Admin endpoints
+        measureLatency('/api/admin/candidates', 'Admin', 
+          async () => await db.select().from(users).limit(10)
+        ),
+        measureLatency('/api/admin/analytics', 'Admin', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM users WHERE role = 'user'`)
+        ),
+        measureLatency('/api/admin/billing/stats', 'Admin', 
+          async () => await db.execute(sql`SELECT COUNT(*) FROM purchases WHERE status = 'completed'`)
+        ),
+        
+        // Partner API endpoints
+        measureLatency('/api/partner/sessions', 'Partner API', 
+          async () => await db.select().from(assessmentSessions).limit(1)
+        ),
+        measureLatency('/api/partner/usage', 'Partner API', 
+          async () => await db.select().from(partnerMonthlyUsage).limit(1)
+        ),
+        
+        // AI Integrations
+        measureLatency('OpenAI API (models list)', 'AI Integration', 
+          async () => {
+            if (!process.env.OPENAI_API_KEY) throw new Error('No API key');
+            await openai.models.list();
+          },
+          { info: 500, warning: 1500, error: 5000 }
+        ),
+        measureLatency('OpenAI API (embeddings)', 'AI Integration', 
+          async () => {
+            if (!process.env.OPENAI_API_KEY) throw new Error('No API key');
+            await openai.embeddings.create({
+              model: 'text-embedding-3-small',
+              input: 'test',
+              dimensions: 256
+            });
+          },
+          { info: 500, warning: 1500, error: 5000 }
+        ),
+        
+        // External services
+        measureLatency('Stripe API', 'External Service', 
+          async () => {
+            if (!process.env.STRIPE_SECRET_KEY) throw new Error('No API key');
+            const Stripe = await import('stripe');
+            const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY);
+            await stripe.balance.retrieve();
+          },
+          { info: 300, warning: 800, error: 2000 }
+        ),
+        
+        // Geolocation
+        measureLatency('/api/geolocation', 'External Service', 
+          async () => {
+            const response = await fetch('https://ipapi.co/json/', { 
+              signal: AbortSignal.timeout(5000) 
+            });
+            if (!response.ok) throw new Error('Failed');
+          },
+          { info: 200, warning: 500, error: 2000 }
+        ),
+        
+        // Exchange rates
+        measureLatency('/api/exchange-rates', 'External Service', 
+          async () => {
+            const response = await fetch('https://api.frankfurter.app/latest?from=GBP', { 
+              signal: AbortSignal.timeout(5000) 
+            });
+            if (!response.ok) throw new Error('Failed');
+          },
+          { info: 300, warning: 800, error: 2000 }
+        ),
+      ]);
       
-      latencyMetrics.push({
-        endpoint: 'Database Query',
-        category: 'Infrastructure',
-        avgLatencyMs: dbAvgLatency,
-        p95LatencyMs: Math.max(...dbLatencies),
-        requestCount: 3,
-        severity: dbAvgLatency < 50 ? 'info' : dbAvgLatency < 200 ? 'warning' : dbAvgLatency < 500 ? 'error' : 'critical',
-        lastMeasured: new Date()
-      });
+      // Sort by slowest first
+      latencyMetrics.sort((a, b) => b.avgLatencyMs - a.avgLatencyMs);
       
       res.json(latencyMetrics);
     } catch (error) {
