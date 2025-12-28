@@ -4116,6 +4116,250 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Get settings
+  app.get("/api/partner/me/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Find partner account associated with this user's organisation or email
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ hasPartnerAccount: false });
+      }
+      
+      res.json({
+        hasPartnerAccount: true,
+        settings: {
+          // Quota alert settings
+          quotaAlertEnabled: matchingPartner.quotaAlertEnabled ?? true,
+          quotaAlertThreshold: matchingPartner.quotaAlertThreshold ?? 80,
+          quotaAlertEmail: matchingPartner.quotaAlertEmail || matchingPartner.billingEmail || matchingPartner.email,
+          // Auto top-up settings (prepaid only)
+          autoTopUpEnabled: matchingPartner.autoTopUpEnabled ?? false,
+          autoTopUpThreshold: matchingPartner.autoTopUpThreshold ?? 10,
+          autoTopUpPackage: matchingPartner.autoTopUpPackage || null,
+          // Read-only info
+          billingType: matchingPartner.billingType,
+          billingEmail: matchingPartner.billingEmail || matchingPartner.email,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching partner settings:", error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  // Partner self-service: Update settings
+  app.patch("/api/partner/me/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only admins can change partner settings
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required to modify settings" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { quotaAlertEnabled, quotaAlertThreshold, quotaAlertEmail, autoTopUpEnabled, autoTopUpThreshold, autoTopUpPackage } = req.body;
+      
+      // Validate inputs
+      const updates: any = {};
+      
+      if (typeof quotaAlertEnabled === 'boolean') {
+        updates.quotaAlertEnabled = quotaAlertEnabled;
+      }
+      
+      if (typeof quotaAlertThreshold === 'number' && quotaAlertThreshold >= 10 && quotaAlertThreshold <= 100) {
+        updates.quotaAlertThreshold = quotaAlertThreshold;
+      }
+      
+      if (typeof quotaAlertEmail === 'string' && quotaAlertEmail.includes('@')) {
+        updates.quotaAlertEmail = quotaAlertEmail;
+      }
+      
+      // Auto top-up only for prepaid partners
+      if (matchingPartner.billingType === 'prepaid') {
+        if (typeof autoTopUpEnabled === 'boolean') {
+          updates.autoTopUpEnabled = autoTopUpEnabled;
+        }
+        
+        if (typeof autoTopUpThreshold === 'number' && autoTopUpThreshold >= 1 && autoTopUpThreshold <= 100) {
+          updates.autoTopUpThreshold = autoTopUpThreshold;
+        }
+        
+        if (autoTopUpPackage === null || ['starter', 'growth', 'professional', 'business', 'enterprise', 'enterprise_plus'].includes(autoTopUpPackage)) {
+          updates.autoTopUpPackage = autoTopUpPackage;
+        }
+      }
+      
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No valid settings to update" });
+      }
+      
+      await storage.updatePartnerAccount(matchingPartner.id, updates);
+      
+      res.json({ success: true, message: "Settings updated successfully" });
+    } catch (error) {
+      console.error("Error updating partner settings:", error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
+  // Partner self-service: Get API keys (masked)
+  app.get("/api/partner/me/api-keys", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only admins can view API keys
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required to view API keys" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ hasPartnerAccount: false, apiKeys: [] });
+      }
+      
+      // Get API keys for this partner (don't expose full key or hash)
+      const apiKeys = await storage.getPartnerApiKeysByPartner(matchingPartner.id);
+      
+      const maskedKeys = apiKeys.map(key => ({
+        id: key.id,
+        name: key.name,
+        environment: key.environment,
+        keyPrefix: key.keyPrefix,
+        keyHint: key.keyHint,
+        displayKey: `${key.keyPrefix}...${key.keyHint}`,
+        permissions: key.permissions,
+        rateLimit: key.rateLimit,
+        lastUsedAt: key.lastUsedAt,
+        createdAt: key.createdAt,
+        organisationId: key.partnerOrganisationId,
+      }));
+      
+      res.json({
+        hasPartnerAccount: true,
+        apiKeys: maskedKeys,
+      });
+    } catch (error) {
+      console.error("Error fetching partner API keys:", error);
+      res.status(500).json({ message: "Failed to fetch API keys" });
+    }
+  });
+
+  // Partner self-service: Rotate API key (generates new key with same config)
+  app.post("/api/partner/me/api-keys/:keyId/rotate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      const { keyId } = req.params;
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only admins can rotate API keys
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required to rotate API keys" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get the existing key
+      const existingKey = await storage.getPartnerApiKey(keyId);
+      if (!existingKey || existingKey.partnerId !== matchingPartner.id) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      // Generate new key with same configuration
+      const crypto = await import('crypto');
+      const newRawKey = `${existingKey.keyPrefix}${crypto.randomBytes(32).toString('base64url')}`;
+      const newKeyHash = crypto.createHash('sha256').update(newRawKey).digest('hex');
+      const newKeyHint = newRawKey.slice(-4);
+      
+      // Update the key with new hash
+      await storage.updatePartnerApiKey(keyId, {
+        keyHash: newKeyHash,
+        keyHint: newKeyHint,
+      });
+      
+      // Return the new key (only time it's visible in full)
+      res.json({
+        success: true,
+        message: "API key rotated successfully. Save this key - it won't be shown again.",
+        newKey: newRawKey,
+        displayKey: `${existingKey.keyPrefix}...${newKeyHint}`,
+      });
+    } catch (error) {
+      console.error("Error rotating API key:", error);
+      res.status(500).json({ message: "Failed to rotate API key" });
+    }
+  });
+
   // Partner self-service: Create checkout session for test package purchase
   app.post("/api/partner/purchase/checkout", isAuthenticated, async (req: any, res) => {
     try {

@@ -247,6 +247,7 @@ export interface IStorage {
   getPartnerApiKey(id: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeyByPrefix(prefix: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
+  updatePartnerApiKey(id: string, updates: Partial<{ keyHash: string; keyHint: string; name: string; permissions: string[]; rateLimit: number }>): Promise<void>;
   updatePartnerApiKeyLastUsed(id: string): Promise<void>;
   revokePartnerApiKey(id: string): Promise<void>;
   
@@ -1433,6 +1434,12 @@ export class DatabaseStorage implements IStorage {
   async revokePartnerApiKey(id: string): Promise<void> {
     await db.update(partnerApiKeys)
       .set({ isActive: false })
+      .where(eq(partnerApiKeys.id, id));
+  }
+
+  async updatePartnerApiKey(id: string, updates: Partial<{ keyHash: string; keyHint: string; name: string; permissions: string[]; rateLimit: number }>): Promise<void> {
+    await db.update(partnerApiKeys)
+      .set(updates as any)
       .where(eq(partnerApiKeys.id, id));
   }
 

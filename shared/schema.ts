@@ -533,6 +533,14 @@ export const partnerAccounts = pgTable("partner_accounts", {
   last70NoticeAt: timestamp("last_70_notice_at"),
   last90NoticeAt: timestamp("last_90_notice_at"),
   apiAccessSuspendedAt: timestamp("api_access_suspended_at"),
+  // Quota alert settings (self-service)
+  quotaAlertEnabled: boolean("quota_alert_enabled").notNull().default(true),
+  quotaAlertThreshold: integer("quota_alert_threshold").notNull().default(80), // Percentage (e.g., 80 = alert at 80% usage)
+  quotaAlertEmail: varchar("quota_alert_email"), // Override email for quota alerts (null = use billingEmail)
+  // Auto top-up settings for prepaid partners
+  autoTopUpEnabled: boolean("auto_top_up_enabled").notNull().default(false),
+  autoTopUpThreshold: integer("auto_top_up_threshold").default(10), // Top up when balance falls below this
+  autoTopUpPackage: varchar("auto_top_up_package"), // Package tier to purchase (e.g., "starter", "growth")
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
