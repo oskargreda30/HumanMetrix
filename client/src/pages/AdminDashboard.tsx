@@ -5,6 +5,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Building2, Globe } from "lucide-react";
+import { Redirect } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import OverviewTab from "@/components/admin/OverviewTab";
@@ -23,6 +24,10 @@ import BillingTab from "@/components/admin/BillingTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
+interface PartnerAccountCheck {
+  hasPartnerAccount: boolean;
+}
+
 export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
@@ -34,13 +39,28 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/my-organization"],
     enabled: !!user,
   });
+  
+  // Check if user has a partner account (only for non-super_admin admins)
+  const { data: partnerCheck, isLoading: partnerLoading } = useQuery<PartnerAccountCheck>({
+    queryKey: ["/api/partner/me"],
+    enabled: !!user && user.role === 'admin',
+  });
 
-  if (userLoading) {
+  // Loading state
+  if (userLoading || (user?.role === 'admin' && partnerLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-user" />
+      <div className="flex items-center justify-center min-h-screen bg-[#0a1628]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mx-auto mb-4" data-testid="loader-user" />
+          <p className="text-blue-100/70">Loading your dashboard...</p>
+        </div>
       </div>
     );
+  }
+  
+  // Redirect partner admins to Partner Dashboard
+  if (user?.role === 'admin' && partnerCheck?.hasPartnerAccount) {
+    return <Redirect to="/partner-dashboard" />;
   }
 
   const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'admin';
