@@ -70,6 +70,11 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS. Navigation is
         - Invoice history tracking with status management (sent, paid, overdue, cancelled).
         - Due date calculation based on partner payment terms.
     - **Multi-Organisation Hierarchy**: Recruitment agencies (partners) can manage multiple client organisations, each with their own API keys for usage tracking while maintaining centralised billing through the parent partner account.
+    - **Partner Self-Service Dashboard**: Partners access their own dashboard at `/partner` with:
+        - **Usage Tab**: Quota consumption, monthly trends, recent usage events.
+        - **Billing Tab**: Payment receipts and invoices with download links.
+        - **Navigation Integration**: "Partner" link appears in navigation for users with partner accounts.
+        - **API Endpoints**: GET /api/partner/me (account info), GET /api/partner/me/usage (usage stats), GET /api/partner/me/billing (billing history).
 - **Health Monitoring System**: Comprehensive system health and error monitoring for super admins.
     - **Health Tab Sub-sections**: Overview (aggregate stats), Health Checks (system components), Latency (API performance), Errors (application errors).
     - **Severity Categorisation**: All metrics categorised as critical, error, warning, or info with colour-coded visual indicators.
