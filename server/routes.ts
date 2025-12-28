@@ -4491,6 +4491,454 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== PARTNER INTEGRATION MANAGEMENT ====================
+  
+  // Helper function to get partner for authenticated user
+  async function getPartnerForUser(userId: string) {
+    const user = await storage.getUser(userId);
+    if (!user) return null;
+    
+    const hasAdminAccess = user.role === 'super_admin' || user.role === 'admin';
+    if (!hasAdminAccess) return null;
+    
+    let partner = null;
+    if (user.organizationId) {
+      partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+    }
+    if (!partner && user.email) {
+      partner = await storage.getPartnerAccountByEmail(user.email);
+    }
+    return partner;
+  }
+
+  // ===== WEBHOOKS =====
+  
+  // Get partner's webhooks
+  app.get("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      const webhooks = await storage.getPartnerWebhooks(partner.id);
+      res.json(webhooks);
+    } catch (error) {
+      console.error("Error fetching webhooks:", error);
+      res.status(500).json({ message: "Failed to fetch webhooks" });
+    }
+  });
+
+  // Create webhook
+  app.post("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { name, url, events, maxRetries, retryDelaySeconds } = req.body;
+      
+      if (!name || !url || !events || !Array.isArray(events) || events.length === 0) {
+        return res.status(400).json({ message: "Name, URL, and at least one event are required" });
+      }
+      
+      // Generate secret
+      const crypto = await import('crypto');
+      const secret = `whsec_${crypto.randomBytes(32).toString('base64url')}`;
+      
+      const webhook = await storage.createPartnerWebhook({
+        partnerId: partner.id,
+        name,
+        url,
+        secret,
+        events,
+        isActive: true,
+        maxRetries: maxRetries || 3,
+        retryDelaySeconds: retryDelaySeconds || 60,
+      });
+      
+      res.json({ ...webhook, secret }); // Return secret only on creation
+    } catch (error) {
+      console.error("Error creating webhook:", error);
+      res.status(500).json({ message: "Failed to create webhook" });
+    }
+  });
+
+  // Update webhook
+  app.patch("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const webhook = await storage.getPartnerWebhook(req.params.id);
+      if (!webhook || webhook.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const { name, url, events, isActive, maxRetries, retryDelaySeconds } = req.body;
+      
+      await storage.updatePartnerWebhook(req.params.id, {
+        ...(name !== undefined && { name }),
+        ...(url !== undefined && { url }),
+        ...(events !== undefined && { events }),
+        ...(isActive !== undefined && { isActive }),
+        ...(maxRetries !== undefined && { maxRetries }),
+        ...(retryDelaySeconds !== undefined && { retryDelaySeconds }),
+      });
+      
+      const updated = await storage.getPartnerWebhook(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating webhook:", error);
+      res.status(500).json({ message: "Failed to update webhook" });
+    }
+  });
+
+  // Delete webhook
+  app.delete("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const webhook = await storage.getPartnerWebhook(req.params.id);
+      if (!webhook || webhook.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      await storage.deletePartnerWebhook(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting webhook:", error);
+      res.status(500).json({ message: "Failed to delete webhook" });
+    }
+  });
+
+  // Get webhook delivery logs
+  app.get("/api/partner/me/webhooks/:id/logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const webhook = await storage.getPartnerWebhook(req.params.id);
+      if (!webhook || webhook.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const logs = await storage.getWebhookDeliveryLogs(req.params.id, 50);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching webhook logs:", error);
+      res.status(500).json({ message: "Failed to fetch webhook logs" });
+    }
+  });
+
+  // Rotate webhook secret
+  app.post("/api/partner/me/webhooks/:id/rotate-secret", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const webhook = await storage.getPartnerWebhook(req.params.id);
+      if (!webhook || webhook.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const crypto = await import('crypto');
+      const newSecret = `whsec_${crypto.randomBytes(32).toString('base64url')}`;
+      
+      await storage.updatePartnerWebhook(req.params.id, { secret: newSecret });
+      
+      res.json({ secret: newSecret });
+    } catch (error) {
+      console.error("Error rotating webhook secret:", error);
+      res.status(500).json({ message: "Failed to rotate webhook secret" });
+    }
+  });
+
+  // ===== ATS INTEGRATIONS =====
+  
+  // Get partner's ATS integrations
+  app.get("/api/partner/me/ats-integrations", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      const integrations = await storage.getPartnerAtsIntegrations(partner.id);
+      // Mask sensitive credentials
+      const masked = integrations.map(i => ({
+        ...i,
+        credentials: i.credentials ? { configured: true } : null,
+      }));
+      res.json(masked);
+    } catch (error) {
+      console.error("Error fetching ATS integrations:", error);
+      res.status(500).json({ message: "Failed to fetch ATS integrations" });
+    }
+  });
+
+  // Create ATS integration
+  app.post("/api/partner/me/ats-integrations", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { provider, name, baseUrl, credentials, fieldMapping, syncMode } = req.body;
+      
+      if (!provider || !name) {
+        return res.status(400).json({ message: "Provider and name are required" });
+      }
+      
+      const integration = await storage.createPartnerAtsIntegration({
+        partnerId: partner.id,
+        provider,
+        name,
+        baseUrl,
+        credentials,
+        fieldMapping,
+        syncMode: syncMode || 'push',
+        isActive: true,
+      });
+      
+      res.json({ ...integration, credentials: credentials ? { configured: true } : null });
+    } catch (error) {
+      console.error("Error creating ATS integration:", error);
+      res.status(500).json({ message: "Failed to create ATS integration" });
+    }
+  });
+
+  // Update ATS integration
+  app.patch("/api/partner/me/ats-integrations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const integration = await storage.getPartnerAtsIntegration(req.params.id);
+      if (!integration || integration.partnerId !== partner.id) {
+        return res.status(404).json({ message: "ATS integration not found" });
+      }
+      
+      const { name, baseUrl, credentials, fieldMapping, syncMode, isActive } = req.body;
+      
+      await storage.updatePartnerAtsIntegration(req.params.id, {
+        ...(name !== undefined && { name }),
+        ...(baseUrl !== undefined && { baseUrl }),
+        ...(credentials !== undefined && { credentials }),
+        ...(fieldMapping !== undefined && { fieldMapping }),
+        ...(syncMode !== undefined && { syncMode }),
+        ...(isActive !== undefined && { isActive }),
+      });
+      
+      const updated = await storage.getPartnerAtsIntegration(req.params.id);
+      res.json({ ...updated, credentials: updated?.credentials ? { configured: true } : null });
+    } catch (error) {
+      console.error("Error updating ATS integration:", error);
+      res.status(500).json({ message: "Failed to update ATS integration" });
+    }
+  });
+
+  // Delete ATS integration
+  app.delete("/api/partner/me/ats-integrations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const integration = await storage.getPartnerAtsIntegration(req.params.id);
+      if (!integration || integration.partnerId !== partner.id) {
+        return res.status(404).json({ message: "ATS integration not found" });
+      }
+      
+      await storage.deletePartnerAtsIntegration(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting ATS integration:", error);
+      res.status(500).json({ message: "Failed to delete ATS integration" });
+    }
+  });
+
+  // ===== SCHEDULED EXPORTS =====
+  
+  // Get partner's scheduled exports
+  app.get("/api/partner/me/scheduled-exports", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      const exports = await storage.getPartnerScheduledExports(partner.id);
+      // Mask sensitive delivery config
+      const masked = exports.map(e => ({
+        ...e,
+        deliveryConfig: e.deliveryConfig ? { ...e.deliveryConfig as any, password: undefined, accessKeySecret: undefined } : null,
+      }));
+      res.json(masked);
+    } catch (error) {
+      console.error("Error fetching scheduled exports:", error);
+      res.status(500).json({ message: "Failed to fetch scheduled exports" });
+    }
+  });
+
+  // Create scheduled export
+  app.post("/api/partner/me/scheduled-exports", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { name, schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryConfig, dataFilters, includeFields } = req.body;
+      
+      if (!name || !schedule || !exportType || !deliveryMethod) {
+        return res.status(400).json({ message: "Name, schedule, export type, and delivery method are required" });
+      }
+      
+      // Calculate next run time
+      const nextRunAt = calculateNextRunTime(schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone);
+      
+      const exportConfig = await storage.createPartnerScheduledExport({
+        partnerId: partner.id,
+        name,
+        schedule,
+        dayOfWeek,
+        dayOfMonth,
+        timeOfDay: timeOfDay || '09:00',
+        timezone: timezone || 'UTC',
+        exportType,
+        deliveryMethod,
+        deliveryConfig,
+        dataFilters,
+        includeFields,
+        isActive: true,
+        nextRunAt,
+      });
+      
+      res.json(exportConfig);
+    } catch (error) {
+      console.error("Error creating scheduled export:", error);
+      res.status(500).json({ message: "Failed to create scheduled export" });
+    }
+  });
+
+  // Update scheduled export
+  app.patch("/api/partner/me/scheduled-exports/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
+      if (!exportConfig || exportConfig.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Scheduled export not found" });
+      }
+      
+      const { name, schedule, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryConfig, dataFilters, includeFields, isActive } = req.body;
+      
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (schedule !== undefined) updates.schedule = schedule;
+      if (dayOfWeek !== undefined) updates.dayOfWeek = dayOfWeek;
+      if (dayOfMonth !== undefined) updates.dayOfMonth = dayOfMonth;
+      if (timeOfDay !== undefined) updates.timeOfDay = timeOfDay;
+      if (timezone !== undefined) updates.timezone = timezone;
+      if (exportType !== undefined) updates.exportType = exportType;
+      if (deliveryMethod !== undefined) updates.deliveryMethod = deliveryMethod;
+      if (deliveryConfig !== undefined) updates.deliveryConfig = deliveryConfig;
+      if (dataFilters !== undefined) updates.dataFilters = dataFilters;
+      if (includeFields !== undefined) updates.includeFields = includeFields;
+      if (isActive !== undefined) updates.isActive = isActive;
+      
+      // Recalculate next run time if schedule changed
+      if (schedule || dayOfWeek !== undefined || dayOfMonth !== undefined || timeOfDay || timezone) {
+        updates.nextRunAt = calculateNextRunTime(
+          schedule || exportConfig.schedule,
+          dayOfWeek !== undefined ? dayOfWeek : exportConfig.dayOfWeek,
+          dayOfMonth !== undefined ? dayOfMonth : exportConfig.dayOfMonth,
+          timeOfDay || exportConfig.timeOfDay,
+          timezone || exportConfig.timezone
+        );
+      }
+      
+      await storage.updatePartnerScheduledExport(req.params.id, updates);
+      
+      const updated = await storage.getPartnerScheduledExport(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating scheduled export:", error);
+      res.status(500).json({ message: "Failed to update scheduled export" });
+    }
+  });
+
+  // Delete scheduled export
+  app.delete("/api/partner/me/scheduled-exports/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
+      if (!exportConfig || exportConfig.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Scheduled export not found" });
+      }
+      
+      await storage.deletePartnerScheduledExport(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting scheduled export:", error);
+      res.status(500).json({ message: "Failed to delete scheduled export" });
+    }
+  });
+
+  // Helper function to calculate next run time
+  function calculateNextRunTime(
+    schedule: string,
+    dayOfWeek?: number | null,
+    dayOfMonth?: number | null,
+    timeOfDay?: string,
+    timezone?: string
+  ): Date {
+    const now = new Date();
+    const [hours, minutes] = (timeOfDay || '09:00').split(':').map(Number);
+    
+    const next = new Date(now);
+    next.setHours(hours, minutes, 0, 0);
+    
+    if (schedule === 'daily') {
+      if (next <= now) {
+        next.setDate(next.getDate() + 1);
+      }
+    } else if (schedule === 'weekly' && dayOfWeek !== undefined && dayOfWeek !== null) {
+      const currentDay = next.getDay();
+      let daysUntil = dayOfWeek - currentDay;
+      if (daysUntil < 0 || (daysUntil === 0 && next <= now)) {
+        daysUntil += 7;
+      }
+      next.setDate(next.getDate() + daysUntil);
+    } else if (schedule === 'monthly' && dayOfMonth !== undefined && dayOfMonth !== null) {
+      next.setDate(dayOfMonth);
+      if (next <= now) {
+        next.setMonth(next.getMonth() + 1);
+      }
+    }
+    
+    return next;
+  }
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
