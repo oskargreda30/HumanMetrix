@@ -36,6 +36,10 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.
 - **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing (Prepaid, Auto-Bill, Invoice), a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts.
+- **Partner Integration Features**: 
+  - **Webhook Notifications**: Event-based webhooks for assessment.started, assessment.completed, session.created, session.expired, results.ready with HMAC-SHA256 signature verification, exponential backoff retry logic, and delivery logging.
+  - **ATS Integrations**: Connect with Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, or custom APIs with configurable sync modes (push/pull/bidirectional).
+  - **Scheduled Exports**: Automated CSV exports (daily/weekly/monthly) delivered via email, SFTP, S3, or webhook.
 - **Health Monitoring System**: Comprehensive super admin dashboard for system health, error tracking with fingerprinting, and status workflow.
 - **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue, managing transactions (including refunds), and promo codes.
 - **Results Retention Consent Dashboard**: Super admin tab for viewing and filtering user consent preferences.

@@ -128,7 +128,7 @@ export async function triggerWebhook(
           httpStatus: result.statusCode,
           responseBody: result.responseBody?.substring(0, 5000),
           errorMessage: result.error,
-          nextRetryAt: calculateNextRetry(1, webhook.retryDelaySeconds || 60),
+          nextRetryAt: calculateNextRetry(deliveryLog.attemptNumber, webhook.retryDelaySeconds || 60),
         });
       } else {
         await storage.updateWebhookDeliveryLog(deliveryLog.id, {
