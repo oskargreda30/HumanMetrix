@@ -156,13 +156,13 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Widget Test
+                <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Analytics
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="health" data-testid="tab-health" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Health
+                <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Widget Test
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
@@ -171,8 +171,8 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Analytics
+                <TabsTrigger value="health" data-testid="tab-health" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Health
                 </TabsTrigger>
               )}
             </TabsList>
@@ -222,14 +222,14 @@ export default function AdminDashboard() {
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="widget-test" className="space-y-4">
-                <WidgetTestTab />
+              <TabsContent value="analytics" className="space-y-4">
+                <AnalyticsTab />
               </TabsContent>
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="health" className="space-y-4">
-                <HealthTab />
+              <TabsContent value="widget-test" className="space-y-4">
+                <WidgetTestTab />
               </TabsContent>
             )}
 
@@ -240,8 +240,8 @@ export default function AdminDashboard() {
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="analytics" className="space-y-4">
-                <AnalyticsTab />
+              <TabsContent value="health" className="space-y-4">
+                <HealthTab />
               </TabsContent>
             )}
           </Tabs>
