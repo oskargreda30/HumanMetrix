@@ -143,6 +143,9 @@ export default function PartnerDashboard() {
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
+  
+  // Purchase state
+  const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
 
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
     queryKey: ["/api/partner/account"],
@@ -219,6 +222,7 @@ export default function PartnerDashboard() {
       if (data.sessionUrl) {
         window.location.href = data.sessionUrl;
       }
+      setPurchasingPackageSize(null);
     },
     onError: (error: Error) => {
       toast({
@@ -226,8 +230,14 @@ export default function PartnerDashboard() {
         description: error.message,
         variant: "destructive",
       });
+      setPurchasingPackageSize(null);
     },
   });
+
+  const handlePurchase = (packageSize: number) => {
+    setPurchasingPackageSize(packageSize);
+    purchaseMutation.mutate(packageSize);
+  };
 
   // Rotate API key mutation
   const rotateKeyMutation = useMutation({
@@ -703,11 +713,11 @@ export default function PartnerDashboard() {
                               </div>
                               <Button 
                                 className="w-full" 
-                                onClick={() => purchaseMutation.mutate(pkg.size)}
-                                disabled={purchaseMutation.isPending}
+                                onClick={() => handlePurchase(pkg.size)}
+                                disabled={purchasingPackageSize !== null}
                                 data-testid={`button-buy-${pkg.size}`}
                               >
-                                {purchaseMutation.isPending ? (
+                                {purchasingPackageSize === pkg.size ? (
                                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                 ) : null}
                                 Purchase
