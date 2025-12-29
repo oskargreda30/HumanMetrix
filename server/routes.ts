@@ -4253,7 +4253,7 @@ Format your response as JSON with this structure:
       }
       
       // Only admins can view API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required to view API keys" });
       }
@@ -4312,7 +4312,7 @@ Format your response as JSON with this structure:
       }
       
       // Only admins can rotate API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
+      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
       if (!hasAdminAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required to rotate API keys" });
       }
