@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 
 import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
-import quinPhoto from "@assets/image_1767042222400.png";
+import quinPhoto from "@assets/image_1767042566135.png";
 import reynalynPhoto from "@assets/image_1767042236125.png";
 
 interface TeamMember {
