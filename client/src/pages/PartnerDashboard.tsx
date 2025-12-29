@@ -494,11 +494,26 @@ export default function PartnerDashboard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
-      setNewApiKey(data.apiKey.fullKey);
-      setShowCreateKeyDialog(false);
-      setShowNewKeyDialog(true);
-      setNewKeyName("");
-      setNewKeyEnvironment("test");
+      
+      // Ensure the API key data is present in response
+      if (data?.apiKey?.fullKey) {
+        setNewApiKey(data.apiKey.fullKey);
+        setShowCreateKeyDialog(false);
+        setShowNewKeyDialog(true);
+        setNewKeyName("");
+        setNewKeyEnvironment("test");
+        toast({
+          title: "API Key Created",
+          description: "Your new API key has been generated. Copy it now - it won't be shown again.",
+        });
+      } else {
+        console.error("API key creation response missing fullKey:", data);
+        toast({
+          title: "API Key Created",
+          description: "Key was created but the full key could not be displayed. Please contact support.",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({

@@ -4465,6 +4465,8 @@ Format your response as JSON with this structure:
       const { generateApiKey } = await import('./partner-auth');
       const { fullKey, prefix, hash, hint } = generateApiKey(environment);
       
+      console.log(`[CREATE API KEY] Generating key for partner ${matchingPartner.id}, name: ${name}, env: ${environment}`);
+      
       // Create the key record
       const newKey = await storage.createPartnerApiKey({
         partnerId: matchingPartner.id,
@@ -4479,7 +4481,9 @@ Format your response as JSON with this structure:
         isActive: true,
       });
       
-      res.json({
+      console.log(`[CREATE API KEY] Key created successfully: id=${newKey.id}, prefix=${prefix}, hint=${hint}`);
+      
+      const responsePayload = {
         success: true,
         message: "API key created successfully. Save this key - it won't be shown again.",
         apiKey: {
@@ -4492,7 +4496,10 @@ Format your response as JSON with this structure:
           rateLimit: newKey.rateLimit,
           createdAt: newKey.createdAt,
         },
-      });
+      };
+      
+      console.log(`[CREATE API KEY] Sending response with fullKey present: ${!!fullKey}`);
+      res.json(responsePayload);
     } catch (error) {
       console.error("Error creating API key:", error);
       res.status(500).json({ message: "Failed to create API key" });
