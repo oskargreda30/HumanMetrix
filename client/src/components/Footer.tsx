@@ -15,6 +15,7 @@ export default function Footer() {
   const footerLinks: { company: FooterLink[]; assessments: FooterLink[]; resources: FooterLink[] } = {
     company: [
       { label: "About Us", href: "/about" },
+      { label: "Our Team", href: "/team" },
       { label: "How It Works", href: "/#how-it-works", isAnchor: true },
       { label: "Terms & Conditions", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },

@@ -40,6 +40,7 @@ import EmbedAssessment from "@/pages/EmbedAssessment";
 import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
+import Team from "@/pages/Team";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/team" component={Team} />
       <Route path="/news" component={Subscribe} />
       <Route path="/developers" component={Developers} />
       <Route path="/embed/assessment" component={EmbedAssessment} />
