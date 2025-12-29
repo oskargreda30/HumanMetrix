@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 
 import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
-import quinPhoto from "@assets/image_1767042566135.png";
+import quinPhoto from "@assets/image_1767042222400.png";
 import reynalynPhoto from "@assets/image_1767042236125.png";
 
 interface TeamMember {
@@ -55,7 +55,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
   return (
     <div className="flex flex-col items-center text-center">
       {/* Circular photo */}
-      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4">
+      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4 border-4 border-primary/20">
         <img
           src={member.photo}
           alt={member.name}
