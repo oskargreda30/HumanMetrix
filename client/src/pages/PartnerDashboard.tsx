@@ -962,6 +962,72 @@ export default function PartnerDashboard() {
                 );
               })()}
 
+              {/* Contract & Terms View */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-muted">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Contract & Terms</CardTitle>
+                        <CardDescription>Your current agreement details</CardDescription>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant={partner?.isSuspended ? "destructive" : "default"}
+                      data-testid="badge-account-status"
+                    >
+                      {partner?.isSuspended ? 'Suspended' : 'Active'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-3 rounded-lg bg-muted/30 border">
+                      <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
+                      <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
+                        <CreditCard className="h-4 w-4 text-primary" />
+                        {account?.partner?.billingType === 'prepaid' && 'Prepaid Credits'}
+                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                        {account?.partner?.billingType === 'invoice' && 'Enterprise Invoice'}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border">
+                      <div className="text-xs text-muted-foreground mb-1">Member Since</div>
+                      <div className="font-semibold flex items-center gap-2" data-testid="text-member-since">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        {partner?.createdAt ? new Date(partner.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border">
+                      <div className="text-xs text-muted-foreground mb-1">Company</div>
+                      <div className="font-semibold flex items-center gap-2" data-testid="text-company-name">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        {partner?.companyName || partner?.name || 'Not specified'}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border">
+                      <div className="text-xs text-muted-foreground mb-1">Account ID</div>
+                      <div className="font-semibold flex items-center gap-2 font-mono text-sm" data-testid="text-account-id">
+                        <Shield className="h-4 w-4 text-primary" />
+                        {partner?.id?.slice(0, 8) || 'N/A'}...
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      For contract modifications or questions, please contact your account manager.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => setActiveTab('billing')} data-testid="button-view-billing">
+                      View Billing
+                      <ExternalLink className="h-3 w-3 ml-2" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Usage Stats */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
