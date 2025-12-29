@@ -55,7 +55,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
   return (
     <div className="flex flex-col items-center text-center">
       {/* Circular photo */}
-      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4 border-4 border-primary/20">
+      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4">
         <img
           src={member.photo}
           alt={member.name}
