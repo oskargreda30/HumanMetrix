@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { SEO } from "@/lib/seo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 const articles = [
   {
@@ -80,15 +81,34 @@ const whitePapers = [
 
 export default function Articles() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col relative">
       <SEO 
         title="Psychometric Testing Articles & Career Insights UK | HumanMetrix"
         description="HumanMetrix articles on psychometric tests UK, pre-employment testing & career development. Learn how to pass assessments."
         canonical="/articles"
       />
-      <Navigation />
       
-      <main className="flex-grow py-12 md:py-20 px-4">
+      {/* Background image with light grey overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(241, 245, 249, 0.92), rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.92))'
+        }} />
+      </div>
+
+      <div className="relative z-10">
+        <Navigation />
+      </div>
+      
+      <main className="relative z-10 flex-grow py-12 md:py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <Badge variant="outline" className="mb-4 text-cyan-600 border-cyan-300">
@@ -204,7 +224,9 @@ export default function Articles() {
         </div>
       </main>
 
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }
