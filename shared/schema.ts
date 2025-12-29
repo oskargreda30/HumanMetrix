@@ -543,6 +543,13 @@ export const partnerAccounts = pgTable("partner_accounts", {
   autoTopUpEnabled: boolean("auto_top_up_enabled").notNull().default(false),
   autoTopUpThreshold: integer("auto_top_up_threshold").default(10), // Top up when balance falls below this
   autoTopUpPackage: varchar("auto_top_up_package"), // Package tier to purchase (e.g., "starter", "growth")
+  // White-label branding settings
+  brandingEnabled: boolean("branding_enabled").notNull().default(false),
+  brandingPrimaryColor: varchar("branding_primary_color"), // Hex color e.g. "#0891b2"
+  brandingAccentColor: varchar("branding_accent_color"), // Hex color for accents
+  brandingWelcomeTitle: varchar("branding_welcome_title"), // Custom welcome title for candidates
+  brandingWelcomeMessage: text("branding_welcome_message"), // Custom welcome message
+  brandingCompanyDisplayName: varchar("branding_company_display_name"), // Display name shown to candidates (can differ from companyName)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
