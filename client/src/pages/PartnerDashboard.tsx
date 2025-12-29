@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail } from "lucide-react";
 import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import Navigation from "@/components/Navigation";
@@ -247,6 +248,8 @@ export default function PartnerDashboard() {
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
+  const [confirmRotateKeyId, setConfirmRotateKeyId] = useState<string | null>(null);
+  const [confirmRevokeKeyId, setConfirmRevokeKeyId] = useState<string | null>(null);
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
@@ -555,8 +558,15 @@ export default function PartnerDashboard() {
   };
 
   const handleRevokeKey = (keyId: string) => {
-    setRevokingKeyId(keyId);
-    revokeKeyMutation.mutate(keyId);
+    setConfirmRevokeKeyId(keyId);
+  };
+
+  const confirmRevoke = () => {
+    if (confirmRevokeKeyId) {
+      setRevokingKeyId(confirmRevokeKeyId);
+      revokeKeyMutation.mutate(confirmRevokeKeyId);
+      setConfirmRevokeKeyId(null);
+    }
   };
 
   const handleSaveSettings = () => {
@@ -571,8 +581,15 @@ export default function PartnerDashboard() {
   };
 
   const handleRotateKey = (keyId: string) => {
-    setRotatingKeyId(keyId);
-    rotateKeyMutation.mutate(keyId);
+    setConfirmRotateKeyId(keyId);
+  };
+
+  const confirmRotate = () => {
+    if (confirmRotateKeyId) {
+      setRotatingKeyId(confirmRotateKeyId);
+      rotateKeyMutation.mutate(confirmRotateKeyId);
+      setConfirmRotateKeyId(null);
+    }
   };
 
   const handleCopyKey = async () => {
@@ -2358,6 +2375,52 @@ export default function PartnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rotate API Key Confirmation */}
+      <AlertDialog open={!!confirmRotateKeyId} onOpenChange={(open) => !open && setConfirmRotateKeyId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rotate API Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate a new API key and invalidate the current one. Any applications using the old key will stop working immediately. You'll need to update your integrations with the new key.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-rotate">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmRotate} 
+              className="bg-amber-600 hover:bg-amber-700"
+              data-testid="button-confirm-rotate"
+            >
+              {rotatingKeyId === confirmRotateKeyId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Rotate Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Revoke API Key Confirmation */}
+      <AlertDialog open={!!confirmRevokeKeyId} onOpenChange={(open) => !open && setConfirmRevokeKeyId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently deactivate this API key. Any applications using this key will immediately lose access. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-revoke">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmRevoke} 
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-revoke"
+            >
+              {revokingKeyId === confirmRevokeKeyId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Revoke Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Footer />
     </div>
