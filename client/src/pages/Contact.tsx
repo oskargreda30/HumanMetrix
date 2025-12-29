@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MessageSquare, Building2, User, Send, CheckCircle, Loader2 } from "lucide-react";
-import dashboardBg from "@assets/network-tech-background.png";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
