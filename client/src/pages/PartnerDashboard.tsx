@@ -1706,7 +1706,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
-              {settingsLoading || apiKeysLoading ? (
+              {settingsLoading ? (
                 <Card>
                   <CardContent className="py-8 flex justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -1714,69 +1714,6 @@ export default function PartnerDashboard() {
                 </Card>
               ) : (
                 <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Key className="h-5 w-5" />
-                        API Keys
-                      </CardTitle>
-                      <CardDescription>
-                        Manage your API keys for accessing the HumanMetrix API
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {!apiKeys?.apiKeys || apiKeys.apiKeys.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground">
-                          <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No API keys found</p>
-                          <p className="text-sm mt-2">Contact support to create API keys for your account</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {apiKeys.apiKeys.map((key) => (
-                            <div key={key.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`api-key-${key.id}`}>
-                              <div className="flex items-center gap-4">
-                                <div className="p-2 rounded-md bg-primary/10">
-                                  <Shield className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                  <div className="font-medium">{key.name}</div>
-                                  <div className="text-sm font-mono text-muted-foreground" data-testid={`api-key-display-${key.id}`}>
-                                    {key.displayKey}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="outline" className="text-xs">
-                                      {key.environment}
-                                    </Badge>
-                                    {key.lastUsedAt && (
-                                      <span className="text-xs text-muted-foreground">
-                                        Last used: {formatDate(key.lastUsedAt)}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRotateKey(key.id)}
-                                disabled={rotatingKeyId === key.id}
-                                data-testid={`button-rotate-key-${key.id}`}
-                              >
-                                {rotatingKeyId === key.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <RefreshCw className="h-4 w-4" />
-                                )}
-                                <span className="ml-2">Rotate</span>
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
