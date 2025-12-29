@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar } from "lucide-react";
 import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -1402,52 +1402,179 @@ export default function PartnerDashboard() {
                 </Card>
               ) : billing ? (
                 <>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold" data-testid="text-total-spent">
-                          {formatCurrency(billing.summary.totalSpent)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          All time purchases
-                        </p>
-                      </CardContent>
-                    </Card>
+                  {/* Billing Model Header */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <CreditCard className="h-5 w-5" />
+                          {account?.partner?.billingType === 'prepaid' && 'Prepaid Billing'}
+                          {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill Billing'}
+                          {account?.partner?.billingType === 'invoice' && 'Invoice Billing'}
+                        </CardTitle>
+                        <CardDescription>
+                          {account?.partner?.billingType === 'prepaid' && 'Purchase test credits upfront and use them as needed'}
+                          {account?.partner?.billingType === 'auto_bill' && 'Card on file - automatically billed based on monthly usage'}
+                          {account?.partner?.billingType === 'invoice' && 'Enterprise invoicing with flexible payment terms'}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
+                        {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
+                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                        {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                      </Badge>
+                    </CardHeader>
+                  </Card>
 
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold" data-testid="text-pending-count">
-                          {billing.summary.pendingInvoices}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Awaiting payment
-                        </p>
-                      </CardContent>
-                    </Card>
+                  {/* Prepaid Billing Stats */}
+                  {account?.partner?.billingType === 'prepaid' && (
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Credit Balance</CardTitle>
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-primary" data-testid="text-credit-balance">
+                            {partner?.testsPurchased ? (partner.testsPurchased - partner.testsConsumed) : 0} tests
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Available credits
+                          </p>
+                        </CardContent>
+                      </Card>
 
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Amount Due</CardTitle>
-                        <Receipt className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className={`text-2xl font-bold ${billing.summary.pendingAmount > 0 ? 'text-amber-500' : ''}`} data-testid="text-pending-amount">
-                          {formatCurrency(billing.summary.pendingAmount)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Outstanding balance
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Purchased</CardTitle>
+                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-total-purchased">
+                            {partner?.testsPurchased || 0} tests
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            All time credits
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-total-spent">
+                            {formatCurrency(billing.summary.totalSpent)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            All time purchases
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Auto-Bill Billing Stats */}
+                  {account?.partner?.billingType === 'auto_bill' && (
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
+                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-tests-used">
+                            {partner?.testsConsumed || 0} tests
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Billed automatically each month
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Amount Due</CardTitle>
+                          <Receipt className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className={`text-2xl font-bold ${billing.summary.pendingAmount > 0 ? 'text-amber-500' : ''}`} data-testid="text-pending-amount">
+                            {formatCurrency(billing.summary.pendingAmount)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Outstanding balance
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-total-spent">
+                            {formatCurrency(billing.summary.totalSpent)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            All time purchases
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Invoice Billing Stats */}
+                  {account?.partner?.billingType === 'invoice' && (
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-pending-invoices">
+                            {billing.summary.pendingInvoices}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Awaiting payment
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+                          <Receipt className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className={`text-2xl font-bold ${billing.summary.pendingAmount > 0 ? 'text-amber-500' : ''}`} data-testid="text-pending-amount">
+                            {formatCurrency(billing.summary.pendingAmount)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {billing.summary.pendingInvoices} pending invoice{billing.summary.pendingInvoices !== 1 ? 's' : ''}
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold" data-testid="text-total-spent">
+                            {formatCurrency(billing.summary.totalSpent)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            All time purchases
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
 
                   {/* Buy More Tests - Only for prepaid and auto_bill billing types */}
                   {(account?.partner?.billingType === 'prepaid' || account?.partner?.billingType === 'auto_bill') && (
