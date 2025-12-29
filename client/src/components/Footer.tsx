@@ -97,6 +97,15 @@ export default function Footer() {
               <SiInstagram className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
               <span>Follow us on Instagram</span>
             </a>
+            <Link href="/contact">
+              <span 
+                className="inline-flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
+                data-testid="link-contact-us"
+              >
+                <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                <span>Contact Us</span>
+              </span>
+            </Link>
           </div>
 
           {/* Company Links */}

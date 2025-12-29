@@ -40,6 +40,7 @@ import EmbedAssessment from "@/pages/EmbedAssessment";
 import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
+import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -135,9 +136,7 @@ function Router() {
       <Route path="/tests">
         {() => <Redirect to="/assessments" />}
       </Route>
-      <Route path="/contact">
-        {() => <Redirect to="/about" />}
-      </Route>
+      <Route path="/contact" component={Contact} />
       <Route path="/terms-of-service">
         {() => <Redirect to="/terms" />}
       </Route>
