@@ -11,7 +11,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { countryCode, getAdjustedPriceInPence, getLocalPriceNumber, formatLocalCurrency } = useCurrency();
+  const { countryCode, getAdjustedPriceInPence, getLocalPriceNumber, formatLocalCurrency, isVPN } = useCurrency();
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -71,6 +71,7 @@ export function ResultsPaymentGate() {
       const response = await apiRequest("POST", "/api/unlock-results", {
         purchaseId: currentPurchase?.id, // Pass the specific purchase ID
         countryCode, // Pass for PPP pricing
+        isVPN, // Pass VPN status for consistent pricing with frontend display
       });
       
       if (!response.ok) {

@@ -879,11 +879,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { discountCode, purchaseId, countryCode } = req.body;
+      const { discountCode, purchaseId, countryCode, isVPN } = req.body;
       
-      // Get pricing tier and PPP multiplier for the user's country
-      const userCountry = countryCode || 'GB';
-      const pricingTier = getPricingTier(userCountry);
+      // For pricing: VPN users get full price (tier1), non-VPN users get PPP discount
+      // For currency: Always use the detected country's currency
+      const pricingCountry = isVPN ? 'GB' : (countryCode || 'GB'); // For PPP adjustment
+      const currencyCountry = countryCode || 'GB'; // For currency selection (keep original)
+      const pricingTier = getPricingTier(pricingCountry);
       
       let unpaidPurchase: any;
       
@@ -991,11 +993,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply PPP adjustment for user's country (SEA countries now use PPP tier pricing like everyone else)
       
       // Standard pricing: base fee + assessments with PPP adjustment
-      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      // Use pricingCountry which is 'GB' for VPN users (full price) or actual country for PPP
+      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, pricingCountry);
       const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
         const normalizedType = normalizeAssessmentId(type);
         const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        return sum + getPPPAdjustedPriceInPence(originalPrice, userCountry);
+        return sum + getPPPAdjustedPriceInPence(originalPrice, pricingCountry);
       }, 0);
       const priceInPence = adjustedBaseFee + assessmentsTotal;
       const totalAssessmentCount = requiredAssessmentTypes.length;
@@ -1042,9 +1045,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, create Stripe checkout session for results payment
-      // Charge in user's local currency
-      let stripeCurrency = getStripeCurrencyCode(userCountry);
-      let currencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      // Charge in user's local currency (based on currencyCountry)
+      let stripeCurrency = getStripeCurrencyCode(currencyCountry);
+      let currencyCode = COUNTRY_CURRENCY_MAP[currencyCountry.toUpperCase()] || 'GBP';
       
       // Fetch live exchange rates to match frontend display prices
       const exchangeRatesData = await getExchangeRates();
@@ -1053,15 +1056,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate Stripe amount: sum individually-rounded local prices
       // This matches frontend display where each component is rounded then summed
       
-      // Get rounded local price for platform fee
+      // Get rounded local price for platform fee (using pricingCountry for PPP)
       const platformFeeLocal = convertPenceToRoundedLocalCurrency(adjustedBaseFee, currencyCode, liveExchangeRate);
       
-      // Sum rounded local prices for each assessment
+      // Sum rounded local prices for each assessment (using pricingCountry for PPP)
       let assessmentsTotalLocal = 0;
       for (const type of requiredAssessmentTypes) {
         const normalizedType = normalizeAssessmentId(type);
         const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        const adjustedPence = getPPPAdjustedPriceInPence(originalPrice, userCountry);
+        const adjustedPence = getPPPAdjustedPriceInPence(originalPrice, pricingCountry);
         assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(adjustedPence, currencyCode, liveExchangeRate);
       }
       
@@ -1074,7 +1077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
-      console.log(`[Results Payment Debug] Country: ${userCountry}, Currency: ${currencyCode}`);
+      console.log(`[Results Payment Debug] PricingCountry: ${pricingCountry}, CurrencyCountry: ${currencyCountry}, isVPN: ${isVPN}`);
       console.log(`[Results Payment Debug] Exchange rate: ${liveExchangeRate}`);
       console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
       console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
@@ -1102,9 +1105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: userId.toString(),
           purchaseId: unpaidPurchase.id.toString(),
           isResultsPayment: 'true',
-          countryCode: userCountry,
+          countryCode: currencyCountry,
           pricingTier,
           localCurrency: currencyCode,
+          isVPN: isVPN ? 'true' : 'false',
         },
       });
       

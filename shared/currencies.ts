@@ -960,16 +960,10 @@ export function formatPriceWithRate(
 }
 
 // Get price in pence after PPP adjustment (for Stripe checkout)
-// For SEA launch countries, this returns the fixed SEA price (ignores priceInPence input)
+// All countries now use PPP tier pricing (SEA launch fixed pricing deprecated)
 export function getPPPAdjustedPriceInPence(priceInPence: number, countryCode: string): number {
-  // Check if this is a SEA launch country with fixed pricing
-  const seaPriceInPence = getSEALaunchPriceInPence(countryCode);
-  if (seaPriceInPence !== null) {
-    // SEA launch countries use fixed pricing regardless of input
-    return seaPriceInPence;
-  }
-  
-  // Non-SEA countries use PPP multiplier
+  // All countries use PPP multiplier based on their tier
+  // SEA countries (PH, VN, ID, MY) are now tier3 with 0.5x multiplier
   const pppMultiplier = getPPPMultiplier(countryCode);
   return Math.round(priceInPence * pppMultiplier);
 }
