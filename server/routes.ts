@@ -8,7 +8,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -423,6 +423,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Invalid form data" 
         });
       }
+      res.status(500).json({ 
+        message: "Failed to send message. Please try again later." 
+      });
+    }
+  });
+
+  // General enquiry form endpoint (for footer contact form)
+  app.post("/api/general-enquiry", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      // Check rate limit (reuse same rate limiter)
+      const rateLimitData = contactFormRateLimiter.get(ip);
+      if (rateLimitData) {
+        if (now < rateLimitData.resetTime) {
+          if (rateLimitData.count >= 5) {
+            return res.status(429).json({ 
+              message: "Too many requests. Please try again later." 
+            });
+          }
+          rateLimitData.count += 1;
+        } else {
+          contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+        }
+      } else {
+        contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+      }
+
+      // Validate request body
+      const { name, email, subject, message } = req.body;
+      
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      if (typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+
+      // Send email
+      const result = await sendGeneralEnquiryEmail({ name, email, subject, message });
+
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: "Message sent successfully" 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to send message. Please try again later." 
+        });
+      }
+    } catch (error: any) {
+      console.error("General enquiry form error:", error);
       res.status(500).json({ 
         message: "Failed to send message. Please try again later." 
       });

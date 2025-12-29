@@ -1435,3 +1435,92 @@ If you have any questions, contact us at hello@humanmetrix.co.uk
     return { success: false };
   }
 }
+
+// Send general enquiry email from footer contact form to hello@humanmetrix.co.uk
+export async function sendGeneralEnquiryEmail(details: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn('General enquiry email not sent - email not configured');
+    return { success: false };
+  }
+
+  const mailOptions = {
+    from: `"HumanMetrix Website" <${process.env.GMAIL_USER}>`,
+    to: 'hello@humanmetrix.co.uk',
+    replyTo: details.email,
+    subject: `Website Enquiry: ${details.subject}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 25px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+            .field { margin-bottom: 15px; }
+            .label { font-weight: 600; color: #374151; }
+            .value { margin-top: 5px; }
+            .message-box { background: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #0891b2; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 22px;">New Website Enquiry</h1>
+            </div>
+            <div class="content">
+              <div class="field">
+                <div class="label">From:</div>
+                <div class="value">${details.name}</div>
+              </div>
+              <div class="field">
+                <div class="label">Email:</div>
+                <div class="value"><a href="mailto:${details.email}">${details.email}</a></div>
+              </div>
+              <div class="field">
+                <div class="label">Subject:</div>
+                <div class="value">${details.subject}</div>
+              </div>
+              <div class="message-box">
+                <div class="label">Message:</div>
+                <div class="value" style="white-space: pre-wrap; margin-top: 10px;">${details.message}</div>
+              </div>
+              <p style="margin-top: 25px; color: #6b7280; font-size: 13px;">
+                This message was sent via the HumanMetrix website contact form.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+New Website Enquiry
+
+From: ${details.name}
+Email: ${details.email}
+Subject: ${details.subject}
+
+Message:
+${details.message}
+
+---
+This message was sent via the HumanMetrix website contact form.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ General enquiry email sent (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send general enquiry email:`, error.message);
+    return { success: false };
+  }
+}
