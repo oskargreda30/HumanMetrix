@@ -500,7 +500,7 @@ export function registerPartnerRoutes(app: Express) {
         
         const partner = await storage.getPartnerAccount(session.partnerId);
         
-        res.json({
+        const response: any = {
           sessionId: session.id,
           assessmentType: session.assessmentType,
           status: session.status,
@@ -509,7 +509,21 @@ export function registerPartnerRoutes(app: Express) {
           partnerName: partner?.companyName || partner?.name,
           expiresAt: session.expiresAt,
           questionLocale: session.questionLocale || 'default',
-        });
+        };
+        
+        if (partner?.brandingEnabled) {
+          response.branding = {
+            enabled: true,
+            primaryColor: partner.brandingPrimaryColor || '#0891b2',
+            accentColor: partner.brandingAccentColor || '#06b6d4',
+            logoUrl: partner.logoUrl || null,
+            welcomeTitle: partner.brandingWelcomeTitle || null,
+            welcomeMessage: partner.brandingWelcomeMessage || null,
+            companyDisplayName: partner.brandingCompanyDisplayName || partner.companyName || partner.name,
+          };
+        }
+        
+        res.json(response);
       } catch (error) {
         console.error("Error fetching session:", error);
         res.status(500).json({ error: "Failed to fetch session" });

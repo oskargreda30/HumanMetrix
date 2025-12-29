@@ -11,6 +11,16 @@ import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 
+interface PartnerBranding {
+  enabled: boolean;
+  primaryColor: string;
+  accentColor: string;
+  logoUrl?: string | null;
+  welcomeTitle?: string | null;
+  welcomeMessage?: string | null;
+  companyDisplayName?: string | null;
+}
+
 interface SessionData {
   sessionId: string;
   assessmentType: string;
@@ -19,6 +29,7 @@ interface SessionData {
   externalEmail?: string;
   partnerName?: string;
   questionLocale?: QuestionLocale;
+  branding?: PartnerBranding;
 }
 
 type Question = {
@@ -271,16 +282,27 @@ export default function EmbedAssessment() {
   }
 
   if (status === "completed") {
+    const branding = session?.branding;
+    const accentColor = branding?.accentColor || '#06b6d4';
+    const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
+    
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-completed">
         <Card className={`max-w-md ${bgCard} border-green-500/30`}>
           <CardContent className="pt-6 text-center">
+            {branding?.logoUrl && (
+              <img 
+                src={branding.logoUrl} 
+                alt={displayName}
+                className="h-10 max-w-[150px] object-contain mx-auto mb-4"
+              />
+            )}
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Assessment Complete</h2>
             <p className={`${textSecondary} mb-4`}>Thank you for completing the assessment.</p>
             {completedScores && (
               <div className={`${bgCardAlt} rounded-lg p-4`}>
-                <p className="text-lg font-semibold text-cyan-400">
+                <p className="text-lg font-semibold" style={{ color: accentColor }}>
                   Score: {completedScores.totalScore}%
                 </p>
               </div>
@@ -292,20 +314,48 @@ export default function EmbedAssessment() {
   }
 
   if (status === "ready") {
+    const branding = session?.branding;
+    const primaryColor = branding?.primaryColor || '#0891b2';
+    const accentColor = branding?.accentColor || '#06b6d4';
+    const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
+    const welcomeTitle = branding?.welcomeTitle;
+    const welcomeMessage = branding?.welcomeMessage;
+    
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
         <Card className={`max-w-lg ${bgCard}`}>
           <CardHeader className="text-center">
-            <Badge className="mb-2 mx-auto bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              HumanMetrix
-            </Badge>
+            {branding?.logoUrl ? (
+              <img 
+                src={branding.logoUrl} 
+                alt={displayName}
+                className="h-12 max-w-[200px] object-contain mx-auto mb-2"
+                data-testid="img-partner-logo"
+              />
+            ) : (
+              <Badge 
+                className="mb-2 mx-auto border"
+                style={{ 
+                  backgroundColor: `${accentColor}20`,
+                  color: accentColor,
+                  borderColor: `${accentColor}4D`
+                }}
+                data-testid="badge-partner-name"
+              >
+                {displayName}
+              </Badge>
+            )}
             <CardTitle className={`text-2xl ${textPrimary}`}>
-              {session && getAssessmentDisplayName(session.assessmentType)}
+              {welcomeTitle || (session && getAssessmentDisplayName(session.assessmentType))}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className={`${textSecondary} space-y-3`}>
-              <p>You are about to begin an assessment with {questions.length} questions.</p>
+              {welcomeMessage ? (
+                <p>{welcomeMessage}</p>
+              ) : (
+                <p>You are about to begin an assessment with {questions.length} questions.</p>
+              )}
               <ul className={`list-disc list-inside text-sm space-y-1 ${textMuted}`}>
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
@@ -315,7 +365,8 @@ export default function EmbedAssessment() {
             </div>
             <Button
               onClick={startAssessment}
-              className="w-full bg-cyan-600 hover:bg-cyan-700"
+              className="w-full"
+              style={{ backgroundColor: primaryColor }}
               data-testid="button-start-assessment"
             >
               Start Assessment
@@ -326,19 +377,30 @@ export default function EmbedAssessment() {
     );
   }
 
+  const branding = session?.branding;
+  const primaryColor = branding?.primaryColor || '#0891b2';
+  const accentColor = branding?.accentColor || '#06b6d4';
+
   return (
     <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+            <Badge 
+              className="border"
+              style={{ 
+                backgroundColor: `${accentColor}20`,
+                color: accentColor,
+                borderColor: `${accentColor}4D`
+              }}
+            >
               {session && getAssessmentDisplayName(session.assessmentType)}
             </Badge>
             <span className={`text-sm ${textMuted}`}>
               Question {currentIndex + 1} of {questions.length}
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2" style={{ '--progress-color': primaryColor } as any} />
         </div>
 
         <Card className={bgCard}>
@@ -437,7 +499,7 @@ export default function EmbedAssessment() {
             <Button
               onClick={handleNext}
               disabled={!hasAnswered}
-              className="bg-cyan-600 hover:bg-cyan-700"
+              style={{ backgroundColor: primaryColor }}
               data-testid="button-next"
             >
               Next
