@@ -1898,258 +1898,253 @@ export default function PartnerDashboard() {
 
             {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">Assessment Analytics</h2>
-                  <p className="text-muted-foreground">Visualize your assessment usage and performance</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Select value={analyticsPeriod} onValueChange={(v: 'daily' | 'weekly' | 'monthly') => setAnalyticsPeriod(v)}>
-                    <SelectTrigger className="w-32" data-testid="select-analytics-period">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={analyticsDays.toString()} onValueChange={(v) => setAnalyticsDays(parseInt(v))}>
-                    <SelectTrigger className="w-32" data-testid="select-analytics-days">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">Last 7 days</SelectItem>
-                      <SelectItem value="30">Last 30 days</SelectItem>
-                      <SelectItem value="90">Last 90 days</SelectItem>
-                      <SelectItem value="365">Last year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/results', '_blank')} data-testid="button-export-results">
-                      <FileText className="h-4 w-4 mr-1.5" />
-                      Export Results
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/usage', '_blank')} data-testid="button-export-usage">
-                      <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-                      Export Usage
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/billing', '_blank')} data-testid="button-export-billing">
-                      <Receipt className="h-4 w-4 mr-1.5" />
-                      Export Billing
-                    </Button>
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 flex-wrap">
+                  <div>
+                    <CardTitle>Assessment Analytics</CardTitle>
+                    <CardDescription>Visualize your assessment usage and performance</CardDescription>
                   </div>
-                </div>
-              </div>
-
-              {analyticsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : analytics ? (
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {/* Tests Over Time Chart */}
-                  <Card className="lg:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Tests Completed Over Time</CardTitle>
-                      <CardDescription>Number of assessments completed per {analyticsPeriod === 'daily' ? 'day' : analyticsPeriod === 'weekly' ? 'week' : 'month'}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-80">
-                      {analytics.testsOverTime.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={analytics.testsOverTime}>
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis dataKey="date" className="text-xs" />
-                            <YAxis className="text-xs" />
-                            <Tooltip />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                          No data available for this period
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <Select value={analyticsPeriod} onValueChange={(v: 'daily' | 'weekly' | 'monthly') => setAnalyticsPeriod(v)}>
+                      <SelectTrigger className="w-32" data-testid="select-analytics-period">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={analyticsDays.toString()} onValueChange={(v) => setAnalyticsDays(parseInt(v))}>
+                      <SelectTrigger className="w-32" data-testid="select-analytics-days">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="90">Last 90 days</SelectItem>
+                        <SelectItem value="365">Last year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/results', '_blank')} data-testid="button-export-results">
+                        <FileText className="h-4 w-4 mr-1.5" />
+                        Export Results
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/usage', '_blank')} data-testid="button-export-usage">
+                        <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+                        Export Usage
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.open('/api/partner/me/export/billing', '_blank')} data-testid="button-export-billing">
+                        <Receipt className="h-4 w-4 mr-1.5" />
+                        Export Billing
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {analyticsLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : analytics ? (
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      {/* Tests Over Time Chart */}
+                      <div className="lg:col-span-2 border rounded-lg p-4">
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold">Tests Completed Over Time</h3>
+                          <p className="text-sm text-muted-foreground">Number of assessments completed per {analyticsPeriod === 'daily' ? 'day' : analyticsPeriod === 'weekly' ? 'week' : 'month'}</p>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                        <div className="h-80">
+                          {analytics.testsOverTime.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={analytics.testsOverTime}>
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                <XAxis dataKey="date" className="text-xs" />
+                                <YAxis className="text-xs" />
+                                <Tooltip />
+                                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground">
+                              No data available for this period
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* By Assessment Type */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">By Assessment Type</CardTitle>
-                      <CardDescription>Breakdown of tests by type with average scores</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {analytics.byAssessmentType.length > 0 ? (
-                        <div className="space-y-4">
-                          {analytics.byAssessmentType.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">{item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-                                <p className="text-sm text-muted-foreground">{item.count} tests</p>
+                      {/* By Assessment Type */}
+                      <div className="border rounded-lg p-4">
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold">By Assessment Type</h3>
+                          <p className="text-sm text-muted-foreground">Breakdown of tests by type with average scores</p>
+                        </div>
+                        {analytics.byAssessmentType.length > 0 ? (
+                          <div className="space-y-4">
+                            {analytics.byAssessmentType.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium">{item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                                  <p className="text-sm text-muted-foreground">{item.count} tests</p>
+                                </div>
+                                {item.avgScore !== null && (
+                                  <Badge variant="secondary">Avg: {item.avgScore}%</Badge>
+                                )}
                               </div>
-                              {item.avgScore !== null && (
-                                <Badge variant="secondary">Avg: {item.avgScore}%</Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground">No assessment data</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No assessment data</p>
+                        )}
+                      </div>
 
-                  {/* By Organization */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">By Organization</CardTitle>
-                      <CardDescription>Test distribution across organizations</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {analytics.byOrganization.length > 0 ? (
-                        <div className="space-y-4">
-                          {analytics.byOrganization.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between">
-                              <p className="font-medium">{item.orgName}</p>
-                              <Badge variant="outline">{item.count} tests</Badge>
-                            </div>
-                          ))}
+                      {/* By Organization */}
+                      <div className="border rounded-lg p-4">
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold">By Organization</h3>
+                          <p className="text-sm text-muted-foreground">Test distribution across organizations</p>
                         </div>
-                      ) : (
-                        <p className="text-muted-foreground">No organization data</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    No analytics data available
-                  </CardContent>
-                </Card>
-              )}
+                        {analytics.byOrganization.length > 0 ? (
+                          <div className="space-y-4">
+                            {analytics.byOrganization.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <p className="font-medium">{item.orgName}</p>
+                                <Badge variant="outline">{item.count} tests</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No organization data</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-muted-foreground">
+                      No analytics data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">Notifications</h2>
-                  <p className="text-muted-foreground">Stay updated with your account activity</p>
-                </div>
-                {notifications?.unreadCount && notifications.unreadCount > 0 && (
-                  <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} data-testid="button-mark-all-read">
-                    <Check className="h-4 w-4 mr-1.5" />
-                    Mark All Read
-                  </Button>
-                )}
-              </div>
-
-              {notificationsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : notifications?.notifications && notifications.notifications.length > 0 ? (
-                <div className="space-y-3">
-                  {notifications.notifications.map((notif) => (
-                    <Card key={notif.id} className={notif.isRead ? 'opacity-60' : ''}>
-                      <CardContent className="py-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-full ${
-                              notif.type.includes('warning') || notif.type.includes('critical') 
-                                ? 'bg-amber-500/10 text-amber-500' 
-                                : notif.type.includes('success') || notif.type.includes('purchase')
-                                  ? 'bg-green-500/10 text-green-500'
-                                  : 'bg-primary/10 text-primary'
-                            }`}>
-                              <Bell className="h-4 w-4" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                  <div>
+                    <CardTitle>Notifications</CardTitle>
+                    <CardDescription>Stay updated with your account activity</CardDescription>
+                  </div>
+                  {notifications?.unreadCount && notifications.unreadCount > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} data-testid="button-mark-all-read">
+                      <Check className="h-4 w-4 mr-1.5" />
+                      Mark All Read
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {notificationsLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : notifications?.notifications && notifications.notifications.length > 0 ? (
+                    <div className="space-y-3">
+                      {notifications.notifications.map((notif) => (
+                        <div key={notif.id} className={`p-4 border rounded-lg ${notif.isRead ? 'opacity-60' : ''}`}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-full ${
+                                notif.type.includes('warning') || notif.type.includes('critical') 
+                                  ? 'bg-amber-500/10 text-amber-500' 
+                                  : notif.type.includes('success') || notif.type.includes('purchase')
+                                    ? 'bg-green-500/10 text-green-500'
+                                    : 'bg-primary/10 text-primary'
+                              }`}>
+                                <Bell className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{notif.title}</p>
+                                <p className="text-sm text-muted-foreground">{notif.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {formatDate(notif.createdAt)}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{notif.title}</p>
-                              <p className="text-sm text-muted-foreground">{notif.message}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {formatDate(notif.createdAt)}
-                              </p>
-                            </div>
+                            {!notif.isRead && (
+                              <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate(notif.id)} data-testid={`button-mark-read-${notif.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          {!notif.isRead && (
-                            <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate(notif.id)} data-testid={`button-mark-read-${notif.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No notifications yet</p>
-                  </CardContent>
-                </Card>
-              )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No notifications yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Team Tab */}
             <TabsContent value="team" className="space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">Team Members</h2>
-                  <p className="text-muted-foreground">Manage access to your partner account</p>
-                </div>
-                <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Invite Member
-                </Button>
-              </div>
-
-              {teamLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : team?.members && team.members.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {team.members.map((member) => (
-                    <Card key={member.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium">{member.name || member.email}</p>
-                            <p className="text-sm text-muted-foreground">{member.email}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant={member.inviteStatus === 'accepted' ? 'secondary' : 'outline'}>
-                                {member.inviteStatus === 'accepted' ? 'Active' : 'Pending'}
-                              </Badge>
-                              <Badge variant="outline" className="capitalize">{member.role}</Badge>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                  <div>
+                    <CardTitle>Team Members</CardTitle>
+                    <CardDescription>Manage access to your partner account</CardDescription>
+                  </div>
+                  <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Invite Member
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {teamLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : team?.members && team.members.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {team.members.map((member) => (
+                        <div key={member.id} className="p-4 border rounded-lg">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-medium">{member.name || member.email}</p>
+                              <p className="text-sm text-muted-foreground">{member.email}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant={member.inviteStatus === 'accepted' ? 'secondary' : 'outline'}>
+                                  {member.inviteStatus === 'accepted' ? 'Active' : 'Pending'}
+                                </Badge>
+                                <Badge variant="outline" className="capitalize">{member.role}</Badge>
+                              </div>
                             </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => removeMemberMutation.mutate(member.id)}
+                              disabled={removeMemberMutation.isPending}
+                              data-testid={`button-remove-member-${member.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeMemberMutation.mutate(member.id)}
-                            disabled={removeMemberMutation.isPending}
-                            data-testid={`button-remove-member-${member.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No team members yet</p>
-                    <p className="text-sm mt-1">Invite team members to help manage your account</p>
-                  </CardContent>
-                </Card>
-              )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No team members yet</p>
+                      <p className="text-sm mt-1">Invite team members to help manage your account</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Invite Dialog */}
               <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
