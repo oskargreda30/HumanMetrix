@@ -1497,7 +1497,10 @@ export class DatabaseStorage implements IStorage {
 
   async getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {
     return await db.select().from(partnerApiKeys)
-      .where(eq(partnerApiKeys.partnerId, partnerId))
+      .where(and(
+        eq(partnerApiKeys.partnerId, partnerId),
+        eq(partnerApiKeys.isActive, true)
+      ))
       .orderBy(desc(partnerApiKeys.createdAt));
   }
 
