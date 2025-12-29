@@ -9,6 +9,7 @@ import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
 import quinPhoto from "@assets/image_1767042222400.png";
 import reynalynPhoto from "@assets/image_1767042236125.png";
+import dashboardBg from "@assets/image_1763608498774.png";
 
 interface TeamMember {
   name: string;
@@ -118,14 +119,30 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
 
 export default function Team() {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col relative">
       <Helmet>
         <title>Our Team | HumanMetrix</title>
         <meta name="description" content="Meet the team behind HumanMetrix - experts in AI, HR, technology, and business development building the future of talent assessment." />
       </Helmet>
 
+      {/* Background image with light grey overlay */}
+      <div className="fixed inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(241, 245, 249, 0.92), rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.92))'
+        }} />
+      </div>
+
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="relative z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/">
             <Button variant="ghost" size="sm" data-testid="button-back-home">
@@ -137,7 +154,7 @@ export default function Team() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 container mx-auto px-4 py-12 md:py-20">
+      <main className="relative z-10 flex-1 container mx-auto px-4 py-12 md:py-20">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4" data-testid="text-team-heading">
             Meet Our Team
@@ -155,7 +172,9 @@ export default function Team() {
         </div>
       </main>
 
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }
