@@ -1532,6 +1532,114 @@ export default function PartnerDashboard() {
                     </Card>
                   </div>
 
+                  {/* Usage Forecasting */}
+                  {(() => {
+                    const monthlyData = usage.monthlyUsage || [];
+                    const recentMonths = monthlyData.slice(-3);
+                    const avgUsage = recentMonths.length > 0 
+                      ? Math.round(recentMonths.reduce((sum, m) => sum + m.sessions, 0) / recentMonths.length)
+                      : 0;
+                    const projectedNextMonth = Math.round(avgUsage * 1.1); // 10% growth assumption
+                    const remaining = partner?.remaining || 0;
+                    const monthsUntilEmpty = avgUsage > 0 ? Math.floor(remaining / avgUsage) : null;
+                    const runOutDate = monthsUntilEmpty !== null && monthsUntilEmpty < 12
+                      ? new Date(Date.now() + monthsUntilEmpty * 30 * 24 * 60 * 60 * 1000)
+                      : null;
+
+                    return (
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <TrendingUp className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg">Usage Forecast</CardTitle>
+                                <CardDescription>Projected usage based on your recent activity</CardDescription>
+                              </div>
+                            </div>
+                            {monthsUntilEmpty !== null && monthsUntilEmpty <= 2 && (
+                              <Badge variant="destructive" className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Low Credits
+                              </Badge>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div className="p-4 rounded-lg bg-muted/30 border">
+                              <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <BarChart3 className="h-3 w-3" />
+                                Avg. Monthly Usage
+                              </div>
+                              <div className="text-2xl font-bold" data-testid="text-avg-usage">
+                                {avgUsage}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Based on last {recentMonths.length} month{recentMonths.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+
+                            <div className="p-4 rounded-lg bg-muted/30 border">
+                              <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3" />
+                                Next Month Projection
+                              </div>
+                              <div className="text-2xl font-bold text-primary" data-testid="text-projected-usage">
+                                {projectedNextMonth}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Estimated tests needed
+                              </p>
+                            </div>
+
+                            <div className="p-4 rounded-lg bg-muted/30 border">
+                              <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Credits Runway
+                              </div>
+                              <div className={`text-2xl font-bold ${monthsUntilEmpty !== null && monthsUntilEmpty <= 2 ? 'text-destructive' : monthsUntilEmpty !== null && monthsUntilEmpty <= 4 ? 'text-amber-500' : ''}`} data-testid="text-runway">
+                                {monthsUntilEmpty === null ? '12+ months' : monthsUntilEmpty === 0 ? 'This month' : `${monthsUntilEmpty} month${monthsUntilEmpty !== 1 ? 's' : ''}`}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {runOutDate ? `Until ~${runOutDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : 'At current rate'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {monthsUntilEmpty !== null && monthsUntilEmpty <= 3 && (
+                            <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                <span className="text-sm">
+                                  {monthsUntilEmpty === 0 
+                                    ? 'Your credits may run out this month. Consider purchasing more.'
+                                    : `Based on your usage, you'll need more credits in ${monthsUntilEmpty} month${monthsUntilEmpty !== 1 ? 's' : ''}.`
+                                  }
+                                </span>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                onClick={() => setActiveTab('billing')}
+                                data-testid="button-buy-credits"
+                              >
+                                Buy Credits
+                              </Button>
+                            </div>
+                          )}
+
+                          {avgUsage === 0 && (
+                            <div className="mt-4 p-3 rounded-lg bg-muted/50 border text-center text-sm text-muted-foreground">
+                              Not enough usage data to generate accurate forecasts. Continue using assessments to build your forecast.
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Monthly Usage Trend</CardTitle>
