@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette } from "lucide-react";
 import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -93,6 +94,13 @@ interface PartnerSettings {
     autoTopUpEnabled: boolean;
     autoTopUpThreshold: number;
     autoTopUpPackage: string | null;
+    brandingEnabled: boolean;
+    brandingPrimaryColor: string;
+    brandingAccentColor: string;
+    brandingWelcomeTitle: string;
+    brandingWelcomeMessage: string;
+    brandingCompanyDisplayName: string;
+    logoUrl: string;
     billingType: string;
     billingEmail: string;
   };
@@ -323,6 +331,14 @@ export default function PartnerDashboard() {
   const [autoTopUpEnabled, setAutoTopUpEnabled] = useState(false);
   const [autoTopUpThreshold, setAutoTopUpThreshold] = useState(10);
   const [autoTopUpPackage, setAutoTopUpPackage] = useState<string | null>(null);
+  // Branding settings state
+  const [brandingEnabled, setBrandingEnabled] = useState(false);
+  const [brandingPrimaryColor, setBrandingPrimaryColor] = useState("#0891b2");
+  const [brandingAccentColor, setBrandingAccentColor] = useState("#06b6d4");
+  const [brandingWelcomeTitle, setBrandingWelcomeTitle] = useState("");
+  const [brandingWelcomeMessage, setBrandingWelcomeMessage] = useState("");
+  const [brandingCompanyDisplayName, setBrandingCompanyDisplayName] = useState("");
+  const [brandingLogoUrl, setBrandingLogoUrl] = useState("");
   
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
@@ -426,6 +442,14 @@ export default function PartnerDashboard() {
       setAutoTopUpEnabled(settings.settings.autoTopUpEnabled);
       setAutoTopUpThreshold(settings.settings.autoTopUpThreshold);
       setAutoTopUpPackage(settings.settings.autoTopUpPackage);
+      // Branding settings
+      setBrandingEnabled(settings.settings.brandingEnabled ?? false);
+      setBrandingPrimaryColor(settings.settings.brandingPrimaryColor || '#0891b2');
+      setBrandingAccentColor(settings.settings.brandingAccentColor || '#06b6d4');
+      setBrandingWelcomeTitle(settings.settings.brandingWelcomeTitle || '');
+      setBrandingWelcomeMessage(settings.settings.brandingWelcomeMessage || '');
+      setBrandingCompanyDisplayName(settings.settings.brandingCompanyDisplayName || '');
+      setBrandingLogoUrl(settings.settings.logoUrl || '');
     }
   };
 
@@ -507,6 +531,13 @@ export default function PartnerDashboard() {
       autoTopUpEnabled: boolean;
       autoTopUpThreshold: number;
       autoTopUpPackage: string | null;
+      brandingEnabled: boolean;
+      brandingPrimaryColor: string;
+      brandingAccentColor: string;
+      brandingWelcomeTitle: string;
+      brandingWelcomeMessage: string;
+      brandingCompanyDisplayName: string;
+      logoUrl: string;
     }>) => {
       const response = await apiRequest("PATCH", "/api/partner/me/settings", data);
       return response.json();
@@ -725,6 +756,13 @@ export default function PartnerDashboard() {
       autoTopUpEnabled,
       autoTopUpThreshold,
       autoTopUpPackage,
+      brandingEnabled,
+      brandingPrimaryColor,
+      brandingAccentColor,
+      brandingWelcomeTitle,
+      brandingWelcomeMessage,
+      brandingCompanyDisplayName,
+      logoUrl: brandingLogoUrl,
     });
   };
 
@@ -2320,6 +2358,195 @@ export default function PartnerDashboard() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* White-Label Branding Settings */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Palette className="h-5 w-5" />
+                        White-Label Branding
+                      </CardTitle>
+                      <CardDescription>
+                        Customize the assessment experience with your company branding for candidates
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="branding-enabled">Enable white-label branding</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Show your branding instead of HumanMetrix branding to candidates
+                          </p>
+                        </div>
+                        <Switch
+                          id="branding-enabled"
+                          checked={brandingEnabled}
+                          onCheckedChange={setBrandingEnabled}
+                          data-testid="switch-branding-enabled"
+                        />
+                      </div>
+
+                      {brandingEnabled && (
+                        <>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="branding-display-name">Display Name</Label>
+                              <Input
+                                id="branding-display-name"
+                                placeholder="Your Company Name"
+                                value={brandingCompanyDisplayName}
+                                onChange={(e) => setBrandingCompanyDisplayName(e.target.value)}
+                                maxLength={100}
+                                data-testid="input-branding-display-name"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Shown to candidates during assessments
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="branding-logo">Logo URL</Label>
+                              <Input
+                                id="branding-logo"
+                                type="url"
+                                placeholder="https://your-company.com/logo.png"
+                                value={brandingLogoUrl}
+                                onChange={(e) => setBrandingLogoUrl(e.target.value)}
+                                data-testid="input-branding-logo"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Direct URL to your company logo (PNG/SVG recommended)
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="branding-primary-color">Primary Color</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  id="branding-primary-color"
+                                  type="color"
+                                  value={brandingPrimaryColor}
+                                  onChange={(e) => setBrandingPrimaryColor(e.target.value)}
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  data-testid="input-branding-primary-color"
+                                />
+                                <Input
+                                  value={brandingPrimaryColor}
+                                  onChange={(e) => setBrandingPrimaryColor(e.target.value)}
+                                  placeholder="#0891b2"
+                                  className="flex-1 font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="branding-accent-color">Accent Color</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  id="branding-accent-color"
+                                  type="color"
+                                  value={brandingAccentColor}
+                                  onChange={(e) => setBrandingAccentColor(e.target.value)}
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  data-testid="input-branding-accent-color"
+                                />
+                                <Input
+                                  value={brandingAccentColor}
+                                  onChange={(e) => setBrandingAccentColor(e.target.value)}
+                                  placeholder="#06b6d4"
+                                  className="flex-1 font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="branding-welcome-title">Welcome Title</Label>
+                            <Input
+                              id="branding-welcome-title"
+                              placeholder="Welcome to Your Assessment"
+                              value={brandingWelcomeTitle}
+                              onChange={(e) => setBrandingWelcomeTitle(e.target.value)}
+                              maxLength={100}
+                              data-testid="input-branding-welcome-title"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="branding-welcome-message">Welcome Message</Label>
+                            <Textarea
+                              id="branding-welcome-message"
+                              placeholder="A personalized message for candidates before they start their assessment..."
+                              value={brandingWelcomeMessage}
+                              onChange={(e) => setBrandingWelcomeMessage(e.target.value)}
+                              maxLength={500}
+                              rows={3}
+                              data-testid="input-branding-welcome-message"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {brandingWelcomeMessage.length}/500 characters
+                            </p>
+                          </div>
+
+                          {/* Preview */}
+                          <div className="border rounded-lg p-4 bg-muted/30">
+                            <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              Preview
+                            </p>
+                            <div 
+                              className="p-4 rounded-lg border-2"
+                              style={{ borderColor: brandingPrimaryColor }}
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                {brandingLogoUrl ? (
+                                  <img 
+                                    src={brandingLogoUrl} 
+                                    alt="Logo preview" 
+                                    className="h-10 w-auto max-w-[120px] object-contain"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <div 
+                                    className="h-10 w-10 rounded flex items-center justify-center text-white font-bold"
+                                    style={{ backgroundColor: brandingPrimaryColor }}
+                                  >
+                                    {(brandingCompanyDisplayName || 'C').charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="font-semibold">
+                                  {brandingCompanyDisplayName || 'Your Company'}
+                                </span>
+                              </div>
+                              <h3 
+                                className="font-semibold text-lg mb-1"
+                                style={{ color: brandingPrimaryColor }}
+                              >
+                                {brandingWelcomeTitle || 'Welcome to Your Assessment'}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {brandingWelcomeMessage || 'Your personalized welcome message will appear here...'}
+                              </p>
+                              <Button 
+                                size="sm" 
+                                className="mt-3"
+                                style={{ 
+                                  backgroundColor: brandingPrimaryColor,
+                                  borderColor: brandingPrimaryColor 
+                                }}
+                              >
+                                Start Assessment
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   <div className="flex justify-end">
                     <Button
