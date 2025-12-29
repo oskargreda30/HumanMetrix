@@ -819,6 +819,149 @@ export default function PartnerDashboard() {
 
             {/* Home Tab */}
             <TabsContent value="home" className="space-y-6">
+              {/* Getting Started Guide */}
+              {(() => {
+                const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
+                const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
+                const hasOrganization = (organizations?.organizations?.length ?? 0) > 0;
+                const hasWebhook = false; // Would need webhook data
+                const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
+                
+                const completedSteps = [hasApiKey, hasAssessment, hasOrganization, hasTeamMember].filter(Boolean).length;
+                const totalSteps = 4;
+                const allComplete = completedSteps === totalSteps;
+                
+                // Hide if all steps are complete
+                if (allComplete) return null;
+                
+                return (
+                  <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Getting Started</CardTitle>
+                            <CardDescription>Complete these steps to get the most out of HumanMetrix</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-sm" data-testid="badge-setup-progress">
+                          {completedSteps}/{totalSteps} complete
+                        </Badge>
+                      </div>
+                      <Progress value={(completedSteps / totalSteps) * 100} className="h-2 mt-3" data-testid="progress-setup" />
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {/* Step 1: Create API Key */}
+                        <button
+                          onClick={() => setActiveTab('api-keys')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            hasApiKey ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
+                          }`}
+                          data-testid="setup-step-api-key"
+                        >
+                          <div className={`p-1.5 rounded-full ${hasApiKey ? 'bg-green-500/20' : 'bg-muted'}`}>
+                            {hasApiKey ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Key className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-sm ${hasApiKey ? 'text-green-700 dark:text-green-400' : ''}`}>
+                              Create an API key
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {hasApiKey ? 'API key created' : 'Required to send assessments'}
+                            </div>
+                          </div>
+                          {!hasApiKey && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        </button>
+
+                        {/* Step 2: Send First Assessment */}
+                        <div
+                          className={`flex items-center gap-3 p-3 rounded-lg border ${
+                            hasAssessment ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
+                          }`}
+                          data-testid="setup-step-assessment"
+                        >
+                          <div className={`p-1.5 rounded-full ${hasAssessment ? 'bg-green-500/20' : 'bg-muted'}`}>
+                            {hasAssessment ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-sm ${hasAssessment ? 'text-green-700 dark:text-green-400' : ''}`}>
+                              Complete first assessment
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {hasAssessment ? `${partner?.testsConsumed} assessments completed` : 'Use the API to send an assessment'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Step 3: Create Organization */}
+                        <button
+                          onClick={() => setActiveTab('organizations')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            hasOrganization ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
+                          }`}
+                          data-testid="setup-step-organization"
+                        >
+                          <div className={`p-1.5 rounded-full ${hasOrganization ? 'bg-green-500/20' : 'bg-muted'}`}>
+                            {hasOrganization ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-sm ${hasOrganization ? 'text-green-700 dark:text-green-400' : ''}`}>
+                              Create an organization
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {hasOrganization ? `${organizations?.organizations?.length} organization(s) created` : 'Group assessments by client or department'}
+                            </div>
+                          </div>
+                          {!hasOrganization && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        </button>
+
+                        {/* Step 4: Invite Team Member */}
+                        <button
+                          onClick={() => setActiveTab('team')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            hasTeamMember ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
+                          }`}
+                          data-testid="setup-step-team"
+                        >
+                          <div className={`p-1.5 rounded-full ${hasTeamMember ? 'bg-green-500/20' : 'bg-muted'}`}>
+                            {hasTeamMember ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-sm ${hasTeamMember ? 'text-green-700 dark:text-green-400' : ''}`}>
+                              Invite team members
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {hasTeamMember ? 'Team members invited' : 'Collaborate with your colleagues'}
+                            </div>
+                          </div>
+                          {!hasTeamMember && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Usage Stats */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
