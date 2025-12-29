@@ -806,9 +806,9 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
                 Notifications
-                {notifications?.unreadCount && notifications.unreadCount > 0 && (
+                {(notifications?.unreadCount ?? 0) > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}
+                    {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
                   </span>
                 )}
               </TabsTrigger>
