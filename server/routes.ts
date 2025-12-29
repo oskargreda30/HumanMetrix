@@ -4155,6 +4155,14 @@ Format your response as JSON with this structure:
           autoTopUpEnabled: matchingPartner.autoTopUpEnabled ?? false,
           autoTopUpThreshold: matchingPartner.autoTopUpThreshold ?? 10,
           autoTopUpPackage: matchingPartner.autoTopUpPackage || null,
+          // White-label branding settings
+          brandingEnabled: matchingPartner.brandingEnabled ?? false,
+          brandingPrimaryColor: matchingPartner.brandingPrimaryColor || '#0891b2',
+          brandingAccentColor: matchingPartner.brandingAccentColor || '#06b6d4',
+          brandingWelcomeTitle: matchingPartner.brandingWelcomeTitle || '',
+          brandingWelcomeMessage: matchingPartner.brandingWelcomeMessage || '',
+          brandingCompanyDisplayName: matchingPartner.brandingCompanyDisplayName || matchingPartner.companyName || '',
+          logoUrl: matchingPartner.logoUrl || '',
           // Read-only info
           billingType: matchingPartner.billingType,
           billingEmail: matchingPartner.billingEmail || matchingPartner.email,
@@ -4197,7 +4205,12 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      const { quotaAlertEnabled, quotaAlertThreshold, quotaAlertEmail, autoTopUpEnabled, autoTopUpThreshold, autoTopUpPackage } = req.body;
+      const { 
+        quotaAlertEnabled, quotaAlertThreshold, quotaAlertEmail, 
+        autoTopUpEnabled, autoTopUpThreshold, autoTopUpPackage,
+        brandingEnabled, brandingPrimaryColor, brandingAccentColor,
+        brandingWelcomeTitle, brandingWelcomeMessage, brandingCompanyDisplayName, logoUrl
+      } = req.body;
       
       // Validate inputs
       const updates: any = {};
@@ -4226,6 +4239,45 @@ Format your response as JSON with this structure:
         
         if (autoTopUpPackage === null || ['starter', 'growth', 'professional', 'business', 'enterprise', 'enterprise_plus'].includes(autoTopUpPackage)) {
           updates.autoTopUpPackage = autoTopUpPackage;
+        }
+      }
+      
+      // White-label branding settings
+      if (typeof brandingEnabled === 'boolean') {
+        updates.brandingEnabled = brandingEnabled;
+      }
+      
+      // Validate hex color format
+      const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      
+      if (typeof brandingPrimaryColor === 'string') {
+        if (brandingPrimaryColor === '' || hexColorRegex.test(brandingPrimaryColor)) {
+          updates.brandingPrimaryColor = brandingPrimaryColor || null;
+        }
+      }
+      
+      if (typeof brandingAccentColor === 'string') {
+        if (brandingAccentColor === '' || hexColorRegex.test(brandingAccentColor)) {
+          updates.brandingAccentColor = brandingAccentColor || null;
+        }
+      }
+      
+      if (typeof brandingWelcomeTitle === 'string' && brandingWelcomeTitle.length <= 100) {
+        updates.brandingWelcomeTitle = brandingWelcomeTitle || null;
+      }
+      
+      if (typeof brandingWelcomeMessage === 'string' && brandingWelcomeMessage.length <= 500) {
+        updates.brandingWelcomeMessage = brandingWelcomeMessage || null;
+      }
+      
+      if (typeof brandingCompanyDisplayName === 'string' && brandingCompanyDisplayName.length <= 100) {
+        updates.brandingCompanyDisplayName = brandingCompanyDisplayName || null;
+      }
+      
+      if (typeof logoUrl === 'string') {
+        // Basic URL validation or allow empty string
+        if (logoUrl === '' || logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+          updates.logoUrl = logoUrl || null;
         }
       }
       
