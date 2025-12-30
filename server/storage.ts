@@ -2542,6 +2542,7 @@ export class DatabaseStorage implements IStorage {
     testsOverTime: Array<{ date: string; count: number }>;
     byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
     byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+    scoreDistribution: Array<{ type: string; buckets: Array<{ range: string; count: number }> }>;
   }> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -2594,6 +2595,43 @@ export class DatabaseStorage implements IStorage {
       .groupBy(partnerOrganisations.id, partnerOrganisations.name)
       .orderBy(sql`count(${assessmentSessions.id}) desc`);
 
+    // Score distribution by assessment type (buckets: 0-20, 21-40, 41-60, 61-80, 81-100)
+    const scoreDistributionResult = await db.select({
+      type: assessmentSessions.assessmentType,
+      score: assessmentSessions.totalScore,
+    })
+      .from(assessmentSessions)
+      .where(and(
+        eq(assessmentSessions.partnerId, partnerId),
+        eq(assessmentSessions.status, 'completed'),
+        gte(assessmentSessions.completedAt, startDate),
+        sql`${assessmentSessions.totalScore} IS NOT NULL`
+      ));
+
+    // Group scores into buckets by type
+    const scoresByType: Record<string, number[]> = {};
+    for (const row of scoreDistributionResult) {
+      if (!scoresByType[row.type]) {
+        scoresByType[row.type] = [];
+      }
+      if (row.score !== null) {
+        scoresByType[row.type].push(row.score);
+      }
+    }
+
+    const bucketRanges = ['0-20', '21-40', '41-60', '61-80', '81-100'];
+    const scoreDistribution: Array<{ type: string; buckets: Array<{ range: string; count: number }> }> = [];
+    
+    for (const type of Object.keys(scoresByType)) {
+      const scores = scoresByType[type];
+      const buckets = bucketRanges.map(range => {
+        const [min, max] = range.split('-').map(Number);
+        const count = scores.filter((s: number) => s >= min && s <= max).length;
+        return { range, count };
+      });
+      scoreDistribution.push({ type, buckets });
+    }
+
     return {
       testsOverTime: testsOverTimeResult.map(r => ({
         date: r.date ? new Date(r.date).toISOString().split('T')[0] : '',
@@ -2609,6 +2647,7 @@ export class DatabaseStorage implements IStorage {
         orgName: r.orgName || 'Unassigned',
         count: Number(r.count),
       })),
+      scoreDistribution,
     };
   }
 }

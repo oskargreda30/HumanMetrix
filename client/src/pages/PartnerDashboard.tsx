@@ -2652,6 +2652,49 @@ export default function PartnerDashboard() {
                           <p className="text-muted-foreground">No organization data</p>
                         )}
                       </div>
+
+                      {/* Score Distribution Charts */}
+                      <div className="lg:col-span-2 border rounded-lg p-4">
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">Score Distribution</h3>
+                            <InfoTooltip content="Visualize how candidates score across each assessment type. Each bar shows the number of candidates who scored within that range (0-20%, 21-40%, etc.)." />
+                          </div>
+                          <p className="text-sm text-muted-foreground">How candidates score across assessments</p>
+                        </div>
+                        {analytics.scoreDistribution && analytics.scoreDistribution.length > 0 ? (
+                          <div className="grid gap-6 md:grid-cols-2">
+                            {analytics.scoreDistribution.map((dist, i) => (
+                              <div key={i} className="space-y-3">
+                                <h4 className="font-medium text-sm">
+                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </h4>
+                                <div className="h-40">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={dist.buckets} layout="vertical">
+                                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                                      <XAxis type="number" className="text-xs" />
+                                      <YAxis dataKey="range" type="category" className="text-xs" width={50} />
+                                      <RechartsTooltip 
+                                        formatter={(value: number) => [`${value} candidates`, 'Count']}
+                                      />
+                                      <Bar 
+                                        dataKey="count" 
+                                        fill="hsl(var(--primary))" 
+                                        radius={[0, 4, 4, 0]}
+                                      />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-40 text-muted-foreground">
+                            No score distribution data available
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-muted-foreground">
