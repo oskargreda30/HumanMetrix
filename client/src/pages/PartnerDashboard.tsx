@@ -2001,16 +2001,16 @@ export default function PartnerDashboard() {
 
                   {/* Pending Billing Change Request Alert */}
                   {billingChangeData?.pendingRequest && (
-                    <Card className="border-2 border-amber-500 bg-amber-500/15">
+                    <Card className="border-2 border-orange-500 bg-orange-500/20 dark:bg-orange-600/25">
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-full bg-amber-500/30">
-                              <Clock className="h-5 w-5 text-amber-400" />
+                            <div className="p-2.5 rounded-full bg-orange-500 dark:bg-orange-600">
+                              <Clock className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-semibold text-amber-400">Billing Change Pending</p>
-                              <p className="text-sm text-foreground/80">
+                              <p className="font-bold text-orange-700 dark:text-orange-300 text-base">Billing Change Pending</p>
+                              <p className="text-sm text-orange-900/80 dark:text-orange-100/80">
                                 Your request to change to{' '}
                                 <span className="font-medium">
                                   {billingChangeData.pendingRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
