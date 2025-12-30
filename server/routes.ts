@@ -4179,6 +4179,239 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Get pending billing change request
+  app.get("/api/partner/me/billing-change-request", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const pendingRequest = await storage.getPendingBillingChangeRequest(matchingPartner.id);
+      const allRequests = await storage.getBillingChangeRequestsByPartner(matchingPartner.id);
+      
+      res.json({
+        pendingRequest: pendingRequest || null,
+        history: allRequests,
+      });
+    } catch (error) {
+      console.error("Error fetching billing change request:", error);
+      res.status(500).json({ message: "Failed to fetch billing change request" });
+    }
+  });
+
+  // Partner self-service: Create billing change request
+  app.post("/api/partner/me/billing-change-request", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { requestedBillingType, reason } = req.body;
+      
+      if (!requestedBillingType || !['prepaid', 'auto_bill', 'invoice'].includes(requestedBillingType)) {
+        return res.status(400).json({ message: "Invalid billing type requested" });
+      }
+      
+      if (requestedBillingType === matchingPartner.billingType) {
+        return res.status(400).json({ message: "Already using this billing type" });
+      }
+      
+      // Check for existing pending request
+      const existingRequest = await storage.getPendingBillingChangeRequest(matchingPartner.id);
+      if (existingRequest) {
+        return res.status(400).json({ message: "A pending billing change request already exists" });
+      }
+      
+      const newRequest = await storage.createBillingChangeRequest({
+        partnerId: matchingPartner.id,
+        requestedByUserId: userId,
+        currentBillingType: matchingPartner.billingType,
+        requestedBillingType,
+        reason: reason || null,
+      });
+      
+      // Create notification for the partner
+      await storage.createPartnerNotification({
+        partnerId: matchingPartner.id,
+        type: 'billing_change_requested',
+        title: 'Billing Change Requested',
+        message: `Your request to change billing type from ${matchingPartner.billingType} to ${requestedBillingType} has been submitted and is pending review.`,
+        metadata: { requestId: newRequest.id, requestedType: requestedBillingType },
+      });
+      
+      res.json({ success: true, request: newRequest });
+    } catch (error) {
+      console.error("Error creating billing change request:", error);
+      res.status(500).json({ message: "Failed to create billing change request" });
+    }
+  });
+
+  // Partner self-service: Cancel pending billing change request
+  app.delete("/api/partner/me/billing-change-request/:requestId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const request = await storage.getBillingChangeRequest(req.params.requestId);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      if (request.partnerId !== matchingPartner.id) {
+        return res.status(403).json({ message: "Not authorized to cancel this request" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Can only cancel pending requests" });
+      }
+      
+      await storage.updateBillingChangeRequest(request.id, {
+        status: 'cancelled',
+        reviewedAt: new Date(),
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error cancelling billing change request:", error);
+      res.status(500).json({ message: "Failed to cancel billing change request" });
+    }
+  });
+
+  // Super Admin: Get all pending billing change requests
+  app.get("/api/admin/billing-change-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const pendingRequests = await storage.getAllPendingBillingChangeRequests();
+      
+      res.json({ requests: pendingRequests });
+    } catch (error) {
+      console.error("Error fetching pending billing change requests:", error);
+      res.status(500).json({ message: "Failed to fetch billing change requests" });
+    }
+  });
+
+  // Super Admin: Approve or reject billing change request
+  app.patch("/api/admin/billing-change-requests/:requestId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const { action, reviewNotes } = req.body;
+      
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
+      }
+      
+      const request = await storage.getBillingChangeRequest(req.params.requestId);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Request is no longer pending" });
+      }
+      
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      
+      await storage.updateBillingChangeRequest(request.id, {
+        status: newStatus,
+        reviewedByUserId: userId,
+        reviewNotes: reviewNotes || null,
+        reviewedAt: new Date(),
+      });
+      
+      // If approved, update the partner's billing type
+      if (action === 'approve') {
+        await storage.updatePartnerAccount(request.partnerId, {
+          billingType: request.requestedBillingType,
+        });
+      }
+      
+      // Create notification for the partner
+      await storage.createPartnerNotification({
+        partnerId: request.partnerId,
+        type: action === 'approve' ? 'billing_change_approved' : 'billing_change_rejected',
+        title: action === 'approve' ? 'Billing Change Approved' : 'Billing Change Rejected',
+        message: action === 'approve' 
+          ? `Your billing type has been changed from ${request.currentBillingType} to ${request.requestedBillingType}.`
+          : `Your request to change billing type to ${request.requestedBillingType} was not approved.${reviewNotes ? ` Reason: ${reviewNotes}` : ''}`,
+        metadata: { requestId: request.id, status: newStatus },
+      });
+      
+      res.json({ success: true, newStatus });
+    } catch (error) {
+      console.error("Error processing billing change request:", error);
+      res.status(500).json({ message: "Failed to process billing change request" });
+    }
+  });
+
   // Partner self-service: Get settings
   app.get("/api/partner/me/settings", isAuthenticated, async (req: any, res) => {
     try {
