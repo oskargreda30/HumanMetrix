@@ -601,6 +601,14 @@ export default function CompareTab() {
     return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200';
   };
 
+  // Helper: Calculate average of scores (handles null/undefined correctly)
+  const calculateAverage = (scores: (number | null)[]): string => {
+    const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
+    if (validScores.length === 0) return '—';
+    const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
+    return String(Math.round(avg));
+  };
+
   // Calculate rankings based on composite scores
   const getRankings = (): Array<{ candidateIndex: number; score: number; rank: number }> => {
     if (!selectedCandidateData) return [];
@@ -974,7 +982,7 @@ export default function CompareTab() {
                                 ))}
                                 <td className="p-3 text-center">
                                   <span className="text-muted-foreground">
-                                    {Math.round(scores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) / scores.filter(s => s !== null).length) || '—'}
+                                    {calculateAverage(scores)}
                                   </span>
                                 </td>
                               </tr>
@@ -1011,7 +1019,7 @@ export default function CompareTab() {
                                 ))}
                                 <td className="p-3 text-center">
                                   <span className="text-muted-foreground">
-                                    {Math.round(scores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) / scores.filter(s => s !== null).length) || '—'}
+                                    {calculateAverage(scores)}
                                   </span>
                                 </td>
                               </tr>
@@ -1048,7 +1056,7 @@ export default function CompareTab() {
                                 ))}
                                 <td className="p-3 text-center">
                                   <span className="text-muted-foreground">
-                                    {Math.round(scores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) / scores.filter(s => s !== null).length) || '—'}
+                                    {calculateAverage(scores)}
                                   </span>
                                 </td>
                               </tr>
@@ -1085,7 +1093,7 @@ export default function CompareTab() {
                                 ))}
                                 <td className="p-3 text-center">
                                   <span className="text-muted-foreground">
-                                    {Math.round(scores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) / scores.filter(s => s !== null).length) || '—'}
+                                    {calculateAverage(scores)}
                                   </span>
                                 </td>
                               </tr>
