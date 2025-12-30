@@ -1227,12 +1227,12 @@ export default function CompareTab() {
                                   </div>
                                   <div className="space-y-1">
                                     {strengths.map((s, i) => (
-                                      <div key={s.name} className="flex items-center justify-between text-sm">
-                                        <span className="flex items-center gap-2">
-                                          <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                                      <div key={s.name} className="flex items-center justify-between gap-2 text-sm flex-nowrap">
+                                        <span className="flex items-center gap-2 min-w-0">
+                                          <span className="text-xs text-muted-foreground shrink-0">#{i + 1}</span>
                                           <span className="truncate">{s.name}</span>
                                         </span>
-                                        <Badge variant="default" className="ml-2">{s.score}</Badge>
+                                        <Badge variant="default" className="shrink-0">{s.score}</Badge>
                                       </div>
                                     ))}
                                   </div>
@@ -1246,12 +1246,12 @@ export default function CompareTab() {
                                   </div>
                                   <div className="space-y-1">
                                     {weaknesses.map((w, i) => (
-                                      <div key={w.name} className="flex items-center justify-between text-sm">
-                                        <span className="flex items-center gap-2">
-                                          <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                                      <div key={w.name} className="flex items-center justify-between gap-2 text-sm flex-nowrap">
+                                        <span className="flex items-center gap-2 min-w-0">
+                                          <span className="text-xs text-muted-foreground shrink-0">#{i + 1}</span>
                                           <span className="truncate">{w.name}</span>
                                         </span>
-                                        <Badge variant="outline" className="ml-2">{w.score}</Badge>
+                                        <Badge variant="outline" className="shrink-0">{w.score}</Badge>
                                       </div>
                                     ))}
                                   </div>
@@ -1785,60 +1785,6 @@ export default function CompareTab() {
                           </div>
                         </div>
                       )}
-
-                      {/* Skill-by-Skill Comparison Table */}
-                      <div>
-                        <h3 className="font-semibold mb-4">Skill-by-Skill Breakdown</h3>
-                        <div className="overflow-x-auto">
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="border-b">
-                                <th className="text-left p-3 font-medium">Skill</th>
-                                {selectedCandidateData?.map((candidate: any, index: number) => (
-                                  <th key={candidate.user.id} className="text-left p-3 font-medium">
-                                    <span style={{ color: CHART_COLORS[index] }}>
-                                      {getCandidateName(candidate)}
-                                    </span>
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {comparison.skillComparison?.map((row: any) => (
-                                <tr key={row.skillName} className="border-b">
-                                  <td className="p-3 font-medium">{row.skillName}</td>
-                                  {row.scores.map((score: number | null, index: number) => (
-                                    <td key={index} className="p-3">
-                                      {score !== null ? (
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-lg font-semibold">{score}/100</span>
-                                          <Badge
-                                            variant={
-                                              score >= 80 ? 'default' : score >= 60 ? 'secondary' : 'outline'
-                                            }
-                                          >
-                                            {score >= 80 ? 'Strong' : score >= 60 ? 'Good' : 'Developing'}
-                                          </Badge>
-                                        </div>
-                                      ) : (
-                                        <span className="text-muted-foreground">N/A</span>
-                                      )}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                              <tr className="border-t-2 font-semibold bg-muted/30">
-                                <td className="p-3">Average Skill Score</td>
-                                {comparison.averageScores?.map((avg: number, index: number) => (
-                                  <td key={index} className="p-3">
-                                    <span className="text-lg text-primary">{avg}/100</span>
-                                  </td>
-                                ))}
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
 
                       {/* Export Button */}
                       <div className="flex justify-end">
