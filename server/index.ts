@@ -7,6 +7,7 @@ import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
 import { apiRateLimiter, authRateLimiter, stripeRateLimiter } from "./middleware/rateLimit";
 import { requestDeduplication } from "./middleware/requestDedup";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache";
 import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
 import { csrfProtection } from "./middleware/csrf";
@@ -132,6 +133,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register object storage routes for file uploads
+  registerObjectStorageRoutes(app);
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

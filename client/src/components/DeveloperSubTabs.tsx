@@ -81,8 +81,8 @@ export function DeveloperSubTabs({
           <Key className="h-5 w-5 text-cyan-400" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Developer Hub</h2>
-          <p className="text-sm text-foreground/70">API keys, integrations, and testing tools</p>
+          <h2 className="text-xl font-semibold text-white">Developer Hub</h2>
+          <p className="text-sm text-white/70">API keys, integrations, and testing tools</p>
         </div>
       </div>
 

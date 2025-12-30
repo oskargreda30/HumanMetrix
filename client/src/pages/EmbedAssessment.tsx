@@ -307,6 +307,16 @@ export default function EmbedAssessment() {
                 </p>
               </div>
             )}
+
+            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+                  <span className="text-white text-[10px] font-bold">HM</span>
+                </div>
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -371,6 +381,16 @@ export default function EmbedAssessment() {
             >
               Start Assessment
             </Button>
+
+            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+                  <span className="text-white text-[10px] font-bold">HM</span>
+                </div>
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -506,6 +526,16 @@ export default function EmbedAssessment() {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
+        </div>
+
+        <div className="mt-8 pt-4 border-t border-slate-700/50 flex items-center justify-center gap-2">
+          <span className={`text-xs ${textMuted}`}>Powered by</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">HM</span>
+            </div>
+            <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+          </div>
         </div>
       </div>
     </div>
