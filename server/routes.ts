@@ -9162,6 +9162,88 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== BILLING CHANGE REQUESTS ADMIN API ====================
+
+  // Super Admin: Get all billing change requests
+  app.get("/api/admin/billing/change-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { status } = req.query;
+      const requests = await storage.getAllBillingChangeRequests(status as string | undefined);
+      
+      // Enrich with partner info
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const partner = await storage.getPartner(request.partnerId);
+        const partnerUser = partner?.userId ? await storage.getUser(partner.userId) : null;
+        
+        return {
+          ...request,
+          partnerName: partner?.companyName || partner?.contactName || 'Unknown Partner',
+          partnerEmail: partnerUser?.email || partner?.contactEmail || null,
+        };
+      }));
+      
+      res.json(enrichedRequests);
+    } catch (error) {
+      console.error("Error fetching billing change requests:", error);
+      res.status(500).json({ message: "Failed to fetch billing change requests" });
+    }
+  });
+
+  // Super Admin: Process billing change request (approve/reject)
+  app.patch("/api/admin/billing/change-requests/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { id } = req.params;
+      const { action, reviewNotes } = req.body;
+      
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Valid action (approve or reject) is required" });
+      }
+      
+      const request = await storage.getBillingChangeRequest(id);
+      if (!request) {
+        return res.status(404).json({ message: "Billing change request not found" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Only pending requests can be processed" });
+      }
+      
+      // Update the request status
+      const updatedRequest = await storage.updateBillingChangeRequest(id, {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        reviewedByUserId: userId,
+        reviewNotes: reviewNotes || null,
+        reviewedAt: new Date(),
+      });
+      
+      // If approved, update the partner's billing type
+      if (action === 'approve') {
+        await storage.updatePartner(request.partnerId, {
+          billingType: request.requestedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+        });
+      }
+      
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error("Error processing billing change request:", error);
+      res.status(500).json({ message: "Failed to process billing change request" });
+    }
+  });
+
   // ==================== GOLDEN SET ADMIN API ====================
 
   // Admin: Get golden set benchmark prompts

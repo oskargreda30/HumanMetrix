@@ -430,7 +430,8 @@ export interface IStorage {
   getBillingChangeRequestsByPartner(partnerId: string): Promise<BillingChangeRequest[]>;
   getPendingBillingChangeRequest(partnerId: string): Promise<BillingChangeRequest | undefined>;
   getAllPendingBillingChangeRequests(): Promise<Array<BillingChangeRequest & { partnerName: string; requestedByName: string; requestedByEmail: string }>>;
-  updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string; reviewedAt?: Date }): Promise<void>;
+  getAllBillingChangeRequests(status?: string): Promise<BillingChangeRequest[]>;
+  updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string | null; reviewedAt?: Date }): Promise<BillingChangeRequest>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2719,10 +2720,27 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string; reviewedAt?: Date }): Promise<void> {
-    await db.update(billingChangeRequests)
-      .set(updates)
-      .where(eq(billingChangeRequests.id, id));
+  async getAllBillingChangeRequests(status?: string): Promise<BillingChangeRequest[]> {
+    if (status) {
+      return await db.select().from(billingChangeRequests)
+        .where(eq(billingChangeRequests.status, status))
+        .orderBy(desc(billingChangeRequests.createdAt));
+    }
+    return await db.select().from(billingChangeRequests)
+      .orderBy(desc(billingChangeRequests.createdAt));
+  }
+
+  async updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string | null; reviewedAt?: Date }): Promise<BillingChangeRequest> {
+    const [result] = await db.update(billingChangeRequests)
+      .set({
+        status: updates.status,
+        reviewedByUserId: updates.reviewedByUserId,
+        reviewNotes: updates.reviewNotes,
+        reviewedAt: updates.reviewedAt,
+      })
+      .where(eq(billingChangeRequests.id, id))
+      .returning();
+    return result;
   }
 }
 

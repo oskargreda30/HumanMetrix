@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, Plus, TrendingUp, CreditCard, Receipt, Tag, RotateCcw, AlertCircle, CheckCircle, Clock, Ban } from "lucide-react";
+import { Loader2, RefreshCw, Plus, TrendingUp, CreditCard, Receipt, Tag, RotateCcw, AlertCircle, CheckCircle, Clock, Ban, ArrowRight, Building2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -71,6 +71,21 @@ interface PromoCode {
 
 type StatusFilter = 'all' | 'completed' | 'pending' | 'refunded';
 
+interface BillingChangeRequest {
+  id: string;
+  partnerId: string;
+  partnerName?: string;
+  partnerEmail?: string;
+  currentBillingType: string;
+  requestedBillingType: string;
+  reason: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  reviewedBy: string | null;
+  reviewNotes: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
 export default function BillingTab() {
   const { toast } = useToast();
   const [subTab, setSubTab] = useState("overview");
@@ -112,6 +127,62 @@ export default function BillingTab() {
   const { data: promoCodes, isLoading: promoLoading, refetch: refetchPromoCodes } = useQuery<PromoCode[]>({
     queryKey: ["/api/admin/billing/promo-codes"],
   });
+
+  // Billing change requests
+  const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<BillingChangeRequest | null>(null);
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [isProcessingRequest, setIsProcessingRequest] = useState(false);
+
+  const { data: billingRequests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery<BillingChangeRequest[]>({
+    queryKey: ["/api/admin/billing/change-requests", requestStatusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (requestStatusFilter !== 'all') params.set('status', requestStatusFilter);
+      const response = await apiRequest("GET", `/api/admin/billing/change-requests${params.toString() ? '?' + params.toString() : ''}`);
+      if (!response.ok) throw new Error("Failed to fetch billing change requests");
+      return response.json();
+    },
+  });
+
+  const handleReviewRequest = async (action: 'approve' | 'reject') => {
+    if (!selectedRequest) return;
+    setIsProcessingRequest(true);
+    try {
+      const response = await apiRequest("PATCH", `/api/admin/billing/change-requests/${selectedRequest.id}`, {
+        action,
+        reviewNotes: reviewNotes || undefined,
+      });
+      if (response.ok) {
+        toast({
+          title: action === 'approve' ? "Request approved" : "Request rejected",
+          description: action === 'approve' 
+            ? `Partner billing has been changed to ${selectedRequest.requestedBillingType}` 
+            : "The billing change request has been rejected",
+        });
+        refetchRequests();
+        setReviewDialogOpen(false);
+        setSelectedRequest(null);
+        setReviewNotes("");
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Failed to process request",
+          description: data.message || "An error occurred",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to process request",
+        description: "An error occurred while processing the request",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingRequest(false);
+    }
+  };
 
   const refundMutation = useMutation({
     mutationFn: async ({ purchaseId, amount, reason }: { purchaseId: string; amount?: number; reason?: string }) => {
@@ -225,6 +296,14 @@ export default function BillingTab() {
           </TabsTrigger>
           <TabsTrigger value="promo-codes" data-testid="tab-billing-promo" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
             Promo Codes
+          </TabsTrigger>
+          <TabsTrigger value="billing-requests" data-testid="tab-billing-requests" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 relative">
+            Change Requests
+            {billingRequests && billingRequests.filter(r => r.status === 'pending').length > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 min-w-5 p-0 flex items-center justify-center bg-amber-500 text-white text-xs">
+                {billingRequests.filter(r => r.status === 'pending').length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -608,7 +687,222 @@ export default function BillingTab() {
             </Card>
           )}
         </TabsContent>
+
+        {/* Billing Change Requests Tab */}
+        <TabsContent value="billing-requests" className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-white/70">Review and manage partner billing change requests</p>
+            <Select value={requestStatusFilter} onValueChange={(v) => setRequestStatusFilter(v as any)}>
+              <SelectTrigger className="w-[150px] bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Requests</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {requestsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+            </div>
+          ) : billingRequests && billingRequests.length > 0 ? (
+            <Card className="bg-white/5 border-white/10">
+              <ScrollArea className="h-[500px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="text-white/70">Partner</TableHead>
+                      <TableHead className="text-white/70">Change Request</TableHead>
+                      <TableHead className="text-white/70">Reason</TableHead>
+                      <TableHead className="text-white/70">Status</TableHead>
+                      <TableHead className="text-white/70">Date</TableHead>
+                      <TableHead className="text-white/70">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {billingRequests.map((request) => (
+                      <TableRow key={request.id} className="border-white/10">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-full bg-white/10">
+                              <Building2 className="h-4 w-4 text-cyan-400" />
+                            </div>
+                            <div>
+                              <div className="text-white font-medium">{request.partnerName || 'Partner'}</div>
+                              {request.partnerEmail && (
+                                <div className="text-xs text-white/50">{request.partnerEmail}</div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-white/80">
+                            <Badge variant="outline" className="border-white/30">
+                              {request.currentBillingType === 'prepaid' && 'Prepaid'}
+                              {request.currentBillingType === 'auto_bill' && 'Auto-Bill'}
+                              {request.currentBillingType === 'invoice' && 'Invoice'}
+                            </Badge>
+                            <ArrowRight className="h-4 w-4 text-white/50" />
+                            <Badge className="bg-cyan-500/20 text-cyan-400 border-0">
+                              {request.requestedBillingType === 'prepaid' && 'Prepaid'}
+                              {request.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
+                              {request.requestedBillingType === 'invoice' && 'Invoice'}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-white/70 max-w-[200px] truncate">
+                          {request.reason || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {request.status === 'pending' && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-0">Pending</Badge>
+                          )}
+                          {request.status === 'approved' && (
+                            <Badge className="bg-green-500/20 text-green-400 border-0">Approved</Badge>
+                          )}
+                          {request.status === 'rejected' && (
+                            <Badge className="bg-red-500/20 text-red-400 border-0">Rejected</Badge>
+                          )}
+                          {request.status === 'cancelled' && (
+                            <Badge className="bg-gray-500/20 text-gray-400 border-0">Cancelled</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-white/70">
+                          {format(new Date(request.createdAt), "dd MMM yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {request.status === 'pending' && (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => {
+                                  setSelectedRequest(request);
+                                  setReviewDialogOpen(true);
+                                }}
+                                data-testid={`button-review-${request.id}`}
+                              >
+                                Review
+                              </Button>
+                            </div>
+                          )}
+                          {request.status !== 'pending' && request.reviewNotes && (
+                            <span className="text-xs text-white/50 italic">"{request.reviewNotes}"</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </Card>
+          ) : (
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="py-8 text-center">
+                <Receipt className="h-12 w-12 text-white/30 mx-auto mb-4" />
+                <p className="text-white/70">No billing change requests found</p>
+                <p className="text-sm text-white/50 mt-2">
+                  {requestStatusFilter === 'pending' 
+                    ? 'No pending requests to review' 
+                    : 'Try adjusting the status filter'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Review Billing Change Request Dialog */}
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <DialogContent className="bg-slate-900 border-white/20">
+          <DialogHeader>
+            <DialogTitle className="text-white">Review Billing Change Request</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Approve or reject this partner's request to change their billing type.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="space-y-4 py-4">
+              <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Partner:</span>
+                  <span className="text-white font-medium">{selectedRequest.partnerName || selectedRequest.partnerId}</span>
+                </div>
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-white/70">Requested Change:</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="border-white/30">
+                      {selectedRequest.currentBillingType === 'prepaid' && 'Prepaid'}
+                      {selectedRequest.currentBillingType === 'auto_bill' && 'Auto-Bill'}
+                      {selectedRequest.currentBillingType === 'invoice' && 'Invoice'}
+                    </Badge>
+                    <ArrowRight className="h-4 w-4 text-white/50" />
+                    <Badge className="bg-cyan-500/20 text-cyan-400 border-0">
+                      {selectedRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
+                      {selectedRequest.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
+                      {selectedRequest.requestedBillingType === 'invoice' && 'Invoice'}
+                    </Badge>
+                  </div>
+                </div>
+                {selectedRequest.reason && (
+                  <div className="pt-2 border-t border-white/10">
+                    <span className="text-white/70 text-sm">Partner's reason:</span>
+                    <p className="text-white mt-1">"{selectedRequest.reason}"</p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70">Review Notes (optional)</Label>
+                <Input
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder="Add any notes about this decision..."
+                  className="bg-white/10 border-white/20 text-white"
+                  data-testid="input-review-notes"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReviewDialogOpen(false);
+                setSelectedRequest(null);
+                setReviewNotes("");
+              }}
+              className="text-white/70 border-white/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleReviewRequest('reject')}
+              disabled={isProcessingRequest}
+              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              data-testid="button-reject-request"
+            >
+              {isProcessingRequest && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <X className="h-4 w-4 mr-1" />
+              Reject
+            </Button>
+            <Button
+              onClick={() => handleReviewRequest('approve')}
+              disabled={isProcessingRequest}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              data-testid="button-approve-request"
+            >
+              {isProcessingRequest && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Check className="h-4 w-4 mr-1" />
+              Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
         <DialogContent className="bg-slate-900 border-white/20">
