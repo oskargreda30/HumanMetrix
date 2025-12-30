@@ -840,6 +840,27 @@ export default function CompareTab() {
                           );
                         })}
                       </div>
+                      {/* Score Explanation */}
+                      <div className="p-4 bg-muted/30 rounded-lg border">
+                        <p className="text-base font-semibold text-foreground mb-2">Understanding the Scores</p>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-base text-muted-foreground leading-relaxed">
+                              <strong className="text-foreground">Composite Score</strong> is a weighted average across all four assessment types 
+                              (FIT, AI Readiness, Prompt Architecture, and AIQ). Use the sliders above to adjust how much each assessment 
+                              contributes to the final score. This allows you to prioritize assessments that matter most for your specific role requirements.
+                            </p>
+                          </div>
+                          <div className="border-t pt-3">
+                            <p className="text-base text-muted-foreground leading-relaxed">
+                              <strong className="text-foreground">Why weighted scoring matters:</strong> Different roles require different skill profiles. 
+                              For technical AI roles, you might weight AI Readiness and Prompt Architecture higher. For leadership positions, 
+                              FIT (behavioral traits) and AIQ (ethical awareness) may be more important. The composite score lets you tailor 
+                              candidate evaluation to match your organization's priorities.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
