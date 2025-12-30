@@ -314,6 +314,80 @@ export default function CompareTab() {
       return;
     }
     
+    // Helper to wait for animation frames (ensures DOM is fully painted)
+    const waitForFrames = (count: number) => new Promise<void>(resolve => {
+      let remaining = count;
+      const tick = () => {
+        remaining--;
+        if (remaining <= 0) resolve();
+        else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    
+    // Helper to enable report mode on real DOM (removes clipping, sticky, etc.)
+    const enableReportMode = (container: HTMLElement) => {
+      // Add report-mode class to container
+      container.classList.add('pdf-report-mode');
+      
+      // Remove overflow-hidden from all descendants
+      container.querySelectorAll('.overflow-hidden, .overflow-x-auto, .overflow-y-auto').forEach(el => {
+        (el as HTMLElement).dataset.originalOverflow = (el as HTMLElement).style.overflow;
+        (el as HTMLElement).style.overflow = 'visible';
+      });
+      
+      // Remove truncate from text elements
+      container.querySelectorAll('.truncate').forEach(el => {
+        (el as HTMLElement).dataset.originalTruncate = 'true';
+        (el as HTMLElement).style.overflow = 'visible';
+        (el as HTMLElement).style.textOverflow = 'clip';
+        (el as HTMLElement).style.whiteSpace = 'normal';
+      });
+      
+      // Remove sticky positioning
+      container.querySelectorAll('.sticky').forEach(el => {
+        (el as HTMLElement).dataset.originalPosition = (el as HTMLElement).style.position;
+        (el as HTMLElement).style.position = 'relative';
+      });
+      
+      // Fix max-height constraints
+      container.querySelectorAll('[class*="max-h-"]').forEach(el => {
+        (el as HTMLElement).dataset.originalMaxHeight = (el as HTMLElement).style.maxHeight;
+        (el as HTMLElement).style.maxHeight = 'none';
+      });
+    };
+    
+    // Helper to disable report mode (restore original styles)
+    const disableReportMode = (container: HTMLElement) => {
+      container.classList.remove('pdf-report-mode');
+      
+      container.querySelectorAll('[data-original-overflow]').forEach(el => {
+        (el as HTMLElement).style.overflow = (el as HTMLElement).dataset.originalOverflow || '';
+        delete (el as HTMLElement).dataset.originalOverflow;
+      });
+      
+      container.querySelectorAll('[data-original-truncate]').forEach(el => {
+        (el as HTMLElement).style.overflow = '';
+        (el as HTMLElement).style.textOverflow = '';
+        (el as HTMLElement).style.whiteSpace = '';
+        delete (el as HTMLElement).dataset.originalTruncate;
+      });
+      
+      container.querySelectorAll('[data-original-position]').forEach(el => {
+        (el as HTMLElement).style.position = (el as HTMLElement).dataset.originalPosition || '';
+        delete (el as HTMLElement).dataset.originalPosition;
+      });
+      
+      container.querySelectorAll('[data-original-max-height]').forEach(el => {
+        (el as HTMLElement).style.maxHeight = (el as HTMLElement).dataset.originalMaxHeight || '';
+        delete (el as HTMLElement).dataset.originalMaxHeight;
+      });
+    };
+    
+    // Track the report element for cleanup in finally block
+    let reportElement: HTMLElement | null = null;
+    let reportModeEnabled = false;
+    
     try {
       setIsCapturingPDF(true);
       
@@ -322,9 +396,12 @@ export default function CompareTab() {
         description: "Capturing the comparison view...",
       });
 
-      // Wait for state change to render the report header
-      await new Promise(resolve => setTimeout(resolve, 600));
+      // Wait for state change to render charts without animations
+      await new Promise(resolve => setTimeout(resolve, 300));
       await document.fonts.ready;
+      
+      // Wait for two animation frames to ensure charts are fully rendered
+      await waitForFrames(2);
       
       // Wait for any images to load
       const images = reportContainerRef.current.querySelectorAll('img');
@@ -336,16 +413,96 @@ export default function CompareTab() {
         });
       }));
 
-      const reportElement = reportContainerRef.current;
+      reportElement = reportContainerRef.current;
       
-      // Get all major sections (Cards) for intelligent page breaks
-      const sections = Array.from(reportElement.querySelectorAll('[data-testid^="summary-card"], [data-testid^="card-"]'));
-      const allCards = Array.from(reportElement.querySelectorAll('.rounded-xl, .rounded-lg'));
+      // Enable report mode on the REAL DOM before measuring
+      enableReportMode(reportElement);
+      reportModeEnabled = true;
       
-      // If no data-testid cards found, fall back to all cards
-      const captureElements = sections.length > 0 ? sections : (allCards.length > 0 ? allCards : [reportElement]);
+      // Wait for layout to stabilize after style changes
+      await waitForFrames(2);
       
-      console.log("Screen capture: Found", captureElements.length, "sections to capture");
+      // Now measure section boundaries with proper styles applied
+      const containerRect = reportElement.getBoundingClientRect();
+      const sectionBoundaries: number[] = [0];
+      
+      // Get major sections - Cards with data-report-section or standard Card components
+      const reportSections = Array.from(reportElement.querySelectorAll('[data-report-section], [class*="rounded-xl"], [class*="rounded-lg"]'));
+      
+      // Only use top-level sections (filter out nested elements)
+      const topLevelSections = reportSections.filter(section => {
+        const parent = section.parentElement;
+        // Skip if parent is also a section (nested)
+        return !parent?.closest('[data-report-section]') || section.hasAttribute('data-report-section');
+      });
+      
+      console.log("Screen capture: Found", topLevelSections.length, "top-level sections");
+      
+      topLevelSections.forEach(section => {
+        const rect = section.getBoundingClientRect();
+        const relativeTop = rect.top - containerRect.top + reportElement.scrollTop;
+        const relativeBottom = rect.bottom - containerRect.top + reportElement.scrollTop;
+        sectionBoundaries.push(relativeTop);
+        sectionBoundaries.push(relativeBottom);
+      });
+      
+      // Sort and dedupe boundaries
+      const uniqueBoundaries = Array.from(new Set(sectionBoundaries)).sort((a, b) => a - b);
+      
+      const elementHeight = reportElement.scrollHeight;
+      const scale = Math.min(2, 16000 / elementHeight);
+      
+      console.log("Screen capture: Element height", elementHeight, "scale", scale);
+      
+      const canvas = await html2canvas(reportElement, {
+        backgroundColor: '#ffffff',
+        scale: scale,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        windowWidth: reportElement.scrollWidth,
+        windowHeight: elementHeight,
+        onclone: (clonedDoc: Document) => {
+          // Fix CSS color functions that html2canvas doesn't support
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            :root, .dark {
+              --sidebar-primary-border: hsl(217 91% 27%) !important;
+              --sidebar-accent-border: hsl(210 8% 80%) !important;
+              --primary-border: hsl(217 91% 27%) !important;
+              --secondary-border: hsl(210 8% 78%) !important;
+              --muted-border: hsl(210 10% 82%) !important;
+              --accent-border: hsl(210 12% 80%) !important;
+              --destructive-border: hsl(0 84% 24%) !important;
+            }
+            /* Ensure all chart animations are disabled */
+            .recharts-wrapper, .recharts-wrapper * {
+              animation: none !important;
+              transition: none !important;
+            }
+            /* Force visible overflow in clone too */
+            .overflow-hidden, .overflow-x-auto, .overflow-y-auto {
+              overflow: visible !important;
+            }
+            .truncate {
+              overflow: visible !important;
+              text-overflow: clip !important;
+              white-space: normal !important;
+            }
+            .sticky {
+              position: relative !important;
+            }
+            [class*="max-h-"] {
+              max-height: none !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        },
+      });
+      
+      // Restore original styles immediately after capture
+      disableReportMode(reportElement);
+      reportModeEnabled = false; // Mark as restored so finally doesn't double-call
 
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -359,114 +516,47 @@ export default function CompareTab() {
       const contentWidth = pageWidth - (margin * 2);
       const availableHeight = pageHeight - (margin * 2);
       
-      // Pixel to mm conversion (assuming 96 DPI)
-      const pxToMm = (px: number) => px * 0.264583;
-      
-      // Capture the entire content but slice intelligently based on section boundaries
-      const elementHeight = reportElement.scrollHeight;
-      const scale = Math.min(2, 16000 / elementHeight);
-      
-      const canvas = await html2canvas(reportElement, {
-        backgroundColor: '#ffffff',
-        scale: scale,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        windowWidth: reportElement.scrollWidth,
-        windowHeight: elementHeight,
-        onclone: (clonedDoc: Document) => {
-          // Fix CSS for capture
-          const style = clonedDoc.createElement('style');
-          style.textContent = `
-            :root, .dark {
-              /* Override computed border colors with static fallbacks */
-              --sidebar-primary-border: hsl(217 91% 27%) !important;
-              --sidebar-accent-border: hsl(210 8% 80%) !important;
-              --primary-border: hsl(217 91% 27%) !important;
-              --secondary-border: hsl(210 8% 78%) !important;
-              --muted-border: hsl(210 10% 82%) !important;
-              --accent-border: hsl(210 12% 80%) !important;
-              --destructive-border: hsl(0 84% 24%) !important;
-            }
-            /* Disable animations for charts */
-            .recharts-wrapper * {
-              animation: none !important;
-              transition: none !important;
-            }
-            /* Remove overflow hidden that can clip content */
-            .overflow-hidden {
-              overflow: visible !important;
-            }
-            /* Ensure all text is visible */
-            .truncate {
-              overflow: visible !important;
-              text-overflow: clip !important;
-              white-space: normal !important;
-            }
-            /* Remove sticky positioning */
-            .sticky {
-              position: relative !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        },
-      });
-
-      // Get section boundaries for intelligent page breaks
-      const containerRect = reportElement.getBoundingClientRect();
-      const sectionBoundaries: number[] = [0]; // Start with 0
-      
-      // Collect all card/section top positions relative to container
-      allCards.forEach(card => {
-        const rect = card.getBoundingClientRect();
-        const relativeTop = rect.top - containerRect.top;
-        const relativeBottom = rect.bottom - containerRect.top;
-        sectionBoundaries.push(relativeTop);
-        sectionBoundaries.push(relativeBottom);
-      });
-      
-      // Sort and dedupe boundaries
-      const uniqueBoundaries = Array.from(new Set(sectionBoundaries)).sort((a, b) => a - b);
-      
       // Calculate scaling factors
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const scaleFactor = imgHeight / elementHeight; // Convert pixel positions to PDF mm
+      const scaleFactor = imgHeight / elementHeight;
       
-      let currentPdfY = margin;
       let currentSourceY = 0;
       let pageNum = 1;
       
       // Find the best slice points that don't cut through sections
-      const findBestBreakPoint = (startPx: number, maxPx: number): number => {
-        // Convert available PDF height to source pixels
-        const maxSourceHeight = (availableHeight / scaleFactor);
+      const findBestBreakPoint = (startPx: number): number => {
+        const maxSourceHeight = availableHeight / scaleFactor;
         const targetEndPx = startPx + maxSourceHeight;
         
         if (targetEndPx >= elementHeight) {
-          return elementHeight; // Last slice
+          return elementHeight;
         }
         
-        // Find the largest boundary that fits
+        // Find the largest section boundary that fits within the page
         let bestBreak = targetEndPx;
         for (let i = uniqueBoundaries.length - 1; i >= 0; i--) {
           const boundary = uniqueBoundaries[i];
-          if (boundary > startPx && boundary <= targetEndPx) {
+          if (boundary > startPx + 50 && boundary <= targetEndPx) {
+            // Ensure we're making progress (at least 50px)
             bestBreak = boundary;
             break;
           }
         }
         
-        // If no good break found, use target (may cut content, but better than infinite loop)
-        return bestBreak;
+        // If best break is too close to start (less than 10% of page), use full page
+        if (bestBreak - startPx < maxSourceHeight * 0.1) {
+          bestBreak = targetEndPx;
+        }
+        
+        return Math.min(bestBreak, elementHeight);
       };
       
       while (currentSourceY < elementHeight) {
-        const endSourceY = findBestBreakPoint(currentSourceY, elementHeight);
+        const endSourceY = findBestBreakPoint(currentSourceY);
         const sliceHeightPx = endSourceY - currentSourceY;
         const sliceHeightMm = sliceHeightPx * scaleFactor;
         
-        // Calculate canvas coordinates (account for scale)
         const canvasStartY = currentSourceY * scale;
         const canvasSliceHeight = sliceHeightPx * scale;
         
@@ -494,9 +584,8 @@ export default function CompareTab() {
         
         currentSourceY = endSourceY;
         
-        // Safety check to prevent infinite loop
         if (sliceHeightPx <= 0) {
-          console.warn("Screen capture: Zero height slice detected, breaking");
+          console.warn("Screen capture: Zero height slice, breaking");
           break;
         }
       }
@@ -514,12 +603,17 @@ export default function CompareTab() {
     } catch (error: any) {
       console.error("Error exporting visual PDF:", error?.message || error?.name || String(error));
       console.error("Error stack:", error?.stack);
+      
       toast({
         title: "Export failed",
         description: error?.message || "There was an error generating the visual PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
+      // Always restore DOM state, even on error
+      if (reportModeEnabled && reportElement) {
+        disableReportMode(reportElement);
+      }
       setIsCapturingPDF(false);
     }
   };
@@ -1052,7 +1146,7 @@ export default function CompareTab() {
 
               {/* 2. Role Suitability Scoring */}
               {comparison.hasSkillData && (
-                <Card data-testid="card-role-suitability">
+                <Card data-testid="card-role-suitability" data-report-section="role-suitability">
                   <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
@@ -1217,7 +1311,7 @@ export default function CompareTab() {
 
               {/* 3. Head-to-Head Skill Breakdown Table */}
               {comparison.hasSkillData && (
-                <Card data-testid="card-head-to-head">
+                <Card data-testid="card-head-to-head" data-report-section="head-to-head">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Scale className="h-5 w-5" />
@@ -1488,7 +1582,7 @@ export default function CompareTab() {
 
               {/* 5. Strengths & Weaknesses Summary */}
               {comparison.hasSkillData && (
-                <Card data-testid="card-strengths-weaknesses">
+                <Card data-testid="card-strengths-weaknesses" data-report-section="strengths-weaknesses">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Award className="h-5 w-5" />
@@ -1565,7 +1659,7 @@ export default function CompareTab() {
 
               {/* 6. Risk Indicators */}
               {comparison.hasSkillData && (
-                <Card data-testid="card-risk-indicators">
+                <Card data-testid="card-risk-indicators" data-report-section="risk-indicators">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5" />
@@ -1644,7 +1738,7 @@ export default function CompareTab() {
 
               {/* FIT Assessment Comparison */}
               {comparison.fitAssessments?.some(a => a !== null) && (
-                <Card>
+                <Card data-report-section="fit-assessment">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Award className="h-5 w-5" />
@@ -1685,11 +1779,12 @@ export default function CompareTab() {
                                     key={candidate.user.id}
                                     name={getCandidateName(candidate)}
                                     dataKey={candidate.user.id}
-                                    stroke={CHART_COLORS[index]}
-                                    fill={CHART_COLORS[index]}
+                                    stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                    fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
                                     label={index === 0 ? renderInsideLabel : false}
+                                    isAnimationActive={!isCapturingPDF}
                                   />
                                 );
                               })}
@@ -1739,10 +1834,11 @@ export default function CompareTab() {
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
                                         dataKey="score"
-                                        stroke={CHART_COLORS[index]}
-                                        fill={CHART_COLORS[index]}
+                                        stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                         fillOpacity={0.5}
                                         label={renderInsideLabel}
+                                        isAnimationActive={!isCapturingPDF}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -1759,7 +1855,7 @@ export default function CompareTab() {
 
               {/* AI Readiness Comparison */}
               {comparison.aiReadinessAssessments?.some(a => a !== null) && (
-                <Card>
+                <Card data-report-section="ai-readiness">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Brain className="h-5 w-5" />
@@ -1800,11 +1896,12 @@ export default function CompareTab() {
                                     key={candidate.user.id}
                                     name={getCandidateName(candidate)}
                                     dataKey={candidate.user.id}
-                                    stroke={CHART_COLORS[index]}
-                                    fill={CHART_COLORS[index]}
+                                    stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                    fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
                                     label={index === 0 ? renderInsideLabel : false}
+                                    isAnimationActive={!isCapturingPDF}
                                   />
                                 );
                               })}
@@ -1854,10 +1951,11 @@ export default function CompareTab() {
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
                                         dataKey="score"
-                                        stroke={CHART_COLORS[index]}
-                                        fill={CHART_COLORS[index]}
+                                        stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                         fillOpacity={0.5}
                                         label={renderInsideLabel}
+                                        isAnimationActive={!isCapturingPDF}
                                       />
                                     </RadarChart>
                                   </ResponsiveContainer>
@@ -1874,7 +1972,7 @@ export default function CompareTab() {
 
               {/* Prompt Architecture Comparison */}
               {comparison.promptArchitectureAssessments?.some(a => a !== null) && (
-                <Card>
+                <Card data-report-section="prompt-architecture">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Target className="h-5 w-5" />
@@ -1986,7 +2084,7 @@ export default function CompareTab() {
 
               {/* AIQ Comparison */}
               {comparison.aiqAssessments?.some(a => a !== null) && (
-                <Card>
+                <Card data-report-section="aiq-assessment">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Sparkles className="h-5 w-5" />
@@ -2079,7 +2177,7 @@ export default function CompareTab() {
 
               {/* Overall Skill Comparison */}
               {comparison.hasSkillData && (
-                <Card>
+                <Card data-report-section="overall-skills">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
@@ -2106,11 +2204,12 @@ export default function CompareTab() {
                                   key={candidate.user.id}
                                   name={getCandidateName(candidate)}
                                   dataKey={`candidate${index}`}
-                                  stroke={CHART_COLORS[index]}
+                                  stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                   strokeWidth={3}
                                   strokeDasharray="8 4"
                                   fill="transparent"
                                   fillOpacity={0}
+                                  isAnimationActive={!isCapturingPDF}
                                 />
                               ))}
                               <Legend />
