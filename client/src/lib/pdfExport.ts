@@ -645,9 +645,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
       
       yPos += 3;
       pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'F');
+      pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
       
-      pdf.setFontSize(6);
+      pdf.setFontSize(7.5);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(71, 85, 105);
       
@@ -659,8 +659,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
       aiqText += ' Higher AIQ indicates better preparedness for responsible AI governance.';
       
       const splitAiqText = pdf.splitTextToSize(aiqText, pageWidth - 48);
-      pdf.text(splitAiqText, 24, yPos + 5);
-      yPos += 14;
+      pdf.text(splitAiqText, 24, yPos + 6);
+      yPos += 18;
     }
     
     yPos += 5;
@@ -840,6 +840,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // --- 1. OVERALL RANKING & COMPOSITE SCORE ---
   yPos = addSectionHeader(pdf, 'OVERALL RANKING & COMPOSITE SCORE', yPos, pageWidth);
   yPos += 3;
+  
+  // Add explanation text
+  pdf.setFontSize(7.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(71, 85, 105);
+  const compositeExplanation = 'This ranking applies fixed 25% weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
+  const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
+  pdf.text(splitCompositeExplanation, 20, yPos);
+  yPos += splitCompositeExplanation.length * 4 + 5;
   
   // Calculate composite scores with equal 25% weights
   const calculatePDFCompositeScore = (candidateIndex: number): number => {
@@ -1382,6 +1391,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATION', yPos, pageWidth);
   yPos += 5;
+  
+  // Add Comparison Summary header for the selected role
+  if (data.selectedRole) {
+    const roleLabel = ROLE_DEFINITIONS[data.selectedRole]?.name ?? 'Selected Role';
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`Comparison Summary for ${roleLabel}`, 20, yPos);
+    yPos += 7;
+  }
   
   // Generate unbiased recommendation based on data
   const candidateAnalysis = data.candidates.map((candidate, index) => {
