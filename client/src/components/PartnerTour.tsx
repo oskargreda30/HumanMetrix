@@ -111,7 +111,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'developer-content',
     title: 'Developer Hub - All-in-One',
-    description: 'Your central hub for API integration. Manage API keys, configure webhooks and ATS connections, and preview assessments in the sandbox - all in one place with easy sub-navigation.',
+    description: 'Your central hub for API integration. Manage API keys, preview assessments in the sandbox, and access upcoming integrations (webhooks, ATS, exports) - all in one place.',
     icon: Key,
     tab: 'developer',
     targetSelector: '[data-testid="panel-developer"][data-state="active"]',

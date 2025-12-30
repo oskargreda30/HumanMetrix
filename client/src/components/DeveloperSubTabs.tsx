@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2 } from "lucide-react";
-import { PartnerIntegrationsTab } from "./PartnerIntegrationsTab";
 
 interface ApiKey {
   id: string;
@@ -197,7 +196,38 @@ export function DeveloperSubTabs({
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-4" data-testid="subpanel-integrations">
-          <PartnerIntegrationsTab />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10">
+                  <Webhook className="h-5 w-5 text-cyan-500" />
+                </div>
+                <div>
+                  <CardTitle>Integrations</CardTitle>
+                  <CardDescription>
+                    Webhooks, ATS connections, and scheduled exports
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                  <Webhook className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Webhook notifications, ATS integrations (Greenhouse, Lever, Workday, and more), 
+                  and scheduled CSV exports are currently in development.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground">Webhooks</span>
+                  <span className="px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground">ATS Sync</span>
+                  <span className="px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground">Scheduled Exports</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="sandbox" className="space-y-6" data-testid="subpanel-sandbox">

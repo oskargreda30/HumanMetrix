@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette } from "lucide-react";
-import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
 import Navigation from "@/components/Navigation";
