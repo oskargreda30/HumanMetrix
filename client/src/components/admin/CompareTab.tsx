@@ -962,10 +962,10 @@ export default function CompareTab() {
                           <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
-                                <p className="text-sm font-semibold text-foreground mb-2">
+                                <p className="text-base font-semibold text-foreground mb-2">
                                   Recommendation: <span style={{ color: CHART_COLORS[top.index] }}>{top.name}</span>
                                 </p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground leading-relaxed">
                                   For the <strong className="text-foreground">{roleName}</strong> role, scoring prioritizes{' '}
                                   <strong className="text-foreground">{topSkills[0]}</strong> (which {getSkillBenefit(topSkills[0])}) 
                                   and <strong className="text-foreground">{topSkills[1]}</strong> (which {getSkillBenefit(topSkills[1])}).
@@ -973,12 +973,12 @@ export default function CompareTab() {
                               </div>
                               <div className="text-right shrink-0">
                                 <div className="text-2xl font-bold" style={{ color: CHART_COLORS[top.index] }}>{top.score}%</div>
-                                <div className="text-xs text-muted-foreground">vs {second.score}%</div>
+                                <div className="text-sm text-muted-foreground">vs {second.score}%</div>
                               </div>
                             </div>
                             
                             {advantageSkills.length > 0 && (
-                              <p className="text-sm text-muted-foreground border-t pt-3">
+                              <p className="text-base text-muted-foreground border-t pt-3 leading-relaxed">
                                 <strong className="text-foreground">Key differentiator:</strong>{' '}
                                 <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> demonstrates 
                                 stronger performance in {advantageSkills.map((skill, i) => (
@@ -1838,7 +1838,7 @@ export default function CompareTab() {
                       
                       return (
                         <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-base text-muted-foreground leading-relaxed">
                             <strong className="text-foreground">AIQ Analysis:</strong>{' '}
                             <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> demonstrates 
                             {top.score >= 80 ? ' exceptional' : top.score >= 70 ? ' strong' : top.score >= 60 ? ' adequate' : ' developing'} 
