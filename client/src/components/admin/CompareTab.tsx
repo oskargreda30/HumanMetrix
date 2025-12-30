@@ -1342,7 +1342,7 @@ export default function CompareTab() {
                                     <Badge variant="destructive" className="text-xs">{errorCount} critical</Badge>
                                   )}
                                   {warningCount > 0 && (
-                                    <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">{warningCount} warnings</Badge>
+                                    <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">{warningCount} risks</Badge>
                                   )}
                                 </div>
                               </div>
