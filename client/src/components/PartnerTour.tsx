@@ -34,6 +34,7 @@ const TOUR_STEPS: TourStep[] = [
     highlightPadding: 8,
     position: 'bottom',
   },
+  // Overview
   {
     id: 'home-content',
     title: 'Home - Your Dashboard Overview',
@@ -44,6 +45,7 @@ const TOUR_STEPS: TourStep[] = [
     highlightPadding: 8,
     position: 'top',
   },
+  // Core Business
   {
     id: 'results-content',
     title: 'Results - View Assessment Outcomes',
@@ -65,9 +67,20 @@ const TOUR_STEPS: TourStep[] = [
     position: 'top',
   },
   {
+    id: 'analytics-content',
+    title: 'Analytics - Insights & Trends',
+    description: 'Visualize your assessment data with charts and graphs. See usage trends over time, breakdowns by assessment type, and performance metrics by organization.',
+    icon: BarChart3,
+    tab: 'analytics',
+    targetSelector: '[data-testid="panel-analytics"][data-state="active"]',
+    highlightPadding: 8,
+    position: 'top',
+  },
+  // Account & Operations
+  {
     id: 'usage-content',
     title: 'Usage - Track Your Consumption',
-    description: 'Monitor your assessment usage over time. View trends by day/week/month, see breakdowns by assessment type and organization, and forecast when you\'ll need more credits.',
+    description: 'Monitor your assessment usage over time. View trends by day/week/month, see breakdowns by assessment type, and forecast when you\'ll need more credits.',
     icon: BarChart3,
     tab: 'usage',
     targetSelector: '[data-testid="panel-usage"][data-state="active"]',
@@ -84,16 +97,7 @@ const TOUR_STEPS: TourStep[] = [
     highlightPadding: 8,
     position: 'top',
   },
-  {
-    id: 'settings-content',
-    title: 'Settings - Configure Your Account',
-    description: 'Set up quota alerts to be notified before credits run low, configure auto-top-up to never run out, and customize white-label branding for your assessment experience.',
-    icon: Settings,
-    tab: 'settings',
-    targetSelector: '[data-testid="panel-settings"][data-state="active"]',
-    highlightPadding: 8,
-    position: 'top',
-  },
+  // Developer & Integrations
   {
     id: 'api-keys-content',
     title: 'API Keys - Connect Your Systems',
@@ -114,6 +118,7 @@ const TOUR_STEPS: TourStep[] = [
     highlightPadding: 8,
     position: 'top',
   },
+  // Administration
   {
     id: 'team-content',
     title: 'Team - Collaborate with Colleagues',
@@ -121,6 +126,16 @@ const TOUR_STEPS: TourStep[] = [
     icon: Users,
     tab: 'team',
     targetSelector: '[data-testid="panel-team"][data-state="active"]',
+    highlightPadding: 8,
+    position: 'top',
+  },
+  {
+    id: 'settings-content',
+    title: 'Settings - Configure Your Account',
+    description: 'Set up quota alerts to be notified before credits run low, configure auto-top-up to never run out, and customize white-label branding for your assessment experience.',
+    icon: Settings,
+    tab: 'settings',
+    targetSelector: '[data-testid="panel-settings"][data-state="active"]',
     highlightPadding: 8,
     position: 'top',
   },

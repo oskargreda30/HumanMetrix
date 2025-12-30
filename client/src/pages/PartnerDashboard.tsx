@@ -871,35 +871,26 @@ export default function PartnerDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
+              {/* Overview */}
               <TabsTrigger value="home" data-testid="tab-home" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Home
               </TabsTrigger>
+              {/* Core Business */}
               <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
               <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Organizations
               </TabsTrigger>
-              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Activity Log
+              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analytics
               </TabsTrigger>
+              {/* Account & Operations */}
               <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Usage
               </TabsTrigger>
               <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Billing
-              </TabsTrigger>
-              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Settings
-              </TabsTrigger>
-              <TabsTrigger value="api-keys" data-testid="tab-api-keys" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                API Keys
-              </TabsTrigger>
-              <TabsTrigger value="integrations" data-testid="tab-integrations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Integrations
-              </TabsTrigger>
-              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Analytics
               </TabsTrigger>
               <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
                 Notifications
@@ -909,11 +900,25 @@ export default function PartnerDashboard() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Team
+              {/* Developer & Integrations */}
+              <TabsTrigger value="api-keys" data-testid="tab-api-keys" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                API Keys
+              </TabsTrigger>
+              <TabsTrigger value="integrations" data-testid="tab-integrations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Integrations
               </TabsTrigger>
               <TabsTrigger value="sandbox" data-testid="tab-sandbox" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Sandbox
+              </TabsTrigger>
+              {/* Administration */}
+              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Team
+              </TabsTrigger>
+              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Settings
+              </TabsTrigger>
+              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Activity Log
               </TabsTrigger>
             </TabsList>
 
@@ -1551,7 +1556,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Activity Log Tab */}
-            <TabsContent value="activity" className="space-y-4">
+            <TabsContent value="activity" className="space-y-4" data-testid="panel-activity">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Activity Log</CardTitle>
@@ -2584,7 +2589,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Analytics Tab */}
-            <TabsContent value="analytics" className="space-y-6">
+            <TabsContent value="analytics" className="space-y-6" data-testid="panel-analytics">
               <Card>
                 <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 flex-wrap">
                   <div>
@@ -2716,7 +2721,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Notifications Tab */}
-            <TabsContent value="notifications" className="space-y-6">
+            <TabsContent value="notifications" className="space-y-6" data-testid="panel-notifications">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                   <div>
@@ -2896,7 +2901,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Sandbox Tab */}
-            <TabsContent value="sandbox" className="space-y-6">
+            <TabsContent value="sandbox" className="space-y-6" data-testid="panel-sandbox">
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-3">
