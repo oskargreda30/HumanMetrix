@@ -1102,7 +1102,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     roleXOffset += roleColWidths[index + 1];
   });
-  yPos += 5;
+  yPos += 12; // 8mm for row height + 4mm padding before recommendation box
   
   // Role Suitability Explanation
   const roleScoresSorted = data.candidates
