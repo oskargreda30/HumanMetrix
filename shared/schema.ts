@@ -1156,3 +1156,34 @@ export const insertPartnerTeamMemberSchema = createInsertSchema(partnerTeamMembe
 
 export type InsertPartnerTeamMember = z.infer<typeof insertPartnerTeamMemberSchema>;
 export type PartnerTeamMember = typeof partnerTeamMembers.$inferSelect;
+
+// Partner billing change requests - requests to change billing type
+export const billingChangeRequests = pgTable("billing_change_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
+  currentBillingType: varchar("current_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
+  requestedBillingType: varchar("requested_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
+  reason: text("reason"), // Optional reason for the change request
+  status: varchar("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
+  reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),
+  reviewNotes: text("review_notes"), // Optional notes from super admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => [
+  index("idx_billing_change_partner").on(table.partnerId),
+  index("idx_billing_change_status").on(table.status),
+  index("idx_billing_change_created").on(table.createdAt),
+]);
+
+export const insertBillingChangeRequestSchema = createInsertSchema(billingChangeRequests).omit({
+  id: true,
+  createdAt: true,
+  reviewedAt: true,
+  reviewedByUserId: true,
+  reviewNotes: true,
+  status: true,
+});
+
+export type InsertBillingChangeRequest = z.infer<typeof insertBillingChangeRequestSchema>;
+export type BillingChangeRequest = typeof billingChangeRequests.$inferSelect;
