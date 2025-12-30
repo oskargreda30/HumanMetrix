@@ -1330,11 +1330,11 @@ export default function CompareTab() {
                                 </div>
                               </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-4">
                               {risks.length === 0 ? (
-                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                  <div className="h-3 w-3 rounded-full bg-green-500" />
-                                  <span className="text-base font-medium">No significant risks detected</span>
+                                <div className="flex items-center gap-3 py-2">
+                                  <div className="h-3 w-3 rounded-full bg-green-500 shrink-0" />
+                                  <span className="text-lg font-medium text-foreground">No significant risks detected</span>
                                 </div>
                               ) : (
                                 <div className="space-y-2 max-h-48 overflow-y-auto">
