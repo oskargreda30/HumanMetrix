@@ -30,93 +30,7 @@ const CHART_COLORS = [
 
 // Role definitions with skill weightings for suitability scoring
 // Uses the same keys as FIT_SKILLS and AI_READINESS_SKILLS
-const ROLE_DEFINITIONS: Record<string, { name: string; description: string; weights: Record<string, number> }> = {
-  'ai_product_manager': {
-    name: 'AI Product Manager',
-    description: 'Leads AI product strategy and development',
-    weights: {
-      'AI Literacy & Prompt Engineering': 0.15,
-      'Critical Thinking & Problem-Solving': 0.15,
-      'Collaboration & Communication': 0.15,
-      'Domain Expertise': 0.12,
-      'Creativity & Innovation': 0.10,
-      'Responsible AI & Ethical Awareness': 0.10,
-      'High Agency': 0.08,
-      'Growth Mindset': 0.08,
-      'Interpersonal Agility': 0.07,
-    }
-  },
-  'data_analyst': {
-    name: 'Data Analyst',
-    description: 'Analyzes data to drive business decisions',
-    weights: {
-      'Data Fluency': 0.20,
-      'Critical Thinking & Problem-Solving': 0.18,
-      'Technical Fundamentals': 0.15,
-      'Domain Expertise': 0.12,
-      'Intellectual Curiosity': 0.10,
-      'Collaboration & Communication': 0.10,
-      'AI Literacy & Prompt Engineering': 0.08,
-      'Growth Mindset': 0.07,
-    }
-  },
-  'ai_engineer': {
-    name: 'AI/ML Engineer',
-    description: 'Builds and deploys AI/ML systems',
-    weights: {
-      'Technical Fundamentals': 0.20,
-      'AI Literacy & Prompt Engineering': 0.18,
-      'Data Fluency': 0.15,
-      'Critical Thinking & Problem-Solving': 0.12,
-      'Adaptability & Continuous Learning': 0.10,
-      'Creativity & Innovation': 0.10,
-      'Responsible AI & Ethical Awareness': 0.08,
-      'Growth Mindset': 0.07,
-    }
-  },
-  'ux_researcher': {
-    name: 'UX Researcher',
-    description: 'Conducts user research for AI products',
-    weights: {
-      'Empathy & Ethics': 0.18,
-      'Collaboration & Communication': 0.15,
-      'Critical Thinking & Problem-Solving': 0.15,
-      'Intellectual Curiosity': 0.12,
-      'Interpersonal Agility': 0.12,
-      'Data Fluency': 0.10,
-      'Creativity & Innovation': 0.10,
-      'Responsible AI & Ethical Awareness': 0.08,
-    }
-  },
-  'ai_consultant': {
-    name: 'AI Strategy Consultant',
-    description: 'Advises organizations on AI adoption',
-    weights: {
-      'Domain Expertise': 0.15,
-      'Collaboration & Communication': 0.15,
-      'High Agency': 0.12,
-      'AI Literacy & Prompt Engineering': 0.12,
-      'Critical Thinking & Problem-Solving': 0.12,
-      'Interpersonal Agility': 0.10,
-      'Responsible AI & Ethical Awareness': 0.10,
-      'Growth Mindset': 0.07,
-      'Resilience': 0.07,
-    }
-  },
-  'prompt_engineer': {
-    name: 'Prompt Engineer',
-    description: 'Designs and optimizes AI prompts',
-    weights: {
-      'AI Literacy & Prompt Engineering': 0.25,
-      'Creativity & Innovation': 0.18,
-      'Critical Thinking & Problem-Solving': 0.15,
-      'Technical Fundamentals': 0.12,
-      'Adaptability & Continuous Learning': 0.10,
-      'Intellectual Curiosity': 0.10,
-      'Domain Expertise': 0.10,
-    }
-  },
-};
+import { ROLE_DEFINITIONS } from '@/lib/assessmentSkills';
 
 // Map skill keys to display names for lookups (handles both legacy and current keys)
 const SKILL_KEY_TO_DISPLAY: Record<string, string> = {
@@ -184,7 +98,7 @@ interface ComparisonData {
 
 export default function CompareTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
-  const [selectedRole, setSelectedRole] = useState<string>('ai_product_manager');
+  const [selectedRole, setSelectedRole] = useState<string>('');
   const [assessmentWeights, setAssessmentWeights] = useState({
     fit: 25,
     aiReadiness: 25,
@@ -362,6 +276,7 @@ export default function CompareTab() {
         fitCombinedChartImage,
         aiCombinedChartImage,
         overallSkillsChartImage,
+        selectedRole: selectedRole || null,
       });
       
       toast({
@@ -894,53 +809,63 @@ export default function CompareTab() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      <p className="text-sm text-muted-foreground">
-                        {ROLE_DEFINITIONS[selectedRole]?.description}
-                      </p>
-                      
-                      {/* Role fit scores */}
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {selectedCandidateData?.map((candidate: any, index: number) => {
-                          const fitScore = calculateRoleSuitability(index, selectedRole);
-                          const performance = getPerformanceLevel(fitScore);
+                      {!selectedRole ? (
+                        <div className="text-center py-8">
+                          <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                          <p className="text-lg font-medium text-muted-foreground mb-2">No Role Selected</p>
+                          <p className="text-sm text-muted-foreground">
+                            Select a role from the dropdown above to see how candidates align with specific job requirements.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            {ROLE_DEFINITIONS[selectedRole]?.description}
+                          </p>
                           
-                          return (
-                            <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
-                              <CardContent className="pt-4 text-center">
-                                <p className="font-medium mb-2" style={{ color: CHART_COLORS[index] }}>
-                                  {getCandidateName(candidate)}
-                                </p>
-                                <div className="text-5xl font-bold mb-2" style={{ color: CHART_COLORS[index] }}>
-                                  {fitScore}%
-                                </div>
-                                <Badge variant={performance.variant}>{performance.label} Fit</Badge>
-                                
-                                {/* Skill match breakdown */}
-                                <div className="mt-4 text-left">
-                                  <p className="text-xs font-medium mb-2">Key Skill Match:</p>
-                                  <div className="space-y-1">
-                                    {Object.entries(ROLE_DEFINITIONS[selectedRole]?.weights || {}).slice(0, 4).map(([skillName, weight]) => {
-                                      const skills = getAllCandidateSkills(index);
-                                      const score = skills[skillName];
-                                      return (
-                                        <div key={skillName} className="flex items-center justify-between text-xs">
-                                          <span className="text-muted-foreground truncate flex-1">{skillName}</span>
-                                          <span className={`ml-2 font-medium ${score !== undefined ? (score >= 70 ? 'text-green-600 dark:text-green-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400') : 'text-muted-foreground'}`}>
-                                            {score !== undefined ? `${score}` : 'N/A'}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Role Suitability Explanation */}
-                      {(() => {
+                          {/* Role fit scores */}
+                          <div className="grid gap-4 md:grid-cols-3">
+                            {selectedCandidateData?.map((candidate: any, index: number) => {
+                              const fitScore = calculateRoleSuitability(index, selectedRole);
+                              const performance = getPerformanceLevel(fitScore);
+                              
+                              return (
+                                <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
+                                  <CardContent className="pt-4 text-center">
+                                    <p className="font-medium mb-2" style={{ color: CHART_COLORS[index] }}>
+                                      {getCandidateName(candidate)}
+                                    </p>
+                                    <div className="text-5xl font-bold mb-2" style={{ color: CHART_COLORS[index] }}>
+                                      {fitScore}%
+                                    </div>
+                                    <Badge variant={performance.variant}>{performance.label} Fit</Badge>
+                                    
+                                    {/* Skill match breakdown */}
+                                    <div className="mt-4 text-left">
+                                      <p className="text-xs font-medium mb-2">Key Skill Match:</p>
+                                      <div className="space-y-1">
+                                        {Object.entries(ROLE_DEFINITIONS[selectedRole]?.weights || {}).slice(0, 4).map(([skillName, weight]) => {
+                                          const skills = getAllCandidateSkills(index);
+                                          const score = skills[skillName];
+                                          return (
+                                            <div key={skillName} className="flex items-center justify-between text-xs">
+                                              <span className="text-muted-foreground truncate flex-1">{skillName}</span>
+                                              <span className={`ml-2 font-medium ${score !== undefined ? (score >= 70 ? 'text-green-600 dark:text-green-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400') : 'text-muted-foreground'}`}>
+                                                {score !== undefined ? `${score}` : 'N/A'}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                          
+                          {/* Role Suitability Explanation */}
+                          {(() => {
                         const roleScores = selectedCandidateData?.map((candidate: any, index: number) => ({
                           name: getCandidateName(candidate),
                           score: calculateRoleSuitability(index, selectedRole),
@@ -1014,6 +939,8 @@ export default function CompareTab() {
                           </div>
                         );
                       })()}
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

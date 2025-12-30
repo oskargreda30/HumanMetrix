@@ -292,3 +292,94 @@ export const COMPARISON_COLORS = [
   'hsl(142, 76%, 36%)',  // Green
   'hsl(24, 95%, 53%)',   // Orange
 ];
+
+/**
+ * Role definitions with weighted skill requirements for role suitability scoring
+ */
+export const ROLE_DEFINITIONS: Record<string, { name: string; description: string; weights: Record<string, number> }> = {
+  'ai_product_manager': {
+    name: 'AI Product Manager',
+    description: 'Leads AI product strategy and development',
+    weights: {
+      'AI Literacy & Prompt Engineering': 0.15,
+      'Critical Thinking & Problem-Solving': 0.15,
+      'Collaboration & Communication': 0.15,
+      'Domain Expertise': 0.12,
+      'Creativity & Innovation': 0.10,
+      'Responsible AI & Ethical Awareness': 0.10,
+      'High Agency': 0.08,
+      'Growth Mindset': 0.08,
+      'Interpersonal Agility': 0.07,
+    }
+  },
+  'data_analyst': {
+    name: 'Data Analyst',
+    description: 'Analyzes data to drive business decisions',
+    weights: {
+      'Data Fluency': 0.20,
+      'Critical Thinking & Problem-Solving': 0.18,
+      'Technical Fundamentals': 0.15,
+      'Domain Expertise': 0.12,
+      'Intellectual Curiosity': 0.10,
+      'Collaboration & Communication': 0.10,
+      'AI Literacy & Prompt Engineering': 0.08,
+      'Growth Mindset': 0.07,
+    }
+  },
+  'ai_engineer': {
+    name: 'AI/ML Engineer',
+    description: 'Builds and deploys AI/ML systems',
+    weights: {
+      'Technical Fundamentals': 0.20,
+      'AI Literacy & Prompt Engineering': 0.18,
+      'Data Fluency': 0.15,
+      'Critical Thinking & Problem-Solving': 0.12,
+      'Adaptability & Continuous Learning': 0.10,
+      'Creativity & Innovation': 0.10,
+      'Responsible AI & Ethical Awareness': 0.08,
+      'Growth Mindset': 0.07,
+    }
+  },
+  'ux_researcher': {
+    name: 'UX Researcher',
+    description: 'Conducts user research for AI products',
+    weights: {
+      'Empathy & Ethics': 0.18,
+      'Collaboration & Communication': 0.15,
+      'Critical Thinking & Problem-Solving': 0.15,
+      'Intellectual Curiosity': 0.12,
+      'Interpersonal Agility': 0.12,
+      'Data Fluency': 0.10,
+      'Creativity & Innovation': 0.10,
+      'Responsible AI & Ethical Awareness': 0.08,
+    }
+  },
+  'ai_consultant': {
+    name: 'AI Strategy Consultant',
+    description: 'Advises organizations on AI adoption',
+    weights: {
+      'Domain Expertise': 0.15,
+      'Collaboration & Communication': 0.15,
+      'High Agency': 0.12,
+      'AI Literacy & Prompt Engineering': 0.12,
+      'Critical Thinking & Problem-Solving': 0.12,
+      'Interpersonal Agility': 0.10,
+      'Responsible AI & Ethical Awareness': 0.10,
+      'Growth Mindset': 0.07,
+      'Resilience': 0.07,
+    }
+  },
+  'prompt_engineer': {
+    name: 'Prompt Engineer',
+    description: 'Designs and optimizes AI prompts',
+    weights: {
+      'AI Literacy & Prompt Engineering': 0.25,
+      'Creativity & Innovation': 0.18,
+      'Critical Thinking & Problem-Solving': 0.15,
+      'Technical Fundamentals': 0.12,
+      'Adaptability & Continuous Learning': 0.10,
+      'Intellectual Curiosity': 0.10,
+      'Domain Expertise': 0.10,
+    }
+  },
+};
