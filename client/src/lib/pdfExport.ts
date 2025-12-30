@@ -1232,8 +1232,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     let cardY = yPos + 7;
     
     if (risks.length === 0) {
-      pdf.setTextColor(34, 197, 94);
-      pdf.setFontSize(5.5);
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
       pdf.text('No significant risks', cardX + 2, cardY);
     } else {
       risks.forEach((risk) => {
