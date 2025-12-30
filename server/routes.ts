@@ -7480,7 +7480,7 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
-      const { partnerId, apiKeyId, assessmentType, email } = req.body;
+      const { partnerId, apiKeyId, assessmentType, email, externalUserId, metadata } = req.body;
       
       if (!partnerId || !apiKeyId || !assessmentType) {
         return res.status(400).json({ message: "Missing required fields: partnerId, apiKeyId, assessmentType" });
@@ -7499,14 +7499,21 @@ Format your response as JSON with this structure:
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       
+      // Merge user-provided metadata with test mode metadata
+      const sessionMetadata = {
+        testMode: true,
+        createdBy: user.email,
+        ...(metadata || {}),
+      };
+      
       const session = await storage.createAssessmentSession({
         partnerId: partner.id,
-        partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
+        partnerOrganisationId: apiKey.partnerOrganisationId || null,
         apiKeyId: apiKey.id,
         assessmentType,
-        externalUserId: `test-${Date.now()}`,
-        externalEmail: email || "test@example.com",
-        metadata: { testMode: true, createdBy: user.email },
+        externalUserId: externalUserId || `test-${Date.now()}`,
+        externalEmail: email || undefined,
+        metadata: sessionMetadata,
         expiresAt,
         status: "created",
         questionLocale: "default",

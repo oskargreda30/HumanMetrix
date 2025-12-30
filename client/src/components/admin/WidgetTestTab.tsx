@@ -41,6 +41,9 @@ export default function WidgetTestTab() {
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
   const [assessmentType, setAssessmentType] = useState<string>("fit");
   const [testEmail, setTestEmail] = useState<string>("test@example.com");
+  const [externalUserId, setExternalUserId] = useState<string>("");
+  const [metadataJson, setMetadataJson] = useState<string>('{\n  "jobRole": "Software Engineer",\n  "department": "Engineering"\n}');
+  const [metadataError, setMetadataError] = useState<string>("");
   const [currentSession, setCurrentSession] = useState<TestSession | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [widgetTheme, setWidgetTheme] = useState<string>("light");
@@ -54,8 +57,24 @@ export default function WidgetTestTab() {
     enabled: !!selectedPartnerId,
   });
 
+  const validateMetadata = (json: string): Record<string, any> | null => {
+    if (!json.trim()) return {};
+    try {
+      const parsed = JSON.parse(json);
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setMetadataError("Metadata must be a JSON object");
+        return null;
+      }
+      setMetadataError("");
+      return parsed;
+    } catch {
+      setMetadataError("Invalid JSON format");
+      return null;
+    }
+  };
+
   const createTestSessionMutation = useMutation({
-    mutationFn: async (data: { partnerId: string; apiKeyId: string; assessmentType: string; email: string }) => {
+    mutationFn: async (data: { partnerId: string; apiKeyId: string; assessmentType: string; email?: string; externalUserId?: string; metadata?: Record<string, any> }) => {
       const response = await apiRequest("POST", "/api/admin/widget-test/session", data);
       return response.json();
     },
@@ -198,15 +217,47 @@ export default function WidgetTestTab() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Test Email</Label>
+                <Label className="text-slate-300">External User ID (optional)</Label>
+                <Input
+                  type="text"
+                  value={externalUserId}
+                  onChange={(e) => setExternalUserId(e.target.value)}
+                  className="bg-slate-900/50 border-slate-600 text-white"
+                  placeholder="candidate-123 or applicant-abc"
+                  data-testid="input-widget-external-user-id"
+                />
+                <p className="text-xs text-slate-500">Your internal identifier for this candidate</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">Email (optional)</Label>
                 <Input
                   type="email"
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
                   className="bg-slate-900/50 border-slate-600 text-white"
-                  placeholder="test@example.com"
+                  placeholder="candidate@example.com"
                   data-testid="input-widget-test-email"
                 />
+                <p className="text-xs text-slate-500">Candidate email for notifications (optional)</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">Custom Metadata (JSON)</Label>
+                <textarea
+                  value={metadataJson}
+                  onChange={(e) => {
+                    setMetadataJson(e.target.value);
+                    validateMetadata(e.target.value);
+                  }}
+                  className="w-full h-28 bg-slate-900/50 border border-slate-600 text-white rounded-md p-3 font-mono text-sm resize-none"
+                  placeholder='{"jobRole": "Engineer", "department": "Tech"}'
+                  data-testid="input-widget-metadata"
+                />
+                {metadataError && (
+                  <p className="text-xs text-red-400">{metadataError}</p>
+                )}
+                <p className="text-xs text-slate-500">Custom key-value pairs to store with this session</p>
               </div>
 
               <div className="space-y-2">
@@ -223,15 +274,19 @@ export default function WidgetTestTab() {
               </div>
 
               <Button
-                onClick={() =>
+                onClick={() => {
+                  const metadata = validateMetadata(metadataJson);
+                  if (metadata === null) return;
                   createTestSessionMutation.mutate({
                     partnerId: selectedPartnerId,
                     apiKeyId: selectedKeyId,
                     assessmentType,
-                    email: testEmail,
-                  })
-                }
-                disabled={!selectedPartnerId || !selectedKeyId || createTestSessionMutation.isPending}
+                    email: testEmail || undefined,
+                    externalUserId: externalUserId || undefined,
+                    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+                  });
+                }}
+                disabled={!selectedPartnerId || !selectedKeyId || createTestSessionMutation.isPending || !!metadataError}
                 className="w-full bg-cyan-600 hover:bg-cyan-700"
                 data-testid="button-create-widget-session"
               >

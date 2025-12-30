@@ -253,6 +253,12 @@ export default function Developers() {
                             <td className="py-2 px-4">Candidate's email for notifications</td>
                           </tr>
                           <tr className="border-b border-slate-700/50">
+                            <td className="py-2 px-4 font-mono text-cyan-400">metadata</td>
+                            <td className="py-2 px-4">object</td>
+                            <td className="py-2 px-4">No</td>
+                            <td className="py-2 px-4">Custom key-value pairs to store with the session (e.g., jobRole, department)</td>
+                          </tr>
+                          <tr className="border-b border-slate-700/50">
                             <td className="py-2 px-4 font-mono text-cyan-400">container</td>
                             <td className="py-2 px-4">string</td>
                             <td className="py-2 px-4">No</td>
@@ -303,8 +309,13 @@ export default function Developers() {
       apiKey: 'hm_live_xxxxxxxxxxxx',
       assessmentType: 'fit',
       candidateId: 'candidate-' + Date.now(),
-      candidateEmail: 'candidate@example.com',
+      candidateEmail: 'candidate@example.com', // Optional
       container: '#assessment-container',
+      metadata: {
+        jobRole: 'Software Engineer',
+        department: 'Engineering',
+        applicationId: 'app-12345'
+      },
       theme: {
         primaryColor: '#0ea5e9',
         fontFamily: 'Inter, sans-serif'
@@ -500,6 +511,44 @@ const allResults = await client.getCandidateResults('candidate-123');`} />
                   </div>
 
                   <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Candidate Tracking</h3>
+                    <p className="text-slate-300 mb-4">
+                      You have flexible options for tracking candidates - email is optional:
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-700">
+                            <th className="text-left py-2 px-4 text-slate-300">Field</th>
+                            <th className="text-left py-2 px-4 text-slate-300">Required</th>
+                            <th className="text-left py-2 px-4 text-slate-300">Use Case</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-slate-400">
+                          <tr className="border-b border-slate-700/50">
+                            <td className="py-2 px-4 font-mono text-cyan-400">candidateId</td>
+                            <td className="py-2 px-4">Yes</td>
+                            <td className="py-2 px-4">Your internal identifier (e.g., ATS ID, employee ID, applicant number)</td>
+                          </tr>
+                          <tr className="border-b border-slate-700/50">
+                            <td className="py-2 px-4 font-mono text-cyan-400">candidateEmail</td>
+                            <td className="py-2 px-4">No</td>
+                            <td className="py-2 px-4">For notifications and matching (optional if you track by ID only)</td>
+                          </tr>
+                          <tr className="border-b border-slate-700/50">
+                            <td className="py-2 px-4 font-mono text-cyan-400">metadata</td>
+                            <td className="py-2 px-4">No</td>
+                            <td className="py-2 px-4">Store any custom data (job role, department, requisition ID, etc.)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-slate-400 text-sm mt-3">
+                      All tracking data is returned with results, enabling you to match sessions to your systems without requiring candidate email.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-white">Create Session Request</h3>
                     <CodeBlock code={`POST /api/partner/sessions
 Content-Type: application/json
@@ -511,10 +560,11 @@ X-API-Key: hm_live_xxxxxxxxxxxx
   "candidateEmail": "candidate@example.com", // Optional
   "candidateName": "John Smith",             // Optional
   "expiresInMinutes": 1440,                  // Optional: Session validity (default: 1440)
-  "metadata": {                              // Optional: Custom metadata
+  "metadata": {                              // Optional: Custom key-value pairs
     "jobRole": "Software Engineer",
     "department": "Engineering",
-    "applicationId": "app-456"
+    "applicationId": "app-456",
+    "requisitionId": "REQ-2025-001"
   }
 }`} />
                   </div>
@@ -537,9 +587,15 @@ X-API-Key: hm_live_xxxxxxxxxxxx
   "sessionId": "sess_abc123def456",
   "status": "completed",
   "candidateId": "your-id-123",
+  "candidateEmail": "candidate@example.com",
   "assessmentType": "fit",
   "overallScore": 78,
   "completedAt": "2025-01-14T14:30:00Z",
+  "metadata": {
+    "jobRole": "Software Engineer",
+    "department": "Engineering",
+    "applicationId": "app-456"
+  },
   "breakdown": {
     "adaptability": 82,
     "collaboration": 75,
