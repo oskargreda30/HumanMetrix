@@ -1006,30 +1006,25 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
   yPos += 8;
   
-  // --- 2. ROLE SUITABILITY ANALYSIS ---
-  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
-  yPos = addSectionHeader(pdf, 'ROLE SUITABILITY: AI STRATEGY CONSULTANT', yPos, pageWidth);
-  yPos += 3;
+  // --- 2. ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
+  // Default role weights used only if we need them for later calculations
+  const roleWeights: Record<string, number> = data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]
+    ? ROLE_DEFINITIONS[data.selectedRole].weights
+    : {};
   
-  // Role description
-  pdf.setFontSize(6.5);
-  pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Advises organizations on AI adoption strategy and implementation', 20, yPos);
-  yPos += 5;
-  
-  // Role weights for AI Strategy Consultant
-  const roleWeights: Record<string, number> = {
-    'Domain Expertise': 0.15,
-    'Collaboration & Communication': 0.15,
-    'High Agency': 0.12,
-    'AI Literacy & Prompt Engineering': 0.12,
-    'Critical Thinking & Problem-Solving': 0.12,
-    'Interpersonal Agility': 0.10,
-    'Responsible AI & Ethical Awareness': 0.10,
-    'Growth Mindset': 0.07,
-    'Resilience': 0.07,
-  };
+  if (data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]) {
+    const selectedRoleDef = ROLE_DEFINITIONS[data.selectedRole];
+    
+    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, `ROLE SUITABILITY: ${selectedRoleDef.name.toUpperCase()}`, yPos, pageWidth);
+    yPos += 3;
+    
+    // Role description
+    pdf.setFontSize(6.5);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(selectedRoleDef.description, 20, yPos);
+    yPos += 5;
   
   // Calculate role suitability
   const calculateRoleSuitabilityPDF = (candidateIndex: number): number => {
@@ -1156,7 +1151,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Main explanation
     pdf.setFontSize(6);
     pdf.setTextColor(71, 85, 105);
-    let roleText = `For AI Strategy Consultant, scoring prioritizes ${topWeightedSkills[0]} (which ${skillBenefits[topWeightedSkills[0]] || 'contributes to role effectiveness'}) `;
+    let roleText = `For ${selectedRoleDef.name}, scoring prioritizes ${topWeightedSkills[0]} (which ${skillBenefits[topWeightedSkills[0]] || 'contributes to role effectiveness'}) `;
     roleText += `and ${topWeightedSkills[1]} (which ${skillBenefits[topWeightedSkills[1]] || 'contributes to role effectiveness'}).`;
     
     const splitRoleText = pdf.splitTextToSize(roleText, pageWidth - 60);
@@ -1175,6 +1170,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += boxHeight;
   }
   yPos += 5;
+  } // End of role suitability conditional
   
   // --- 3. RISK INDICATORS ---
   yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
@@ -1303,7 +1299,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     // Recalculate role scores using the selected role weights
     const selectedRoleScores = data.candidates.map((candidate, index) => {
-      const skills = getAllCandidateSkillsPDF(data, index);
+      const skills = getAllCandidateSkillsPDF(index);
       let weightedSum = 0;
       let totalWeight = 0;
       
