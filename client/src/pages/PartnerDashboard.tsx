@@ -14,15 +14,36 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import dashboardBg from "@assets/image_1763608498774.png";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Helper component for info tooltips - accessible with keyboard
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          aria-label="More information"
+        >
+          <Info className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-muted-foreground" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p className="text-sm">{content}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 interface PartnerAccount {
   hasPartnerAccount: boolean;
@@ -1131,7 +1152,10 @@ export default function PartnerDashboard() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
+                      <InfoTooltip content="Total assessment credits purchased for your account. Each completed assessment consumes one credit." />
+                    </div>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1143,7 +1167,10 @@ export default function PartnerDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
+                      <InfoTooltip content="Number of assessments that candidates have fully completed. Only completed tests consume credits." />
+                    </div>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1155,7 +1182,10 @@ export default function PartnerDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+                      <InfoTooltip content="Credits available for new assessments. Low balance shown in amber/red. Consider purchasing more credits when low." />
+                    </div>
                     <CreditCard className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1167,7 +1197,10 @@ export default function PartnerDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
+                      <InfoTooltip content="Number of API keys currently active. Each key can be used to integrate assessments into your applications." />
+                    </div>
                     <Activity className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1196,7 +1229,10 @@ export default function PartnerDashboard() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                      <InfoTooltip content="Assessments completed during the current calendar month. Resets on the 1st of each month." />
+                    </div>
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1208,7 +1244,10 @@ export default function PartnerDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Organizations</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Organizations</CardTitle>
+                      <InfoTooltip content="Separate workspaces to group assessments by client, department, or project. Each org can have its own API key." />
+                    </div>
                     <Building2 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1220,7 +1259,10 @@ export default function PartnerDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Completed Results</CardTitle>
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Completed Results</CardTitle>
+                      <InfoTooltip content="Total number of assessment results available for review. Only completed assessments appear here." />
+                    </div>
                     <ClipboardList className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -1307,7 +1349,10 @@ export default function PartnerDashboard() {
             <TabsContent value="results" className="space-y-4" data-testid="panel-results">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Candidate Results</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">Candidate Results</CardTitle>
+                    <InfoTooltip content="Assessment scores are percentages (0-100%). Higher scores indicate stronger performance. Scores above 70% are considered strong, 50-70% average, and below 50% may need development." />
+                  </div>
                   <CardDescription>View completed assessment results for your candidates</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1751,7 +1796,7 @@ export default function PartnerDashboard() {
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                             <XAxis dataKey="month" className="text-xs" />
                             <YAxis className="text-xs" />
-                            <Tooltip 
+                            <RechartsTooltip 
                               contentStyle={{ 
                                 backgroundColor: 'hsl(var(--card))',
                                 border: '1px solid hsl(var(--border))',
@@ -2135,6 +2180,7 @@ export default function PartnerDashboard() {
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Bell className="h-5 w-5" />
                         Quota Alerts
+                        <InfoTooltip content="Set up email notifications to alert you when your remaining credits drop below a certain percentage. Helps prevent running out of credits unexpectedly." />
                       </CardTitle>
                       <CardDescription>
                         Get notified when your test credits are running low
@@ -2198,6 +2244,7 @@ export default function PartnerDashboard() {
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Auto Top-Up
+                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for prepaid accounts." />
                         </CardTitle>
                         <CardDescription>
                           Automatically purchase more tests when your balance runs low
@@ -2264,6 +2311,7 @@ export default function PartnerDashboard() {
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Palette className="h-5 w-5" />
                         White-Label Branding
+                        <InfoTooltip content="Display your company logo, colors, and messaging instead of HumanMetrix branding. Candidates will see your brand throughout the assessment experience." />
                       </CardTitle>
                       <CardDescription>
                         Customize the assessment experience with your company branding for candidates
@@ -2532,7 +2580,10 @@ export default function PartnerDashboard() {
                       {/* Tests Over Time Chart */}
                       <div className="lg:col-span-2 border rounded-lg p-4">
                         <div className="mb-4">
-                          <h3 className="text-lg font-semibold">Tests Completed Over Time</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">Tests Completed Over Time</h3>
+                            <InfoTooltip content="Shows the volume of completed assessments over time. Use the period selector above to switch between daily, weekly, or monthly views." />
+                          </div>
                           <p className="text-sm text-muted-foreground">Number of assessments completed per {analyticsPeriod === 'daily' ? 'day' : analyticsPeriod === 'weekly' ? 'week' : 'month'}</p>
                         </div>
                         <div className="h-80">
@@ -2542,7 +2593,7 @@ export default function PartnerDashboard() {
                                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                 <XAxis dataKey="date" className="text-xs" />
                                 <YAxis className="text-xs" />
-                                <Tooltip />
+                                <RechartsTooltip />
                                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                               </BarChart>
                             </ResponsiveContainer>
@@ -2557,7 +2608,10 @@ export default function PartnerDashboard() {
                       {/* By Assessment Type */}
                       <div className="border rounded-lg p-4">
                         <div className="mb-4">
-                          <h3 className="text-lg font-semibold">By Assessment Type</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">By Assessment Type</h3>
+                            <InfoTooltip content="Shows how many of each assessment type have been completed, along with the average score for each type." />
+                          </div>
                           <p className="text-sm text-muted-foreground">Breakdown of tests by type with average scores</p>
                         </div>
                         {analytics.byAssessmentType.length > 0 ? (

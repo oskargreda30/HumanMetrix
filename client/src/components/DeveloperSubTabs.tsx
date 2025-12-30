@@ -3,7 +3,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info } from "lucide-react";
+
+// Helper component for info tooltips - accessible with keyboard
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          aria-label="More information"
+        >
+          <Info className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-muted-foreground" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p className="text-sm">{content}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 interface ApiKey {
   id: string;
@@ -85,7 +106,10 @@ export function DeveloperSubTabs({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0">
               <div>
-                <CardTitle>API Keys</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>API Keys</CardTitle>
+                  <InfoTooltip content="API keys authenticate your applications with HumanMetrix. Use 'test' keys for development (no charges) and 'live' keys for production. Rotate keys periodically for security." />
+                </div>
                 <CardDescription>Manage your API keys for accessing the HumanMetrix API</CardDescription>
               </div>
               <Button 
@@ -238,7 +262,10 @@ export function DeveloperSubTabs({
                   <TestTube className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <CardTitle>Assessment Sandbox</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Assessment Sandbox</CardTitle>
+                    <InfoTooltip content="Test the assessment experience yourself before sending to real candidates. Sandbox tests don't consume credits and results are for preview only." />
+                  </div>
                   <CardDescription>
                     Preview our assessment experience before deploying to candidates
                   </CardDescription>
