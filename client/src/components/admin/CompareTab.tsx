@@ -942,19 +942,54 @@ export default function CompareTab() {
                           return topScore > secondScore;
                         }).slice(0, 2).map(([name]) => name);
                         
+                        // Get skill benefit descriptions for the role
+                        const getSkillBenefit = (skillName: string): string => {
+                          const benefits: Record<string, string> = {
+                            'Domain Expertise': 'enables strategic guidance on industry-specific AI applications',
+                            'Collaboration & Communication': 'facilitates stakeholder alignment and cross-functional team coordination',
+                            'High Agency': 'drives proactive problem-solving and initiative in complex projects',
+                            'AI Literacy & Prompt Engineering': 'ensures effective implementation and optimization of AI systems',
+                            'Critical Thinking & Problem-Solving': 'supports analytical decision-making in ambiguous situations',
+                            'Interpersonal Agility': 'enables effective navigation of diverse team dynamics',
+                            'Responsible AI & Ethical Awareness': 'ensures compliance with AI governance frameworks',
+                            'Growth Mindset': 'supports continuous adaptation to emerging AI technologies',
+                            'Resilience': 'maintains performance under pressure and through setbacks',
+                          };
+                          return benefits[skillName] || 'contributes to role effectiveness';
+                        };
+                        
                         return (
-                          <div className="p-4 bg-muted/30 rounded-lg border">
-                            <p className="text-sm text-muted-foreground">
-                              <strong className="text-foreground">Why{' '}
-                              <span style={{ color: CHART_COLORS[top.index] }}>{top.name}</span> ranks highest:</strong>{' '}
-                              For the {roleName} role, scoring is weighted toward {topSkills.join(' and ')}.{' '}
-                              <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> scores {top.score}% 
-                              compared to <span style={{ color: CHART_COLORS[second.index] }} className="font-medium">{second.name}</span>'s {second.score}%
-                              {advantageSkills.length > 0 && (
-                                <>, with particular advantage in {advantageSkills.join(' and ')}</>
-                              )}.
-                              This weighted calculation considers how each candidate's skill profile aligns with the specific demands of the role.
-                            </p>
+                          <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-foreground mb-2">
+                                  Recommendation: <span style={{ color: CHART_COLORS[top.index] }}>{top.name}</span>
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  For the <strong className="text-foreground">{roleName}</strong> role, scoring prioritizes{' '}
+                                  <strong className="text-foreground">{topSkills[0]}</strong> (which {getSkillBenefit(topSkills[0])}) 
+                                  and <strong className="text-foreground">{topSkills[1]}</strong> (which {getSkillBenefit(topSkills[1])}).
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="text-2xl font-bold" style={{ color: CHART_COLORS[top.index] }}>{top.score}%</div>
+                                <div className="text-xs text-muted-foreground">vs {second.score}%</div>
+                              </div>
+                            </div>
+                            
+                            {advantageSkills.length > 0 && (
+                              <p className="text-sm text-muted-foreground border-t pt-3">
+                                <strong className="text-foreground">Key differentiator:</strong>{' '}
+                                <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> demonstrates 
+                                stronger performance in {advantageSkills.map((skill, i) => (
+                                  <span key={skill}>
+                                    <strong className="text-foreground">{skill}</strong>
+                                    {i < advantageSkills.length - 1 ? ' and ' : ''}
+                                  </span>
+                                ))}, which {advantageSkills.length === 1 ? getSkillBenefit(advantageSkills[0]) : 'are critical competencies for this role'}.
+                                This advantage translates to a {top.score - second.score} percentage point lead in overall role fit.
+                              </p>
+                            )}
                           </div>
                         );
                       })()}
