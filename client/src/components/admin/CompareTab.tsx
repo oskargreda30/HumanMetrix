@@ -1856,7 +1856,7 @@ export default function CompareTab() {
                                   dataKey={`candidate${index}`}
                                   stroke={CHART_COLORS[index]}
                                   strokeWidth={3}
-                                  strokeDasharray={index === 0 ? "0" : "8 4"}
+                                  strokeDasharray="8 4"
                                   fill="transparent"
                                   fillOpacity={0}
                                 />
