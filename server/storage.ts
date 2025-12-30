@@ -87,6 +87,7 @@ import {
   partnerScheduledExports,
   partnerNotifications,
   partnerTeamMembers,
+  billingChangeRequests,
   type PartnerWebhook,
   type InsertPartnerWebhook,
   type WebhookDeliveryLog,
@@ -99,6 +100,8 @@ import {
   type InsertPartnerNotification,
   type PartnerTeamMember,
   type InsertPartnerTeamMember,
+  type BillingChangeRequest,
+  type InsertBillingChangeRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
@@ -420,6 +423,14 @@ export interface IStorage {
     byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
     byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
   }>;
+
+  // Billing change request operations
+  createBillingChangeRequest(request: InsertBillingChangeRequest): Promise<BillingChangeRequest>;
+  getBillingChangeRequest(id: string): Promise<BillingChangeRequest | undefined>;
+  getBillingChangeRequestsByPartner(partnerId: string): Promise<BillingChangeRequest[]>;
+  getPendingBillingChangeRequest(partnerId: string): Promise<BillingChangeRequest | undefined>;
+  getAllPendingBillingChangeRequests(): Promise<Array<BillingChangeRequest & { partnerName: string; requestedByName: string; requestedByEmail: string }>>;
+  updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string; reviewedAt?: Date }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2649,6 +2660,69 @@ export class DatabaseStorage implements IStorage {
       })),
       scoreDistribution,
     };
+  }
+
+  // Billing change request operations
+  async createBillingChangeRequest(request: InsertBillingChangeRequest): Promise<BillingChangeRequest> {
+    const [result] = await db.insert(billingChangeRequests).values(request).returning();
+    return result;
+  }
+
+  async getBillingChangeRequest(id: string): Promise<BillingChangeRequest | undefined> {
+    const [result] = await db.select().from(billingChangeRequests).where(eq(billingChangeRequests.id, id));
+    return result;
+  }
+
+  async getBillingChangeRequestsByPartner(partnerId: string): Promise<BillingChangeRequest[]> {
+    return await db.select().from(billingChangeRequests)
+      .where(eq(billingChangeRequests.partnerId, partnerId))
+      .orderBy(desc(billingChangeRequests.createdAt));
+  }
+
+  async getPendingBillingChangeRequest(partnerId: string): Promise<BillingChangeRequest | undefined> {
+    const [result] = await db.select().from(billingChangeRequests)
+      .where(and(
+        eq(billingChangeRequests.partnerId, partnerId),
+        eq(billingChangeRequests.status, 'pending')
+      ));
+    return result;
+  }
+
+  async getAllPendingBillingChangeRequests(): Promise<Array<BillingChangeRequest & { partnerName: string; requestedByName: string; requestedByEmail: string }>> {
+    const results = await db.select({
+      id: billingChangeRequests.id,
+      partnerId: billingChangeRequests.partnerId,
+      requestedByUserId: billingChangeRequests.requestedByUserId,
+      currentBillingType: billingChangeRequests.currentBillingType,
+      requestedBillingType: billingChangeRequests.requestedBillingType,
+      reason: billingChangeRequests.reason,
+      status: billingChangeRequests.status,
+      reviewedByUserId: billingChangeRequests.reviewedByUserId,
+      reviewNotes: billingChangeRequests.reviewNotes,
+      createdAt: billingChangeRequests.createdAt,
+      reviewedAt: billingChangeRequests.reviewedAt,
+      partnerName: partnerAccounts.companyName,
+      requestedByName: users.fullName,
+      requestedByEmail: users.email,
+    })
+      .from(billingChangeRequests)
+      .leftJoin(partnerAccounts, eq(billingChangeRequests.partnerId, partnerAccounts.id))
+      .leftJoin(users, eq(billingChangeRequests.requestedByUserId, users.id))
+      .where(eq(billingChangeRequests.status, 'pending'))
+      .orderBy(desc(billingChangeRequests.createdAt));
+    
+    return results.map(r => ({
+      ...r,
+      partnerName: r.partnerName || 'Unknown Partner',
+      requestedByName: r.requestedByName || 'Unknown User',
+      requestedByEmail: r.requestedByEmail || 'unknown@example.com',
+    }));
+  }
+
+  async updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string; reviewedAt?: Date }): Promise<void> {
+    await db.update(billingChangeRequests)
+      .set(updates)
+      .where(eq(billingChangeRequests.id, id));
   }
 }
 
