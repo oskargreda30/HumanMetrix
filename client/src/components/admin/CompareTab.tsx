@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -18,9 +18,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
+import logoUrl from "@assets/logo_HumanMetrix_big_1766783080540.png";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -105,6 +107,8 @@ export default function CompareTab() {
     promptArchitecture: 25,
     aiq: 25,
   });
+  const [isCapturingPDF, setIsCapturingPDF] = useState(false);
+  const reportContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -290,6 +294,101 @@ export default function CompareTab() {
         description: "There was an error generating the PDF. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleScreenCapturePDF = async () => {
+    if (!comparison || !selectedCandidateData || !reportContainerRef.current) return;
+    
+    try {
+      setIsCapturingPDF(true);
+      
+      toast({
+        title: "Generating Visual PDF...",
+        description: "Capturing the comparison view...",
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await document.fonts.ready;
+
+      const reportElement = reportContainerRef.current;
+      
+      const canvas = await html2canvas(reportElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        windowWidth: reportElement.scrollWidth,
+        windowHeight: reportElement.scrollHeight,
+      });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - (margin * 2);
+
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let currentY = margin;
+      let remainingHeight = imgHeight;
+      let sourceY = 0;
+
+      while (remainingHeight > 0) {
+        const availableHeight = pageHeight - (margin * 2);
+        const sliceHeight = Math.min(remainingHeight, availableHeight);
+        const sourceSliceHeight = (sliceHeight / imgHeight) * canvas.height;
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sourceSliceHeight;
+        const sliceCtx = sliceCanvas.getContext('2d');
+        
+        if (sliceCtx) {
+          sliceCtx.drawImage(
+            canvas, 
+            0, sourceY, canvas.width, sourceSliceHeight,
+            0, 0, canvas.width, sourceSliceHeight
+          );
+          
+          const sliceImgData = sliceCanvas.toDataURL('image/png');
+          pdf.addImage(sliceImgData, 'PNG', margin, margin, imgWidth, sliceHeight);
+        }
+
+        sourceY += sourceSliceHeight;
+        remainingHeight -= sliceHeight;
+
+        if (remainingHeight > 0) {
+          pdf.addPage();
+        }
+      }
+
+      const candidateNames = selectedCandidateData.map((c: any) => 
+        getCandidateName(c)
+      ).join('_vs_').substring(0, 50);
+      
+      pdf.save(`comparison-visual-${candidateNames}-${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: "Visual PDF exported successfully",
+        description: "Your visual comparison report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting visual PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the visual PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCapturingPDF(false);
     }
   };
 
@@ -611,6 +710,44 @@ export default function CompareTab() {
             </Card>
           ) : comparison ? (
             <>
+              {/* Report Container for Screen Capture PDF */}
+              <div 
+                ref={reportContainerRef} 
+                className={`space-y-6 ${isCapturingPDF ? 'bg-white p-6' : ''}`}
+              >
+                {/* Report Header - Only visible during PDF capture */}
+                {isCapturingPDF && (
+                  <div className="border-b pb-6 mb-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <img src={logoUrl} alt="HumanMetrix" className="h-12" />
+                        <div>
+                          <h1 className="text-2xl font-bold text-gray-900">Candidate Comparison Report</h1>
+                          <p className="text-sm text-gray-600">Generated on {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {selectedCandidateData?.map((candidate: any, index: number) => (
+                        <div key={candidate.user.id} className="p-3 border rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: CHART_COLORS[index]?.replace('hsl(var(--chart-', '').replace('))', '') || '#666' }}
+                            />
+                            <span className="font-semibold text-gray-900">{getCandidateName(candidate)}</span>
+                          </div>
+                          <p className="text-sm text-gray-600">{candidate.user.email}</p>
+                          <p className="text-sm font-medium mt-1">
+                            Composite Score: <span className="text-primary">{Math.round(comparison.averageScores[index])}%</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {/* Summary Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {selectedCandidateData?.map((candidate: any, index: number) => {
@@ -1965,20 +2102,35 @@ export default function CompareTab() {
                         </div>
                       </div>
 
-                      {/* Export Button */}
-                      <div className="flex justify-end">
+                      {/* Export Buttons */}
+                      <div className={`flex justify-end gap-3 ${isCapturingPDF ? 'report-hidden' : ''}`}>
                         <Button 
                           onClick={handleExportPDF}
                           data-testid="button-export-comparison"
+                          variant="outline"
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Export as PDF
+                          <FileText className="h-4 w-4 mr-2" />
+                          Export PDF (Standard)
+                        </Button>
+                        <Button 
+                          onClick={handleScreenCapturePDF}
+                          data-testid="button-export-visual"
+                          disabled={isCapturingPDF}
+                        >
+                          {isCapturingPDF ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Camera className="h-4 w-4 mr-2" />
+                          )}
+                          Export PDF (Visual)
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
+              </div>
+              {/* End of Report Container */}
 
               {!comparison.hasSkillData && (
                 <Card>
