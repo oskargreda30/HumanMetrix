@@ -9179,7 +9179,7 @@ Format your response as JSON with this structure:
       
       // Enrich with partner info
       const enrichedRequests = await Promise.all(requests.map(async (request) => {
-        const partner = await storage.getPartner(request.partnerId);
+        const partner = await storage.getPartnerAccount(request.partnerId);
         const partnerUser = partner?.userId ? await storage.getUser(partner.userId) : null;
         
         return {
@@ -9232,7 +9232,7 @@ Format your response as JSON with this structure:
       
       // If approved, update the partner's billing type
       if (action === 'approve') {
-        await storage.updatePartner(request.partnerId, {
+        await storage.updatePartnerAccount(request.partnerId, {
           billingType: request.requestedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
         });
       }
