@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, X, Sparkles, Home, Building2, ClipboardList, BarChart3, CreditCard, Key, Webhook, Users, CheckCircle, Bell, TestTube, Settings, Activity } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Sparkles, Home, Building2, ClipboardList, BarChart3, CreditCard, Key, Users, CheckCircle, Bell, Settings, Activity } from "lucide-react";
 
 export interface TourStep {
   id: string;
@@ -107,34 +107,14 @@ const TOUR_STEPS: TourStep[] = [
     highlightPadding: 8,
     position: 'top',
   },
-  // Developer & Integrations
+  // Developer Hub (consolidated)
   {
-    id: 'api-keys-content',
-    title: 'API Keys - Connect Your Systems',
-    description: 'Generate and manage API keys to integrate HumanMetrix assessments into your own applications. Create separate keys for development and production environments.',
+    id: 'developer-content',
+    title: 'Developer Hub - All-in-One',
+    description: 'Your central hub for API integration. Manage API keys, configure webhooks and ATS connections, and preview assessments in the sandbox - all in one place with easy sub-navigation.',
     icon: Key,
-    tab: 'api-keys',
-    targetSelector: '[data-testid="panel-api-keys"][data-state="active"]',
-    highlightPadding: 8,
-    position: 'top',
-  },
-  {
-    id: 'integrations-content',
-    title: 'Integrations - Automate Workflows',
-    description: 'Set up webhooks for real-time notifications when assessments complete. Connect to your ATS (Applicant Tracking System) and schedule automated data exports.',
-    icon: Webhook,
-    tab: 'integrations',
-    targetSelector: '[data-testid="panel-integrations"][data-state="active"]',
-    highlightPadding: 8,
-    position: 'top',
-  },
-  {
-    id: 'sandbox-content',
-    title: 'Sandbox - Test Your Integration',
-    description: 'Test your API integration without consuming real credits. The sandbox environment lets you verify API calls and webhook configurations safely before going live.',
-    icon: TestTube,
-    tab: 'sandbox',
-    targetSelector: '[data-testid="panel-sandbox"][data-state="active"]',
+    tab: 'developer',
+    targetSelector: '[data-testid="panel-developer"][data-state="active"]',
     highlightPadding: 8,
     position: 'top',
   },
