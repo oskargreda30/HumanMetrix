@@ -571,7 +571,7 @@ This document contains all original questions, answer options, and scoring logic
 ### Level 3: Role-Based Instruction
 **Description**: Guide the AI to adopt a specific persona or expertise level
 
-**Scenario**: You want the AI to explain a complex topic accessibly.
+**Scenario**: You want the to explain a complex topic accessibly.
 
 **Task Instructions**: Write a prompt asking the AI to explain quantum computing as if it were a senior physics professor teaching undergraduate students. The explanation should be accessible but accurate.
 

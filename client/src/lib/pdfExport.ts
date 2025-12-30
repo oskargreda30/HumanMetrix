@@ -630,7 +630,39 @@ export async function exportComparisonPDF(data: ComparisonData) {
       }
       yPos += 6;
     });
-    yPos += 5; // Reduced spacing to move sections up
+    
+    // AIQ Comparison Explanation
+    const aiqScoresSorted = data.candidates
+      .map((c, i) => ({ name: getCandidateName(c), score: data.aiqAssessments?.[i]?.totalScore ?? null, index: i }))
+      .filter(c => c.score !== null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)) as Array<{name: string; score: number; index: number}>;
+    
+    if (aiqScoresSorted.length >= 2) {
+      const top = aiqScoresSorted[0];
+      const second = aiqScoresSorted[1];
+      const diff = top.score - second.score;
+      
+      yPos += 3;
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'F');
+      
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105);
+      
+      const topLevel = top.score >= 80 ? 'exceptional' : top.score >= 70 ? 'strong' : top.score >= 60 ? 'adequate' : 'developing';
+      let aiqText = `AIQ Analysis: ${top.name} demonstrates ${topLevel} understanding of AI ethics with a score of ${top.score}/100.`;
+      if (diff > 0) {
+        aiqText += ` This is ${diff} points higher than ${second.name} (${second.score}/100).`;
+      }
+      aiqText += ' Higher AIQ indicates better preparedness for responsible AI governance.';
+      
+      const splitAiqText = pdf.splitTextToSize(aiqText, pageWidth - 48);
+      pdf.text(splitAiqText, 24, yPos + 5);
+      yPos += 14;
+    }
+    
+    yPos += 5;
   }
   
   // Prompt Architecture - Total Level Scores
@@ -1065,7 +1097,49 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     roleXOffset += roleColWidths[index + 1];
   });
-  yPos += 12;
+  yPos += 5;
+  
+  // Role Suitability Explanation
+  const roleScoresSorted = data.candidates
+    .map((c, i) => ({ 
+      name: getCandidateName(c), 
+      score: roleFitScores[i], 
+      index: i,
+      skills: getAllCandidateSkillsPDF(i)
+    }))
+    .sort((a, b) => b.score - a.score);
+  
+  if (roleScoresSorted.length >= 2) {
+    const topRole = roleScoresSorted[0];
+    const secondRole = roleScoresSorted[1];
+    const topWeightedSkills = Object.keys(roleWeights).slice(0, 2);
+    
+    // Find advantage skills
+    const advantageSkills = Object.keys(roleWeights).filter(skillName => {
+      const topScore = topRole.skills[skillName] ?? 0;
+      const secondScore = secondRole.skills[skillName] ?? 0;
+      return topScore > secondScore;
+    }).slice(0, 2);
+    
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'F');
+    
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(71, 85, 105);
+    
+    let roleText = `Why ${topRole.name} ranks highest: For AI Strategy Consultant, scoring is weighted toward ${topWeightedSkills.join(' and ')}. `;
+    roleText += `${topRole.name} scores ${topRole.score}% vs ${secondRole.name}'s ${secondRole.score}%`;
+    if (advantageSkills.length > 0) {
+      roleText += `, with advantage in ${advantageSkills.join(' and ')}`;
+    }
+    roleText += '.';
+    
+    const splitRoleText = pdf.splitTextToSize(roleText, pageWidth - 48);
+    pdf.text(splitRoleText, 24, yPos + 5);
+    yPos += 14;
+  }
+  yPos += 5;
   
   // --- 3. STRENGTHS & DEVELOPMENT AREAS ---
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
@@ -1085,63 +1159,90 @@ export async function exportComparisonPDF(data: ComparisonData) {
     };
   };
   
-  const cardWidth = Math.min(60, (pageWidth - 40) / data.candidates.length);
+  const cardWidth = Math.min(85, (pageWidth - 30) / data.candidates.length);
   
   data.candidates.forEach((candidate, index) => {
     const { strengths, weaknesses } = getStrengthsWeaknessesPDF(index);
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardX = 20 + (index * (cardWidth + 3));
+    const cardX = 15 + (index * (cardWidth + 3));
     
     // Candidate header
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(cardX, yPos, cardWidth, 5, 'F');
-    pdf.setFontSize(6);
+    pdf.rect(cardX, yPos, cardWidth, 6, 'F');
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    const shortName = getCandidateName(candidate).substring(0, 15);
-    pdf.text(shortName, cardX + 2, yPos + 3.5);
+    const shortName = getCandidateName(candidate).substring(0, 18);
+    pdf.text(shortName, cardX + 3, yPos + 4);
     
-    // Strengths
-    let cardY = yPos + 7;
-    pdf.setTextColor(34, 197, 94);
+    let cardY = yPos + 9;
+    
+    // Strengths section with green background
+    pdf.setFillColor(240, 253, 244); // Light green bg
+    pdf.rect(cardX + 1, cardY, (cardWidth - 2) / 2 - 1, 24, 'F');
+    
+    pdf.setTextColor(22, 163, 74);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Top Strengths', cardX + 2, cardY);
-    cardY += 3.5;
+    pdf.setFontSize(5.5);
+    pdf.text('STRENGTHS', cardX + 3, cardY + 3);
+    cardY += 5;
     
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    strengths.forEach((s, i) => {
-      const skillName = s.name.length > 18 ? s.name.substring(0, 16) + '..' : s.name;
-      pdf.setFontSize(5.5);
-      pdf.text(`${i + 1}. ${skillName}`, cardX + 2, cardY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${s.score}`, cardX + cardWidth - 5, cardY);
+    strengths.forEach((s) => {
+      const skillName = s.name.length > 12 ? s.name.substring(0, 11) + '..' : s.name;
+      const barWidth = (cardWidth - 2) / 2 - 8;
+      
+      pdf.setFontSize(5);
       pdf.setFont('helvetica', 'normal');
-      cardY += 3;
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(skillName, cardX + 3, cardY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 163, 74);
+      pdf.text(`${s.score}`, cardX + (cardWidth - 2) / 2 - 7, cardY);
+      
+      // Progress bar
+      cardY += 1.5;
+      pdf.setFillColor(187, 247, 208); // Light green bar bg
+      pdf.rect(cardX + 3, cardY, barWidth, 1.5, 'F');
+      pdf.setFillColor(34, 197, 94); // Green bar
+      pdf.rect(cardX + 3, cardY, barWidth * (s.score / 100), 1.5, 'F');
+      cardY += 4;
     });
     
-    // Development areas
-    cardY += 2;
-    pdf.setTextColor(245, 158, 11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(6);
-    pdf.text('Development Areas', cardX + 2, cardY);
-    cardY += 3.5;
+    // Development section with amber background (reset cardY)
+    cardY = yPos + 9;
+    const devX = cardX + (cardWidth - 2) / 2 + 1;
+    pdf.setFillColor(255, 251, 235); // Light amber bg
+    pdf.rect(devX, cardY, (cardWidth - 2) / 2, 24, 'F');
     
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    weaknesses.forEach((w, i) => {
-      const skillName = w.name.length > 18 ? w.name.substring(0, 16) + '..' : w.name;
-      pdf.setFontSize(5.5);
-      pdf.text(`${i + 1}. ${skillName}`, cardX + 2, cardY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${w.score}`, cardX + cardWidth - 5, cardY);
+    pdf.setTextColor(180, 83, 9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(5.5);
+    pdf.text('DEVELOPMENT', devX + 2, cardY + 3);
+    cardY += 5;
+    
+    weaknesses.forEach((w) => {
+      const skillName = w.name.length > 12 ? w.name.substring(0, 11) + '..' : w.name;
+      const barWidth = (cardWidth - 2) / 2 - 8;
+      
+      pdf.setFontSize(5);
       pdf.setFont('helvetica', 'normal');
-      cardY += 3;
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(skillName, devX + 2, cardY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(180, 83, 9);
+      pdf.text(`${w.score}`, devX + (cardWidth - 2) / 2 - 6, cardY);
+      
+      // Progress bar
+      cardY += 1.5;
+      pdf.setFillColor(253, 230, 138); // Light amber bar bg
+      pdf.rect(devX + 2, cardY, barWidth, 1.5, 'F');
+      pdf.setFillColor(245, 158, 11); // Amber bar
+      pdf.rect(devX + 2, cardY, barWidth * (w.score / 100), 1.5, 'F');
+      cardY += 4;
     });
   });
   
-  yPos += 42;
+  yPos += 38;
   
   // --- 4. RISK INDICATORS ---
   yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);

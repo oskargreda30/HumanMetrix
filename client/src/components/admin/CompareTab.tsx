@@ -917,6 +917,47 @@ export default function CompareTab() {
                           );
                         })}
                       </div>
+                      
+                      {/* Role Suitability Explanation */}
+                      {(() => {
+                        const roleScores = selectedCandidateData?.map((candidate: any, index: number) => ({
+                          name: getCandidateName(candidate),
+                          score: calculateRoleSuitability(index, selectedRole),
+                          index,
+                          skills: getAllCandidateSkills(index),
+                        })).sort((a: any, b: any) => b.score - a.score);
+                        
+                        if (!roleScores || roleScores.length < 2) return null;
+                        
+                        const top = roleScores[0];
+                        const second = roleScores[1];
+                        const roleName = ROLE_DEFINITIONS[selectedRole]?.name || selectedRole;
+                        const roleWeights = Object.entries(ROLE_DEFINITIONS[selectedRole]?.weights || {});
+                        const topSkills = roleWeights.slice(0, 2).map(([name]) => name);
+                        
+                        // Find where top candidate excels
+                        const advantageSkills = roleWeights.filter(([skillName]) => {
+                          const topScore = top.skills[skillName] ?? 0;
+                          const secondScore = second.skills[skillName] ?? 0;
+                          return topScore > secondScore;
+                        }).slice(0, 2).map(([name]) => name);
+                        
+                        return (
+                          <div className="p-4 bg-muted/30 rounded-lg border">
+                            <p className="text-sm text-muted-foreground">
+                              <strong className="text-foreground">Why{' '}
+                              <span style={{ color: CHART_COLORS[top.index] }}>{top.name}</span> ranks highest:</strong>{' '}
+                              For the {roleName} role, scoring is weighted toward {topSkills.join(' and ')}.{' '}
+                              <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> scores {top.score}% 
+                              compared to <span style={{ color: CHART_COLORS[second.index] }} className="font-medium">{second.name}</span>'s {second.score}%
+                              {advantageSkills.length > 0 && (
+                                <>, with particular advantage in {advantageSkills.join(' and ')}</>
+                              )}.
+                              This weighted calculation considers how each candidate's skill profile aligns with the specific demands of the role.
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -1212,46 +1253,50 @@ export default function CompareTab() {
                         
                         return (
                           <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
-                            <CardHeader className="pb-2">
+                            <CardHeader className="pb-3">
                               <CardTitle className="text-base" style={{ color: CHART_COLORS[index] }}>
                                 {getCandidateName(candidate)}
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
-                              <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
                                 {/* Strengths */}
-                                <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <TrendingUp className="h-4 w-4 text-green-500" />
-                                    <span className="text-sm font-medium">Top Strengths</span>
+                                <div className="bg-green-50 dark:bg-green-900/10 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Strengths</span>
                                   </div>
-                                  <div className="space-y-1">
-                                    {strengths.map((s, i) => (
-                                      <div key={s.name} className="flex items-center justify-between gap-2 text-sm flex-nowrap">
-                                        <span className="flex items-center gap-2 min-w-0">
-                                          <span className="text-xs text-muted-foreground shrink-0">#{i + 1}</span>
-                                          <span className="truncate">{s.name}</span>
-                                        </span>
-                                        <Badge variant="default" className="shrink-0">{s.score}</Badge>
+                                  <div className="space-y-2">
+                                    {strengths.map((s) => (
+                                      <div key={s.name} className="space-y-1">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <span className="text-xs truncate flex-1">{s.name}</span>
+                                          <span className="text-xs font-bold text-green-600 dark:text-green-400">{s.score}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
+                                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${s.score}%` }} />
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
                                 </div>
                                 
                                 {/* Weaknesses */}
-                                <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <TrendingDown className="h-4 w-4 text-amber-500" />
-                                    <span className="text-sm font-medium">Development Areas</span>
+                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <TrendingDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Development</span>
                                   </div>
-                                  <div className="space-y-1">
-                                    {weaknesses.map((w, i) => (
-                                      <div key={w.name} className="flex items-center justify-between gap-2 text-sm flex-nowrap">
-                                        <span className="flex items-center gap-2 min-w-0">
-                                          <span className="text-xs text-muted-foreground shrink-0">#{i + 1}</span>
-                                          <span className="truncate">{w.name}</span>
-                                        </span>
-                                        <Badge variant="outline" className="shrink-0">{w.score}</Badge>
+                                  <div className="space-y-2">
+                                    {weaknesses.map((w) => (
+                                      <div key={w.name} className="space-y-1">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <span className="text-xs truncate flex-1">{w.name}</span>
+                                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{w.score}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden">
+                                          <div className="h-full bg-amber-500 rounded-full" style={{ width: `${w.score}%` }} />
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -1363,7 +1408,7 @@ export default function CompareTab() {
                       <div>
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-fit-overlapping" className="bg-white p-4 rounded-lg">
-                          <ResponsiveContainer width="100%" height={400}>
+                          <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={(() => {
                               // Merge all candidate FIT data into one dataset using user IDs as keys
                               return FIT_SKILLS.map(skill => {
@@ -1435,7 +1480,7 @@ export default function CompareTab() {
                                   </p>
                                 </div>
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
-                                  <ResponsiveContainer width="100%" height={300}>
+                                  <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
                                       <PolarGrid />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
@@ -1478,7 +1523,7 @@ export default function CompareTab() {
                       <div>
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-ai-overlapping" className="bg-white p-4 rounded-lg">
-                          <ResponsiveContainer width="100%" height={400}>
+                          <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={(() => {
                               // Merge all candidate AI Readiness data into one dataset using user IDs as keys
                               return AI_READINESS_SKILLS.map(skill => {
@@ -1550,7 +1595,7 @@ export default function CompareTab() {
                                   </p>
                                 </div>
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
-                                  <ResponsiveContainer width="100%" height={300}>
+                                  <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
                                       <PolarGrid />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
@@ -1741,6 +1786,41 @@ export default function CompareTab() {
                         );
                       })}
                     </div>
+                    
+                    {/* AIQ Comparison Explanation */}
+                    {(() => {
+                      const aiqScores = selectedCandidateData?.map((candidate: any, index: number) => ({
+                        name: getCandidateName(candidate),
+                        score: comparison.aiqAssessments?.[index]?.totalScore ?? null,
+                        index,
+                      })).filter((c: any) => c.score !== null).sort((a: any, b: any) => b.score - a.score) as Array<{name: string; score: number; index: number}>;
+                      
+                      if (!aiqScores || aiqScores.length < 2) return null;
+                      
+                      const top = aiqScores[0];
+                      const second = aiqScores[1];
+                      const diff = top.score - second.score;
+                      
+                      return (
+                        <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
+                          <p className="text-sm text-muted-foreground">
+                            <strong className="text-foreground">AIQ Analysis:</strong>{' '}
+                            <span style={{ color: CHART_COLORS[top.index] }} className="font-medium">{top.name}</span> demonstrates 
+                            {top.score >= 80 ? ' exceptional' : top.score >= 70 ? ' strong' : top.score >= 60 ? ' adequate' : ' developing'} 
+                            {' '}understanding of AI ethics and algorithmic fairness with a score of {top.score}/100.
+                            {diff > 0 && (
+                              <> This is {diff} points higher than{' '}
+                              <span style={{ color: CHART_COLORS[second.index] }} className="font-medium">{second.name}</span> ({second.score}/100).
+                              </>
+                            )}
+                            {diff === 0 && (
+                              <> Both candidates scored equally at {top.score}/100, showing comparable ethical AI understanding.</>
+                            )}
+                            {' '}Higher AIQ scores indicate better preparedness for responsible AI governance and decision-making in AI-driven environments.
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               )}
@@ -1775,8 +1855,10 @@ export default function CompareTab() {
                                   name={getCandidateName(candidate)}
                                   dataKey={`candidate${index}`}
                                   stroke={CHART_COLORS[index]}
-                                  fill={CHART_COLORS[index]}
-                                  fillOpacity={0.3}
+                                  strokeWidth={3}
+                                  strokeDasharray={index === 0 ? "0" : "8 4"}
+                                  fill="transparent"
+                                  fillOpacity={0}
                                 />
                               ))}
                               <Legend />
