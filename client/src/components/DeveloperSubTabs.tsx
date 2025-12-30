@@ -56,12 +56,12 @@ export function DeveloperSubTabs({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-cyan-500/10">
-          <Key className="h-5 w-5 text-cyan-500" />
+        <div className="p-2 rounded-lg bg-cyan-500/20">
+          <Key className="h-5 w-5 text-cyan-400" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold">Developer Hub</h2>
-          <p className="text-sm text-muted-foreground">API keys, integrations, and testing tools</p>
+          <h2 className="text-xl font-semibold text-foreground">Developer Hub</h2>
+          <p className="text-sm text-foreground/70">API keys, integrations, and testing tools</p>
         </div>
       </div>
 
