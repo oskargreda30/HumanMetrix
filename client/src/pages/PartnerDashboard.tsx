@@ -304,6 +304,13 @@ export default function PartnerDashboard() {
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
 
+  // Billing change request state
+  const [showBillingChangeDialog, setShowBillingChangeDialog] = useState(false);
+  const [selectedBillingType, setSelectedBillingType] = useState<string | null>(null);
+  const [billingChangeReason, setBillingChangeReason] = useState("");
+  const [isSubmittingBillingChange, setIsSubmittingBillingChange] = useState(false);
+  const [isCancellingBillingChange, setIsCancellingBillingChange] = useState(false);
+
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
     queryKey: ["/api/partner/account"],
   });
@@ -315,6 +322,32 @@ export default function PartnerDashboard() {
 
   const { data: billing, isLoading: billingLoading } = useQuery<BillingData>({
     queryKey: ["/api/partner/me/billing"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  // Billing change request data
+  interface BillingChangeRequestData {
+    pendingRequest: {
+      id: string;
+      requestedBillingType: string;
+      reason?: string;
+      createdAt: string;
+      status: string;
+    } | null;
+    history: Array<{
+      id: string;
+      currentBillingType: string;
+      requestedBillingType: string;
+      reason?: string;
+      status: string;
+      reviewNotes?: string;
+      createdAt: string;
+      reviewedAt?: string;
+    }>;
+  }
+
+  const { data: billingChangeData, isLoading: billingChangeLoading, refetch: refetchBillingChange } = useQuery<BillingChangeRequestData>({
+    queryKey: ["/api/partner/me/billing-change-request"],
     enabled: !!account?.hasPartnerAccount,
   });
 
@@ -501,6 +534,72 @@ export default function PartnerDashboard() {
   const handlePurchase = (packageSize: number) => {
     setPurchasingPackageSize(packageSize);
     purchaseMutation.mutate(packageSize);
+  };
+
+  // Billing change request handlers
+  const handleSubmitBillingChange = async () => {
+    if (!selectedBillingType) return;
+    setIsSubmittingBillingChange(true);
+    try {
+      const response = await apiRequest("POST", "/api/partner/me/billing-change-request", {
+        requestedBillingType: selectedBillingType,
+        reason: billingChangeReason || undefined,
+      });
+      if (response.ok) {
+        toast({
+          title: "Request submitted",
+          description: "Your billing change request has been submitted for review.",
+        });
+        setShowBillingChangeDialog(false);
+        setSelectedBillingType(null);
+        setBillingChangeReason("");
+        refetchBillingChange();
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Failed to submit request",
+          description: data.message || "An error occurred",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to submit request",
+        description: "An error occurred while submitting your request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingBillingChange(false);
+    }
+  };
+
+  const handleCancelBillingChange = async (requestId: string) => {
+    setIsCancellingBillingChange(true);
+    try {
+      const response = await apiRequest("DELETE", `/api/partner/me/billing-change-request/${requestId}`);
+      if (response.ok) {
+        toast({
+          title: "Request cancelled",
+          description: "Your billing change request has been cancelled.",
+        });
+        refetchBillingChange();
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Failed to cancel request",
+          description: data.message || "An error occurred",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to cancel request",
+        description: "An error occurred while cancelling your request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancellingBillingChange(false);
+    }
   };
 
   // Create organization mutation
@@ -1900,6 +1999,242 @@ export default function PartnerDashboard() {
                     </CardHeader>
                   </Card>
 
+                  {/* Pending Billing Change Request Alert */}
+                  {billingChangeData?.pendingRequest && (
+                    <Card className="border-amber-500/50 bg-amber-500/5">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-amber-500/20">
+                              <Clock className="h-4 w-4 text-amber-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Billing Change Pending</p>
+                              <p className="text-sm text-muted-foreground">
+                                Your request to change to{' '}
+                                <span className="font-medium">
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'invoice' && 'Invoice'}
+                                </span>{' '}
+                                billing is being reviewed.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelBillingChange(billingChangeData.pendingRequest!.id)}
+                            disabled={isCancellingBillingChange}
+                            data-testid="button-cancel-billing-change"
+                          >
+                            {isCancellingBillingChange ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <X className="h-4 w-4 mr-2" />
+                            )}
+                            Cancel Request
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Billing Options */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Billing Options
+                        <InfoTooltip content="Choose the billing model that works best for your organization. Request a change and our team will review it within 1-2 business days." />
+                      </CardTitle>
+                      <CardDescription>
+                        Compare billing models and request a change if needed
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        {/* Prepaid Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors ${
+                            account?.partner?.billingType === 'prepaid' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-prepaid"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Prepaid</span>
+                            </div>
+                            {account?.partner?.billingType === 'prepaid' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Purchase test credits upfront. Use them whenever you need without monthly commitments.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Pay as you go
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Volume discounts
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Credits never expire
+                            </li>
+                          </ul>
+                          {account?.partner?.billingType !== 'prepaid' && !billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedBillingType('prepaid');
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-prepaid"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Auto-Bill Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors ${
+                            account?.partner?.billingType === 'auto_bill' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-auto-bill"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Auto-Bill</span>
+                            </div>
+                            {account?.partner?.billingType === 'auto_bill' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Card on file billed monthly based on actual usage. Simple and predictable.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              No upfront payment
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Pay only for what you use
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Automatic monthly billing
+                            </li>
+                          </ul>
+                          {account?.partner?.billingType !== 'auto_bill' && !billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedBillingType('auto_bill');
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-auto-bill"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Invoice Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors ${
+                            account?.partner?.billingType === 'invoice' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-invoice"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Invoice</span>
+                            </div>
+                            {account?.partner?.billingType === 'invoice' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Enterprise invoicing with flexible NET terms. Best for large organizations.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              NET 30/60 payment terms
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Dedicated support
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              Custom contracts
+                            </li>
+                          </ul>
+                          {account?.partner?.billingType !== 'invoice' && !billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedBillingType('invoice');
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-invoice"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Request History */}
+                      {billingChangeData?.history && billingChangeData.history.length > 0 && (
+                        <div className="mt-6 pt-6 border-t">
+                          <h4 className="text-sm font-medium mb-3">Request History</h4>
+                          <div className="space-y-2">
+                            {billingChangeData.history.slice(0, 5).map((request) => (
+                              <div key={request.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {request.currentBillingType} → {request.requestedBillingType}
+                                  </span>
+                                  <Badge 
+                                    variant={request.status === 'approved' ? 'secondary' : request.status === 'rejected' ? 'destructive' : 'outline'}
+                                    className={request.status === 'approved' ? 'bg-green-500/20 text-green-600' : ''}
+                                  >
+                                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                  </Badge>
+                                </div>
+                                <span className="text-muted-foreground">{formatDate(request.createdAt)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   {/* Prepaid Billing Stats */}
                   {account?.partner?.billingType === 'prepaid' && (
                     <div className="grid gap-4 md:grid-cols-3">
@@ -3110,6 +3445,74 @@ export default function PartnerDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Billing Change Request Dialog */}
+      <Dialog open={showBillingChangeDialog} onOpenChange={(open) => {
+        setShowBillingChangeDialog(open);
+        if (!open) {
+          setSelectedBillingType(null);
+          setBillingChangeReason("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Billing Change</DialogTitle>
+            <DialogDescription>
+              Submit a request to change your billing model. Our team will review and respond within 1-2 business days.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-lg border bg-muted/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Current billing type</p>
+                  <p className="font-medium">
+                    {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
+                    {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                    {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Requested billing type</p>
+                  <p className="font-medium text-primary">
+                    {selectedBillingType === 'prepaid' && 'Prepaid'}
+                    {selectedBillingType === 'auto_bill' && 'Auto-Bill'}
+                    {selectedBillingType === 'invoice' && 'Invoice'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billing-reason">Reason for change (optional)</Label>
+              <textarea
+                id="billing-reason"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Tell us why you'd like to change your billing model..."
+                value={billingChangeReason}
+                onChange={(e) => setBillingChangeReason(e.target.value)}
+                data-testid="textarea-billing-reason"
+              />
+              <p className="text-xs text-muted-foreground">
+                This helps our team understand your needs and process your request faster.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBillingChangeDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitBillingChange}
+              disabled={isSubmittingBillingChange}
+              data-testid="button-submit-billing-change"
+            >
+              {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Interactive Spotlight Tour */}
       <PartnerTour
