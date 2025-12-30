@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -1785,6 +1785,83 @@ export default function CompareTab() {
                           </div>
                         </div>
                       )}
+
+                      {/* AI-Generated Comparison Write-up */}
+                      <div className="bg-muted/30 p-6 rounded-lg border" data-testid="comparison-writeup">
+                        <div className="flex items-center gap-2 mb-4">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold">Comparison Summary for AI Strategy Consultant</h3>
+                        </div>
+                        
+                        <div className="space-y-4 text-sm text-muted-foreground">
+                          {selectedCandidateData && (() => {
+                            const rankedCandidates = selectedCandidateData.map((candidate: any, index: number) => ({
+                              name: getCandidateName(candidate),
+                              index,
+                              compositeScore: calculateCompositeScore(index),
+                              roleFit: calculateRoleSuitability(index, 'ai_consultant'),
+                              strengths: getStrengthsAndWeaknesses(index).strengths,
+                              weaknesses: getStrengthsAndWeaknesses(index).weaknesses,
+                              risks: getRiskIndicators(index),
+                            })).sort((a, b) => b.roleFit - a.roleFit);
+                            
+                            const topCandidate = rankedCandidates[0];
+                            const otherCandidates = rankedCandidates.slice(1);
+                            
+                            return (
+                              <>
+                                <p>
+                                  <strong>Overview:</strong> For the AI Strategy Consultant role, 
+                                  <span className="text-foreground font-medium"> {topCandidate.name}</span> emerges as the 
+                                  strongest candidate with a role fit score of <span className="text-primary font-semibold">{topCandidate.roleFit}%</span>. 
+                                  This assessment is based on weighted skill alignment to the role requirements.
+                                </p>
+                                
+                                <p>
+                                  <strong>Top Candidate Analysis - {topCandidate.name}:</strong> Excels in{' '}
+                                  {topCandidate.strengths.slice(0, 2).map(s => s.name).join(' and ')}, 
+                                  which are critical for advising organizations on AI adoption. 
+                                  {topCandidate.weaknesses.length > 0 && (
+                                    <> Development areas include {topCandidate.weaknesses[0].name} ({topCandidate.weaknesses[0].score}/100), 
+                                    which may require mentoring or targeted training.</>
+                                  )}
+                                  {topCandidate.risks.filter(r => r.severity === 'error').length > 0 && (
+                                    <span className="text-red-600 dark:text-red-400"> Note: Some critical skill gaps identified.</span>
+                                  )}
+                                </p>
+                                
+                                {otherCandidates.map((candidate) => (
+                                  <p key={candidate.index}>
+                                    <strong>{candidate.name}:</strong> Achieved a role fit of{' '}
+                                    <span className="font-medium">{candidate.roleFit}%</span>.
+                                    {candidate.roleFit >= 70 ? (
+                                      <> Shows solid alignment with the AI Strategy Consultant requirements, 
+                                      particularly in {candidate.strengths[0]?.name || 'key competencies'}.</>
+                                    ) : candidate.roleFit >= 60 ? (
+                                      <> Demonstrates potential but may need development in key areas 
+                                      such as {candidate.weaknesses[0]?.name || 'certain competencies'} to fully meet role requirements.</>
+                                    ) : (
+                                      <> May require additional training or experience to align with role expectations. 
+                                      Consider for junior or supporting roles initially.</>
+                                    )}
+                                  </p>
+                                ))}
+                                
+                                <p className="pt-2 border-t">
+                                  <strong>Recommendation:</strong> Based on the comprehensive analysis,{' '}
+                                  <span className="text-foreground font-medium">{topCandidate.name}</span> is 
+                                  recommended as the primary candidate for the AI Strategy Consultant role.
+                                  {otherCandidates.filter(c => c.roleFit >= 70).length > 0 && (
+                                    <> {otherCandidates.filter(c => c.roleFit >= 70).map(c => c.name).join(' and ')} would 
+                                    also be suitable {otherCandidates.filter(c => c.roleFit >= 70).length > 1 ? 'alternatives' : 'alternative'} 
+                                    depending on team dynamics and specific project needs.</>
+                                  )}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
 
                       {/* Export Button */}
                       <div className="flex justify-end">

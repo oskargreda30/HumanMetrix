@@ -798,6 +798,426 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
   
+  // ========== ENHANCED ANALYSIS PAGE ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 50;
+  
+  // --- 1. OVERALL RANKING & COMPOSITE SCORE ---
+  yPos = addSectionHeader(pdf, 'OVERALL RANKING & COMPOSITE SCORE', yPos, pageWidth);
+  yPos += 3;
+  
+  // Calculate composite scores with equal 25% weights
+  const calculatePDFCompositeScore = (candidateIndex: number): number => {
+    const assessmentData: Array<{ score: number; weight: number }> = [];
+    const equalWeight = 25; // 100% / 4 = 25% each
+    
+    // FIT average
+    const fitData = data.fitAssessments?.[candidateIndex];
+    if (fitData) {
+      const fitScores = Object.values(fitData.scores);
+      if (fitScores.length > 0) {
+        const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
+        assessmentData.push({ score: fitAvg, weight: equalWeight });
+      }
+    }
+    
+    // AI Readiness average
+    const aiData = data.aiReadinessAssessments?.[candidateIndex];
+    if (aiData) {
+      const aiScores = Object.values(aiData.scores);
+      if (aiScores.length > 0) {
+        const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
+        assessmentData.push({ score: aiAvg, weight: equalWeight });
+      }
+    }
+    
+    // Prompt Architecture
+    const promptData = data.promptArchitectureAssessments?.[candidateIndex];
+    if (promptData) {
+      assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
+    }
+    
+    // AIQ
+    const aiqData = data.aiqAssessments?.[candidateIndex];
+    if (aiqData) {
+      assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
+    }
+    
+    if (assessmentData.length === 0) return 0;
+    
+    const totalWeight = assessmentData.reduce((sum, d) => sum + d.weight, 0);
+    if (totalWeight === 0) return 0;
+    
+    const weightedSum = assessmentData.reduce((sum, d) => sum + d.score * d.weight, 0);
+    return Math.round(weightedSum / totalWeight);
+  };
+  
+  // Get all candidate skills for a given candidate
+  const getAllCandidateSkillsPDF = (candidateIndex: number): Record<string, number> => {
+    const skills: Record<string, number> = {};
+    
+    const fitData = data.fitAssessments?.[candidateIndex];
+    if (fitData) {
+      Object.entries(fitData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    const aiData = data.aiReadinessAssessments?.[candidateIndex];
+    if (aiData) {
+      Object.entries(aiData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    const aiqData = data.aiqAssessments?.[candidateIndex];
+    if (aiqData && aiqData.scores) {
+      Object.entries(aiqData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    return skills;
+  };
+  
+  // Calculate rankings
+  const rankings = data.candidates.map((_, index) => ({
+    candidateIndex: index,
+    score: calculatePDFCompositeScore(index),
+    rank: 0,
+  }));
+  rankings.sort((a, b) => b.score - a.score);
+  rankings.forEach((item, idx) => {
+    item.rank = idx + 1;
+  });
+  
+  // Draw ranking table
+  const rankTableStartX = 20;
+  const rankColWidths = [15, 60, 30, 30, 30]; // Rank, Name, Composite, Avg, Status
+  const rankRowHeight = 7;
+  
+  // Header
+  drawTableRow(pdf, rankTableStartX, yPos, rankColWidths, 
+    ['Rank', 'Candidate', 'Composite', 'Avg Score', 'Status'], rankRowHeight, {
+    isBold: true,
+    fontSize: 6.5,
+    fillColor: [249, 250, 251],
+    textColor: [17, 24, 39]
+  });
+  yPos += rankRowHeight;
+  
+  // Data rows
+  rankings.forEach((ranking) => {
+    const candidate = data.candidates[ranking.candidateIndex];
+    const name = getCandidateName(candidate);
+    const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
+    const avgScore = data.averageScores[ranking.candidateIndex];
+    
+    const status = ranking.score >= 80 ? 'Excellent' : 
+                   ranking.score >= 70 ? 'Strong' :
+                   ranking.score >= 60 ? 'Good' : 'Developing';
+    
+    const candidateColor = CANDIDATE_COLORS[ranking.candidateIndex] || [100, 100, 100];
+    
+    // Draw rank with medal for top position
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    if (ranking.rank === 1) {
+      pdf.setTextColor(245, 158, 11); // Gold
+    } else if (ranking.rank === 2) {
+      pdf.setTextColor(156, 163, 175); // Silver
+    } else {
+      pdf.setTextColor(180, 83, 9); // Bronze
+    }
+    pdf.text(`#${ranking.rank}`, rankTableStartX + 7, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Draw name with candidate color
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(shortName, rankTableStartX + 15 + 2, yPos + rankRowHeight / 2 + 1);
+    
+    // Composite score
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${ranking.score}`, rankTableStartX + 75 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Avg score
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${avgScore}`, rankTableStartX + 105 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Status badge
+    const statusColor = status === 'Excellent' ? [34, 197, 94] :
+                        status === 'Strong' ? [59, 130, 246] :
+                        status === 'Good' ? [245, 158, 11] : [107, 114, 128];
+    pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+    pdf.text(status, rankTableStartX + 135 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Draw cell borders
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.1);
+    let xOffset = rankTableStartX;
+    rankColWidths.forEach(width => {
+      pdf.rect(xOffset, yPos, width, rankRowHeight, 'S');
+      xOffset += width;
+    });
+    
+    yPos += rankRowHeight;
+  });
+  yPos += 5;
+  
+  // Note about weights
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
+  yPos += 8;
+  
+  // --- 2. ROLE SUITABILITY ANALYSIS ---
+  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+  yPos = addSectionHeader(pdf, 'ROLE SUITABILITY: AI STRATEGY CONSULTANT', yPos, pageWidth);
+  yPos += 3;
+  
+  // Role description
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Advises organizations on AI adoption strategy and implementation', 20, yPos);
+  yPos += 5;
+  
+  // Role weights for AI Strategy Consultant
+  const roleWeights: Record<string, number> = {
+    'Domain Expertise': 0.15,
+    'Collaboration & Communication': 0.15,
+    'High Agency': 0.12,
+    'AI Literacy & Prompt Engineering': 0.12,
+    'Critical Thinking & Problem-Solving': 0.12,
+    'Interpersonal Agility': 0.10,
+    'Responsible AI & Ethical Awareness': 0.10,
+    'Growth Mindset': 0.07,
+    'Resilience': 0.07,
+  };
+  
+  // Calculate role suitability
+  const calculateRoleSuitabilityPDF = (candidateIndex: number): number => {
+    const skills = getAllCandidateSkillsPDF(candidateIndex);
+    let weightedSum = 0;
+    let totalWeight = 0;
+    
+    Object.entries(roleWeights).forEach(([skillName, weight]) => {
+      const score = skills[skillName];
+      if (score !== undefined) {
+        weightedSum += score * weight;
+        totalWeight += weight;
+      }
+    });
+    
+    return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+  };
+  
+  // Draw role fit scores
+  const roleTableStartX = 20;
+  const roleColWidths = [60, ...Array(data.candidates.length).fill(Math.min(40, (pageWidth - 80) / data.candidates.length))];
+  
+  // Header
+  drawTableRow(pdf, roleTableStartX, yPos, roleColWidths,
+    ['Role Fit Score', ...data.candidates.map(c => getCandidateName(c).substring(0, 12))], 6, {
+    isBold: true,
+    fontSize: 6.5,
+    fillColor: [249, 250, 251],
+    textColor: [17, 24, 39]
+  });
+  yPos += 6;
+  
+  // Scores
+  const roleFitScores = data.candidates.map((_, index) => calculateRoleSuitabilityPDF(index));
+  const maxRoleFit = Math.max(...roleFitScores);
+  const minRoleFit = Math.min(...roleFitScores.filter(s => s > 0));
+  
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'normal');
+  
+  let roleXOffset = roleTableStartX;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(roleXOffset, yPos, roleColWidths[0], 8, 'S');
+  pdf.setTextColor(55, 65, 81);
+  pdf.text('Suitability %', roleXOffset + 2, yPos + 5);
+  roleXOffset += roleColWidths[0];
+  
+  roleFitScores.forEach((score, index) => {
+    // Color coding
+    if (score === maxRoleFit && roleFitScores.filter(s => s === maxRoleFit).length === 1) {
+      pdf.setFillColor(220, 252, 231); // Green bg
+      pdf.setTextColor(22, 163, 74);
+    } else if (score === minRoleFit && score > 0) {
+      pdf.setFillColor(254, 226, 226); // Red bg
+      pdf.setTextColor(220, 38, 38);
+    } else {
+      pdf.setFillColor(254, 249, 195); // Yellow bg
+      pdf.setTextColor(161, 98, 7);
+    }
+    
+    pdf.rect(roleXOffset, yPos, roleColWidths[index + 1], 8, 'F');
+    pdf.setDrawColor(200, 200, 200);
+    pdf.rect(roleXOffset, yPos, roleColWidths[index + 1], 8, 'S');
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${score}%`, roleXOffset + roleColWidths[index + 1] / 2, yPos + 5, { align: 'center' });
+    
+    roleXOffset += roleColWidths[index + 1];
+  });
+  yPos += 12;
+  
+  // --- 3. STRENGTHS & DEVELOPMENT AREAS ---
+  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
+  yPos += 3;
+  
+  // Get strengths and weaknesses for each candidate
+  const getStrengthsWeaknessesPDF = (candidateIndex: number): { strengths: Array<{name: string; score: number}>; weaknesses: Array<{name: string; score: number}> } => {
+    const skills = getAllCandidateSkillsPDF(candidateIndex);
+    const sorted = Object.entries(skills)
+      .map(([name, score]) => ({ name, score }))
+      .sort((a, b) => b.score - a.score);
+    
+    return {
+      strengths: sorted.slice(0, 3),
+      weaknesses: sorted.slice(-3).reverse(),
+    };
+  };
+  
+  const cardWidth = Math.min(60, (pageWidth - 40) / data.candidates.length);
+  
+  data.candidates.forEach((candidate, index) => {
+    const { strengths, weaknesses } = getStrengthsWeaknessesPDF(index);
+    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    const cardX = 20 + (index * (cardWidth + 3));
+    
+    // Candidate header
+    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.rect(cardX, yPos, cardWidth, 5, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    const shortName = getCandidateName(candidate).substring(0, 15);
+    pdf.text(shortName, cardX + 2, yPos + 3.5);
+    
+    // Strengths
+    let cardY = yPos + 7;
+    pdf.setTextColor(34, 197, 94);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Top Strengths', cardX + 2, cardY);
+    cardY += 3.5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    strengths.forEach((s, i) => {
+      const skillName = s.name.length > 18 ? s.name.substring(0, 16) + '..' : s.name;
+      pdf.setFontSize(5.5);
+      pdf.text(`${i + 1}. ${skillName}`, cardX + 2, cardY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${s.score}`, cardX + cardWidth - 5, cardY);
+      pdf.setFont('helvetica', 'normal');
+      cardY += 3;
+    });
+    
+    // Development areas
+    cardY += 2;
+    pdf.setTextColor(245, 158, 11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6);
+    pdf.text('Development Areas', cardX + 2, cardY);
+    cardY += 3.5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    weaknesses.forEach((w, i) => {
+      const skillName = w.name.length > 18 ? w.name.substring(0, 16) + '..' : w.name;
+      pdf.setFontSize(5.5);
+      pdf.text(`${i + 1}. ${skillName}`, cardX + 2, cardY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${w.score}`, cardX + cardWidth - 5, cardY);
+      pdf.setFont('helvetica', 'normal');
+      cardY += 3;
+    });
+  });
+  
+  yPos += 42;
+  
+  // --- 4. RISK INDICATORS ---
+  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+  yPos = addSectionHeader(pdf, 'RISK INDICATORS', yPos, pageWidth);
+  yPos += 3;
+  
+  // Get risk indicators
+  const getRiskIndicatorsPDF = (candidateIndex: number): Array<{ message: string; severity: 'warning' | 'error' }> => {
+    const risks: Array<{ message: string; severity: 'warning' | 'error' }> = [];
+    
+    const skills = getAllCandidateSkillsPDF(candidateIndex);
+    Object.entries(skills).forEach(([name, score]) => {
+      if (score < 50) {
+        risks.push({
+          message: `${name}: ${score}/100 (below threshold)`,
+          severity: score < 40 ? 'error' : 'warning',
+        });
+      }
+    });
+    
+    const skillScores = Object.values(skills);
+    if (skillScores.length > 1) {
+      const avg = skillScores.reduce((a, b) => a + b, 0) / skillScores.length;
+      const variance = skillScores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / skillScores.length;
+      const stdDev = Math.sqrt(variance);
+      
+      if (stdDev > 20) {
+        risks.push({
+          message: `High skill variance (±${Math.round(stdDev)} pts)`,
+          severity: 'warning',
+        });
+      }
+    }
+    
+    if (!data.fitAssessments?.[candidateIndex]) risks.push({ message: 'FIT not completed', severity: 'warning' });
+    if (!data.aiReadinessAssessments?.[candidateIndex]) risks.push({ message: 'AI Readiness not completed', severity: 'warning' });
+    if (!data.promptArchitectureAssessments?.[candidateIndex]) risks.push({ message: 'Prompt Arch not completed', severity: 'warning' });
+    if (!data.aiqAssessments?.[candidateIndex]) risks.push({ message: 'AIQ not completed', severity: 'warning' });
+    
+    return risks.slice(0, 4);
+  };
+  
+  data.candidates.forEach((candidate, index) => {
+    const risks = getRiskIndicatorsPDF(index);
+    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    const cardX = 20 + (index * (cardWidth + 3));
+    
+    // Candidate header
+    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.rect(cardX, yPos, cardWidth, 5, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    const shortName = getCandidateName(candidate).substring(0, 15);
+    pdf.text(shortName, cardX + 2, yPos + 3.5);
+    
+    let cardY = yPos + 7;
+    
+    if (risks.length === 0) {
+      pdf.setTextColor(34, 197, 94);
+      pdf.setFontSize(5.5);
+      pdf.text('No significant risks', cardX + 2, cardY);
+    } else {
+      risks.forEach((risk) => {
+        const isError = risk.severity === 'error';
+        pdf.setTextColor(isError ? 220 : 245, isError ? 38 : 158, isError ? 38 : 11);
+        pdf.setFontSize(5);
+        const riskMsg = risk.message.length > 25 ? risk.message.substring(0, 23) + '..' : risk.message;
+        pdf.text(`• ${riskMsg}`, cardX + 2, cardY);
+        cardY += 3;
+      });
+    }
+  });
+  
+  yPos += 25;
+  
   // ========== EMPLOYER RECOMMENDATION ==========
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
   
