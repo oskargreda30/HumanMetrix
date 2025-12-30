@@ -1173,9 +1173,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
   } // End of role suitability conditional
   
   // --- 3. RISK INDICATORS ---
-  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
   yPos = addSectionHeader(pdf, 'RISK INDICATORS', yPos, pageWidth);
-  yPos += 3;
+  yPos += 10; // Increased spacing after header
   
   // Get risk indicators
   const getRiskIndicatorsPDF = (candidateIndex: number): Array<{ message: string; severity: 'warning' | 'error' }> => {
@@ -1213,42 +1213,48 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return risks.slice(0, 4);
   };
   
-  const riskCardWidth = Math.min(60, (pageWidth - 40) / data.candidates.length);
+  // Card spacing constants
+  const cardGutter = 6; // 6mm between cards
+  const cardPaddingTop = 6;
+  const cardPaddingLeft = 4;
+  const cardHeaderHeight = 7;
+  const riskCardWidth = Math.min(65, (pageWidth - 40 - (cardGutter * (data.candidates.length - 1))) / data.candidates.length);
   
   data.candidates.forEach((candidate, index) => {
     const risks = getRiskIndicatorsPDF(index);
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardX = 20 + (index * (riskCardWidth + 3));
+    const cardX = 20 + (index * (riskCardWidth + cardGutter));
     
-    // Candidate header
+    // Candidate header with better height
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(cardX, yPos, riskCardWidth, 5, 'F');
-    pdf.setFontSize(6);
+    pdf.rect(cardX, yPos, riskCardWidth, cardHeaderHeight, 'F');
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    const shortName = getCandidateName(candidate).substring(0, 15);
-    pdf.text(shortName, cardX + 2, yPos + 3.5);
+    const shortName = getCandidateName(candidate).substring(0, 18);
+    pdf.text(shortName, cardX + cardPaddingLeft, yPos + 5);
     
-    let cardY = yPos + 7;
+    // Content area starts after header with proper padding
+    let cardY = yPos + cardHeaderHeight + cardPaddingTop;
     
     if (risks.length === 0) {
       pdf.setTextColor(17, 24, 39);
-      pdf.setFontSize(7);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('No significant risks', cardX + 2, cardY);
+      pdf.text('No significant risks', cardX + cardPaddingLeft, cardY);
     } else {
       risks.forEach((risk) => {
         const isError = risk.severity === 'error';
         pdf.setTextColor(isError ? 220 : 245, isError ? 38 : 158, isError ? 38 : 11);
-        pdf.setFontSize(5);
-        const riskMsg = risk.message.length > 25 ? risk.message.substring(0, 23) + '..' : risk.message;
-        pdf.text(`• ${riskMsg}`, cardX + 2, cardY);
-        cardY += 3;
+        pdf.setFontSize(6);
+        const riskMsg = risk.message.length > 28 ? risk.message.substring(0, 26) + '..' : risk.message;
+        pdf.text(`• ${riskMsg}`, cardX + cardPaddingLeft, cardY);
+        cardY += 4;
       });
     }
   });
   
-  yPos += 25;
+  yPos += 35; // More space after risk cards
   
   // ========== ROLE SUITABILITY SUMMARY (only if a role is selected) ==========
   if (data.selectedRole) {
