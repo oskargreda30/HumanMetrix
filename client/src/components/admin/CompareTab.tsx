@@ -337,16 +337,25 @@ export default function CompareTab() {
       }));
 
       const reportElement = reportContainerRef.current;
-      console.log("Screen capture: Element dimensions", reportElement.scrollWidth, reportElement.scrollHeight);
+      const elementHeight = reportElement.scrollHeight;
+      console.log("Screen capture: Element dimensions", reportElement.scrollWidth, elementHeight);
+      
+      // Reduce scale for very tall elements to avoid canvas size limits (max ~16384px)
+      const maxCanvasHeight = 16000;
+      let scale = 2;
+      if (elementHeight * 2 > maxCanvasHeight) {
+        scale = Math.min(2, maxCanvasHeight / elementHeight);
+        console.log("Screen capture: Reducing scale to", scale, "due to element height");
+      }
       
       const canvas = await html2canvas(reportElement, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: scale,
         useCORS: true,
         logging: true,
         allowTaint: true,
         windowWidth: reportElement.scrollWidth,
-        windowHeight: reportElement.scrollHeight,
+        windowHeight: elementHeight,
       });
 
       const pdf = new jsPDF({
@@ -406,11 +415,12 @@ export default function CompareTab() {
         title: "Visual PDF exported successfully",
         description: "Your visual comparison report has been downloaded.",
       });
-    } catch (error) {
-      console.error("Error exporting visual PDF:", error);
+    } catch (error: any) {
+      console.error("Error exporting visual PDF:", error?.message || error?.name || String(error));
+      console.error("Error stack:", error?.stack);
       toast({
         title: "Export failed",
-        description: "There was an error generating the visual PDF. Please try again.",
+        description: error?.message || "There was an error generating the visual PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
