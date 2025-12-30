@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette } from "lucide-react";
 import { PartnerIntegrationsTab } from "@/components/PartnerIntegrationsTab";
+import { PartnerTour } from "@/components/PartnerTour";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import dashboardBg from "@assets/image_1763608498774.png";
@@ -232,88 +233,13 @@ const PACKAGE_OPTIONS = [
   { value: 'enterprise_plus', label: 'Enterprise+ (500 tests)' },
 ];
 
-// Tutorial steps configuration
-const TUTORIAL_STEPS = [
-  {
-    id: 'welcome',
-    title: 'Welcome to HumanMetrix Partner Dashboard!',
-    description: 'This quick tour will walk you through the key features of your partner dashboard. You can restart this tutorial anytime from the help menu.',
-    icon: Sparkles,
-    tab: null,
-  },
-  {
-    id: 'home',
-    title: 'Home - Your Dashboard Overview',
-    description: 'The Home tab gives you a quick snapshot of your account: test credits, usage stats, recent activity, and your contract details. The Getting Started guide helps you complete essential setup steps.',
-    icon: Home,
-    tab: 'home',
-  },
-  {
-    id: 'organizations',
-    title: 'Organizations - Manage Your Clients',
-    description: 'Create organizations to group assessments by client, department, or project. Each organization gets its own usage tracking and can have dedicated admin contacts.',
-    icon: Building2,
-    tab: 'organizations',
-  },
-  {
-    id: 'results',
-    title: 'Results - View Assessment Outcomes',
-    description: 'Access all completed assessment results here. Filter by organization, assessment type, or date. Export results as CSV for your own analysis and reporting.',
-    icon: ClipboardList,
-    tab: 'results',
-  },
-  {
-    id: 'usage',
-    title: 'Usage - Track Your Consumption',
-    description: 'Monitor your assessment usage over time. The usage forecast helps you predict when you might need more credits, so you can plan purchases ahead of time.',
-    icon: BarChart3,
-    tab: 'usage',
-  },
-  {
-    id: 'billing',
-    title: 'Billing - Manage Payments & Credits',
-    description: 'View your billing history, purchase additional test credits, and manage your payment preferences. Content here adapts based on your billing model (Prepaid, Auto-Bill, or Invoice).',
-    icon: CreditCard,
-    tab: 'billing',
-  },
-  {
-    id: 'api-keys',
-    title: 'API Keys - Connect Your Systems',
-    description: 'Generate and manage API keys to integrate HumanMetrix assessments into your own applications. Create separate keys for development and production environments.',
-    icon: Key,
-    tab: 'api-keys',
-  },
-  {
-    id: 'integrations',
-    title: 'Integrations - Automate Workflows',
-    description: 'Set up webhooks to receive real-time notifications, connect to your ATS (Applicant Tracking System), and schedule automated data exports to your preferred destinations.',
-    icon: Webhook,
-    tab: 'integrations',
-  },
-  {
-    id: 'team',
-    title: 'Team - Collaborate with Colleagues',
-    description: 'Invite team members to access the dashboard. Assign roles (Viewer, Member, Admin) to control what each person can do. Team invitations expire after 7 days.',
-    icon: Users,
-    tab: 'team',
-  },
-  {
-    id: 'complete',
-    title: 'You\'re All Set!',
-    description: 'That covers the essentials. Explore each tab to discover more features. If you need help, check the notifications for important updates or contact your account manager.',
-    icon: CheckCircle,
-    tab: null,
-  },
-];
-
 export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("home");
   const { toast } = useToast();
   
-  // Tutorial state
+  // Tour state
   const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialChecked, setTutorialChecked] = useState(false);
   
   // Organization state
@@ -466,58 +392,29 @@ export default function PartnerDashboard() {
     }
   }, [account, tutorialChecked]);
 
-  // Tutorial navigation functions
-  const handleTutorialNext = () => {
-    const currentStep = TUTORIAL_STEPS[tutorialStep];
-    const nextStep = TUTORIAL_STEPS[tutorialStep + 1];
-    
-    if (tutorialStep < TUTORIAL_STEPS.length - 1) {
-      setTutorialStep(tutorialStep + 1);
-      // Navigate to the tab for the next step if it has one
-      if (nextStep?.tab) {
-        setActiveTab(nextStep.tab);
-      }
-    } else {
-      handleTutorialComplete();
-    }
-  };
-
-  const handleTutorialPrev = () => {
-    const prevStep = TUTORIAL_STEPS[tutorialStep - 1];
-    if (tutorialStep > 0) {
-      setTutorialStep(tutorialStep - 1);
-      if (prevStep?.tab) {
-        setActiveTab(prevStep.tab);
-      }
-    }
-  };
-
-  const handleTutorialComplete = () => {
+  // Tour handlers
+  const handleTourComplete = () => {
     if (account?.partner?.id) {
       const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
       localStorage.setItem(tutorialKey, 'true');
     }
     setShowTutorial(false);
-    setTutorialStep(0);
     setActiveTab('home');
     toast({
-      title: "Tutorial completed!",
-      description: "You can restart the tutorial anytime from the help button.",
+      title: "Tour completed!",
+      description: "You can take the tour again anytime using the 'Take a Tour' button.",
     });
   };
 
-  const handleTutorialSkip = () => {
+  const handleTourClose = () => {
     if (account?.partner?.id) {
       const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
       localStorage.setItem(tutorialKey, 'true');
     }
     setShowTutorial(false);
-    setTutorialStep(0);
-    setActiveTab('home');
   };
 
   const handleRestartTutorial = () => {
-    setTutorialStep(0);
     setActiveTab('home');
     setShowTutorial(true);
   };
@@ -1021,7 +918,7 @@ export default function PartnerDashboard() {
             </TabsList>
 
             {/* Home Tab */}
-            <TabsContent value="home" className="space-y-6">
+            <TabsContent value="home" className="space-y-6" data-testid="panel-home">
               {/* Getting Started Guide */}
               {(() => {
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
@@ -1408,7 +1305,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Results Tab */}
-            <TabsContent value="results" className="space-y-4">
+            <TabsContent value="results" className="space-y-4" data-testid="panel-results">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Candidate Results</CardTitle>
@@ -1465,7 +1362,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Organizations Tab */}
-            <TabsContent value="organizations" className="space-y-4">
+            <TabsContent value="organizations" className="space-y-4" data-testid="panel-organizations">
               {selectedOrgId ? (
                 // Organization Details View
                 <div className="space-y-4">
@@ -1694,7 +1591,7 @@ export default function PartnerDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="usage" className="space-y-4">
+            <TabsContent value="usage" className="space-y-4" data-testid="panel-usage">
               {usageLoading ? (
                 <Card>
                   <CardContent className="py-8 flex justify-center">
@@ -1913,7 +1810,7 @@ export default function PartnerDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="billing" className="space-y-4">
+            <TabsContent value="billing" className="space-y-4" data-testid="panel-billing">
               {billingLoading ? (
                 <Card>
                   <CardContent className="py-8 flex justify-center">
@@ -2225,7 +2122,7 @@ export default function PartnerDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-4">
+            <TabsContent value="settings" className="space-y-4" data-testid="panel-settings">
               {settingsLoading ? (
                 <Card>
                   <CardContent className="py-8 flex justify-center">
@@ -2568,7 +2465,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* API Keys Tab */}
-            <TabsContent value="api-keys" className="space-y-6">
+            <TabsContent value="api-keys" className="space-y-6" data-testid="panel-api-keys">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0">
                   <div>
@@ -2682,7 +2579,7 @@ export default function PartnerDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="integrations" className="space-y-4">
+            <TabsContent value="integrations" className="space-y-4" data-testid="panel-integrations">
               <PartnerIntegrationsTab />
             </TabsContent>
 
@@ -2881,7 +2778,7 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Team Tab */}
-            <TabsContent value="team" className="space-y-6">
+            <TabsContent value="team" className="space-y-6" data-testid="panel-team">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                   <div>
@@ -3375,97 +3272,13 @@ export default function PartnerDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Interactive Tutorial Dialog */}
-      <Dialog open={showTutorial} onOpenChange={(open) => !open && handleTutorialSkip()}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 rounded-xl bg-primary/10">
-                {(() => {
-                  const step = TUTORIAL_STEPS[tutorialStep];
-                  const IconComponent = step?.icon || Sparkles;
-                  return <IconComponent className="h-6 w-6 text-primary" />;
-                })()}
-              </div>
-              <div className="flex-1">
-                <DialogTitle className="text-xl">
-                  {TUTORIAL_STEPS[tutorialStep]?.title}
-                </DialogTitle>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground">
-                    Step {tutorialStep + 1} of {TUTORIAL_STEPS.length}
-                  </span>
-                  <Progress 
-                    value={((tutorialStep + 1) / TUTORIAL_STEPS.length) * 100} 
-                    className="h-1.5 w-24" 
-                  />
-                </div>
-              </div>
-            </div>
-          </DialogHeader>
-          
-          <DialogDescription className="text-base leading-relaxed py-4">
-            {TUTORIAL_STEPS[tutorialStep]?.description}
-          </DialogDescription>
-
-          {TUTORIAL_STEPS[tutorialStep]?.tab && (
-            <div className="p-3 rounded-lg bg-muted/50 border flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10">
-                {(() => {
-                  const step = TUTORIAL_STEPS[tutorialStep];
-                  const IconComponent = step?.icon || Home;
-                  return <IconComponent className="h-4 w-4 text-primary" />;
-                })()}
-              </div>
-              <div className="text-sm">
-                <span className="text-muted-foreground">Currently viewing: </span>
-                <span className="font-medium capitalize">
-                  {TUTORIAL_STEPS[tutorialStep]?.tab?.replace('-', ' ')} Tab
-                </span>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex-row gap-2 sm:justify-between mt-4">
-            <Button
-              variant="ghost"
-              onClick={handleTutorialSkip}
-              className="text-muted-foreground"
-              data-testid="button-tutorial-skip"
-            >
-              Skip Tutorial
-            </Button>
-            <div className="flex gap-2">
-              {tutorialStep > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={handleTutorialPrev}
-                  data-testid="button-tutorial-prev"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Back
-                </Button>
-              )}
-              <Button
-                onClick={handleTutorialNext}
-                data-testid="button-tutorial-next"
-              >
-                {tutorialStep === TUTORIAL_STEPS.length - 1 ? (
-                  <>
-                    Get Started
-                    <CheckCircle className="h-4 w-4 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Interactive Spotlight Tour */}
+      <PartnerTour
+        isOpen={showTutorial}
+        onClose={handleTourClose}
+        onComplete={handleTourComplete}
+        onTabChange={setActiveTab}
+      />
 
       <Footer />
     </div>
