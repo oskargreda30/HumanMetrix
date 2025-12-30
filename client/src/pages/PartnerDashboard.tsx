@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -1363,8 +1363,9 @@ export default function PartnerDashboard() {
                   ) : resultsData?.results.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No results yet</p>
-                      <p className="text-sm">Results will appear here when candidates complete assessments</p>
+                      <p className="font-medium">No results yet</p>
+                      <p className="text-sm mt-1">Results will appear here when candidates complete assessments.</p>
+                      <p className="text-sm mt-2">Get started by creating an assessment session via the API or Widget Test Lab.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1500,7 +1501,8 @@ export default function PartnerDashboard() {
                           {selectedOrg.results.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground">
                               <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                              <p>No completed assessments yet</p>
+                              <p className="font-medium">No completed assessments yet</p>
+                              <p className="text-sm mt-1">Assessments assigned to this organization will appear here once completed.</p>
                             </div>
                           ) : (
                             <div className="space-y-3">
@@ -1546,8 +1548,17 @@ export default function PartnerDashboard() {
                     <Card>
                       <CardContent className="py-8 text-center text-muted-foreground">
                         <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No organizations yet</p>
-                        <p className="text-sm">Add organizations to track usage by client</p>
+                        <p className="font-medium">No organizations yet</p>
+                        <p className="text-sm mt-1">Organizations help you group candidates by client or department.</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-4"
+                          onClick={() => setShowAddOrgDialog(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1.5" />
+                          Add Your First Organization
+                        </Button>
                       </CardContent>
                     </Card>
                   ) : (
@@ -1609,7 +1620,9 @@ export default function PartnerDashboard() {
                   ) : activityLog?.activities.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No activity recorded yet</p>
+                      <p className="font-medium">No activity recorded yet</p>
+                      <p className="text-sm mt-1">Your account activity will appear here as you use the platform.</p>
+                      <p className="text-sm">This includes API calls, assessments, billing events, and more.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -2101,7 +2114,8 @@ export default function PartnerDashboard() {
                       {billing.items.length === 0 ? (
                         <div className="py-8 text-center text-muted-foreground">
                           <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No billing history yet</p>
+                          <p className="font-medium">No billing history yet</p>
+                          <p className="text-sm mt-1">Your receipts and invoices will appear here after your first purchase.</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -2598,8 +2612,9 @@ export default function PartnerDashboard() {
                               </BarChart>
                             </ResponsiveContainer>
                           ) : (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">
-                              No data available for this period
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                              <p className="font-medium">No data for this period</p>
+                              <p className="text-sm">Complete some assessments to see trends over time.</p>
                             </div>
                           )}
                         </div>
@@ -2629,7 +2644,7 @@ export default function PartnerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground">No assessment data</p>
+                          <p className="text-muted-foreground text-sm">No completed assessments yet. Data will appear as candidates finish tests.</p>
                         )}
                       </div>
 
@@ -2649,7 +2664,7 @@ export default function PartnerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground">No organization data</p>
+                          <p className="text-muted-foreground text-sm">Create organizations to see test distribution by client.</p>
                         )}
                       </div>
 
@@ -2690,15 +2705,18 @@ export default function PartnerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <div className="flex items-center justify-center h-40 text-muted-foreground">
-                            No score distribution data available
+                          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                            <p className="font-medium">No score data yet</p>
+                            <p className="text-sm">Score distribution will appear after candidates complete assessments.</p>
                           </div>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-muted-foreground">
-                      No analytics data available
+                      <BarChart2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="font-medium">No analytics data yet</p>
+                      <p className="text-sm mt-1">Analytics will populate as your candidates complete assessments.</p>
                     </div>
                   )}
                 </CardContent>
@@ -2760,7 +2778,8 @@ export default function PartnerDashboard() {
                   ) : (
                     <div className="py-12 text-center text-muted-foreground">
                       <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No notifications yet</p>
+                      <p className="font-medium">No notifications yet</p>
+                      <p className="text-sm mt-1">You'll receive notifications for quota alerts, billing updates, and system announcements.</p>
                     </div>
                   )}
                 </CardContent>
@@ -2816,8 +2835,17 @@ export default function PartnerDashboard() {
                   ) : (
                     <div className="py-12 text-center text-muted-foreground">
                       <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No team members yet</p>
-                      <p className="text-sm mt-1">Invite team members to help manage your account</p>
+                      <p className="font-medium">No team members yet</p>
+                      <p className="text-sm mt-1">Invite colleagues to help manage assessments and view results.</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-4"
+                        onClick={() => setShowInviteDialog(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Invite Your First Team Member
+                      </Button>
                     </div>
                   )}
                 </CardContent>

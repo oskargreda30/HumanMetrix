@@ -192,8 +192,16 @@ export function DeveloperSubTabs({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Key className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>No API keys found</p>
-                  <p className="text-sm">Create your first API key to get started</p>
+                  <p className="font-medium">No API keys yet</p>
+                  <p className="text-sm mt-1">API keys let you integrate HumanMetrix into your applications.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={onCreateKey}
+                  >
+                    Create Your First API Key
+                  </Button>
                 </div>
               )}
             </CardContent>
