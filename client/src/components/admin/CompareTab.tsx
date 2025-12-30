@@ -1795,10 +1795,47 @@ export default function CompareTab() {
                         
                         <div className="space-y-4 text-sm text-muted-foreground">
                           {selectedCandidateData && (() => {
+                            // Fixed 25% equal weights for consistency with PDF export
+                            const calculateFixedComposite = (candIndex: number): number => {
+                              if (!comparison) return 0;
+                              const assessmentData: Array<{ score: number; weight: number }> = [];
+                              const equalWeight = 25;
+                              
+                              const fitData = comparison.fitAssessments?.[candIndex];
+                              if (fitData) {
+                                const fitScores = Object.values(fitData.scores);
+                                if (fitScores.length > 0) {
+                                  const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
+                                  assessmentData.push({ score: fitAvg, weight: equalWeight });
+                                }
+                              }
+                              
+                              const aiData = comparison.aiReadinessAssessments?.[candIndex];
+                              if (aiData) {
+                                const aiScores = Object.values(aiData.scores);
+                                if (aiScores.length > 0) {
+                                  const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
+                                  assessmentData.push({ score: aiAvg, weight: equalWeight });
+                                }
+                              }
+                              
+                              const promptData = comparison.promptArchitectureAssessments?.[candIndex];
+                              if (promptData) assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
+                              
+                              const aiqData = comparison.aiqAssessments?.[candIndex];
+                              if (aiqData) assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
+                              
+                              if (assessmentData.length === 0) return 0;
+                              const totalWeight = assessmentData.reduce((sum, d) => sum + d.weight, 0);
+                              if (totalWeight === 0) return 0;
+                              const weightedSum = assessmentData.reduce((sum, d) => sum + d.score * d.weight, 0);
+                              return Math.round(weightedSum / totalWeight);
+                            };
+                            
                             const rankedCandidates = selectedCandidateData.map((candidate: any, index: number) => ({
                               name: getCandidateName(candidate),
                               index,
-                              compositeScore: calculateCompositeScore(index),
+                              compositeScore: calculateFixedComposite(index),
                               roleFit: calculateRoleSuitability(index, 'ai_consultant'),
                               strengths: getStrengthsAndWeaknesses(index).strengths,
                               weaknesses: getStrengthsAndWeaknesses(index).weaknesses,
