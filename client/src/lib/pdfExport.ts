@@ -1175,110 +1175,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   }
   yPos += 5;
   
-  // --- 3. STRENGTHS & DEVELOPMENT AREAS ---
-  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-  yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 3;
-  
-  // Get strengths and weaknesses for each candidate
-  const getStrengthsWeaknessesPDF = (candidateIndex: number): { strengths: Array<{name: string; score: number}>; weaknesses: Array<{name: string; score: number}> } => {
-    const skills = getAllCandidateSkillsPDF(candidateIndex);
-    const sorted = Object.entries(skills)
-      .map(([name, score]) => ({ name, score }))
-      .sort((a, b) => b.score - a.score);
-    
-    return {
-      strengths: sorted.slice(0, 3),
-      weaknesses: sorted.slice(-3).reverse(),
-    };
-  };
-  
-  const cardWidth = Math.min(85, (pageWidth - 30) / data.candidates.length);
-  
-  data.candidates.forEach((candidate, index) => {
-    const { strengths, weaknesses } = getStrengthsWeaknessesPDF(index);
-    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardX = 15 + (index * (cardWidth + 3));
-    
-    // Candidate header
-    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(cardX, yPos, cardWidth, 6, 'F');
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    const shortName = getCandidateName(candidate).substring(0, 18);
-    pdf.text(shortName, cardX + 3, yPos + 4);
-    
-    let cardY = yPos + 9;
-    
-    // Strengths section with green background
-    pdf.setFillColor(240, 253, 244); // Light green bg
-    pdf.rect(cardX + 1, cardY, (cardWidth - 2) / 2 - 1, 24, 'F');
-    
-    pdf.setTextColor(22, 163, 74);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(5.5);
-    pdf.text('STRENGTHS', cardX + 3, cardY + 3);
-    cardY += 5;
-    
-    strengths.forEach((s) => {
-      const skillName = s.name.length > 12 ? s.name.substring(0, 11) + '..' : s.name;
-      const barWidth = (cardWidth - 2) / 2 - 8;
-      
-      pdf.setFontSize(5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(55, 65, 81);
-      pdf.text(skillName, cardX + 3, cardY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(22, 163, 74);
-      pdf.text(`${s.score}`, cardX + (cardWidth - 2) / 2 - 7, cardY);
-      
-      // Progress bar
-      cardY += 1.5;
-      pdf.setFillColor(187, 247, 208); // Light green bar bg
-      pdf.rect(cardX + 3, cardY, barWidth, 1.5, 'F');
-      pdf.setFillColor(34, 197, 94); // Green bar
-      pdf.rect(cardX + 3, cardY, barWidth * (s.score / 100), 1.5, 'F');
-      cardY += 4;
-    });
-    
-    // Development section with amber background (reset cardY)
-    cardY = yPos + 9;
-    const devX = cardX + (cardWidth - 2) / 2 + 1;
-    pdf.setFillColor(255, 251, 235); // Light amber bg
-    pdf.rect(devX, cardY, (cardWidth - 2) / 2, 24, 'F');
-    
-    pdf.setTextColor(180, 83, 9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(5.5);
-    pdf.text('DEVELOPMENT', devX + 2, cardY + 3);
-    cardY += 5;
-    
-    weaknesses.forEach((w) => {
-      const skillName = w.name.length > 12 ? w.name.substring(0, 11) + '..' : w.name;
-      const barWidth = (cardWidth - 2) / 2 - 8;
-      
-      pdf.setFontSize(5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(55, 65, 81);
-      pdf.text(skillName, devX + 2, cardY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(180, 83, 9);
-      pdf.text(`${w.score}`, devX + (cardWidth - 2) / 2 - 6, cardY);
-      
-      // Progress bar
-      cardY += 1.5;
-      pdf.setFillColor(253, 230, 138); // Light amber bar bg
-      pdf.rect(devX + 2, cardY, barWidth, 1.5, 'F');
-      pdf.setFillColor(245, 158, 11); // Amber bar
-      pdf.rect(devX + 2, cardY, barWidth * (w.score / 100), 1.5, 'F');
-      cardY += 4;
-    });
-  });
-  
-  yPos += 38;
-  
-  // --- 4. RISK INDICATORS ---
+  // --- 3. RISK INDICATORS ---
   yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
   yPos = addSectionHeader(pdf, 'RISK INDICATORS', yPos, pageWidth);
   yPos += 3;
@@ -1319,14 +1216,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return risks.slice(0, 4);
   };
   
+  const riskCardWidth = Math.min(60, (pageWidth - 40) / data.candidates.length);
+  
   data.candidates.forEach((candidate, index) => {
     const risks = getRiskIndicatorsPDF(index);
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardX = 20 + (index * (cardWidth + 3));
+    const cardX = 20 + (index * (riskCardWidth + 3));
     
     // Candidate header
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(cardX, yPos, cardWidth, 5, 'F');
+    pdf.rect(cardX, yPos, riskCardWidth, 5, 'F');
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
