@@ -14,8 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Link } from "lucide-react";
-import { useUpload } from "@/hooks/use-upload";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -2717,53 +2716,65 @@ export default function PartnerDashboard() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground">or</span>
-                                  <label className="cursor-pointer">
-                                    <input
-                                      type="file"
-                                      accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                                      className="hidden"
-                                      data-testid="input-branding-logo-upload"
-                                      onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          try {
-                                            const res = await fetch("/api/uploads/request-url", {
-                                              method: "POST",
-                                              headers: { "Content-Type": "application/json" },
-                                              body: JSON.stringify({
-                                                name: file.name,
-                                                size: file.size,
-                                                contentType: file.type,
-                                              }),
-                                            });
-                                            const { uploadURL, objectPath } = await res.json();
-                                            await fetch(uploadURL, {
-                                              method: "PUT",
-                                              body: file,
-                                              headers: { "Content-Type": file.type },
-                                            });
-                                            setBrandingLogoUrl(objectPath);
-                                            toast({
-                                              title: "Logo uploaded",
-                                              description: "Your logo has been uploaded successfully.",
-                                            });
-                                          } catch (err) {
-                                            toast({
-                                              title: "Upload failed",
-                                              description: "Failed to upload logo. Please try again.",
-                                              variant: "destructive",
-                                            });
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                                    id="branding-logo-upload"
+                                    className="hidden"
+                                    data-testid="input-branding-logo-upload"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        try {
+                                          const res = await fetch("/api/uploads/request-url", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            credentials: "include",
+                                            body: JSON.stringify({
+                                              name: file.name,
+                                              size: file.size,
+                                              contentType: file.type,
+                                            }),
+                                          });
+                                          if (!res.ok) {
+                                            throw new Error("Failed to get upload URL");
                                           }
+                                          const { uploadURL, objectPath } = await res.json();
+                                          const uploadRes = await fetch(uploadURL, {
+                                            method: "PUT",
+                                            body: file,
+                                            headers: { "Content-Type": file.type },
+                                          });
+                                          if (!uploadRes.ok) {
+                                            throw new Error("Failed to upload file");
+                                          }
+                                          setBrandingLogoUrl(objectPath);
+                                          // Reset file input to allow re-uploading the same file
+                                          e.target.value = "";
+                                          toast({
+                                            title: "Logo uploaded",
+                                            description: "Your logo has been uploaded successfully.",
+                                          });
+                                        } catch (err) {
+                                          toast({
+                                            title: "Upload failed",
+                                            description: "Failed to upload logo. Please try again.",
+                                            variant: "destructive",
+                                          });
                                         }
-                                      }}
-                                    />
-                                    <Button variant="outline" size="sm" asChild>
-                                      <span>
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Upload Logo
-                                      </span>
-                                    </Button>
-                                  </label>
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    type="button"
+                                    onClick={() => document.getElementById("branding-logo-upload")?.click()}
+                                    data-testid="button-upload-logo"
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Upload Logo
+                                  </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
                                   Enter a URL or upload an image (PNG, JPEG, SVG, or WebP recommended)
