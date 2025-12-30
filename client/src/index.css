@@ -354,4 +354,31 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Report Mode - Hide interactive elements during PDF screen capture */
+  .report-mode .report-hidden {
+    display: none !important;
+  }
+
+  .report-only {
+    display: none !important;
+  }
+
+  .report-mode .report-only {
+    display: block !important;
+  }
+
+  .report-mode .report-only-flex {
+    display: flex !important;
+  }
+
+  /* Clean up margins/padding in report mode */
+  .report-mode {
+    background-color: white !important;
+  }
+
+  .report-mode .report-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
