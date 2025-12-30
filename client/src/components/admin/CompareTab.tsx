@@ -30,6 +30,13 @@ const CHART_COLORS = [
   "hsl(var(--chart-3))",
 ];
 
+// Concrete colors for PDF export (CSS variables don't work in html2canvas)
+const PDF_CHART_COLORS = [
+  "#3b82f6", // Blue
+  "#22c55e", // Green
+  "#f59e0b", // Amber
+];
+
 // Role definitions with skill weightings for suitability scoring
 // Uses the same keys as FIT_SKILLS and AI_READINESS_SKILLS
 import { ROLE_DEFINITIONS } from '@/lib/assessmentSkills';
@@ -298,7 +305,14 @@ export default function CompareTab() {
   };
 
   const handleScreenCapturePDF = async () => {
-    if (!comparison || !selectedCandidateData || !reportContainerRef.current) return;
+    if (!comparison || !selectedCandidateData || !reportContainerRef.current) {
+      console.log("Screen capture PDF: Missing required data", { 
+        comparison: !!comparison, 
+        selectedCandidateData: !!selectedCandidateData, 
+        reportContainerRef: !!reportContainerRef.current 
+      });
+      return;
+    }
     
     try {
       setIsCapturingPDF(true);
@@ -308,16 +322,28 @@ export default function CompareTab() {
         description: "Capturing the comparison view...",
       });
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait for state change to render the report header
+      await new Promise(resolve => setTimeout(resolve, 500));
       await document.fonts.ready;
+      
+      // Wait for any images to load
+      const images = reportContainerRef.current.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
 
       const reportElement = reportContainerRef.current;
+      console.log("Screen capture: Element dimensions", reportElement.scrollWidth, reportElement.scrollHeight);
       
       const canvas = await html2canvas(reportElement, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
-        logging: false,
+        logging: true,
         allowTaint: true,
         windowWidth: reportElement.scrollWidth,
         windowHeight: reportElement.scrollHeight,
@@ -734,13 +760,13 @@ export default function CompareTab() {
                           <div className="flex items-center gap-2 mb-1">
                             <div 
                               className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: CHART_COLORS[index]?.replace('hsl(var(--chart-', '').replace('))', '') || '#666' }}
+                              style={{ backgroundColor: PDF_CHART_COLORS[index] || '#666' }}
                             />
                             <span className="font-semibold text-gray-900">{getCandidateName(candidate)}</span>
                           </div>
                           <p className="text-sm text-gray-600">{candidate.user.email}</p>
                           <p className="text-sm font-medium mt-1">
-                            Composite Score: <span className="text-primary">{Math.round(comparison.averageScores[index])}%</span>
+                            Composite Score: <span style={{ color: '#0ea5e9' }}>{Math.round(comparison.averageScores[index])}%</span>
                           </p>
                         </div>
                       ))}
