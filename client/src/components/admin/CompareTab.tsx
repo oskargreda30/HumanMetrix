@@ -352,10 +352,28 @@ export default function CompareTab() {
         backgroundColor: '#ffffff',
         scale: scale,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
         windowWidth: reportElement.scrollWidth,
         windowHeight: elementHeight,
+        onclone: (clonedDoc: Document) => {
+          // Replace modern CSS color functions that html2canvas doesn't support
+          // The main issue is hsl(from ...) syntax used for computed borders
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            :root, .dark {
+              /* Override computed border colors with static fallbacks */
+              --sidebar-primary-border: hsl(217 91% 27%) !important;
+              --sidebar-accent-border: hsl(210 8% 80%) !important;
+              --primary-border: hsl(217 91% 27%) !important;
+              --secondary-border: hsl(210 8% 78%) !important;
+              --muted-border: hsl(210 10% 82%) !important;
+              --accent-border: hsl(210 12% 80%) !important;
+              --destructive-border: hsl(0 84% 24%) !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        },
       });
 
       const pdf = new jsPDF({
