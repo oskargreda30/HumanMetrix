@@ -427,7 +427,13 @@ export function DeveloperSubTabs({
                       variant="outline" 
                       size="sm" 
                       className="mt-3"
-                      onClick={() => setActiveSubTab('api-keys')}
+                      onClick={() => {
+                        setActiveSubTab('api-keys');
+                        // Scroll to top of the developer section after tab switch
+                        setTimeout(() => {
+                          document.querySelector('[data-value="api-keys"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
                       data-testid="button-sandbox-to-api"
                     >
                       <Key className="h-4 w-4 mr-2" />
