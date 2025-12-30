@@ -323,7 +323,7 @@ export default function CompareTab() {
       });
 
       // Wait for state change to render the report header
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 600));
       await document.fonts.ready;
       
       // Wait for any images to load
@@ -337,16 +337,34 @@ export default function CompareTab() {
       }));
 
       const reportElement = reportContainerRef.current;
-      const elementHeight = reportElement.scrollHeight;
-      console.log("Screen capture: Element dimensions", reportElement.scrollWidth, elementHeight);
       
-      // Reduce scale for very tall elements to avoid canvas size limits (max ~16384px)
-      const maxCanvasHeight = 16000;
-      let scale = 2;
-      if (elementHeight * 2 > maxCanvasHeight) {
-        scale = Math.min(2, maxCanvasHeight / elementHeight);
-        console.log("Screen capture: Reducing scale to", scale, "due to element height");
-      }
+      // Get all major sections (Cards) for intelligent page breaks
+      const sections = Array.from(reportElement.querySelectorAll('[data-testid^="summary-card"], [data-testid^="card-"]'));
+      const allCards = Array.from(reportElement.querySelectorAll('.rounded-xl, .rounded-lg'));
+      
+      // If no data-testid cards found, fall back to all cards
+      const captureElements = sections.length > 0 ? sections : (allCards.length > 0 ? allCards : [reportElement]);
+      
+      console.log("Screen capture: Found", captureElements.length, "sections to capture");
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - (margin * 2);
+      const availableHeight = pageHeight - (margin * 2);
+      
+      // Pixel to mm conversion (assuming 96 DPI)
+      const pxToMm = (px: number) => px * 0.264583;
+      
+      // Capture the entire content but slice intelligently based on section boundaries
+      const elementHeight = reportElement.scrollHeight;
+      const scale = Math.min(2, 16000 / elementHeight);
       
       const canvas = await html2canvas(reportElement, {
         backgroundColor: '#ffffff',
@@ -357,8 +375,7 @@ export default function CompareTab() {
         windowWidth: reportElement.scrollWidth,
         windowHeight: elementHeight,
         onclone: (clonedDoc: Document) => {
-          // Replace modern CSS color functions that html2canvas doesn't support
-          // The main issue is hsl(from ...) syntax used for computed borders
+          // Fix CSS for capture
           const style = clonedDoc.createElement('style');
           style.textContent = `
             :root, .dark {
@@ -371,55 +388,116 @@ export default function CompareTab() {
               --accent-border: hsl(210 12% 80%) !important;
               --destructive-border: hsl(0 84% 24%) !important;
             }
+            /* Disable animations for charts */
+            .recharts-wrapper * {
+              animation: none !important;
+              transition: none !important;
+            }
+            /* Remove overflow hidden that can clip content */
+            .overflow-hidden {
+              overflow: visible !important;
+            }
+            /* Ensure all text is visible */
+            .truncate {
+              overflow: visible !important;
+              text-overflow: clip !important;
+              white-space: normal !important;
+            }
+            /* Remove sticky positioning */
+            .sticky {
+              position: relative !important;
+            }
           `;
           clonedDoc.head.appendChild(style);
         },
       });
 
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
+      // Get section boundaries for intelligent page breaks
+      const containerRect = reportElement.getBoundingClientRect();
+      const sectionBoundaries: number[] = [0]; // Start with 0
+      
+      // Collect all card/section top positions relative to container
+      allCards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const relativeTop = rect.top - containerRect.top;
+        const relativeBottom = rect.bottom - containerRect.top;
+        sectionBoundaries.push(relativeTop);
+        sectionBoundaries.push(relativeBottom);
       });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const contentWidth = pageWidth - (margin * 2);
-
+      
+      // Sort and dedupe boundaries
+      const uniqueBoundaries = Array.from(new Set(sectionBoundaries)).sort((a, b) => a - b);
+      
+      // Calculate scaling factors
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let currentY = margin;
-      let remainingHeight = imgHeight;
-      let sourceY = 0;
-
-      while (remainingHeight > 0) {
-        const availableHeight = pageHeight - (margin * 2);
-        const sliceHeight = Math.min(remainingHeight, availableHeight);
-        const sourceSliceHeight = (sliceHeight / imgHeight) * canvas.height;
-
+      const scaleFactor = imgHeight / elementHeight; // Convert pixel positions to PDF mm
+      
+      let currentPdfY = margin;
+      let currentSourceY = 0;
+      let pageNum = 1;
+      
+      // Find the best slice points that don't cut through sections
+      const findBestBreakPoint = (startPx: number, maxPx: number): number => {
+        // Convert available PDF height to source pixels
+        const maxSourceHeight = (availableHeight / scaleFactor);
+        const targetEndPx = startPx + maxSourceHeight;
+        
+        if (targetEndPx >= elementHeight) {
+          return elementHeight; // Last slice
+        }
+        
+        // Find the largest boundary that fits
+        let bestBreak = targetEndPx;
+        for (let i = uniqueBoundaries.length - 1; i >= 0; i--) {
+          const boundary = uniqueBoundaries[i];
+          if (boundary > startPx && boundary <= targetEndPx) {
+            bestBreak = boundary;
+            break;
+          }
+        }
+        
+        // If no good break found, use target (may cut content, but better than infinite loop)
+        return bestBreak;
+      };
+      
+      while (currentSourceY < elementHeight) {
+        const endSourceY = findBestBreakPoint(currentSourceY, elementHeight);
+        const sliceHeightPx = endSourceY - currentSourceY;
+        const sliceHeightMm = sliceHeightPx * scaleFactor;
+        
+        // Calculate canvas coordinates (account for scale)
+        const canvasStartY = currentSourceY * scale;
+        const canvasSliceHeight = sliceHeightPx * scale;
+        
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sourceSliceHeight;
+        sliceCanvas.height = Math.ceil(canvasSliceHeight);
         const sliceCtx = sliceCanvas.getContext('2d');
         
-        if (sliceCtx) {
+        if (sliceCtx && canvasSliceHeight > 0) {
           sliceCtx.drawImage(
             canvas, 
-            0, sourceY, canvas.width, sourceSliceHeight,
-            0, 0, canvas.width, sourceSliceHeight
+            0, canvasStartY, canvas.width, canvasSliceHeight,
+            0, 0, canvas.width, canvasSliceHeight
           );
           
           const sliceImgData = sliceCanvas.toDataURL('image/png');
-          pdf.addImage(sliceImgData, 'PNG', margin, margin, imgWidth, sliceHeight);
+          
+          if (pageNum > 1) {
+            pdf.addPage();
+          }
+          
+          pdf.addImage(sliceImgData, 'PNG', margin, margin, imgWidth, sliceHeightMm);
+          pageNum++;
         }
-
-        sourceY += sourceSliceHeight;
-        remainingHeight -= sliceHeight;
-
-        if (remainingHeight > 0) {
-          pdf.addPage();
+        
+        currentSourceY = endSourceY;
+        
+        // Safety check to prevent infinite loop
+        if (sliceHeightPx <= 0) {
+          console.warn("Screen capture: Zero height slice detected, breaking");
+          break;
         }
       }
 
