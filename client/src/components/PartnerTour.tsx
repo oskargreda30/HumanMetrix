@@ -37,8 +37,8 @@ const TOUR_STEPS: TourStep[] = [
   // Overview
   {
     id: 'home-content',
-    title: 'Home - Your Dashboard Overview',
-    description: 'The Home tab shows your account at a glance: remaining test credits, monthly usage, billing summary, and a Getting Started checklist to help new partners complete essential setup.',
+    title: 'Overview - Your Dashboard at a Glance',
+    description: 'The Overview tab shows your account status: remaining test credits, monthly usage, billing summary, and a Getting Started checklist to help new partners complete essential setup.',
     icon: Home,
     tab: 'home',
     targetSelector: '[data-testid="panel-home"][data-state="active"]',
