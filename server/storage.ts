@@ -1689,7 +1689,7 @@ export class DatabaseStorage implements IStorage {
     const balance = await this.getPartnerQuotaBalance(partnerId);
     
     if (balance.remaining <= 0) {
-      // No credits remaining - suspend access
+      // No credits remaining - suspend access (notification will be sent separately by caller if needed)
       await this.suspendPartnerApiAccess(partnerId);
       return { success: false, remaining: 0, suspended: true };
     }
@@ -1713,13 +1713,81 @@ export class DatabaseStorage implements IStorage {
       description,
     });
     
+    // Check quota alert thresholds and send notifications based on partner settings
+    await this.checkAndSendQuotaAlerts(partnerId, newConsumed, balance.testsPurchased, newRemaining);
+    
     // Check if we need to suspend (hit 100%)
     if (newRemaining <= 0) {
       await this.suspendPartnerApiAccess(partnerId);
+      
+      // Create quota exceeded notification
+      await this.createPartnerNotification({
+        partnerId,
+        type: 'quota_exceeded',
+        title: 'Quota Exceeded',
+        message: 'Your assessment credits have been exhausted. Purchase more credits to continue using the API.',
+        metadata: { remaining: 0, purchased: balance.testsPurchased, consumed: newConsumed },
+      });
+      
       return { success: true, remaining: 0, suspended: true };
     }
     
     return { success: true, remaining: newRemaining, suspended: false };
+  }
+  
+  async checkAndSendQuotaAlerts(partnerId: string, consumed: number, purchased: number, remaining: number): Promise<{ shouldNotifyFirst: boolean; shouldNotifyUrgent: boolean }> {
+    // Get partner settings for quota alerts
+    const [partner] = await db.select({
+      quotaAlertEnabled: partnerAccounts.quotaAlertEnabled,
+      quotaAlertThreshold: partnerAccounts.quotaAlertThreshold,
+      last70NoticeAt: partnerAccounts.last70NoticeAt,
+      last90NoticeAt: partnerAccounts.last90NoticeAt,
+    }).from(partnerAccounts).where(eq(partnerAccounts.id, partnerId));
+    
+    let shouldNotifyFirst = false;
+    let shouldNotifyUrgent = false;
+    
+    if (!partner || !partner.quotaAlertEnabled || purchased === 0) {
+      return { shouldNotifyFirst, shouldNotifyUrgent };
+    }
+    
+    const usagePercentage = Math.round((consumed / purchased) * 100);
+    const threshold = partner.quotaAlertThreshold || 80;
+    const urgentThreshold = Math.min(threshold + 15, 95);
+    
+    // Check if usage just crossed the partner's configured threshold (warning)
+    // Note: We only create in-app notifications here, timestamps are updated by partner-auth.ts
+    // to ensure email notifications are also sent
+    if (usagePercentage >= threshold && usagePercentage < urgentThreshold) {
+      // Only send if we haven't sent a 70% notice yet (partner-auth will update the timestamp)
+      if (!partner.last70NoticeAt) {
+        shouldNotifyFirst = true;
+        await this.createPartnerNotification({
+          partnerId,
+          type: 'quota_warning',
+          title: 'Quota Warning',
+          message: `You have used ${usagePercentage}% of your assessment credits. ${remaining} credits remaining.`,
+          metadata: { usagePercentage, remaining, threshold },
+        });
+      }
+    }
+    
+    // Check if usage just crossed urgent threshold (95%)
+    if (usagePercentage >= urgentThreshold && usagePercentage < 100) {
+      // Only send if we haven't sent a 90% notice yet (partner-auth will update the timestamp)
+      if (!partner.last90NoticeAt) {
+        shouldNotifyUrgent = true;
+        await this.createPartnerNotification({
+          partnerId,
+          type: 'quota_critical',
+          title: 'Critical: Quota Almost Exhausted',
+          message: `You have used ${usagePercentage}% of your assessment credits. Only ${remaining} credits remaining. Purchase more to avoid service interruption.`,
+          metadata: { usagePercentage, remaining },
+        });
+      }
+    }
+    
+    return { shouldNotifyFirst, shouldNotifyUrgent };
   }
 
   async creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }> {

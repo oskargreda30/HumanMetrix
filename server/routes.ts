@@ -4695,6 +4695,15 @@ Format your response as JSON with this structure:
         keyHint: newKeyHint,
       });
       
+      // Create notification for API key rotation
+      await storage.createPartnerNotification({
+        partnerId: matchingPartner.id,
+        type: 'api_key_rotated',
+        title: 'API Key Rotated',
+        message: `API key "${existingKey.name}" has been rotated. The old key is no longer valid.`,
+        metadata: { keyId: existingKey.id, keyName: existingKey.name },
+      });
+      
       // Return the new key (only time it's visible in full)
       res.json({
         success: true,
@@ -4747,6 +4756,15 @@ Format your response as JSON with this structure:
       
       // Revoke the key
       await storage.revokePartnerApiKey(keyId);
+      
+      // Create notification for API key revocation
+      await storage.createPartnerNotification({
+        partnerId: matchingPartner.id,
+        type: 'api_key_revoked',
+        title: 'API Key Revoked',
+        message: `API key "${existingKey.name}" has been revoked and can no longer be used.`,
+        metadata: { keyId: existingKey.id, keyName: existingKey.name },
+      });
       
       res.json({
         success: true,
@@ -4827,6 +4845,15 @@ Format your response as JSON with this structure:
       });
       
       console.log(`[CREATE API KEY] Key created successfully: id=${newKey.id}, prefix=${prefix}, hint=${hint}`);
+      
+      // Create notification for API key creation
+      await storage.createPartnerNotification({
+        partnerId: matchingPartner.id,
+        type: 'api_key_created',
+        title: 'API Key Created',
+        message: `A new ${environment} API key "${name}" has been created.`,
+        metadata: { keyId: newKey.id, keyName: name, environment },
+      });
       
       const responsePayload = {
         success: true,
@@ -5832,6 +5859,84 @@ Format your response as JSON with this structure:
     }
   });
   
+  // Accept team invitation (token-authenticated with rate limiting)
+  // Rate limiting: max 5 attempts per IP per minute
+  const inviteAttempts = new Map<string, { count: number; resetAt: number }>();
+  
+  app.post("/api/partner/team/accept/:token", async (req: Request, res: Response) => {
+    try {
+      // Rate limiting by IP
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const rateLimit = inviteAttempts.get(clientIp);
+      
+      if (rateLimit) {
+        if (now < rateLimit.resetAt) {
+          if (rateLimit.count >= 5) {
+            return res.status(429).json({ message: "Too many attempts. Please try again later." });
+          }
+          rateLimit.count++;
+        } else {
+          // Reset window
+          inviteAttempts.set(clientIp, { count: 1, resetAt: now + 60000 });
+        }
+      } else {
+        inviteAttempts.set(clientIp, { count: 1, resetAt: now + 60000 });
+      }
+      
+      const { token } = req.params;
+      
+      // Validate token format (should be 64 hex characters)
+      if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(400).json({ message: "Invalid invitation token format" });
+      }
+      
+      // Find the team member by invite token
+      const member = await storage.getPartnerTeamMemberByToken(token);
+      
+      if (!member) {
+        return res.status(404).json({ message: "Invalid or expired invitation" });
+      }
+      
+      // Check if invite has expired
+      if (member.inviteExpiresAt && new Date(member.inviteExpiresAt) < new Date()) {
+        return res.status(400).json({ message: "This invitation has expired" });
+      }
+      
+      // Check if already accepted
+      if (member.inviteStatus === 'accepted') {
+        return res.status(400).json({ message: "This invitation has already been accepted" });
+      }
+      
+      // Update member status to accepted
+      await storage.updatePartnerTeamMember(member.id, {
+        inviteStatus: 'accepted',
+        acceptedAt: new Date(),
+      } as any);
+      
+      // Get partner for notification
+      const partner = await storage.getPartnerAccount(member.partnerId);
+      
+      // Create notification for team member joining
+      await storage.createPartnerNotification({
+        partnerId: member.partnerId,
+        type: 'team_member_joined',
+        title: 'Team Member Joined',
+        message: `${member.name || member.email} has accepted the invitation and joined the team.`,
+        metadata: { memberId: member.id, memberEmail: member.email, memberName: member.name, role: member.role },
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Invitation accepted successfully",
+        partner: partner ? { companyName: partner.companyName } : null,
+      });
+    } catch (error) {
+      console.error("Error accepting team invitation:", error);
+      res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+  
   // Remove team member
   app.delete("/api/partner/me/team/:id", isAuthenticated, async (req: any, res) => {
     try {
@@ -5846,6 +5951,16 @@ Format your response as JSON with this structure:
       }
       
       await storage.deletePartnerTeamMember(req.params.id);
+      
+      // Create notification for team member removal
+      await storage.createPartnerNotification({
+        partnerId: partner.id,
+        type: 'team_member_removed',
+        title: 'Team Member Removed',
+        message: `${member.name || member.email} has been removed from the team.`,
+        metadata: { memberId: member.id, memberEmail: member.email, memberName: member.name },
+      });
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error removing team member:", error);
@@ -7415,6 +7530,15 @@ Format your response as JSON with this structure:
       }
       
       console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId}`);
+      
+      // Create notification for credits purchased
+      await storage.createPartnerNotification({
+        partnerId,
+        type: 'credits_purchased',
+        title: 'Credits Purchased',
+        message: `${packageSize} assessment credits have been added to your account. New balance: ${result.newBalance} credits.`,
+        metadata: { packageId, packageSize: parseInt(packageSize), newBalance: result.newBalance },
+      });
       
       res.json({ 
         success: true, 

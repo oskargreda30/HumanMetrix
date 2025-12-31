@@ -718,6 +718,21 @@ export function registerPartnerRoutes(app: Express) {
           }
         }
         
+        // Create notification for assessment completion
+        await storage.createPartnerNotification({
+          partnerId: session.partnerId,
+          type: 'assessment_completed',
+          title: 'Assessment Completed',
+          message: `A ${session.assessmentType.toUpperCase()} assessment has been completed${session.externalUserId ? ` by ${session.externalUserId}` : ''}.`,
+          metadata: { 
+            sessionId: session.id, 
+            assessmentType: session.assessmentType,
+            externalUserId: session.externalUserId,
+            totalScore,
+            percentile,
+          },
+        });
+        
         if (session.webhookUrl) {
           sendWebhook(session.webhookUrl, {
             event: "session.completed",
