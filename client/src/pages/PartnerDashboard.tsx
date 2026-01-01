@@ -59,6 +59,8 @@ interface PartnerAccount {
     suspendedAt: string | null;
     activeApiKeys: number;
     createdAt: string;
+    freeTestsAllocated: number;
+    freeTestsExpiresAt: string | null;
   };
 }
 
@@ -1181,6 +1183,54 @@ export default function PartnerDashboard() {
                 );
               })()}
 
+              {/* Free Tests Expiry Banner */}
+              {(() => {
+                if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
+                if (!partner?.freeTestsExpiresAt) return null;
+                
+                const expiryDate = new Date(partner.freeTestsExpiresAt);
+                const now = new Date();
+                const diffMs = expiryDate.getTime() - now.getTime();
+                const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                
+                // Don't show if already expired
+                if (daysRemaining <= 0) return null;
+                
+                const isUrgent = daysRemaining <= 2;
+                
+                return (
+                  <Card className={`border-2 ${isUrgent ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30' : 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-950/30'}`} data-testid="card-free-tests-expiry">
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${isUrgent ? 'bg-amber-500' : 'bg-cyan-500'}`}>
+                            <Clock className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
+                              {isUrgent ? 'Free Tests Expiring Soon!' : 'Free Tests Available'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              You have <strong>{partner.freeTestsAllocated}</strong> complimentary tests that expire in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
+                              {' '}({expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant={isUrgent ? "default" : "outline"} 
+                          size="sm" 
+                          onClick={() => window.open('/developers', '_blank')}
+                          className={isUrgent ? 'bg-amber-600 hover:bg-amber-700' : ''}
+                        >
+                          Get Started
+                          <ExternalLink className="h-3 w-3 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Contract & Terms View */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1748,6 +1798,41 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             <TabsContent value="usage" className="space-y-4" data-testid="panel-usage">
+              {/* Free Tests Expiry Banner in Usage Tab */}
+              {(() => {
+                if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
+                if (!partner?.freeTestsExpiresAt) return null;
+                
+                const expiryDate = new Date(partner.freeTestsExpiresAt);
+                const now = new Date();
+                const diffMs = expiryDate.getTime() - now.getTime();
+                const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                
+                if (daysRemaining <= 0) return null;
+                
+                const isUrgent = daysRemaining <= 2;
+                
+                return (
+                  <Card className={`border-2 ${isUrgent ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30' : 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-950/30'}`}>
+                    <CardContent className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${isUrgent ? 'bg-amber-500' : 'bg-cyan-500'}`}>
+                          <Clock className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
+                            Free Tests: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {partner.freeTestsAllocated} complimentary tests expire on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {usageLoading ? (
                 <Card>
                   <CardContent className="py-8 flex justify-center">

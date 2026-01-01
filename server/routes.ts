@@ -4008,6 +4008,9 @@ Format your response as JSON with this structure:
           suspendedAt: matchingPartner.apiAccessSuspendedAt,
           activeApiKeys: apiKeys.filter(k => k.isActive).length,
           createdAt: matchingPartner.createdAt,
+          // Free tests expiry info
+          freeTestsAllocated: matchingPartner.freeTestsAllocated || 0,
+          freeTestsExpiresAt: matchingPartner.freeTestsExpiresAt,
         },
       });
     } catch (error) {
@@ -6685,7 +6688,7 @@ Format your response as JSON with this structure:
       }
       
       const { 
-        name, companyName, email, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
+        name, companyName, email, country, phone, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
         billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
         billingCycleAnchor, prepaidBalance
       } = req.body;
@@ -6775,10 +6778,17 @@ Format your response as JSON with this structure:
         console.log(`Created admin user ${partnerUser.id} for partner organisation`);
       }
       
+      // Calculate 7-day expiry for free tests if allocated
+      const freeTestsExpiryDate = freeTestsAllocated && freeTestsAllocated > 0 
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        : null;
+      
       const partner = await storage.createPartnerAccount({
         name,
         companyName: companyName || name, // Default to contact name if company not provided
         email,
+        country: country || null,
+        phone: phone || null,
         monthlyQuota: monthlyQuota || null,
         pricePerAssessment: pricePerAssessment || 500, // Default £5
         stripeCustomerId: stripeCustomerId || null,
@@ -6787,6 +6797,7 @@ Format your response as JSON with this structure:
         // New billing type system: prepaid, auto_bill, or invoice
         billingType: selectedBillingType,
         freeTestsAllocated: freeTestsAllocated || 0,
+        freeTestsExpiresAt: freeTestsExpiryDate,
         // Prepaid fields
         prepaidBalance: selectedBillingType === 'prepaid' ? (prepaidBalance || freeTestsAllocated || 0) : 0,
         // Auto-bill fields
