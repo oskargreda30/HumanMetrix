@@ -504,6 +504,8 @@ export const partnerAccounts = pgTable("partner_accounts", {
   email: varchar("email").unique().notNull(),
   companyName: varchar("company_name").notNull(),
   website: varchar("website"),
+  country: varchar("country"), // Partner's country
+  phone: varchar("phone"), // Partner's phone number
   logoUrl: varchar("logo_url"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
@@ -518,6 +520,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   // 'invoice': Enterprise invoicing, we send invoices based on usage
   billingType: varchar("billing_type").notNull().default("prepaid"), // 'prepaid', 'auto_bill', or 'invoice'
   freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
+  freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
   prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
   // Auto-bill fields

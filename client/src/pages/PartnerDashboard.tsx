@@ -1116,7 +1116,7 @@ export default function PartnerDashboard() {
                           </div>
                           <div className="flex-1">
                             <div className={`font-medium text-sm ${hasAssessment ? 'text-green-700 dark:text-green-400' : ''}`}>
-                              Complete first assessment
+                              Send first assessment
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {hasAssessment ? `${partner?.testsConsumed} assessments completed` : 'Use the API to send an assessment'}
@@ -1413,28 +1413,28 @@ export default function PartnerDashboard() {
 
               {/* Quick Actions */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("results")} data-testid="card-quick-results">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("results"); window.scrollTo(0, 0); }} data-testid="card-quick-results">
                   <CardContent className="pt-6 text-center">
                     <ClipboardList className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">View Results</h3>
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("organizations")} data-testid="card-quick-organizations">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("organizations"); window.scrollTo(0, 0); }} data-testid="card-quick-organizations">
                   <CardContent className="pt-6 text-center">
                     <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Organizations</h3>
                     <p className="text-sm text-muted-foreground">Manage clients</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveTab("billing")} data-testid="card-quick-billing">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }} data-testid="card-quick-billing">
                   <CardContent className="pt-6 text-center">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Buy Tests</h3>
                     <p className="text-sm text-muted-foreground">Purchase credits</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setLocation("/developers")} data-testid="card-quick-api-docs">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => window.open('/developers', '_blank')} data-testid="card-quick-api-docs">
                   <CardContent className="pt-6 text-center">
                     <ExternalLink className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">API Docs</h3>
@@ -3419,7 +3419,7 @@ export default function PartnerDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="org-slug">Slug *</Label>
+              <Label htmlFor="org-slug">URL Identifier *</Label>
               <Input
                 id="org-slug"
                 placeholder="acme-corp"
@@ -3427,7 +3427,7 @@ export default function PartnerDashboard() {
                 onChange={(e) => setNewOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
                 data-testid="input-org-slug"
               />
-              <p className="text-xs text-muted-foreground">Used for API identification (lowercase, no spaces)</p>
+              <p className="text-xs text-muted-foreground">A short, unique ID for this organization (e.g., "acme-corp"). Used in URLs and API calls. Lowercase letters, numbers, and hyphens only.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-admin-name">Admin Name</Label>

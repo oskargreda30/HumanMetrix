@@ -516,6 +516,8 @@ export default function PartnersTab() {
       name: formData.get("name") as string,
       companyName: formData.get("companyName") as string,
       email: formData.get("email") as string,
+      country: (formData.get("country") as string) || undefined,
+      phone: (formData.get("phone") as string) || undefined,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
       billingType,
@@ -1648,6 +1650,16 @@ export default function PartnersTab() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" name="email" type="email" required className="bg-slate-800 border-slate-600" data-testid="input-partner-email" />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input id="country" name="country" placeholder="e.g. United Kingdom" className="bg-slate-800 border-slate-600" data-testid="input-partner-country" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" name="phone" type="tel" placeholder="+44 7..." className="bg-slate-800 border-slate-600" data-testid="input-partner-phone" />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="pricePerAssessment">Price Per Assessment (pence)</Label>
                   <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
@@ -1664,8 +1676,12 @@ export default function PartnersTab() {
                       type="number" 
                       min={0} 
                       max={500}
-                      value={freeTests} 
-                      onChange={(e) => setFreeTests(parseInt(e.target.value) || 0)}
+                      value={freeTests || ''} 
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/^0+/, '') || '0';
+                        const num = Math.min(500, Math.max(0, parseInt(val) || 0));
+                        setFreeTests(num);
+                      }}
                       className="bg-slate-800 border-slate-600" 
                       data-testid="input-partner-free-tests" 
                     />
