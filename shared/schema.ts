@@ -506,6 +506,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   website: varchar("website"),
   country: varchar("country"), // Partner's country
   phone: varchar("phone"), // Partner's phone number
+  currency: varchar("currency").notNull().default("GBP"), // Partner's preferred currency (GBP, USD, EUR)
   logoUrl: varchar("logo_url"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
@@ -523,6 +524,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
   prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
+  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (12 months from purchase)
   // Auto-bill fields
   stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
   billingCycleAnchor: integer("billing_cycle_anchor").default(1), // Day of month for billing (1-28)

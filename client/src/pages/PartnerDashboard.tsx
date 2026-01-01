@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+// Initialize Stripe with public key
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +66,8 @@ interface PartnerAccount {
     createdAt: string;
     freeTestsAllocated: number;
     freeTestsExpiresAt: string | null;
+    currency: string;
+    prepaidCreditsExpiresAt: string | null;
   };
 }
 
@@ -312,6 +319,8 @@ export default function PartnerDashboard() {
   const [billingChangeReason, setBillingChangeReason] = useState("");
   const [isSubmittingBillingChange, setIsSubmittingBillingChange] = useState(false);
   const [isCancellingBillingChange, setIsCancellingBillingChange] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
 
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
     queryKey: ["/api/partner/account"],
@@ -852,13 +861,18 @@ export default function PartnerDashboard() {
     },
   });
 
-  const formatCurrency = (amount: number, currency: string = 'gbp') => {
+  const partnerCurrency = account?.partner?.currency || 'GBP';
+  
+  const formatCurrency = (amount: number, currency?: string) => {
+    const curr = currency || partnerCurrency;
     const currencySymbols: Record<string, string> = {
       gbp: '£',
       usd: '$',
       eur: '€',
+      sgd: 'S$',
+      aud: 'A$',
     };
-    const symbol = currencySymbols[currency.toLowerCase()] || '£';
+    const symbol = currencySymbols[curr.toLowerCase()] || '£';
     return `${symbol}${(amount / 100).toFixed(2)}`;
   };
 
@@ -2171,7 +2185,7 @@ export default function PartnerDashboard() {
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Credits never expire
+                              Credits valid for 12 months
                             </li>
                           </ul>
                           {account?.partner?.billingType !== 'prepaid' && !billingChangeData?.pendingRequest && (
@@ -3604,6 +3618,8 @@ export default function PartnerDashboard() {
         if (!open) {
           setSelectedBillingType(null);
           setBillingChangeReason("");
+          setCardError(null);
+          setCardComplete(false);
         }
       }}>
         <DialogContent>
@@ -3649,6 +3665,52 @@ export default function PartnerDashboard() {
                 This helps our team understand your needs and process your request faster.
               </p>
             </div>
+
+            {/* Card Details Section - Only shown when requesting Auto-Bill */}
+            {selectedBillingType === 'auto_bill' && (
+              <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  <Label className="font-medium">Card Details</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Auto-billing requires a card on file. Your card will only be charged based on actual usage at the end of each billing cycle.
+                </p>
+                <Elements stripe={stripePromise}>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-md border bg-background">
+                      <CardElement 
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '14px',
+                              color: '#424770',
+                              '::placeholder': {
+                                color: '#aab7c4',
+                              },
+                            },
+                            invalid: {
+                              color: '#9e2146',
+                            },
+                          },
+                        }}
+                        onChange={(event) => {
+                          setCardComplete(event.complete);
+                          setCardError(event.error ? event.error.message : null);
+                        }}
+                      />
+                    </div>
+                    {cardError && (
+                      <p className="text-xs text-destructive">{cardError}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      <span>Your card details are securely processed by Stripe</span>
+                    </div>
+                  </div>
+                </Elements>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowBillingChangeDialog(false)}>
@@ -3656,7 +3718,7 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange}
+              disabled={isSubmittingBillingChange || (selectedBillingType === 'auto_bill' && !cardComplete)}
               data-testid="button-submit-billing-change"
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

@@ -1791,19 +1791,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }> {
-    // Get current balance
+    // Get current balance and partner details
     const balance = await this.getPartnerQuotaBalance(partnerId);
+    const partner = await this.getPartnerAccount(partnerId);
     const newPurchased = balance.testsPurchased + amount;
     const newRemaining = newPurchased - balance.testsConsumed;
+    
+    // Calculate 12-month expiry: extend from existing expiry (if future) or from now
+    const now = new Date();
+    const existingExpiry = partner?.prepaidCreditsExpiresAt ? new Date(partner.prepaidCreditsExpiresAt) : null;
+    const baseDate = (existingExpiry && existingExpiry > now) ? existingExpiry : now;
+    const prepaidExpiry = new Date(baseDate);
+    prepaidExpiry.setMonth(prepaidExpiry.getMonth() + 12);
     
     // Update partner account
     await db.update(partnerAccounts).set({
       testsPurchased: newPurchased,
+      // Set prepaid credits expiry to 12 months from base date
+      prepaidCreditsExpiresAt: prepaidExpiry,
       // Clear suspension if they had remaining credits = 0 before
       apiAccessSuspendedAt: null,
       last70NoticeAt: null,
       last90NoticeAt: null,
-      updatedAt: new Date(),
+      updatedAt: now,
     }).where(eq(partnerAccounts.id, partnerId));
     
     // Create ledger entry

@@ -333,6 +333,7 @@ export default function PartnersTab() {
   const [freeTests, setFreeTests] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
@@ -518,6 +519,7 @@ export default function PartnersTab() {
       email: formData.get("email") as string,
       country: (formData.get("country") as string) || undefined,
       phone: (formData.get("phone") as string) || undefined,
+      currency: selectedCurrency,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
       billingType,
@@ -1659,6 +1661,22 @@ export default function PartnersTab() {
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input id="phone" name="phone" type="tel" placeholder="+44 7..." className="bg-slate-800 border-slate-600" data-testid="input-partner-phone" />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Currency</Label>
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-currency">
+                      <SelectValue placeholder="Select currency..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectItem value="GBP" className="text-white">GBP (£) - British Pound</SelectItem>
+                      <SelectItem value="USD" className="text-white">USD ($) - US Dollar</SelectItem>
+                      <SelectItem value="EUR" className="text-white">EUR (€) - Euro</SelectItem>
+                      <SelectItem value="SGD" className="text-white">SGD (S$) - Singapore Dollar</SelectItem>
+                      <SelectItem value="AUD" className="text-white">AUD (A$) - Australian Dollar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-400">Partner's preferred billing currency</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pricePerAssessment">Price Per Assessment (pence)</Label>

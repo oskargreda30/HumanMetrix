@@ -4011,6 +4011,9 @@ Format your response as JSON with this structure:
           // Free tests expiry info
           freeTestsAllocated: matchingPartner.freeTestsAllocated || 0,
           freeTestsExpiresAt: matchingPartner.freeTestsExpiresAt,
+          // Currency and prepaid expiry
+          currency: matchingPartner.currency || 'GBP',
+          prepaidCreditsExpiresAt: matchingPartner.prepaidCreditsExpiresAt,
         },
       });
     } catch (error) {
@@ -6688,7 +6691,7 @@ Format your response as JSON with this structure:
       }
       
       const { 
-        name, companyName, email, country, phone, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
+        name, companyName, email, country, phone, currency, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
         billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
         billingCycleAnchor, prepaidBalance
       } = req.body;
@@ -6783,12 +6786,19 @@ Format your response as JSON with this structure:
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         : null;
       
+      // Validate currency (default to GBP if not provided or invalid)
+      const validCurrencies = ['GBP', 'USD', 'EUR', 'SGD', 'AUD'];
+      const selectedCurrency = currency && validCurrencies.includes(currency.toUpperCase()) 
+        ? currency.toUpperCase() 
+        : 'GBP';
+      
       const partner = await storage.createPartnerAccount({
         name,
         companyName: companyName || name, // Default to contact name if company not provided
         email,
         country: country || null,
         phone: phone || null,
+        currency: selectedCurrency,
         monthlyQuota: monthlyQuota || null,
         pricePerAssessment: pricePerAssessment || 500, // Default £5
         stripeCustomerId: stripeCustomerId || null,
