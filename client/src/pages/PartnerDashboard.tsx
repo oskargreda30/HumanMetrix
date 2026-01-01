@@ -866,11 +866,48 @@ export default function PartnerDashboard() {
   const formatCurrency = (amount: number, currency?: string) => {
     const curr = currency || partnerCurrency;
     const currencySymbols: Record<string, string> = {
+      // Tier 1 - Developed Markets
       gbp: '£',
       usd: '$',
       eur: '€',
       sgd: 'S$',
       aud: 'A$',
+      cad: 'C$',
+      jpy: '¥',
+      chf: 'Fr',
+      nzd: 'NZ$',
+      hkd: 'HK$',
+      // Tier 2 - Emerging Markets
+      myr: 'RM',
+      thb: '฿',
+      php: '₱',
+      inr: '₹',
+      aed: 'د.إ',
+      sar: '﷼',
+      zar: 'R',
+      brl: 'R$',
+      mxn: 'Mex$',
+      krw: '₩',
+      twd: 'NT$',
+      // Tier 3 - SEA Emerging Markets
+      idr: 'Rp',
+      vnd: '₫',
+      mmk: 'K',
+      khr: '៛',
+      lak: '₭',
+      bnd: 'B$',
+      pkr: '₨',
+      bdt: '৳',
+      lkr: 'Rs',
+      npr: '₨',
+      try: '₺',
+      egp: 'E£',
+      ngn: '₦',
+      kes: 'KSh',
+      clp: 'CLP$',
+      cop: 'COL$',
+      pen: 'S/',
+      ars: 'AR$',
     };
     const symbol = currencySymbols[curr.toLowerCase()] || '£';
     return `${symbol}${(amount / 100).toFixed(2)}`;

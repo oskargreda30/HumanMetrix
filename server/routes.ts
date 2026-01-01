@@ -6787,7 +6787,17 @@ Format your response as JSON with this structure:
         : null;
       
       // Validate currency (default to GBP if not provided or invalid)
-      const validCurrencies = ['GBP', 'USD', 'EUR', 'SGD', 'AUD'];
+      // Tier 1 (Developed): GBP, USD, EUR, SGD, AUD, CAD, JPY, CHF, NZD, HKD
+      // Tier 2 (Emerging): MYR, THB, PHP, INR, AED, SAR, ZAR, BRL, MXN, KRW, TWD
+      // Tier 3 (SEA Emerging): IDR, VND, MMK, KHR, LAK, BND, PKR, BDT, LKR, NPR, TRY, EGP, NGN, KES, CLP, COP, PEN, ARS
+      const validCurrencies = [
+        // Tier 1
+        'GBP', 'USD', 'EUR', 'SGD', 'AUD', 'CAD', 'JPY', 'CHF', 'NZD', 'HKD',
+        // Tier 2
+        'MYR', 'THB', 'PHP', 'INR', 'AED', 'SAR', 'ZAR', 'BRL', 'MXN', 'KRW', 'TWD',
+        // Tier 3
+        'IDR', 'VND', 'MMK', 'KHR', 'LAK', 'BND', 'PKR', 'BDT', 'LKR', 'NPR', 'TRY', 'EGP', 'NGN', 'KES', 'CLP', 'COP', 'PEN', 'ARS'
+      ];
       const selectedCurrency = currency && validCurrencies.includes(currency.toUpperCase()) 
         ? currency.toUpperCase() 
         : 'GBP';
