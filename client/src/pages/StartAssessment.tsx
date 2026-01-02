@@ -89,10 +89,19 @@ export default function StartAssessment() {
     try {
       const response = await apiRequest("POST", `/api/invite/${token}/start`, {
         assessmentType,
-      }) as { widgetUrl?: string; sessionId?: string };
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to start assessment");
+      }
+      
+      const data = await response.json() as { widgetUrl?: string; sessionId?: string };
 
-      if (response.widgetUrl) {
-        window.location.href = response.widgetUrl;
+      if (data.widgetUrl) {
+        window.location.href = data.widgetUrl;
+      } else {
+        throw new Error("No assessment URL returned");
       }
     } catch (err: any) {
       setStatus("error");
