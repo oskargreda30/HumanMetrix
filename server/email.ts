@@ -1536,6 +1536,7 @@ interface PartnerBulkInvitationDetails {
   partnerPrimaryColor?: string | null;
   customMessage?: string | null;
   expiresAt?: Date;
+  temporaryPassword?: string; // Password for new user accounts
 }
 
 // Send bulk invitation email from partner to candidate
@@ -1613,6 +1614,18 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
                 </ul>
               </div>
               
+              ${details.temporaryPassword ? `
+              <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <strong style="color: #92400e;">Your Login Credentials</strong>
+                <p style="margin: 10px 0 5px 0; color: #78350f;">An account has been created for you:</p>
+                <p style="margin: 5px 0; font-family: monospace; background: white; padding: 8px; border-radius: 4px;">
+                  <strong>Email:</strong> ${details.candidateEmail}<br>
+                  <strong>Password:</strong> ${details.temporaryPassword}
+                </p>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #92400e;">Please save these credentials. You can change your password after logging in.</p>
+              </div>
+              ` : ''}
+              
               ${details.customMessage ? `<div class="custom-message">"${details.customMessage}"</div>` : ''}
               
               <p>These assessments are designed to evaluate your skills and capabilities. Click the button below to get started:</p>
@@ -1645,7 +1658,15 @@ Hello ${candidateName},
 ${details.partnerCompanyName} has invited you to complete the following assessments:
 ${assessmentListText}
 
-${details.customMessage ? `Message: "${details.customMessage}"\n` : ''}
+${details.temporaryPassword ? `
+YOUR LOGIN CREDENTIALS
+An account has been created for you:
+Email: ${details.candidateEmail}
+Password: ${details.temporaryPassword}
+
+Please save these credentials. You can change your password after logging in.
+
+` : ''}${details.customMessage ? `Message: "${details.customMessage}"\n` : ''}
 Click the link below to get started:
 ${assessmentUrl}
 

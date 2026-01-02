@@ -5,6 +5,9 @@ import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
 import { getQuestionLocale } from "@shared/currencies";
+import { generateTemporaryPassword } from "./passwordUtils";
+import bcrypt from "bcryptjs";
+import * as crypto from "crypto";
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
@@ -958,25 +961,52 @@ export function registerPartnerRoutes(app: Express) {
       
       const errors: Array<{ row: number; externalUserId: string; error: string }> = [];
       const invitations: any[] = [];
+      const candidatePasswords: Map<string, { password: string; userId: string; isNewUser: boolean }> = new Map();
       
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
         
         try {
-          // Check if this externalUserId already has active invitations for these assessments
-          const existingInvites = await storage.getPartnerCandidateInvitationsByExternalId(partner.id, candidate.externalUserId);
-          const activeInviteTypes = existingInvites
-            .filter(inv => inv.status !== 'expired' && inv.status !== 'completed')
-            .flatMap(inv => inv.assessmentTypes);
+          // Note: We allow re-inviting the same candidate multiple times
+          // Each invitation creates a new "testing series" with fresh assessment sessions
+          // This matches the behavior of logged-in candidates starting new assessments
           
-          const duplicateTypes = assessmentTypes.filter(t => activeInviteTypes.includes(t.toLowerCase()));
-          if (duplicateTypes.length > 0) {
-            errors.push({
-              row: i + 1,
-              externalUserId: candidate.externalUserId,
-              error: `Already has active invitations for: ${duplicateTypes.join(', ')}`,
-            });
-            continue;
+          // If candidate has email, ensure they have a user account
+          if (candidate.email) {
+            const existingUser = await storage.getUserByEmail(candidate.email);
+            
+            if (!existingUser) {
+              // Create new user account with generated password
+              const temporaryPassword = generateTemporaryPassword();
+              const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+              
+              // Parse name into first and last name
+              const nameParts = (candidate.name || '').trim().split(' ');
+              const firstName = nameParts[0] || undefined;
+              const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
+              
+              const newUser = await storage.createUser({
+                email: candidate.email,
+                passwordHash,
+                firstName,
+                lastName,
+                role: 'candidate',
+              });
+              
+              candidatePasswords.set(candidate.email, {
+                password: temporaryPassword,
+                userId: newUser.id,
+                isNewUser: true,
+              });
+              console.log(`[Bulk Invitations] Created new user for ${candidate.email}`);
+            } else {
+              // User already exists - no new password needed
+              candidatePasswords.set(candidate.email, {
+                password: '', // Empty - they use existing password
+                userId: existingUser.id,
+                isNewUser: false,
+              });
+            }
           }
           
           // Generate unique invite token
@@ -1061,6 +1091,9 @@ export function registerPartnerRoutes(app: Express) {
           for (const inv of createdInvitations) {
             if (inv.email) {
               try {
+                // Get the password info for this candidate
+                const passwordInfo = candidatePasswords.get(inv.email);
+                
                 const emailResult = await sendPartnerBulkInvitationEmail({
                   candidateEmail: inv.email,
                   candidateName: inv.name || undefined,
@@ -1070,6 +1103,8 @@ export function registerPartnerRoutes(app: Express) {
                   partnerLogoUrl: partnerAccount?.logoUrl,
                   partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
                   expiresAt: inv.expiresAt,
+                  // Include password for new users
+                  temporaryPassword: passwordInfo?.isNewUser ? passwordInfo.password : undefined,
                 });
                 
                 if (emailResult.success) {
@@ -1077,7 +1112,7 @@ export function registerPartnerRoutes(app: Express) {
                     status: 'sent',
                     emailSentAt: new Date(),
                   });
-                  console.log(`Email sent to ${inv.email}`);
+                  console.log(`Email sent to ${inv.email}${passwordInfo?.isNewUser ? ' (with credentials)' : ''}`);
                 }
               } catch (emailError: any) {
                 console.error(`Failed to send email to ${inv.email}:`, emailError.message);
