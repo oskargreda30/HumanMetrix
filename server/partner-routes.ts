@@ -786,7 +786,7 @@ export function registerPartnerRoutes(app: Express) {
         testsPurchased: balance.testsPurchased,
         testsConsumed: balance.testsConsumed,
         testsRemaining: balance.remaining,
-        freeTestsRemaining: partnerAccount?.freeTestsRemaining || 0,
+        freeTestsRemaining: partnerAccount?.freeTestsAllocated || 0,
         prepaidBalance: partnerAccount?.prepaidBalance || 0,
         prepaidCreditsExpiresAt: partnerAccount?.prepaidCreditsExpiresAt,
       });
@@ -800,7 +800,6 @@ export function registerPartnerRoutes(app: Express) {
   app.post("/api/partner/me/invitations/bulk", partnerAuth, async (req: PartnerRequest, res: Response) => {
     try {
       const partner = req.partner!;
-      const userId = req.partnerUserId!;
       
       const bodySchema = z.object({
         candidates: z.array(z.object({
@@ -926,7 +925,7 @@ export function registerPartnerRoutes(app: Express) {
       // Create import batch record
       const importRecord = await storage.createPartnerCandidateImport({
         partnerId: partner.id,
-        createdByUserId: userId,
+        createdByUserId: null, // API imports don't have a user context
         sourceType: 'manual',
         assessmentTypes: assessmentTypes.map(t => t.toLowerCase()),
         candidateCount: candidates.length,
@@ -1013,7 +1012,7 @@ export function registerPartnerRoutes(app: Express) {
                   inviteToken: inv.inviteToken,
                   partnerCompanyName: partnerAccount?.companyName || partner.companyName || 'HumanMetrix Partner',
                   partnerLogoUrl: partnerAccount?.logoUrl,
-                  partnerPrimaryColor: partnerAccount?.primaryColor,
+                  partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
                   expiresAt: inv.expiresAt,
                 });
                 
@@ -1126,6 +1125,137 @@ export function registerPartnerRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching import details:", error);
       res.status(500).json({ error: "Failed to fetch import details" });
+    }
+  });
+
+  // ========================================
+  // PUBLIC INVITE TOKEN VALIDATION
+  // ========================================
+
+  // Validate invite token and get invitation details (public endpoint - no auth required)
+  app.get("/api/invite/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Missing invite token" });
+      }
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ error: "Invalid or expired invitation" });
+      }
+      
+      if (invitation.status === 'expired') {
+        return res.status(410).json({ error: "This invitation has expired" });
+      }
+      
+      if (invitation.status === 'completed') {
+        return res.status(410).json({ error: "This invitation has already been completed" });
+      }
+      
+      // Check if expired based on date
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        await storage.updatePartnerCandidateInvitation(invitation.id, { status: 'expired' });
+        return res.status(410).json({ error: "This invitation has expired" });
+      }
+      
+      // Get partner branding
+      const partnerAccount = await storage.getPartnerAccount(invitation.partnerId);
+      
+      res.json({
+        id: invitation.id,
+        externalUserId: invitation.externalUserId,
+        name: invitation.name,
+        assessmentTypes: invitation.assessmentTypes,
+        status: invitation.status,
+        expiresAt: invitation.expiresAt,
+        partnerName: partnerAccount?.companyName || 'HumanMetrix Partner',
+        branding: partnerAccount?.brandingEnabled ? {
+          enabled: true,
+          primaryColor: partnerAccount.brandingPrimaryColor,
+          accentColor: partnerAccount.brandingAccentColor,
+          logoUrl: partnerAccount.logoUrl,
+          welcomeTitle: partnerAccount.brandingWelcomeTitle,
+          welcomeMessage: partnerAccount.brandingWelcomeMessage,
+          companyDisplayName: partnerAccount.brandingCompanyDisplayName,
+        } : null,
+      });
+    } catch (error) {
+      console.error("Error validating invite token:", error);
+      res.status(500).json({ error: "Failed to validate invitation" });
+    }
+  });
+
+  // Create assessment session from invite token (public endpoint)
+  app.post("/api/invite/:token/start", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const { assessmentType } = req.body;
+      
+      if (!token || !assessmentType) {
+        return res.status(400).json({ error: "Missing token or assessment type" });
+      }
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ error: "Invalid or expired invitation" });
+      }
+      
+      if (invitation.status === 'expired' || invitation.status === 'completed') {
+        return res.status(410).json({ error: "This invitation is no longer valid" });
+      }
+      
+      // Check if expired based on date
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        await storage.updatePartnerCandidateInvitation(invitation.id, { status: 'expired' });
+        return res.status(410).json({ error: "This invitation has expired" });
+      }
+      
+      // Verify assessment type is allowed
+      const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
+      if (!invitation.assessmentTypes.includes(normalizedType)) {
+        return res.status(400).json({ error: "Assessment type not included in this invitation" });
+      }
+      
+      // Create assessment session
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session expiry
+      
+      const session = await storage.createAssessmentSession({
+        partnerId: invitation.partnerId,
+        partnerOrganisationId: null,
+        apiKeyId: null,
+        assessmentType: normalizedType,
+        externalUserId: invitation.externalUserId,
+        externalEmail: invitation.email,
+        metadata: invitation.metadata,
+        webhookUrl: null,
+        expiresAt,
+        status: 'pending',
+        questionLocale: 'default',
+      });
+      
+      // Update invitation status to started if not already
+      if (invitation.status === 'pending' || invitation.status === 'sent') {
+        await storage.updatePartnerCandidateInvitation(invitation.id, { 
+          status: 'started',
+          startedAt: new Date(),
+        });
+      }
+      
+      const baseUrl = getBaseUrl(req);
+      
+      res.json({
+        sessionId: session.id,
+        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}`,
+        assessmentType: normalizedType,
+      });
+    } catch (error) {
+      console.error("Error starting assessment from invite:", error);
+      res.status(500).json({ error: "Failed to start assessment" });
     }
   });
 

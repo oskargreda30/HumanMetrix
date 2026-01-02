@@ -37,6 +37,7 @@ import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
 import Subscribe from "@/pages/Subscribe";
 import Developers from "@/pages/Developers";
 import EmbedAssessment from "@/pages/EmbedAssessment";
+import StartAssessment from "@/pages/StartAssessment";
 import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/news" component={Subscribe} />
       <Route path="/developers" component={Developers} />
       <Route path="/embed/assessment" component={EmbedAssessment} />
+      <Route path="/start-assessment" component={StartAssessment} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>

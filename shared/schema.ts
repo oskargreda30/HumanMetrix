@@ -632,7 +632,7 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "set null" }), // Which client organisation this session belongs to
-  apiKeyId: varchar("api_key_id").notNull().references(() => partnerApiKeys.id, { onDelete: "cascade" }),
+  apiKeyId: varchar("api_key_id").references(() => partnerApiKeys.id, { onDelete: "set null" }), // Nullable for invite-based sessions
   externalUserId: varchar("external_user_id"), // Partner's user ID
   externalEmail: varchar("external_email"),
   assessmentType: varchar("assessment_type").notNull(),
@@ -1197,7 +1197,7 @@ export type BillingChangeRequest = typeof billingChangeRequests.$inferSelect;
 export const partnerCandidateImports = pgTable("partner_candidate_imports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
-  createdByUserId: varchar("created_by_user_id").notNull().references(() => users.id),
+  createdByUserId: varchar("created_by_user_id").references(() => users.id), // Nullable for API-created imports
   sourceType: varchar("source_type").notNull(), // 'csv', 'manual', 'api'
   filename: varchar("filename"), // Original filename for CSV imports
   assessmentTypes: text("assessment_types").array().notNull(), // ['fit', 'ai_readiness', 'prompt_architecture', 'aiq']

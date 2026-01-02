@@ -161,7 +161,7 @@ export function partnerAuth(requiredPermissions: string[] = []) {
 
 export async function trackUsage(
   partnerId: string,
-  apiKeyId: string,
+  apiKeyId: string | null,
   sessionId: string | null,
   eventType: string,
   assessmentType?: string,
