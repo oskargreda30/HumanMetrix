@@ -98,7 +98,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       assessmentTypes: string[];
       sendEmails: boolean;
     }) => {
-      return apiRequest('POST', '/api/partner/me/invitations/bulk', payload);
+      // Use longer timeout for bulk operations (2 minutes)
+      return apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
     },
     onSuccess: (data: any) => {
       if (data.errors?.length > 0) {
@@ -676,7 +677,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Send {validCandidates.length} Invitation{validCandidates.length !== 1 ? 's' : ''} ({tokensRequired} token{tokensRequired !== 1 ? 's' : ''})
+                Send {validCandidates.length} Invitation{validCandidates.length !== 1 ? 's' : ''} ({selectedAssessments.length} assessment{selectedAssessments.length !== 1 ? 's' : ''})
               </>
             )}
           </Button>
