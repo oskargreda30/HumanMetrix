@@ -220,7 +220,7 @@ export default function StartAssessment() {
 
         <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
           <span>Powered by</span>
-          <img src={logoSymbol} alt="HumanMetrix Logo" className="h-5 w-5" />
+          <img src={logoSymbol} alt="HumanMetrix Logo" className="h-8 w-8" />
           <span className="text-cyan-500">HumanMetrix</span>
           <span>- AI Assessment Platform</span>
         </div>
