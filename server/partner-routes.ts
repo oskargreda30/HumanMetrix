@@ -552,10 +552,20 @@ export function registerPartnerRoutes(app: Express) {
           return res.status(400).json({ error: "Session has expired" });
         }
         
-        if (session.status !== "created") {
+        // Allow session to proceed if already started (but not completed/expired)
+        if (session.status === "completed" || session.status === "expired") {
           return res.status(400).json({
-            error: "Session already started",
+            error: session.status === "completed" ? "Session already completed" : "Session has expired",
             status: session.status,
+          });
+        }
+        
+        // If already started, just return success without updating
+        if (session.status === "started") {
+          return res.json({
+            sessionId: session.id,
+            assessmentType: session.assessmentType,
+            status: "started",
           });
         }
         
