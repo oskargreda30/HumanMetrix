@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation } from "./email";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
 import { getQuestionLocale } from "@shared/currencies";
 import { z } from "zod";
@@ -767,6 +767,365 @@ export function registerPartnerRoutes(app: Express) {
     } catch (error) {
       console.error("Error serving embed-test.html:", error);
       res.status(404).send("Test page not found");
+    }
+  });
+
+  // ========================================
+  // BULK CANDIDATE INVITATIONS
+  // ========================================
+
+  // Get partner's prepaid balance for token preview
+  app.get("/api/partner/me/quota", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    try {
+      const partner = req.partner!;
+      const balance = await storage.getPartnerQuotaBalance(partner.id);
+      const partnerAccount = await storage.getPartnerAccount(partner.id);
+      
+      res.json({
+        billingType: partnerAccount?.billingType || 'prepaid',
+        testsPurchased: balance.testsPurchased,
+        testsConsumed: balance.testsConsumed,
+        testsRemaining: balance.remaining,
+        freeTestsRemaining: partnerAccount?.freeTestsRemaining || 0,
+        prepaidBalance: partnerAccount?.prepaidBalance || 0,
+        prepaidCreditsExpiresAt: partnerAccount?.prepaidCreditsExpiresAt,
+      });
+    } catch (error) {
+      console.error("Error fetching quota:", error);
+      res.status(500).json({ error: "Failed to fetch quota" });
+    }
+  });
+
+  // Create bulk candidate invitations
+  app.post("/api/partner/me/invitations/bulk", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    try {
+      const partner = req.partner!;
+      const userId = req.partnerUserId!;
+      
+      const bodySchema = z.object({
+        candidates: z.array(z.object({
+          externalUserId: z.string().min(1, "External User ID is required").transform(s => s.trim()),
+          email: z.string().transform(s => s.trim()).pipe(
+            z.union([z.literal(''), z.string().email("Invalid email format")])
+          ).optional().nullable(),
+          name: z.string().optional().nullable(),
+          metadata: z.record(z.any()).optional().nullable(),
+        })).min(1, "At least one candidate required").max(500, "Maximum 500 candidates per batch"),
+        assessmentTypes: z.array(z.string()).min(1, "At least one assessment type required"),
+        sendEmails: z.boolean().default(true),
+        expiresInDays: z.number().min(1).max(90).default(30),
+      });
+      
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        // Return structured error response matching frontend expectation
+        const zodErrors = parsed.error.errors.map((err, idx) => ({
+          row: err.path.includes('candidates') ? (Number(err.path[1]) || 0) + 1 : 0,
+          externalUserId: '',
+          field: String(err.path[err.path.length - 1] || 'unknown'),
+          error: err.message,
+        }));
+        return res.status(400).json({
+          error: 'Validation failed',
+          errors: zodErrors,
+          summary: {
+            totalCandidates: Array.isArray(req.body?.candidates) ? req.body.candidates.length : 0,
+            successCount: 0,
+            failedCount: zodErrors.length,
+            tokensUsed: 0,
+          },
+        });
+      }
+      
+      const { candidates, assessmentTypes, sendEmails, expiresInDays } = parsed.data;
+      
+      // Validate assessment types
+      const validTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+      const invalidTypes = assessmentTypes.filter(t => !validTypes.includes(t.toLowerCase()));
+      if (invalidTypes.length > 0) {
+        return res.status(400).json({
+          error: `Invalid assessment types: ${invalidTypes.join(', ')}`,
+          errors: [{ row: 0, externalUserId: '', field: 'assessmentTypes', error: `Invalid types: ${invalidTypes.join(', ')}` }],
+          summary: {
+            totalCandidates: candidates.length,
+            successCount: 0,
+            failedCount: candidates.length,
+            tokensUsed: 0,
+          },
+        });
+      }
+      
+      // Server-side validation: collect ALL errors before processing
+      const validationErrors: Array<{ row: number; externalUserId: string; field: string; error: string }> = [];
+      const seenExternalIds = new Map<string, number>();
+      
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        const row = i + 1;
+        
+        // Validate externalUserId is not blank
+        if (!candidate.externalUserId || candidate.externalUserId.trim() === '') {
+          validationErrors.push({ row, externalUserId: candidate.externalUserId || '', field: 'externalUserId', error: 'External User ID is required' });
+          continue;
+        }
+        
+        // Check for duplicates within batch
+        const existingRow = seenExternalIds.get(candidate.externalUserId.toLowerCase());
+        if (existingRow !== undefined) {
+          validationErrors.push({ row, externalUserId: candidate.externalUserId, field: 'externalUserId', error: `Duplicate of row ${existingRow}` });
+          continue;
+        }
+        seenExternalIds.set(candidate.externalUserId.toLowerCase(), row);
+        
+        // Validate email format if provided and not empty
+        if (candidate.email && candidate.email.trim() !== '') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(candidate.email)) {
+            validationErrors.push({ row, externalUserId: candidate.externalUserId, field: 'email', error: 'Invalid email format' });
+          }
+        }
+      }
+      
+      // If there are validation errors, return them without creating anything
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          errors: validationErrors,
+          summary: {
+            totalCandidates: candidates.length,
+            successCount: 0,
+            failedCount: validationErrors.length,
+            tokensUsed: 0,
+          },
+        });
+      }
+      
+      // Calculate tokens required (only after validation passes)
+      const tokensRequired = candidates.length * assessmentTypes.length;
+      
+      // Check prepaid balance if prepaid billing type
+      const partnerAccount = await storage.getPartnerAccount(partner.id);
+      if (partnerAccount?.billingType === 'prepaid') {
+        const balance = await storage.getPartnerQuotaBalance(partner.id);
+        if (balance.remaining < tokensRequired) {
+          return res.status(400).json({ 
+            error: "Insufficient tokens",
+            tokensRequired,
+            tokensRemaining: balance.remaining,
+            errors: [{ row: 0, externalUserId: '', field: 'tokens', error: `Need ${tokensRequired} tokens, only ${balance.remaining} available` }],
+            summary: {
+              totalCandidates: candidates.length,
+              successCount: 0,
+              failedCount: candidates.length,
+              tokensUsed: 0,
+            },
+          });
+        }
+      }
+      
+      // Create import batch record
+      const importRecord = await storage.createPartnerCandidateImport({
+        partnerId: partner.id,
+        createdByUserId: userId,
+        sourceType: 'manual',
+        assessmentTypes: assessmentTypes.map(t => t.toLowerCase()),
+        candidateCount: candidates.length,
+        status: 'processing',
+      });
+      
+      // Create individual invitations
+      const baseUrl = getBaseUrl(req);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+      
+      const errors: Array<{ row: number; externalUserId: string; error: string }> = [];
+      const invitations: any[] = [];
+      
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        
+        try {
+          // Check if this externalUserId already has active invitations for these assessments
+          const existingInvites = await storage.getPartnerCandidateInvitationsByExternalId(partner.id, candidate.externalUserId);
+          const activeInviteTypes = existingInvites
+            .filter(inv => inv.status !== 'expired' && inv.status !== 'completed')
+            .flatMap(inv => inv.assessmentTypes);
+          
+          const duplicateTypes = assessmentTypes.filter(t => activeInviteTypes.includes(t.toLowerCase()));
+          if (duplicateTypes.length > 0) {
+            errors.push({
+              row: i + 1,
+              externalUserId: candidate.externalUserId,
+              error: `Already has active invitations for: ${duplicateTypes.join(', ')}`,
+            });
+            continue;
+          }
+          
+          // Generate unique invite token
+          const inviteToken = crypto.randomUUID().replace(/-/g, '');
+          const inviteUrl = `${baseUrl}/invite/${inviteToken}`;
+          
+          invitations.push({
+            partnerId: partner.id,
+            importId: importRecord.id,
+            externalUserId: candidate.externalUserId,
+            email: candidate.email || null,
+            name: candidate.name || null,
+            metadata: candidate.metadata || null,
+            assessmentTypes: assessmentTypes.map(t => t.toLowerCase()),
+            inviteToken,
+            inviteUrl,
+            status: 'pending',
+            expiresAt,
+            tokensUsed: assessmentTypes.length,
+          });
+        } catch (err: any) {
+          errors.push({
+            row: i + 1,
+            externalUserId: candidate.externalUserId,
+            error: err.message || 'Unknown error',
+          });
+        }
+      }
+      
+      // Bulk insert invitations
+      let createdInvitations: any[] = [];
+      if (invitations.length > 0) {
+        createdInvitations = await storage.createPartnerCandidateInvitationsBulk(invitations);
+        
+        // Deduct tokens for prepaid partners
+        if (partnerAccount?.billingType === 'prepaid') {
+          const tokensUsed = createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0);
+          for (const inv of createdInvitations) {
+            await storage.consumePartnerTest(partner.id, inv.id, `Bulk invite: ${inv.externalUserId}`);
+          }
+        }
+        
+        // Send emails if requested and email is available
+        if (sendEmails) {
+          for (const inv of createdInvitations) {
+            if (inv.email) {
+              try {
+                const emailResult = await sendPartnerBulkInvitationEmail({
+                  candidateEmail: inv.email,
+                  candidateName: inv.name || undefined,
+                  assessmentTypes: inv.assessmentTypes,
+                  inviteToken: inv.inviteToken,
+                  partnerCompanyName: partnerAccount?.companyName || partner.companyName || 'HumanMetrix Partner',
+                  partnerLogoUrl: partnerAccount?.logoUrl,
+                  partnerPrimaryColor: partnerAccount?.primaryColor,
+                  expiresAt: inv.expiresAt,
+                });
+                
+                if (emailResult.success) {
+                  await storage.updatePartnerCandidateInvitation(inv.id, {
+                    status: 'sent',
+                    emailSentAt: new Date(),
+                  });
+                }
+              } catch (emailError: any) {
+                console.error(`Failed to send email to ${inv.email}:`, emailError.message);
+              }
+            }
+          }
+        }
+      }
+      
+      // Update import record
+      await storage.updatePartnerCandidateImport(importRecord.id, {
+        successCount: createdInvitations.length,
+        failedCount: errors.length,
+        tokensUsed: createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0),
+        status: errors.length === 0 ? 'completed' : (createdInvitations.length > 0 ? 'partial' : 'failed'),
+        errorReport: errors.length > 0 ? { errors } : null,
+        completedAt: new Date(),
+      });
+      
+      res.json({
+        success: true,
+        importId: importRecord.id,
+        summary: {
+          totalCandidates: candidates.length,
+          successCount: createdInvitations.length,
+          failedCount: errors.length,
+          tokensUsed: createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0),
+        },
+        errors: errors.length > 0 ? errors : undefined,
+        invitations: createdInvitations.map(inv => ({
+          id: inv.id,
+          externalUserId: inv.externalUserId,
+          email: inv.email,
+          inviteUrl: inv.inviteUrl,
+          status: inv.status,
+          expiresAt: inv.expiresAt,
+        })),
+      });
+    } catch (error: any) {
+      console.error("Error creating bulk invitations:", error);
+      res.status(500).json({ error: error.message || "Failed to create bulk invitations" });
+    }
+  });
+
+  // Get candidate invitations for partner
+  app.get("/api/partner/me/invitations", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    try {
+      const partner = req.partner!;
+      const { status, limit = '50', offset = '0' } = req.query;
+      
+      const invitations = await storage.getPartnerCandidateInvitations(partner.id, {
+        status: status as string | undefined,
+        limit: parseInt(limit as string, 10),
+        offset: parseInt(offset as string, 10),
+      });
+      
+      const total = await storage.countPartnerCandidateInvitations(partner.id, status as string | undefined);
+      
+      res.json({
+        invitations,
+        pagination: {
+          total,
+          limit: parseInt(limit as string, 10),
+          offset: parseInt(offset as string, 10),
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ error: "Failed to fetch invitations" });
+    }
+  });
+
+  // Get import history
+  app.get("/api/partner/me/invitations/imports", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    try {
+      const partner = req.partner!;
+      const imports = await storage.getPartnerCandidateImports(partner.id, 20);
+      res.json({ imports });
+    } catch (error) {
+      console.error("Error fetching imports:", error);
+      res.status(500).json({ error: "Failed to fetch import history" });
+    }
+  });
+
+  // Get import details with error report
+  app.get("/api/partner/me/invitations/imports/:importId", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    try {
+      const partner = req.partner!;
+      const { importId } = req.params;
+      
+      const importRecord = await storage.getPartnerCandidateImport(importId);
+      if (!importRecord || importRecord.partnerId !== partner.id) {
+        return res.status(404).json({ error: "Import not found" });
+      }
+      
+      const invitations = await storage.getPartnerCandidateInvitations(partner.id, { importId });
+      
+      res.json({
+        import: importRecord,
+        invitations,
+      });
+    } catch (error) {
+      console.error("Error fetching import details:", error);
+      res.status(500).json({ error: "Failed to fetch import details" });
     }
   });
 

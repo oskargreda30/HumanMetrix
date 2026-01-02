@@ -1192,3 +1192,78 @@ export const insertBillingChangeRequestSchema = createInsertSchema(billingChange
 
 export type InsertBillingChangeRequest = z.infer<typeof insertBillingChangeRequestSchema>;
 export type BillingChangeRequest = typeof billingChangeRequests.$inferSelect;
+
+// Partner candidate import batches - tracks bulk invitation imports
+export const partnerCandidateImports = pgTable("partner_candidate_imports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  createdByUserId: varchar("created_by_user_id").notNull().references(() => users.id),
+  sourceType: varchar("source_type").notNull(), // 'csv', 'manual', 'api'
+  filename: varchar("filename"), // Original filename for CSV imports
+  assessmentTypes: text("assessment_types").array().notNull(), // ['fit', 'ai_readiness', 'prompt_architecture', 'aiq']
+  candidateCount: integer("candidate_count").notNull().default(0),
+  successCount: integer("success_count").notNull().default(0),
+  failedCount: integer("failed_count").notNull().default(0),
+  tokensUsed: integer("tokens_used").notNull().default(0),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'processing', 'completed', 'failed', 'partial'
+  errorReport: jsonb("error_report").$type<{ errors: Array<{ row: number; email?: string; externalUserId?: string; error: string }> }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+}, (table) => [
+  index("idx_candidate_imports_partner").on(table.partnerId),
+  index("idx_candidate_imports_status").on(table.status),
+  index("idx_candidate_imports_created").on(table.createdAt),
+]);
+
+export const insertPartnerCandidateImportSchema = createInsertSchema(partnerCandidateImports).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+  successCount: true,
+  failedCount: true,
+  tokensUsed: true,
+});
+
+export type InsertPartnerCandidateImport = z.infer<typeof insertPartnerCandidateImportSchema>;
+export type PartnerCandidateImport = typeof partnerCandidateImports.$inferSelect;
+
+// Partner candidate invitations - individual invitations within a batch
+export const partnerCandidateInvitations = pgTable("partner_candidate_invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  importId: varchar("import_id").references(() => partnerCandidateImports.id, { onDelete: "set null" }),
+  externalUserId: varchar("external_user_id").notNull(), // Required - partner's internal candidate ID
+  email: varchar("email"), // Optional - some candidates may not have email initially
+  name: varchar("name"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(), // Custom metadata for ATS integrations
+  assessmentTypes: text("assessment_types").array().notNull(), // Tests assigned to this candidate
+  inviteToken: varchar("invite_token").notNull().unique(), // Unique token for accessing assessments
+  inviteUrl: varchar("invite_url"), // Full URL sent to candidate
+  status: varchar("status").notNull().default("pending"), // 'pending', 'sent', 'opened', 'started', 'completed', 'expired'
+  emailSentAt: timestamp("email_sent_at"),
+  openedAt: timestamp("opened_at"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at"),
+  tokensUsed: integer("tokens_used").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_candidate_invitations_partner").on(table.partnerId),
+  index("idx_candidate_invitations_import").on(table.importId),
+  index("idx_candidate_invitations_external").on(table.partnerId, table.externalUserId),
+  index("idx_candidate_invitations_token").on(table.inviteToken),
+  index("idx_candidate_invitations_status").on(table.status),
+  index("idx_candidate_invitations_email").on(table.email),
+]);
+
+export const insertPartnerCandidateInvitationSchema = createInsertSchema(partnerCandidateInvitations).omit({
+  id: true,
+  createdAt: true,
+  emailSentAt: true,
+  openedAt: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export type InsertPartnerCandidateInvitation = z.infer<typeof insertPartnerCandidateInvitationSchema>;
+export type PartnerCandidateInvitation = typeof partnerCandidateInvitations.$inferSelect;

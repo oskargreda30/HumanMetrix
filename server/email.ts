@@ -1524,3 +1524,146 @@ This message was sent via the HumanMetrix website contact form.
     return { success: false };
   }
 }
+
+// Interface for partner bulk invitation email
+interface PartnerBulkInvitationDetails {
+  candidateEmail: string;
+  candidateName?: string;
+  assessmentTypes: string[];
+  inviteToken: string;
+  partnerCompanyName: string;
+  partnerLogoUrl?: string | null;
+  partnerPrimaryColor?: string | null;
+  customMessage?: string | null;
+  expiresAt?: Date;
+}
+
+// Send bulk invitation email from partner to candidate
+export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitationDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Partner bulk invitation email not sent to ${details.candidateEmail} - email not configured`);
+    return { success: false };
+  }
+  
+  const assessmentNames = details.assessmentTypes.map(formatAssessmentName);
+  const assessmentListHtml = assessmentNames.map(a => `<li>${a}</li>`).join('');
+  const assessmentListText = assessmentNames.join(', ');
+  
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : process.env.REPL_SLUG 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase()}.repl.co`
+      : 'https://humanmetrix.co.uk';
+  
+  const assessmentUrl = `${baseUrl}/start-assessment?token=${details.inviteToken}`;
+  const candidateName = details.candidateName || 'there';
+  const expiryDate = details.expiresAt 
+    ? new Date(details.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+  
+  // Use partner branding or default HumanMetrix colors
+  const primaryColor = details.partnerPrimaryColor || '#0891b2';
+  const headerBg = details.partnerPrimaryColor 
+    ? `background: ${details.partnerPrimaryColor};`
+    : 'background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%);';
+  
+  const logoHtml = details.partnerLogoUrl 
+    ? `<img src="${details.partnerLogoUrl}" alt="${details.partnerCompanyName}" style="max-height: 50px; max-width: 200px;" />`
+    : `<h1 style="margin: 0; font-size: 24px;">${details.partnerCompanyName}</h1>`;
+  
+  const mailOptions = {
+    from: `"${details.partnerCompanyName} via HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.candidateEmail,
+    subject: `Assessment Invitation from ${details.partnerCompanyName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { ${headerBg} color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: ${primaryColor}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .assessments { background: #f9fafb; padding: 15px; border-radius: 6px; margin: 15px 0; }
+            ul { padding-left: 20px; margin: 10px 0; }
+            li { margin: 8px 0; }
+            .custom-message { background: #f3f4f6; padding: 15px; border-left: 4px solid ${primaryColor}; margin: 20px 0; font-style: italic; }
+            .expiry-notice { color: #6b7280; font-size: 14px; margin-top: 20px; }
+            .powered-by { font-size: 12px; color: #9ca3af; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              ${logoHtml}
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Assessment Invitation</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${candidateName},</h2>
+              <p>${details.partnerCompanyName} has invited you to complete the following assessments:</p>
+              
+              <div class="assessments">
+                <strong>Assessments to complete:</strong>
+                <ul>
+                  ${assessmentListHtml}
+                </ul>
+              </div>
+              
+              ${details.customMessage ? `<div class="custom-message">"${details.customMessage}"</div>` : ''}
+              
+              <p>These assessments are designed to evaluate your skills and capabilities. Click the button below to get started:</p>
+              
+              <div style="text-align: center;">
+                <a href="${assessmentUrl}" class="button">Start Assessments</a>
+              </div>
+              
+              ${expiryDate ? `<p class="expiry-notice">This invitation expires on ${expiryDate}. Please complete the assessments before this date.</p>` : ''}
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="${assessmentUrl}" style="color: ${primaryColor};">${assessmentUrl}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>Sent on behalf of ${details.partnerCompanyName}</p>
+              <p class="powered-by">Powered by HumanMetrix - AI Assessment Platform</p>
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Assessment Invitation from ${details.partnerCompanyName}
+
+Hello ${candidateName},
+
+${details.partnerCompanyName} has invited you to complete the following assessments:
+${assessmentListText}
+
+${details.customMessage ? `Message: "${details.customMessage}"\n` : ''}
+Click the link below to get started:
+${assessmentUrl}
+
+${expiryDate ? `This invitation expires on ${expiryDate}.` : ''}
+
+---
+Sent on behalf of ${details.partnerCompanyName}
+Powered by HumanMetrix - AI Assessment Platform
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Partner bulk invitation email sent to ${details.candidateEmail} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send partner bulk invitation email to ${details.candidateEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}

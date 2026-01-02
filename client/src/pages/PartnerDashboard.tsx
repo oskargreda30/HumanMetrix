@@ -29,6 +29,7 @@ import dashboardBg from "@assets/image_1763608498774.png";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -1052,6 +1053,9 @@ export default function PartnerDashboard() {
               <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
+              <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Invitations
+              </TabsTrigger>
               <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Organizations
               </TabsTrigger>
@@ -1604,6 +1608,11 @@ export default function PartnerDashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Invitations Tab */}
+            <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
+              <BulkInvitationsTab partnerId={partner?.id || ''} billingType={partner?.billingType || 'prepaid'} />
             </TabsContent>
 
             {/* Organizations Tab */}

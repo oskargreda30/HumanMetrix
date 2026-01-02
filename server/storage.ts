@@ -88,6 +88,8 @@ import {
   partnerNotifications,
   partnerTeamMembers,
   billingChangeRequests,
+  partnerCandidateImports,
+  partnerCandidateInvitations,
   type PartnerWebhook,
   type InsertPartnerWebhook,
   type WebhookDeliveryLog,
@@ -102,6 +104,10 @@ import {
   type InsertPartnerTeamMember,
   type BillingChangeRequest,
   type InsertBillingChangeRequest,
+  type PartnerCandidateImport,
+  type InsertPartnerCandidateImport,
+  type PartnerCandidateInvitation,
+  type InsertPartnerCandidateInvitation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
@@ -432,6 +438,22 @@ export interface IStorage {
   getAllPendingBillingChangeRequests(): Promise<Array<BillingChangeRequest & { partnerName: string; requestedByName: string; requestedByEmail: string }>>;
   getAllBillingChangeRequests(status?: string): Promise<BillingChangeRequest[]>;
   updateBillingChangeRequest(id: string, updates: { status: string; reviewedByUserId?: string; reviewNotes?: string | null; reviewedAt?: Date }): Promise<BillingChangeRequest>;
+
+  // Partner candidate import operations
+  createPartnerCandidateImport(importData: InsertPartnerCandidateImport): Promise<PartnerCandidateImport>;
+  getPartnerCandidateImport(id: string): Promise<PartnerCandidateImport | undefined>;
+  getPartnerCandidateImports(partnerId: string, limit?: number): Promise<PartnerCandidateImport[]>;
+  updatePartnerCandidateImport(id: string, updates: Partial<{ successCount: number; failedCount: number; tokensUsed: number; status: string; errorReport: any; completedAt: Date }>): Promise<void>;
+
+  // Partner candidate invitation operations
+  createPartnerCandidateInvitation(invitation: InsertPartnerCandidateInvitation): Promise<PartnerCandidateInvitation>;
+  createPartnerCandidateInvitationsBulk(invitations: InsertPartnerCandidateInvitation[]): Promise<PartnerCandidateInvitation[]>;
+  getPartnerCandidateInvitation(id: string): Promise<PartnerCandidateInvitation | undefined>;
+  getPartnerCandidateInvitationByToken(token: string): Promise<PartnerCandidateInvitation | undefined>;
+  getPartnerCandidateInvitations(partnerId: string, filters?: { status?: string; importId?: string; limit?: number; offset?: number }): Promise<PartnerCandidateInvitation[]>;
+  getPartnerCandidateInvitationsByExternalId(partnerId: string, externalUserId: string): Promise<PartnerCandidateInvitation[]>;
+  updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
+  countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2819,6 +2841,86 @@ export class DatabaseStorage implements IStorage {
       .where(eq(billingChangeRequests.id, id))
       .returning();
     return result;
+  }
+
+  // Partner candidate import operations
+  async createPartnerCandidateImport(importData: InsertPartnerCandidateImport): Promise<PartnerCandidateImport> {
+    const [result] = await db.insert(partnerCandidateImports).values(importData).returning();
+    return result;
+  }
+
+  async getPartnerCandidateImport(id: string): Promise<PartnerCandidateImport | undefined> {
+    const [result] = await db.select().from(partnerCandidateImports).where(eq(partnerCandidateImports.id, id));
+    return result;
+  }
+
+  async getPartnerCandidateImports(partnerId: string, limit: number = 50): Promise<PartnerCandidateImport[]> {
+    return await db.select().from(partnerCandidateImports)
+      .where(eq(partnerCandidateImports.partnerId, partnerId))
+      .orderBy(desc(partnerCandidateImports.createdAt))
+      .limit(limit);
+  }
+
+  async updatePartnerCandidateImport(id: string, updates: Partial<{ successCount: number; failedCount: number; tokensUsed: number; status: string; errorReport: any; completedAt: Date }>): Promise<void> {
+    await db.update(partnerCandidateImports).set(updates).where(eq(partnerCandidateImports.id, id));
+  }
+
+  // Partner candidate invitation operations
+  async createPartnerCandidateInvitation(invitation: InsertPartnerCandidateInvitation): Promise<PartnerCandidateInvitation> {
+    const [result] = await db.insert(partnerCandidateInvitations).values(invitation).returning();
+    return result;
+  }
+
+  async createPartnerCandidateInvitationsBulk(invitations: InsertPartnerCandidateInvitation[]): Promise<PartnerCandidateInvitation[]> {
+    if (invitations.length === 0) return [];
+    return await db.insert(partnerCandidateInvitations).values(invitations).returning();
+  }
+
+  async getPartnerCandidateInvitation(id: string): Promise<PartnerCandidateInvitation | undefined> {
+    const [result] = await db.select().from(partnerCandidateInvitations).where(eq(partnerCandidateInvitations.id, id));
+    return result;
+  }
+
+  async getPartnerCandidateInvitationByToken(token: string): Promise<PartnerCandidateInvitation | undefined> {
+    const [result] = await db.select().from(partnerCandidateInvitations).where(eq(partnerCandidateInvitations.inviteToken, token));
+    return result;
+  }
+
+  async getPartnerCandidateInvitations(partnerId: string, filters?: { status?: string; importId?: string; limit?: number; offset?: number }): Promise<PartnerCandidateInvitation[]> {
+    const conditions = [eq(partnerCandidateInvitations.partnerId, partnerId)];
+    if (filters?.status) conditions.push(eq(partnerCandidateInvitations.status, filters.status));
+    if (filters?.importId) conditions.push(eq(partnerCandidateInvitations.importId, filters.importId));
+
+    let query = db.select().from(partnerCandidateInvitations)
+      .where(and(...conditions))
+      .orderBy(desc(partnerCandidateInvitations.createdAt));
+
+    if (filters?.limit) query = query.limit(filters.limit);
+    if (filters?.offset) query = query.offset(filters.offset);
+
+    return await query;
+  }
+
+  async getPartnerCandidateInvitationsByExternalId(partnerId: string, externalUserId: string): Promise<PartnerCandidateInvitation[]> {
+    return await db.select().from(partnerCandidateInvitations)
+      .where(and(
+        eq(partnerCandidateInvitations.partnerId, partnerId),
+        eq(partnerCandidateInvitations.externalUserId, externalUserId)
+      ))
+      .orderBy(desc(partnerCandidateInvitations.createdAt));
+  }
+
+  async updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void> {
+    await db.update(partnerCandidateInvitations).set(updates).where(eq(partnerCandidateInvitations.id, id));
+  }
+
+  async countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number> {
+    const conditions = [eq(partnerCandidateInvitations.partnerId, partnerId)];
+    if (status) conditions.push(eq(partnerCandidateInvitations.status, status));
+
+    const [result] = await db.select({ count: count() }).from(partnerCandidateInvitations)
+      .where(and(...conditions));
+    return result?.count || 0;
   }
 }
 
