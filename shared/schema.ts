@@ -639,6 +639,8 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   questionLocale: varchar("question_locale").notNull().default("default"), // 'default' or 'sea' for localized questions
   status: varchar("status").notNull().default("created"), // created, started, completed, expired
   answers: jsonb("answers").$type<Record<string, any>>(),
+  lastAnsweredIndex: integer("last_answered_index"), // Track progress for resume functionality
+  lastActivityAt: timestamp("last_activity_at"), // Track when user last interacted
   scores: jsonb("scores").$type<Record<string, number>>(),
   totalScore: integer("total_score"),
   percentile: integer("percentile"),

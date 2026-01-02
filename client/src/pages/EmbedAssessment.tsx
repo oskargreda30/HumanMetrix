@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch } from "wouter";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,9 @@ interface SessionData {
   partnerName?: string;
   questionLocale?: QuestionLocale;
   branding?: PartnerBranding;
+  savedAnswers?: Record<string, any> | null;
+  lastAnsweredIndex?: number | null;
+  lastActivityAt?: string | null;
 }
 
 type Question = {
@@ -130,16 +133,35 @@ export default function EmbedAssessment() {
 
       const data = await res.json();
       setSession(data);
+      
+      // Load questions
+      const loadedQuestions = getQuestions(data.assessmentType, data.questionLocale || 'default');
+      setQuestions(loadedQuestions);
+      
+      // Load saved answers if they exist
+      if (data.savedAnswers) {
+        setAnswers(data.savedAnswers);
+        
+        // Find the first unanswered question to resume from
+        const firstUnansweredIndex = loadedQuestions.findIndex(
+          (q) => !data.savedAnswers[q.id]
+        );
+        
+        // If all answered, go to last question, otherwise go to first unanswered
+        if (firstUnansweredIndex === -1 && loadedQuestions.length > 0) {
+          setCurrentIndex(loadedQuestions.length - 1);
+        } else if (firstUnansweredIndex > 0) {
+          setCurrentIndex(firstUnansweredIndex);
+        }
+      }
 
       if (data.status === "expired") {
         setStatus("expired");
       } else if (data.status === "completed") {
         setStatus("completed");
       } else if (data.status === "started") {
-        setQuestions(getQuestions(data.assessmentType, data.questionLocale || 'default'));
         setStatus("started");
       } else {
-        setQuestions(getQuestions(data.assessmentType, data.questionLocale || 'default'));
         setStatus("ready");
       }
     } catch (err) {
@@ -173,19 +195,75 @@ export default function EmbedAssessment() {
     }
   };
 
+  // Track the latest answers for debounced saves
+  const answersRef = useRef<Record<string, string>>({});
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Update ref whenever answers change
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+  
+  // Save progress to server (called on navigation)
+  const saveProgressImmediately = useCallback(async (index: number) => {
+    if (!sessionId || status !== "started") return;
+    
+    // Clear any pending debounced save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
+    try {
+      await fetch(`/api/embed/session/${sessionId}/progress`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answers: answersRef.current,
+          lastAnsweredIndex: index,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save progress:", err);
+    }
+  }, [sessionId, status]);
+  
+  // Debounced save - only fires 2 seconds after last change
+  const debouncedSave = useCallback(() => {
+    if (!sessionId || status !== "started") return;
+    
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveProgressImmediately(currentIndex);
+    }, 2000);
+  }, [sessionId, status, currentIndex, saveProgressImmediately]);
+
   const handleAnswerChange = (value: string) => {
     const currentQ = questions[currentIndex];
-    setAnswers((prev) => ({ ...prev, [currentQ.id]: value }));
+    const newAnswers = { ...answers, [currentQ.id]: value };
+    setAnswers(newAnswers);
+    
+    // Trigger debounced save for text questions (will fire 2s after last change)
+    if (currentQ.type === "text-input") {
+      debouncedSave();
+    }
   };
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
+      // Save progress immediately before moving to next question
+      saveProgressImmediately(currentIndex + 1);
       setCurrentIndex((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
+      // Save progress immediately before moving to previous question
+      saveProgressImmediately(currentIndex - 1);
       setCurrentIndex((prev) => prev - 1);
     }
   };

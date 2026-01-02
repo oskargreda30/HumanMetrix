@@ -513,6 +513,10 @@ export function registerPartnerRoutes(app: Express) {
           partnerName: partner?.companyName || partner?.name,
           expiresAt: session.expiresAt,
           questionLocale: session.questionLocale || 'default',
+          // Include saved progress for resume functionality
+          savedAnswers: session.answers || null,
+          lastAnsweredIndex: session.lastAnsweredIndex ?? null,
+          lastActivityAt: session.lastActivityAt || null,
         };
         
         if (partner?.brandingEnabled) {
@@ -595,6 +599,57 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Save progress endpoint - allows incremental answer saving
+  app.patch(
+    "/api/embed/session/:sessionId/progress",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const { answers, lastAnsweredIndex } = req.body;
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Only allow saving progress for started sessions
+        if (session.status !== "started" && session.status !== "created") {
+          return res.status(400).json({
+            error: "Cannot save progress for this session",
+            status: session.status,
+          });
+        }
+        
+        // Check if session has expired
+        if (session.expiresAt && new Date(session.expiresAt) < new Date()) {
+          await storage.updateAssessmentSession(sessionId, { status: "expired" } as any);
+          return res.status(400).json({ error: "Session has expired" });
+        }
+        
+        // Merge new answers with existing answers
+        const existingAnswers = session.answers || {};
+        const mergedAnswers = { ...existingAnswers, ...answers };
+        
+        await storage.updateAssessmentSession(sessionId, {
+          answers: mergedAnswers,
+          lastAnsweredIndex: lastAnsweredIndex ?? session.lastAnsweredIndex,
+          lastActivityAt: new Date(),
+          status: session.status === "created" ? "started" : session.status,
+        } as any);
+        
+        res.json({
+          success: true,
+          savedAnswerCount: Object.keys(mergedAnswers).length,
+          lastAnsweredIndex: lastAnsweredIndex ?? session.lastAnsweredIndex,
+        });
+      } catch (error) {
+        console.error("Error saving session progress:", error);
+        res.status(500).json({ error: "Failed to save progress" });
+      }
+    }
+  );
+
   app.post(
     "/api/embed/session/:sessionId/submit",
     async (req: Request, res: Response) => {
@@ -647,7 +702,12 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        const { answers } = parseResult.data;
+        const { answers: submittedAnswers } = parseResult.data;
+        
+        // Merge saved answers with submitted answers (submitted takes precedence)
+        const savedAnswers = session.answers || {};
+        const answers = { ...savedAnswers, ...submittedAnswers };
+        
         const { scores, totalScore, percentile, evaluations } = await calculateScores(
           session.assessmentType,
           answers
