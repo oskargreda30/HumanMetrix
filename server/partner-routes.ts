@@ -798,8 +798,10 @@ export function registerPartnerRoutes(app: Express) {
 
   // Create bulk candidate invitations
   app.post("/api/partner/me/invitations/bulk", partnerAuth, async (req: PartnerRequest, res: Response) => {
+    console.log('[Bulk Invitations] Request received');
     try {
       const partner = req.partner!;
+      console.log('[Bulk Invitations] Partner authenticated:', partner.id);
       
       const bodySchema = z.object({
         candidates: z.array(z.object({
@@ -923,6 +925,7 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       // Create import batch record
+      console.log('[Bulk Invitations] Creating import record...');
       const importRecord = await storage.createPartnerCandidateImport({
         partnerId: partner.id,
         createdByUserId: null, // API imports don't have a user context
@@ -931,6 +934,7 @@ export function registerPartnerRoutes(app: Express) {
         candidateCount: candidates.length,
         status: 'processing',
       });
+      console.log('[Bulk Invitations] Import record created:', importRecord.id);
       
       // Create individual invitations
       const baseUrl = getBaseUrl(req);
