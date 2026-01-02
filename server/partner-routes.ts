@@ -1000,34 +1000,6 @@ export function registerPartnerRoutes(app: Express) {
           }
         }
         
-        // Send emails if requested and email is available
-        if (sendEmails) {
-          for (const inv of createdInvitations) {
-            if (inv.email) {
-              try {
-                const emailResult = await sendPartnerBulkInvitationEmail({
-                  candidateEmail: inv.email,
-                  candidateName: inv.name || undefined,
-                  assessmentTypes: inv.assessmentTypes,
-                  inviteToken: inv.inviteToken,
-                  partnerCompanyName: partnerAccount?.companyName || partner.companyName || 'HumanMetrix Partner',
-                  partnerLogoUrl: partnerAccount?.logoUrl,
-                  partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
-                  expiresAt: inv.expiresAt,
-                });
-                
-                if (emailResult.success) {
-                  await storage.updatePartnerCandidateInvitation(inv.id, {
-                    status: 'sent',
-                    emailSentAt: new Date(),
-                  });
-                }
-              } catch (emailError: any) {
-                console.error(`Failed to send email to ${inv.email}:`, emailError.message);
-              }
-            }
-          }
-        }
       }
       
       // Update import record
@@ -1040,6 +1012,7 @@ export function registerPartnerRoutes(app: Express) {
         completedAt: new Date(),
       });
       
+      // Respond immediately
       res.json({
         success: true,
         importId: importRecord.id,
@@ -1059,6 +1032,38 @@ export function registerPartnerRoutes(app: Express) {
           expiresAt: inv.expiresAt,
         })),
       });
+      
+      // Send emails in background (one email per candidate with all assessments)
+      if (sendEmails && createdInvitations.length > 0) {
+        setImmediate(async () => {
+          for (const inv of createdInvitations) {
+            if (inv.email) {
+              try {
+                const emailResult = await sendPartnerBulkInvitationEmail({
+                  candidateEmail: inv.email,
+                  candidateName: inv.name || undefined,
+                  assessmentTypes: inv.assessmentTypes,
+                  inviteToken: inv.inviteToken,
+                  partnerCompanyName: partnerAccount?.companyName || partner.companyName || 'HumanMetrix Partner',
+                  partnerLogoUrl: partnerAccount?.logoUrl,
+                  partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
+                  expiresAt: inv.expiresAt,
+                });
+                
+                if (emailResult.success) {
+                  await storage.updatePartnerCandidateInvitation(inv.id, {
+                    status: 'sent',
+                    emailSentAt: new Date(),
+                  });
+                  console.log(`Email sent to ${inv.email}`);
+                }
+              } catch (emailError: any) {
+                console.error(`Failed to send email to ${inv.email}:`, emailError.message);
+              }
+            }
+          }
+        });
+      }
     } catch (error: any) {
       console.error("Error creating bulk invitations:", error);
       res.status(500).json({ error: error.message || "Failed to create bulk invitations" });

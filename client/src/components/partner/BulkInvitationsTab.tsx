@@ -173,12 +173,30 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
         seenIds.add(candidate.externalUserId.trim().toLowerCase());
       }
       
-      if (candidate.email.trim() && !emailRegex.test(candidate.email.trim())) {
+      // Email is mandatory
+      if (!candidate.email.trim()) {
+        errors.push({
+          row,
+          externalUserId: candidate.externalUserId || '(empty)',
+          field: 'email',
+          error: 'Email is required',
+        });
+      } else if (!emailRegex.test(candidate.email.trim())) {
         errors.push({
           row,
           externalUserId: candidate.externalUserId || '(empty)',
           field: 'email',
           error: 'Invalid email format',
+        });
+      }
+      
+      // Name is mandatory
+      if (!candidate.name.trim()) {
+        errors.push({
+          row,
+          externalUserId: candidate.externalUserId || '(empty)',
+          field: 'name',
+          error: 'Name is required',
         });
       }
     });
@@ -658,7 +676,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Send {tokensRequired} Invitation{tokensRequired !== 1 ? 's' : ''}
+                Send {validCandidates.length} Invitation{validCandidates.length !== 1 ? 's' : ''} ({tokensRequired} token{tokensRequired !== 1 ? 's' : ''})
               </>
             )}
           </Button>
