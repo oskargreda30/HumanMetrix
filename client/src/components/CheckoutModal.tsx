@@ -65,7 +65,39 @@ export default function CheckoutModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isExistingUser, setIsExistingUser] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Check if email exists when it changes (debounced)
+  useEffect(() => {
+    if (!email || isAuthenticated || !email.includes("@")) {
+      setIsExistingUser(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsCheckingEmail(true);
+      try {
+        const response = await fetch("/api/check-email-exists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setIsExistingUser(data.exists);
+        }
+      } catch (err) {
+        console.error("Error checking email:", err);
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [email, isAuthenticated]);
 
   useEffect(() => {
     if (!open) {
@@ -74,6 +106,8 @@ export default function CheckoutModal({
       setFirstName("");
       setLastName("");
       setEmail("");
+      setPassword("");
+      setIsExistingUser(false);
       setIsProcessing(false);
       return;
     }
@@ -115,13 +149,26 @@ export default function CheckoutModal({
 
     // Only validate form fields if not authenticated
     if (!isAuthenticated) {
-      if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-        toast({
-          title: "Missing information",
-          description: "Please fill in all fields (name and email).",
-          variant: "destructive",
-        });
-        return;
+      if (isExistingUser) {
+        // Existing user just needs email and password
+        if (!email.trim() || !password.trim()) {
+          toast({
+            title: "Missing information",
+            description: "Please enter your email and password.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // New user needs all fields
+        if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+          toast({
+            title: "Missing information",
+            description: "Please fill in all fields (name and email).",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       if (!email.includes("@")) {
@@ -147,6 +194,7 @@ export default function CheckoutModal({
           firstName: userFirstName,
           lastName: userLastName,
           email: userEmail,
+          ...(isExistingUser && password ? { password } : {}),
         }),
         credentials: "include",
       });
@@ -274,60 +322,103 @@ export default function CheckoutModal({
           {/* Customer Details - Only show for non-authenticated users */}
           {!isAuthenticated && (
             <div>
-              <h3 className="font-semibold mb-3">Your Details</h3>
+              <h3 className="font-semibold mb-3">
+                {isExistingUser ? "Welcome Back" : "Your Details"}
+              </h3>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="checkout-firstname">First Name</Label>
-                    <Input
-                      id="checkout-firstname"
-                      type="text"
-                      placeholder="John"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      data-testid="checkout-input-firstname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="checkout-lastname">Last Name</Label>
-                    <Input
-                      id="checkout-lastname"
-                      type="text"
-                      placeholder="Doe"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                      data-testid="checkout-input-lastname"
-                    />
-                  </div>
-                </div>
+                {/* Email field - always shown first */}
                 <div className="space-y-2">
                   <Label htmlFor="checkout-email">Email Address</Label>
-                  <Input
-                    id="checkout-email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    data-testid="checkout-input-email"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    We'll send your login credentials to this email
-                  </p>
+                  <div className="relative">
+                    <Input
+                      id="checkout-email"
+                      type="email"
+                      placeholder="john@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      data-testid="checkout-input-email"
+                    />
+                    {isCheckingEmail && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        Checking...
+                      </span>
+                    )}
+                  </div>
+                  {isExistingUser ? (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      Account found! Enter your password to continue.
+                    </p>
+                  ) : email.includes("@") && !isCheckingEmail ? (
+                    <p className="text-xs text-muted-foreground">
+                      We'll send your login credentials to this email
+                    </p>
+                  ) : null}
                 </div>
+
+                {/* Password field - only for existing users */}
+                {isExistingUser && (
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-password">Password</Label>
+                    <Input
+                      id="checkout-password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      data-testid="checkout-input-password"
+                    />
+                    <a
+                      href="/forgot-password"
+                      className="text-xs text-primary hover:underline"
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot your password?
+                    </a>
+                  </div>
+                )}
+
+                {/* Name fields - only for new users */}
+                {!isExistingUser && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-firstname">First Name</Label>
+                      <Input
+                        id="checkout-firstname"
+                        type="text"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        data-testid="checkout-input-firstname"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-lastname">Last Name</Label>
+                      <Input
+                        id="checkout-lastname"
+                        type="text"
+                        placeholder="Doe"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        data-testid="checkout-input-lastname"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Info Box - Different message for authenticated users */}
+          {/* Info Box - Different message based on user state */}
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-              {isAuthenticated ? "Adding to your account" : "What happens next?"}
+              {isAuthenticated || isExistingUser ? "Adding to your account" : "What happens next?"}
             </p>
             <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              {isAuthenticated ? (
+              {isAuthenticated || isExistingUser ? (
                 <>
                   <li>Assessments will be added to your dashboard</li>
                   <li>Complete and submit your results</li>
@@ -335,9 +426,9 @@ export default function CheckoutModal({
                 </>
               ) : (
                 <>
+                  <li>We'll create an account and send you login details</li>
                   <li>Complete all selected assessments</li>
-                  <li>Submit your results and payment</li>
-                  <li>Download your results</li>
+                  <li>Pay to unlock and download your results</li>
                 </>
               )}
             </ol>
@@ -348,10 +439,14 @@ export default function CheckoutModal({
             className="w-full"
             size="lg"
             onClick={handleProceed}
-            disabled={isProcessing || selectedAssessments.size === 0}
+            disabled={isProcessing || selectedAssessments.size === 0 || isCheckingEmail}
             data-testid="checkout-button-proceed"
           >
-            {isProcessing ? "Processing..." : (isAuthenticated ? "Add to Dashboard" : "Get Started")}
+            {isProcessing ? "Processing..." : (
+              isAuthenticated ? "Add to Dashboard" : (
+                isExistingUser ? "Sign In & Add Tests" : "Get Started"
+              )
+            )}
           </Button>
         </div>
       </DialogContent>

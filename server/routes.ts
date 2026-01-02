@@ -2530,10 +2530,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if email exists (for checkout flow) - rate limited
+  app.post("/api/check-email-exists", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        return res.status(400).json({ message: "Please provide a valid email address" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email.toLowerCase());
+      
+      // Return whether the email exists (don't reveal any other user info)
+      res.json({ exists: !!existingUser });
+    } catch (error) {
+      console.error("Error checking email:", error);
+      res.status(500).json({ message: "Failed to check email" });
+    }
+  });
+
   // Self-service: Create free account and grant access to assessments (no payment upfront)
   app.post("/api/create-free-invitation", populateUser, async (req, res) => {
     try {
-      const { assessmentIds, firstName, lastName, email } = req.body;
+      const { assessmentIds, firstName, lastName, email, password } = req.body;
       
       if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
         return res.status(400).json({ message: "Please select at least one assessment" });
@@ -2618,11 +2637,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Don't fail registration - account is created, user can use password reset
           }
         } else {
-          // User already exists - they should log in instead of creating new assessments
-          console.log(`⚠️  User ${email} already exists - rejecting checkout, they should log in`);
-          return res.status(400).json({ 
-            message: "An account with this email already exists. Please log in to add assessments to your account." 
-          });
+          // User already exists - verify password to authenticate inline
+          if (!password) {
+            console.log(`⚠️  User ${email} already exists - password required`);
+            return res.status(400).json({ 
+              message: "An account with this email already exists. Please enter your password to continue.",
+              existingUser: true 
+            });
+          }
+          
+          // Verify password
+          const isValid = await bcrypt.compare(password, existingUser.passwordHash);
+          if (!isValid) {
+            console.log(`⚠️  User ${email} provided incorrect password`);
+            return res.status(401).json({ 
+              message: "Incorrect password. Please try again or use forgot password.",
+              existingUser: true 
+            });
+          }
+          
+          // Password correct - use existing user and log them in
+          userId = existingUser.id;
+          console.log(`✅ Existing user ${email} authenticated via checkout`);
+          
+          // Log the user in by setting session
+          if (req.session) {
+            (req.session as any).userId = userId;
+          }
         }
       }
 
