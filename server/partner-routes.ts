@@ -876,33 +876,33 @@ export function registerPartnerRoutes(app: Express) {
       
       // Server-side validation: collect ALL errors before processing
       const validationErrors: Array<{ row: number; externalUserId: string; field: string; error: string }> = [];
-      const seenExternalIds = new Map<string, number>();
+      const seenEmails = new Map<string, number>();
       
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
         const row = i + 1;
+        const identifier = candidate.email || candidate.externalUserId || `row-${row}`;
         
-        // Validate externalUserId is not blank
-        if (!candidate.externalUserId || candidate.externalUserId.trim() === '') {
-          validationErrors.push({ row, externalUserId: candidate.externalUserId || '', field: 'externalUserId', error: 'External User ID is required' });
+        // Email is now required (externalUserId is optional)
+        if (!candidate.email || candidate.email.trim() === '') {
+          validationErrors.push({ row, externalUserId: identifier, field: 'email', error: 'Email is required' });
           continue;
         }
         
-        // Check for duplicates within batch
-        const existingRow = seenExternalIds.get(candidate.externalUserId.toLowerCase());
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(candidate.email.trim())) {
+          validationErrors.push({ row, externalUserId: identifier, field: 'email', error: 'Invalid email format' });
+          continue;
+        }
+        
+        // Check for duplicate emails within batch
+        const existingRow = seenEmails.get(candidate.email.toLowerCase());
         if (existingRow !== undefined) {
-          validationErrors.push({ row, externalUserId: candidate.externalUserId, field: 'externalUserId', error: `Duplicate of row ${existingRow}` });
+          validationErrors.push({ row, externalUserId: identifier, field: 'email', error: `Duplicate of row ${existingRow}` });
           continue;
         }
-        seenExternalIds.set(candidate.externalUserId.toLowerCase(), row);
-        
-        // Validate email format if provided and not empty
-        if (candidate.email && candidate.email.trim() !== '') {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(candidate.email)) {
-            validationErrors.push({ row, externalUserId: candidate.externalUserId, field: 'email', error: 'Invalid email format' });
-          }
-        }
+        seenEmails.set(candidate.email.toLowerCase(), row);
       }
       
       // If there are validation errors, return them without creating anything
@@ -1013,10 +1013,13 @@ export function registerPartnerRoutes(app: Express) {
           const inviteToken = crypto.randomUUID().replace(/-/g, '');
           const inviteUrl = `${baseUrl}/invite/${inviteToken}`;
           
+          // Use email as externalUserId if not provided
+          const effectiveExternalUserId = (candidate.externalUserId?.trim()) || candidate.email!;
+          
           invitations.push({
             partnerId: partner.id,
             importId: importRecord.id,
-            externalUserId: candidate.externalUserId,
+            externalUserId: effectiveExternalUserId,
             email: candidate.email || null,
             name: candidate.name || null,
             metadata: candidate.metadata || null,
@@ -1028,9 +1031,10 @@ export function registerPartnerRoutes(app: Express) {
             tokensUsed: assessmentTypes.length,
           });
         } catch (err: any) {
+          const identifier = candidate.email || candidate.externalUserId || `row-${i + 1}`;
           errors.push({
             row: i + 1,
-            externalUserId: candidate.externalUserId,
+            externalUserId: identifier,
             error: err.message || 'Unknown error',
           });
         }
