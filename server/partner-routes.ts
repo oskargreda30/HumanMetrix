@@ -1,6 +1,7 @@
 import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
+import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
 import { getQuestionLocale } from "@shared/currencies";
@@ -796,11 +797,25 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
-  // Create bulk candidate invitations
-  app.post("/api/partner/me/invitations/bulk", partnerAuth, async (req: PartnerRequest, res: Response) => {
+  // Create bulk candidate invitations (session-based auth for dashboard)
+  app.post("/api/partner/me/invitations/bulk", isAuthenticated, async (req: any, res: Response) => {
     console.log('[Bulk Invitations] Request received');
     try {
-      const partner = req.partner!;
+      // Get partner account from user session
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
       console.log('[Bulk Invitations] Partner authenticated:', partner.id);
       
       const bodySchema = z.object({
