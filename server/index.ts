@@ -27,6 +27,22 @@ if (isProduction) {
   app.set('trust proxy', 1);
 }
 
+// Domain redirect middleware - redirect all domains to primary domain
+const PRIMARY_DOMAIN = 'www.humanmetrix.co.uk';
+const REDIRECT_DOMAINS = ['www.humanmetrix-ai.com', 'humanmetrix-ai.com', 'www.humanmetrixai.com', 'humanmetrixai.com', 'humanmetrix.co.uk'];
+
+app.use((req, res, next) => {
+  const host = req.get('host')?.toLowerCase();
+  
+  // Only redirect in production and for actual domain requests
+  if (isProduction && host && REDIRECT_DOMAINS.includes(host)) {
+    const redirectUrl = `https://${PRIMARY_DOMAIN}${req.originalUrl}`;
+    return res.redirect(301, redirectUrl);
+  }
+  
+  next();
+});
+
 app.use(compression({
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {

@@ -56,7 +56,7 @@
       }
       return window.location.origin;
     }
-    return 'https://humanmetrix.replit.app';
+    return 'https://www.humanmetrix.co.uk';
   };
 
   HumanMetrixClient.prototype._request = function(method, path, data) {
