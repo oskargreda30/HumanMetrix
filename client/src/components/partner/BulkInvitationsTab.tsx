@@ -99,7 +99,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       sendEmails: boolean;
     }) => {
       // Use longer timeout for bulk operations (2 minutes)
-      return apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
+      const response = await apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
+      return response.json();
     },
     onSuccess: (data: any) => {
       if (data.errors?.length > 0) {
