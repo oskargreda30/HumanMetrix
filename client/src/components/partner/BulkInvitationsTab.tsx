@@ -499,7 +499,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                       </div>
                       <div className="relative">
                         <Input
-                          placeholder="Email (optional)"
+                          placeholder="Email (required)"
                           type="email"
                           value={candidate.email}
                           onChange={(e) => updateCandidate(candidate.id, 'email', e.target.value)}
@@ -511,7 +511,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                         )}
                       </div>
                       <Input
-                        placeholder="Name (optional)"
+                        placeholder="Name (required)"
                         value={candidate.name}
                         onChange={(e) => updateCandidate(candidate.id, 'name', e.target.value)}
                         className="text-sm"
