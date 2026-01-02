@@ -107,7 +107,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
         setLastImportErrors(data.errors);
         toast({
           title: "Invitations created with issues",
-          description: `${data.summary.successCount} created, ${data.summary.errorCount} failed. Download the error report for details.`,
+          description: `${data.summary.successCount} created, ${data.summary.failedCount} failed. Download the error report for details.`,
           variant: data.summary.successCount > 0 ? "default" : "destructive",
         });
       } else {
