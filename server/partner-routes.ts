@@ -1343,7 +1343,7 @@ export function registerPartnerRoutes(app: Express) {
         metadata: invitation.metadata,
         webhookUrl: null,
         expiresAt,
-        status: 'pending',
+        status: 'created',
         questionLocale: 'default',
       });
       
