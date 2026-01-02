@@ -151,52 +151,49 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
 
   const validateCandidates = (): ValidationError[] => {
     const errors: ValidationError[] = [];
-    const seenIds = new Set<string>();
+    const seenEmails = new Set<string>();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     candidates.forEach((candidate, index) => {
       const row = index + 1;
+      const identifier = candidate.email || candidate.externalUserId || `row-${row}`;
       
-      if (!candidate.externalUserId.trim()) {
-        errors.push({
-          row,
-          externalUserId: candidate.externalUserId || '(empty)',
-          field: 'externalUserId',
-          error: 'External ID is required',
-        });
-      } else if (seenIds.has(candidate.externalUserId.trim().toLowerCase())) {
-        errors.push({
-          row,
-          externalUserId: candidate.externalUserId,
-          field: 'externalUserId',
-          error: 'Duplicate External ID in batch',
-        });
-      } else {
-        seenIds.add(candidate.externalUserId.trim().toLowerCase());
+      // External ID is now optional - if provided, just validate uniqueness
+      if (candidate.externalUserId.trim()) {
+        // No duplicate check needed - server allows re-inviting
       }
       
       // Email is mandatory
       if (!candidate.email.trim()) {
         errors.push({
           row,
-          externalUserId: candidate.externalUserId || '(empty)',
+          externalUserId: identifier,
           field: 'email',
           error: 'Email is required',
         });
       } else if (!emailRegex.test(candidate.email.trim())) {
         errors.push({
           row,
-          externalUserId: candidate.externalUserId || '(empty)',
+          externalUserId: identifier,
           field: 'email',
           error: 'Invalid email format',
         });
+      } else if (seenEmails.has(candidate.email.trim().toLowerCase())) {
+        errors.push({
+          row,
+          externalUserId: identifier,
+          field: 'email',
+          error: 'Duplicate email in batch',
+        });
+      } else {
+        seenEmails.add(candidate.email.trim().toLowerCase());
       }
       
       // Name is mandatory
       if (!candidate.name.trim()) {
         errors.push({
           row,
-          externalUserId: candidate.externalUserId || '(empty)',
+          externalUserId: identifier,
           field: 'name',
           error: 'Name is required',
         });
@@ -346,7 +343,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   };
 
   const downloadTemplate = () => {
-    const template = "externalUserId,email,name\nCAND001,john@example.com,John Smith\nCAND002,jane@example.com,Jane Doe";
+    const template = "email,name,externalUserId\njohn@example.com,John Smith,CAND001\njane@example.com,Jane Doe,";
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -371,12 +368,13 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       return;
     }
     
-    const validCandidates = candidates.filter(c => c.externalUserId.trim());
+    // Filter candidates that have email (which is required)
+    const validCandidates = candidates.filter(c => c.email.trim());
     
     if (validCandidates.length === 0) {
       toast({
         title: "No candidates",
-        description: "Please add at least one candidate with an External ID.",
+        description: "Please add at least one candidate with an email address.",
         variant: "destructive",
       });
       return;
@@ -393,16 +391,18 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
     
     bulkInviteMutation.mutate({
       candidates: validCandidates.map(c => ({
-        externalUserId: c.externalUserId,
-        email: c.email || undefined,
-        name: c.name || undefined,
+        // Use email as externalUserId if not provided
+        externalUserId: c.externalUserId.trim() || c.email.trim(),
+        email: c.email.trim(),
+        name: c.name.trim() || undefined,
       })),
       assessmentTypes: selectedAssessments,
       sendEmails,
     });
   };
 
-  const validCandidates = candidates.filter(c => c.externalUserId.trim());
+  // Valid candidates are those with email (required field)
+  const validCandidates = candidates.filter(c => c.email.trim());
   const tokensRequired = validCandidates.length * selectedAssessments.length;
   const isPrepaid = billingType === 'prepaid';
   const hasInsufficientTokens = isPrepaid && quota && tokensRequired > quota.testsRemaining;
@@ -487,10 +487,10 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                     <div className="flex-1 grid grid-cols-3 gap-2">
                       <div className="relative">
                         <Input
-                          placeholder="External ID *"
+                          placeholder="External ID (optional)"
                           value={candidate.externalUserId}
                           onChange={(e) => updateCandidate(candidate.id, 'externalUserId', e.target.value)}
-                          className={`text-sm ${rowErrors.some(e => e.field === 'externalUserId') ? 'border-red-500' : ''}`}
+                          className="text-sm"
                           data-testid={`input-external-id-${index}`}
                         />
                         {rowErrors.some(e => e.field === 'externalUserId') && (

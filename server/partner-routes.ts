@@ -823,7 +823,7 @@ export function registerPartnerRoutes(app: Express) {
       
       const bodySchema = z.object({
         candidates: z.array(z.object({
-          externalUserId: z.string().min(1, "External User ID is required").transform(s => s.trim()),
+          externalUserId: z.string().transform(s => s.trim()).optional().nullable(),
           email: z.string().transform(s => s.trim()).pipe(
             z.union([z.literal(''), z.string().email("Invalid email format")])
           ).optional().nullable(),
@@ -1044,13 +1044,8 @@ export function registerPartnerRoutes(app: Express) {
         createdInvitations = await storage.createPartnerCandidateInvitationsBulk(invitations);
         console.log(`[Bulk Invitations] Created ${createdInvitations.length} invitations successfully`);
         
-        // Deduct tokens for prepaid partners
-        if (partnerAccount?.billingType === 'prepaid') {
-          const tokensUsed = createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0);
-          for (const inv of createdInvitations) {
-            await storage.consumePartnerTest(partner.id, inv.id, `Bulk invite: ${inv.externalUserId}`);
-          }
-        }
+        // Note: Tokens are deducted when assessment sessions are actually started,
+        // not when invitations are created. This prevents charging for unused invitations.
         
       }
       
