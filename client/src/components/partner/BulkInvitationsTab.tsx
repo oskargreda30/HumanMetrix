@@ -21,6 +21,9 @@ import {
   Download,
   Loader2,
   Mail,
+  ClipboardPaste,
+  Link2,
+  Building2,
 } from "lucide-react";
 
 interface BulkInvitationsTabProps {
@@ -465,6 +468,47 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                 <Download className="h-4 w-4 mr-2" />
                 Download Template
               </Button>
+            </div>
+          </div>
+
+          {/* Coming Soon: Alternative Import Methods */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Copy-Paste from Spreadsheet */}
+            <div className="border rounded-lg p-4 bg-muted/30 relative opacity-75">
+              <Badge variant="secondary" className="absolute top-2 right-2 text-xs">Coming Soon</Badge>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <ClipboardPaste className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm">Paste from Spreadsheet</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Copy rows from Excel or Google Sheets and paste directly. No file upload needed.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ATS Integrations */}
+            <div className="border rounded-lg p-4 bg-muted/30 relative opacity-75">
+              <Badge variant="secondary" className="absolute top-2 right-2 text-xs">Coming Soon</Badge>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm">ATS Integrations</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Connect with Greenhouse, Lever, Workday, and BambooHR to sync candidates automatically.
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <Badge variant="outline" className="text-xs py-0">Greenhouse</Badge>
+                    <Badge variant="outline" className="text-xs py-0">Lever</Badge>
+                    <Badge variant="outline" className="text-xs py-0">Workday</Badge>
+                    <Badge variant="outline" className="text-xs py-0">BambooHR</Badge>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
