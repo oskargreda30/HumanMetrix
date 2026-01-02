@@ -1007,9 +1007,12 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       // Bulk insert invitations
+      console.log(`[Bulk Invitations] Prepared ${invitations.length} invitations, ${errors.length} errors`);
       let createdInvitations: any[] = [];
       if (invitations.length > 0) {
+        console.log('[Bulk Invitations] Inserting invitations into database...');
         createdInvitations = await storage.createPartnerCandidateInvitationsBulk(invitations);
+        console.log(`[Bulk Invitations] Created ${createdInvitations.length} invitations successfully`);
         
         // Deduct tokens for prepaid partners
         if (partnerAccount?.billingType === 'prepaid') {
