@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, Clock, ClipboardList } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 interface InvitationData {
   id: string;
@@ -208,9 +209,12 @@ export default function StartAssessment() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-slate-500">
-          Powered by <span className="text-cyan-500">HumanMetrix</span> - AI Assessment Platform
-        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+          <span>Powered by</span>
+          <img src={logoSymbol} alt="HumanMetrix Logo" className="h-5 w-5" />
+          <span className="text-cyan-500">HumanMetrix</span>
+          <span>- AI Assessment Platform</span>
+        </div>
       </div>
     </div>
   );
