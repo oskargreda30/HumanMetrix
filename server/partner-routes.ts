@@ -829,7 +829,7 @@ export function registerPartnerRoutes(app: Express) {
         })).min(1, "At least one candidate required").max(500, "Maximum 500 candidates per batch"),
         assessmentTypes: z.array(z.string()).min(1, "At least one assessment type required"),
         sendEmails: z.boolean().default(true),
-        expiresInDays: z.number().min(1).max(90).default(30),
+        expiresInDays: z.number().min(1).max(30).default(7), // 7-day default expiry
       });
       
       const parsed = bodySchema.safeParse(req.body);
@@ -1093,9 +1093,24 @@ export function registerPartnerRoutes(app: Express) {
   });
 
   // Get candidate invitations for partner
-  app.get("/api/partner/me/invitations", partnerAuth, async (req: PartnerRequest, res: Response) => {
+  app.get("/api/partner/me/invitations", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const partner = req.partner!;
+      // Get partner account from user session
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
       const { status, limit = '50', offset = '0' } = req.query;
       
       const invitations = await storage.getPartnerCandidateInvitations(partner.id, {
@@ -1121,9 +1136,24 @@ export function registerPartnerRoutes(app: Express) {
   });
 
   // Get import history
-  app.get("/api/partner/me/invitations/imports", partnerAuth, async (req: PartnerRequest, res: Response) => {
+  app.get("/api/partner/me/invitations/imports", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const partner = req.partner!;
+      // Get partner account from user session
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
       const imports = await storage.getPartnerCandidateImports(partner.id, 20);
       res.json({ imports });
     } catch (error) {
@@ -1133,9 +1163,24 @@ export function registerPartnerRoutes(app: Express) {
   });
 
   // Get import details with error report
-  app.get("/api/partner/me/invitations/imports/:importId", partnerAuth, async (req: PartnerRequest, res: Response) => {
+  app.get("/api/partner/me/invitations/imports/:importId", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const partner = req.partner!;
+      // Get partner account from user session
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
       const { importId } = req.params;
       
       const importRecord = await storage.getPartnerCandidateImport(importId);
@@ -1163,14 +1208,17 @@ export function registerPartnerRoutes(app: Express) {
   app.get("/api/invite/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
+      console.log(`[Invite Validation] Checking token: ${token}`);
       
       if (!token) {
         return res.status(400).json({ error: "Missing invite token" });
       }
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      console.log(`[Invite Validation] Found invitation:`, invitation ? invitation.id : 'null');
       
       if (!invitation) {
+        console.log(`[Invite Validation] No invitation found for token: ${token}`);
         return res.status(404).json({ error: "Invalid or expired invitation" });
       }
       
