@@ -15,18 +15,8 @@ async function checkTestSetting(): Promise<void> {
   
   if (!databaseUrl) {
     // No database configured, default to running tests
-    console.error('DATABASE_URL: Not set');
     console.log('RUN_TESTS');
     process.exit(0);
-  }
-
-  // Log masked database URL to help debug which database is being used
-  try {
-    const url = new URL(databaseUrl);
-    const maskedUrl = `${url.protocol}//${url.username}:****@${url.host}${url.pathname}`;
-    console.error(`DATABASE_URL: ${maskedUrl}`);
-  } catch {
-    console.error('DATABASE_URL: [invalid URL format]');
   }
 
   const pool = new Pool({ connectionString: databaseUrl });

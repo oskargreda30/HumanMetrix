@@ -27,10 +27,10 @@ export default function SystemSettingsTab() {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   
-  // Check if we're in production (deployed site)
-  const isProduction = typeof window !== 'undefined' && 
-    !window.location.hostname.includes('localhost') && 
-    !window.location.hostname.includes('replit.dev');
+  // Check if we're in development (localhost or replit.dev)
+  const isDevelopment = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('localhost') || 
+     window.location.hostname.includes('replit.dev'));
 
   const { data: settings, isLoading, refetch } = useQuery<SystemSetting[]>({
     queryKey: ["/api/admin/system-settings"],
@@ -109,8 +109,8 @@ export default function SystemSettingsTab() {
         </Button>
       </div>
 
-      {/* Deployment Settings - Only show in development */}
-      {isProduction ? (
+      {/* Deployment Settings - Only show in production */}
+      {isDevelopment ? (
         <Card className="bg-white/10 border-white/20">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
@@ -118,7 +118,7 @@ export default function SystemSettingsTab() {
               Deployment Testing
             </CardTitle>
             <CardDescription className="text-white/70">
-              This setting can only be changed in the development environment
+              This setting can only be changed in production
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,10 +126,10 @@ export default function SystemSettingsTab() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
                 <div>
-                  <h4 className="text-amber-300 font-medium mb-1">Development Only</h4>
+                  <h4 className="text-amber-300 font-medium mb-1">Production Only</h4>
                   <p className="text-white/70 text-sm">
-                    The deployment test toggle must be changed in the development environment 
-                    because the build process reads from the development database.
+                    The deployment test toggle must be changed in the production admin dashboard 
+                    because the build process reads from the production database.
                   </p>
                 </div>
               </div>
@@ -238,8 +238,8 @@ export default function SystemSettingsTab() {
       </Card>
       )}
 
-      {/* Environment Info - Only show in development */}
-      {!isProduction && (
+      {/* Environment Info - Only show in production */}
+      {!isDevelopment && (
       <Card className="bg-white/10 border-white/20">
         <CardHeader>
           <CardTitle className="text-white text-lg">Environment Configuration</CardTitle>
