@@ -8,7 +8,7 @@ packages = ["imagemagick", "pandoc"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
+build = ["sh", "-c", "./scripts/run-tests-before-deploy.sh && npm run build"]
 run = ["npm", "run", "start"]
 
 [[ports]]
@@ -44,7 +44,13 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.0", "javascript_stripe:1.0.0", "javascript_openai:1.0.0", "javascript_object_storage:2.0.0"]
+integrations = [
+  "javascript_database:1.0.0",
+  "javascript_log_in_with_replit:1.0.0",
+  "javascript_stripe:1.0.0",
+  "javascript_openai:1.0.0",
+  "javascript_object_storage:2.0.0",
+]
 
 [userenv]
 
