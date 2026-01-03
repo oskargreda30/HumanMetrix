@@ -303,7 +303,7 @@ export interface IStorage {
   createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
   getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
   getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }>;
-  consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean }>;
+  consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
   creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
   updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
   suspendPartnerApiAccess(partnerId: string): Promise<void>;
@@ -1720,12 +1720,64 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean }> {
+  async consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }> {
     // Get current balance
     const balance = await this.getPartnerQuotaBalance(partnerId);
     
+    // Get partner to check card-on-file status for prepaid partners
+    const partner = await this.getPartnerAccount(partnerId);
+    const hasCardOnFile = partner?.billingType === 'prepaid' && partner?.cardOnFile === true;
+    
     if (balance.remaining <= 0) {
-      // No credits remaining - suspend access (notification will be sent separately by caller if needed)
+      // No credits remaining - check if prepaid partner has card on file
+      if (hasCardOnFile && partner) {
+        // Partner has card on file - allow overage and track it
+        const newConsumed = balance.testsConsumed + 1;
+        const overageRate = partner.overageRatePerTest || 500; // Default £5.00
+        
+        // Update partner account with increased consumption
+        await db.update(partnerAccounts).set({
+          testsConsumed: newConsumed,
+          pendingOverageAmount: (partner.pendingOverageAmount || 0) + overageRate,
+          currentMonthUsage: (partner.currentMonthUsage || 0) + 1,
+          updatedAt: new Date(),
+        }).where(eq(partnerAccounts.id, partnerId));
+        
+        // Create ledger entry for overage
+        await this.createQuotaLedgerEntry({
+          partnerId,
+          sessionId,
+          entryType: 'debit',
+          amount: -1,
+          balanceAfter: balance.remaining - 1, // Will be negative to show overage
+          description: `${description} (overage)`,
+        });
+        
+        // Track overage in the overage ledger for this month
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+        const existingOverage = await this.getOverageLedgerByMonth(partnerId, currentMonth);
+        
+        if (existingOverage) {
+          // Update existing overage record
+          await this.updateOverageLedgerEntry(existingOverage.id, {
+            overageTests: existingOverage.overageTests + 1,
+            overageAmount: existingOverage.overageAmount + overageRate,
+          });
+        } else {
+          // Create new overage record for this month
+          await this.createOverageLedgerEntry({
+            partnerId,
+            billingMonth: currentMonth,
+            overageTests: 1,
+            overageAmount: overageRate,
+            chargeStatus: 'pending',
+          });
+        }
+        
+        return { success: true, remaining: balance.remaining - 1, suspended: false, isOverage: true };
+      }
+      
+      // No card on file - suspend access
       await this.suspendPartnerApiAccess(partnerId);
       return { success: false, remaining: 0, suspended: true };
     }
@@ -1736,6 +1788,7 @@ export class DatabaseStorage implements IStorage {
     // Update partner account
     await db.update(partnerAccounts).set({
       testsConsumed: newConsumed,
+      currentMonthUsage: (partner?.currentMonthUsage || 0) + 1,
       updatedAt: new Date(),
     }).where(eq(partnerAccounts.id, partnerId));
     
@@ -1754,6 +1807,20 @@ export class DatabaseStorage implements IStorage {
     
     // Check if we need to suspend (hit 100%)
     if (newRemaining <= 0) {
+      // If partner has card on file, don't suspend - they can continue with overage billing
+      if (hasCardOnFile) {
+        // Create notification about entering overage billing
+        await this.createPartnerNotification({
+          partnerId,
+          type: 'quota_exceeded',
+          title: 'Prepaid Credits Exhausted',
+          message: 'Your prepaid credits have been exhausted. Future tests will be billed as overages to your saved card.',
+          metadata: { remaining: 0, purchased: balance.testsPurchased, consumed: newConsumed, hasCardOnFile: true },
+        });
+        
+        return { success: true, remaining: 0, suspended: false };
+      }
+      
       await this.suspendPartnerApiAccess(partnerId);
       
       // Create quota exceeded notification

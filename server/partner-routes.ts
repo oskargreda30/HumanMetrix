@@ -1625,6 +1625,114 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // ========== Billing Scheduler Endpoint (called by cron job on 1st of month) ==========
+  
+  // Process all pending overage charges for prepaid partners with cards on file
+  app.post("/api/internal/process-overage-billing", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    try {
+      const pendingCharges = await storage.getPendingOverageCharges();
+      const results = {
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+      
+      for (const charge of pendingCharges) {
+        results.processed++;
+        
+        try {
+          const partner = await storage.getPartnerAccount(charge.partnerId);
+          if (!partner) {
+            results.failed++;
+            results.errors.push(`Partner ${charge.partnerId} not found`);
+            continue;
+          }
+          
+          if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
+            results.failed++;
+            await storage.updateOverageLedgerEntry(charge.id, { chargeStatus: 'failed' });
+            results.errors.push(`Partner ${charge.partnerId} missing payment method`);
+            continue;
+          }
+          
+          // Create payment intent for the overage amount
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: charge.overageAmount,
+            currency: 'gbp',
+            customer: partner.stripeCustomerId,
+            payment_method: partner.stripePaymentMethodId,
+            off_session: true,
+            confirm: true,
+            description: `Overage billing for ${charge.billingMonth}: ${charge.overageTests} tests`,
+            metadata: {
+              partnerId: partner.id,
+              overageLedgerId: charge.id,
+              billingMonth: charge.billingMonth,
+              overageTests: charge.overageTests.toString(),
+            },
+          });
+          
+          if (paymentIntent.status === 'succeeded') {
+            // Update ledger entry as paid
+            await storage.updateOverageLedgerEntry(charge.id, {
+              chargeStatus: 'paid',
+              stripePaymentIntentId: paymentIntent.id,
+              chargedAt: new Date(),
+            });
+            
+            // Reset partner's pending overage amount
+            await storage.updatePartnerAccount(partner.id, {
+              pendingOverageAmount: 0,
+            });
+            
+            // Create success notification
+            await storage.createPartnerNotification({
+              partnerId: partner.id,
+              type: 'billing_success',
+              title: 'Overage Billing Processed',
+              message: `Your overage charges for ${charge.billingMonth} (£${(charge.overageAmount / 100).toFixed(2)} for ${charge.overageTests} tests) have been successfully billed.`,
+              metadata: { billingMonth: charge.billingMonth, amount: charge.overageAmount, tests: charge.overageTests },
+            });
+            
+            results.succeeded++;
+          } else {
+            await storage.updateOverageLedgerEntry(charge.id, { chargeStatus: 'failed' });
+            results.failed++;
+            results.errors.push(`Partner ${charge.partnerId} payment status: ${paymentIntent.status}`);
+          }
+        } catch (paymentError: any) {
+          await storage.updateOverageLedgerEntry(charge.id, { chargeStatus: 'failed' });
+          results.failed++;
+          results.errors.push(`Partner ${charge.partnerId}: ${paymentError.message}`);
+          
+          // Create failure notification
+          await storage.createPartnerNotification({
+            partnerId: charge.partnerId,
+            type: 'billing_failed',
+            title: 'Overage Billing Failed',
+            message: `Your overage billing for ${charge.billingMonth} failed. Please update your payment method.`,
+            metadata: { billingMonth: charge.billingMonth, error: paymentError.message },
+          });
+        }
+      }
+      
+      console.log(`[Overage Billing] Processed: ${results.processed}, Succeeded: ${results.succeeded}, Failed: ${results.failed}`);
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error processing overage billing:", error);
+      res.status(500).json({ error: "Failed to process overage billing" });
+    }
+  });
+
   // Serve embed widget.js
   app.get("/embed/widget.js", (req, res) => {
     try {
