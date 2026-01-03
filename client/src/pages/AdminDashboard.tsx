@@ -22,6 +22,7 @@ import WidgetTestTab from "@/components/admin/WidgetTestTab";
 import HealthTab from "@/components/admin/HealthTab";
 import BillingTab from "@/components/admin/BillingTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
+import SystemSettingsTab from "@/components/admin/SystemSettingsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -179,6 +180,11 @@ export default function AdminDashboard() {
                   Health
                 </TabsTrigger>
               )}
+              {isSuperAdmin && (
+                <TabsTrigger value="settings" data-testid="tab-settings" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Settings
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -285,6 +291,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="health" className="space-y-4">
                 <HealthTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="settings" className="space-y-4">
+                <SystemSettingsTab />
               </TabsContent>
             )}
           </Tabs>
