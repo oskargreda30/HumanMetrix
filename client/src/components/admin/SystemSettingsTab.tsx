@@ -251,7 +251,7 @@ export default function SystemSettingsTab() {
           <div className="space-y-4 text-white/80 text-sm">
             <p>
               The toggle above <strong className="text-white">directly controls</strong> whether tests run during deployment. 
-              The setting is stored in the development database and read by the build script.
+              The setting is stored in the database and read by the build script during publishing.
             </p>
             <div className="p-3 rounded bg-black/30 border border-white/10 font-mono text-xs overflow-x-auto">
               <code>./scripts/run-tests-before-deploy.sh && npm run build</code>
