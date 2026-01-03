@@ -1505,7 +1505,120 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
   });
   
-  // Closing statement
+  // ========== RECOMMENDED NEXT STEPS ==========
+  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+  yPos += 5;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text('Recommended Next Steps:', 25, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
+  const comparisonNextSteps = [
+    'Conduct combined technical and behavioral interviews with shortlisted candidates to validate assessment findings',
+    'Perform team fit analysis to understand how each candidate will integrate with the current or target team dynamics',
+    'Check professional references with emphasis on areas of demonstrated strength',
+    'Consider role-specific scenarios to assess practical application of identified skills'
+  ];
+  
+  comparisonNextSteps.forEach(step => {
+    yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('•', 27, yPos);
+    pdf.setTextColor(55, 65, 81);
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    stepLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 3.5));
+    });
+    yPos += (stepLines.length * 3.5) + 2;
+  });
+  
+  yPos += 5;
+  
+  // ========== ADDITIONAL SERVICES ON REQUEST ==========
+  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 2;
+  
+  pdf.setFontSize(7);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 7;
+  
+  const comparisonAdditionalServices = [
+    {
+      name: 'Suggested Interview Questions',
+      description: 'Customized interview questions based on assessment results and identified skill gaps'
+    },
+    {
+      name: 'Team Composition Fit',
+      description: 'Analysis of how the candidate would integrate with your existing team dynamics and structure'
+    },
+    {
+      name: 'Time to Productivity Estimate',
+      description: 'Projected timeline for the candidate to reach full productivity in the role'
+    },
+    {
+      name: 'Hiring Risk Analysis',
+      description: 'Comprehensive risk assessment including potential challenges and mitigation strategies'
+    },
+    {
+      name: 'Development Investment Cost',
+      description: 'Estimated training and development investment required to bridge identified skill gaps'
+    }
+  ];
+  
+  comparisonAdditionalServices.forEach((service, index) => {
+    yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+    
+    // Service number badge
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(20, yPos - 2, 5, 5, 1, 1, 'F');
+    pdf.setFontSize(6);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${index + 1}`, 22.5, yPos + 1.5, { align: 'center' });
+    
+    // Service name
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(service.name, 28, yPos + 1);
+    
+    // Service description
+    pdf.setFontSize(6.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 28, yPos + 5 + (idx * 3));
+    });
+    
+    yPos += 5 + (descLines.length * 3) + 2;
+  });
+  
+  yPos += 4;
+  
+  // Contact info box
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 10, 2, 2, 'FD');
+  
+  pdf.setFontSize(7);
+  pdf.setTextColor(30, 58, 138);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 4);
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('assessments@humanmetrix.co.uk', 25, yPos + 7.5);
+  
+  yPos += 15;
+  
+  // Closing statement / Disclaimer
   yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(6.5);
