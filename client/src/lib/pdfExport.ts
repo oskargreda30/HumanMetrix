@@ -417,7 +417,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
     const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 65;
+    const chartHeight = 80; // Increased from 65 for better aspect ratio
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
@@ -495,7 +495,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(aiCharts.length, 2);
     const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 65;
+    const chartHeight = 80; // Increased from 65 for better aspect ratio
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
