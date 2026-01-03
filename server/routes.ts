@@ -3872,7 +3872,7 @@ Format your response as JSON with this structure:
       const dataRiskIndicators: { type: string; severity: 'low' | 'medium' | 'high'; message: string }[] = [];
       
       // Check for missing assessments
-      const completedAssessmentTypes = new Set(candidateResults.map((r: any) => r.assessmentType));
+      const completedAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
       const requiredAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
       const missingAssessments = requiredAssessmentTypes.filter(t => !completedAssessmentTypes.has(t));
       if (missingAssessments.length > 0) {
@@ -3899,7 +3899,7 @@ Format your response as JSON with this structure:
       }
       
       // Check for stale results (>90 days old)
-      const oldestResult = candidateResults.reduce((oldest: any, result: any) => {
+      const oldestResult = completedResults.reduce((oldest: any, result: any) => {
         if (!oldest) return result;
         return new Date(result.completedAt) < new Date(oldest.completedAt) ? result : oldest;
       }, null);
