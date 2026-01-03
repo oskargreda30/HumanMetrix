@@ -2,22 +2,13 @@
 
 # Pre-deployment test runner script
 # This script runs comprehensive tests before deployment
-# Tests can be skipped by:
-#   1. Setting SKIP_DEPLOY_TESTS=true environment variable
-#   2. Toggling off in the admin dashboard (System Settings)
+# Tests can be skipped by toggling off in the admin dashboard (System Settings)
 
 set -e
 
 echo "=========================================="
 echo "Pre-Deployment Test Runner"
 echo "=========================================="
-
-# First check environment variable (takes precedence for quick overrides)
-if [ "$SKIP_DEPLOY_TESTS" = "true" ] || [ "$SKIP_DEPLOY_TESTS" = "1" ]; then
-  echo "SKIP_DEPLOY_TESTS environment variable is set - skipping all tests"
-  echo "Proceeding directly to build..."
-  exit 0
-fi
 
 # Check the database setting via CLI script
 echo "Checking admin dashboard setting from database..."

@@ -222,10 +222,6 @@ export default function SystemSettingsTab() {
             <div className="p-3 rounded bg-black/30 border border-white/10 font-mono text-xs overflow-x-auto">
               <code>./scripts/run-tests-before-deploy.sh && npm run build</code>
             </div>
-            <p>
-              You can also override with the <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300">SKIP_DEPLOY_TESTS=true</code> environment 
-              variable for emergency bypasses.
-            </p>
           </div>
         </CardContent>
       </Card>
