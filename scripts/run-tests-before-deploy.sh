@@ -12,10 +12,16 @@ echo "=========================================="
 
 # Check the database setting via CLI script
 echo "Checking admin dashboard setting from database..."
-# Run the script and capture stdout for the result, but allow stderr to show for debugging
-SETTING_RESULT=$(npx tsx scripts/check-test-setting.ts 2>&1 | tee /dev/stderr | tail -n1)
-# Fallback if script fails
-if [ -z "$SETTING_RESULT" ] || [[ "$SETTING_RESULT" != "RUN_TESTS" && "$SETTING_RESULT" != "SKIP_TESTS" ]]; then
+# Run the script - it outputs debug info to stderr and result to stdout
+# Use a temp file to capture stdout while letting stderr through
+TEMP_RESULT_FILE=$(mktemp)
+npx tsx scripts/check-test-setting.ts > "$TEMP_RESULT_FILE" 2>&1
+cat "$TEMP_RESULT_FILE"  # Show all output in logs
+SETTING_RESULT=$(grep -E "^(RUN_TESTS|SKIP_TESTS)$" "$TEMP_RESULT_FILE" | tail -n1)
+rm -f "$TEMP_RESULT_FILE"
+# Fallback if script fails or no valid result found
+if [ -z "$SETTING_RESULT" ]; then
+  echo "Warning: Could not determine test setting, defaulting to RUN_TESTS"
   SETTING_RESULT="RUN_TESTS"
 fi
 
