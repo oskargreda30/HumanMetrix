@@ -19,28 +19,17 @@ if [ "$SKIP_DEPLOY_TESTS" = "true" ] || [ "$SKIP_DEPLOY_TESTS" = "1" ]; then
   exit 0
 fi
 
-# Check the config file written by admin dashboard toggle
-CONFIG_FILE="./.test-config.json"
-if [ -f "$CONFIG_FILE" ]; then
-  echo "Found test configuration file..."
-  
-  # Parse the skipTests value from JSON
-  SKIP_TESTS=$(cat "$CONFIG_FILE" | grep -o '"skipTests":[^,}]*' | cut -d':' -f2 | tr -d ' ')
-  
-  if [ "$SKIP_TESTS" = "true" ]; then
-    UPDATED_BY=$(cat "$CONFIG_FILE" | grep -o '"updatedBy":"[^"]*"' | cut -d'"' -f4)
-    UPDATED_AT=$(cat "$CONFIG_FILE" | grep -o '"updatedAt":"[^"]*"' | cut -d'"' -f4)
-    echo "Admin dashboard setting: Tests DISABLED"
-    echo "  Disabled by: $UPDATED_BY"
-    echo "  Disabled at: $UPDATED_AT"
-    echo ""
-    echo "Proceeding directly to build..."
-    exit 0
-  fi
-  
-  echo "Admin dashboard setting: Tests ENABLED"
+# Check the database setting via CLI script
+echo "Checking admin dashboard setting from database..."
+SETTING_RESULT=$(npx tsx scripts/check-test-setting.ts 2>/dev/null || echo "RUN_TESTS")
+
+if [ "$SETTING_RESULT" = "SKIP_TESTS" ]; then
+  echo "Admin dashboard setting: Tests DISABLED"
+  echo "Proceeding directly to build..."
+  exit 0
 fi
 
+echo "Admin dashboard setting: Tests ENABLED"
 echo ""
 echo "Running comprehensive test suite..."
 echo ""
