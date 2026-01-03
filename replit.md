@@ -28,6 +28,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Payment Flow**: Pay-deferred model, allowing candidates to complete assessments before paying to unlock results. Supports discount codes.
 - **User Flows**: Self-service for candidates and admin-invited users.
 - **Admin Dashboard**: Candidate management, multi-candidate comparison, AI-powered role fit analysis, and Scoring QA.
+- **Enhanced Role Fit Analysis**: AI-generated skill requirements with criticality levels (critical/important/nice-to-have), anonymous cohort benchmarking with percentile rankings (requires minimum 5 candidates), data quality risk indicators (missing assessments, high variance, stale results), and optional premium services preview (interview questions, onboarding plans, culture fit analysis).
 - **Enhanced PDF Export System**: Generates multi-page, dynamic PDF reports.
 - **Results Access Gating & Retention**: Requires completion of all four distinct assessments to view results, with explicit user consent for sharing results.
 - **Product Roadmap**: Visual timeline of future assessment releases.
