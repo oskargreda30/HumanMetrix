@@ -1614,7 +1614,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 4);
   pdf.setFontSize(6.5);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('assessments@humanmetrix.co.uk', 25, yPos + 7.5);
+  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 7.5);
   
   yPos += 15;
   
@@ -2582,7 +2582,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 5);
   applySmallText(pdf);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('assessments@humanmetrix.co.uk', 25, yPos + 9);
+  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 9);
   
   yPos += 18;
   
