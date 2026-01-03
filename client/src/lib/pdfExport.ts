@@ -416,21 +416,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
-    const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 80; // Increased from 65 for better aspect ratio
+    const columnWidth = (pageWidth - 30) / chartsPerRow;
+    const chartSize = 65; // Square charts for proper radar appearance
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      const isLeftChart = (index % chartsPerRow) === 0;
-      let horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
-      if (index === 1) horizontalOffset += 6; // Candidate 2 gets additional 6mm to the right
-      const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      // Center the square chart within its column
+      const columnStart = 15 + (index % chartsPerRow) * columnWidth;
+      const xPos = columnStart + (columnWidth - chartSize) / 2;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartSize + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartSize, chartSize);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartSize + 5) + 3;
     
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
@@ -493,22 +492,21 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
-    const chartsPerRow = Math.min(aiCharts.length, 2);
-    const chartWidth = (pageWidth - 30) / chartsPerRow;
-    const chartHeight = 80; // Increased from 65 for better aspect ratio
+    const aiChartsPerRow = Math.min(aiCharts.length, 2);
+    const aiColumnWidth = (pageWidth - 30) / aiChartsPerRow;
+    const aiChartSize = 65; // Square charts for proper radar appearance
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      const isLeftChart = (index % chartsPerRow) === 0;
-      let horizontalOffset = isLeftChart ? 2 : 4; // Left charts +2mm, right charts +4mm
-      if (index === 1) horizontalOffset += 6; // Candidate 2 gets additional 6mm to the right
-      const xPos = 15 + (index % chartsPerRow) * chartWidth + horizontalOffset;
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
+      // Center the square chart within its column
+      const columnStart = 15 + (index % aiChartsPerRow) * aiColumnWidth;
+      const xPos = columnStart + (aiColumnWidth - aiChartSize) / 2;
+      const chartYPos = yPos + Math.floor(index / aiChartsPerRow) * (aiChartSize + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth - 5, chartHeight);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, aiChartSize, aiChartSize);
     });
     
-    yPos += Math.ceil(aiCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
+    yPos += Math.ceil(aiCharts.length / aiChartsPerRow) * (aiChartSize + 5) + 3;
     
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
