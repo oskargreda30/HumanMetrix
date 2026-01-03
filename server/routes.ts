@@ -6961,6 +6961,21 @@ Format your response as JSON with this structure:
 
   // ==================== SYSTEM SETTINGS API ====================
 
+  // Internal build API: Check if tests should run before deployment
+  // This endpoint is called by the build script and doesn't require authentication
+  app.get("/api/build/should-run-tests", async (req, res) => {
+    try {
+      const setting = await storage.getSystemSetting("run_tests_before_deploy");
+      // Default to true if setting doesn't exist
+      const shouldRunTests = setting?.value !== false;
+      res.json({ shouldRunTests });
+    } catch (error) {
+      console.error("Error checking test setting:", error);
+      // Default to running tests if there's an error
+      res.json({ shouldRunTests: true });
+    }
+  });
+
   // Super Admin: Get all system settings
   app.get("/api/admin/system-settings", isAuthenticated, async (req: any, res) => {
     try {
