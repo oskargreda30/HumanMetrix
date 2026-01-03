@@ -718,15 +718,41 @@ export default function CompareTab() {
   };
 
   // Helper: Calculate role suitability score using database role's requiredSkillScores
+  // Helper: Extract flat skill requirements from nested requiredSkillScores structure
+  const extractSkillRequirements = (requiredSkillScores: any): Record<string, number> => {
+    if (!requiredSkillScores) return {};
+    
+    const skills: Record<string, number> = {};
+    
+    // Extract FIT skills
+    if (requiredSkillScores.fitSkills && typeof requiredSkillScores.fitSkills === 'object') {
+      Object.entries(requiredSkillScores.fitSkills).forEach(([skillName, score]) => {
+        if (typeof score === 'number') {
+          skills[skillName] = score;
+        }
+      });
+    }
+    
+    // Extract AI Readiness skills
+    if (requiredSkillScores.aiReadinessSkills && typeof requiredSkillScores.aiReadinessSkills === 'object') {
+      Object.entries(requiredSkillScores.aiReadinessSkills).forEach(([skillName, score]) => {
+        if (typeof score === 'number') {
+          skills[skillName] = score;
+        }
+      });
+    }
+    
+    return skills;
+  };
+
   const calculateRoleSuitability = (candidateIndex: number, roleId: string): number => {
     const role = dbRoles?.find((r: any) => r.id === roleId);
     if (!role || !role.requiredSkillScores) return 0;
     
     const skills = getAllCandidateSkills(candidateIndex);
-    const requiredScores = role.requiredSkillScores as Record<string, number>;
+    const requiredScores = extractSkillRequirements(role.requiredSkillScores);
     
     let totalScore = 0;
-    let totalPossible = 0;
     let matchCount = 0;
     
     Object.entries(requiredScores).forEach(([skillName, requiredScore]) => {
@@ -735,7 +761,6 @@ export default function CompareTab() {
         // Calculate how well candidate meets the requirement (capped at 100%)
         const matchPercent = Math.min(100, (candidateScore / requiredScore) * 100);
         totalScore += matchPercent;
-        totalPossible += 100;
         matchCount++;
       }
     });
@@ -1231,7 +1256,7 @@ export default function CompareTab() {
                                     <div className="mt-4 text-left">
                                       <p className="text-xs font-medium mb-2">Key Skill Match:</p>
                                       <div className="space-y-1">
-                                        {Object.entries(getSelectedRoleData()?.requiredSkillScores || {}).slice(0, 4).map(([skillName, requiredScore]) => {
+                                        {Object.entries(extractSkillRequirements(getSelectedRoleData()?.requiredSkillScores)).slice(0, 4).map(([skillName, requiredScore]) => {
                                           const skills = getAllCandidateSkills(index);
                                           const score = skills[skillName];
                                           return (
@@ -1266,7 +1291,7 @@ export default function CompareTab() {
                         const top = roleScores[0];
                         const second = roleScores[1];
                         const roleName = roleData.name || selectedRole;
-                        const roleRequirements = Object.entries(roleData.requiredSkillScores || {});
+                        const roleRequirements = Object.entries(extractSkillRequirements(roleData.requiredSkillScores));
                         const topSkills = roleRequirements.slice(0, 2).map(([name]) => name);
                         
                         // Find where top candidate excels
