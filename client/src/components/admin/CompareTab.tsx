@@ -2223,7 +2223,7 @@ export default function CompareTab() {
                       <div className="bg-muted/30 p-6 rounded-lg border" data-testid="comparison-writeup">
                         <div className="flex items-center gap-2 mb-4">
                           <FileText className="h-5 w-5 text-primary" />
-                          <h3 className="font-semibold">Comparison Summary for AI Strategy Consultant</h3>
+                          <h3 className="font-semibold">Comparison Summary for {selectedRole ? ROLE_DEFINITIONS[selectedRole]?.name : 'Selected Role'}</h3>
                         </div>
                         
                         <div className="space-y-4 text-sm text-muted-foreground">
@@ -2265,11 +2265,14 @@ export default function CompareTab() {
                               return Math.round(weightedSum / totalWeight);
                             };
                             
+                            const currentRole = selectedRole || 'ai_consultant';
+                            const currentRoleName = ROLE_DEFINITIONS[currentRole]?.name || 'Selected Role';
+                            
                             const rankedCandidates = selectedCandidateData.map((candidate: any, index: number) => ({
                               name: getCandidateName(candidate),
                               index,
                               compositeScore: calculateFixedComposite(index),
-                              roleFit: calculateRoleSuitability(index, 'ai_consultant'),
+                              roleFit: calculateRoleSuitability(index, currentRole),
                               strengths: getStrengthsAndWeaknesses(index).strengths,
                               weaknesses: getStrengthsAndWeaknesses(index).weaknesses,
                               risks: getRiskIndicators(index),
@@ -2281,7 +2284,7 @@ export default function CompareTab() {
                             return (
                               <>
                                 <p>
-                                  <strong>Overview:</strong> For the AI Strategy Consultant role, 
+                                  <strong>Overview:</strong> For the {currentRoleName} role, 
                                   <span className="text-foreground font-medium"> {topCandidate.name}</span> emerges as the 
                                   strongest candidate with a role fit score of <span className="text-primary font-semibold">{topCandidate.roleFit}%</span>. 
                                   This assessment is based on weighted skill alignment to the role requirements.
@@ -2305,7 +2308,7 @@ export default function CompareTab() {
                                     <strong>{candidate.name}:</strong> Achieved a role fit of{' '}
                                     <span className="font-medium">{candidate.roleFit}%</span>.
                                     {candidate.roleFit >= 70 ? (
-                                      <> Shows solid alignment with the AI Strategy Consultant requirements, 
+                                      <> Shows solid alignment with the {currentRoleName} requirements, 
                                       particularly in {candidate.strengths[0]?.name || 'key competencies'}.</>
                                     ) : candidate.roleFit >= 60 ? (
                                       <> Demonstrates potential but may need development in key areas 
@@ -2320,7 +2323,7 @@ export default function CompareTab() {
                                 <p className="pt-2 border-t">
                                   <strong>Recommendation:</strong> Based on the comprehensive analysis,{' '}
                                   <span className="text-foreground font-medium">{topCandidate.name}</span> is 
-                                  recommended as the primary candidate for the AI Strategy Consultant role.
+                                  recommended as the primary candidate for the {currentRoleName} role.
                                   {otherCandidates.filter(c => c.roleFit >= 70).length > 0 && (
                                     <> {otherCandidates.filter(c => c.roleFit >= 70).map(c => c.name).join(' and ')} would 
                                     also be suitable {otherCandidates.filter(c => c.roleFit >= 70).length > 1 ? 'alternatives' : 'alternative'} 
