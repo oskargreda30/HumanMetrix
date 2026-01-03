@@ -47,6 +47,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
   - **Webhook Notifications**: Event-based webhooks for assessment.started, assessment.completed, session.created, session.expired, results.ready with HMAC-SHA256 signature verification, exponential backoff retry logic, and delivery logging.
   - **ATS Integrations**: Connect with Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, or custom APIs with configurable sync modes (push/pull/bidirectional).
   - **Scheduled Exports**: Automated CSV exports (daily/weekly/monthly) delivered via email, SFTP, S3, or webhook.
+- **CI/CD Testing Pipeline**: Pre-deployment test runner with admin-controlled toggle. Tests can be enabled/disabled via System Settings tab in admin dashboard. The test runner (`scripts/run-tests-before-deploy.sh`) runs unit and integration tests using Vitest. Tests can also be skipped via `SKIP_DEPLOY_TESTS=true` environment variable.
 - **Health Monitoring System**: Comprehensive super admin dashboard for system health, error tracking with fingerprinting, and status workflow.
 - **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue, managing transactions (including refunds), and promo codes.
 - **Results Retention Consent Dashboard**: Super admin tab for viewing and filtering user consent preferences.
