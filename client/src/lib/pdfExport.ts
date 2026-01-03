@@ -72,6 +72,17 @@ interface RoleFitData {
       severity: 'low' | 'medium' | 'high';
       message: string;
     }> | null;
+    interviewQuestions?: Array<{
+      question: string;
+      purpose: string;
+      targetSkill: string;
+    }> | null;
+    roleFlexibility?: Array<{
+      roleId: string;
+      roleName: string;
+      fitScore: number;
+      description?: string;
+    }> | null;
   };
 }
 
@@ -2043,6 +2054,86 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   });
   
   yPos += PDF_SPACING.medium;
+  
+  // ========== INTERVIEW QUESTIONS ==========
+  if (data.alignment.interviewQuestions && data.alignment.interviewQuestions.length > 0) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, 'RECOMMENDED INTERVIEW QUESTIONS', yPos, pageWidth);
+    yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.text('Targeted questions to probe skill gaps during candidate interviews', 20, yPos);
+    yPos += 6;
+    
+    data.alignment.interviewQuestions.forEach((q, index) => {
+      // Calculate dynamic height based on question text
+      applyBodyText(pdf);
+      const questionLines = pdf.splitTextToSize(`"${q.question}"`, pageWidth - 50);
+      const boxHeight = 10 + (questionLines.length * 4) + 8; // padding + lines + metadata row
+      
+      yPos = ensurePageSpace(pdf, yPos, boxHeight + 4, pageHeight, pageWidth);
+      
+      // Question box with dynamic height
+      pdf.setFillColor(249, 250, 251);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      questionLines.forEach((line: string, lineIdx: number) => {
+        pdf.text(line, 25, yPos + 5 + (lineIdx * 4));
+      });
+      
+      applySmallText(pdf);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`Target: ${q.targetSkill}  |  Purpose: ${q.purpose}`, 25, yPos + 5 + (questionLines.length * 4) + 2);
+      
+      yPos += boxHeight + 4;
+    });
+    
+    yPos += PDF_SPACING.medium;
+  }
+  
+  // ========== ROLE FLEXIBILITY ANALYSIS ==========
+  if (data.alignment.roleFlexibility && data.alignment.roleFlexibility.length > 0) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, 'ROLE FLEXIBILITY ANALYSIS', yPos, pageWidth);
+    yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.text('Alternative roles this candidate might be suitable for', 20, yPos);
+    yPos += 6;
+    
+    data.alignment.roleFlexibility.forEach((role, index) => {
+      yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+      
+      applyBodyText(pdf);
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(role.roleName, 25, yPos);
+      
+      // Progress bar
+      const barX = 100;
+      const barWidth = 50;
+      const barHeight = 4;
+      
+      pdf.setFillColor(229, 231, 235);
+      pdf.rect(barX, yPos - 3, barWidth, barHeight, 'F');
+      
+      const fillColor: [number, number, number] = role.fitScore >= 80 ? [34, 197, 94] : role.fitScore >= 60 ? [59, 130, 246] : [234, 179, 8];
+      pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+      pdf.rect(barX, yPos - 3, (role.fitScore / 100) * barWidth, barHeight, 'F');
+      
+      // Score badge
+      pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${role.fitScore}%`, barX + barWidth + 5, yPos);
+      
+      yPos += 8;
+    });
+    
+    yPos += PDF_SPACING.medium;
+  }
   
   // Disclaimer
   applySmallText(pdf);

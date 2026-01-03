@@ -3916,6 +3916,55 @@ Format your response as JSON with this structure:
         }
       }
 
+      // Calculate Role Flexibility - find alternative roles that might suit this candidate
+      const allRoles = await storage.getAllJobRoles();
+      const roleFlexibility: Array<{ roleId: string; roleName: string; fitScore: number; description?: string }> = [];
+      
+      for (const altRole of allRoles) {
+        // Skip current role and roles without required scores
+        if (altRole.id === jobRoleId || !altRole.requiredSkillScores) continue;
+        
+        const altAlignments: Array<{ candidateScore: number; requiredScore: number }> = [];
+        
+        // Calculate fit for FIT skills
+        if (altRole.requiredSkillScores.fitSkills) {
+          Object.entries(altRole.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
+            const candidateScore = fitSkills.get(skillName) || 0;
+            altAlignments.push({ candidateScore, requiredScore: requiredScore as number });
+          });
+        }
+        
+        // Calculate fit for AI Readiness skills
+        if (altRole.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(altRole.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
+            altAlignments.push({ candidateScore, requiredScore: requiredScore as number });
+          });
+        }
+        
+        if (altAlignments.length > 0) {
+          const altFitScore = Math.round(altAlignments.reduce((sum, skill) => {
+            if (skill.candidateScore >= skill.requiredScore) {
+              return sum + 100;
+            } else {
+              return sum + (skill.candidateScore / skill.requiredScore) * 100;
+            }
+          }, 0) / altAlignments.length);
+          
+          roleFlexibility.push({
+            roleId: altRole.id,
+            roleName: altRole.name,
+            fitScore: altFitScore,
+            description: altRole.description || undefined
+          });
+        }
+      }
+      
+      // Sort by fit score and take top 5 alternative roles
+      roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
+      const topAlternativeRoles = roleFlexibility.slice(0, 5);
+
       const analysis = {
         overallFit,
         skillAlignments: allAlignments,  // Combined for backward compatibility
@@ -3926,7 +3975,9 @@ Format your response as JSON with this structure:
         recommendations: insights.recommendations || '',
         riskFlags: insights.riskFlags || [],
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
-        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : null
+        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : null,
+        interviewQuestions: insights.interviewQuestions || null,
+        roleFlexibility: topAlternativeRoles.length > 0 ? topAlternativeRoles : null
       };
 
       // Cache the result

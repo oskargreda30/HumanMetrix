@@ -55,6 +55,17 @@ export default function RoleFitTab() {
       severity: 'low' | 'medium' | 'high';
       message: string;
     }> | null;
+    interviewQuestions?: Array<{
+      question: string;
+      purpose: string;
+      targetSkill: string;
+    }> | null;
+    roleFlexibility?: Array<{
+      roleId: string;
+      roleName: string;
+      fitScore: number;
+      description?: string;
+    }> | null;
   };
 
   const getPercentileBadge = (percentile: number) => {
@@ -518,6 +529,84 @@ export default function RoleFitTab() {
             </Card>
           </div>
 
+          {/* Interview Questions */}
+          {alignment.interviewQuestions && alignment.interviewQuestions.length > 0 && (
+            <Card data-testid="card-interview-questions">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  Recommended Interview Questions
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Targeted questions to probe skill gaps during interviews
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.interviewQuestions.map((q, index) => (
+                    <div 
+                      key={index} 
+                      className="p-4 rounded-lg bg-muted/50 border"
+                      data-testid={`card-interview-question-${index}`}
+                    >
+                      <p className="font-medium text-sm mb-2" data-testid={`text-interview-question-${index}`}>"{q.question}"</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs" data-testid={`badge-target-skill-${index}`}>
+                          Target: {q.targetSkill}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground" data-testid={`text-question-purpose-${index}`}>
+                          Purpose: {q.purpose}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Role Flexibility Analysis */}
+          {alignment.roleFlexibility && alignment.roleFlexibility.length > 0 && (
+            <Card data-testid="card-role-flexibility">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  Role Flexibility Analysis
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Alternative roles this candidate might be suitable for
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {alignment.roleFlexibility.map((role, index) => (
+                    <div 
+                      key={role.roleId} 
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                      data-testid={`row-alternative-role-${role.roleId}`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-sm" data-testid={`text-role-name-${role.roleId}`}>{role.roleName}</p>
+                        {role.description && (
+                          <p className="text-xs text-muted-foreground truncate max-w-md">{role.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Progress value={role.fitScore} className="w-24 h-2" />
+                        <Badge 
+                          variant={role.fitScore >= 80 ? 'default' : role.fitScore >= 60 ? 'secondary' : 'outline'}
+                          className="min-w-[60px] justify-center"
+                          data-testid={`badge-role-fit-score-${role.roleId}`}
+                        >
+                          {role.fitScore}%
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Optional Premium Services */}
           <Card className="border-primary/20 bg-primary/5">
