@@ -1060,7 +1060,7 @@ export function registerPartnerRoutes(app: Express) {
                 passwordHash,
                 firstName,
                 lastName,
-                role: 'candidate',
+                role: 'partner_candidate',
               });
               
               candidatePasswords.set(candidate.email, {
