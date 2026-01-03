@@ -262,6 +262,7 @@ export const jobRoles = pgTable("job_roles", {
   requiredSkillScores: jsonb("required_skill_scores").$type<{
     fitSkills: Record<string, number>;
     aiReadinessSkills: Record<string, number>;
+    skillCriticality?: Record<string, 'critical' | 'important' | 'nice-to-have'>;
     generatedAt?: string;
   }>(),
   isCustom: boolean("is_custom").notNull().default(false),

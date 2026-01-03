@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Calendar, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ export default function RoleFitTab() {
       requiredScore: number;
       gap: number;
       alignment: string;
+      criticality?: 'critical' | 'important' | 'nice-to-have';
     }> | null;
     aiReadinessSkillAlignments?: Array<{
       skillName: string;
@@ -44,9 +45,48 @@ export default function RoleFitTab() {
       requiredScore: number;
       gap: number;
       alignment: string;
+      criticality?: 'critical' | 'important' | 'nice-to-have';
     }> | null;
     strengths: string[];
     gaps: string[];
+    cohortBenchmarks?: Record<string, { percentile: number; totalCandidates: number }> | null;
+    dataRiskIndicators?: Array<{
+      type: string;
+      severity: 'low' | 'medium' | 'high';
+      message: string;
+    }> | null;
+  };
+
+  const getPercentileBadge = (percentile: number) => {
+    // percentile = 90 means candidate is better than 90% of candidates, so they're in Top 10%
+    if (percentile >= 90) return { label: `Top ${100 - percentile}%`, variant: 'default' as const, color: 'text-green-600' };
+    if (percentile >= 75) return { label: `Top ${100 - percentile}%`, variant: 'secondary' as const, color: 'text-blue-600' };
+    if (percentile >= 50) return { label: `Top ${100 - percentile}%`, variant: 'outline' as const, color: 'text-muted-foreground' };
+    // For below median: percentile=40 means they're in the bottom 40%, so we show "Bottom 40%"
+    return { label: `Bottom ${percentile}%`, variant: 'outline' as const, color: 'text-amber-600' };
+  };
+
+  const getCriticalityBadge = (criticality: string | undefined, hasGap: boolean) => {
+    const level = criticality || 'important';
+    if (level === 'critical') {
+      return (
+        <Badge variant={hasGap ? 'destructive' : 'outline'} className="text-xs ml-2">
+          Critical
+        </Badge>
+      );
+    } else if (level === 'important') {
+      return (
+        <Badge variant="secondary" className="text-xs ml-2">
+          Important
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="outline" className="text-xs ml-2 opacity-60">
+          Nice-to-have
+        </Badge>
+      );
+    }
   };
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
@@ -265,6 +305,33 @@ export default function RoleFitTab() {
             </CardContent>
           </Card>
 
+          {/* Data Quality Risk Indicators */}
+          {alignment.dataRiskIndicators && alignment.dataRiskIndicators.length > 0 && (
+            <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <AlertCircle className="h-5 w-5" />
+                  Data Quality Alerts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {alignment.dataRiskIndicators.map((indicator: any, index: number) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <Badge
+                        variant={indicator.severity === 'high' ? 'destructive' : 'secondary'}
+                        className="mt-0.5 shrink-0"
+                      >
+                        {indicator.severity}
+                      </Badge>
+                      <span className="text-sm">{indicator.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
           {/* FIT Skill Alignments */}
           {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
             <Card>
@@ -280,10 +347,11 @@ export default function RoleFitTab() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.fitSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className="space-y-2">
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-destructive/5 border border-destructive/20' : ''}`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">{skill.skillName}</span>
+                          {getCriticalityBadge(skill.criticality, skill.gap > 0)}
                           {skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive" />
                           ) : (
@@ -302,7 +370,7 @@ export default function RoleFitTab() {
                           {skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="grid grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Candidate Score</p>
                           <p className="font-semibold">{skill.candidateScore}%</p>
@@ -316,6 +384,16 @@ export default function RoleFitTab() {
                           <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
                             {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
                           </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">vs. All Candidates</p>
+                          {alignment.cohortBenchmarks?.[skill.skillName] ? (
+                            <p className={`font-semibold ${getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).color}`}>
+                              {getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).label}
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground text-xs">Insufficient data</p>
+                          )}
                         </div>
                       </div>
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
@@ -341,10 +419,11 @@ export default function RoleFitTab() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className="space-y-2">
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-destructive/5 border border-destructive/20' : ''}`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">{skill.skillName}</span>
+                          {getCriticalityBadge(skill.criticality, skill.gap > 0)}
                           {skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive" />
                           ) : (
@@ -363,7 +442,7 @@ export default function RoleFitTab() {
                           {skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="grid grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Candidate Score</p>
                           <p className="font-semibold">{skill.candidateScore}%</p>
@@ -377,6 +456,16 @@ export default function RoleFitTab() {
                           <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
                             {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
                           </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">vs. All Candidates</p>
+                          {alignment.cohortBenchmarks?.[skill.skillName] ? (
+                            <p className={`font-semibold ${getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).color}`}>
+                              {getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).label}
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground text-xs">Insufficient data</p>
+                          )}
                         </div>
                       </div>
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
@@ -429,6 +518,59 @@ export default function RoleFitTab() {
             </Card>
           </div>
 
+
+          {/* Optional Premium Services */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Optional Premium Services
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Additional insights available when employer provides company-specific information
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    Interview Questions
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    AI-generated competency-based questions tailored to this candidate's skill gaps
+                  </p>
+                  <Badge variant="outline" className="text-xs">Requires: Role context</Badge>
+                </div>
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    30/60/90 Day Onboarding Plan
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Customized development milestones based on candidate's strengths and gaps
+                  </p>
+                  <Badge variant="outline" className="text-xs">Requires: Team structure</Badge>
+                </div>
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    Culture Fit Analysis
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Assessment of alignment with company values and team dynamics
+                  </p>
+                  <Badge variant="outline" className="text-xs">Requires: Company values</Badge>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <Button variant="outline" disabled className="opacity-50">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Contact Sales to Enable
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Export Button */}
           <div className="flex justify-end gap-2">

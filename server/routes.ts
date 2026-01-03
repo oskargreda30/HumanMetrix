@@ -3508,12 +3508,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         apiKey: process.env.OPENAI_API_KEY,
       });
 
-      const prompt = `You are an expert HR consultant determining required skill scores for a job role.
+      const prompt = `You are an expert HR consultant determining required skill scores and their criticality for a job role.
 
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-Based on this role, determine the minimum required percentage scores (0-100) for each of the following HumanMetrix assessment skills:
+Based on this role, determine:
+1. The minimum required percentage scores (0-100) for each skill
+2. The CRITICALITY of each skill for this role:
+   - "critical": Must-have skills - gaps here are deal-breakers
+   - "important": Significant skills - gaps are concerning but manageable
+   - "nice-to-have": Beneficial but not essential - gaps are acceptable
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
@@ -3538,7 +3543,7 @@ For each skill, provide a realistic required score (0-100) that represents the M
 - Entry-level roles may require 50-60% for basic skills
 - Mid-level roles may require 65-75% for core competencies
 - Senior roles may require 80-90% for critical skills
-- Not all skills are equally important for every role
+- Typically, 2-4 skills should be "critical", 4-6 should be "important", and the rest "nice-to-have"
 
 Format your response as JSON with this exact structure and skill names:
 {
@@ -3560,6 +3565,23 @@ Format your response as JSON with this exact structure and skill names:
     "Critical Thinking & Problem-Solving": number,
     "Technical Fundamentals": number,
     "Creativity & Innovation": number
+  },
+  "skillCriticality": {
+    "Resilience": "critical" | "important" | "nice-to-have",
+    "High Agency": "critical" | "important" | "nice-to-have",
+    "Growth Mindset": "critical" | "important" | "nice-to-have",
+    "Empathy & Ethics": "critical" | "important" | "nice-to-have",
+    "Interpersonal Agility": "critical" | "important" | "nice-to-have",
+    "Intellectual Curiosity": "critical" | "important" | "nice-to-have",
+    "AI Literacy": "critical" | "important" | "nice-to-have",
+    "Collaboration": "critical" | "important" | "nice-to-have",
+    "Data Fluency": "critical" | "important" | "nice-to-have",
+    "Responsible AI & Ethical Awareness": "critical" | "important" | "nice-to-have",
+    "Domain Expertise": "critical" | "important" | "nice-to-have",
+    "Adaptability & Continuous Learning": "critical" | "important" | "nice-to-have",
+    "Critical Thinking & Problem-Solving": "critical" | "important" | "nice-to-have",
+    "Technical Fundamentals": "critical" | "important" | "nice-to-have",
+    "Creativity & Innovation": "critical" | "important" | "nice-to-have"
   }
 }`;
 
@@ -3678,6 +3700,8 @@ Format your response as JSON with this exact structure and skill names:
       const aiReadinessSkillAlignments: any[] = [];
       
       // Process FIT skills
+      const skillCriticality = role.requiredSkillScores.skillCriticality || {};
+      
       if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
         Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
           const candidateScore = fitSkills.get(skillName) || 0;
@@ -3693,7 +3717,8 @@ Format your response as JSON with this exact structure and skill names:
             candidateScore,
             requiredScore,
             gap,
-            alignment
+            alignment,
+            criticality: skillCriticality[skillName] || 'important'
           });
         });
       }
@@ -3733,7 +3758,8 @@ Format your response as JSON with this exact structure and skill names:
             candidateScore,
             requiredScore,
             gap,
-            alignment
+            alignment,
+            criticality: skillCriticality[skillName] || 'important'
           });
         });
       }
@@ -3795,6 +3821,99 @@ Format your response as JSON with this structure:
 
       const insights = JSON.parse(completion.choices[0].message.content || "{}");
 
+      // Calculate anonymous benchmarks (percentile ranking against all candidates)
+      const allResults = await storage.getAllAssessmentResults();
+      const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
+      
+      // Group scores by skill across all candidates
+      const skillScoresMap: Record<string, number[]> = {};
+      allResults.forEach((result: any) => {
+        if (result.scores && typeof result.scores === 'object') {
+          Object.entries(result.scores).forEach(([skill, score]) => {
+            if (!skillScoresMap[skill]) {
+              skillScoresMap[skill] = [];
+            }
+            skillScoresMap[skill].push(score as number);
+          });
+        }
+      });
+      
+      // Calculate percentile for each of the candidate's skills
+      const calculatePercentile = (score: number, allScores: number[]): number => {
+        if (allScores.length === 0) return 50;
+        const sortedScores = [...allScores].sort((a, b) => a - b);
+        const belowCount = sortedScores.filter(s => s < score).length;
+        return Math.round((belowCount / sortedScores.length) * 100);
+      };
+      
+      // Calculate benchmarks for FIT skills
+      fitSkills.forEach((score, skillName) => {
+        const allScoresForSkill = skillScoresMap[skillName] || [];
+        if (allScoresForSkill.length >= 5) { // Only show benchmark if we have enough data
+          cohortBenchmarks[skillName] = {
+            percentile: calculatePercentile(score, allScoresForSkill),
+            totalCandidates: allScoresForSkill.length
+          };
+        }
+      });
+      
+      // Calculate benchmarks for AI Readiness skills
+      aiReadinessSkills.forEach((score, skillName) => {
+        const allScoresForSkill = skillScoresMap[skillName] || [];
+        if (allScoresForSkill.length >= 5) { // Only show benchmark if we have enough data
+          cohortBenchmarks[skillName] = {
+            percentile: calculatePercentile(score, allScoresForSkill),
+            totalCandidates: allScoresForSkill.length
+          };
+        }
+      });
+
+      // Calculate data quality risk indicators
+      const dataRiskIndicators: { type: string; severity: 'low' | 'medium' | 'high'; message: string }[] = [];
+      
+      // Check for missing assessments
+      const completedAssessmentTypes = new Set(candidateResults.map((r: any) => r.assessmentType));
+      const requiredAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+      const missingAssessments = requiredAssessmentTypes.filter(t => !completedAssessmentTypes.has(t));
+      if (missingAssessments.length > 0) {
+        dataRiskIndicators.push({
+          type: 'missing_data',
+          severity: missingAssessments.length >= 2 ? 'high' : 'medium',
+          message: `Missing ${missingAssessments.length} assessment(s): ${missingAssessments.join(', ')}`
+        });
+      }
+      
+      // Check for score variance (wide range suggests inconsistent performance)
+      const allScores = [...fitSkillAlignments, ...aiReadinessSkillAlignments].map(s => s.candidateScore);
+      if (allScores.length >= 3) {
+        const maxScore = Math.max(...allScores);
+        const minScore = Math.min(...allScores);
+        const variance = maxScore - minScore;
+        if (variance >= 50) {
+          dataRiskIndicators.push({
+            type: 'high_variance',
+            severity: 'medium',
+            message: `High score variance (${variance}% range) - candidate shows inconsistent performance across skills`
+          });
+        }
+      }
+      
+      // Check for stale results (>90 days old)
+      const oldestResult = candidateResults.reduce((oldest: any, result: any) => {
+        if (!oldest) return result;
+        return new Date(result.completedAt) < new Date(oldest.completedAt) ? result : oldest;
+      }, null);
+      if (oldestResult) {
+        const daysSinceOldest = Math.floor((Date.now() - new Date(oldestResult.completedAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSinceOldest > 90) {
+          dataRiskIndicators.push({
+            type: 'stale_results',
+            severity: daysSinceOldest > 180 ? 'high' : 'medium',
+            message: `Assessment results are ${daysSinceOldest} days old - consider requesting retake for current skills`
+          });
+        }
+      }
+
       const analysis = {
         overallFit,
         skillAlignments: allAlignments,  // Combined for backward compatibility
@@ -3803,7 +3922,9 @@ Format your response as JSON with this structure:
         strengths: insights.strengths || [],
         gaps: insights.gaps || [],
         recommendations: insights.recommendations || '',
-        riskFlags: insights.riskFlags || []
+        riskFlags: insights.riskFlags || [],
+        cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
+        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : null
       };
 
       // Cache the result
