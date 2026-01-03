@@ -2336,27 +2336,14 @@ export default function CompareTab() {
                         </div>
                       </div>
 
-                      {/* Export Buttons */}
-                      <div className={`flex justify-end gap-3 ${isCapturingPDF ? 'report-hidden' : ''}`}>
+                      {/* Export Button */}
+                      <div className="flex justify-end">
                         <Button 
                           onClick={handleExportPDF}
                           data-testid="button-export-comparison"
-                          variant="outline"
                         >
                           <FileText className="h-4 w-4 mr-2" />
-                          Export PDF (Standard)
-                        </Button>
-                        <Button 
-                          onClick={handleScreenCapturePDF}
-                          data-testid="button-export-visual"
-                          disabled={isCapturingPDF}
-                        >
-                          {isCapturingPDF ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Camera className="h-4 w-4 mr-2" />
-                          )}
-                          Export PDF (Visual)
+                          Export PDF
                         </Button>
                       </div>
                     </div>
