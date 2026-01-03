@@ -3965,11 +3965,6 @@ Format your response as JSON with this structure:
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
       const topAlternativeRoles = roleFlexibility.slice(0, 5);
 
-      // Debug logging for POST endpoint
-      console.log('[DEBUG POST] Cohort Benchmarks:', cohortBenchmarks);
-      console.log('[DEBUG POST] FIT skill alignments:', fitSkillAlignments.map((s: any) => s.skillName));
-      console.log('[DEBUG POST] AI Readiness skill alignments:', aiReadinessSkillAlignments.map((s: any) => s.skillName));
-
       const analysis = {
         overallFit,
         skillAlignments: allAlignments,  // Combined for backward compatibility
@@ -4102,13 +4097,6 @@ Format your response as JSON with this structure:
           };
         }
       });
-
-      // Debug logging for cohort benchmarks
-      console.log('[DEBUG] Cohort Benchmarks calculation:');
-      console.log('[DEBUG] - skillScoresMap keys:', Object.keys(skillScoresMap));
-      console.log('[DEBUG] - fitSkillAlignments skills:', fitSkillAlignments.map((s: any) => s.skillName));
-      console.log('[DEBUG] - aiReadinessSkillAlignments skills:', aiReadinessSkillAlignments.map((s: any) => s.skillName));
-      console.log('[DEBUG] - Final cohortBenchmarks:', cohortBenchmarks);
 
       // Return alignment with fresh cohort benchmarks
       res.json({
