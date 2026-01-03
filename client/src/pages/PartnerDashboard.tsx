@@ -1464,8 +1464,9 @@ export default function PartnerDashboard() {
                         </button>
 
                         {/* Step 2: Send First Assessment */}
-                        <div
-                          className={`flex items-center gap-3 p-3 rounded-lg border ${
+                        <button
+                          onClick={() => setActiveTab('invitations')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
                             hasAssessment ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
                           }`}
                           data-testid="setup-step-assessment"
@@ -1482,10 +1483,11 @@ export default function PartnerDashboard() {
                               Send first assessment
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {hasAssessment ? `${partner?.testsConsumed} assessments completed` : 'Use the API to send an assessment'}
+                              {hasAssessment ? `${partner?.testsConsumed} assessments completed` : 'Invite candidates to take assessments'}
                             </div>
                           </div>
-                        </div>
+                          {!hasAssessment && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        </button>
 
                         {/* Step 3: Create Organization */}
                         <button
