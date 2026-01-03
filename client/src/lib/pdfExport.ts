@@ -2028,46 +2028,6 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += PDF_SPACING.medium;
   
-  // ========== INTERVIEW QUESTIONS ==========
-  if (data.alignment.interviewQuestions && data.alignment.interviewQuestions.length > 0) {
-    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
-    yPos = addSectionHeader(pdf, 'RECOMMENDED INTERVIEW QUESTIONS', yPos, pageWidth);
-    yPos += 2;
-    
-    applySmallText(pdf);
-    pdf.text('Targeted questions to probe skill gaps during candidate interviews', 20, yPos);
-    yPos += 6;
-    
-    data.alignment.interviewQuestions.forEach((q, index) => {
-      // Calculate dynamic height based on question text
-      applyBodyText(pdf);
-      const questionLines = pdf.splitTextToSize(`"${q.question}"`, pageWidth - 50);
-      const boxHeight = 10 + (questionLines.length * 4) + 8; // padding + lines + metadata row
-      
-      yPos = ensurePageSpace(pdf, yPos, boxHeight + 4, pageHeight, pageWidth);
-      
-      // Question box with dynamic height
-      pdf.setFillColor(249, 250, 251);
-      pdf.setDrawColor(229, 231, 235);
-      pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      questionLines.forEach((line: string, lineIdx: number) => {
-        pdf.text(line, 25, yPos + 5 + (lineIdx * 4));
-      });
-      
-      applySmallText(pdf);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`Target: ${q.targetSkill}  |  Purpose: ${q.purpose}`, 25, yPos + 5 + (questionLines.length * 4) + 2);
-      
-      yPos += boxHeight + 4;
-    });
-    
-    yPos += PDF_SPACING.medium;
-  }
-  
   // ========== ROLE FLEXIBILITY ANALYSIS ==========
   if (data.alignment.roleFlexibility && data.alignment.roleFlexibility.length > 0) {
     yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);

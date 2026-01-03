@@ -529,42 +529,6 @@ export default function RoleFitTab() {
             </Card>
           </div>
 
-          {/* Interview Questions */}
-          {alignment.interviewQuestions && alignment.interviewQuestions.length > 0 && (
-            <Card data-testid="card-interview-questions">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-blue-600" />
-                  Recommended Interview Questions
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Targeted questions to probe skill gaps during interviews
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alignment.interviewQuestions.map((q, index) => (
-                    <div 
-                      key={index} 
-                      className="p-4 rounded-lg bg-muted/50 border"
-                      data-testid={`card-interview-question-${index}`}
-                    >
-                      <p className="font-medium text-sm mb-2" data-testid={`text-interview-question-${index}`}>"{q.question}"</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs" data-testid={`badge-target-skill-${index}`}>
-                          Target: {q.targetSkill}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground" data-testid={`text-question-purpose-${index}`}>
-                          Purpose: {q.purpose}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Role Flexibility Analysis */}
           {alignment.roleFlexibility && alignment.roleFlexibility.length > 0 && (
             <Card data-testid="card-role-flexibility">
