@@ -6959,6 +6959,95 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ==================== SYSTEM SETTINGS API ====================
+
+  // Super Admin: Get all system settings
+  app.get("/api/admin/system-settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching system settings:", error);
+      res.status(500).json({ message: "Failed to fetch system settings" });
+    }
+  });
+
+  // Super Admin: Get a specific system setting
+  app.get("/api/admin/system-settings/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const setting = await storage.getSystemSetting(req.params.key);
+      if (!setting) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      console.error("Error fetching system setting:", error);
+      res.status(500).json({ message: "Failed to fetch system setting" });
+    }
+  });
+
+  // Super Admin: Update or create a system setting
+  app.put("/api/admin/system-settings/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { value, description } = req.body;
+      if (value === undefined) {
+        return res.status(400).json({ message: "Value is required" });
+      }
+      
+      const setting = await storage.upsertSystemSetting({
+        key: req.params.key,
+        value,
+        description,
+        updatedBy: userId,
+      });
+      
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating system setting:", error);
+      res.status(500).json({ message: "Failed to update system setting" });
+    }
+  });
+
+  // Super Admin: Delete a system setting
+  app.delete("/api/admin/system-settings/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      await storage.deleteSystemSetting(req.params.key);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting system setting:", error);
+      res.status(500).json({ message: "Failed to delete system setting" });
+    }
+  });
+
   // ==================== B2B PARTNER ADMIN API ====================
 
   // Super Admin: List all partners with comprehensive analytics
