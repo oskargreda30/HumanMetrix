@@ -208,7 +208,7 @@ function drawTableRow(
 ) {
   const {
     isBold = false,
-    fontSize = 7,
+    fontSize = 8,
     fillColor,
     textColor = [0, 0, 0],
     drawBorders = true
@@ -291,31 +291,24 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.roundedRect(25, cardY, pageWidth - 50, 20, 2, 2, 'FD');
     pdf.setLineWidth(0.2);
     
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
+    applyLabelText(pdf);
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     pdf.text(`CANDIDATE ${index + 1}`, 30, cardY + 6);
     
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
+    applySubheading(pdf);
     pdf.setTextColor(17, 24, 39);
     const shortName = name.length > 25 ? name.substring(0, 23) + '...' : name;
     pdf.text(shortName, 30, cardY + 12);
     
-    pdf.setFontSize(7.5);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
+    applySmallText(pdf);
     const shortEmail = candidate.user.email.length > 30 ? candidate.user.email.substring(0, 28) + '...' : candidate.user.email;
     pdf.text(shortEmail, 30, cardY + 17);
     
     const avgScore = data.averageScores[index];
-    pdf.setFontSize(13);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(0, 0, 0);
+    applyHeading(pdf);
     pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
     
-    pdf.setFontSize(6);
-    pdf.setTextColor(107, 114, 128);
+    applySmallText(pdf);
     pdf.text('Avg', pageWidth - 30, cardY + 16, { align: 'right' });
   });
   
@@ -353,7 +346,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const headerTexts = ['Assessment', ...data.candidates.map(c => getCandidateName(c))];
   drawTableRow(pdf, tableStartX, yPos, headerWidths, headerTexts, rowHeight, {
     isBold: true,
-    fontSize: 7,
+    fontSize: 8,
     fillColor: [249, 250, 251],
     textColor: [17, 24, 39]
   });
@@ -362,9 +355,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Data rows with green indicators
   assessmentNames.forEach((aName, aIndex) => {
     // Draw assessment name cell
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
+    applySmallText(pdf);
     
     // Draw borders for first column
     pdf.setDrawColor(200, 200, 200);
@@ -391,7 +382,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
       } else {
         // Draw red cross or dash
         pdf.setTextColor(239, 68, 68); // Red-500
-        pdf.setFontSize(8);
+        applySmallText(pdf);
+        pdf.setTextColor(239, 68, 68);
         pdf.text('—', currentX + candidateColWidth / 2, yPos + rowHeight * 0.6, { align: 'center' });
         pdf.setTextColor(75, 85, 99);
       }
@@ -439,9 +431,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
     
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
+    applySubheading(pdf);
     pdf.text('FIT Skills Comparison', 20, yPos);
     yPos += 5;
     
@@ -462,7 +452,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const fitHeaderTexts = ['Skill', ...data.candidates.map(c => getCandidateName(c))];
     drawTableRow(pdf, fitTableStartX, yPos, fitHeaderWidths, fitHeaderTexts, fitRowHeight, {
       isBold: true,
-      fontSize: 6.5,
+      fontSize: 8,
       fillColor: [249, 250, 251],
       textColor: [17, 24, 39]
     });
@@ -476,7 +466,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       });
       
       drawTableRow(pdf, fitTableStartX, yPos, fitHeaderWidths, rowTexts, fitRowHeight, {
-        fontSize: 6.5,
+        fontSize: 8,
         textColor: [55, 65, 81]
       });
       yPos += fitRowHeight;
@@ -519,9 +509,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
+    applySubheading(pdf);
     pdf.text('AI Readiness Skills Comparison', 20, yPos);
     yPos += 5;
     
@@ -542,7 +530,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const aiHeaderTexts = ['Skill', ...data.candidates.map(c => getCandidateName(c))];
     drawTableRow(pdf, aiTableStartX, yPos, aiHeaderWidths, aiHeaderTexts, aiRowHeight, {
       isBold: true,
-      fontSize: 6.5,
+      fontSize: 8,
       fillColor: [249, 250, 251],
       textColor: [17, 24, 39]
     });
@@ -556,7 +544,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       });
       
       drawTableRow(pdf, aiTableStartX, yPos, aiHeaderWidths, rowTexts, aiRowHeight, {
-        fontSize: 6.5,
+        fontSize: 8,
         textColor: [55, 65, 81]
       });
       yPos += aiRowHeight;
@@ -578,9 +566,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
     
     // Add description
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(100, 100, 100);
+    applySmallText(pdf);
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
     yPos += 8;
     
@@ -610,7 +596,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
     yPos += 2;
     
-    pdf.setFontSize(7);
+    applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Candidate', 25, yPos);
     pdf.text('Score', 100, yPos);
@@ -698,7 +684,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 12; // More breathing room before levels table
     
     // Table header
-    pdf.setFontSize(7);
+    applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text('Level', 25, yPos);
@@ -720,9 +706,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     // Render all 7 levels
     for (let level = 1; level <= 7; level++) {
-      pdf.setFontSize(6);
+      applySmallText(pdf);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(55, 65, 81);
       pdf.text(`Level ${level}`, 25, yPos + 3);
       
       // Candidate scores with bars
@@ -738,7 +723,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
           const barLength = (score / maxScore) * barWidth;
           
           // Score text on the left
-          pdf.setFontSize(6);
+          applySmallText(pdf);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(17, 24, 39);
           pdf.text(`${score}`, colX, yPos + 3);
@@ -752,8 +737,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
           pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
           pdf.rect(colX + 8, yPos + 0.5, barLength, 4, 'F');
         } else {
-          pdf.setFontSize(6);
-          pdf.setFont('helvetica', 'normal');
+          applySmallText(pdf);
           pdf.setTextColor(150, 150, 150);
           pdf.text('—', colX, yPos + 3);
         }
@@ -822,7 +806,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 10;
   
   // Draw Strengths section
-  pdf.setFontSize(7);
+  applySmallText(pdf);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 139, 34); // Green color for strengths
   pdf.text('TOP STRENGTHS', startX, yPos);
@@ -837,14 +821,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       
       if (strength) {
         // Skill name
-        pdf.setFontSize(6.5);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
+        applySmallText(pdf);
         const skillName = strength.name.length > 20 ? strength.name.substring(0, 18) + '...' : strength.name;
         pdf.text(skillName, colX, yPos);
         
         // Score badge
-        pdf.setFontSize(6);
         pdf.setFont('helvetica', 'bold');
         const scoreColor = strength.score >= 80 ? [34, 139, 34] : strength.score >= 60 ? [59, 130, 246] : [107, 114, 128];
         pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
@@ -857,7 +838,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 5;
   
   // Draw Development Areas section
-  pdf.setFontSize(7);
+  applySmallText(pdf);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(220, 120, 50); // Amber color for development areas
   pdf.text('DEVELOPMENT AREAS', startX, yPos);
@@ -872,14 +853,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       
       if (weakness) {
         // Skill name
-        pdf.setFontSize(6.5);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
+        applySmallText(pdf);
         const skillName = weakness.name.length > 20 ? weakness.name.substring(0, 18) + '...' : weakness.name;
         pdf.text(skillName, colX, yPos);
         
         // Score badge
-        pdf.setFontSize(6);
         pdf.setFont('helvetica', 'bold');
         const scoreColor = weakness.score < 50 ? [220, 38, 38] : weakness.score < 65 ? [220, 120, 50] : [107, 114, 128];
         pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
@@ -903,9 +881,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 3;
   
   // Add explanation text
-  pdf.setFontSize(7.5);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(71, 85, 105);
+  applySmallText(pdf);
   const compositeExplanation = 'This ranking applies fixed 25% weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
   const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
   pdf.text(splitCompositeExplanation, 20, yPos);
@@ -1005,7 +981,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   drawTableRow(pdf, rankTableStartX, yPos, rankColWidths, 
     ['Rank', 'Candidate', 'Composite', 'Avg Score', 'Status'], rankRowHeight, {
     isBold: true,
-    fontSize: 6.5,
+    fontSize: 8,
     fillColor: [249, 250, 251],
     textColor: [17, 24, 39]
   });
@@ -1025,7 +1001,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const candidateColor = CANDIDATE_COLORS[ranking.candidateIndex] || [100, 100, 100];
     
     // Draw rank with medal for top position
-    pdf.setFontSize(7);
+    applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
     if (ranking.rank === 1) {
       pdf.setTextColor(245, 158, 11); // Gold
@@ -1070,9 +1046,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 5;
   
   // Note about weights
-  pdf.setFontSize(6);
+  applySmallText(pdf);
   pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(107, 114, 128);
   pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
   yPos += 8;
   
@@ -1090,9 +1065,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
     
     // Role description
-    pdf.setFontSize(6.5);
+    applySmallText(pdf);
     pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(107, 114, 128);
     pdf.text(selectedRoleDef.description, 20, yPos);
     yPos += 5;
   
@@ -1121,7 +1095,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   drawTableRow(pdf, roleTableStartX, yPos, roleColWidths,
     ['Role Fit Score', ...data.candidates.map(c => getCandidateName(c).substring(0, 12))], 6, {
     isBold: true,
-    fontSize: 6.5,
+    fontSize: 8,
     fillColor: [249, 250, 251],
     textColor: [17, 24, 39]
   });
@@ -1132,8 +1106,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const maxRoleFit = Math.max(...roleFitScores);
   const minRoleFit = Math.min(...roleFitScores.filter(s => s > 0));
   
-  pdf.setFontSize(6.5);
-  pdf.setFont('helvetica', 'normal');
+  applySmallText(pdf);
   
   let roleXOffset = roleTableStartX;
   pdf.setDrawColor(200, 200, 200);
