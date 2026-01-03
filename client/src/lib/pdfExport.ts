@@ -1959,6 +1959,80 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
+  // ========== COHORT BENCHMARKS ==========
+  if (data.alignment.cohortBenchmarks && Object.keys(data.alignment.cohortBenchmarks).length > 0) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos += PDF_SPACING.medium;
+    
+    yPos = addSectionHeader(pdf, 'COHORT BENCHMARKS', yPos, pageWidth);
+    yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text("Candidate's percentile ranking compared to all assessed candidates", 20, yPos);
+    yPos += 6;
+    
+    // Get all skills with benchmarks
+    const benchmarkedSkills = Object.entries(data.alignment.cohortBenchmarks);
+    
+    // Create a compact grid layout for percentile badges
+    const colWidth = (pageWidth - 40) / 3;
+    let col = 0;
+    let rowStartY = yPos;
+    
+    benchmarkedSkills.forEach(([skillName, benchmark], index) => {
+      const x = 20 + (col * colWidth);
+      const y = rowStartY;
+      
+      // Truncate long skill names
+      const displayName = skillName.length > 16 ? skillName.substring(0, 14) + '...' : skillName;
+      
+      // Determine percentile display and color
+      const percentile = benchmark.percentile;
+      let percentileText: string;
+      let badgeColor: [number, number, number];
+      
+      // Use compact labels to fit in badges
+      if (percentile >= 90) {
+        const topPercent = Math.max(1, 100 - percentile); // Ensure at least 1%
+        percentileText = `Top ${topPercent}%`;
+        badgeColor = [34, 197, 94]; // Green
+      } else if (percentile >= 75) {
+        percentileText = `Top ${100 - percentile}%`;
+        badgeColor = [59, 130, 246]; // Blue
+      } else if (percentile >= 50) {
+        percentileText = `Top ${100 - percentile}%`;
+        badgeColor = [107, 114, 128]; // Gray
+      } else {
+        percentileText = `Bot ${percentile}%`; // Shortened "Bottom" to "Bot"
+        badgeColor = [245, 158, 11]; // Amber
+      }
+      
+      // Draw skill name
+      applySmallText(pdf);
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(displayName, x, y);
+      
+      // Draw percentile badge - use dynamic width based on text
+      const badgeX = x + 38;
+      const badgeWidth = 15; // Smaller fixed width for compact labels
+      pdf.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
+      pdf.roundedRect(badgeX, y - 3, badgeWidth, 4, 1, 1, 'F');
+      pdf.setFontSize(5.5); // Slightly smaller font
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(percentileText, badgeX + badgeWidth / 2, y - 0.5, { align: 'center' });
+      
+      col++;
+      if (col >= 3) {
+        col = 0;
+        rowStartY += 7;
+      }
+    });
+    
+    // Adjust yPos after grid
+    yPos = rowStartY + (col > 0 ? 10 : 5);
+  }
+  
   pdf.setTextColor(0, 0, 0);
   
   // ========== FINAL RECOMMENDATION ==========
