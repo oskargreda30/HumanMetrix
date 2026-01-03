@@ -1645,6 +1645,9 @@ export function registerPartnerRoutes(app: Express) {
         errors: [] as string[],
       };
       
+      // Track amounts billed per partner for accurate pendingOverageAmount updates
+      const billedByPartner: Map<string, number> = new Map();
+      
       for (const charge of pendingCharges) {
         results.processed++;
         
@@ -1688,10 +1691,11 @@ export function registerPartnerRoutes(app: Express) {
               chargedAt: new Date(),
             });
             
-            // Reset partner's pending overage amount
-            await storage.updatePartnerAccount(partner.id, {
-              pendingOverageAmount: 0,
-            });
+            // Track billed amount for this partner
+            billedByPartner.set(
+              partner.id, 
+              (billedByPartner.get(partner.id) || 0) + charge.overageAmount
+            );
             
             // Create success notification
             await storage.createPartnerNotification({
@@ -1720,6 +1724,17 @@ export function registerPartnerRoutes(app: Express) {
             title: 'Overage Billing Failed',
             message: `Your overage billing for ${charge.billingMonth} failed. Please update your payment method.`,
             metadata: { billingMonth: charge.billingMonth, error: paymentError.message },
+          });
+        }
+      }
+      
+      // Update pendingOverageAmount for each partner based on what was successfully billed
+      for (const [partnerId, billedAmount] of billedByPartner.entries()) {
+        const partner = await storage.getPartnerAccount(partnerId);
+        if (partner) {
+          const newPendingAmount = Math.max(0, (partner.pendingOverageAmount || 0) - billedAmount);
+          await storage.updatePartnerAccount(partnerId, {
+            pendingOverageAmount: newPendingAmount,
           });
         }
       }

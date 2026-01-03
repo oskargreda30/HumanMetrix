@@ -123,6 +123,8 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
         });
         setShowAddCard(false);
         refetch();
+        // Also refresh overage history
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/overage-history"] });
       }
     } catch (error: any) {
       setCardError(error.message || "Failed to save card");
@@ -145,6 +147,8 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
         description: "Your saved card has been removed.",
       });
       refetch();
+      // Also refresh overage history
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/overage-history"] });
     } catch (error: any) {
       toast({
         title: "Error",

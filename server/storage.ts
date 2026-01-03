@@ -1754,17 +1754,18 @@ export class DatabaseStorage implements IStorage {
         });
         
         // Track overage in the overage ledger for this month
+        // Only append to pending/failed entries - create new entry if existing is paid
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
         const existingOverage = await this.getOverageLedgerByMonth(partnerId, currentMonth);
         
-        if (existingOverage) {
-          // Update existing overage record
+        if (existingOverage && existingOverage.chargeStatus !== 'paid') {
+          // Update existing pending/failed overage record
           await this.updateOverageLedgerEntry(existingOverage.id, {
             overageTests: existingOverage.overageTests + 1,
             overageAmount: existingOverage.overageAmount + overageRate,
           });
         } else {
-          // Create new overage record for this month
+          // Create new overage record (either no existing entry or existing is paid)
           await this.createOverageLedgerEntry({
             partnerId,
             billingMonth: currentMonth,
