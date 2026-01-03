@@ -4033,6 +4033,16 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No cached alignment found" });
       }
 
+      // Check if this is an old cached alignment missing enhanced fields
+      // If so, return 404 to force the UI to regenerate
+      const hasEnhancedFields = alignment.fitSkillAlignments !== null || 
+                                 alignment.aiReadinessSkillAlignments !== null;
+      if (!hasEnhancedFields) {
+        // Delete the stale cached alignment so a fresh one can be generated
+        await storage.invalidateRoleAlignmentCache(userId as string, jobRoleId as string);
+        return res.status(404).json({ message: "Cached alignment outdated, please regenerate" });
+      }
+
       // Recalculate cohort benchmarks (should always be fresh based on current cohort)
       const allResults = await storage.getAllResults();
       const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
