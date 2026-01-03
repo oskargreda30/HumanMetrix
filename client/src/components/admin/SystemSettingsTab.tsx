@@ -216,18 +216,15 @@ export default function SystemSettingsTab() {
         <CardContent>
           <div className="space-y-4 text-white/80 text-sm">
             <p>
-              To enable pre-deployment testing, configure your deployment build command in the Publishing tool:
+              The toggle above <strong className="text-white">directly controls</strong> whether tests run during deployment. 
+              When you toggle it, a config file is updated that the build script reads.
             </p>
             <div className="p-3 rounded bg-black/30 border border-white/10 font-mono text-xs overflow-x-auto">
-              <code>./scripts/run-tests-before-deploy.sh && npm run build:no-test</code>
+              <code>./scripts/run-tests-before-deploy.sh && npm run build</code>
             </div>
             <p>
-              The test runner script checks the <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300">SKIP_DEPLOY_TESTS</code> environment 
-              variable. Set it to <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300">true</code> to skip tests.
-            </p>
-            <p className="text-white/60 text-xs">
-              Note: This admin toggle updates the database setting. For the toggle to affect deployments, 
-              your build script should query this API endpoint to determine whether to run tests.
+              You can also override with the <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300">SKIP_DEPLOY_TESTS=true</code> environment 
+              variable for emergency bypasses.
             </p>
           </div>
         </CardContent>

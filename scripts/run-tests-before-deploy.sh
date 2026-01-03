@@ -4,7 +4,7 @@
 # This script runs comprehensive tests before deployment
 # Tests can be skipped by:
 #   1. Setting SKIP_DEPLOY_TESTS=true environment variable
-#   2. Disabling tests in the admin dashboard (System Settings)
+#   2. Toggling off in the admin dashboard (System Settings)
 
 set -e
 
@@ -19,25 +19,26 @@ if [ "$SKIP_DEPLOY_TESTS" = "true" ] || [ "$SKIP_DEPLOY_TESTS" = "1" ]; then
   exit 0
 fi
 
-# Check if we should query the admin setting
-# During build, the app may not be running, so we use the env var as primary
-# The API check is optional and can be enabled when the app is accessible
-if [ -n "$CHECK_ADMIN_SETTING" ] && [ "$CHECK_ADMIN_SETTING" = "true" ]; then
-  echo "Checking admin dashboard setting..."
+# Check the config file written by admin dashboard toggle
+CONFIG_FILE="./.test-config.json"
+if [ -f "$CONFIG_FILE" ]; then
+  echo "Found test configuration file..."
   
-  # Try to fetch the setting from the running app
-  API_URL="${APP_URL:-http://localhost:5000}"
-  RESPONSE=$(curl -s --max-time 5 "${API_URL}/api/build/should-run-tests" 2>/dev/null || echo '{"shouldRunTests":true}')
+  # Parse the skipTests value from JSON
+  SKIP_TESTS=$(cat "$CONFIG_FILE" | grep -o '"skipTests":[^,}]*' | cut -d':' -f2 | tr -d ' ')
   
-  SHOULD_RUN=$(echo "$RESPONSE" | grep -o '"shouldRunTests":[^,}]*' | cut -d':' -f2 | tr -d ' ')
-  
-  if [ "$SHOULD_RUN" = "false" ]; then
-    echo "Admin dashboard setting: Tests disabled"
+  if [ "$SKIP_TESTS" = "true" ]; then
+    UPDATED_BY=$(cat "$CONFIG_FILE" | grep -o '"updatedBy":"[^"]*"' | cut -d'"' -f4)
+    UPDATED_AT=$(cat "$CONFIG_FILE" | grep -o '"updatedAt":"[^"]*"' | cut -d'"' -f4)
+    echo "Admin dashboard setting: Tests DISABLED"
+    echo "  Disabled by: $UPDATED_BY"
+    echo "  Disabled at: $UPDATED_AT"
+    echo ""
     echo "Proceeding directly to build..."
     exit 0
   fi
   
-  echo "Admin dashboard setting: Tests enabled"
+  echo "Admin dashboard setting: Tests ENABLED"
 fi
 
 echo ""

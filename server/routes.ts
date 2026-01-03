@@ -7038,6 +7038,24 @@ Format your response as JSON with this structure:
         updatedBy: userId,
       });
       
+      // If this is the test toggle, also write to config file for build script
+      if (req.params.key === 'run_tests_before_deploy') {
+        try {
+          const fs = await import('fs');
+          const configPath = './.test-config.json';
+          const config = {
+            skipTests: value === false,
+            updatedAt: new Date().toISOString(),
+            updatedBy: user?.email || userId,
+          };
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+          console.log(`[System Settings] Updated test config: skipTests=${config.skipTests}`);
+        } catch (fileError) {
+          console.error("Error writing test config file:", fileError);
+          // Don't fail the request, just log the error
+        }
+      }
+      
       res.json(setting);
     } catch (error) {
       console.error("Error updating system setting:", error);
