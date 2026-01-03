@@ -527,9 +527,15 @@ export const partnerAccounts = pgTable("partner_accounts", {
   prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (12 months from purchase)
   // Auto-bill fields
   stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
+  cardOnFile: boolean("card_on_file").notNull().default(false), // Whether prepaid partner has saved card for overage billing
+  cardLast4: varchar("card_last4", { length: 4 }), // Last 4 digits of saved card for display
+  cardBrand: varchar("card_brand"), // Card brand (visa, mastercard, amex, etc.)
+  overageRatePerTest: integer("overage_rate_per_test").default(500), // Rate per test over quota in pence (default £5.00)
   billingCycleAnchor: integer("billing_cycle_anchor").default(1), // Day of month for billing (1-28)
   lastBilledAt: timestamp("last_billed_at"), // Last successful auto-bill date
+  lastOverageBilledAt: timestamp("last_overage_billed_at"), // Last overage billing date
   currentMonthUsage: integer("current_month_usage").notNull().default(0), // Tests used this billing cycle
+  pendingOverageAmount: integer("pending_overage_amount").notNull().default(0), // Accumulated overage charges pending billing (in pence)
   // Invoice fields
   paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 15/30/45/60/90
   invoiceNotes: varchar("invoice_notes"), // Special terms or notes for invoiced clients
@@ -595,6 +601,35 @@ export const insertPartnerOrganisationSchema = createInsertSchema(partnerOrganis
 
 export type InsertPartnerOrganisation = z.infer<typeof insertPartnerOrganisationSchema>;
 export type PartnerOrganisation = typeof partnerOrganisations.$inferSelect;
+
+// Partner overage ledger - tracks monthly overage charges for prepaid partners with card on file
+export const partnerOverageLedger = pgTable("partner_overage_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  billingMonth: varchar("billing_month", { length: 7 }).notNull(), // Format: YYYY-MM
+  testsOverLimit: integer("tests_over_limit").notNull().default(0), // Number of tests over prepaid balance
+  unitPrice: integer("unit_price").notNull(), // Price per test in pence at time of billing
+  totalAmount: integer("total_amount").notNull(), // Total charge in pence
+  chargeStatus: varchar("charge_status").notNull().default("pending"), // pending, charged, failed, waived
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"), // Stripe payment intent for this charge
+  stripeInvoiceId: varchar("stripe_invoice_id"), // Stripe invoice ID if using invoices
+  failureReason: varchar("failure_reason"), // Reason if charge failed
+  chargedAt: timestamp("charged_at"), // When payment was collected
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_overage_ledger_partner").on(table.partnerId),
+  index("idx_partner_overage_ledger_month").on(table.partnerId, table.billingMonth),
+  index("idx_partner_overage_ledger_status").on(table.chargeStatus),
+]);
+
+export const insertPartnerOverageLedgerSchema = createInsertSchema(partnerOverageLedger).omit({
+  id: true,
+  createdAt: true,
+  chargedAt: true,
+});
+
+export type InsertPartnerOverageLedger = z.infer<typeof insertPartnerOverageLedgerSchema>;
+export type PartnerOverageLedger = typeof partnerOverageLedger.$inferSelect;
 
 // Partner API keys - for authentication
 // Keys can be either partner-level (parent key for billing) or organisation-level (for usage tracking)

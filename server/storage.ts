@@ -74,10 +74,13 @@ import {
   type InsertPartnerInvoice,
   partnerMonthlyUsage,
   partnerOrganisations,
+  partnerOverageLedger,
   type PartnerOrganisation,
   type InsertPartnerOrganisation,
   type PartnerMonthlyUsage,
   type InsertPartnerMonthlyUsage,
+  type PartnerOverageLedger,
+  type InsertPartnerOverageLedger,
   errorLogs,
   type ErrorLog,
   type InsertErrorLog,
@@ -308,6 +311,17 @@ export interface IStorage {
   
   // Alias for consistency
   getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
+  
+  // Partner overage ledger operations
+  createOverageLedgerEntry(entry: InsertPartnerOverageLedger): Promise<PartnerOverageLedger>;
+  getOverageLedgerByPartner(partnerId: string, limit?: number): Promise<PartnerOverageLedger[]>;
+  getOverageLedgerByMonth(partnerId: string, billingMonth: string): Promise<PartnerOverageLedger | undefined>;
+  getPendingOverageCharges(): Promise<PartnerOverageLedger[]>;
+  updateOverageLedgerEntry(id: string, updates: Partial<InsertPartnerOverageLedger>): Promise<void>;
+  
+  // Partner card management
+  updatePartnerCardInfo(partnerId: string, cardInfo: { stripePaymentMethodId: string; cardLast4: string; cardBrand: string; cardOnFile: boolean }): Promise<void>;
+  removePartnerCard(partnerId: string): Promise<void>;
   
   // Partner invoice operations
   createPartnerInvoice(invoice: InsertPartnerInvoice): Promise<PartnerInvoice>;
@@ -1894,6 +1908,59 @@ export class DatabaseStorage implements IStorage {
         )
       )
     );
+  }
+
+  // Partner overage ledger operations
+  async createOverageLedgerEntry(entry: InsertPartnerOverageLedger): Promise<PartnerOverageLedger> {
+    const [result] = await db.insert(partnerOverageLedger).values(entry).returning();
+    return result;
+  }
+
+  async getOverageLedgerByPartner(partnerId: string, limit: number = 12): Promise<PartnerOverageLedger[]> {
+    return await db.select().from(partnerOverageLedger)
+      .where(eq(partnerOverageLedger.partnerId, partnerId))
+      .orderBy(desc(partnerOverageLedger.billingMonth))
+      .limit(limit);
+  }
+
+  async getOverageLedgerByMonth(partnerId: string, billingMonth: string): Promise<PartnerOverageLedger | undefined> {
+    const [result] = await db.select().from(partnerOverageLedger)
+      .where(and(
+        eq(partnerOverageLedger.partnerId, partnerId),
+        eq(partnerOverageLedger.billingMonth, billingMonth)
+      ));
+    return result;
+  }
+
+  async getPendingOverageCharges(): Promise<PartnerOverageLedger[]> {
+    return await db.select().from(partnerOverageLedger)
+      .where(eq(partnerOverageLedger.chargeStatus, 'pending'))
+      .orderBy(partnerOverageLedger.createdAt);
+  }
+
+  async updateOverageLedgerEntry(id: string, updates: Partial<InsertPartnerOverageLedger>): Promise<void> {
+    await db.update(partnerOverageLedger).set(updates).where(eq(partnerOverageLedger.id, id));
+  }
+
+  // Partner card management
+  async updatePartnerCardInfo(partnerId: string, cardInfo: { stripePaymentMethodId: string; cardLast4: string; cardBrand: string; cardOnFile: boolean }): Promise<void> {
+    await db.update(partnerAccounts).set({
+      stripePaymentMethodId: cardInfo.stripePaymentMethodId,
+      cardLast4: cardInfo.cardLast4,
+      cardBrand: cardInfo.cardBrand,
+      cardOnFile: cardInfo.cardOnFile,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+  }
+
+  async removePartnerCard(partnerId: string): Promise<void> {
+    await db.update(partnerAccounts).set({
+      stripePaymentMethodId: null,
+      cardLast4: null,
+      cardBrand: null,
+      cardOnFile: false,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
   }
 
   // Partner invoice operations
