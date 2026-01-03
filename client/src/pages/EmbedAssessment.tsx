@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
+import { getHumanReadableError } from "@/lib/queryClient";
 
 interface PartnerBranding {
   enabled: boolean;
@@ -121,12 +122,13 @@ export default function EmbedAssessment() {
     try {
       const res = await fetch(`/api/embed/session/${sessionId}`);
       if (!res.ok) {
-        const data = await res.json();
-        if (data.error === "Session has expired") {
+        const data = await res.json().catch(() => ({}));
+        const errorMsg = getHumanReadableError(data, "Failed to load session");
+        if (errorMsg.toLowerCase().includes("expired")) {
           setStatus("expired");
         } else {
           setStatus("error");
-          setErrorMessage(data.error || "Failed to load session");
+          setErrorMessage(errorMsg);
         }
         return;
       }
@@ -178,9 +180,9 @@ export default function EmbedAssessment() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setStatus("error");
-        setErrorMessage(data.error || "Failed to start session");
+        setErrorMessage(getHumanReadableError(data, "Failed to start session"));
         return;
       }
 
@@ -278,9 +280,9 @@ export default function EmbedAssessment() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setStatus("error");
-        setErrorMessage(data.error || "Failed to submit answers");
+        setErrorMessage(getHumanReadableError(data, "Failed to submit answers"));
         setIsSubmitting(false);
         return;
       }

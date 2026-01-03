@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, Clock, ClipboardList } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getHumanReadableError } from "@/lib/queryClient";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 interface InvitationData {
@@ -65,8 +65,8 @@ export default function StartAssessment() {
     fetch(`/api/invite/${token}`)
       .then(async (res) => {
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to validate invitation");
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getHumanReadableError(data, "Failed to validate invitation"));
         }
         return res.json();
       })
@@ -76,7 +76,7 @@ export default function StartAssessment() {
       })
       .catch((err) => {
         setStatus("error");
-        setErrorMessage(err.message || "Invalid or expired invitation");
+        setErrorMessage(getHumanReadableError(err, "Invalid or expired invitation"));
       });
   }, [token]);
 
@@ -92,8 +92,8 @@ export default function StartAssessment() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to start assessment");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(getHumanReadableError(errorData, "Failed to start assessment"));
       }
       
       const data = await response.json() as { widgetUrl?: string; sessionId?: string };
@@ -105,7 +105,7 @@ export default function StartAssessment() {
       }
     } catch (err: any) {
       setStatus("error");
-      setErrorMessage(err.message || "Failed to start assessment");
+      setErrorMessage(getHumanReadableError(err, "Failed to start assessment"));
     }
   };
 

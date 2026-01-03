@@ -15,22 +15,79 @@ function getCsrfToken(): string | null {
   return null;
 }
 
+/**
+ * Extract a human-readable error message from various error formats.
+ * This handles JSON error responses, Error objects, and raw strings.
+ */
+export function getHumanReadableError(error: unknown, fallback = "An unexpected error occurred"): string {
+  // Handle Error objects
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    // Try to parse as JSON in case it's a stringified error object
+    try {
+      const parsed = JSON.parse(error);
+      return extractMessageFromObject(parsed) || error || fallback;
+    } catch {
+      return error || fallback;
+    }
+  }
+  
+  // Handle object errors (like API response data)
+  if (typeof error === 'object' && error !== null) {
+    return extractMessageFromObject(error) || fallback;
+  }
+  
+  return fallback;
+}
+
+function extractMessageFromObject(obj: any): string | null {
+  // Common error message fields in priority order
+  if (obj.message && typeof obj.message === 'string') return obj.message;
+  if (obj.error && typeof obj.error === 'string') return obj.error;
+  if (obj.detail && typeof obj.detail === 'string') return obj.detail;
+  if (obj.errorMessage && typeof obj.errorMessage === 'string') return obj.errorMessage;
+  
+  // Handle array of errors (e.g., { errors: ["Error 1", "Error 2"] })
+  if (Array.isArray(obj.errors) && obj.errors.length > 0) {
+    const firstError = obj.errors[0];
+    if (typeof firstError === 'string') return firstError;
+    if (typeof firstError === 'object' && firstError.message) return firstError.message;
+  }
+  
+  // Handle validation errors array (e.g., from Zod)
+  if (Array.isArray(obj) && obj.length > 0) {
+    const firstItem = obj[0];
+    if (typeof firstItem === 'string') return firstItem;
+    if (typeof firstItem === 'object' && firstItem.message) return firstItem.message;
+  }
+  
+  // Don't return stringified objects - that looks like JSON to users
+  return null;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    const rawText = (await res.text()) || res.statusText;
+    const text = rawText.trim();
     
     // Try to parse JSON and extract human-readable message
     let errorMessage = text;
     try {
       const parsed = JSON.parse(text);
-      if (parsed.message) {
-        errorMessage = parsed.message;
-      } else if (parsed.error) {
-        errorMessage = parsed.error;
-      }
+      errorMessage = extractMessageFromObject(parsed) || text;
     } catch {
       // Not JSON, use the raw text but clean it up
       errorMessage = text;
+    }
+    
+    // If the error still looks like JSON, provide a generic message
+    const trimmed = errorMessage.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      errorMessage = `Request failed with status ${res.status}`;
     }
     
     throw new Error(errorMessage);
