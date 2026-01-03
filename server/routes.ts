@@ -3975,9 +3975,9 @@ Format your response as JSON with this structure:
         recommendations: insights.recommendations || '',
         riskFlags: insights.riskFlags || [],
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
-        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : null,
+        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : [],
         interviewQuestions: insights.interviewQuestions || null,
-        roleFlexibility: topAlternativeRoles.length > 0 ? topAlternativeRoles : null
+        roleFlexibility: topAlternativeRoles // Always save array (empty if no matches) to distinguish from old null values
       };
 
       // Cache the result
@@ -3997,8 +3997,8 @@ Format your response as JSON with this structure:
         recommendations: analysis.recommendations,
         riskFlags: analysis.riskFlags || [],
         interviewQuestions: analysis.interviewQuestions || null,
-        dataRiskIndicators: analysis.dataRiskIndicators || null,
-        roleFlexibility: analysis.roleFlexibility || null,
+        dataRiskIndicators: analysis.dataRiskIndicators, // Already an array (empty if no issues)
+        roleFlexibility: analysis.roleFlexibility, // Already an array (empty if no matches)
         promptHash,
         expiresAt,
       });
@@ -4034,13 +4034,14 @@ Format your response as JSON with this structure:
       }
 
       // Check if this is an old cached alignment missing enhanced fields
-      // We check for dataRiskIndicators column which was added with the enhanced schema
-      // Old cached alignments won't have this field
-      const hasEnhancedSchema = 'dataRiskIndicators' in alignment;
-      const hasCriticalityInSkills = alignment.fitSkillAlignments?.some((s: any) => 'criticality' in s) ||
-                                      alignment.aiReadinessSkillAlignments?.some((s: any) => 'criticality' in s);
+      // Enhanced analyses have: criticality in skills, roleFlexibility as array (not null)
+      const hasCriticalityInSkills = alignment.fitSkillAlignments?.some((s: any) => s.criticality !== undefined) ||
+                                      alignment.aiReadinessSkillAlignments?.some((s: any) => s.criticality !== undefined);
+      // roleFlexibility = null means old analysis, [] or [...] means new analysis (computed but maybe no matches)
+      const hasRoleFlexibilityComputed = Array.isArray(alignment.roleFlexibility);
       
-      if (!hasEnhancedSchema || !hasCriticalityInSkills) {
+      // If skills don't have criticality or roleFlexibility wasn't computed, this is an old cache
+      if (!hasCriticalityInSkills || !hasRoleFlexibilityComputed) {
         // Delete the stale cached alignment so a fresh one can be generated
         await storage.invalidateRoleAlignmentCache(userId as string, jobRoleId as string);
         return res.status(404).json({ message: "Cached alignment outdated, please regenerate" });
