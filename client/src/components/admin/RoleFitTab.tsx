@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Calendar, Users } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -574,48 +574,63 @@ export default function RoleFitTab() {
             </Card>
           )}
 
-          {/* Optional Premium Services */}
+          {/* Additional Services on Request */}
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                Optional Premium Services
+                Additional Services on Request
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Additional insights available when employer provides company-specific information
+                Contact our team to unlock these premium insights for your hiring decisions
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="p-4 rounded-lg bg-background border">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
                     <MessageSquare className="h-4 w-4 text-primary" />
-                    Interview Questions
+                    Suggested Interview Questions
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    AI-generated competency-based questions tailored to this candidate's skill gaps
+                  <p className="text-sm text-muted-foreground">
+                    AI-generated questions based on candidate's assessment results and skill gaps
                   </p>
-                  <Badge variant="outline" className="text-xs">Requires: Role context</Badge>
-                </div>
-                <div className="p-4 rounded-lg bg-background border">
-                  <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    30/60/90 Day Onboarding Plan
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Customized development milestones based on candidate's strengths and gaps
-                  </p>
-                  <Badge variant="outline" className="text-xs">Requires: Team structure</Badge>
                 </div>
                 <div className="p-4 rounded-lg bg-background border">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    Culture Fit Analysis
+                    Team Composition Fit
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Assessment of alignment with company values and team dynamics
+                  <p className="text-sm text-muted-foreground">
+                    Analysis of how the candidate would complement your existing team dynamics
                   </p>
-                  <Badge variant="outline" className="text-xs">Requires: Company values</Badge>
+                </div>
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Time to Productivity Estimate
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Projected onboarding timeline based on skill readiness and learning agility
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <ShieldAlert className="h-4 w-4 text-primary" />
+                    Hiring Risk Analysis
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive risk assessment highlighting potential challenges and mitigations
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-background border">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    Development Investment Cost
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Estimated training and development investment to close identified skill gaps
+                  </p>
                 </div>
               </div>
               <div className="mt-4 text-center">
