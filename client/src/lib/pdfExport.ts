@@ -746,87 +746,129 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 3;
   }
   
-  // Top 5 Skills Comparison - Horizontal Bar Chart
-  if (yPos > pageHeight - 60) {
+  // Strengths & Development Areas - Side by Side Comparison
+  if (yPos > pageHeight - 80) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
     yPos = 50;
   }
   
-  yPos = addSectionHeader(pdf, 'TOP 5 SKILLS COMPARISON', yPos, pageWidth);
+  yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 3;
   
-  // Get top 5 skills based on average scores
-  const skillsWithAvg = data.skillComparison.map(skill => {
-    const validScores = skill.scores.filter((s): s is number => s !== null);
-    const avg = validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
-    return { ...skill, avg };
-  });
-  const top5Skills = skillsWithAvg.sort((a, b) => b.avg - a.avg).slice(0, 5);
-  
-  const barChartWidth = 110;
-  const barChartStartX = 60;
-  
-  top5Skills.forEach((skill, index) => {
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const skillName = skill.skillName.length > 20 ? skill.skillName.substring(0, 18) + '...' : skill.skillName;
-    pdf.text(skillName, 22, yPos + 4);
+  // Helper to get candidate's top strengths and development areas
+  const getCandidateStrengthsAndWeaknesses = (candidateIndex: number) => {
+    const allSkills: Array<{ name: string; score: number }> = [];
     
-    // Draw grouped bars for each candidate
-    const barHeight = 3.5;
-    const barGap = 0.5;
-    const groupHeight = (data.candidates.length * (barHeight + barGap));
-    
-    skill.scores.forEach((score, candIndex) => {
-      if (score !== null) {
-        const candidateColor = CANDIDATE_COLORS[candIndex] || [100, 100, 100];
-        const barLength = (score / 100) * barChartWidth;
-        const barY = yPos + (candIndex * (barHeight + barGap));
-        
-        // Background bar
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(barChartStartX, barY, barChartWidth, barHeight, 'F');
-        
-        // Score bar
-        pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-        pdf.rect(barChartStartX, barY, barLength, barHeight, 'F');
-        
-        // Score label
-        pdf.setFontSize(5);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(17, 24, 39);
-        pdf.text(`${score}`, barChartStartX + barChartWidth + 2, barY + 2.5);
+    // Collect all skills from skill comparison for this candidate
+    data.skillComparison.forEach(skill => {
+      const score = skill.scores[candidateIndex];
+      if (score !== null && score !== undefined) {
+        allSkills.push({ name: skill.skillName, score });
       }
     });
     
-    yPos += groupHeight + 3;
-  });
+    // Sort by score
+    const sorted = [...allSkills].sort((a, b) => b.score - a.score);
+    const strengths = sorted.slice(0, 3);
+    const weaknesses = sorted.slice(-3).reverse();
+    
+    return { strengths, weaknesses };
+  };
   
-  // Legend - IMPROVED WITH FULL NAMES
-  yPos += 2;
-  pdf.setFontSize(6);
+  // Calculate column width based on number of candidates
+  const numCandidates = data.candidates.length;
+  const columnWidth = (pageWidth - 40) / numCandidates;
+  const startX = 20;
   
-  // Calculate legend item widths dynamically to prevent cut-off
-  const legendStartX = 25;
-  const legendItemSpacing = Math.min(60, (pageWidth - legendStartX - 10) / data.candidates.length);
-  
+  // Draw candidate headers with colored indicators
   data.candidates.forEach((candidate, index) => {
+    const colX = startX + (index * columnWidth);
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const xPos = legendStartX + (index * legendItemSpacing);
     
-    // Color circle (matching new marker style)
+    // Color indicator circle
     pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.circle(xPos + 1.5, yPos + 1.5, 1.5, 'F');
+    pdf.circle(colX + 3, yPos + 2, 2, 'F');
     
-    // Full candidate name (truncate only if extremely long)
-    pdf.setTextColor(75, 85, 99);
+    // Candidate name
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
     const fullName = getCandidateName(candidate);
     const displayName = fullName.length > 18 ? fullName.substring(0, 16) + '...' : fullName;
-    pdf.text(displayName, xPos + 5, yPos + 2.5);
+    pdf.text(displayName, colX + 8, yPos + 3.5);
   });
+  
+  yPos += 10;
+  
+  // Draw Strengths section
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 139, 34); // Green color for strengths
+  pdf.text('TOP STRENGTHS', startX, yPos);
+  yPos += 5;
+  
+  // Draw strengths for each candidate in columns
+  for (let skillIndex = 0; skillIndex < 3; skillIndex++) {
+    data.candidates.forEach((candidate, candIndex) => {
+      const colX = startX + (candIndex * columnWidth);
+      const { strengths } = getCandidateStrengthsAndWeaknesses(candIndex);
+      const strength = strengths[skillIndex];
+      
+      if (strength) {
+        // Skill name
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        const skillName = strength.name.length > 20 ? strength.name.substring(0, 18) + '...' : strength.name;
+        pdf.text(skillName, colX, yPos);
+        
+        // Score badge
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
+        const scoreColor = strength.score >= 80 ? [34, 139, 34] : strength.score >= 60 ? [59, 130, 246] : [107, 114, 128];
+        pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+        pdf.text(`${strength.score}`, colX + columnWidth - 12, yPos);
+      }
+    });
+    yPos += 6;
+  }
+  
+  yPos += 5;
+  
+  // Draw Development Areas section
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(220, 120, 50); // Amber color for development areas
+  pdf.text('DEVELOPMENT AREAS', startX, yPos);
+  yPos += 5;
+  
+  // Draw weaknesses for each candidate in columns
+  for (let skillIndex = 0; skillIndex < 3; skillIndex++) {
+    data.candidates.forEach((candidate, candIndex) => {
+      const colX = startX + (candIndex * columnWidth);
+      const { weaknesses } = getCandidateStrengthsAndWeaknesses(candIndex);
+      const weakness = weaknesses[skillIndex];
+      
+      if (weakness) {
+        // Skill name
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        const skillName = weakness.name.length > 20 ? weakness.name.substring(0, 18) + '...' : weakness.name;
+        pdf.text(skillName, colX, yPos);
+        
+        // Score badge
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
+        const scoreColor = weakness.score < 50 ? [220, 38, 38] : weakness.score < 65 ? [220, 120, 50] : [107, 114, 128];
+        pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+        pdf.text(`${weakness.score}`, colX + columnWidth - 12, yPos);
+      }
+    });
+    yPos += 6;
+  }
   
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
