@@ -102,7 +102,7 @@ export default function RoleFitTab() {
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: selectedCandidate && selectedRole
-      ? ['/api/admin/role-alignment', { userId: selectedCandidate, jobRoleId: selectedRole }]
+      ? [`/api/admin/role-alignment?userId=${selectedCandidate}&jobRoleId=${selectedRole}`]
       : undefined as any,
     enabled: !!selectedCandidate && !!selectedRole,
   });
@@ -135,7 +135,7 @@ export default function RoleFitTab() {
     },
     onSuccess: (data) => {
       // Directly set the query data for immediate display
-      queryClient.setQueryData(['/api/admin/role-alignment', { userId: selectedCandidate, jobRoleId: selectedRole }], data);
+      queryClient.setQueryData([`/api/admin/role-alignment?userId=${selectedCandidate}&jobRoleId=${selectedRole}`], data);
       toast({ title: "Role fit analysis completed" });
     },
     onError: (error: Error) => {
