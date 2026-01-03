@@ -329,6 +329,7 @@ export const cachedRoleAlignments = pgTable("cached_role_alignments", {
     requiredScore: number;
     gap: number;
     alignment: string; // "excellent", "good", "fair", "poor"
+    criticality?: 'critical' | 'important' | 'nice-to-have';
   }[]>(),
   fitSkillAlignments: jsonb("fit_skill_alignments").$type<{
     skillName: string;
@@ -336,6 +337,7 @@ export const cachedRoleAlignments = pgTable("cached_role_alignments", {
     requiredScore: number;
     gap: number;
     alignment: string;
+    criticality?: 'critical' | 'important' | 'nice-to-have';
   }[]>(),
   aiReadinessSkillAlignments: jsonb("ai_readiness_skill_alignments").$type<{
     skillName: string;
@@ -343,11 +345,29 @@ export const cachedRoleAlignments = pgTable("cached_role_alignments", {
     requiredScore: number;
     gap: number;
     alignment: string;
+    criticality?: 'critical' | 'important' | 'nice-to-have';
   }[]>(),
   strengths: jsonb("strengths").notNull().$type<string[]>(),
   gaps: jsonb("gaps").notNull().$type<string[]>(),
   recommendations: text("recommendations").notNull(),
   riskFlags: jsonb("risk_flags").$type<string[]>(),
+  // Enhanced role fit features
+  interviewQuestions: jsonb("interview_questions").$type<{
+    question: string;
+    purpose: string;
+    targetSkill: string;
+  }[]>(),
+  dataRiskIndicators: jsonb("data_risk_indicators").$type<{
+    type: string;
+    severity: 'low' | 'medium' | 'high';
+    message: string;
+  }[]>(),
+  roleFlexibility: jsonb("role_flexibility").$type<{
+    roleId: string;
+    roleName: string;
+    fitScore: number;
+    description?: string;
+  }[]>(),
   promptHash: text("prompt_hash").notNull(), // to invalidate cache when prompt changes
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at").notNull(), // cache TTL

@@ -3996,6 +3996,9 @@ Format your response as JSON with this structure:
         gaps: analysis.gaps,
         recommendations: analysis.recommendations,
         riskFlags: analysis.riskFlags || [],
+        interviewQuestions: analysis.interviewQuestions || null,
+        dataRiskIndicators: analysis.dataRiskIndicators || null,
+        roleFlexibility: analysis.roleFlexibility || null,
         promptHash,
         expiresAt,
       });
@@ -4030,7 +4033,62 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No cached alignment found" });
       }
 
-      res.json(alignment);
+      // Recalculate cohort benchmarks (should always be fresh based on current cohort)
+      const allResults = await storage.getAllResults();
+      const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
+      
+      // Group scores by skill across all candidates
+      const skillScoresMap: Record<string, number[]> = {};
+      allResults.forEach((result: any) => {
+        if (result.scores && typeof result.scores === 'object') {
+          Object.entries(result.scores).forEach(([skill, score]) => {
+            if (!skillScoresMap[skill]) {
+              skillScoresMap[skill] = [];
+            }
+            skillScoresMap[skill].push(score as number);
+          });
+        }
+      });
+      
+      // Calculate percentile for each of the candidate's skills
+      const calculatePercentile = (score: number, allScores: number[]): number => {
+        if (allScores.length === 0) return 50;
+        const sortedScores = [...allScores].sort((a, b) => a - b);
+        const belowCount = sortedScores.filter(s => s < score).length;
+        return Math.round((belowCount / sortedScores.length) * 100);
+      };
+      
+      // Extract candidate's skills from stored alignments
+      const fitSkillAlignments = alignment.fitSkillAlignments || [];
+      const aiReadinessSkillAlignments = alignment.aiReadinessSkillAlignments || [];
+      
+      // Calculate benchmarks for FIT skills
+      fitSkillAlignments.forEach((skill: any) => {
+        const allScoresForSkill = skillScoresMap[skill.skillName] || [];
+        if (allScoresForSkill.length >= 5) {
+          cohortBenchmarks[skill.skillName] = {
+            percentile: calculatePercentile(skill.candidateScore, allScoresForSkill),
+            totalCandidates: allScoresForSkill.length
+          };
+        }
+      });
+      
+      // Calculate benchmarks for AI Readiness skills
+      aiReadinessSkillAlignments.forEach((skill: any) => {
+        const allScoresForSkill = skillScoresMap[skill.skillName] || [];
+        if (allScoresForSkill.length >= 5) {
+          cohortBenchmarks[skill.skillName] = {
+            percentile: calculatePercentile(skill.candidateScore, allScoresForSkill),
+            totalCandidates: allScoresForSkill.length
+          };
+        }
+      });
+
+      // Return alignment with fresh cohort benchmarks
+      res.json({
+        ...alignment,
+        cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
+      });
     } catch (error) {
       console.error("Error fetching role alignment:", error);
       res.status(500).json({ message: "Failed to fetch role alignment" });
