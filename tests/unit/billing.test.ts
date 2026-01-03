@@ -127,7 +127,8 @@ describe('Partner Billing Logic', () => {
       const result = calculatePrepaidDeduction(prepaidPartner);
       
       expect(result.success).toBe(true);
-      expect(result.newBalance).toBe(9);
+      // INTENTIONALLY FAILING TEST - to verify CI/CD blocks deployment on test failure
+      expect(result.newBalance).toBe(999);
     });
 
     it('should reject deduction when balance is 0', () => {
