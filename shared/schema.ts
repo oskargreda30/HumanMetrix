@@ -125,6 +125,7 @@ export const assessmentResults = pgTable("assessment_results", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   purchaseItemId: varchar("purchase_item_id").references(() => purchaseItems.id, { onDelete: "set null" }),
   invitationId: varchar("invitation_id").references(() => invitations.id, { onDelete: "set null" }),
+  partnerInvitationId: varchar("partner_invitation_id"), // References partnerCandidateInvitations (defined later in file)
   assessmentType: text("assessment_type").notNull(),
   questionLocale: text("question_locale").notNull().default("default"), // 'default' or 'sea' for localized questions
   answers: jsonb("answers").notNull().$type<Record<string, any>>(),
@@ -141,6 +142,7 @@ export const assessmentResults = pgTable("assessment_results", {
   index("idx_results_status").on(table.status),
   index("idx_results_user_type").on(table.userId, table.assessmentType),
   index("idx_results_purchase_item").on(table.purchaseItemId),
+  index("idx_results_partner_invitation").on(table.partnerInvitationId),
 ]);
 
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults).omit({

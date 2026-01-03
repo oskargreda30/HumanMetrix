@@ -150,6 +150,8 @@ export interface IStorage {
   getAssessmentResult(id: string): Promise<AssessmentResult | undefined>;
   getResultsByUser(userId: string): Promise<AssessmentResult[]>;
   getResultByPurchaseItem(purchaseItemId: string): Promise<AssessmentResult | undefined>;
+  getResultByInvitationAndType(invitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
+  getResultByPartnerInvitationAndType(partnerInvitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
   updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void>;
   
@@ -466,6 +468,7 @@ export interface IStorage {
   getPartnerCandidateInvitationByToken(token: string): Promise<PartnerCandidateInvitation | undefined>;
   getPartnerCandidateInvitations(partnerId: string, filters?: { status?: string; importId?: string; limit?: number; offset?: number }): Promise<PartnerCandidateInvitation[]>;
   getPartnerCandidateInvitationsByExternalId(partnerId: string, externalUserId: string): Promise<PartnerCandidateInvitation[]>;
+  getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]>;
   updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
   countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
 }
@@ -735,6 +738,21 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(assessmentResults.invitationId, invitationId),
+          sql`REPLACE(${assessmentResults.assessmentType}, '-', '_') = ${assessmentType}`
+        )
+      );
+    return result;
+  }
+
+  async getResultByPartnerInvitationAndType(partnerInvitationId: string, assessmentType: string): Promise<AssessmentResult | undefined> {
+    // Normalize the database assessment_type column by replacing hyphens with underscores
+    // This ensures matching even if legacy data has hyphens
+    const [result] = await db
+      .select()
+      .from(assessmentResults)
+      .where(
+        and(
+          eq(assessmentResults.partnerInvitationId, partnerInvitationId),
           sql`REPLACE(${assessmentResults.assessmentType}, '-', '_') = ${assessmentType}`
         )
       );
@@ -3042,6 +3060,12 @@ export class DatabaseStorage implements IStorage {
         eq(partnerCandidateInvitations.partnerId, partnerId),
         eq(partnerCandidateInvitations.externalUserId, externalUserId)
       ))
+      .orderBy(desc(partnerCandidateInvitations.createdAt));
+  }
+
+  async getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]> {
+    return await db.select().from(partnerCandidateInvitations)
+      .where(eq(partnerCandidateInvitations.email, email))
       .orderBy(desc(partnerCandidateInvitations.createdAt));
   }
 

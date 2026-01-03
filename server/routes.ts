@@ -1915,6 +1915,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Check for partner candidate invitations (bulk invitations from Partner Dashboard)
+      const partnerInvitations = await storage.getPartnerCandidateInvitationsByEmail(user.email);
+      for (const partnerInv of partnerInvitations) {
+        // Only include active invitations (pending, sent, or started, not completed/expired)
+        if (partnerInv.status === 'pending' || partnerInv.status === 'sent' || partnerInv.status === 'started') {
+          // Check if invitation is still valid (not expired)
+          if (partnerInv.expiresAt && new Date(partnerInv.expiresAt) > new Date()) {
+            hasActiveInvitation = true;
+            
+            // Add each assessment type from the partner invitation
+            for (const assessmentType of partnerInv.assessmentTypes) {
+              // Normalize assessment type for consistent comparison
+              const normalizedType = normalizeAssessmentId(assessmentType);
+              
+              // Use partner invitation-specific key to track which assessments we've added
+              const partnerInvTypeKey = `partner::${partnerInv.id}::${normalizedType}`;
+              
+              if (!addedAssessmentTypes.has(partnerInvTypeKey)) {
+                // Track this type in required assessment types
+                if (!requiredAssessmentTypes.includes(normalizedType)) {
+                  requiredAssessmentTypes.push(normalizedType);
+                }
+                
+                availableAssessments.push({
+                  purchaseItemId: `partner_invitation::${partnerInv.id}::${normalizedType}`,
+                  assessmentType: normalizedType,
+                  status: 'ready',
+                  source: 'partner_invitation',
+                  partnerInvitationId: partnerInv.id,
+                  partnerId: partnerInv.partnerId,
+                  canRemove: false, // Partner invitation-based assessments cannot be removed
+                });
+                addedAssessmentTypes.add(partnerInvTypeKey);
+              }
+            }
+          }
+        }
+      }
+      
       // If no active invitation, use the assessments they actually purchased
       if (!hasActiveInvitation) {
         requiredAssessmentTypes = Array.from(purchasedAssessmentTypes);
@@ -1939,6 +1978,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if this is a partner invitation-based assessment (synthetic ID format: partner_invitation::{invitationId}::{assessmentType})
+      if (purchaseItemId.startsWith('partner_invitation::')) {
+        const parts = purchaseItemId.split('::');
+        if (parts.length !== 3 || parts[0] !== 'partner_invitation') {
+          return res.status(400).json({ message: "Invalid partner invitation assessment ID" });
+        }
+        
+        const partnerInvitationId = parts[1];
+        const assessmentType = normalizeAssessmentId(parts[2]);
+
+        // Verify partner invitation exists and belongs to user's email
+        const partnerInvitation = await storage.getPartnerCandidateInvitation(partnerInvitationId);
+        if (!partnerInvitation || partnerInvitation.email !== user.email) {
+          return res.status(403).json({ message: "Unauthorized access to this assessment" });
+        }
+
+        // Verify invitation is still valid
+        if (partnerInvitation.expiresAt && new Date(partnerInvitation.expiresAt) < new Date()) {
+          return res.status(400).json({ message: "Invitation has expired" });
+        }
+
+        // Verify this assessment type is included in the invitation
+        const normalizedInvitationTypes = partnerInvitation.assessmentTypes.map(t => normalizeAssessmentId(t));
+        if (!normalizedInvitationTypes.includes(assessmentType)) {
+          return res.status(403).json({ message: "Assessment type not included in invitation" });
+        }
+
+        // Check if assessment already started for this partner invitation
+        const existing = await storage.getResultByPartnerInvitationAndType(partnerInvitationId, assessmentType);
+        if (existing) {
+          if (existing.userId !== userId) {
+            return res.status(403).json({ message: "Unauthorized access to this assessment" });
+          }
+          
+          // If already completed, don't allow restart
+          if (existing.status === 'completed') {
+            return res.status(400).json({ message: "Assessment already completed" });
+          }
+          
+          // Calculate remaining time based on assessment type
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
+          const startTime = new Date(existing.startedAt).getTime();
+          const now = Date.now();
+          const elapsed = Math.floor((now - startTime) / 1000);
+          const remaining = Math.max(0, timeLimit - elapsed);
+          
+          // If time has expired, give full time again
+          if (remaining <= 0 && existing.status === 'in_progress') {
+            console.log(`[START ASSESSMENT] Partner invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ ...existing, timeRemaining: timeLimit });
+          }
+          
+          return res.json({ ...existing, timeRemaining: remaining });
+        }
+
+        // Update partner invitation status to started if needed
+        if (partnerInvitation.status === 'pending' || partnerInvitation.status === 'sent') {
+          await storage.updatePartnerCandidateInvitation(partnerInvitationId, { 
+            status: 'started',
+            startedAt: new Date(),
+          });
+        }
+
+        // Create new assessment result for partner invitation
+        const result = await storage.createAssessmentResult({
+          userId,
+          purchaseItemId: null,
+          invitationId: null,
+          partnerInvitationId,
+          assessmentType,
+          questionLocale: questionLocale || 'default',
+          answers: {},
+          scores: {},
+          totalScore: null,
+          percentile: null,
+          status: 'in_progress',
+          completedAt: null,
+        });
+
+        const timeLimit = getAssessmentTimeLimit(assessmentType);
+        const startTime = new Date(result.startedAt).getTime();
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const remaining = Math.max(0, timeLimit - elapsed);
+
+        return res.json({ ...result, timeRemaining: remaining });
       }
 
       // Check if this is an invitation-based assessment (synthetic ID format: invitation::{invitationId}::{assessmentType})
