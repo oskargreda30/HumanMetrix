@@ -81,6 +81,10 @@ interface RoleFitData {
       roleId: string;
       roleName: string;
       fitScore: number;
+      rawFitScore?: number;
+      coveragePercent?: number;
+      coverageLabel?: 'High' | 'Medium' | 'Limited';
+      missingCriticalSkills?: string[];
       description?: string;
     }> | null;
   };
@@ -2400,41 +2404,77 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== ROLE FLEXIBILITY ANALYSIS (moved before Final Recommendation) ==========
   if (data.alignment.roleFlexibility && data.alignment.roleFlexibility.length > 0) {
-    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
     yPos += PDF_SPACING.medium;
     
     yPos = addSectionHeader(pdf, 'ROLE FLEXIBILITY ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
     applySmallText(pdf);
-    pdf.text('Alternative roles this candidate might be suitable for', 20, yPos);
-    yPos += 6;
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)', 20, yPos);
+    yPos += 8;
     
-    data.alignment.roleFlexibility.forEach((role, index) => {
-      yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+    data.alignment.roleFlexibility.forEach((role) => {
+      yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
       
+      // Role name
       applyBodyText(pdf);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
       pdf.text(role.roleName, 25, yPos);
       
-      // Progress bar
-      const barX = 100;
-      const barWidth = 50;
+      // Coverage badge next to role name
+      if (role.coverageLabel && role.coveragePercent) {
+        const coverageColor: [number, number, number] = role.coverageLabel === 'High' ? [34, 197, 94] : 
+          role.coverageLabel === 'Medium' ? [59, 130, 246] : [234, 179, 8];
+        
+        const nameWidth = pdf.getTextWidth(role.roleName);
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(coverageColor[0], coverageColor[1], coverageColor[2]);
+        pdf.text(`${role.coverageLabel} Confidence (${role.coveragePercent}%)`, 28 + nameWidth, yPos);
+      }
+      
+      // Progress bar positioned to the right
+      const barX = 130;
+      const barWidth = 40;
       const barHeight = 4;
       
       pdf.setFillColor(229, 231, 235);
       pdf.rect(barX, yPos - 3, barWidth, barHeight, 'F');
       
-      const fillColor: [number, number, number] = role.fitScore >= 80 ? [34, 197, 94] : role.fitScore >= 60 ? [59, 130, 246] : [234, 179, 8];
+      const fillColor: [number, number, number] = role.fitScore >= 70 ? [34, 197, 94] : role.fitScore >= 50 ? [59, 130, 246] : [234, 179, 8];
       pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
       pdf.rect(barX, yPos - 3, (role.fitScore / 100) * barWidth, barHeight, 'F');
       
-      // Score badge
+      // Adjusted score badge
+      applyBodyText(pdf);
       pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`${role.fitScore}%`, barX + barWidth + 5, yPos);
+      pdf.text(`${role.fitScore}%`, barX + barWidth + 3, yPos);
       
-      yPos += 8;
+      // Show raw score if different
+      if (role.rawFitScore && role.rawFitScore !== role.fitScore) {
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`(Raw: ${role.rawFitScore}%)`, barX + barWidth + 15, yPos);
+      }
+      
+      yPos += 5;
+      
+      // Missing critical skills warning
+      if (role.missingCriticalSkills && role.missingCriticalSkills.length > 0) {
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(234, 179, 8); // Amber warning color
+        const warningText = `Missing critical skills: ${role.missingCriticalSkills.join(', ')}`;
+        pdf.text(warningText, 28, yPos);
+        yPos += 4;
+      }
+      
+      yPos += 4;
     });
     
     yPos += PDF_SPACING.medium;

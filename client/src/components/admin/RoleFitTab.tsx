@@ -64,6 +64,10 @@ export default function RoleFitTab() {
       roleId: string;
       roleName: string;
       fitScore: number;
+      rawFitScore?: number;
+      coveragePercent?: number;
+      coverageLabel?: 'High' | 'Medium' | 'Limited';
+      missingCriticalSkills?: string[];
       description?: string;
     }> | null;
   };
@@ -540,33 +544,61 @@ export default function RoleFitTab() {
                   Role Flexibility Analysis
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Alternative roles this candidate might be suitable for
+                  Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {alignment.roleFlexibility.map((role, index) => (
+                  {alignment.roleFlexibility.map((role) => (
                     <div 
                       key={role.roleId} 
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                      className="p-3 rounded-lg bg-muted/50 border"
                       data-testid={`row-alternative-role-${role.roleId}`}
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm" data-testid={`text-role-name-${role.roleId}`}>{role.roleName}</p>
-                        {role.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-md">{role.description}</p>
-                        )}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm" data-testid={`text-role-name-${role.roleId}`}>{role.roleName}</p>
+                            {role.coverageLabel && (
+                              <Badge 
+                                variant={role.coverageLabel === 'High' ? 'default' : role.coverageLabel === 'Medium' ? 'secondary' : 'outline'}
+                                className="text-xs"
+                                data-testid={`badge-coverage-${role.roleId}`}
+                              >
+                                {role.coverageLabel} Confidence ({role.coveragePercent}%)
+                              </Badge>
+                            )}
+                          </div>
+                          {role.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-md mt-1">{role.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <Progress value={role.fitScore} className="w-24 h-2" />
+                            {role.rawFitScore && role.rawFitScore !== role.fitScore && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Raw: {role.rawFitScore}%
+                              </p>
+                            )}
+                          </div>
+                          <Badge 
+                            variant={role.fitScore >= 70 ? 'default' : role.fitScore >= 50 ? 'secondary' : 'outline'}
+                            className="min-w-[60px] justify-center"
+                            data-testid={`badge-role-fit-score-${role.roleId}`}
+                          >
+                            {role.fitScore}%
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Progress value={role.fitScore} className="w-24 h-2" />
-                        <Badge 
-                          variant={role.fitScore >= 80 ? 'default' : role.fitScore >= 60 ? 'secondary' : 'outline'}
-                          className="min-w-[60px] justify-center"
-                          data-testid={`badge-role-fit-score-${role.roleId}`}
-                        >
-                          {role.fitScore}%
-                        </Badge>
-                      </div>
+                      {role.missingCriticalSkills && role.missingCriticalSkills.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-dashed">
+                          <p className="text-xs text-amber-600 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Missing critical skills: {role.missingCriticalSkills.join(', ')}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

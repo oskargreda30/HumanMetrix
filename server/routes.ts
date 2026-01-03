@@ -3917,34 +3917,96 @@ Format your response as JSON with this structure:
       }
 
       // Calculate Role Flexibility - find alternative roles that might suit this candidate
+      // With coverage-weighted scoring and minimum 50% coverage threshold
       const allRoles = await storage.getAllJobRoles();
-      const roleFlexibility: Array<{ roleId: string; roleName: string; fitScore: number; description?: string }> = [];
+      const roleFlexibility: Array<{ 
+        roleId: string; 
+        roleName: string; 
+        fitScore: number;  // Adjusted score (raw * coverage)
+        rawFitScore: number;  // Original unadjusted score
+        coveragePercent: number;  // Percentage of role's skills that are assessed
+        coverageLabel: 'High' | 'Medium' | 'Limited';  // High: 80%+, Medium: 60-79%, Limited: 50-59%
+        missingCriticalSkills: string[];  // Critical skills the candidate hasn't been assessed on
+        description?: string;
+      }> = [];
       
       for (const altRole of allRoles) {
         // Skip current role and roles without required scores
         if (altRole.id === jobRoleId || !altRole.requiredSkillScores) continue;
         
-        const altAlignments: Array<{ candidateScore: number; requiredScore: number }> = [];
+        const altAlignments: Array<{ candidateScore: number; requiredScore: number; hasScore: boolean }> = [];
+        const missingCriticalSkills: string[] = [];
+        let totalSkillCount = 0;
+        let assessedSkillCount = 0;
+        
+        // Get criticality map from role's requiredSkillScores
+        const skillCriticality = altRole.requiredSkillScores.skillCriticality || {};
         
         // Calculate fit for FIT skills
         if (altRole.requiredSkillScores.fitSkills) {
           Object.entries(altRole.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
-            const candidateScore = fitSkills.get(skillName) || 0;
-            altAlignments.push({ candidateScore, requiredScore: requiredScore as number });
+            totalSkillCount++;
+            const candidateScore = fitSkills.get(skillName);
+            // A score of 0 is still a valid assessed score - only undefined means not assessed
+            const hasScore = candidateScore !== undefined;
+            
+            if (hasScore) {
+              assessedSkillCount++;
+              altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, hasScore: true });
+            } else {
+              // Track if this is a critical missing skill (skill not assessed at all)
+              const criticality = skillCriticality[skillName];
+              if (criticality === 'critical') {
+                missingCriticalSkills.push(skillName);
+              }
+            }
           });
         }
         
         // Calculate fit for AI Readiness skills
         if (altRole.requiredSkillScores.aiReadinessSkills) {
           Object.entries(altRole.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+            totalSkillCount++;
             const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
-            const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
-            altAlignments.push({ candidateScore, requiredScore: requiredScore as number });
+            // Check both the short name and full name in the map
+            const scoreFromFull = aiReadinessSkills.get(fullSkillName);
+            const scoreFromShort = aiReadinessSkills.get(skillName);
+            const candidateScore = scoreFromFull !== undefined ? scoreFromFull : scoreFromShort;
+            // A score of 0 is still a valid assessed score - only undefined means not assessed
+            const hasScore = candidateScore !== undefined;
+            
+            if (hasScore) {
+              assessedSkillCount++;
+              altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, hasScore: true });
+            } else {
+              // Track if this is a critical missing skill (skill not assessed at all)
+              const criticality = skillCriticality[skillName] || skillCriticality[fullSkillName];
+              if (criticality === 'critical') {
+                missingCriticalSkills.push(skillName);
+              }
+            }
           });
         }
         
+        // Calculate coverage percentage
+        const coveragePercent = totalSkillCount > 0 ? Math.round((assessedSkillCount / totalSkillCount) * 100) : 0;
+        
+        // Skip roles with less than 50% coverage (minimum threshold)
+        if (coveragePercent < 50) continue;
+        
+        // Determine coverage label
+        let coverageLabel: 'High' | 'Medium' | 'Limited';
+        if (coveragePercent >= 80) {
+          coverageLabel = 'High';
+        } else if (coveragePercent >= 60) {
+          coverageLabel = 'Medium';
+        } else {
+          coverageLabel = 'Limited';
+        }
+        
         if (altAlignments.length > 0) {
-          const altFitScore = Math.round(altAlignments.reduce((sum, skill) => {
+          // Calculate raw fit score (based on assessed skills only)
+          const rawFitScore = Math.round(altAlignments.reduce((sum, skill) => {
             if (skill.candidateScore >= skill.requiredScore) {
               return sum + 100;
             } else {
@@ -3952,16 +4014,23 @@ Format your response as JSON with this structure:
             }
           }, 0) / altAlignments.length);
           
+          // Apply coverage-weighted adjustment: adjusted score = raw score * coverage %
+          const adjustedFitScore = Math.round(rawFitScore * (coveragePercent / 100));
+          
           roleFlexibility.push({
             roleId: altRole.id,
             roleName: altRole.name,
-            fitScore: altFitScore,
+            fitScore: adjustedFitScore,
+            rawFitScore,
+            coveragePercent,
+            coverageLabel,
+            missingCriticalSkills,
             description: altRole.description || undefined
           });
         }
       }
       
-      // Sort by fit score and take top 5 alternative roles
+      // Sort by adjusted fit score and take top 5 alternative roles
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
       const topAlternativeRoles = roleFlexibility.slice(0, 5);
 
