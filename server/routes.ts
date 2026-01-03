@@ -3754,12 +3754,12 @@ Format your response as JSON with this exact structure and skill names:
           else alignment = 'poor';
           
           aiReadinessSkillAlignments.push({
-            skillName,
+            skillName: fullSkillName, // Use full skill name for proper cohort benchmark matching
             candidateScore,
             requiredScore,
             gap,
             alignment,
-            criticality: skillCriticality[skillName] || 'important'
+            criticality: skillCriticality[skillName] || skillCriticality[fullSkillName] || 'important'
           });
         });
       }
