@@ -127,10 +127,11 @@ export default function RoleFitTab() {
 
   const analyzeRoleFitMutation = useMutation({
     mutationFn: async () => {
+      // Use 120 second timeout for AI analysis which includes OpenAI API calls
       const res = await apiRequest('POST', '/api/admin/role-alignment', {
         userId: selectedCandidate,
         jobRoleId: selectedRole,
-      });
+      }, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {

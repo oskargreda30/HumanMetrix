@@ -4034,10 +4034,13 @@ Format your response as JSON with this structure:
       }
 
       // Check if this is an old cached alignment missing enhanced fields
-      // If so, return 404 to force the UI to regenerate
-      const hasEnhancedFields = alignment.fitSkillAlignments !== null || 
-                                 alignment.aiReadinessSkillAlignments !== null;
-      if (!hasEnhancedFields) {
+      // We check for dataRiskIndicators column which was added with the enhanced schema
+      // Old cached alignments won't have this field
+      const hasEnhancedSchema = 'dataRiskIndicators' in alignment;
+      const hasCriticalityInSkills = alignment.fitSkillAlignments?.some((s: any) => 'criticality' in s) ||
+                                      alignment.aiReadinessSkillAlignments?.some((s: any) => 'criticality' in s);
+      
+      if (!hasEnhancedSchema || !hasCriticalityInSkills) {
         // Delete the stale cached alignment so a fresh one can be generated
         await storage.invalidateRoleAlignmentCache(userId as string, jobRoleId as string);
         return res.status(404).json({ message: "Cached alignment outdated, please regenerate" });
