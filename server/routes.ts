@@ -3804,13 +3804,15 @@ Based on this analysis, provide:
 2. Top 3-5 development areas/gaps (areas where candidate falls short)
 3. Brief practical recommendations for hiring manager (2-3 sentences)
 4. Any risk flags or concerns (if any critical gaps exist)
+5. 2-3 targeted interview questions to probe the candidate's weakest areas (focus on behavioral and situational questions that reveal true capability)
 
 Format your response as JSON with this structure:
 {
   "strengths": [string],
   "gaps": [string],
   "recommendations": string,
-  "riskFlags": [string]
+  "riskFlags": [string],
+  "interviewQuestions": [{"question": string, "purpose": string, "targetSkill": string}]
 }`;
 
       const completion = await openai.chat.completions.create({
