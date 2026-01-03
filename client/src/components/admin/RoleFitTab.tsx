@@ -109,7 +109,8 @@ export default function RoleFitTab() {
 
   const generateRequiredScoresMutation = useMutation({
     mutationFn: async (roleId: string) => {
-      const res = await apiRequest('POST', `/api/admin/roles/${roleId}/generate-required-scores`);
+      // Use 90 second timeout for AI score generation which includes OpenAI API calls
+      const res = await apiRequest('POST', `/api/admin/roles/${roleId}/generate-required-scores`, undefined, { timeoutMs: 90000 });
       return res.json();
     },
     onSuccess: () => {
