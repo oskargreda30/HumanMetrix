@@ -3822,7 +3822,7 @@ Format your response as JSON with this structure:
       const insights = JSON.parse(completion.choices[0].message.content || "{}");
 
       // Calculate anonymous benchmarks (percentile ranking against all candidates)
-      const allResults = await storage.getAllAssessmentResults();
+      const allResults = await storage.getAllResults();
       const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
       
       // Group scores by skill across all candidates
