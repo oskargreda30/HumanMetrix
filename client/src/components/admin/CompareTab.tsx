@@ -39,7 +39,7 @@ const PDF_CHART_COLORS = [
 
 // Role definitions with skill weightings for suitability scoring
 // Uses the same keys as FIT_SKILLS and AI_READINESS_SKILLS
-import { ROLE_DEFINITIONS } from '@/lib/assessmentSkills';
+// Database roles are now used instead of static ROLE_DEFINITIONS
 
 // Map skill keys to display names for lookups (handles both legacy and current keys)
 const SKILL_KEY_TO_DISPLAY: Record<string, string> = {
@@ -120,6 +120,10 @@ export default function CompareTab() {
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/candidates'],
+  });
+
+  const { data: dbRoles } = useQuery<any[]>({
+    queryKey: ['/api/admin/roles'],
   });
 
   const { data: comparison, isLoading: isComparing } = useQuery<ComparisonData>({
@@ -707,24 +711,36 @@ export default function CompareTab() {
     };
   };
 
-  // Helper: Calculate role suitability score
-  const calculateRoleSuitability = (candidateIndex: number, roleKey: string): number => {
-    const role = ROLE_DEFINITIONS[roleKey];
-    if (!role) return 0;
+  // Helper: Get selected role data (from database roles)
+  const getSelectedRoleData = () => {
+    if (!selectedRole || !dbRoles) return null;
+    return dbRoles.find((r: any) => r.id === selectedRole);
+  };
+
+  // Helper: Calculate role suitability score using database role's requiredSkillScores
+  const calculateRoleSuitability = (candidateIndex: number, roleId: string): number => {
+    const role = dbRoles?.find((r: any) => r.id === roleId);
+    if (!role || !role.requiredSkillScores) return 0;
     
     const skills = getAllCandidateSkills(candidateIndex);
-    let weightedSum = 0;
-    let totalWeight = 0;
+    const requiredScores = role.requiredSkillScores as Record<string, number>;
     
-    Object.entries(role.weights).forEach(([skillName, weight]) => {
-      const score = skills[skillName];
-      if (score !== undefined) {
-        weightedSum += score * weight;
-        totalWeight += weight;
+    let totalScore = 0;
+    let totalPossible = 0;
+    let matchCount = 0;
+    
+    Object.entries(requiredScores).forEach(([skillName, requiredScore]) => {
+      const candidateScore = skills[skillName];
+      if (candidateScore !== undefined && requiredScore > 0) {
+        // Calculate how well candidate meets the requirement (capped at 100%)
+        const matchPercent = Math.min(100, (candidateScore / requiredScore) * 100);
+        totalScore += matchPercent;
+        totalPossible += 100;
+        matchCount++;
       }
     });
     
-    return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+    return matchCount > 0 ? Math.round(totalScore / matchCount) : 0;
   };
 
   // Helper: Calculate composite score across all assessments
@@ -1163,8 +1179,8 @@ export default function CompareTab() {
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.entries(ROLE_DEFINITIONS).map(([key, role]) => (
-                            <SelectItem key={key} value={key}>{role.name}</SelectItem>
+                          {dbRoles?.map((role: any) => (
+                            <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1172,7 +1188,7 @@ export default function CompareTab() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      {!selectedRole ? (
+                      {!selectedRole || !getSelectedRoleData() ? (
                         <div className="text-center py-8">
                           <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                           <p className="text-lg font-medium text-muted-foreground mb-2">No Role Selected</p>
@@ -1180,10 +1196,18 @@ export default function CompareTab() {
                             Select a role from the dropdown above to see how candidates align with specific job requirements.
                           </p>
                         </div>
+                      ) : !getSelectedRoleData()?.requiredSkillScores ? (
+                        <div className="text-center py-8">
+                          <Target className="h-12 w-12 mx-auto text-amber-500/50 mb-4" />
+                          <p className="text-lg font-medium text-muted-foreground mb-2">Required Scores Not Generated</p>
+                          <p className="text-sm text-muted-foreground">
+                            This role needs required skill scores before you can analyze candidates. Go to the Role Fit tab to generate them using AI.
+                          </p>
+                        </div>
                       ) : (
                         <>
                           <p className="text-sm text-muted-foreground">
-                            {ROLE_DEFINITIONS[selectedRole]?.description}
+                            {getSelectedRoleData()?.description || 'Select a role to see candidate alignment'}
                           </p>
                           
                           {/* Role fit scores */}
@@ -1207,7 +1231,7 @@ export default function CompareTab() {
                                     <div className="mt-4 text-left">
                                       <p className="text-xs font-medium mb-2">Key Skill Match:</p>
                                       <div className="space-y-1">
-                                        {Object.entries(ROLE_DEFINITIONS[selectedRole]?.weights || {}).slice(0, 4).map(([skillName, weight]) => {
+                                        {Object.entries(getSelectedRoleData()?.requiredSkillScores || {}).slice(0, 4).map(([skillName, requiredScore]) => {
                                           const skills = getAllCandidateSkills(index);
                                           const score = skills[skillName];
                                           return (
@@ -1229,6 +1253,7 @@ export default function CompareTab() {
                           
                           {/* Role Suitability Explanation */}
                           {(() => {
+                        const roleData = getSelectedRoleData();
                         const roleScores = selectedCandidateData?.map((candidate: any, index: number) => ({
                           name: getCandidateName(candidate),
                           score: calculateRoleSuitability(index, selectedRole),
@@ -1236,16 +1261,16 @@ export default function CompareTab() {
                           skills: getAllCandidateSkills(index),
                         })).sort((a: any, b: any) => b.score - a.score);
                         
-                        if (!roleScores || roleScores.length < 2) return null;
+                        if (!roleScores || roleScores.length < 2 || !roleData) return null;
                         
                         const top = roleScores[0];
                         const second = roleScores[1];
-                        const roleName = ROLE_DEFINITIONS[selectedRole]?.name || selectedRole;
-                        const roleWeights = Object.entries(ROLE_DEFINITIONS[selectedRole]?.weights || {});
-                        const topSkills = roleWeights.slice(0, 2).map(([name]) => name);
+                        const roleName = roleData.name || selectedRole;
+                        const roleRequirements = Object.entries(roleData.requiredSkillScores || {});
+                        const topSkills = roleRequirements.slice(0, 2).map(([name]) => name);
                         
                         // Find where top candidate excels
-                        const advantageSkills = roleWeights.filter(([skillName]) => {
+                        const advantageSkills = roleRequirements.filter(([skillName]) => {
                           const topScore = top.skills[skillName] ?? 0;
                           const secondScore = second.skills[skillName] ?? 0;
                           return topScore > secondScore;
@@ -2223,7 +2248,7 @@ export default function CompareTab() {
                       <div className="bg-muted/30 p-6 rounded-lg border" data-testid="comparison-writeup">
                         <div className="flex items-center gap-2 mb-4">
                           <FileText className="h-5 w-5 text-primary" />
-                          <h3 className="font-semibold">Comparison Summary for {selectedRole ? ROLE_DEFINITIONS[selectedRole]?.name : 'Selected Role'}</h3>
+                          <h3 className="font-semibold">Comparison Summary for {selectedRole ? getSelectedRoleData()?.name : 'Selected Role'}</h3>
                         </div>
                         
                         <div className="space-y-4 text-sm text-muted-foreground">
@@ -2265,8 +2290,9 @@ export default function CompareTab() {
                               return Math.round(weightedSum / totalWeight);
                             };
                             
-                            const currentRole = selectedRole || 'ai_consultant';
-                            const currentRoleName = ROLE_DEFINITIONS[currentRole]?.name || 'Selected Role';
+                            const currentRole = selectedRole;
+                            const currentRoleData = getSelectedRoleData();
+                            const currentRoleName = currentRoleData?.name || 'Selected Role';
                             
                             const rankedCandidates = selectedCandidateData.map((candidate: any, index: number) => ({
                               name: getCandidateName(candidate),

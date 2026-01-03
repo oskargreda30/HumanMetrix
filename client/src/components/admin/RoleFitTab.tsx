@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -58,14 +58,7 @@ export default function RoleFitTab() {
 
   const generateRequiredScoresMutation = useMutation({
     mutationFn: async (roleId: string) => {
-      const res = await fetch(`/api/admin/roles/${roleId}/generate-required-scores`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'Failed to generate required scores' }));
-        throw new Error(error.message || 'Failed to generate required scores');
-      }
+      const res = await apiRequest('POST', `/api/admin/roles/${roleId}/generate-required-scores`);
       return res.json();
     },
     onSuccess: () => {
@@ -83,22 +76,10 @@ export default function RoleFitTab() {
 
   const analyzeRoleFitMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/admin/role-alignment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedCandidate,
-          jobRoleId: selectedRole,
-        }),
+      const res = await apiRequest('POST', '/api/admin/role-alignment', {
+        userId: selectedCandidate,
+        jobRoleId: selectedRole,
       });
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'Failed to analyze role fit' }));
-        // Check if it requires generation
-        if (error.requiresGeneration) {
-          throw new Error(error.message + ' Click "Generate Required Scores" button first.');
-        }
-        throw new Error(error.message || 'Failed to analyze role fit');
-      }
       return res.json();
     },
     onSuccess: (data) => {
