@@ -3,28 +3,36 @@ import jsPDF from 'jspdf';
 // Shared PDF typography and styling helpers for HumanMetrix exports
 
 // Typography helpers for consistent font styling
+// Standard font sizes: Body=9pt, Subheading=10pt, Heading=13pt, Small=8pt
+
 export function applyBodyText(pdf: jsPDF) {
-  pdf.setFontSize(7);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
 }
 
 export function applySubheading(pdf: jsPDF) {
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(55, 65, 81);
 }
 
 export function applyHeading(pdf: jsPDF) {
-  pdf.setFontSize(11);
+  pdf.setFontSize(13);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
 }
 
 export function applySmallText(pdf: jsPDF) {
-  pdf.setFontSize(6);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(107, 114, 128);
+}
+
+export function applyLabelText(pdf: jsPDF) {
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(55, 65, 81);
 }
 
 // Blue color palette for charts and visualizations
