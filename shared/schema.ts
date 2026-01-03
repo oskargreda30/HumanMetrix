@@ -1307,3 +1307,29 @@ export const insertPartnerCandidateInvitationSchema = createInsertSchema(partner
 
 export type InsertPartnerCandidateInvitation = z.infer<typeof insertPartnerCandidateInvitationSchema>;
 export type PartnerCandidateInvitation = typeof partnerCandidateInvitations.$inferSelect;
+
+// System Settings - global configuration for the platform
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").unique().notNull(),
+  value: jsonb("value").$type<any>().notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [
+  index("idx_system_settings_key").on(table.key),
+]);
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+
+// Predefined system setting keys
+export const SYSTEM_SETTING_KEYS = {
+  RUN_TESTS_BEFORE_DEPLOY: "run_tests_before_deploy",
+  MAINTENANCE_MODE: "maintenance_mode",
+} as const;
