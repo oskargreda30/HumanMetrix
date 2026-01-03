@@ -1438,6 +1438,193 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // ========== Card Management Endpoints (for Prepaid Partners) ==========
+  
+  // Create Stripe Setup Intent for saving card
+  app.post("/api/partner/card/setup-intent", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Get partner account for this user
+      const partner = await storage.getPartnerAccountByEmail(user.email);
+      if (!partner) {
+        return res.status(403).json({ error: "Not a partner account" });
+      }
+      
+      // Only prepaid partners can save cards for overage billing
+      if (partner.billingType !== 'prepaid') {
+        return res.status(400).json({ error: "Card-on-file is only available for prepaid partners" });
+      }
+      
+      // Create or retrieve Stripe customer
+      let stripeCustomerId = partner.stripeCustomerId;
+      if (!stripeCustomerId) {
+        const customer = await stripe.customers.create({
+          email: partner.billingEmail || partner.email,
+          name: partner.companyName || partner.name,
+          metadata: {
+            partnerId: partner.id,
+          },
+        });
+        stripeCustomerId = customer.id;
+        await storage.updatePartnerAccount(partner.id, { stripeCustomerId });
+      }
+      
+      // Create a SetupIntent to collect card details
+      const setupIntent = await stripe.setupIntents.create({
+        customer: stripeCustomerId,
+        payment_method_types: ['card'],
+        metadata: {
+          partnerId: partner.id,
+          purpose: 'overage_billing',
+        },
+      });
+      
+      res.json({
+        clientSecret: setupIntent.client_secret,
+      });
+    } catch (error) {
+      console.error("Error creating setup intent:", error);
+      res.status(500).json({ error: "Failed to create payment setup" });
+    }
+  });
+  
+  // Confirm card was saved and update partner record
+  app.post("/api/partner/card/confirm", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { paymentMethodId } = req.body;
+      if (!paymentMethodId) {
+        return res.status(400).json({ error: "Payment method ID required" });
+      }
+      
+      // Get partner account for this user
+      const partner = await storage.getPartnerAccountByEmail(user.email);
+      if (!partner) {
+        return res.status(403).json({ error: "Not a partner account" });
+      }
+      
+      // Retrieve payment method to get card details
+      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+      if (!paymentMethod.card) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+      
+      // Set as default payment method for customer
+      if (partner.stripeCustomerId) {
+        await stripe.customers.update(partner.stripeCustomerId, {
+          invoice_settings: {
+            default_payment_method: paymentMethodId,
+          },
+        });
+      }
+      
+      // Update partner record with card info
+      await storage.updatePartnerCardInfo(partner.id, {
+        stripePaymentMethodId: paymentMethodId,
+        cardLast4: paymentMethod.card.last4,
+        cardBrand: paymentMethod.card.brand,
+        cardOnFile: true,
+      });
+      
+      res.json({
+        success: true,
+        cardLast4: paymentMethod.card.last4,
+        cardBrand: paymentMethod.card.brand,
+      });
+    } catch (error) {
+      console.error("Error confirming card:", error);
+      res.status(500).json({ error: "Failed to save card" });
+    }
+  });
+  
+  // Get current card status
+  app.get("/api/partner/card/status", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const partner = await storage.getPartnerAccountByEmail(user.email);
+      if (!partner) {
+        return res.status(403).json({ error: "Not a partner account" });
+      }
+      
+      res.json({
+        hasCard: partner.cardOnFile || false,
+        cardLast4: partner.cardLast4,
+        cardBrand: partner.cardBrand,
+        overageRatePerTest: partner.overageRatePerTest || 500, // Default 5.00 GBP
+        billingType: partner.billingType,
+      });
+    } catch (error) {
+      console.error("Error getting card status:", error);
+      res.status(500).json({ error: "Failed to get card status" });
+    }
+  });
+  
+  // Remove saved card
+  app.delete("/api/partner/card", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const partner = await storage.getPartnerAccountByEmail(user.email);
+      if (!partner) {
+        return res.status(403).json({ error: "Not a partner account" });
+      }
+      
+      // Detach payment method from Stripe if it exists
+      if (partner.stripePaymentMethodId) {
+        try {
+          await stripe.paymentMethods.detach(partner.stripePaymentMethodId);
+        } catch (e) {
+          console.log("Payment method already detached or not found");
+        }
+      }
+      
+      // Remove card info from partner record
+      await storage.removePartnerCard(partner.id);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing card:", error);
+      res.status(500).json({ error: "Failed to remove card" });
+    }
+  });
+  
+  // Get overage billing history
+  app.get("/api/partner/overage-history", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const partner = await storage.getPartnerAccountByEmail(user.email);
+      if (!partner) {
+        return res.status(403).json({ error: "Not a partner account" });
+      }
+      
+      const history = await storage.getOverageLedgerByPartner(partner.id);
+      
+      res.json(history);
+    } catch (error) {
+      console.error("Error getting overage history:", error);
+      res.status(500).json({ error: "Failed to get overage history" });
+    }
+  });
+
   // Serve embed widget.js
   app.get("/embed/widget.js", (req, res) => {
     try {

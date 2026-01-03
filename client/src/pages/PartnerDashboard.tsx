@@ -51,6 +51,308 @@ function InfoTooltip({ content }: { content: string }) {
   );
 }
 
+interface CardStatus {
+  hasCard: boolean;
+  cardLast4?: string;
+  cardBrand?: string;
+  overageRatePerTest?: number;
+  billingType: string;
+}
+
+interface OverageHistoryItem {
+  id: string;
+  billingMonth: string;
+  overageTests: number;
+  overageAmount: number;
+  chargeStatus: string;
+  stripePaymentIntentId?: string;
+  createdAt: string;
+}
+
+function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
+
+  const { data: cardStatus, isLoading, refetch } = useQuery<CardStatus>({
+    queryKey: ["/api/partner/card/status"],
+  });
+
+  const { data: overageHistory } = useQuery<OverageHistoryItem[]>({
+    queryKey: ["/api/partner/overage-history"],
+  });
+
+  const handleSaveCard = async () => {
+    if (!stripe || !elements) return;
+
+    setIsSettingUp(true);
+    setCardError(null);
+
+    try {
+      const response = await apiRequest("POST", "/api/partner/card/setup-intent");
+      const { clientSecret } = await response.json();
+
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error("Card element not found");
+      }
+
+      const { setupIntent, error } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (setupIntent?.payment_method) {
+        await apiRequest("POST", "/api/partner/card/confirm", {
+          paymentMethodId: setupIntent.payment_method,
+        });
+
+        toast({
+          title: "Card saved",
+          description: "Your card has been saved for overage billing.",
+        });
+        setShowAddCard(false);
+        refetch();
+      }
+    } catch (error: any) {
+      setCardError(error.message || "Failed to save card");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save card",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
+
+  const handleRemoveCard = async () => {
+    setIsRemoving(true);
+    try {
+      await apiRequest("DELETE", "/api/partner/card");
+      toast({
+        title: "Card removed",
+        description: "Your saved card has been removed.",
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove card",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const formatCardBrand = (brand?: string) => {
+    if (!brand) return "";
+    return brand.charAt(0).toUpperCase() + brand.slice(1);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Card on File
+          </CardTitle>
+          <CardDescription>
+            Save a card for automatic overage billing when your prepaid credits run out
+          </CardDescription>
+        </div>
+        {cardStatus?.hasCard && (
+          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Active
+          </Badge>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {cardStatus?.hasCard ? (
+          <>
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">
+                    {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Overage rate: £{((cardStatus.overageRatePerTest || 500) / 100).toFixed(2)} per test
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveCard}
+                disabled={isRemoving}
+                data-testid="button-remove-card"
+              >
+                {isRemoving ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Remove
+              </Button>
+            </div>
+            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <Info className="h-4 w-4 inline mr-1" />
+                With a card on file, your API access stays active even when prepaid credits run out. Overages are billed automatically on the 1st of each month.
+              </p>
+            </div>
+
+            {overageHistory && overageHistory.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Overage History</p>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">Month</th>
+                        <th className="px-3 py-2 text-right font-medium">Tests</th>
+                        <th className="px-3 py-2 text-right font-medium">Amount</th>
+                        <th className="px-3 py-2 text-right font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {overageHistory.slice(0, 6).map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-3 py-2">{item.billingMonth}</td>
+                          <td className="px-3 py-2 text-right">{item.overageTests}</td>
+                          <td className="px-3 py-2 text-right">£{(item.overageAmount / 100).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Badge 
+                              variant="outline" 
+                              className={
+                                item.chargeStatus === 'paid' 
+                                  ? 'bg-green-500/10 text-green-600 border-green-500/30' 
+                                  : item.chargeStatus === 'pending'
+                                  ? 'bg-orange-500/10 text-orange-600 border-orange-500/30'
+                                  : 'bg-red-500/10 text-red-600 border-red-500/30'
+                              }
+                            >
+                              {item.chargeStatus}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        ) : showAddCard ? (
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <CardElement
+                options={{
+                  style: {
+                    base: {
+                      fontSize: "16px",
+                      color: "#424770",
+                      "::placeholder": { color: "#aab7c4" },
+                    },
+                    invalid: { color: "#9e2146" },
+                  },
+                }}
+                onChange={(event) => {
+                  setCardComplete(event.complete);
+                  setCardError(event.error ? event.error.message : null);
+                }}
+              />
+              {cardError && (
+                <p className="text-sm text-destructive mt-2">{cardError}</p>
+              )}
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Your card details are securely processed by Stripe. We never store your full card number.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveCard}
+                disabled={!cardComplete || isSettingUp || !stripe}
+                data-testid="button-confirm-save-card"
+              >
+                {isSettingUp && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Save Card
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddCard(false);
+                  setCardError(null);
+                }}
+                disabled={isSettingUp}
+                data-testid="button-cancel-save-card"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 border-2 border-dashed rounded-lg text-center">
+              <CreditCard className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-4">
+                No card saved. Add a card to keep API access active when credits run out.
+              </p>
+              <Button onClick={() => setShowAddCard(true)} data-testid="button-add-card">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Card
+              </Button>
+            </div>
+            <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4 inline mr-1" />
+                Without a card on file, your API access will be suspended when prepaid credits are exhausted.
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PrepaidCardManagement({ partnerId }: { partnerId: string }) {
+  return (
+    <Elements stripe={stripePromise}>
+      <PrepaidCardManagementInner partnerId={partnerId} />
+    </Elements>
+  );
+}
+
 interface PartnerAccount {
   hasPartnerAccount: boolean;
   partner?: {
@@ -2143,6 +2445,11 @@ export default function PartnerDashboard() {
                       </Badge>
                     </CardHeader>
                   </Card>
+
+                  {/* Card on File for Prepaid Partners */}
+                  {account?.partner?.billingType === 'prepaid' && (
+                    <PrepaidCardManagement partnerId={account.partner.id} />
+                  )}
 
                   {/* Pending Billing Change Request Alert */}
                   {billingChangeData?.pendingRequest && (
