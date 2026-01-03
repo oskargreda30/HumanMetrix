@@ -26,6 +26,11 @@ const SETTING_KEYS = {
 export default function SystemSettingsTab() {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  
+  // Check if we're in production (deployed site)
+  const isProduction = typeof window !== 'undefined' && 
+    !window.location.hostname.includes('localhost') && 
+    !window.location.hostname.includes('replit.dev');
 
   const { data: settings, isLoading, refetch } = useQuery<SystemSetting[]>({
     queryKey: ["/api/admin/system-settings"],
@@ -104,7 +109,34 @@ export default function SystemSettingsTab() {
         </Button>
       </div>
 
-      {/* Deployment Settings */}
+      {/* Deployment Settings - Only show in development */}
+      {isProduction ? (
+        <Card className="bg-white/10 border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 text-cyan-400" />
+              Deployment Testing
+            </CardTitle>
+            <CardDescription className="text-white/70">
+              This setting can only be changed in the development environment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <h4 className="text-amber-300 font-medium mb-1">Development Only</h4>
+                  <p className="text-white/70 text-sm">
+                    The deployment test toggle must be changed in the development environment 
+                    because the build process reads from the development database.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="bg-white/10 border-white/20">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
@@ -204,8 +236,10 @@ export default function SystemSettingsTab() {
           )}
         </CardContent>
       </Card>
+      )}
 
-      {/* Environment Info */}
+      {/* Environment Info - Only show in development */}
+      {!isProduction && (
       <Card className="bg-white/10 border-white/20">
         <CardHeader>
           <CardTitle className="text-white text-lg">Environment Configuration</CardTitle>
@@ -217,7 +251,7 @@ export default function SystemSettingsTab() {
           <div className="space-y-4 text-white/80 text-sm">
             <p>
               The toggle above <strong className="text-white">directly controls</strong> whether tests run during deployment. 
-              The setting is stored in the database and read by the build script.
+              The setting is stored in the development database and read by the build script.
             </p>
             <div className="p-3 rounded bg-black/30 border border-white/10 font-mono text-xs overflow-x-auto">
               <code>./scripts/run-tests-before-deploy.sh && npm run build</code>
@@ -225,6 +259,7 @@ export default function SystemSettingsTab() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
