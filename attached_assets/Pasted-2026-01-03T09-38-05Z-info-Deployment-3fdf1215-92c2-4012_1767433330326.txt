@@ -1,0 +1,1320 @@
+2026-01-03T09:38:05Z info: Deployment: 3fdf1215-92c2-4012-bc08-009d4594b5e2
+2026-01-03T09:38:05Z info: Build: d0317d2d-786c-44bc-9b12-fe9a72d5087f
+2026-01-03T09:38:05Z info: Running Security Scan
+2026-01-03T09:38:20Z info: Security Scan Complete
+2026-01-03T09:38:20Z info: Connecting to builder
+2026-01-03T09:38:20Z info: Builder connected
+2026-01-03T09:38:21Z info: Installing packages
+2026-01-03T09:38:21Z info: Starting Build
+==========================================
+Pre-Deployment Test Runner
+==========================================
+
+Running comprehensive test suite...
+
+
+----------------------------------------
+
+Running Unit Tests...
+
+----------------------------------------
+
+ RUN  v1.6.0 /home/runner/workspace
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should deduct 1 credit for each test usage
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should reject deduction when balance is 0
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should reject deduction for negative balance
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should correctly add prepaid credits after top-up
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should handle adding credits to zero balance
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should increment usage count for each test
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should calculate correct month-end billing
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should not bill inactive partners
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should not bill partners with zero usage
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should use custom price per assessment when set
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should increment usage count for each test
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should calculate correct month-end billing for invoice
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should handle large usage volumes
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should generate correct month key format
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should pad single-digit months
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should calculate previous month key correctly
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should handle year rollback for January
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should reject prepaid deduction for auto-bill partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should reject usage increment for prepaid partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should not generate month-end bill for prepaid partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should handle default price when pricePerAssessment is 0
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should handle very large prepaid balances
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should calculate correct totals for fractional prices
+
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should create user with generated ID
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return user by ID
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return undefined for non-existent user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should find user by email
+
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return undefined for non-existent email
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should set default role to user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should create purchase with pending status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should return purchases by user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should return empty array for user with no purchases
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Result Operations > should create result with pending status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Result Operations > should return results by user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Session Operations > should create session with created status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Session Operations > should return undefined for non-existent session
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Email Validation > should validate correct emails
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Email Validation > should reject invalid emails
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > UUID Validation > should validate correct UUIDs
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > UUID Validation > should reject invalid UUIDs
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should accept valid amounts
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should reject negative amounts
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should reject decimal amounts
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Array to Map > should convert array to map by ID
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Array to Map > should handle empty array
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Group By > should group items by key
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Bulk Operations > should return items grouped by purchase ID
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Bulk Operations > should return empty array for purchases with no items
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Cascade Patterns > should identify dependent records
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should accept valid foreign key
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should accept null for nullable FK
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should reject invalid foreign key
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should return success with data
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should return failure for undefined
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should catch exceptions
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should return value when present
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should return default when undefined
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should not use default for null
+
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Created/Updated Timestamps > should set createdAt on new records
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Created/Updated Timestamps > should compare timestamps correctly
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Expiry Checking > should detect expired timestamps
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Expiry Checking > should detect valid timestamps
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should have exactly 4 assessment types
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include FIT assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include AI Readiness assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include Prompt Architecture assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include AIQ assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for FIT
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for AI Readiness
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 14 minutes for Prompt Architecture
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for AIQ
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 25 questions for FIT
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 25 questions for AI Readiness
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 7 levels for Prompt Architecture
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 8 questions for AIQ
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize fit correctly
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize ai_readiness variants
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize prompt_architecture variants
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize aiq correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept valid options
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept lowercase options
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept options with whitespace
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should reject invalid options
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should accept answers meeting minimum length
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should reject answers below minimum length
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should trim whitespace before validation
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should calculate 100% for complete answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should calculate 50% for half-complete answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should handle empty answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate 100% for all correct
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate 0% for none correct
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate percentage correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should handle zero total
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Exceptional for 90+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Strong for 80-89
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Proficient for 70-79
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Developing for 60-69
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Basic for 50-59
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Needs Improvement for below 50
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should succeed on first attempt
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should apply the locked hybrid scoring formula correctly
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle equal raw percentages (all same score)
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle edge case of 0% minimum raw percentage
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle edge case of 100% minimum raw percentage
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should return rounded integer scores
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have exactly 6 skills defined
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have perfectly balanced matrix with 15 occurrences per skill
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have 90 total skill mappings (6 skills × 15 occurrences)
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have all skill points equal to 4
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have exactly 9 skills defined
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have skill occurrences matching questions section (intentionally unbalanced)
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have 210 total skill mappings across all questions
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have all skill points equal to 4
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should calculate scores for valid answers
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should handle normalized question formats
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should return valid scores for empty answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should handle mixed case answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should calculate scores for valid answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should return valid scores for empty answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should never produce scores below 50
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should never produce scores above 100
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should maintain score differentiation with varied inputs
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Regression Tests > should produce consistent scores for known input (regression guard)
+
+stdout | tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should calculate scores for valid answers
+[AIR Scoring] Raw scores: {
+  'AI Literacy & Prompt Engineering': 16,
+  'Technical Fundamentals': 20,
+  'Data Fluency': 28,
+  'Critical Thinking & Problem-Solving': 32,
+  'Adaptability & Continuous Learning': 24,
+  'Collaboration & Communication': 8,
+  'Responsible AI & Ethical Awareness': 20,
+  'Creativity & Innovation': 4,
+  'Domain Expertise': 16
+}
+[AIR Scoring] Max scores: {
+  'AI Literacy & Prompt Engineering': 80,
+  'Technical Fundamentals': 76,
+  'Data Fluency': 72,
+  'Critical Thinking & Problem-Solving': 72,
+  'Adaptability & Continuous Learning': 76,
+  'Responsible AI & Ethical Awareness': 60,
+  'Domain Expertise': 76,
+  'Creativity & Innovation': 72,
+  'Collaboration & Communication': 80
+}
+[AIR Scoring] Raw percentages: {
+  'AI Literacy & Prompt Engineering': 20,
+  'Technical Fundamentals': 26.31578947368421,
+  'Data Fluency': 38.88888888888889,
+  'Critical Thinking & Problem-Solving': 44.44444444444444,
+  'Adaptability & Continuous Learning': 31.57894736842105,
+  'Collaboration & Communication': 10,
+  'Responsible AI & Ethical Awareness': 33.33333333333333,
+  'Creativity & Innovation': 5.555555555555555,
+  'Domain Expertise': 21.052631578947366
+}
+[AIR Scoring] Final scores after hybrid formula: {
+  'AI Literacy & Prompt Engineering': 67,
+  'Technical Fundamentals': 73,
+  'Data Fluency': 85,
+  'Critical Thinking & Problem-Solving': 91,
+  'Adaptability & Continuous Learning': 78,
+  'Collaboration & Communication': 57,
+  'Responsible AI & Ethical Awareness': 80,
+  'Creativity & Innovation': 52,
+  'Domain Expertise': 68
+}
+
+stdout | tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should return valid scores for empty answers
+[AIR Scoring] Raw scores: {
+  'AI Literacy & Prompt Engineering': 0,
+  'Technical Fundamentals': 0,
+  'Data Fluency': 0,
+  'Critical Thinking & Problem-Solving': 0,
+  'Adaptability & Continuous Learning': 0,
+  'Collaboration & Communication': 0,
+  'Responsible AI & Ethical Awareness': 0,
+  'Creativity & Innovation': 0,
+  'Domain Expertise': 0
+}
+[AIR Scoring] Max scores: {
+  'AI Literacy & Prompt Engineering': 80,
+  'Technical Fundamentals': 76,
+  'Data Fluency': 72,
+  'Critical Thinking & Problem-Solving': 72,
+  'Adaptability & Continuous Learning': 76,
+  'Responsible AI & Ethical Awareness': 60,
+  'Domain Expertise': 76,
+  'Creativity & Innovation': 72,
+  'Collaboration & Communication': 80
+}
+[AIR Scoring] Raw percentages: {
+  'AI Literacy & Prompt Engineering': 0,
+  'Technical Fundamentals': 0,
+  'Data Fluency': 0,
+  'Critical Thinking & Problem-Solving': 0,
+  'Adaptability & Continuous Learning': 0,
+  'Collaboration & Communication': 0,
+  'Responsible AI & Ethical Awareness': 0,
+  'Creativity & Innovation': 0,
+  'Domain Expertise': 0
+}
+[AIR Scoring] Final scores after hybrid formula: {
+  'AI Literacy & Prompt Engineering': 50,
+  'Technical Fundamentals': 50,
+  'Data Fluency': 50,
+  'Critical Thinking & Problem-Solving': 50,
+  'Adaptability & Continuous Learning': 50,
+  'Collaboration & Communication': 50,
+  'Responsible AI & Ethical Awareness': 50,
+  'Creativity & Innovation': 50,
+  'Domain Expertise': 50
+}
+
+
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should use hello@humanmetrix.co.uk as sender
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should use HumanMetrix as sender name
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should format from address correctly
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should use humanmetrix.co.uk domain
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should not use deprecated info@ address
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should not use deprecated support@ address
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format FIT assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format AI Readiness assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format Prompt Architecture assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format AIQ assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should return original type for unknown assessment
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include candidate name in body
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include inviter name in subject
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include all assessment types
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include invite URL
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should have correct subject line
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should include user name
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should include reset URL
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should mention expiry time
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should include payment amount
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should include transaction ID
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should list purchased assessments
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact password fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact passwordHash fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact resetToken fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact apiKey fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should preserve non-sensitive fields
+ ✓ tests/unit/email.test.ts > Email Validation > should accept valid email addresses
+ ✓ tests/unit/email.test.ts > Email Validation > should reject invalid email addresses
+ ✓ tests/unit/email.test.ts > Date Formatting for Emails > should format date in British style
+ ✓ tests/unit/email.test.ts > Date Formatting for Emails > should use day month year order
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format GBP correctly
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format USD correctly
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format EUR correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should retry on transient errors 1002ms
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should not retry on invalid_api_key error
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should not retry on insufficient_quota error
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify rate limit errors as retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify server errors as retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify auth errors as non-retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify invalid request as non-retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > should have 7 levels
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > should have correct total time (14 minutes)
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should score level 1 at base points
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should score higher levels with multiplier
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should return 0 for failed levels
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > should have correct total weight
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should give full score for exact match
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should give partial score for partial match
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should apply weight correctly
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return High band for 80+
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Moderate band for 60-79
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Developing band for 40-59
+
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Low band for below 40
+
+ Test Files  5 passed (5)
+      Tests  177 passed (177)
+
+   Start at  09:38:28
+   Duration  3.55s (transform 395ms, setup 96ms, collect 531ms, tests 1.14s, environment 1ms, prepare 1.93s)
+
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.7.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+npm notice To update run: npm install -g npm@11.7.0
+npm notice
+
+Unit tests passed!
+
+----------------------------------------
+
+Running Integration Tests...
+----------------------------------------
+
+ RUN  v1.6.0 /home/runner/workspace
+
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should return correct base fee in pence
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should calculate total price for assessments
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should handle single assessment purchase
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 1 pricing (1.0x) for US
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 1 pricing (1.0x) for UK
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 2 pricing (0.7x) for Brazil
+
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 2 pricing (0.7x) for Thailand
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 3 pricing (0.5x) for India
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 3 pricing (0.5x) for Nigeria
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should default to full price for unknown country
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should detect Philippines as SEA launch country
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Philippines
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Vietnam
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Indonesia
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Malaysia
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should not have SEA pricing for non-SEA countries
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should validate FREE discount code
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should validate 20OFFPRICE discount code
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should handle case-insensitive codes
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should handle codes with whitespace
+
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should reject invalid codes
+
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should reject empty codes
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 100% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 20% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 0% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should handle 50% discount
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow pending to completed transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow pending to cancelled transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should not allow completed to any transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow failed to pending (retry)
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should require at least one assessment for purchase
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should accept valid assessment types
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should reject invalid assessment types
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should convert GBP to pence
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should convert USD to cents
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should handle JPY (zero decimal currency)
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should handle VND (zero decimal currency)
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should round correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should convert pence to GBP
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should convert cents to USD
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should handle JPY correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should parse Stripe signature header format
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should reject missing timestamp
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should reject missing v1 signature
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Timestamp Validation > should accept recent timestamps
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Timestamp Validation > should reject old timestamps
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should process new event
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should reject duplicate event
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should handle multiple unique events
+
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should accept valid API key format with prefix
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should extract key prefix correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should reject keys without valid prefix
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should differentiate between live and test keys
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should allow access with matching permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should deny access without required permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should allow access with wildcard permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should handle multiple permissions correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should allow requests within rate limit
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should track request count correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should block requests exceeding rate limit
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should reset count after window expires
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should accept valid assessment types
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should reject invalid assessment types
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should validate expiration time within bounds
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should validate email format if provided
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow transition from created to started
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow transition from started to completed
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should not allow transition from completed to any status
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow any status to transition to expired
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should calculate expiry time correctly
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should identify expired sessions
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should identify valid sessions
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should calculate remaining quota correctly
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should handle zero purchased credits
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should handle fully consumed quota
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should detect negative remaining (over-consumption)
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Consumption > should block session creation when quota exhausted
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Consumption > should allow session creation when quota available
+ ✓ tests/integration/partner-
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should generate CSRF token if not present in cookies
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should not regenerate token if already present in cookies
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should attach token to request object
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow GET requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow HEAD requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow OPTIONS requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject POST without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject POST with mismatched tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow POST with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject PUT without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow PUT with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject DELETE without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow DELETE with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/login without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/signup without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/stripe/webhook without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/partner/sessions without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/partner/sessions/:id without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > API Key Bypass > should bypass CSRF for requests with x-api-key header
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > API Key Bypass > should bypass CSRF for requests with Authorization header
+
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > getCsrfToken Helper > should return token from request object
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > getCsrfToken Helper > should return empty string if no token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Cookie Settings > should set correct cookie options in development
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Cookie Settings > should set secure cookie in production
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup without email
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup without password
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup with existing email
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should accept signup with valid credentials
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should hash passwords with bcrypt
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should verify correct password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should reject incorrect password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should generate different hashes for same password 369ms
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login without credentials
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login for non-existent user
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login with wrong password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should accept login with correct credentials
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should generate cryptographically secure reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should set token expiry to 1 hour
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should reject expired reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should accept valid reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should reject password change without current password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should reject password shorter than 8 characters
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should accept password of exactly 8 characters
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should accept password longer than 8 characters
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should identify authenticated requests by userId in session
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests without userId in session
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests with null userId
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests with undefined userId
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > User Response Sanitization > should not include passwordHash in login response
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > User Response Sanitization > should not include resetToken in response
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should reject request without session userId
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should reject request if user not found in database
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should attach user to request if valid
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should not fail if no userId in session
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should populate user if userId exists and user found
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should not fail if user not found
+
+ Test Files  4 passed (4)
+
+      Tests  145 passed (145)
+
+   Start at  09:38:32
+
+   Duration  2.29s (transform 495ms, setup 67ms, collect 555ms, tests 1.31s, environment 1ms, prepare 730ms)
+
+Integration tests passed!
+
+----------------------------------------
+
+E2E Tests
+----------------------------------------
+Note: E2E tests are run via Playwright testing tool during development
+      They are not run automatically during deployment.
+
+==========================================
+
+All tests passed! Proceeding to build...
+
+==========================================
+
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+
+vite v5.4.20 building for production...
+
+transforming...
+
+Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+
+
+/grid.svg referenced in /grid.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+✓ 5459 modules transformed.
+
+rendering chunks...
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /home/runner/workspace/node_modules/jspdf/dist/jspdf.es.min.js is dynamically imported by /home/runner/workspace/client/src/pages/GenerateSamplePDFs.tsx but also statically imported by /home/runner/workspace/client/src/components/admin/CompareTab.tsx, /home/runner/workspace/client/src/lib/enhancedPdfExport.ts, /home/runner/workspace/client/src/lib/pdfExport.ts, dynamic import will not move module into another chunk.
+
+
+computing gzip size...
+
+../dist/public/index.html                                                                                      3.37 kB │ gzip:   1.38 kB
+
+../dist/public/assets/logo_HumanMetrix_big_1766783080540-D0l8ZuTI.png                                         43.58 kB
+
+../dist/public/assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899-D93fnt0W.png     54.79 kB
+../dist/public/assets/Professional_results_preview-BN95Gpkq.png                                               99.15 kB
+
+../dist/public/assets/image_1767042236125-Dklc7Z_x.png                                                       101.13 kB
+
+../dist/public/assets/image_1767042222400-ghbgReCs.png                                                       108.26 kB
+
+../dist/public/assets/image_1767042182791-Cp0vGAFh.png                                                       109.23 kB
+../dist/public/assets/image_1767042160343-DDuzPnEh.png                                                       112.68 kB
+../dist/public/assets/image_1765687714401-Ee0vFGDs.png                                                       119.33 kB
+
+../dist/public/assets/image_1765688061458-DrR7HcHu.png                                                       140.49 kB
+../dist/public/assets/image_1763608498774-B9ZjYiYd.png                                                       966.51 kB
+
+../dist/public/assets/image_1761537286469-CDZ89g90.png                                                     1,326.68 kB
+
+../dist/public/assets/index-hUc7Evm0.css                                                                     315.12 kB │ gzip:  47.42 kB
+
+../dist/public/assets/defineProperty-D1u6Fzp-.js                                                               0.50 kB │ gzip:   0.34 kB
+
+../dist/public/assets/purify.es-sOfw8HaZ.js                                                                   22.67 kB │ gzip:   8.75 kB
+
+../dist/public/assets/index.es-DCzkup73.js                                                                   150.16 kB │ gzip:  51.20 kB
+
+../dist/public/assets/index-DxOPNw35.js                                                                    1,299.11 kB │ gzip: 369.37 kB
+
+../dist/public/assets/index-C4mGxpIu.js                                                                    2,756.94 kB │ gzip: 762.57 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+✓ built in 26.29s
+
+
+  dist/index.js  750.4kb
+
+⚡ Done in 1551ms
+
+2026-01-03T09:39:04Z info: Pushing pid1 binary layer...
+2026-01-03T09:39:07Z info: Created pid1 binary layer
+2026-01-03T09:39:09Z info: Pushing hosting layer...
+2026-01-03T09:39:09Z info: Pushing Repl layer...
+2026-01-03T09:39:09Z info: Retrieved cached nix layer
+2026-01-03T09:39:09Z info: Created hosting layer
+2026-01-03T09:40:04Z info: Created Repl layer
+2026-01-03T09:40:07Z info: Pushed image manifest
+2026-01-03T09:40:08Z info: Pushed soci index manifest
+2026-01-03T09:40:11Z info: Creating Autoscale service
+2026-01-03T09:38:05Z info: Deployment: 3fdf1215-92c2-4012-bc08-009d4594b5e2
+2026-01-03T09:38:05Z info: Build: d0317d2d-786c-44bc-9b12-fe9a72d5087f
+2026-01-03T09:38:05Z info: Running Security Scan
+2026-01-03T09:38:20Z info: Security Scan Complete
+2026-01-03T09:38:20Z info: Connecting to builder
+2026-01-03T09:38:20Z info: Builder connected
+2026-01-03T09:38:21Z info: Installing packages
+2026-01-03T09:38:21Z info: Starting Build
+==========================================
+Pre-Deployment Test Runner
+==========================================
+
+Running comprehensive test suite...
+
+
+----------------------------------------
+
+Running Unit Tests...
+
+----------------------------------------
+
+ RUN  v1.6.0 /home/runner/workspace
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should deduct 1 credit for each test usage
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should reject deduction when balance is 0
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should reject deduction for negative balance
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should correctly add prepaid credits after top-up
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Prepaid Billing Model > should handle adding credits to zero balance
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should increment usage count for each test
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should calculate correct month-end billing
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should not bill inactive partners
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should not bill partners with zero usage
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Auto-Bill Model > should use custom price per assessment when set
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should increment usage count for each test
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should calculate correct month-end billing for invoice
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Invoice Model > should handle large usage volumes
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should generate correct month key format
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should pad single-digit months
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should calculate previous month key correctly
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Month Key Generation > should handle year rollback for January
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should reject prepaid deduction for auto-bill partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should reject usage increment for prepaid partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Billing Type Validation > should not generate month-end bill for prepaid partners
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should handle default price when pricePerAssessment is 0
+
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should handle very large prepaid balances
+ ✓ tests/unit/billing.test.ts > Partner Billing Logic > Edge Cases > should calculate correct totals for fractional prices
+
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should create user with generated ID
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return user by ID
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return undefined for non-existent user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should find user by email
+
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should return undefined for non-existent email
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > User Operations > should set default role to user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should create purchase with pending status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should return purchases by user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Purchase Operations > should return empty array for user with no purchases
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Result Operations > should create result with pending status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Result Operations > should return results by user
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Session Operations > should create session with created status
+ ✓ tests/unit/storage.test.ts > Storage Layer Patterns > Session Operations > should return undefined for non-existent session
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Email Validation > should validate correct emails
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Email Validation > should reject invalid emails
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > UUID Validation > should validate correct UUIDs
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > UUID Validation > should reject invalid UUIDs
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should accept valid amounts
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should reject negative amounts
+ ✓ tests/unit/storage.test.ts > Data Validation Patterns > Amount Validation > should reject decimal amounts
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Array to Map > should convert array to map by ID
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Array to Map > should handle empty array
+
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Group By > should group items by key
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Bulk Operations > should return items grouped by purchase ID
+ ✓ tests/unit/storage.test.ts > Query Result Transformations > Bulk Operations > should return empty array for purchases with no items
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Cascade Patterns > should identify dependent records
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should accept valid foreign key
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should accept null for nullable FK
+
+ ✓ tests/unit/storage.test.ts > Referential Integrity > Foreign Key Validation > should reject invalid foreign key
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should return success with data
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should return failure for undefined
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Optional Lookups > should catch exceptions
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should return value when present
+
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should return default when undefined
+ ✓ tests/unit/storage.test.ts > Soft-Fail Patterns > Default Values > should not use default for null
+
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Created/Updated Timestamps > should set createdAt on new records
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Created/Updated Timestamps > should compare timestamps correctly
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Expiry Checking > should detect expired timestamps
+ ✓ tests/unit/storage.test.ts > Timestamp Handling > Expiry Checking > should detect valid timestamps
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should have exactly 4 assessment types
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include FIT assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include AI Readiness assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include Prompt Architecture assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Assessment Types > should include AIQ assessment
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for FIT
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for AI Readiness
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 14 minutes for Prompt Architecture
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Time Limits > should set 20 minutes for AIQ
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 25 questions for FIT
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 25 questions for AI Readiness
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 7 levels for Prompt Architecture
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment Configuration > Question Counts > should have 8 questions for AIQ
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize fit correctly
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize ai_readiness variants
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize prompt_architecture variants
+ ✓ tests/unit/assessment-evaluation.test.ts > Assessment ID Normalisation > should normalize aiq correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept valid options
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept lowercase options
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should accept options with whitespace
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Multiple Choice Answers > should reject invalid options
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should accept answers meeting minimum length
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should reject answers below minimum length
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Text Answers > should trim whitespace before validation
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should calculate 100% for complete answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should calculate 50% for half-complete answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Answer Validation > Answer Completeness > should handle empty answers
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate 100% for all correct
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate 0% for none correct
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should calculate percentage correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Percentage Calculation > should handle zero total
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Exceptional for 90+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Strong for 80-89
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Proficient for 70-79
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Developing for 60-69
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Basic for 50-59
+
+ ✓ tests/unit/assessment-evaluation.test.ts > Score Normalisation > Score Banding > should return Needs Improvement for below 50
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should succeed on first attempt
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should apply the locked hybrid scoring formula correctly
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle equal raw percentages (all same score)
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle edge case of 0% minimum raw percentage
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should handle edge case of 100% minimum raw percentage
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > applyHybridScoring > should return rounded integer scores
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have exactly 6 skills defined
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have perfectly balanced matrix with 15 occurrences per skill
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have 90 total skill mappings (6 skills × 15 occurrences)
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > FIT Scoring Matrix Integrity > should have all skill points equal to 4
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have exactly 9 skills defined
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have skill occurrences matching questions section (intentionally unbalanced)
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have 210 total skill mappings across all questions
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > AI Readiness Scoring Matrix Integrity > should have all skill points equal to 4
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should calculate scores for valid answers
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should handle normalized question formats
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should return valid scores for empty answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateFITScores > should handle mixed case answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should calculate scores for valid answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should return valid scores for empty answers
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should never produce scores below 50
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should never produce scores above 100
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Score Bounds Validation > should maintain score differentiation with varied inputs
+
+ ✓ tests/unit/scoring.test.ts > Scoring Module > Regression Tests > should produce consistent scores for known input (regression guard)
+
+stdout | tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should calculate scores for valid answers
+[AIR Scoring] Raw scores: {
+  'AI Literacy & Prompt Engineering': 16,
+  'Technical Fundamentals': 20,
+  'Data Fluency': 28,
+  'Critical Thinking & Problem-Solving': 32,
+  'Adaptability & Continuous Learning': 24,
+  'Collaboration & Communication': 8,
+  'Responsible AI & Ethical Awareness': 20,
+  'Creativity & Innovation': 4,
+  'Domain Expertise': 16
+}
+[AIR Scoring] Max scores: {
+  'AI Literacy & Prompt Engineering': 80,
+  'Technical Fundamentals': 76,
+  'Data Fluency': 72,
+  'Critical Thinking & Problem-Solving': 72,
+  'Adaptability & Continuous Learning': 76,
+  'Responsible AI & Ethical Awareness': 60,
+  'Domain Expertise': 76,
+  'Creativity & Innovation': 72,
+  'Collaboration & Communication': 80
+}
+[AIR Scoring] Raw percentages: {
+  'AI Literacy & Prompt Engineering': 20,
+  'Technical Fundamentals': 26.31578947368421,
+  'Data Fluency': 38.88888888888889,
+  'Critical Thinking & Problem-Solving': 44.44444444444444,
+  'Adaptability & Continuous Learning': 31.57894736842105,
+  'Collaboration & Communication': 10,
+  'Responsible AI & Ethical Awareness': 33.33333333333333,
+  'Creativity & Innovation': 5.555555555555555,
+  'Domain Expertise': 21.052631578947366
+}
+[AIR Scoring] Final scores after hybrid formula: {
+  'AI Literacy & Prompt Engineering': 67,
+  'Technical Fundamentals': 73,
+  'Data Fluency': 85,
+  'Critical Thinking & Problem-Solving': 91,
+  'Adaptability & Continuous Learning': 78,
+  'Collaboration & Communication': 57,
+  'Responsible AI & Ethical Awareness': 80,
+  'Creativity & Innovation': 52,
+  'Domain Expertise': 68
+}
+
+stdout | tests/unit/scoring.test.ts > Scoring Module > calculateAIReadinessScores > should return valid scores for empty answers
+[AIR Scoring] Raw scores: {
+  'AI Literacy & Prompt Engineering': 0,
+  'Technical Fundamentals': 0,
+  'Data Fluency': 0,
+  'Critical Thinking & Problem-Solving': 0,
+  'Adaptability & Continuous Learning': 0,
+  'Collaboration & Communication': 0,
+  'Responsible AI & Ethical Awareness': 0,
+  'Creativity & Innovation': 0,
+  'Domain Expertise': 0
+}
+[AIR Scoring] Max scores: {
+  'AI Literacy & Prompt Engineering': 80,
+  'Technical Fundamentals': 76,
+  'Data Fluency': 72,
+  'Critical Thinking & Problem-Solving': 72,
+  'Adaptability & Continuous Learning': 76,
+  'Responsible AI & Ethical Awareness': 60,
+  'Domain Expertise': 76,
+  'Creativity & Innovation': 72,
+  'Collaboration & Communication': 80
+}
+[AIR Scoring] Raw percentages: {
+  'AI Literacy & Prompt Engineering': 0,
+  'Technical Fundamentals': 0,
+  'Data Fluency': 0,
+  'Critical Thinking & Problem-Solving': 0,
+  'Adaptability & Continuous Learning': 0,
+  'Collaboration & Communication': 0,
+  'Responsible AI & Ethical Awareness': 0,
+  'Creativity & Innovation': 0,
+  'Domain Expertise': 0
+}
+[AIR Scoring] Final scores after hybrid formula: {
+  'AI Literacy & Prompt Engineering': 50,
+  'Technical Fundamentals': 50,
+  'Data Fluency': 50,
+  'Critical Thinking & Problem-Solving': 50,
+  'Adaptability & Continuous Learning': 50,
+  'Collaboration & Communication': 50,
+  'Responsible AI & Ethical Awareness': 50,
+  'Creativity & Innovation': 50,
+  'Domain Expertise': 50
+}
+
+
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should use hello@humanmetrix.co.uk as sender
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should use HumanMetrix as sender name
+ ✓ tests/unit/email.test.ts > Email Address Standards > Sender Address > should format from address correctly
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should use humanmetrix.co.uk domain
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should not use deprecated info@ address
+ ✓ tests/unit/email.test.ts > Email Address Standards > Email Domain Validation > should not use deprecated support@ address
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format FIT assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format AI Readiness assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format Prompt Architecture assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should format AIQ assessment correctly
+ ✓ tests/unit/email.test.ts > Assessment Name Formatting > should return original type for unknown assessment
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include candidate name in body
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include inviter name in subject
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include all assessment types
+ ✓ tests/unit/email.test.ts > Email Template Content > Invitation Email > should include invite URL
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should have correct subject line
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should include user name
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should include reset URL
+ ✓ tests/unit/email.test.ts > Email Template Content > Password Reset Email > should mention expiry time
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should include payment amount
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should include transaction ID
+ ✓ tests/unit/email.test.ts > Email Template Content > Payment Receipt Email > should list purchased assessments
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact password fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact passwordHash fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact resetToken fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should redact apiKey fields
+ ✓ tests/unit/email.test.ts > PII Sanitisation > should preserve non-sensitive fields
+ ✓ tests/unit/email.test.ts > Email Validation > should accept valid email addresses
+ ✓ tests/unit/email.test.ts > Email Validation > should reject invalid email addresses
+ ✓ tests/unit/email.test.ts > Date Formatting for Emails > should format date in British style
+ ✓ tests/unit/email.test.ts > Date Formatting for Emails > should use day month year order
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format GBP correctly
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format USD correctly
+ ✓ tests/unit/email.test.ts > Currency Formatting for Emails > should format EUR correctly
+
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should retry on transient errors 1002ms
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should not retry on invalid_api_key error
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Retry Logic > should not retry on insufficient_quota error
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify rate limit errors as retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify server errors as retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify auth errors as non-retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > OpenAI Integration Patterns > Error Classification > should classify invalid request as non-retriable
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > should have 7 levels
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > should have correct total time (14 minutes)
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should score level 1 at base points
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should score higher levels with multiplier
+ ✓ tests/unit/assessment-evaluation.test.ts > Prompt Architecture Levels > Level Scoring > should return 0 for failed levels
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > should have correct total weight
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should give full score for exact match
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should give partial score for partial match
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Graded Response Scoring > should apply weight correctly
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return High band for 80+
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Moderate band for 60-79
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Developing band for 40-59
+
+ ✓ tests/unit/assessment-evaluation.test.ts > AIQ Scoring > Band Interpretation > should return Low band for below 40
+
+ Test Files  5 passed (5)
+      Tests  177 passed (177)
+
+   Start at  09:38:28
+   Duration  3.55s (transform 395ms, setup 96ms, collect 531ms, tests 1.14s, environment 1ms, prepare 1.93s)
+
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.7.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+npm notice To update run: npm install -g npm@11.7.0
+npm notice
+
+Unit tests passed!
+
+----------------------------------------
+
+Running Integration Tests...
+----------------------------------------
+
+ RUN  v1.6.0 /home/runner/workspace
+
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should return correct base fee in pence
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should calculate total price for assessments
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > Base Pricing > should handle single assessment purchase
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 1 pricing (1.0x) for US
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 1 pricing (1.0x) for UK
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 2 pricing (0.7x) for Brazil
+
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 2 pricing (0.7x) for Thailand
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 3 pricing (0.5x) for India
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should apply tier 3 pricing (0.5x) for Nigeria
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > PPP Tier Pricing > should default to full price for unknown country
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should detect Philippines as SEA launch country
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Philippines
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Vietnam
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Indonesia
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should return correct price for Malaysia
+ ✓ tests/integration/stripe-purchases.test.ts > Price Calculations > SEA Launch Pricing > should not have SEA pricing for non-SEA countries
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should validate FREE discount code
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should validate 20OFFPRICE discount code
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should handle case-insensitive codes
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should handle codes with whitespace
+
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should reject invalid codes
+
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Code Validation > should reject empty codes
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 100% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 20% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should apply 0% discount correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Discount Code Validation > Discount Application > should handle 50% discount
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow pending to completed transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow pending to cancelled transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should not allow completed to any transition
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Status Transitions > should allow failed to pending (retry)
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should require at least one assessment for purchase
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should accept valid assessment types
+ ✓ tests/integration/stripe-purchases.test.ts > Purchase Flow > Purchase Validation > should reject invalid assessment types
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should convert GBP to pence
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should convert USD to cents
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should handle JPY (zero decimal currency)
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should handle VND (zero decimal currency)
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > To Stripe Amount > should round correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should convert pence to GBP
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should convert cents to USD
+ ✓ tests/integration/stripe-purchases.test.ts > Currency Conversion > From Stripe Amount > should handle JPY correctly
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should parse Stripe signature header format
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should reject missing timestamp
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Signature Format > should reject missing v1 signature
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Timestamp Validation > should accept recent timestamps
+ ✓ tests/integration/stripe-purchases.test.ts > Webhook Signature Validation > Timestamp Validation > should reject old timestamps
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should process new event
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should reject duplicate event
+ ✓ tests/integration/stripe-purchases.test.ts > Idempotency > Duplicate Webhook Prevention > should handle multiple unique events
+
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should accept valid API key format with prefix
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should extract key prefix correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should reject keys without valid prefix
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Format Validation > should differentiate between live and test keys
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should allow access with matching permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should deny access without required permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should allow access with wildcard permission
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > API Key Permissions > should handle multiple permissions correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should allow requests within rate limit
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should track request count correctly
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should block requests exceeding rate limit
+ ✓ tests/integration/partner-api.test.ts > Partner API Key Authentication > Rate Limiting > should reset count after window expires
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should accept valid assessment types
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should reject invalid assessment types
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should validate expiration time within bounds
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Creation Validation > should validate email format if provided
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow transition from created to started
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow transition from started to completed
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should not allow transition from completed to any status
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Status Transitions > should allow any status to transition to expired
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should calculate expiry time correctly
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should identify expired sessions
+ ✓ tests/integration/partner-api.test.ts > Partner Session Management > Session Expiration > should identify valid sessions
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should calculate remaining quota correctly
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should handle zero purchased credits
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should handle fully consumed quota
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Balance Calculation > should detect negative remaining (over-consumption)
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Consumption > should block session creation when quota exhausted
+ ✓ tests/integration/partner-api.test.ts > Partner Quota System > Quota Consumption > should allow session creation when quota available
+ ✓ tests/integration/partner-
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should generate CSRF token if not present in cookies
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should not regenerate token if already present in cookies
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Token Generation > should attach token to request object
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow GET requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow HEAD requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > GET Requests (No Validation) > should allow OPTIONS requests without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject POST without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject POST with mismatched tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow POST with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject PUT without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow PUT with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should reject DELETE without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > POST/PUT/PATCH/DELETE Validation > should allow DELETE with matching tokens
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/login without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/signup without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/stripe/webhook without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/partner/sessions without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Exempt Paths > should allow POST to /api/partner/sessions/:id without CSRF token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > API Key Bypass > should bypass CSRF for requests with x-api-key header
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > API Key Bypass > should bypass CSRF for requests with Authorization header
+
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > getCsrfToken Helper > should return token from request object
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > getCsrfToken Helper > should return empty string if no token
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Cookie Settings > should set correct cookie options in development
+ ✓ tests/integration/csrf.test.ts > CSRF Middleware > Cookie Settings > should set secure cookie in production
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup without email
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup without password
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should reject signup with existing email
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Signup Validation > should accept signup with valid credentials
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should hash passwords with bcrypt
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should verify correct password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should reject incorrect password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Hashing > should generate different hashes for same password 369ms
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login without credentials
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login for non-existent user
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should reject login with wrong password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Login Validation > should accept login with correct credentials
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should generate cryptographically secure reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should set token expiry to 1 hour
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should reject expired reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Reset Token > should accept valid reset tokens
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should reject password change without current password
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should reject password shorter than 8 characters
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should accept password of exactly 8 characters
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Password Change Validation > should accept password longer than 8 characters
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should identify authenticated requests by userId in session
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests without userId in session
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests with null userId
+ ✓ tests/integration/auth.test.ts > Authentication Logic > Session Management > should reject requests with undefined userId
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > User Response Sanitization > should not include passwordHash in login response
+
+ ✓ tests/integration/auth.test.ts > Authentication Logic > User Response Sanitization > should not include resetToken in response
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should reject request without session userId
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should reject request if user not found in database
+
+ ✓ tests/integration/auth.test.ts > isAuthenticated Middleware Logic > should attach user to request if valid
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should not fail if no userId in session
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should populate user if userId exists and user found
+
+ ✓ tests/integration/auth.test.ts > populateUser Middleware Logic > should not fail if user not found
+
+ Test Files  4 passed (4)
+
+      Tests  145 passed (145)
+
+   Start at  09:38:32
+
+   Duration  2.29s (transform 495ms, setup 67ms, collect 555ms, tests 1.31s, environment 1ms, prepare 730ms)
+
+Integration tests passed!
+
+----------------------------------------
+
+E2E Tests
+----------------------------------------
+Note: E2E tests are run via Playwright testing tool during development
+      They are not run automatically during deployment.
+
+==========================================
+
+All tests passed! Proceeding to build...
+
+==========================================
+
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+
+vite v5.4.20 building for production...
+
+transforming...
+
+Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+
+
+/grid.svg referenced in /grid.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+✓ 5459 modules transformed.
+
+rendering chunks...
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /home/runner/workspace/node_modules/jspdf/dist/jspdf.es.min.js is dynamically imported by /home/runner/workspace/client/src/pages/GenerateSamplePDFs.tsx but also statically imported by /home/runner/workspace/client/src/components/admin/CompareTab.tsx, /home/runner/workspace/client/src/lib/enhancedPdfExport.ts, /home/runner/workspace/client/src/lib/pdfExport.ts, dynamic import will not move module into another chunk.
+
+
+computing gzip size...
+
+../dist/public/index.html                                                                                      3.37 kB │ gzip:   1.38 kB
+
+../dist/public/assets/logo_HumanMetrix_big_1766783080540-D0l8ZuTI.png                                         43.58 kB
+
+../dist/public/assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899-D93fnt0W.png     54.79 kB
+../dist/public/assets/Professional_results_preview-BN95Gpkq.png                                               99.15 kB
+
+../dist/public/assets/image_1767042236125-Dklc7Z_x.png                                                       101.13 kB
+
+../dist/public/assets/image_1767042222400-ghbgReCs.png                                                       108.26 kB
+
+../dist/public/assets/image_1767042182791-Cp0vGAFh.png                                                       109.23 kB
+../dist/public/assets/image_1767042160343-DDuzPnEh.png                                                       112.68 kB
+../dist/public/assets/image_1765687714401-Ee0vFGDs.png                                                       119.33 kB
+
+../dist/public/assets/image_1765688061458-DrR7HcHu.png                                                       140.49 kB
+../dist/public/assets/image_1763608498774-B9ZjYiYd.png                                                       966.51 kB
+
+../dist/public/assets/image_1761537286469-CDZ89g90.png                                                     1,326.68 kB
+
+../dist/public/assets/index-hUc7Evm0.css                                                                     315.12 kB │ gzip:  47.42 kB
+
+../dist/public/assets/defineProperty-D1u6Fzp-.js                                                               0.50 kB │ gzip:   0.34 kB
+
+../dist/public/assets/purify.es-sOfw8HaZ.js                                                                   22.67 kB │ gzip:   8.75 kB
+
+../dist/public/assets/index.es-DCzkup73.js                                                                   150.16 kB │ gzip:  51.20 kB
+
+../dist/public/assets/index-DxOPNw35.js                                                                    1,299.11 kB │ gzip: 369.37 kB
+
+../dist/public/assets/index-C4mGxpIu.js                                                                    2,756.94 kB │ gzip: 762.57 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+✓ built in 26.29s
+
+
+  dist/index.js  750.4kb
+
+⚡ Done in 1551ms
+
+2026-01-03T09:39:04Z info: Pushing pid1 binary layer...
+2026-01-03T09:39:07Z info: Created pid1 binary layer
+2026-01-03T09:39:09Z info: Pushing hosting layer...
+2026-01-03T09:39:09Z info: Pushing Repl layer...
+2026-01-03T09:39:09Z info: Retrieved cached nix layer
+2026-01-03T09:39:09Z info: Created hosting layer
+2026-01-03T09:40:04Z info: Created Repl layer
+2026-01-03T09:40:07Z info: Pushed image manifest
+2026-01-03T09:40:08Z info: Pushed soci index manifest
+2026-01-03T09:40:11Z info: Creating Autoscale service
+forwarding local port 5000 to external port 80 (mapped as 1104)
+> NODE_ENV=production node dist/index.js
+metasidecar: loaded enterprise status from environment is_enterprise=false
+> rest-express@1.0.0 start
+starting up user application
+2026-01-03T09:41:07Z info: upsertCloudRunService completed
+2026-01-03T09:41:07Z info: Waiting for service to be ready
+[Golden Set Scheduler] Will run first evaluation in 859 minutes at 2026-01-04T00:00:00.000Z
+[2026-01-03 09:41:04] DEBUG Creating transport: nodemailer (7.0.10; +https://nodemailer.com/; SMTP (pool)/7.0.10[client:7.0.10])
+✅ Job queues initialized
+[Stripe] Coupon 20OFFPRICE_20_OFF already exists
+[Stripe] Failed to create promo code FREE: An active promotion code with `code: FREE` already exists.
+🔒 Production mode: secure cookies enabled
+📋 Registered job handler: email
+⚠️  This will cause secure session cookies to be dropped!
+🔧 Initializing email system...
+⚠️  Without proper proxy configuration, session cookies will be silently dropped!
+[Stripe] Failed to create promo code 20OFFPRICE: An active promotion code with `code: 20OFFPRICE` already exists.
+✅ Database pool configured (max: 50 connections)
+✅ HTTP Keep-Alive configured (timeout: 65s)
+[2026-01-03 09:41:04] DEBUG [kzUmxcZBnp0] Closing connection to the server using "end"
+[Stripe] Coupon FREE_100_OFF already exists
+⚠️  Check X-Forwarded-Proto header and trust proxy settings
+🚀 Preloading heavy modules for production...
+🔧 Job queue initialized with concurrency: 2
+📋 Registered job handler: scoring
+⚠️  PROXY WARNING: req.secure is false in production for /
+✅ Stripe loaded in 1ms
+✅ SMTP Server ready to send emails
+9:41:04 AM [express] serving on port 5000
+🔧 Initializing job queues...
+[2026-01-03 09:41:04] INFO  [kzUmxcZBnp0] Connection upgraded with STARTTLS
+[2026-01-03 09:41:04] INFO  [kzUmxcZBnp0] Connection established to 74.125.69.109:587
+[2026-01-03 09:41:04] INFO  [kzUmxcZBnp0] User "assessments@humanmetrix.co.uk" authenticated
+[2026-01-03 09:41:04] DEBUG [kzUmxcZBnp0] SMTP handshake finished
+⚠️  IMPORTANT: Ensure your proxy/load balancer sets X-Forwarded-Proto header
+🔧 Job queue initialized with concurrency: 2
+[2026-01-03 09:41:04] DEBUG [kzUmxcZBnp0] Resolved smtp.gmail.com as 74.125.69.109 [cache miss]
+📦 Lazy loading OpenAI module...
+✅ OpenAI loaded in 1ms
+📦 Lazy loading Stripe module...
+[2026-01-03 09:41:04] INFO  [kzUmxcZBnp0] Connection closed
+[Billing Scheduler] Will run first check in 919 minutes at 2026-01-04T01:00:00.000Z
+2026-01-03T09:41:09Z info: Deployment successful
