@@ -894,7 +894,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos += 7;
     }
     
-    yPos += 3;
+    yPos += 10; // More space before next section
   }
   
   // Strengths & Development Areas - Side by Side Comparison
