@@ -104,10 +104,10 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.rect(0, 0, pageWidth, 38, 'F');
   
   // HumanMetrix Logo - render larger with negative offset to crop whitespace
-  // The logo image has ~25% padding on each side, so render at 50mm but offset by -8mm
+  // The logo image has ~25% padding on each side, so render at 48mm but offset
   // This effectively "crops" the whitespace by rendering the padded area off-page
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -6, -6, 48, 48);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -6, -4, 48, 48);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
@@ -713,7 +713,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Add description
     applySmallText(pdf);
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
-    yPos += 8;
+    yPos += 3;
     
     // Use larger dimensions - 150mm height for bigger radar chart
     const imgProps = pdf.getImageProperties(data.overallSkillsChartImage);
