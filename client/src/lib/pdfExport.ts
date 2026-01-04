@@ -99,29 +99,29 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
 
 // Helper to add header to each page
 function addHeader(pdf: jsPDF, pageWidth: number) {
-  // Clean white header background - reduced height
+  // Clean white header background
   pdf.setFillColor(255, 255, 255);
-  pdf.rect(0, 0, pageWidth, 30, 'F');
+  pdf.rect(0, 0, pageWidth, 32, 'F');
   
-  // HumanMetrix Logo - smaller size with aggressive cropping
-  // Render at 36mm with negative offset to crop the built-in whitespace
+  // HumanMetrix Logo - render with negative offset to crop whitespace
+  // The logo image has built-in padding, so we position off-page to crop it
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -5, -3, 36, 36);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -6, -4, 48, 48);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
   // Company name - positioned close to the visual logo content
   pdf.setTextColor(30, 58, 138);
-  pdf.setFontSize(16);
+  pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 26, 14);
+  pdf.text('HUMANMETRIX', 34, 16);
   
   // Tagline - positioned below company name
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 26, 21);
+  pdf.text('AI-Powered Assessment Platform', 34, 24);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -190,7 +190,7 @@ function ensurePageSpace(pdf: jsPDF, yPos: number, requiredHeight: number, pageH
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    return 50; // Updated to account for 40mm header + spacing
+    return 38; // Start content closer to header to reduce whitespace
   }
   return yPos;
 }
@@ -262,7 +262,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addHeader(pdf, pageWidth);
   
   // Title Section
-  yPos = 50;
+  yPos = 38;
   pdf.setFillColor(59, 130, 246);
   pdf.rect(0, yPos, pageWidth, 35, 'F');
   
@@ -547,7 +547,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 50;
+  yPos = 38;
   
   // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
@@ -627,7 +627,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 50;
+      yPos = 38;
     }
     
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
@@ -704,7 +704,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 50;
+      yPos = 38;
     }
     
     yPos = addSectionHeader(pdf, 'OVERALL SKILLS COMPARISON', yPos, pageWidth);
@@ -736,7 +736,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 50;
+      yPos = 38;
     }
     
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
@@ -900,7 +900,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    yPos = 50;
+    yPos = 38;
   }
   
   yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
@@ -1022,7 +1022,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
-  yPos = 50;
+  yPos = 38;
   
   // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
   // Default role weights used only if we need them for later calculations
@@ -1797,7 +1797,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 50;
+  yPos = 38;
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
   yPos += 3;
   
