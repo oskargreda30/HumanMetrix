@@ -1103,12 +1103,29 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = 32;
   
   // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
-  // Helper to extract skill requirements from nested requiredSkillScores structure
+  // Helper to extract skill requirements from requiredSkillScores structure
+  // Database structure: { fitSkills: Record<string, number>, aiReadinessSkills: Record<string, number> }
   const extractSkillRequirementsPDF = (requiredSkillScores: any): Record<string, number> => {
     const skills: Record<string, number> = {};
     if (!requiredSkillScores) return skills;
     
-    // Handle nested structure with FIT and AI_READINESS categories
+    // Handle database structure with fitSkills and aiReadinessSkills
+    if (requiredSkillScores.fitSkills) {
+      Object.entries(requiredSkillScores.fitSkills).forEach(([skillName, score]: [string, any]) => {
+        if (typeof score === 'number') {
+          skills[skillName] = score;
+        }
+      });
+    }
+    if (requiredSkillScores.aiReadinessSkills) {
+      Object.entries(requiredSkillScores.aiReadinessSkills).forEach(([skillName, score]: [string, any]) => {
+        if (typeof score === 'number') {
+          skills[skillName] = score;
+        }
+      });
+    }
+    
+    // Also handle legacy FIT/AI_READINESS structure for backwards compatibility
     if (requiredSkillScores.FIT) {
       Object.entries(requiredSkillScores.FIT).forEach(([skillName, data]: [string, any]) => {
         if (typeof data === 'object' && data.score !== undefined) {
@@ -1120,17 +1137,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }
     if (requiredSkillScores.AI_READINESS) {
       Object.entries(requiredSkillScores.AI_READINESS).forEach(([skillName, data]: [string, any]) => {
-        if (typeof data === 'object' && data.score !== undefined) {
-          skills[skillName] = data.score;
-        } else if (typeof data === 'number') {
-          skills[skillName] = data;
-        }
-      });
-    }
-    
-    // Also handle flat structure for backwards compatibility
-    if (!requiredSkillScores.FIT && !requiredSkillScores.AI_READINESS) {
-      Object.entries(requiredSkillScores).forEach(([skillName, data]: [string, any]) => {
         if (typeof data === 'object' && data.score !== undefined) {
           skills[skillName] = data.score;
         } else if (typeof data === 'number') {
