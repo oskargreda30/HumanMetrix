@@ -2448,7 +2448,7 @@ export default function CompareTab() {
               <div 
                 key={`fit-${index}`}
                 id={`pdf-comparison-fit-${index}`}
-                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+                style={{ width: '400px', height: '400px', backgroundColor: 'white', padding: '20px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
                   {getCandidateName(selectedCandidateData?.[index])} - FIT
@@ -2484,7 +2484,7 @@ export default function CompareTab() {
               <div 
                 key={`ai-${index}`}
                 id={`pdf-comparison-ai-${index}`}
-                style={{ width: '500px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+                style={{ width: '400px', height: '400px', backgroundColor: 'white', padding: '20px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
                   {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
