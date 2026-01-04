@@ -1177,21 +1177,67 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text(roleData.description || 'Role suitability analysis based on skill requirements', 20, yPos);
     yPos += 5;
   
-  // Calculate role suitability
+  // Calculate role suitability with criticality weighting and critical gap penalties
+  // Matches server logic: Critical skills 2x, Important 1.5x, Nice-to-have 1x
+  // Plus 10% penalty per critical skill below requirement (capped at 50%)
   const calculateRoleSuitabilityPDF = (candidateIndex: number): number => {
     const skills = getAllCandidateSkillsPDF(candidateIndex);
-    let weightedSum = 0;
-    let totalWeight = 0;
+    const skillCriticality = (data.roleData?.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
     
-    Object.entries(roleWeights).forEach(([skillName, weight]) => {
-      const score = skills[skillName];
-      if (score !== undefined) {
-        weightedSum += score * weight;
-        totalWeight += weight;
+    const getSkillWeight = (skillName: string): number => {
+      const criticality = skillCriticality[skillName] || 'important';
+      if (criticality === 'critical') return 2.0;
+      if (criticality === 'important') return 1.5;
+      return 1.0;
+    };
+    
+    let weightedTotal = 0;
+    let weightSum = 0;
+    let criticalGaps = 0;
+    let totalCriticalSkills = 0;
+    let matchCount = 0;
+    
+    Object.entries(roleWeights).forEach(([skillName, requiredScore]) => {
+      if (requiredScore <= 0) return;
+      
+      const candidateScore = skills[skillName];
+      const weight = getSkillWeight(skillName);
+      const isCritical = skillCriticality[skillName] === 'critical';
+      
+      if (isCritical) totalCriticalSkills++;
+      
+      if (candidateScore !== undefined) {
+        // Calculate match percentage (capped at 100%)
+        const matchPercent = Math.min(100, (candidateScore / requiredScore) * 100);
+        weightedTotal += matchPercent * weight;
+        weightSum += weight;
+        matchCount++;
+        
+        // Track critical gaps
+        if (isCritical && candidateScore < requiredScore) {
+          criticalGaps++;
+        }
+      } else {
+        // Missing critical skills count as critical gaps
+        if (isCritical) {
+          criticalGaps++;
+        }
       }
     });
     
-    return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+    const totalRequiredSkills = Object.keys(roleWeights).filter(k => roleWeights[k] > 0).length;
+    const coverage = totalRequiredSkills > 0 ? matchCount / totalRequiredSkills : 0;
+    
+    // Calculate weighted average with coverage penalty
+    let score = weightSum > 0 ? (weightedTotal / weightSum) * coverage : 0;
+    
+    // Apply critical gap penalty: 10% reduction per critical gap (capped at 50%)
+    if (criticalGaps > 0 && totalCriticalSkills > 0) {
+      const criticalPenalty = criticalGaps * 0.10;
+      score = score * (1 - Math.min(criticalPenalty, 0.5));
+    }
+    
+    return Math.round(score);
   };
   
   // Draw role fit scores
