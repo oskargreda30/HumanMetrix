@@ -259,11 +259,12 @@ export default function CompareTab() {
         }
       }
 
-      // Capture Overall Skills chart
+      // Capture Overall Skills chart from hidden container
       let overallSkillsChartImage: string | null = null;
       if (comparison.hasSkillData) {
         try {
-          const element = document.getElementById('pdf-comparison-overall-skills');
+          // Use the hidden container with proper dimensions and padding
+          const element = document.getElementById('pdf-comparison-overall-skills-hidden');
           if (element) {
             const canvas = await html2canvas(element, {
               backgroundColor: '#ffffff',
@@ -2506,6 +2507,35 @@ export default function CompareTab() {
               </div>
             );
           })}
+
+          {/* Overall Skills Comparison chart - hidden for PDF capture */}
+          {comparison.radarData && comparison.radarData.length > 0 && (
+            <div 
+              id="pdf-comparison-overall-skills-hidden"
+              style={{ width: '500px', height: '500px', backgroundColor: 'white', padding: '40px' }}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={comparison.radarData} outerRadius="70%">
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                  {selectedCandidateData?.map((candidate: any, index: number) => (
+                    <Radar
+                      key={candidate.user.id}
+                      name={getCandidateName(candidate)}
+                      dataKey={`candidate${index}`}
+                      stroke={CHART_COLORS[index]}
+                      strokeWidth={3}
+                      strokeDasharray="8 4"
+                      fill="transparent"
+                      fillOpacity={0}
+                    />
+                  ))}
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
     </div>
