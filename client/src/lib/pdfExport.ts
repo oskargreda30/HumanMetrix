@@ -190,7 +190,7 @@ function ensurePageSpace(pdf: jsPDF, yPos: number, requiredHeight: number, pageH
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    return 38; // Start content closer to header to reduce whitespace
+    return 32; // Start content closer to header to reduce whitespace
   }
   return yPos;
 }
@@ -262,7 +262,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addHeader(pdf, pageWidth);
   
   // Title Section
-  yPos = 38;
+  yPos = 32;
   pdf.setFillColor(59, 130, 246);
   pdf.rect(0, yPos, pageWidth, 35, 'F');
   
@@ -547,7 +547,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 38;
+  yPos = 32;
   
   // FIT Assessment Radar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
@@ -627,7 +627,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 38;
+      yPos = 32;
     }
     
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
@@ -704,7 +704,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 38;
+      yPos = 32;
     }
     
     yPos = addSectionHeader(pdf, 'OVERALL SKILLS COMPARISON', yPos, pageWidth);
@@ -736,7 +736,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
-      yPos = 38;
+      yPos = 32;
     }
     
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
@@ -900,7 +900,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    yPos = 38;
+    yPos = 32;
   }
   
   yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
@@ -1022,7 +1022,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
-  yPos = 38;
+  yPos = 32;
   
   // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
   // Default role weights used only if we need them for later calculations
@@ -1797,7 +1797,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  yPos = 38;
+  yPos = 32;
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
   yPos += 3;
   
