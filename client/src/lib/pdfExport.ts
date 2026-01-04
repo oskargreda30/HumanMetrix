@@ -2406,18 +2406,6 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setTextColor(17, 24, 39);
       pdf.text(role.roleName, 25, yPos);
       
-      // Coverage badge next to role name
-      if (role.coverageLabel && role.coveragePercent) {
-        const coverageColor: [number, number, number] = role.coverageLabel === 'High' ? [34, 197, 94] : 
-          role.coverageLabel === 'Medium' ? [59, 130, 246] : [234, 179, 8];
-        
-        const nameWidth = pdf.getTextWidth(role.roleName);
-        pdf.setFontSize(6.5);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(coverageColor[0], coverageColor[1], coverageColor[2]);
-        pdf.text(`${role.coverageLabel} Confidence (${role.coveragePercent}%)`, 28 + nameWidth, yPos);
-      }
-      
       // Progress bar positioned to the right
       const barX = 130;
       const barWidth = 40;
@@ -2430,19 +2418,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
       pdf.rect(barX, yPos - 3, (role.fitScore / 100) * barWidth, barHeight, 'F');
       
-      // Adjusted score badge
+      // Score badge
       applyBodyText(pdf);
       pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
       pdf.setFont('helvetica', 'bold');
       pdf.text(`${role.fitScore}%`, barX + barWidth + 3, yPos);
-      
-      // Show raw score if different
-      if (role.rawFitScore && role.rawFitScore !== role.fitScore) {
-        pdf.setFontSize(6);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(107, 114, 128);
-        pdf.text(`(Raw: ${role.rawFitScore}%)`, barX + barWidth + 15, yPos);
-      }
       
       yPos += 5;
       
