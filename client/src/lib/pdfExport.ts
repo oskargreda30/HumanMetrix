@@ -2000,17 +2000,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       
       // Draw criticality indicator - only show CRITICAL badges (simplified per user request)
       if (criticality === 'critical') {
-        // Red star/badge for critical skills - positioned prominently
-        pdf.setFillColor(isCriticalGap ? 239 : 220, isCriticalGap ? 68 : 38, isCriticalGap ? 68 : 38);
+        // Blue badge for critical skills - positioned prominently
+        pdf.setFillColor(37, 99, 235); // Blue-600
         pdf.roundedRect(14, skillY - 2.2, 10, 4.5, 1, 1, 'F');
         pdf.setFontSize(6);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(255, 255, 255);
         pdf.text('CRITICAL', 19, skillY + 0.8, { align: 'center' });
         
-        // Skill name in bold red for critical skills
+        // Skill name in bold blue for critical skills
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(185, 28, 28); // Dark red
+        pdf.setTextColor(30, 64, 175); // Blue-800
         pdf.setFontSize(8);
         pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
       } else {
@@ -2078,8 +2078,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     // Criticality legend - simplified to only show CRITICAL
     yPos += 5;
     
-    // Critical legend only
-    pdf.setFillColor(220, 38, 38);
+    // Critical legend only - blue theme
+    pdf.setFillColor(37, 99, 235); // Blue-600
     pdf.roundedRect(chartMarginLeft + 5, yPos - 1.5, 10, 4, 1, 1, 'F');
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'bold');
@@ -2165,8 +2165,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
         yPos += 6;
       }
       
-      // Skill name with badge
-      pdf.setFillColor(220, 38, 38);
+      // Skill name with blue badge
+      pdf.setFillColor(37, 99, 235); // Blue-600
       pdf.roundedRect(20, yPos - 2, 10, 4, 0.5, 0.5, 'F');
       pdf.setFontSize(5);
       pdf.setTextColor(255, 255, 255);

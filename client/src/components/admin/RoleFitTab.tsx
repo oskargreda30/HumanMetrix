@@ -92,7 +92,7 @@ export default function RoleFitTab() {
     const level = criticality || 'important';
     if (level === 'critical') {
       return (
-        <Badge variant={hasGap ? 'destructive' : 'outline'} className="text-xs ml-1 px-1.5 min-w-[20px] justify-center">
+        <Badge className={`text-xs ml-1 px-1.5 min-w-[20px] justify-center ${hasGap ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-100 text-blue-700 border-blue-300'}`}>
           C
         </Badge>
       );
@@ -115,7 +115,7 @@ export default function RoleFitTab() {
     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4 pt-3 border-t">
       <span className="font-medium">Legend:</span>
       <span className="flex items-center gap-1">
-        <Badge variant="outline" className="text-xs px-1.5 min-w-[20px] justify-center">C</Badge>
+        <Badge className="text-xs px-1.5 min-w-[20px] justify-center bg-blue-600 text-white">C</Badge>
         = Critical
       </span>
       <span className="flex items-center gap-1">
