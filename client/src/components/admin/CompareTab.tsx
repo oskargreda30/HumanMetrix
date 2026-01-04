@@ -294,6 +294,7 @@ export default function CompareTab() {
         overallSkillsChartImage,
         selectedRole: selectedRole || null,
         roleData: selectedRole ? getSelectedRoleData() : null,
+        assessmentWeights,
       });
       
       toast({

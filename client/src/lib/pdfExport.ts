@@ -44,6 +44,12 @@ interface ComparisonData {
     description?: string;
     requiredSkillScores?: Record<string, any>;
   } | null;
+  assessmentWeights?: {
+    fit: number;
+    aiReadiness: number;
+    promptArchitecture: number;
+    aiq: number;
+  };
 }
 
 interface RoleFitData {
@@ -382,17 +388,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = addSectionHeader(pdf, 'OVERALL RANKING & COMPOSITE SCORE', yPos, pageWidth);
   yPos += 3;
   
-  // Add explanation text
+  // Add explanation text - dynamically describe weights
   applySmallText(pdf);
-  const compositeExplanation = 'This ranking applies equal weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
+  const weights = data.assessmentWeights || { fit: 25, aiReadiness: 25, promptArchitecture: 25, aiq: 25 };
+  const isEqualWeights = weights.fit === 25 && weights.aiReadiness === 25 && weights.promptArchitecture === 25 && weights.aiq === 25;
+  const compositeExplanation = isEqualWeights 
+    ? 'This ranking applies equal weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.'
+    : `This ranking applies custom weights: FIT (${weights.fit}%), AI Readiness (${weights.aiReadiness}%), Prompt Architecture (${weights.promptArchitecture}%), AIQ (${weights.aiq}%). Higher scores indicate stronger overall performance across all evaluated competencies.`;
   const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
   pdf.text(splitCompositeExplanation, 20, yPos);
   yPos += splitCompositeExplanation.length * 4 + 5;
   
-  // Calculate composite scores with equal 25% weights
+  // Calculate composite scores using passed weights (or default equal 25% each)
   const calculatePDFCompositeScore = (candidateIndex: number): number => {
     const assessmentData: Array<{ score: number; weight: number }> = [];
-    const equalWeight = 25; // 100% / 4 = 25% each
     
     // FIT average
     const fitData = data.fitAssessments?.[candidateIndex];
@@ -400,7 +409,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const fitScores = Object.values(fitData.scores);
       if (fitScores.length > 0) {
         const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
-        assessmentData.push({ score: fitAvg, weight: equalWeight });
+        assessmentData.push({ score: fitAvg, weight: weights.fit });
       }
     }
     
@@ -410,20 +419,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const aiScores = Object.values(aiData.scores);
       if (aiScores.length > 0) {
         const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
-        assessmentData.push({ score: aiAvg, weight: equalWeight });
+        assessmentData.push({ score: aiAvg, weight: weights.aiReadiness });
       }
     }
     
     // Prompt Architecture
     const promptData = data.promptArchitectureAssessments?.[candidateIndex];
     if (promptData) {
-      assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
+      assessmentData.push({ score: promptData.totalScore, weight: weights.promptArchitecture });
     }
     
     // AIQ
     const aiqData = data.aiqAssessments?.[candidateIndex];
     if (aiqData) {
-      assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
+      assessmentData.push({ score: aiqData.totalScore, weight: weights.aiq });
     }
     
     if (assessmentData.length === 0) return 0;
