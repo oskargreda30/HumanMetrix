@@ -3916,112 +3916,183 @@ Format your response as JSON with this structure:
         }
       }
 
-      // Calculate Role Flexibility - find alternative roles that might suit this candidate
-      // With coverage-weighted scoring and minimum 50% coverage threshold
+      // Calculate Role Flexibility - find alternative roles using ROLE SIMILARITY + CANDIDATE FIT
+      // This combines two factors:
+      // 1. Role Similarity: How similar is the alternative role's skill profile to the target role?
+      // 2. Candidate Fit: How well does the candidate meet the alternative role's requirements?
       const allRoles = await storage.getAllJobRoles();
       const roleFlexibility: Array<{ 
         roleId: string; 
         roleName: string; 
-        fitScore: number;  // Adjusted score (raw * coverage)
-        rawFitScore: number;  // Original unadjusted score
+        fitScore: number;  // Combined score (role similarity * candidate fit)
+        rawFitScore: number;  // Candidate fit to alternative role
+        roleSimilarity: number;  // How similar the role profiles are (0-100)
         coveragePercent: number;  // Percentage of role's skills that are assessed
-        coverageLabel: 'High' | 'Medium' | 'Limited';  // High: 80%+, Medium: 60-79%, Limited: 50-59%
-        missingCriticalSkills: string[];  // Critical skills the candidate hasn't been assessed on
+        coverageLabel: 'High' | 'Medium' | 'Limited';
+        missingCriticalSkills: string[];
         description?: string;
       }> = [];
+      
+      // Get target role requirements for comparison
+      const targetFitSkills = (jobRole.requiredSkillScores?.fitSkills || {}) as Record<string, number>;
+      const targetAiSkills = (jobRole.requiredSkillScores?.aiReadinessSkills || {}) as Record<string, number>;
+      const targetCriticality = (jobRole.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
+      
+      // Helper: Get criticality weight (critical=3, important=2, nice-to-have=1)
+      const getCriticalityWeight = (criticality: string | undefined): number => {
+        if (criticality === 'critical') return 3;
+        if (criticality === 'important') return 2;
+        return 1; // nice-to-have or undefined
+      };
       
       for (const altRole of allRoles) {
         // Skip current role and roles without required scores
         if (altRole.id === jobRoleId || !altRole.requiredSkillScores) continue;
         
-        const altAlignments: Array<{ candidateScore: number; requiredScore: number; hasScore: boolean }> = [];
+        const altFitSkills = (altRole.requiredSkillScores.fitSkills || {}) as Record<string, number>;
+        const altAiSkills = (altRole.requiredSkillScores.aiReadinessSkills || {}) as Record<string, number>;
+        const altCriticality = (altRole.requiredSkillScores.skillCriticality || {}) as Record<string, string>;
+        
+        // ---- STEP 1: Calculate ROLE SIMILARITY (how similar are the two roles?) ----
+        // Using weighted skill-vector similarity with criticality-based weights
+        let roleSimilarityScore = 0;
+        let totalRoleSimilarityWeight = 0;
+        
+        // Get all unique skills from both roles
+        const allSkillNames = new Set([
+          ...Object.keys(targetFitSkills),
+          ...Object.keys(targetAiSkills),
+          ...Object.keys(altFitSkills),
+          ...Object.keys(altAiSkills)
+        ]);
+        
+        for (const skillName of allSkillNames) {
+          // Get required scores from both roles (0 if skill not required)
+          const targetScore = targetFitSkills[skillName] ?? targetAiSkills[skillName] ?? 0;
+          const altScore = altFitSkills[skillName] ?? altAiSkills[skillName] ?? 0;
+          
+          // Get max criticality weight from either role for this skill
+          const targetCrit = getCriticalityWeight(targetCriticality[skillName]);
+          const altCrit = getCriticalityWeight(altCriticality[skillName]);
+          const weight = Math.max(targetCrit, altCrit);
+          
+          // Calculate similarity: penalize differences more heavily for critical skills
+          // Difference of 0 = 100% similar, difference of 100 = 0% similar
+          const scoreDiff = Math.abs(targetScore - altScore);
+          const skillSimilarity = Math.max(0, 100 - scoreDiff);
+          
+          // Apply penalty if skill is in one role but not the other (0 vs non-zero)
+          let effectiveSimilarity = skillSimilarity;
+          if ((targetScore === 0 && altScore > 0) || (targetScore > 0 && altScore === 0)) {
+            // One role requires this skill, the other doesn't - apply 50% penalty
+            effectiveSimilarity = skillSimilarity * 0.5;
+          }
+          
+          roleSimilarityScore += effectiveSimilarity * weight;
+          totalRoleSimilarityWeight += 100 * weight; // Max possible similarity per skill
+        }
+        
+        const roleSimilarity = totalRoleSimilarityWeight > 0 
+          ? Math.round((roleSimilarityScore / totalRoleSimilarityWeight) * 100)
+          : 0;
+        
+        // Skip roles that are too dissimilar (less than 40% similar)
+        if (roleSimilarity < 40) continue;
+        
+        // ---- STEP 2: Calculate CANDIDATE FIT to alternative role ----
+        const altAlignments: Array<{ candidateScore: number; requiredScore: number; weight: number }> = [];
         const missingCriticalSkills: string[] = [];
         let totalSkillCount = 0;
         let assessedSkillCount = 0;
         
-        // Get criticality map from role's requiredSkillScores
-        const skillCriticality = altRole.requiredSkillScores.skillCriticality || {};
-        
         // Calculate fit for FIT skills
-        if (altRole.requiredSkillScores.fitSkills) {
-          Object.entries(altRole.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
-            totalSkillCount++;
-            const candidateScore = fitSkills.get(skillName);
-            // A score of 0 is still a valid assessed score - only undefined means not assessed
-            const hasScore = candidateScore !== undefined;
-            
-            if (hasScore) {
-              assessedSkillCount++;
-              altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, hasScore: true });
-            } else {
-              // Track if this is a critical missing skill (skill not assessed at all)
-              const criticality = skillCriticality[skillName];
-              if (criticality === 'critical') {
-                missingCriticalSkills.push(skillName);
-              }
+        Object.entries(altFitSkills).forEach(([skillName, requiredScore]) => {
+          totalSkillCount++;
+          const candidateScore = fitSkills.get(skillName);
+          const hasScore = candidateScore !== undefined;
+          const weight = getCriticalityWeight(altCriticality[skillName]);
+          
+          if (hasScore) {
+            assessedSkillCount++;
+            altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, weight });
+          } else {
+            if (altCriticality[skillName] === 'critical') {
+              missingCriticalSkills.push(skillName);
             }
-          });
-        }
+          }
+        });
         
         // Calculate fit for AI Readiness skills
-        if (altRole.requiredSkillScores.aiReadinessSkills) {
-          Object.entries(altRole.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-            totalSkillCount++;
-            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
-            // Check both the short name and full name in the map
-            const scoreFromFull = aiReadinessSkills.get(fullSkillName);
-            const scoreFromShort = aiReadinessSkills.get(skillName);
-            const candidateScore = scoreFromFull !== undefined ? scoreFromFull : scoreFromShort;
-            // A score of 0 is still a valid assessed score - only undefined means not assessed
-            const hasScore = candidateScore !== undefined;
-            
-            if (hasScore) {
-              assessedSkillCount++;
-              altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, hasScore: true });
-            } else {
-              // Track if this is a critical missing skill (skill not assessed at all)
-              const criticality = skillCriticality[skillName] || skillCriticality[fullSkillName];
-              if (criticality === 'critical') {
-                missingCriticalSkills.push(skillName);
-              }
+        Object.entries(altAiSkills).forEach(([skillName, requiredScore]) => {
+          totalSkillCount++;
+          const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+          const scoreFromFull = aiReadinessSkills.get(fullSkillName);
+          const scoreFromShort = aiReadinessSkills.get(skillName);
+          const candidateScore = scoreFromFull !== undefined ? scoreFromFull : scoreFromShort;
+          const hasScore = candidateScore !== undefined;
+          const weight = getCriticalityWeight(altCriticality[skillName] || altCriticality[fullSkillName]);
+          
+          if (hasScore) {
+            assessedSkillCount++;
+            altAlignments.push({ candidateScore: candidateScore!, requiredScore: requiredScore as number, weight });
+          } else {
+            const crit = altCriticality[skillName] || altCriticality[fullSkillName];
+            if (crit === 'critical') {
+              missingCriticalSkills.push(skillName);
             }
-          });
-        }
+          }
+        });
         
         // Calculate coverage percentage
         const coveragePercent = totalSkillCount > 0 ? Math.round((assessedSkillCount / totalSkillCount) * 100) : 0;
         
-        // Skip roles with less than 50% coverage (minimum threshold)
+        // Skip roles with less than 50% coverage
         if (coveragePercent < 50) continue;
         
         // Determine coverage label
         let coverageLabel: 'High' | 'Medium' | 'Limited';
-        if (coveragePercent >= 80) {
-          coverageLabel = 'High';
-        } else if (coveragePercent >= 60) {
-          coverageLabel = 'Medium';
-        } else {
-          coverageLabel = 'Limited';
-        }
+        if (coveragePercent >= 80) coverageLabel = 'High';
+        else if (coveragePercent >= 60) coverageLabel = 'Medium';
+        else coverageLabel = 'Limited';
         
         if (altAlignments.length > 0) {
-          // Calculate raw fit score (based on assessed skills only)
-          const rawFitScore = Math.round(altAlignments.reduce((sum, skill) => {
-            if (skill.candidateScore >= skill.requiredScore) {
-              return sum + 100;
-            } else {
-              return sum + (skill.candidateScore / skill.requiredScore) * 100;
-            }
-          }, 0) / altAlignments.length);
+          // Calculate weighted candidate fit score
+          let weightedFitSum = 0;
+          let totalWeight = 0;
           
-          // Apply coverage-weighted adjustment: adjusted score = raw score * coverage %
-          const adjustedFitScore = Math.round(rawFitScore * (coveragePercent / 100));
+          altAlignments.forEach(({ candidateScore, requiredScore, weight }) => {
+            let skillFit: number;
+            if (candidateScore >= requiredScore) {
+              skillFit = 100;
+            } else {
+              // Sharper penalty: use squared ratio for bigger gap penalties
+              const ratio = candidateScore / requiredScore;
+              skillFit = ratio * ratio * 100;
+            }
+            weightedFitSum += skillFit * weight;
+            totalWeight += 100 * weight;
+          });
+          
+          const rawFitScore = totalWeight > 0 ? Math.round((weightedFitSum / totalWeight) * 100) : 0;
+          
+          // ---- STEP 3: Combine role similarity and candidate fit ----
+          // Final score = (roleSimilarity * 0.4) + (candidateFit * 0.6) * coverageAdjustment
+          // This gives more weight to actual candidate fit but role similarity filters out irrelevant matches
+          const coverageAdjustment = coveragePercent / 100;
+          const combinedScore = Math.round(
+            ((roleSimilarity * 0.4) + (rawFitScore * 0.6)) * coverageAdjustment
+          );
+          
+          // Apply penalty for missing critical skills
+          const criticalPenalty = missingCriticalSkills.length * 10;
+          const finalScore = Math.max(0, combinedScore - criticalPenalty);
           
           roleFlexibility.push({
             roleId: altRole.id,
             roleName: altRole.name,
-            fitScore: adjustedFitScore,
+            fitScore: finalScore,
             rawFitScore,
+            roleSimilarity,
             coveragePercent,
             coverageLabel,
             missingCriticalSkills,
@@ -4030,7 +4101,7 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Sort by adjusted fit score and take top 5 alternative roles
+      // Sort by final combined score and take top 5 alternative roles
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
       const topAlternativeRoles = roleFlexibility.slice(0, 5);
 

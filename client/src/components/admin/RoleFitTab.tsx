@@ -65,6 +65,7 @@ export default function RoleFitTab() {
       roleName: string;
       fitScore: number;
       rawFitScore?: number;
+      roleSimilarity?: number;  // How similar the alternative role is to the target role
       coveragePercent?: number;
       coverageLabel?: 'High' | 'Medium' | 'Limited';
       missingCriticalSkills?: string[];
@@ -544,7 +545,7 @@ export default function RoleFitTab() {
                   Role Flexibility Analysis
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)
+                  Alternative roles based on skill profile similarity and candidate fit (40%+ role similarity required)
                 </p>
               </CardHeader>
               <CardContent>
@@ -557,15 +558,24 @@ export default function RoleFitTab() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium text-sm" data-testid={`text-role-name-${role.roleId}`}>{role.roleName}</p>
+                            {role.roleSimilarity !== undefined && (
+                              <Badge 
+                                variant={role.roleSimilarity >= 70 ? 'default' : role.roleSimilarity >= 55 ? 'secondary' : 'outline'}
+                                className="text-xs"
+                                data-testid={`badge-similarity-${role.roleId}`}
+                              >
+                                {role.roleSimilarity}% Similar Role
+                              </Badge>
+                            )}
                             {role.coverageLabel && (
                               <Badge 
-                                variant={role.coverageLabel === 'High' ? 'default' : role.coverageLabel === 'Medium' ? 'secondary' : 'outline'}
+                                variant="outline"
                                 className="text-xs"
                                 data-testid={`badge-coverage-${role.roleId}`}
                               >
-                                {role.coverageLabel} Confidence ({role.coveragePercent}%)
+                                {role.coveragePercent}% Coverage
                               </Badge>
                             )}
                           </div>
@@ -576,14 +586,14 @@ export default function RoleFitTab() {
                         <div className="flex items-center gap-3">
                           <div className="text-right">
                             <Progress value={role.fitScore} className="w-24 h-2" />
-                            {role.rawFitScore && role.rawFitScore !== role.fitScore && (
+                            {role.rawFitScore !== undefined && (
                               <p className="text-xs text-muted-foreground mt-0.5">
-                                Raw: {role.rawFitScore}%
+                                Candidate Fit: {role.rawFitScore}%
                               </p>
                             )}
                           </div>
                           <Badge 
-                            variant={role.fitScore >= 70 ? 'default' : role.fitScore >= 50 ? 'secondary' : 'outline'}
+                            variant={role.fitScore >= 60 ? 'default' : role.fitScore >= 40 ? 'secondary' : 'outline'}
                             className="min-w-[60px] justify-center"
                             data-testid={`badge-role-fit-score-${role.roleId}`}
                           >
