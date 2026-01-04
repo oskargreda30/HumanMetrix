@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera, MessageSquare, Clock, ShieldAlert, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -2513,6 +2513,66 @@ export default function CompareTab() {
               )}
               </div>
               {/* End of Report Container */}
+
+              {/* Additional Services On Request */}
+              <Card className="border-dashed border-2 border-muted">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    Additional Services On Request
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-background border">
+                      <h4 className="font-medium flex items-center gap-2 mb-2">
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                        Interview Questions
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Tailored interview questions to probe candidates' weaker areas
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-background border">
+                      <h4 className="font-medium flex items-center gap-2 mb-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        Onboarding Timeline
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Projected onboarding timeline based on skill readiness
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-background border">
+                      <h4 className="font-medium flex items-center gap-2 mb-2">
+                        <ShieldAlert className="h-4 w-4 text-primary" />
+                        Hiring Risk Analysis
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Comprehensive risk assessment highlighting potential challenges
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-background border">
+                      <h4 className="font-medium flex items-center gap-2 mb-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        Development Investment Cost
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Estimated training investment to close identified skill gaps
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.location.href = '/for-employers'}
+                      data-testid="button-contact-team-comparison"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Speak to the Team
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
               {!comparison.hasSkillData && (
                 <Card>

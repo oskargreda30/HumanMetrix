@@ -766,9 +766,13 @@ export default function RoleFitTab() {
                 </div>
               </div>
               <div className="mt-4 text-center">
-                <Button variant="outline" disabled className="opacity-50">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/for-employers'}
+                  data-testid="button-contact-team-services"
+                >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Contact Sales to Enable
+                  Speak to the Team
                 </Button>
               </div>
             </CardContent>
@@ -776,7 +780,12 @@ export default function RoleFitTab() {
 
           {/* Export Button */}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => analyzeRoleFitMutation.mutate()}>
+            <Button 
+              variant="secondary" 
+              className="bg-white hover:bg-gray-100 text-gray-900 border"
+              onClick={() => analyzeRoleFitMutation.mutate()}
+              data-testid="button-refresh-analysis"
+            >
               Refresh Analysis
             </Button>
             <Button 
