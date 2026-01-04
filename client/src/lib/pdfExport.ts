@@ -1245,7 +1245,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   yPos += 12; // 8mm for row height + 4mm padding before recommendation box
   
-  // Role Suitability Explanation
+  // Role Suitability Explanation - Enhanced with comprehensive skill prioritization
   const roleScoresSorted = data.candidates
     .map((c, i) => ({ 
       name: getCandidateName(c), 
@@ -1255,33 +1255,93 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }))
     .sort((a, b) => b.score - a.score);
   
+  // Skill benefit descriptions - comprehensive mapping
+  const skillBenefits: Record<string, string> = {
+    'Domain Expertise': 'enables strategic guidance on industry-specific applications and ensures deep subject matter knowledge',
+    'Collaboration & Communication': 'facilitates stakeholder alignment, cross-functional coordination, and clear information sharing',
+    'High Agency': 'drives proactive problem-solving, independent initiative, and ownership of outcomes',
+    'AI Literacy & Prompt Engineering': 'ensures effective AI system implementation and optimal human-AI interaction',
+    'Critical Thinking & Problem-Solving': 'supports analytical decision-making and structured approach to complex challenges',
+    'Interpersonal Agility': 'enables effective navigation of team dynamics and adaptive relationship building',
+    'Responsible AI & Ethical Awareness': 'ensures AI governance compliance, ethical considerations, and responsible technology use',
+    'Growth Mindset': 'supports adaptation to emerging technologies, continuous learning, and embracing feedback',
+    'Resilience': 'maintains performance under pressure, recovers from setbacks, and sustains motivation',
+    'Empathy & Ethics': 'fosters trust-building, ethical decision-making, and consideration of diverse perspectives',
+    'Intellectual Curiosity': 'drives proactive exploration, questioning assumptions, and seeking deeper understanding',
+    'Data Fluency': 'enables data-driven decision making and interpretation of quantitative insights',
+    'Adaptability': 'supports flexibility in changing environments and quick adjustment to new requirements',
+    'Leadership': 'guides teams effectively, inspires others, and drives strategic initiatives',
+    'Technical Proficiency': 'ensures competent execution of technical tasks and understanding of systems',
+  };
+  
+  // Skill criticality descriptions based on weight
+  const getCriticality = (weight: number): { level: string; color: number[] } => {
+    if (weight >= 0.2) return { level: 'Critical', color: [220, 38, 38] }; // Red
+    if (weight >= 0.15) return { level: 'Important', color: [217, 119, 6] }; // Amber
+    return { level: 'Supporting', color: [22, 163, 74] }; // Green
+  };
+  
+  // Sort skills by weight to get properly prioritized list
+  const sortedRoleSkills = Object.entries(roleWeights)
+    .sort(([, a], [, b]) => (b as number) - (a as number));
+  
+  const topWeightedSkills = sortedRoleSkills.slice(0, 3).map(([name]) => name);
+  
+  // Skill Prioritization Box - shows why these skills matter
+  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+  
+  pdf.setFillColor(240, 249, 255); // Light blue background
+  pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'F');
+  
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text('Skill Prioritization Rationale', 24, yPos + 5);
+  
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  // Build comprehensive explanation for top skills
+  let priorityExplanation = `For ${roleData.name}, the weighted scoring model prioritizes: `;
+  topWeightedSkills.forEach((skillName, idx) => {
+    const weight = roleWeights[skillName] as number;
+    const criticality = getCriticality(weight);
+    const benefit = skillBenefits[skillName] || 'contributes to role effectiveness';
+    
+    if (idx === 0) {
+      priorityExplanation += `${skillName} (${criticality.level} - ${benefit})`;
+    } else if (idx === topWeightedSkills.length - 1) {
+      priorityExplanation += `, and ${skillName} (${criticality.level} - ${benefit})`;
+    } else {
+      priorityExplanation += `, ${skillName} (${criticality.level} - ${benefit})`;
+    }
+  });
+  priorityExplanation += '.';
+  
+  const priorityLines = pdf.splitTextToSize(priorityExplanation, pageWidth - 52);
+  priorityLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 10 + (i * 3.5));
+  });
+  
+  yPos += 32;
+  
+  // Candidate recommendation section
   if (roleScoresSorted.length >= 2) {
     const topRole = roleScoresSorted[0];
     const secondRole = roleScoresSorted[1];
-    const topWeightedSkills = Object.keys(roleWeights).slice(0, 2);
     
-    // Skill benefit descriptions
-    const skillBenefits: Record<string, string> = {
-      'Domain Expertise': 'enables strategic guidance on industry-specific AI applications',
-      'Collaboration & Communication': 'facilitates stakeholder alignment and cross-functional coordination',
-      'High Agency': 'drives proactive problem-solving and initiative',
-      'AI Literacy & Prompt Engineering': 'ensures effective AI system implementation',
-      'Critical Thinking & Problem-Solving': 'supports analytical decision-making',
-      'Interpersonal Agility': 'enables effective navigation of team dynamics',
-      'Responsible AI & Ethical Awareness': 'ensures AI governance compliance',
-      'Growth Mindset': 'supports adaptation to emerging technologies',
-      'Resilience': 'maintains performance under pressure',
-    };
-    
-    // Find advantage skills
-    const advantageSkills = Object.keys(roleWeights).filter(skillName => {
-      const topScore = topRole.skills[skillName] ?? 0;
-      const secondScore = secondRole.skills[skillName] ?? 0;
-      return topScore > secondScore;
-    }).slice(0, 2);
+    // Find advantage skills (sorted by weight importance)
+    const advantageSkills = sortedRoleSkills
+      .map(([name]) => name)
+      .filter(skillName => {
+        const topScore = topRole.skills[skillName] ?? 0;
+        const secondScore = secondRole.skills[skillName] ?? 0;
+        return topScore > secondScore;
+      }).slice(0, 3);
     
     // Calculate box height based on content
-    const boxHeight = advantageSkills.length > 0 ? 22 : 14;
+    const boxHeight = advantageSkills.length > 0 ? 26 : 14;
     
     pdf.setFillColor(248, 250, 252);
     pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
@@ -1298,155 +1358,33 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setTextColor(107, 114, 128);
     pdf.text(`vs ${secondRole.score}%`, pageWidth - 28, yPos + 9, { align: 'right' });
     
-    // Main explanation
-    pdf.setFontSize(6);
-    pdf.setTextColor(71, 85, 105);
-    let roleText = `For ${roleData.name}, scoring prioritizes ${topWeightedSkills[0]} (which ${skillBenefits[topWeightedSkills[0]] || 'contributes to role effectiveness'}) `;
-    roleText += `and ${topWeightedSkills[1]} (which ${skillBenefits[topWeightedSkills[1]] || 'contributes to role effectiveness'}).`;
-    
-    const splitRoleText = pdf.splitTextToSize(roleText, pageWidth - 60);
-    pdf.text(splitRoleText, 24, yPos + 10);
-    
-    // Key differentiator if applicable
+    // Enhanced key differentiator with skill context
     if (advantageSkills.length > 0) {
       const scoreDiff = topRole.score - secondRole.score;
-      let diffText = `Key differentiator: ${topRole.name} demonstrates stronger performance in ${advantageSkills.join(' and ')}, `;
-      diffText += `translating to a ${scoreDiff} percentage point lead in overall role fit.`;
+      pdf.setFontSize(6);
+      pdf.setTextColor(71, 85, 105);
       
-      const splitDiffText = pdf.splitTextToSize(diffText, pageWidth - 48);
-      pdf.text(splitDiffText, 24, yPos + 17);
+      // Build detailed differentiator text
+      const advantageDescriptions = advantageSkills.map(skill => {
+        const topScore = topRole.skills[skill] ?? 0;
+        const secondScore = secondRole.skills[skill] ?? 0;
+        return `${skill} (+${topScore - secondScore}pts)`;
+      });
+      
+      let diffText = `Key differentiator: ${topRole.name} outperforms in ${advantageDescriptions.join(', ')}`;
+      diffText += `. This translates to a ${scoreDiff} percentage point lead in weighted role fit, `;
+      diffText += `with particular strength in skills most critical for ${roleData.name} success.`;
+      
+      const splitDiffText = pdf.splitTextToSize(diffText, pageWidth - 52);
+      splitDiffText.forEach((line: string, i: number) => {
+        pdf.text(line, 24, yPos + 12 + (i * 3.2));
+      });
     }
     
     yPos += boxHeight;
   }
   yPos += 5;
   } // End of role suitability conditional
-  
-  // ========== ROLE SUITABILITY SUMMARY (only if a role is selected) ==========
-  if (data.selectedRole && roleData) {
-    yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
-    
-    yPos = addSectionHeader(pdf, 'ROLE SUITABILITY SUMMARY', yPos, pageWidth);
-    yPos += 3;
-    
-    // Role description - use the selected role name
-    const roleName = roleData.name || 'Selected Role';
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`How candidates align with the ${roleName} role based on weighted skill requirements`, 20, yPos);
-    yPos += 6;
-    
-    // Skill benefit descriptions for the role
-    const roleBenefits: Record<string, string> = {
-      'Domain Expertise': 'enables strategic guidance on industry-specific AI applications',
-      'Collaboration & Communication': 'facilitates stakeholder alignment and cross-functional coordination',
-      'High Agency': 'drives proactive problem-solving and initiative',
-      'AI Literacy & Prompt Engineering': 'ensures effective AI system implementation',
-      'Critical Thinking & Problem-Solving': 'supports analytical decision-making',
-      'Interpersonal Agility': 'enables effective navigation of team dynamics',
-      'Responsible AI & Ethical Awareness': 'ensures AI governance compliance',
-      'Growth Mindset': 'supports adaptation to emerging technologies',
-      'Resilience': 'maintains performance under pressure',
-      'Empathy & Ethics': 'fosters trust-building and ethical candidate evaluation',
-      'Intellectual Curiosity': 'drives proactive talent sourcing and market awareness',
-    };
-    
-    // Get role weights from the selected role
-    const selectedRoleWeights = roleWeights;
-    
-    // Get top 2 weighted skills for the role (sorted by weight descending)
-    const topRoleSkills = Object.entries(selectedRoleWeights)
-      .sort(([, a], [, b]) => (b as number) - (a as number))
-      .slice(0, 2)
-      .map(([skillName]) => skillName);
-    
-    // Role priority explanation
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    let roleExplanation = `For the ${roleName} role, scoring prioritizes ${topRoleSkills[0]} (which ${roleBenefits[topRoleSkills[0]] || 'contributes to role effectiveness'}) `;
-    roleExplanation += `and ${topRoleSkills[1]} (which ${roleBenefits[topRoleSkills[1]] || 'contributes to role effectiveness'}).`;
-    
-    const roleExpLines = pdf.splitTextToSize(roleExplanation, pageWidth - 40);
-    roleExpLines.forEach((line: string) => {
-      pdf.text(line, 20, yPos);
-      yPos += 4;
-    });
-    yPos += 3;
-    
-    // Recalculate role scores using the selected role weights
-    const selectedRoleScores = data.candidates.map((candidate, index) => {
-      const skills = getAllCandidateSkillsPDF(index);
-      let weightedSum = 0;
-      let totalWeight = 0;
-      
-      Object.entries(selectedRoleWeights).forEach(([skillName, weight]) => {
-        const score = skills[skillName];
-        if (score !== undefined) {
-          weightedSum += score * weight;
-          totalWeight += weight;
-        }
-      });
-      
-      return {
-        name: getCandidateName(candidate),
-        score: totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0,
-        skills,
-      };
-    }).sort((a, b) => b.score - a.score);
-    
-    // Recommendation box
-    if (selectedRoleScores.length >= 2) {
-      const topCandidate = selectedRoleScores[0];
-      const secondCandidate = selectedRoleScores[1];
-      
-      // Find advantage skills
-      const candidateAdvantageSkills = Object.keys(selectedRoleWeights).filter(skillName => {
-        const topScore = topCandidate.skills[skillName] ?? 0;
-        const secondScore = secondCandidate.skills[skillName] ?? 0;
-        return topScore > secondScore;
-      }).slice(0, 2);
-      
-      const scoreDiff = topCandidate.score - secondCandidate.score;
-      
-      // Recommendation header box
-      pdf.setFillColor(240, 249, 255);
-      pdf.roundedRect(20, yPos, pageWidth - 40, 24, 2, 2, 'F');
-      
-      // Recommendation label
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(30, 64, 175);
-      pdf.text(`Recommendation: ${topCandidate.name}`, 25, yPos + 6);
-      
-      // Score display
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${topCandidate.score}%`, pageWidth - 35, yPos + 8, { align: 'right' });
-      
-      pdf.setFontSize(6);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`vs ${secondCandidate.score}%`, pageWidth - 35, yPos + 12, { align: 'right' });
-      
-      // Key differentiator
-      if (candidateAdvantageSkills.length > 0) {
-        pdf.setFontSize(6.5);
-        pdf.setTextColor(55, 65, 81);
-        let diffText = `Key differentiator: ${topCandidate.name} demonstrates stronger performance in ${candidateAdvantageSkills.join(' and ')}, `;
-        diffText += `translating to a ${scoreDiff} percentage point lead in overall role fit.`;
-        
-        const diffLines = pdf.splitTextToSize(diffText, pageWidth - 50);
-        diffLines.forEach((line: string, i: number) => {
-          pdf.text(line, 25, yPos + 16 + (i * 3.5));
-        });
-      }
-      
-      yPos += 28;
-    }
-    yPos += 5;
-  }
   
   // ========== EMPLOYER RECOMMENDATION ==========
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
