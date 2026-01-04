@@ -1770,7 +1770,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   const fitX = roleX + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.setLineWidth(1.5);
+  pdf.setLineWidth(0.8);
   pdf.roundedRect(fitX, yPos, cardWidth, finalCardHeight, 2, 2, 'FD');
   pdf.setLineWidth(0.5);
   
@@ -1864,29 +1864,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 10);
     const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
-    // Draw individual box with green styling
-    pdf.setFillColor(240, 253, 244);
-    pdf.setDrawColor(34, 197, 94);
-    pdf.setLineWidth(0.5);
+    // Draw individual box with subtle green styling
+    pdf.setFillColor(250, 255, 250); // Very light green
+    pdf.setDrawColor(134, 197, 134); // Subtle green border
+    pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
-    
-    // Green left accent
-    pdf.setFillColor(34, 197, 94);
-    pdf.rect(boxX, currentY + 1.5, 1.5, boxHeight - 3, 'F');
     
     // Text content (font size 8)
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(22, 101, 52);
+    pdf.setTextColor(34, 84, 52); // Dark green text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 5, currentY + 4 + (lineIdx * 3.5));
+      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      strengthLeftY = currentY + boxHeight + 2;
+      strengthLeftY = currentY + boxHeight + 4;
     } else {
-      strengthRightY = currentY + boxHeight + 2;
+      strengthRightY = currentY + boxHeight + 4;
     }
   });
   
@@ -1910,29 +1906,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 10);
     const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
-    // Draw individual box with amber styling
-    pdf.setFillColor(254, 249, 195);
-    pdf.setDrawColor(234, 179, 8);
-    pdf.setLineWidth(0.5);
+    // Draw individual box with subtle amber styling
+    pdf.setFillColor(255, 253, 245); // Very light amber
+    pdf.setDrawColor(210, 180, 100); // Subtle amber border
+    pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
-    
-    // Amber left accent
-    pdf.setFillColor(234, 179, 8);
-    pdf.rect(boxX, currentY + 1.5, 1.5, boxHeight - 3, 'F');
     
     // Text content (font size 8)
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(161, 98, 7);
+    pdf.setTextColor(130, 90, 20); // Dark amber text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 5, currentY + 4 + (lineIdx * 3.5));
+      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      gapLeftY = currentY + boxHeight + 2;
+      gapLeftY = currentY + boxHeight + 4;
     } else {
-      gapRightY = currentY + boxHeight + 2;
+      gapRightY = currentY + boxHeight + 4;
     }
   });
   
