@@ -101,26 +101,28 @@ function addBackgroundPattern(pdf: jsPDF, pageWidth: number, pageHeight: number)
 function addHeader(pdf: jsPDF, pageWidth: number) {
   // Clean white header background
   pdf.setFillColor(255, 255, 255);
-  pdf.rect(0, 0, pageWidth, 42, 'F');
+  pdf.rect(0, 0, pageWidth, 38, 'F');
   
-  // HumanMetrix Logo - tighter crop to reduce whitespace around logo
+  // HumanMetrix Logo - render larger with negative offset to crop whitespace
+  // The logo image has ~25% padding on each side, so render at 50mm but offset by -8mm
+  // This effectively "crops" the whitespace by rendering the padded area off-page
   try {
-    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', 8, 2, 32, 32);
+    pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -6, -6, 48, 48);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
   }
   
-  // Company name - positioned closer to logo
+  // Company name - positioned close to the visual logo content
   pdf.setTextColor(30, 58, 138);
   pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 42, 18);
+  pdf.text('HUMANMETRIX', 38, 16);
   
   // Tagline - positioned below company name
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 42, 26);
+  pdf.text('AI-Powered Assessment Platform', 38, 24);
   
   pdf.setTextColor(0, 0, 0);
 }
