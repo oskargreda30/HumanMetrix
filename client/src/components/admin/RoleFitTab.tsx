@@ -92,24 +92,42 @@ export default function RoleFitTab() {
     const level = criticality || 'important';
     if (level === 'critical') {
       return (
-        <Badge variant={hasGap ? 'destructive' : 'outline'} className="text-xs ml-2">
-          Critical
+        <Badge variant={hasGap ? 'destructive' : 'outline'} className="text-xs ml-1 px-1.5 min-w-[20px] justify-center">
+          C
         </Badge>
       );
     } else if (level === 'important') {
       return (
-        <Badge variant="secondary" className="text-xs ml-2">
-          Important
+        <Badge variant="secondary" className="text-xs ml-1 px-1.5 min-w-[20px] justify-center">
+          I
         </Badge>
       );
     } else {
       return (
-        <Badge variant="outline" className="text-xs ml-2 opacity-60">
-          Nice-to-have
+        <Badge variant="outline" className="text-xs ml-1 px-1.5 min-w-[20px] justify-center opacity-60">
+          N
         </Badge>
       );
     }
   };
+  
+  const CriticalityLegend = () => (
+    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4 pt-3 border-t">
+      <span className="font-medium">Legend:</span>
+      <span className="flex items-center gap-1">
+        <Badge variant="outline" className="text-xs px-1.5 min-w-[20px] justify-center">C</Badge>
+        = Critical
+      </span>
+      <span className="flex items-center gap-1">
+        <Badge variant="secondary" className="text-xs px-1.5 min-w-[20px] justify-center">I</Badge>
+        = Important
+      </span>
+      <span className="flex items-center gap-1">
+        <Badge variant="outline" className="text-xs px-1.5 min-w-[20px] justify-center opacity-60">N</Badge>
+        = Nice-to-have
+      </span>
+    </div>
+  );
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: selectedCandidate && selectedRole
@@ -373,13 +391,13 @@ export default function RoleFitTab() {
                   {alignment.fitSkillAlignments.map((skill: any, index: number) => (
                     <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-destructive/5 border border-destructive/20' : ''}`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{skill.skillName}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality, skill.gap > 0)}
                           {skill.gap > 0 ? (
-                            <TrendingDown className="h-4 w-4 text-destructive" />
+                            <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
                           )}
                         </div>
                         <Badge
@@ -413,6 +431,7 @@ export default function RoleFitTab() {
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
                   ))}
+                  <CriticalityLegend />
                 </div>
               </CardContent>
             </Card>
@@ -435,13 +454,13 @@ export default function RoleFitTab() {
                   {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
                     <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-destructive/5 border border-destructive/20' : ''}`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{skill.skillName}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality, skill.gap > 0)}
                           {skill.gap > 0 ? (
-                            <TrendingDown className="h-4 w-4 text-destructive" />
+                            <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
                           )}
                         </div>
                         <Badge
@@ -475,6 +494,7 @@ export default function RoleFitTab() {
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
                   ))}
+                  <CriticalityLegend />
                 </div>
               </CardContent>
             </Card>
