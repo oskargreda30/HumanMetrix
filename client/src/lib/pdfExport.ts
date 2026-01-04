@@ -1844,6 +1844,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(0, 0, 0);
   }
   
+  // Add extra spacing before KEY STRENGTHS section
+  yPos += 8;
+  
   // ========== KEY STRENGTHS (individual boxes) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 1;
