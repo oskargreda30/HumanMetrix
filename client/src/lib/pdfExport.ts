@@ -2030,7 +2030,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       // Draw line connecting required to candidate score
       const lineColor = skill.candidateScore >= skill.requiredScore ? [34, 197, 94] : [239, 68, 68];
       pdf.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
-      pdf.setLineWidth(isCriticalGap ? 1.5 : 0.8);
+      pdf.setLineWidth(0.8); // Consistent line thickness for all skills
       pdf.line(Math.min(requiredX, candidateX), skillY, Math.max(requiredX, candidateX), skillY);
       
       // Draw required score marker (hollow circle)
