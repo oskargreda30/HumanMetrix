@@ -1784,19 +1784,58 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(0, 0, 0);
   }
   
-  // ========== KEY STRENGTHS (on page 1, compact two-column) ==========
-  yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
-  yPos += 2;
+  // ========== KEY STRENGTHS (boxed style) ==========
+  // Calculate box height based on content
+  const strengthBoxX = 20;
+  const strengthBoxWidth = pageWidth - 40;
+  const strengthContentPadding = 4;
+  
+  // First calculate total content height for strengths
+  let strengthContentHeight = 8; // Title + subtitle
+  const strengthColWidth = (strengthBoxWidth - 15) / 2;
+  let tempStrengthLeftY = 0;
+  let tempStrengthRightY = 0;
+  let tempOnStrengthLeftCol = true;
+  
+  data.alignment.strengths.forEach((strength) => {
+    const strengthLines = pdf.splitTextToSize(strength, strengthColWidth - 6);
+    const itemHeight = strengthLines.length * 3 + 2;
+    if (tempOnStrengthLeftCol) {
+      tempStrengthLeftY += itemHeight;
+    } else {
+      tempStrengthRightY += itemHeight;
+    }
+    tempOnStrengthLeftCol = !tempOnStrengthLeftCol;
+  });
+  strengthContentHeight += Math.max(tempStrengthLeftY, tempStrengthRightY) + 4;
+  
+  // Draw strength box with green left border (like Critical Skills Summary style)
+  pdf.setFillColor(240, 253, 244); // Light green background
+  pdf.setDrawColor(34, 197, 94); // Green border
+  pdf.setLineWidth(0.8);
+  pdf.roundedRect(strengthBoxX, yPos, strengthBoxWidth, strengthContentHeight, 2, 2, 'FD');
+  
+  // Left accent bar
+  pdf.setFillColor(34, 197, 94);
+  pdf.rect(strengthBoxX, yPos + 2, 1.5, strengthContentHeight - 4, 'F');
+  
+  yPos += strengthContentPadding;
+  
+  // Box title
+  applySubheading(pdf);
+  pdf.setTextColor(22, 101, 52);
+  pdf.text('Key Strengths', strengthBoxX + 6, yPos + 2);
+  yPos += 6;
   
   applySmallText(pdf);
-  pdf.text('Areas where candidate meets or exceeds requirements', 20, yPos);
-  yPos += 6;
+  pdf.setTextColor(55, 65, 81);
+  pdf.text('Areas where candidate meets or exceeds requirements', strengthBoxX + 6, yPos);
+  yPos += 5;
   
   applyBodyText(pdf);
   
-  // Two-column layout for strengths
-  const strengthColWidth = (pageWidth - 45) / 2;
-  const strengthLeftX = 20;
+  // Two-column layout for strengths inside the box
+  const strengthLeftX = strengthBoxX + 6;
   const strengthRightX = strengthLeftX + strengthColWidth + 5;
   let strengthLeftY = yPos;
   let strengthRightY = yPos;
@@ -1826,22 +1865,61 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     onStrengthLeftCol = !onStrengthLeftCol;
   });
   
-  yPos = Math.max(strengthLeftY, strengthRightY) + 6;
+  yPos += strengthContentHeight - strengthContentPadding + 4;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== DEVELOPMENT AREAS (on page 1, compact two-column) ==========
-  yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 2;
+  // ========== DEVELOPMENT AREAS (boxed style) ==========
+  // Calculate box height based on content
+  const gapBoxX = 20;
+  const gapBoxWidth = pageWidth - 40;
+  const gapContentPadding = 4;
+  
+  // First calculate total content height for gaps
+  let gapContentHeight = 8; // Title + subtitle
+  const gapColWidth = (gapBoxWidth - 15) / 2;
+  let tempGapLeftY = 0;
+  let tempGapRightY = 0;
+  let tempOnGapLeftCol = true;
+  
+  data.alignment.gaps.forEach((gap) => {
+    const gapLines = pdf.splitTextToSize(gap, gapColWidth - 6);
+    const itemHeight = gapLines.length * 3 + 2;
+    if (tempOnGapLeftCol) {
+      tempGapLeftY += itemHeight;
+    } else {
+      tempGapRightY += itemHeight;
+    }
+    tempOnGapLeftCol = !tempOnGapLeftCol;
+  });
+  gapContentHeight += Math.max(tempGapLeftY, tempGapRightY) + 4;
+  
+  // Draw gap box with red/amber left border
+  pdf.setFillColor(254, 249, 195); // Light amber background
+  pdf.setDrawColor(234, 179, 8); // Amber border
+  pdf.setLineWidth(0.8);
+  pdf.roundedRect(gapBoxX, yPos, gapBoxWidth, gapContentHeight, 2, 2, 'FD');
+  
+  // Left accent bar
+  pdf.setFillColor(234, 179, 8);
+  pdf.rect(gapBoxX, yPos + 2, 1.5, gapContentHeight - 4, 'F');
+  
+  yPos += gapContentPadding;
+  
+  // Box title
+  applySubheading(pdf);
+  pdf.setTextColor(161, 98, 7);
+  pdf.text('Development Areas', gapBoxX + 6, yPos + 2);
+  yPos += 6;
   
   applySmallText(pdf);
-  pdf.text('Skills requiring improvement for better role alignment', 20, yPos);
-  yPos += 6;
+  pdf.setTextColor(55, 65, 81);
+  pdf.text('Skills requiring improvement for better role alignment', gapBoxX + 6, yPos);
+  yPos += 5;
   
   applyBodyText(pdf);
   
-  // Two-column layout for gaps
-  const gapColWidth = (pageWidth - 45) / 2;
-  const gapLeftX = 20;
+  // Two-column layout for gaps inside the box
+  const gapLeftX = gapBoxX + 6;
   const gapRightX = gapLeftX + gapColWidth + 5;
   let gapLeftY = yPos;
   let gapRightY = yPos;
@@ -1851,10 +1929,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const currentX = onGapLeftCol ? gapLeftX : gapRightX;
     let currentY = onGapLeftCol ? gapLeftY : gapRightY;
     
-    pdf.setTextColor(239, 68, 68);
+    pdf.setTextColor(234, 179, 8);
     pdf.text('⚠', currentX + 1, currentY);
     
-    pdf.setTextColor(127, 29, 29);
+    pdf.setTextColor(161, 98, 7);
     const gapLines = pdf.splitTextToSize(gap, gapColWidth - 6);
     gapLines.forEach((line: string, lineIdx: number) => {
       pdf.text(line, currentX + 4, currentY + (lineIdx * 3));
@@ -1871,7 +1949,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     onGapLeftCol = !onGapLeftCol;
   });
   
-  yPos = Math.max(gapLeftY, gapRightY);
+  yPos += gapContentHeight - gapContentPadding;
   pdf.setTextColor(0, 0, 0);
   
   // ========== PAGE 2: SKILL ALIGNMENT ANALYSIS ==========
