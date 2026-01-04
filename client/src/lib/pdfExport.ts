@@ -156,16 +156,16 @@ function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidt
   // Clear any previous draw color and set fill only
   pdf.setDrawColor(243, 244, 246);
   pdf.setFillColor(243, 244, 246);
-  pdf.rect(20, yPosition, pageWidth - 40, 14, 'F');
+  pdf.rect(20, yPosition, pageWidth - 40, 12, 'F');
   
-  pdf.setFontSize(15);
+  pdf.setFontSize(13);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  // Title positioned in the middle of the box
-  pdf.text(title, 25, yPosition + 10);
+  // Title positioned in the middle of the box (yPosition + 8 for center of 12-height box)
+  pdf.text(title, 25, yPosition + 8);
   pdf.setTextColor(0, 0, 0);
   
-  return yPosition + 18;
+  return yPosition + 16;
 }
 
 // Helper to determine performance level
@@ -1437,12 +1437,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addHeader(pdf, pageWidth);
   yPos = 32;
   yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
-  yPos += 2;
+  yPos += 3;
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(10);
   pdf.setTextColor(107, 114, 128);
   pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
-  yPos += 7;
+  yPos += 10;
   
   const comparisonAdditionalServices = [
     {
@@ -1468,61 +1468,61 @@ export async function exportComparisonPDF(data: ComparisonData) {
   ];
   
   comparisonAdditionalServices.forEach((service, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
     
     // Service number badge
     pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(20, yPos - 2, 5, 5, 1, 1, 'F');
-    pdf.setFontSize(6);
+    pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
+    pdf.setFontSize(8);
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${index + 1}`, 22.5, yPos + 1.5, { align: 'center' });
+    pdf.text(`${index + 1}`, 23, yPos + 2, { align: 'center' });
     
     // Service name
-    pdf.setFontSize(7);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(service.name, 28, yPos + 1);
+    pdf.text(service.name, 30, yPos + 2);
     
     // Service description
-    pdf.setFontSize(6.5);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     const descLines = pdf.splitTextToSize(service.description, pageWidth - 55);
     descLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 28, yPos + 5 + (idx * 3));
+      pdf.text(line, 30, yPos + 8 + (idx * 5));
     });
     
-    yPos += 5 + (descLines.length * 3) + 2;
+    yPos += 8 + (descLines.length * 5) + 4;
   });
   
-  yPos += 4;
+  yPos += 6;
   
   // Contact info box
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 10, 2, 2, 'FD');
+  pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(10);
   pdf.setTextColor(30, 58, 138);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 4);
-  pdf.setFontSize(6.5);
+  pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 6);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 7.5);
+  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 12);
   
-  yPos += 15;
+  yPos += 22;
   
   // Closing statement / Disclaimer
-  yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
+  yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);
   pdf.setFont('helvetica', 'italic');
-  pdf.setFontSize(6.5);
+  pdf.setFontSize(10);
   pdf.setTextColor(107, 114, 128);
   const closingText = 'This recommendation is generated based solely on assessment data and should be considered alongside interviews, references, and other evaluation criteria for comprehensive hiring decisions.';
   const closingLines = pdf.splitTextToSize(closingText, pageWidth - 50);
   closingLines.forEach((line: string) => {
     pdf.text(line, 25, yPos);
-    yPos += 3.5;
+    yPos += 5;
   });
   
   pdf.setTextColor(0, 0, 0);
