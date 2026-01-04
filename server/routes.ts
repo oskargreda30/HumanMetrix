@@ -4247,6 +4247,10 @@ Format your response as JSON with this structure:
         roleFlexibility: topAlternativeRoles // Always save array (empty if no matches) to distinguish from old null values
       };
 
+      // Invalidate any existing cached alignment before creating new one
+      // This ensures the new scoring formula is always used
+      await storage.invalidateRoleAlignmentCache(userId, jobRoleId);
+      
       // Cache the result
       const crypto = await import('crypto');
       const promptHash = crypto.createHash('md5').update(prompt).digest('hex');

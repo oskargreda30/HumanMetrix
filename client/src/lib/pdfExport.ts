@@ -1701,91 +1701,96 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   pdf.setTextColor(0, 0, 0);
   
-  // Candidate & Role Information (compact, side-by-side)
+  // Three-card layout: Candidate | Target Role | Overall Fit Score (inline)
   yPos = 85;
+  const cardGap = 5;
+  const cardWidth = (pageWidth - 40 - cardGap * 2) / 3;
+  const baseCardHeight = 35;
   
-  // Candidate card (left)
+  // Pre-calculate role description lines to determine dynamic height
+  let descLines: string[] = [];
+  let finalCardHeight = baseCardHeight;
+  if (data.role.description) {
+    pdf.setFontSize(7);
+    descLines = pdf.splitTextToSize(data.role.description, cardWidth - 10);
+    const maxDescLines = Math.min(descLines.length, 3);
+    finalCardHeight = Math.max(baseCardHeight, 28 + (maxDescLines * 3));
+  }
+  
+  // Card 1: Candidate (left) - uses finalCardHeight
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(20, yPos, (pageWidth - 45) / 2, 30, 2, 2, 'FD');
+  pdf.roundedRect(20, yPos, cardWidth, finalCardHeight, 2, 2, 'FD');
   
   applyLabelText(pdf);
   pdf.text('CANDIDATE', 25, yPos + 8);
   
   applySubheading(pdf);
   pdf.setTextColor(17, 24, 39);
-  pdf.text(candidateName, 25, yPos + 16);
+  const truncatedName = candidateName.length > 20 ? candidateName.substring(0, 18) + '...' : candidateName;
+  pdf.text(truncatedName, 25, yPos + 17);
   
-  applySmallText(pdf);
-  pdf.text(data.candidate.user.email, 25, yPos + 22);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  const truncatedEmail = data.candidate.user.email.length > 25 
+    ? data.candidate.user.email.substring(0, 23) + '...' 
+    : data.candidate.user.email;
+  pdf.text(truncatedEmail, 25, yPos + 25);
   
-  // Role card (right) with dynamic height
-  const roleX = (pageWidth + 5) / 2;
-  
-  // Calculate dynamic card height based on description
-  let roleCardHeight = 30;
-  let descLineCount = 0;
-  if (data.role.description) {
-    const tempDescLines = pdf.splitTextToSize(data.role.description, (pageWidth - 55) / 2);
-    descLineCount = tempDescLines.length;
-    roleCardHeight = Math.max(30, 20 + (descLineCount * 2.5));
-  }
-  
+  // Card 2: Target Role (middle) - uses finalCardHeight
+  const roleX = 20 + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(roleX, yPos, (pageWidth - 45) / 2, roleCardHeight, 2, 2, 'FD');
+  pdf.roundedRect(roleX, yPos, cardWidth, finalCardHeight, 2, 2, 'FD');
   
   applyLabelText(pdf);
   pdf.text('TARGET ROLE', roleX + 5, yPos + 8);
   
   applySubheading(pdf);
   pdf.setTextColor(17, 24, 39);
-  pdf.text(data.role.name, roleX + 5, yPos + 16);
+  const truncatedRole = data.role.name.length > 22 ? data.role.name.substring(0, 20) + '...' : data.role.name;
+  pdf.text(truncatedRole, roleX + 5, yPos + 17);
   
-  if (data.role.description) {
-    applySmallText(pdf);
-    const descLines = pdf.splitTextToSize(data.role.description, (pageWidth - 55) / 2);
-    descLines.forEach((line: string, idx: number) => {
-      pdf.text(line, roleX + 5, yPos + 22 + (idx * 3));
+  if (data.role.description && descLines.length > 0) {
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const displayLines = descLines.slice(0, 3);
+    displayLines.forEach((line: string, idx: number) => {
+      pdf.text(line, roleX + 5, yPos + 23 + (idx * 3));
     });
   }
   
-  pdf.setTextColor(0, 0, 0);
-  
-  // OVERALL FIT SCORE (on page 1) - SMALLER VERSION
-  yPos = 125;
-  yPos = addSectionHeader(pdf, 'OVERALL FIT SCORE', yPos, pageWidth);
-  yPos += 3;
-  
+  // Card 3: Overall Fit Score (right) - uses finalCardHeight
   const fitColor = data.alignment.overallFit >= 80 ? [34, 197, 94] : 
                    data.alignment.overallFit >= 60 ? [234, 179, 8] : [239, 68, 68];
   const fitLabel = data.alignment.overallFit >= 80 ? 'Excellent Fit' : 
                    data.alignment.overallFit >= 60 ? 'Good Fit' : 'Needs Development';
   
-  // Smaller inline score display (single line)
-  pdf.setFontSize(16);
+  const fitX = roleX + cardWidth + cardGap;
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(fitColor[0], fitColor[1], fitColor[2]);
+  pdf.setLineWidth(1.5);
+  pdf.roundedRect(fitX, yPos, cardWidth, finalCardHeight, 2, 2, 'FD');
+  pdf.setLineWidth(0.5);
+  
+  applyLabelText(pdf);
+  pdf.text('OVERALL FIT', fitX + 5, yPos + 8);
+  
+  // Large score
+  pdf.setFontSize(20);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.text(`${data.alignment.overallFit}%`, 25, yPos + 4);
+  pdf.text(`${data.alignment.overallFit}%`, fitX + 5, yPos + 22);
   
-  applyBodyText(pdf);
+  // Fit label
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
-  pdf.text(fitLabel, 52, yPos + 4);
+  pdf.text(fitLabel, fitX + 5, yPos + 30);
   
-  // Compact progress bar next to score
-  const barX = 95;
-  const barWidth = pageWidth - barX - 25;
-  const barHeight = 4;
-  
-  pdf.setFillColor(229, 231, 235);
-  pdf.roundedRect(barX, yPos + 1, barWidth, barHeight, 1, 1, 'F');
-  
-  const fillWidth = (data.alignment.overallFit / 100) * barWidth;
-  pdf.setFillColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.roundedRect(barX, yPos + 1, fillWidth, barHeight, 1, 1, 'F');
-  
-  yPos += 16;
   pdf.setTextColor(0, 0, 0);
+  yPos = 85 + finalCardHeight + 8;
   
   // ========== DATA QUALITY ALERTS (if any) ==========
   if (data.alignment.dataRiskIndicators && data.alignment.dataRiskIndicators.length > 0) {
@@ -1839,172 +1844,99 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(0, 0, 0);
   }
   
-  // ========== KEY STRENGTHS (boxed style) ==========
-  // Calculate box height based on content
-  const strengthBoxX = 20;
-  const strengthBoxWidth = pageWidth - 40;
-  const strengthContentPadding = 4;
+  // ========== KEY STRENGTHS (individual boxes) ==========
+  yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
+  yPos += 2;
   
-  // First calculate total content height for strengths
-  let strengthContentHeight = 8; // Title + subtitle
-  const strengthColWidth = (strengthBoxWidth - 15) / 2;
-  let tempStrengthLeftY = 0;
-  let tempStrengthRightY = 0;
-  let tempOnStrengthLeftCol = true;
-  
-  data.alignment.strengths.forEach((strength) => {
-    const strengthLines = pdf.splitTextToSize(strength, strengthColWidth - 6);
-    const itemHeight = strengthLines.length * 3 + 2;
-    if (tempOnStrengthLeftCol) {
-      tempStrengthLeftY += itemHeight;
-    } else {
-      tempStrengthRightY += itemHeight;
-    }
-    tempOnStrengthLeftCol = !tempOnStrengthLeftCol;
-  });
-  strengthContentHeight += Math.max(tempStrengthLeftY, tempStrengthRightY) + 4;
-  
-  // Draw strength box with green left border (like Critical Skills Summary style)
-  pdf.setFillColor(240, 253, 244); // Light green background
-  pdf.setDrawColor(34, 197, 94); // Green border
-  pdf.setLineWidth(0.8);
-  pdf.roundedRect(strengthBoxX, yPos, strengthBoxWidth, strengthContentHeight, 2, 2, 'FD');
-  
-  // Left accent bar
-  pdf.setFillColor(34, 197, 94);
-  pdf.rect(strengthBoxX, yPos + 2, 1.5, strengthContentHeight - 4, 'F');
-  
-  yPos += strengthContentPadding;
-  
-  // Box title
-  applySubheading(pdf);
-  pdf.setTextColor(22, 101, 52);
-  pdf.text('Key Strengths', strengthBoxX + 6, yPos + 2);
-  yPos += 6;
-  
-  applySmallText(pdf);
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('Areas where candidate meets or exceeds requirements', strengthBoxX + 6, yPos);
-  yPos += 5;
-  
-  applyBodyText(pdf);
-  
-  // Two-column layout for strengths inside the box
-  const strengthLeftX = strengthBoxX + 6;
-  const strengthRightX = strengthLeftX + strengthColWidth + 5;
+  // Two-column grid of individual boxes
+  const itemBoxWidth = (pageWidth - 45) / 2;
+  const itemBoxGap = 5;
   let strengthLeftY = yPos;
   let strengthRightY = yPos;
-  let onStrengthLeftCol = true;
   
   data.alignment.strengths.forEach((strength, index) => {
-    const currentX = onStrengthLeftCol ? strengthLeftX : strengthRightX;
-    let currentY = onStrengthLeftCol ? strengthLeftY : strengthRightY;
+    const isLeftCol = index % 2 === 0;
+    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
+    const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    pdf.setTextColor(34, 197, 94);
-    pdf.text('✓', currentX + 1, currentY);
+    // Calculate box height based on text wrapping (font size 9)
+    pdf.setFontSize(9);
+    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 12);
+    const boxHeight = Math.max(12, textLines.length * 4 + 6);
     
+    // Draw individual box with green styling
+    pdf.setFillColor(240, 253, 244);
+    pdf.setDrawColor(34, 197, 94);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
+    
+    // Green left accent
+    pdf.setFillColor(34, 197, 94);
+    pdf.rect(boxX, currentY + 2, 1.5, boxHeight - 4, 'F');
+    
+    // Text content (font size 9 = +1 from default 8)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(22, 101, 52);
-    const strengthLines = pdf.splitTextToSize(strength, strengthColWidth - 6);
-    strengthLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, currentX + 4, currentY + (lineIdx * 3));
+    textLines.forEach((line: string, lineIdx: number) => {
+      pdf.text(line, boxX + 6, currentY + 5 + (lineIdx * 4));
     });
     
-    const itemHeight = strengthLines.length * 3 + 2;
-    
-    if (onStrengthLeftCol) {
-      strengthLeftY += itemHeight;
+    // Update column Y position
+    if (isLeftCol) {
+      strengthLeftY = currentY + boxHeight + 3;
     } else {
-      strengthRightY += itemHeight;
+      strengthRightY = currentY + boxHeight + 3;
     }
-    
-    onStrengthLeftCol = !onStrengthLeftCol;
   });
   
-  yPos += strengthContentHeight - strengthContentPadding + 4;
+  yPos = Math.max(strengthLeftY, strengthRightY) + 5;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== DEVELOPMENT AREAS (boxed style) ==========
-  // Calculate box height based on content
-  const gapBoxX = 20;
-  const gapBoxWidth = pageWidth - 40;
-  const gapContentPadding = 4;
+  // ========== DEVELOPMENT AREAS (individual boxes) ==========
+  yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
+  yPos += 2;
   
-  // First calculate total content height for gaps
-  let gapContentHeight = 8; // Title + subtitle
-  const gapColWidth = (gapBoxWidth - 15) / 2;
-  let tempGapLeftY = 0;
-  let tempGapRightY = 0;
-  let tempOnGapLeftCol = true;
-  
-  data.alignment.gaps.forEach((gap) => {
-    const gapLines = pdf.splitTextToSize(gap, gapColWidth - 6);
-    const itemHeight = gapLines.length * 3 + 2;
-    if (tempOnGapLeftCol) {
-      tempGapLeftY += itemHeight;
-    } else {
-      tempGapRightY += itemHeight;
-    }
-    tempOnGapLeftCol = !tempOnGapLeftCol;
-  });
-  gapContentHeight += Math.max(tempGapLeftY, tempGapRightY) + 4;
-  
-  // Draw gap box with red/amber left border
-  pdf.setFillColor(254, 249, 195); // Light amber background
-  pdf.setDrawColor(234, 179, 8); // Amber border
-  pdf.setLineWidth(0.8);
-  pdf.roundedRect(gapBoxX, yPos, gapBoxWidth, gapContentHeight, 2, 2, 'FD');
-  
-  // Left accent bar
-  pdf.setFillColor(234, 179, 8);
-  pdf.rect(gapBoxX, yPos + 2, 1.5, gapContentHeight - 4, 'F');
-  
-  yPos += gapContentPadding;
-  
-  // Box title
-  applySubheading(pdf);
-  pdf.setTextColor(161, 98, 7);
-  pdf.text('Development Areas', gapBoxX + 6, yPos + 2);
-  yPos += 6;
-  
-  applySmallText(pdf);
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('Skills requiring improvement for better role alignment', gapBoxX + 6, yPos);
-  yPos += 5;
-  
-  applyBodyText(pdf);
-  
-  // Two-column layout for gaps inside the box
-  const gapLeftX = gapBoxX + 6;
-  const gapRightX = gapLeftX + gapColWidth + 5;
   let gapLeftY = yPos;
   let gapRightY = yPos;
-  let onGapLeftCol = true;
   
   data.alignment.gaps.forEach((gap, index) => {
-    const currentX = onGapLeftCol ? gapLeftX : gapRightX;
-    let currentY = onGapLeftCol ? gapLeftY : gapRightY;
+    const isLeftCol = index % 2 === 0;
+    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
+    const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    pdf.setTextColor(234, 179, 8);
-    pdf.text('⚠', currentX + 1, currentY);
+    // Calculate box height based on text wrapping (font size 9)
+    pdf.setFontSize(9);
+    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 12);
+    const boxHeight = Math.max(12, textLines.length * 4 + 6);
     
+    // Draw individual box with amber styling
+    pdf.setFillColor(254, 249, 195);
+    pdf.setDrawColor(234, 179, 8);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
+    
+    // Amber left accent
+    pdf.setFillColor(234, 179, 8);
+    pdf.rect(boxX, currentY + 2, 1.5, boxHeight - 4, 'F');
+    
+    // Text content (font size 9 = +1 from default 8)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(161, 98, 7);
-    const gapLines = pdf.splitTextToSize(gap, gapColWidth - 6);
-    gapLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, currentX + 4, currentY + (lineIdx * 3));
+    textLines.forEach((line: string, lineIdx: number) => {
+      pdf.text(line, boxX + 6, currentY + 5 + (lineIdx * 4));
     });
     
-    const itemHeight = gapLines.length * 3 + 2;
-    
-    if (onGapLeftCol) {
-      gapLeftY += itemHeight;
+    // Update column Y position
+    if (isLeftCol) {
+      gapLeftY = currentY + boxHeight + 3;
     } else {
-      gapRightY += itemHeight;
+      gapRightY = currentY + boxHeight + 3;
     }
-    
-    onGapLeftCol = !onGapLeftCol;
   });
   
-  yPos += gapContentHeight - gapContentPadding;
+  yPos = Math.max(gapLeftY, gapRightY) + 5;
   pdf.setTextColor(0, 0, 0);
   
   // ========== PAGE 2: SKILL ALIGNMENT ANALYSIS ==========
