@@ -2271,11 +2271,12 @@ export default function CompareTab() {
                         </div>
                       )}
 
-                      {/* AI-Generated Comparison Write-up */}
+                      {/* AI-Generated Comparison Write-up - only show when a role is selected */}
+                      {selectedRole && getSelectedRoleData() && (
                       <div className="bg-muted/30 p-6 rounded-lg border" data-testid="comparison-writeup">
                         <div className="flex items-center gap-2 mb-4">
                           <FileText className="h-5 w-5 text-primary" />
-                          <h3 className="font-semibold">Comparison Summary for {selectedRole ? getSelectedRoleData()?.name : 'Selected Role'}</h3>
+                          <h3 className="font-semibold">Comparison Summary for {getSelectedRoleData()?.name}</h3>
                         </div>
                         
                         <div className="space-y-4 text-sm text-muted-foreground">
@@ -2388,6 +2389,7 @@ export default function CompareTab() {
                           })()}
                         </div>
                       </div>
+                      )}
 
                       {/* Export Button */}
                       <div className="flex justify-end">
