@@ -3757,21 +3757,52 @@ Format your response as JSON with this exact structure and skill names:
         });
       }
 
-      // Calculate overall fit score based on how well candidate meets requirements
-      // Uses a weighted approach: exceeding requirements helps, falling short penalizes more
+      // Calculate overall fit score with criticality weighting and critical gap penalties
+      // Critical skills are weighted 2x, Important 1.5x, Nice-to-have 1x
+      // Additional penalty applied for each critical skill where candidate falls short
       const allAlignments = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
-      const overallFit = allAlignments.length > 0
-        ? Math.round(allAlignments.reduce((sum, skill) => {
-            // If candidate meets or exceeds requirement, give them full credit
-            if (skill.candidateScore >= skill.requiredScore) {
-              return sum + 100;
-            } else {
-              // If below requirement, scale proportionally (penalize more heavily)
-              const percentage = (skill.candidateScore / skill.requiredScore) * 100;
-              return sum + percentage;
-            }
-          }, 0) / allAlignments.length)
-        : 0;
+      
+      const getSkillWeight = (criticality: string): number => {
+        if (criticality === 'critical') return 2.0;
+        if (criticality === 'important') return 1.5;
+        return 1.0;
+      };
+      
+      let weightedTotal = 0;
+      let weightSum = 0;
+      let criticalGaps = 0;
+      let totalCriticalSkills = 0;
+      
+      allAlignments.forEach(skill => {
+        const weight = getSkillWeight(skill.criticality || 'important');
+        const isCritical = skill.criticality === 'critical';
+        
+        if (isCritical) totalCriticalSkills++;
+        
+        // Calculate match percentage (capped at 100%)
+        const matchPercent = skill.candidateScore >= skill.requiredScore
+          ? 100
+          : (skill.candidateScore / skill.requiredScore) * 100;
+        
+        weightedTotal += matchPercent * weight;
+        weightSum += weight;
+        
+        // Track critical gaps
+        if (isCritical && skill.candidateScore < skill.requiredScore) {
+          criticalGaps++;
+        }
+      });
+      
+      // Calculate weighted average
+      let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
+      
+      // Apply critical gap penalty: 10% reduction per critical gap (capped at 50%)
+      if (criticalGaps > 0 && totalCriticalSkills > 0) {
+        const criticalPenalty = criticalGaps * 0.10;
+        overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
+      }
+      
+      overallFit = Math.round(overallFit);
 
       // Use OpenAI to generate strengths, gaps, and recommendations
       const OpenAI = await import('openai');
