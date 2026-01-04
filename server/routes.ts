@@ -4037,9 +4037,9 @@ Format your response as JSON with this structure:
       }> = [];
       
       // Get target role requirements for comparison
-      const targetFitSkills = (jobRole.requiredSkillScores?.fitSkills || {}) as Record<string, number>;
-      const targetAiSkills = (jobRole.requiredSkillScores?.aiReadinessSkills || {}) as Record<string, number>;
-      const targetCriticality = (jobRole.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
+      const targetFitSkills = (role.requiredSkillScores?.fitSkills || {}) as Record<string, number>;
+      const targetAiSkills = (role.requiredSkillScores?.aiReadinessSkills || {}) as Record<string, number>;
+      const targetCriticality = (role.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
       
       // Helper: Get criticality weight (critical=3, important=2, nice-to-have=1)
       const getCriticalityWeight = (criticality: string | undefined): number => {
@@ -4375,7 +4375,7 @@ Format your response as JSON with this structure:
       }
       
       // Get candidate's results for PA and AIQ from database
-      const candidateResults = await storage.getAssessmentResultsByUser(userId as string);
+      const candidateResults = await storage.getResultsByUser(userId as string);
       
       // Calculate Prompt Architecture benchmarks
       const paResults = resultsByType['prompt_architecture'];
