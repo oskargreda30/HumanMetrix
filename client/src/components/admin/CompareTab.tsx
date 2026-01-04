@@ -293,6 +293,7 @@ export default function CompareTab() {
         aiCombinedChartImage,
         overallSkillsChartImage,
         selectedRole: selectedRole || null,
+        roleData: selectedRole ? getSelectedRoleData() : null,
       });
       
       toast({

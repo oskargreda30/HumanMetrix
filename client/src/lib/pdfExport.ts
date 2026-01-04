@@ -38,6 +38,12 @@ interface ComparisonData {
   aiCombinedChartImage?: string | null;
   overallSkillsChartImage?: string | null;
   selectedRole?: string | null;
+  roleData?: {
+    id: string;
+    name: string;
+    description?: string;
+    requiredSkillScores?: Record<string, any>;
+  } | null;
 }
 
 interface RoleFitData {
@@ -1026,22 +1032,66 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = 32;
   
   // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
-  // Default role weights used only if we need them for later calculations
-  const roleWeights: Record<string, number> = data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]
-    ? ROLE_DEFINITIONS[data.selectedRole].weights
-    : {};
-  
-  if (data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]) {
-    const selectedRoleDef = ROLE_DEFINITIONS[data.selectedRole];
+  // Helper to extract skill requirements from nested requiredSkillScores structure
+  const extractSkillRequirementsPDF = (requiredSkillScores: any): Record<string, number> => {
+    const skills: Record<string, number> = {};
+    if (!requiredSkillScores) return skills;
     
+    // Handle nested structure with FIT and AI_READINESS categories
+    if (requiredSkillScores.FIT) {
+      Object.entries(requiredSkillScores.FIT).forEach(([skillName, data]: [string, any]) => {
+        if (typeof data === 'object' && data.score !== undefined) {
+          skills[skillName] = data.score;
+        } else if (typeof data === 'number') {
+          skills[skillName] = data;
+        }
+      });
+    }
+    if (requiredSkillScores.AI_READINESS) {
+      Object.entries(requiredSkillScores.AI_READINESS).forEach(([skillName, data]: [string, any]) => {
+        if (typeof data === 'object' && data.score !== undefined) {
+          skills[skillName] = data.score;
+        } else if (typeof data === 'number') {
+          skills[skillName] = data;
+        }
+      });
+    }
+    
+    // Also handle flat structure for backwards compatibility
+    if (!requiredSkillScores.FIT && !requiredSkillScores.AI_READINESS) {
+      Object.entries(requiredSkillScores).forEach(([skillName, data]: [string, any]) => {
+        if (typeof data === 'object' && data.score !== undefined) {
+          skills[skillName] = data.score;
+        } else if (typeof data === 'number') {
+          skills[skillName] = data;
+        }
+      });
+    }
+    
+    return skills;
+  };
+  
+  // Get role data from passed roleData (database) or fallback to static ROLE_DEFINITIONS
+  const roleData = data.roleData || (data.selectedRole && ROLE_DEFINITIONS[data.selectedRole] ? {
+    id: data.selectedRole,
+    name: ROLE_DEFINITIONS[data.selectedRole].name,
+    description: ROLE_DEFINITIONS[data.selectedRole].description,
+  } : null);
+  
+  // Extract role requirements from database roleData or static ROLE_DEFINITIONS
+  const roleWeights: Record<string, number> = data.roleData?.requiredSkillScores 
+    ? extractSkillRequirementsPDF(data.roleData.requiredSkillScores)
+    : (data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]?.weights || {});
+  
+  if (roleData) {
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
-    yPos = addSectionHeader(pdf, `ROLE SUITABILITY: ${selectedRoleDef.name.toUpperCase()}`, yPos, pageWidth);
+    yPos = addSectionHeader(pdf, `ROLE SUITABILITY: ${roleData.name.toUpperCase()}`, yPos, pageWidth);
     yPos += 3;
     
     // Role description
     applySmallText(pdf);
     pdf.setFont('helvetica', 'italic');
-    pdf.text(selectedRoleDef.description, 20, yPos);
+    pdf.text(roleData.description || 'Role suitability analysis based on skill requirements', 20, yPos);
     yPos += 5;
   
   // Calculate role suitability
@@ -1168,7 +1218,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Main explanation
     pdf.setFontSize(6);
     pdf.setTextColor(71, 85, 105);
-    let roleText = `For ${selectedRoleDef.name}, scoring prioritizes ${topWeightedSkills[0]} (which ${skillBenefits[topWeightedSkills[0]] || 'contributes to role effectiveness'}) `;
+    let roleText = `For ${roleData.name}, scoring prioritizes ${topWeightedSkills[0]} (which ${skillBenefits[topWeightedSkills[0]] || 'contributes to role effectiveness'}) `;
     roleText += `and ${topWeightedSkills[1]} (which ${skillBenefits[topWeightedSkills[1]] || 'contributes to role effectiveness'}).`;
     
     const splitRoleText = pdf.splitTextToSize(roleText, pageWidth - 60);
@@ -1190,14 +1240,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
   } // End of role suitability conditional
   
   // ========== ROLE SUITABILITY SUMMARY (only if a role is selected) ==========
-  if (data.selectedRole) {
+  if (data.selectedRole && roleData) {
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     
     yPos = addSectionHeader(pdf, 'ROLE SUITABILITY SUMMARY', yPos, pageWidth);
     yPos += 3;
     
     // Role description - use the selected role name
-    const roleName = ROLE_DEFINITIONS[data.selectedRole]?.name || 'Selected Role';
+    const roleName = roleData.name || 'Selected Role';
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(107, 114, 128);
@@ -1220,7 +1270,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     };
     
     // Get role weights from the selected role
-    const selectedRoleWeights = ROLE_DEFINITIONS[data.selectedRole]?.weights || roleWeights;
+    const selectedRoleWeights = roleWeights;
     
     // Get top 2 weighted skills for the role (sorted by weight descending)
     const topRoleSkills = Object.entries(selectedRoleWeights)
@@ -1322,8 +1372,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 5;
   
   // Add Comparison Summary header for the selected role
-  if (data.selectedRole) {
-    const roleLabel = ROLE_DEFINITIONS[data.selectedRole]?.name ?? 'Selected Role';
+  if (data.selectedRole && roleData) {
+    const roleLabel = roleData.name ?? 'Selected Role';
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
