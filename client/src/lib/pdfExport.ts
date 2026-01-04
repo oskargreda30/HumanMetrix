@@ -1216,13 +1216,18 @@ export async function exportComparisonPDF(data: ComparisonData) {
       'Responsible AI & Ethical Awareness': 'ensures AI governance compliance',
       'Growth Mindset': 'supports adaptation to emerging technologies',
       'Resilience': 'maintains performance under pressure',
+      'Empathy & Ethics': 'fosters trust-building and ethical candidate evaluation',
+      'Intellectual Curiosity': 'drives proactive talent sourcing and market awareness',
     };
     
     // Get role weights from the selected role
     const selectedRoleWeights = ROLE_DEFINITIONS[data.selectedRole]?.weights || roleWeights;
     
-    // Get top 2 weighted skills for the role
-    const topRoleSkills = Object.keys(selectedRoleWeights).slice(0, 2);
+    // Get top 2 weighted skills for the role (sorted by weight descending)
+    const topRoleSkills = Object.entries(selectedRoleWeights)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 2)
+      .map(([skillName]) => skillName);
     
     // Role priority explanation
     pdf.setFontSize(7);

@@ -382,4 +382,19 @@ export const ROLE_DEFINITIONS: Record<string, { name: string; description: strin
       'Domain Expertise': 0.10,
     }
   },
+  'recruiter': {
+    name: 'Recruiter',
+    description: 'Identifies and evaluates talent for AI-focused roles',
+    weights: {
+      'Interpersonal Agility': 0.18,
+      'Collaboration & Communication': 0.16,
+      'Empathy & Ethics': 0.14,
+      'Critical Thinking & Problem-Solving': 0.12,
+      'High Agency': 0.10,
+      'Intellectual Curiosity': 0.10,
+      'AI Literacy & Prompt Engineering': 0.08,
+      'Growth Mindset': 0.07,
+      'Resilience': 0.05,
+    }
+  },
 };
