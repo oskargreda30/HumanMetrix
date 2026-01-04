@@ -1732,10 +1732,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
-  const truncatedEmail = data.candidate.user.email.length > 25 
-    ? data.candidate.user.email.substring(0, 23) + '...' 
-    : data.candidate.user.email;
-  pdf.text(truncatedEmail, 25, yPos + 25);
+  pdf.setTextColor(107, 114, 128);
+  // Allow email to wrap to two lines if needed
+  const emailLines = pdf.splitTextToSize(data.candidate.user.email, cardWidth - 10);
+  const displayEmailLines = emailLines.slice(0, 2); // Max 2 lines
+  displayEmailLines.forEach((line: string, idx: number) => {
+    pdf.text(line, 25, yPos + 24 + (idx * 3));
+  });
   
   // Card 2: Target Role (middle) - uses finalCardHeight
   const roleX = 20 + cardWidth + cardGap;
