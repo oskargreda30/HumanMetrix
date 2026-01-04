@@ -559,7 +559,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
 
   // Overall Skills Comparison Chart
   if (data.overallSkillsChartImage) {
-    if (yPos > pageHeight - 90) {
+    if (yPos > pageHeight - 140) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
@@ -574,10 +574,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
     yPos += 8;
     
-    // Calculate proportional dimensions to maintain aspect ratio
+    // Use larger dimensions to show all skill labels without truncation
+    // Capture is 680x520 (4:3 ratio), render at 170x128mm to preserve legibility
     const imgProps = pdf.getImageProperties(data.overallSkillsChartImage);
-    const maxWidth = pageWidth - 40; // Respect margins
-    const maxHeight = 80; // Keep compact
+    const maxWidth = pageWidth - 40; // Respect margins (170mm on A4)
+    const maxHeight = 128; // Larger height to prevent label truncation
     const scale = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
     const chartWidth = imgProps.width * scale;
     const chartHeight = imgProps.height * scale;
