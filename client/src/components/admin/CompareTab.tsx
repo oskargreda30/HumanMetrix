@@ -446,8 +446,8 @@ export default function CompareTab() {
       
       topLevelSections.forEach(section => {
         const rect = section.getBoundingClientRect();
-        const relativeTop = rect.top - containerRect.top + reportElement.scrollTop;
-        const relativeBottom = rect.bottom - containerRect.top + reportElement.scrollTop;
+        const relativeTop = rect.top - containerRect.top + (reportElement?.scrollTop || 0);
+        const relativeBottom = rect.bottom - containerRect.top + (reportElement?.scrollTop || 0);
         sectionBoundaries.push(relativeTop);
         sectionBoundaries.push(relativeBottom);
       });
@@ -747,27 +747,61 @@ export default function CompareTab() {
     return skills;
   };
 
-  const calculateRoleSuitability = (candidateIndex: number, roleId: string): number => {
+  // Calculate role suitability with coverage awareness
+  // Returns both the score and coverage metadata
+  const calculateRoleSuitabilityWithCoverage = (candidateIndex: number, roleId: string): { 
+    score: number; 
+    coverage: number; 
+    matchedSkills: number; 
+    totalRequiredSkills: number;
+    missingSkills: string[];
+  } => {
     const role = dbRoles?.find((r: any) => r.id === roleId);
-    if (!role || !role.requiredSkillScores) return 0;
+    if (!role || !role.requiredSkillScores) {
+      return { score: 0, coverage: 0, matchedSkills: 0, totalRequiredSkills: 0, missingSkills: [] };
+    }
     
     const skills = getAllCandidateSkills(candidateIndex);
     const requiredScores = extractSkillRequirements(role.requiredSkillScores);
+    const requiredSkillEntries = Object.entries(requiredScores).filter(([_, score]) => score > 0);
     
     let totalScore = 0;
     let matchCount = 0;
+    const missingSkills: string[] = [];
     
-    Object.entries(requiredScores).forEach(([skillName, requiredScore]) => {
+    requiredSkillEntries.forEach(([skillName, requiredScore]) => {
       const candidateScore = skills[skillName];
-      if (candidateScore !== undefined && requiredScore > 0) {
+      if (candidateScore !== undefined) {
         // Calculate how well candidate meets the requirement (capped at 100%)
         const matchPercent = Math.min(100, (candidateScore / requiredScore) * 100);
         totalScore += matchPercent;
         matchCount++;
+      } else {
+        // Track missing skills for display
+        missingSkills.push(skillName);
       }
     });
     
-    return matchCount > 0 ? Math.round(totalScore / matchCount) : 0;
+    const totalRequiredSkills = requiredSkillEntries.length;
+    const coverage = totalRequiredSkills > 0 ? matchCount / totalRequiredSkills : 0;
+    
+    // Apply coverage penalty: avgMatch * coverage
+    // This ensures candidates with partial data don't get inflated scores
+    const avgMatch = matchCount > 0 ? totalScore / matchCount : 0;
+    const adjustedScore = Math.round(avgMatch * coverage);
+    
+    return { 
+      score: adjustedScore, 
+      coverage: Math.round(coverage * 100), 
+      matchedSkills: matchCount, 
+      totalRequiredSkills,
+      missingSkills
+    };
+  };
+
+  // Backward-compatible wrapper that returns just the score
+  const calculateRoleSuitability = (candidateIndex: number, roleId: string): number => {
+    return calculateRoleSuitabilityWithCoverage(candidateIndex, roleId).score;
   };
 
   // Helper: Calculate composite score across all assessments
@@ -1240,8 +1274,9 @@ export default function CompareTab() {
                           {/* Role fit scores */}
                           <div className="grid gap-4 md:grid-cols-3">
                             {selectedCandidateData?.map((candidate: any, index: number) => {
-                              const fitScore = calculateRoleSuitability(index, selectedRole);
-                              const performance = getPerformanceLevel(fitScore);
+                              const suitability = calculateRoleSuitabilityWithCoverage(index, selectedRole);
+                              const performance = getPerformanceLevel(suitability.score);
+                              const hasPartialData = suitability.coverage < 100;
                               
                               return (
                                 <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
@@ -1250,9 +1285,27 @@ export default function CompareTab() {
                                       {getCandidateName(candidate)}
                                     </p>
                                     <div className="text-5xl font-bold mb-2" style={{ color: CHART_COLORS[index] }}>
-                                      {fitScore}%
+                                      {suitability.score}%
                                     </div>
-                                    <Badge variant={performance.variant}>{performance.label} Fit</Badge>
+                                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                                      <Badge variant={performance.variant}>{performance.label} Fit</Badge>
+                                      {hasPartialData && (
+                                        <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+                                          {suitability.coverage}% Coverage
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Coverage warning */}
+                                    {hasPartialData && suitability.missingSkills.length > 0 && (
+                                      <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-left">
+                                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                                          <AlertCircle className="inline h-3 w-3 mr-1" />
+                                          Missing: {suitability.missingSkills.slice(0, 2).join(', ')}
+                                          {suitability.missingSkills.length > 2 && ` +${suitability.missingSkills.length - 2} more`}
+                                        </p>
+                                      </div>
+                                    )}
                                     
                                     {/* Skill match breakdown */}
                                     <div className="mt-4 text-left">
