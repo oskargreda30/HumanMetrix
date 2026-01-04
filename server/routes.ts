@@ -37,11 +37,9 @@ function recalculateScores(result: any): any {
   // Only recalculate FIT and AI Readiness (they use the hybrid formula)
   if (result.assessmentType === 'fit') {
     const recalculatedScores = calculateFITScores(result.answers as Record<string, string>);
-    console.log(`[Score Recalc] FIT result ${result.id}: old scores:`, result.scores, 'new scores:', recalculatedScores);
     return { ...result, scores: recalculatedScores };
   } else if (result.assessmentType === 'ai_readiness') {
     const recalculatedScores = calculateAIReadinessScores(result.answers as Record<string, string>);
-    console.log(`[Score Recalc] AI Readiness result ${result.id}: old scores:`, result.scores, 'new scores:', recalculatedScores);
     return { ...result, scores: recalculatedScores };
   }
   
@@ -2336,10 +2334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIReadinessScores(answers);
         totalScore = null; // No total score for AI Readiness - just individual skills
       } else if (result.assessmentType === ASSESSMENT_TYPES.AIQ) {
-        console.log(`[SUBMIT DEBUG] Calculating AIQ scores for assessment ${id}`);
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
-        console.log(`[SUBMIT DEBUG] AIQ scores calculated:`, { scores, totalScore });
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
         // For Prompt Architecture, use OpenAI GPT evaluation
         // This includes transactional storage of evaluations AND status update
@@ -2390,8 +2386,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // For other assessment types, update assessment result
-      console.log(`[SUBMIT ${timestamp}] Updating database for assessment ${id}, type: ${result.assessmentType}`);
-      console.log(`[SUBMIT ${timestamp}] Scores to save:`, JSON.stringify(scores));
       
       try {
         await db.update(assessmentResults)
@@ -2405,7 +2399,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
           .where(eq(assessmentResults.id, id));
         
-        console.log(`[SUBMIT ${timestamp}] Database update successful for assessment ${id}`);
       } catch (dbUpdateError: any) {
         console.error(`[SUBMIT ${timestamp}] Database update failed:`, {
           error: dbUpdateError.message,
@@ -2622,7 +2615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             temporaryPassword,
             validatedData.message ?? undefined
           );
-          console.log(`Successfully created invitation for ${validatedData.candidateEmail} with temp password: ${temporaryPassword}`);
+          console.log(`Successfully created invitation for ${validatedData.candidateEmail}`);
         } catch (emailError: any) {
           console.error(`✗ Failed to send welcome email to ${validatedData.candidateEmail}:`, emailError.message);
           // Don't fail invitation - account is created, user can use password reset
@@ -2750,7 +2743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId = newUser.id;
           requiresLogin = true;
           
-          console.log(`📧 Sending welcome email to ${email} with temporary password`);
+          console.log(`📧 Sending welcome email to ${email}`);
           // Send welcome email with credentials
           try {
             await sendWelcomeEmailWithPassword(

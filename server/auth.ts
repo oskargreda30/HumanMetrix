@@ -70,6 +70,18 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error("Session regenerate error during login:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+
       // Set session and explicitly save to ensure it's persisted before responding
       (req.session as any).userId = user.id;
       
@@ -127,6 +139,18 @@ export async function setupAuth(app: Express) {
 
       // Auto-grant all assessments for free
       await storage.createFreeAssessmentsForUser(user.id);
+
+      // Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error("Session regenerate error during signup:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
       // Set session and explicitly save to ensure it's persisted before responding
       (req.session as any).userId = user.id;
