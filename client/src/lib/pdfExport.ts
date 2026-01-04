@@ -746,7 +746,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos = 32;
     }
     
-    yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'AIQ (ARTIFICIAL INTELLIGENCE QUOTIENT)', yPos, pageWidth);
     yPos += 2;
     
     applySmallText(pdf);
@@ -899,6 +899,41 @@ export async function exportComparisonPDF(data: ComparisonData) {
       yPos += 7;
     }
     
+    // Prompt Architecture Analysis Summary
+    const promptScores = data.candidates.map((candidate, index) => {
+      const promptData = data.promptArchitectureAssessments?.[index];
+      return {
+        name: getCandidateName(candidate),
+        score: promptData?.totalScore || 0,
+        levelsCompleted: promptData?.levels?.filter((l: any) => l.totalScore > 0).length || 0
+      };
+    }).sort((a, b) => b.score - a.score);
+    
+    if (promptScores.length >= 2 && promptScores[0].score > 0) {
+      const topPrompt = promptScores[0];
+      const secondPrompt = promptScores[1];
+      const promptDiff = topPrompt.score - secondPrompt.score;
+      
+      yPos += 3;
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+      
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105);
+      
+      const promptLevel = topPrompt.score >= 80 ? 'advanced' : topPrompt.score >= 70 ? 'proficient' : topPrompt.score >= 60 ? 'competent' : 'developing';
+      let promptText = `Prompt Analysis: ${topPrompt.name} shows ${promptLevel} prompt engineering skills with a score of ${topPrompt.score}/100.`;
+      if (promptDiff > 0) {
+        promptText += ` This is ${promptDiff} points ahead of ${secondPrompt.name} (${secondPrompt.score}/100).`;
+      }
+      promptText += ' Strong prompt architecture indicates ability to effectively leverage AI tools.';
+      
+      const splitPromptText = pdf.splitTextToSize(promptText, pageWidth - 48);
+      pdf.text(splitPromptText, 24, yPos + 6);
+      yPos += 18;
+    }
+    
     yPos += 10; // More space before next section
   }
   
@@ -1020,6 +1055,42 @@ export async function exportComparisonPDF(data: ComparisonData) {
       }
     });
     yPos += 6;
+  }
+  
+  // Strengths & Development Areas Analysis Summary
+  const candidateProfiles = data.candidates.map((candidate, index) => {
+    const { strengths, weaknesses } = getCandidateStrengthsAndWeaknesses(index);
+    return {
+      name: getCandidateName(candidate),
+      topStrength: strengths[0],
+      topWeakness: weaknesses[weaknesses.length - 1],
+      strengthAvg: strengths.length > 0 ? Math.round(strengths.reduce((sum, s) => sum + s.score, 0) / strengths.length) : 0,
+      weaknessAvg: weaknesses.length > 0 ? Math.round(weaknesses.reduce((sum, w) => sum + w.score, 0) / weaknesses.length) : 0
+    };
+  }).sort((a, b) => b.strengthAvg - a.strengthAvg);
+  
+  if (candidateProfiles.length >= 2 && candidateProfiles[0].topStrength) {
+    yPos += 3;
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+    
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(71, 85, 105);
+    
+    const topProfile = candidateProfiles[0];
+    const secondProfile = candidateProfiles[1];
+    let profileText = `Skills Analysis: ${topProfile.name} leads in top strengths averaging ${topProfile.strengthAvg}/100, excelling in ${topProfile.topStrength.name} (${topProfile.topStrength.score}/100).`;
+    if (topProfile.topWeakness) {
+      profileText += ` Development focus: ${topProfile.topWeakness.name} (${topProfile.topWeakness.score}/100).`;
+    }
+    if (secondProfile.topStrength) {
+      profileText += ` ${secondProfile.name} shows strength in ${secondProfile.topStrength.name} (${secondProfile.topStrength.score}/100).`;
+    }
+    
+    const splitProfileText = pdf.splitTextToSize(profileText, pageWidth - 48);
+    pdf.text(splitProfileText, 24, yPos + 6);
+    yPos += 18;
   }
   
   yPos += 8;
