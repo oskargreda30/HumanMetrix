@@ -2512,16 +2512,16 @@ export default function CompareTab() {
           {comparison.radarData && comparison.radarData.length > 0 && (
             <div 
               id="pdf-comparison-overall-skills-hidden"
-              style={{ width: '800px', height: '540px', backgroundColor: 'white', padding: '5px 48px 50px 48px' }}
+              style={{ width: '850px', height: '580px', backgroundColor: 'white', padding: '0px 40px 40px 40px' }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart 
                   data={comparison.radarData} 
-                  outerRadius="50%"
-                  margin={{ top: 5, right: 80, bottom: 50, left: 100 }}
+                  outerRadius="55%"
+                  margin={{ top: 0, right: 70, bottom: 40, left: 90 }}
                 >
                   <PolarGrid />
-                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
+                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                   {selectedCandidateData?.map((candidate: any, index: number) => (
                     <Radar
