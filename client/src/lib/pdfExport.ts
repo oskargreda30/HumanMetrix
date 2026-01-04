@@ -1936,33 +1936,57 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     skills.forEach((skill, index) => {
       const skillY = chartStartY + (index * skillHeight) + (skillHeight / 2);
       
-      // Skill label on left - better positioned with criticality badge
-      applySmallText(pdf);
-      const skillName = skill.skillName.length > 20 ? skill.skillName.substring(0, 18) + '...' : skill.skillName;
-      
-      // Add criticality badge before skill name
+      // Skill label on left with prominent criticality indicator
       const criticality = skill.criticality || 'important';
       const isCriticalGap = criticality === 'critical' && skill.gap > 0;
+      const skillName = skill.skillName.length > 18 ? skill.skillName.substring(0, 16) + '...' : skill.skillName;
       
+      // Draw criticality indicator - larger and more visible
       if (criticality === 'critical') {
-        // Red badge for critical skills
+        // Red star/badge for critical skills - positioned prominently
         pdf.setFillColor(isCriticalGap ? 239 : 220, isCriticalGap ? 68 : 38, isCriticalGap ? 68 : 38);
-        pdf.roundedRect(5, skillY - 2, 8, 3.5, 0.5, 0.5, 'F');
-        pdf.setFontSize(5);
+        pdf.roundedRect(14, skillY - 2.2, 10, 4.5, 1, 1, 'F');
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(255, 255, 255);
-        pdf.text('CRIT', 9, skillY + 0.5, { align: 'center' });
-      } else if (criticality === 'nice-to-have') {
-        // Gray badge for nice-to-have
+        pdf.text('CRITICAL', 19, skillY + 0.8, { align: 'center' });
+        
+        // Skill name in bold red for critical skills
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(185, 28, 28); // Dark red
+        pdf.setFontSize(8);
+        pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
+      } else if (criticality === 'important') {
+        // Amber badge for important skills
+        pdf.setFillColor(217, 119, 6);
+        pdf.roundedRect(14, skillY - 2.2, 10, 4.5, 1, 1, 'F');
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('IMPT', 19, skillY + 0.8, { align: 'center' });
+        
+        // Skill name in normal style
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.setFontSize(8);
+        pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
+      } else {
+        // Gray badge for nice-to-have/supporting skills
         pdf.setFillColor(156, 163, 175);
-        pdf.roundedRect(5, skillY - 2, 8, 3.5, 0.5, 0.5, 'F');
-        pdf.setFontSize(5);
+        pdf.roundedRect(14, skillY - 2.2, 10, 4.5, 1, 1, 'F');
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(255, 255, 255);
-        pdf.text('N2H', 9, skillY + 0.5, { align: 'center' });
+        pdf.text('N2H', 19, skillY + 0.8, { align: 'center' });
+        
+        // Skill name in lighter style
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.setFontSize(8);
+        pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
       }
       
-      pdf.setTextColor(55, 65, 81);
-      applySmallText(pdf);
-      pdf.text(skillName, chartMarginLeft - 3, skillY + 1, { align: 'right' });
+      pdf.setFont('helvetica', 'normal');
       
       // Calculate positions
       const requiredX = chartMarginLeft + (skill.requiredScore / 100) * chartWidth;
@@ -2016,17 +2040,45 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.circle(legendX, yPos, 1.5, 'F');
     pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
-    // Criticality legend
-    const critLegendX = legendX + 50;
+    // Criticality legend - show all three levels
+    yPos += 5;
+    
+    // Critical legend
     pdf.setFillColor(220, 38, 38);
-    pdf.roundedRect(critLegendX, yPos - 1.5, 8, 3.5, 0.5, 0.5, 'F');
-    pdf.setFontSize(5);
+    pdf.roundedRect(chartMarginLeft + 5, yPos - 1.5, 10, 4, 1, 1, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text('CRIT', critLegendX + 4, yPos + 0.5, { align: 'center' });
+    pdf.text('CRITICAL', chartMarginLeft + 10, yPos + 1, { align: 'center' });
     applySmallText(pdf);
     pdf.setTextColor(55, 65, 81);
-    pdf.text('= Critical Skill', critLegendX + 12, yPos + 1);
+    pdf.text('= Essential for role success', chartMarginLeft + 19, yPos + 1);
     
+    // Important legend
+    const imptLegendX = chartMarginLeft + 65;
+    pdf.setFillColor(217, 119, 6);
+    pdf.roundedRect(imptLegendX, yPos - 1.5, 10, 4, 1, 1, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('IMPT', imptLegendX + 5, yPos + 1, { align: 'center' });
+    applySmallText(pdf);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('= Important', imptLegendX + 14, yPos + 1);
+    
+    // Nice-to-have legend
+    const n2hLegendX = imptLegendX + 45;
+    pdf.setFillColor(156, 163, 175);
+    pdf.roundedRect(n2hLegendX, yPos - 1.5, 10, 4, 1, 1, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('N2H', n2hLegendX + 5, yPos + 1, { align: 'center' });
+    applySmallText(pdf);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('= Nice to have', n2hLegendX + 14, yPos + 1);
+    
+    pdf.setFont('helvetica', 'normal');
     yPos += 8;
   };
   
