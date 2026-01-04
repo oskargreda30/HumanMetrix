@@ -279,45 +279,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   pdf.setTextColor(0, 0, 0);
   
-  // Compact Candidate Cards
   yPos = 95;
-  data.candidates.forEach((candidate, index) => {
-    const name = candidate.user.firstName || candidate.user.lastName
-      ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-      : 'No Name';
-    
-    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardY = yPos + (index * 26);
-    
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(25, cardY, pageWidth - 50, 20, 2, 2, 'FD');
-    pdf.setLineWidth(0.2);
-    
-    applyLabelText(pdf);
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`CANDIDATE ${index + 1}`, 30, cardY + 6);
-    
-    applySubheading(pdf);
-    pdf.setTextColor(17, 24, 39);
-    const shortName = name.length > 25 ? name.substring(0, 23) + '...' : name;
-    pdf.text(shortName, 30, cardY + 12);
-    
-    applySmallText(pdf);
-    const shortEmail = candidate.user.email.length > 30 ? candidate.user.email.substring(0, 28) + '...' : candidate.user.email;
-    pdf.text(shortEmail, 30, cardY + 17);
-    
-    const avgScore = data.averageScores[index];
-    applyHeading(pdf);
-    pdf.text(`${avgScore}`, pageWidth - 30, cardY + 11, { align: 'right' });
-    
-    applySmallText(pdf);
-    pdf.text('Avg', pageWidth - 30, cardY + 16, { align: 'right' });
-  });
-  
-  yPos += (data.candidates.length * 26) + 8;
-  pdf.setTextColor(0, 0, 0);
   
   // Helper function to get candidate name
   function getCandidateName(candidate: any): string {
@@ -408,7 +370,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Add explanation text
   applySmallText(pdf);
-  const compositeExplanation = 'This ranking applies fixed 25% weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
+  const compositeExplanation = 'This ranking applies equal weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
   const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
   pdf.text(splitCompositeExplanation, 20, yPos);
   yPos += splitCompositeExplanation.length * 4 + 5;
@@ -574,7 +536,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Note about weights
   applySmallText(pdf);
   pdf.setFont('helvetica', 'italic');
-  pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
+  pdf.text('* Composite score calculated with equal weight for each assessment type', 20, yPos);
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
   
