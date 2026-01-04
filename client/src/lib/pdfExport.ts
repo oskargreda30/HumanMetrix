@@ -2551,7 +2551,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += PDF_SPACING.medium;
   
   // ========== ADDITIONAL SERVICES ON REQUEST ==========
-  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  // Force new page for this section
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
   yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
   yPos += 2;
   
