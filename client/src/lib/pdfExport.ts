@@ -1846,7 +1846,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== KEY STRENGTHS (individual boxes) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
-  yPos += 2;
+  yPos += 1;
   
   // Two-column grid of individual boxes
   const itemBoxWidth = (pageWidth - 45) / 2;
@@ -1859,10 +1859,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Calculate box height based on text wrapping (font size 9)
-    pdf.setFontSize(9);
-    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 12);
-    const boxHeight = Math.max(12, textLines.length * 4 + 6);
+    // Calculate box height based on text wrapping (font size 8)
+    pdf.setFontSize(8);
+    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 10);
+    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
     // Draw individual box with green styling
     pdf.setFillColor(240, 253, 244);
@@ -1872,30 +1872,30 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     
     // Green left accent
     pdf.setFillColor(34, 197, 94);
-    pdf.rect(boxX, currentY + 2, 1.5, boxHeight - 4, 'F');
+    pdf.rect(boxX, currentY + 1.5, 1.5, boxHeight - 3, 'F');
     
-    // Text content (font size 9 = +1 from default 8)
-    pdf.setFontSize(9);
+    // Text content (font size 8)
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(22, 101, 52);
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 6, currentY + 5 + (lineIdx * 4));
+      pdf.text(line, boxX + 5, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      strengthLeftY = currentY + boxHeight + 3;
+      strengthLeftY = currentY + boxHeight + 2;
     } else {
-      strengthRightY = currentY + boxHeight + 3;
+      strengthRightY = currentY + boxHeight + 2;
     }
   });
   
-  yPos = Math.max(strengthLeftY, strengthRightY) + 5;
+  yPos = Math.max(strengthLeftY, strengthRightY) + 3;
   pdf.setTextColor(0, 0, 0);
   
   // ========== DEVELOPMENT AREAS (individual boxes) ==========
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 2;
+  yPos += 1;
   
   let gapLeftY = yPos;
   let gapRightY = yPos;
@@ -1905,10 +1905,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Calculate box height based on text wrapping (font size 9)
-    pdf.setFontSize(9);
-    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 12);
-    const boxHeight = Math.max(12, textLines.length * 4 + 6);
+    // Calculate box height based on text wrapping (font size 8)
+    pdf.setFontSize(8);
+    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 10);
+    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
     // Draw individual box with amber styling
     pdf.setFillColor(254, 249, 195);
@@ -1918,25 +1918,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     
     // Amber left accent
     pdf.setFillColor(234, 179, 8);
-    pdf.rect(boxX, currentY + 2, 1.5, boxHeight - 4, 'F');
+    pdf.rect(boxX, currentY + 1.5, 1.5, boxHeight - 3, 'F');
     
-    // Text content (font size 9 = +1 from default 8)
-    pdf.setFontSize(9);
+    // Text content (font size 8)
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(161, 98, 7);
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 6, currentY + 5 + (lineIdx * 4));
+      pdf.text(line, boxX + 5, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      gapLeftY = currentY + boxHeight + 3;
+      gapLeftY = currentY + boxHeight + 2;
     } else {
-      gapRightY = currentY + boxHeight + 3;
+      gapRightY = currentY + boxHeight + 2;
     }
   });
   
-  yPos = Math.max(gapLeftY, gapRightY) + 5;
+  yPos = Math.max(gapLeftY, gapRightY) + 3;
   pdf.setTextColor(0, 0, 0);
   
   // ========== PAGE 2: SKILL ALIGNMENT ANALYSIS ==========
