@@ -805,7 +805,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.setFillColor(248, 250, 252);
       pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
       
-      pdf.setFontSize(7.5);
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(71, 85, 105);
       
@@ -918,7 +918,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.setFillColor(248, 250, 252);
       pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
       
-      pdf.setFontSize(7.5);
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(71, 85, 105);
       
@@ -1074,7 +1074,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFillColor(248, 250, 252);
     pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
     
-    pdf.setFontSize(7.5);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(71, 85, 105);
     
