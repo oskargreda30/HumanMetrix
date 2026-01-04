@@ -156,16 +156,16 @@ function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidt
   // Clear any previous draw color and set fill only
   pdf.setDrawColor(243, 244, 246);
   pdf.setFillColor(243, 244, 246);
-  pdf.rect(20, yPosition, pageWidth - 40, 12, 'F');
+  pdf.rect(20, yPosition, pageWidth - 40, 14, 'F');
   
-  pdf.setFontSize(13);
+  pdf.setFontSize(15);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  // Title positioned in the middle of the box (yPosition + 8 for center of 12-height box)
-  pdf.text(title, 25, yPosition + 8);
+  // Title positioned in the middle of the box
+  pdf.text(title, 25, yPosition + 10);
   pdf.setTextColor(0, 0, 0);
   
-  return yPosition + 16;
+  return yPosition + 18;
 }
 
 // Helper to determine performance level
@@ -1431,7 +1431,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 5;
   
   // ========== ADDITIONAL SERVICES ON REQUEST ==========
-  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
+  // Force new page for this section
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
   yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
   yPos += 2;
   
