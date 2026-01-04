@@ -621,15 +621,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 10; // Increased breathing room before AI READINESS section
   }
   
-  // AI Readiness Radar Charts
+  // AI Readiness Radar Charts - ALWAYS start on a new page to keep chart + table together
   const hasAI = data.aiReadinessAssessments?.some(a => a !== null);
   if (hasAI && data.aiChartImages) {
-    if (yPos > pageHeight - 80) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 32;
-    }
+    // Always start AI Readiness section on a new page
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 32;
     
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
     yPos += 3;
