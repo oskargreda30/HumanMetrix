@@ -747,55 +747,94 @@ export default function CompareTab() {
     return skills;
   };
 
-  // Calculate role suitability with coverage awareness
-  // Returns both the score and coverage metadata
+  // Calculate role suitability with coverage awareness and critical skill weighting
+  // Critical skills are weighted 2x and deficits in critical skills incur penalties
   const calculateRoleSuitabilityWithCoverage = (candidateIndex: number, roleId: string): { 
     score: number; 
     coverage: number; 
     matchedSkills: number; 
     totalRequiredSkills: number;
     missingSkills: string[];
+    criticalGaps: number;
+    totalCriticalSkills: number;
   } => {
     const role = dbRoles?.find((r: any) => r.id === roleId);
     if (!role || !role.requiredSkillScores) {
-      return { score: 0, coverage: 0, matchedSkills: 0, totalRequiredSkills: 0, missingSkills: [] };
+      return { score: 0, coverage: 0, matchedSkills: 0, totalRequiredSkills: 0, missingSkills: [], criticalGaps: 0, totalCriticalSkills: 0 };
     }
     
     const skills = getAllCandidateSkills(candidateIndex);
     const requiredScores = extractSkillRequirements(role.requiredSkillScores);
+    const skillCriticality = (role.requiredSkillScores.skillCriticality || {}) as Record<string, string>;
     const requiredSkillEntries = Object.entries(requiredScores).filter(([_, score]) => score > 0);
     
-    let totalScore = 0;
+    let weightedTotal = 0;
+    let weightSum = 0;
     let matchCount = 0;
+    let criticalGaps = 0;
+    let totalCriticalSkills = 0;
     const missingSkills: string[] = [];
+    
+    // Define weights: critical = 2x, important = 1.5x, nice-to-have = 1x
+    const getWeight = (skillName: string): number => {
+      const criticality = skillCriticality[skillName] || 'important';
+      if (criticality === 'critical') return 2.0;
+      if (criticality === 'important') return 1.5;
+      return 1.0;
+    };
     
     requiredSkillEntries.forEach(([skillName, requiredScore]) => {
       const candidateScore = skills[skillName];
+      const weight = getWeight(skillName);
+      const isCritical = skillCriticality[skillName] === 'critical';
+      
+      if (isCritical) totalCriticalSkills++;
+      
       if (candidateScore !== undefined) {
         // Calculate how well candidate meets the requirement (capped at 100%)
         const matchPercent = Math.min(100, (candidateScore / requiredScore) * 100);
-        totalScore += matchPercent;
+        weightedTotal += matchPercent * weight;
+        weightSum += weight;
         matchCount++;
+        
+        // Track critical gaps (when candidate is below requirement)
+        if (isCritical && candidateScore < requiredScore) {
+          criticalGaps++;
+        }
       } else {
         // Track missing skills for display
         missingSkills.push(skillName);
+        // Missing critical skills count as critical gaps
+        if (isCritical) {
+          criticalGaps++;
+        }
       }
     });
     
     const totalRequiredSkills = requiredSkillEntries.length;
     const coverage = totalRequiredSkills > 0 ? matchCount / totalRequiredSkills : 0;
     
-    // Apply coverage penalty: avgMatch * coverage
-    // This ensures candidates with partial data don't get inflated scores
-    const avgMatch = matchCount > 0 ? totalScore / matchCount : 0;
-    const adjustedScore = Math.round(avgMatch * coverage);
+    // Calculate weighted average match
+    const weightedAvgMatch = weightSum > 0 ? weightedTotal / weightSum : 0;
+    
+    // Apply coverage penalty
+    let adjustedScore = weightedAvgMatch * coverage;
+    
+    // Apply critical gap penalty: reduce score by 10% for each critical skill where candidate is below requirement
+    // This ensures critical deficits significantly impact the overall score
+    if (criticalGaps > 0 && totalCriticalSkills > 0) {
+      const criticalPenalty = criticalGaps * 0.10; // 10% penalty per critical gap
+      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.5)); // Cap penalty at 50%
+    }
     
     return { 
-      score: adjustedScore, 
+      score: Math.round(adjustedScore), 
       coverage: Math.round(coverage * 100), 
       matchedSkills: matchCount, 
       totalRequiredSkills,
-      missingSkills
+      missingSkills,
+      criticalGaps,
+      totalCriticalSkills
     };
   };
 
@@ -1296,9 +1335,19 @@ export default function CompareTab() {
                                       )}
                                     </div>
                                     
+                                    {/* Critical gaps warning */}
+                                    {suitability.criticalGaps > 0 && (
+                                      <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-left border border-red-200 dark:border-red-800">
+                                        <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                                          <AlertCircle className="inline h-3 w-3 mr-1" />
+                                          {suitability.criticalGaps} of {suitability.totalCriticalSkills} critical skills below requirement
+                                        </p>
+                                      </div>
+                                    )}
+                                    
                                     {/* Coverage warning */}
                                     {hasPartialData && suitability.missingSkills.length > 0 && (
-                                      <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-left">
+                                      <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-left">
                                         <p className="text-xs text-amber-700 dark:text-amber-300">
                                           <AlertCircle className="inline h-3 w-3 mr-1" />
                                           Missing: {suitability.missingSkills.slice(0, 2).join(', ')}
