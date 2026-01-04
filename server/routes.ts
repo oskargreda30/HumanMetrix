@@ -3824,51 +3824,154 @@ Format your response as JSON with this structure:
       const insights = JSON.parse(completion.choices[0].message.content || "{}");
 
       // Calculate anonymous benchmarks (percentile ranking against all candidates)
+      // Uses proper percentile formula: percentile = (rank - 1) / (total - 1) * 100
       const allResults = await storage.getAllResults();
-      const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
       
-      // Group scores by skill across all candidates
-      const skillScoresMap: Record<string, number[]> = {};
-      allResults.forEach((result: any) => {
-        if (result.scores && typeof result.scores === 'object') {
-          Object.entries(result.scores).forEach(([skill, score]) => {
-            if (!skillScoresMap[skill]) {
-              skillScoresMap[skill] = [];
-            }
-            skillScoresMap[skill].push(score as number);
-          });
-        }
-      });
-      
-      // Calculate percentile for each of the candidate's skills
-      const calculatePercentile = (score: number, allScores: number[]): number => {
-        if (allScores.length === 0) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        return Math.round((belowCount / sortedScores.length) * 100);
+      // Helper function for ordinal suffix
+      const getOrdinalSuffix = (n: number): string => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
       };
       
-      // Calculate benchmarks for FIT skills
-      fitSkills.forEach((score, skillName) => {
-        const allScoresForSkill = skillScoresMap[skillName] || [];
-        if (allScoresForSkill.length >= 5) { // Only show benchmark if we have enough data
-          cohortBenchmarks[skillName] = {
-            percentile: calculatePercentile(score, allScoresForSkill),
-            totalCandidates: allScoresForSkill.length
-          };
+      // Calculate percentile properly: what percentage of candidates scored lower?
+      const calculatePercentile = (score: number, allScores: number[]): number => {
+        if (allScores.length <= 1) return 50;
+        const sortedScores = [...allScores].sort((a, b) => a - b);
+        const belowCount = sortedScores.filter(s => s < score).length;
+        // Use (n-1) denominator for proper percentile with small samples
+        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+      };
+      
+      // Group results by assessment type
+      const resultsByType: Record<string, any[]> = {
+        fit: [],
+        ai_readiness: [],
+        prompt_architecture: [],
+        aiq: []
+      };
+      
+      allResults.forEach((result: any) => {
+        if (result.assessmentType && result.status === 'completed' && result.scores) {
+          if (resultsByType[result.assessmentType]) {
+            resultsByType[result.assessmentType].push(result);
+          }
         }
       });
       
-      // Calculate benchmarks for AI Readiness skills
-      aiReadinessSkills.forEach((score, skillName) => {
-        const allScoresForSkill = skillScoresMap[skillName] || [];
-        if (allScoresForSkill.length >= 5) { // Only show benchmark if we have enough data
-          cohortBenchmarks[skillName] = {
-            percentile: calculatePercentile(score, allScoresForSkill),
-            totalCandidates: allScoresForSkill.length
+      // Structure cohort benchmarks by assessment type
+      const cohortBenchmarks: {
+        overall?: { percentile: number; totalCandidates: number; position: string };
+        fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+        aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+      } = {};
+      
+      // Calculate FIT benchmarks
+      const fitResults = resultsByType['fit'];
+      if (fitResults.length >= 5) {
+        // Calculate average score for each candidate's FIT assessment
+        const fitAverages = fitResults.map(r => {
+          const scores = Object.values(r.scores as Record<string, number>);
+          return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        });
+        
+        // Get this candidate's FIT average
+        const candidateFitAvg = fitSkills.size > 0
+          ? Array.from(fitSkills.values()).reduce((a, b) => a + b, 0) / fitSkills.size
+          : 0;
+        
+        if (fitSkills.size > 0) {
+          cohortBenchmarks.fit = {
+            percentile: calculatePercentile(candidateFitAvg, fitAverages),
+            totalCandidates: fitResults.length,
+            skillCount: fitSkills.size,
+            avgScore: Math.round(candidateFitAvg)
           };
         }
-      });
+      }
+      
+      // Calculate AI Readiness benchmarks
+      const aiResults = resultsByType['ai_readiness'];
+      if (aiResults.length >= 5) {
+        const aiAverages = aiResults.map(r => {
+          const scores = Object.values(r.scores as Record<string, number>);
+          return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        });
+        
+        const candidateAiAvg = aiReadinessSkills.size > 0
+          ? Array.from(aiReadinessSkills.values()).reduce((a, b) => a + b, 0) / aiReadinessSkills.size
+          : 0;
+        
+        if (aiReadinessSkills.size > 0) {
+          cohortBenchmarks.ai_readiness = {
+            percentile: calculatePercentile(candidateAiAvg, aiAverages),
+            totalCandidates: aiResults.length,
+            skillCount: aiReadinessSkills.size,
+            avgScore: Math.round(candidateAiAvg)
+          };
+        }
+      }
+      
+      // Calculate Prompt Architecture benchmarks
+      const paResults = resultsByType['prompt_architecture'];
+      if (paResults.length >= 5) {
+        const paScores = paResults.map(r => r.totalScore || 0);
+        
+        // Get this candidate's PA score
+        const candidatePAResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+        if (candidatePAResult?.totalScore) {
+          cohortBenchmarks.prompt_architecture = {
+            percentile: calculatePercentile(candidatePAResult.totalScore, paScores),
+            totalCandidates: paResults.length,
+            avgScore: candidatePAResult.totalScore
+          };
+        }
+      }
+      
+      // Calculate AIQ benchmarks
+      const aiqResults = resultsByType['aiq'];
+      if (aiqResults.length >= 5) {
+        const aiqScores = aiqResults.map(r => {
+          // AIQ stores score in 'Algorithmic Integrity' field
+          const scores = r.scores as Record<string, number>;
+          return scores['Algorithmic Integrity'] || r.totalScore || 0;
+        });
+        
+        // Get this candidate's AIQ score
+        const candidateAIQResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
+        const candidateAIQScore = candidateAIQResult?.scores?.['Algorithmic Integrity'] || candidateAIQResult?.totalScore;
+        if (candidateAIQScore) {
+          cohortBenchmarks.aiq = {
+            percentile: calculatePercentile(candidateAIQScore, aiqScores),
+            totalCandidates: aiqResults.length,
+            avgScore: candidateAIQScore
+          };
+        }
+      }
+      
+      // Calculate overall percentile (average across all assessed types)
+      const assessedPercentiles: number[] = [];
+      if (cohortBenchmarks.fit) assessedPercentiles.push(cohortBenchmarks.fit.percentile);
+      if (cohortBenchmarks.ai_readiness) assessedPercentiles.push(cohortBenchmarks.ai_readiness.percentile);
+      if (cohortBenchmarks.prompt_architecture) assessedPercentiles.push(cohortBenchmarks.prompt_architecture.percentile);
+      if (cohortBenchmarks.aiq) assessedPercentiles.push(cohortBenchmarks.aiq.percentile);
+      
+      if (assessedPercentiles.length > 0) {
+        const overallPercentile = Math.round(assessedPercentiles.reduce((a, b) => a + b, 0) / assessedPercentiles.length);
+        const totalCandidates = Math.min(
+          fitResults.length,
+          aiResults.length,
+          paResults.length || Infinity,
+          aiqResults.length || Infinity
+        );
+        cohortBenchmarks.overall = {
+          percentile: overallPercentile,
+          totalCandidates: Math.min(totalCandidates, 1000), // Cap display at reasonable number
+          position: getOrdinalSuffix(100 - overallPercentile) // Convert percentile to position
+        };
+      }
 
       // Calculate data quality risk indicators
       const dataRiskIndicators: { type: string; severity: 'low' | 'medium' | 'high'; message: string }[] = [];
@@ -4188,55 +4291,146 @@ Format your response as JSON with this structure:
       }
 
       // Recalculate cohort benchmarks (should always be fresh based on current cohort)
+      // Uses assessment-type-level benchmarks, not per-skill
       const allResults = await storage.getAllResults();
-      const cohortBenchmarks: Record<string, { percentile: number; totalCandidates: number }> = {};
       
-      // Group scores by skill across all candidates
-      const skillScoresMap: Record<string, number[]> = {};
+      // Helper function for ordinal suffix
+      const getOrdinalSuffix = (n: number): string => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+      };
+      
+      // Calculate percentile properly: what percentage of candidates scored lower?
+      const calculatePercentile = (score: number, allScores: number[]): number => {
+        if (allScores.length <= 1) return 50;
+        const sortedScores = [...allScores].sort((a, b) => a - b);
+        const belowCount = sortedScores.filter(s => s < score).length;
+        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+      };
+      
+      // Group results by assessment type
+      const resultsByType: Record<string, any[]> = {
+        fit: [],
+        ai_readiness: [],
+        prompt_architecture: [],
+        aiq: []
+      };
+      
       allResults.forEach((result: any) => {
-        if (result.scores && typeof result.scores === 'object') {
-          Object.entries(result.scores).forEach(([skill, score]) => {
-            if (!skillScoresMap[skill]) {
-              skillScoresMap[skill] = [];
-            }
-            skillScoresMap[skill].push(score as number);
-          });
+        if (result.assessmentType && result.status === 'completed' && result.scores) {
+          if (resultsByType[result.assessmentType]) {
+            resultsByType[result.assessmentType].push(result);
+          }
         }
       });
       
-      // Calculate percentile for each of the candidate's skills
-      const calculatePercentile = (score: number, allScores: number[]): number => {
-        if (allScores.length === 0) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        return Math.round((belowCount / sortedScores.length) * 100);
-      };
+      // Structure cohort benchmarks by assessment type
+      const cohortBenchmarks: {
+        overall?: { percentile: number; totalCandidates: number; position: string };
+        fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+        aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+      } = {};
       
       // Extract candidate's skills from stored alignments
       const fitSkillAlignments = alignment.fitSkillAlignments || [];
       const aiReadinessSkillAlignments = alignment.aiReadinessSkillAlignments || [];
       
-      // Calculate benchmarks for FIT skills
-      fitSkillAlignments.forEach((skill: any) => {
-        const allScoresForSkill = skillScoresMap[skill.skillName] || [];
-        if (allScoresForSkill.length >= 5) {
-          cohortBenchmarks[skill.skillName] = {
-            percentile: calculatePercentile(skill.candidateScore, allScoresForSkill),
-            totalCandidates: allScoresForSkill.length
-          };
-        }
-      });
+      // Calculate FIT benchmarks
+      const fitResults = resultsByType['fit'];
+      if (fitResults.length >= 5 && fitSkillAlignments.length > 0) {
+        const fitAverages = fitResults.map((r: any) => {
+          const scores = Object.values(r.scores as Record<string, number>);
+          return scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+        });
+        
+        const candidateFitAvg = fitSkillAlignments.reduce((sum: number, s: any) => sum + s.candidateScore, 0) / fitSkillAlignments.length;
+        
+        cohortBenchmarks.fit = {
+          percentile: calculatePercentile(candidateFitAvg, fitAverages),
+          totalCandidates: fitResults.length,
+          skillCount: fitSkillAlignments.length,
+          avgScore: Math.round(candidateFitAvg)
+        };
+      }
       
-      // Calculate benchmarks for AI Readiness skills
-      aiReadinessSkillAlignments.forEach((skill: any) => {
-        const allScoresForSkill = skillScoresMap[skill.skillName] || [];
-        if (allScoresForSkill.length >= 5) {
-          cohortBenchmarks[skill.skillName] = {
-            percentile: calculatePercentile(skill.candidateScore, allScoresForSkill),
-            totalCandidates: allScoresForSkill.length
+      // Calculate AI Readiness benchmarks
+      const aiResults = resultsByType['ai_readiness'];
+      if (aiResults.length >= 5 && aiReadinessSkillAlignments.length > 0) {
+        const aiAverages = aiResults.map((r: any) => {
+          const scores = Object.values(r.scores as Record<string, number>);
+          return scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+        });
+        
+        const candidateAiAvg = aiReadinessSkillAlignments.reduce((sum: number, s: any) => sum + s.candidateScore, 0) / aiReadinessSkillAlignments.length;
+        
+        cohortBenchmarks.ai_readiness = {
+          percentile: calculatePercentile(candidateAiAvg, aiAverages),
+          totalCandidates: aiResults.length,
+          skillCount: aiReadinessSkillAlignments.length,
+          avgScore: Math.round(candidateAiAvg)
+        };
+      }
+      
+      // Get candidate's results for PA and AIQ from database
+      const candidateResults = await storage.getAssessmentResultsByUser(userId as string);
+      
+      // Calculate Prompt Architecture benchmarks
+      const paResults = resultsByType['prompt_architecture'];
+      if (paResults.length >= 5) {
+        const paScores = paResults.map((r: any) => r.totalScore || 0);
+        const candidatePAResult = candidateResults.find((r: any) => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+        if (candidatePAResult?.totalScore) {
+          cohortBenchmarks.prompt_architecture = {
+            percentile: calculatePercentile(candidatePAResult.totalScore, paScores),
+            totalCandidates: paResults.length,
+            avgScore: candidatePAResult.totalScore
           };
         }
-      });
+      }
+      
+      // Calculate AIQ benchmarks
+      const aiqResults = resultsByType['aiq'];
+      if (aiqResults.length >= 5) {
+        const aiqScores = aiqResults.map((r: any) => {
+          const scores = r.scores as Record<string, number>;
+          return scores?.['Algorithmic Integrity'] || r.totalScore || 0;
+        });
+        
+        const candidateAIQResult = candidateResults.find((r: any) => r.assessmentType === 'aiq' && r.status === 'completed');
+        const candidateAIQScore = candidateAIQResult?.scores?.['Algorithmic Integrity'] || candidateAIQResult?.totalScore;
+        if (candidateAIQScore) {
+          cohortBenchmarks.aiq = {
+            percentile: calculatePercentile(candidateAIQScore, aiqScores),
+            totalCandidates: aiqResults.length,
+            avgScore: candidateAIQScore
+          };
+        }
+      }
+      
+      // Calculate overall percentile (average across all assessed types)
+      const assessedPercentiles: number[] = [];
+      if (cohortBenchmarks.fit) assessedPercentiles.push(cohortBenchmarks.fit.percentile);
+      if (cohortBenchmarks.ai_readiness) assessedPercentiles.push(cohortBenchmarks.ai_readiness.percentile);
+      if (cohortBenchmarks.prompt_architecture) assessedPercentiles.push(cohortBenchmarks.prompt_architecture.percentile);
+      if (cohortBenchmarks.aiq) assessedPercentiles.push(cohortBenchmarks.aiq.percentile);
+      
+      if (assessedPercentiles.length > 0) {
+        const overallPercentile = Math.round(assessedPercentiles.reduce((a, b) => a + b, 0) / assessedPercentiles.length);
+        const totalCandidates = Math.min(
+          fitResults.length || Infinity,
+          aiResults.length || Infinity,
+          paResults.length || Infinity,
+          aiqResults.length || Infinity
+        );
+        cohortBenchmarks.overall = {
+          percentile: overallPercentile,
+          totalCandidates: Math.min(totalCandidates, 1000),
+          position: getOrdinalSuffix(100 - overallPercentile)
+        };
+      }
 
       // Return alignment with fresh cohort benchmarks
       res.json({

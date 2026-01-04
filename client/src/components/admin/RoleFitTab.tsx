@@ -49,7 +49,13 @@ export default function RoleFitTab() {
     }> | null;
     strengths: string[];
     gaps: string[];
-    cohortBenchmarks?: Record<string, { percentile: number; totalCandidates: number }> | null;
+    cohortBenchmarks?: {
+      overall?: { percentile: number; totalCandidates: number; position: string };
+      fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+      aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+    } | null;
     dataRiskIndicators?: Array<{
       type: string;
       severity: 'low' | 'medium' | 'high';
@@ -388,7 +394,7 @@ export default function RoleFitTab() {
                           {skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Candidate Score</p>
                           <p className="font-semibold">{skill.candidateScore}%</p>
@@ -402,16 +408,6 @@ export default function RoleFitTab() {
                           <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
                             {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">vs. All Candidates</p>
-                          {alignment.cohortBenchmarks?.[skill.skillName] ? (
-                            <p className={`font-semibold ${getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).color}`}>
-                              {getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).label}
-                            </p>
-                          ) : (
-                            <p className="text-muted-foreground text-xs">Insufficient data</p>
-                          )}
                         </div>
                       </div>
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
@@ -460,7 +456,7 @@ export default function RoleFitTab() {
                           {skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Candidate Score</p>
                           <p className="font-semibold">{skill.candidateScore}%</p>
@@ -475,21 +471,115 @@ export default function RoleFitTab() {
                             {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
                           </p>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">vs. All Candidates</p>
-                          {alignment.cohortBenchmarks?.[skill.skillName] ? (
-                            <p className={`font-semibold ${getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).color}`}>
-                              {getPercentileBadge(alignment.cohortBenchmarks[skill.skillName].percentile).label}
-                            </p>
-                          ) : (
-                            <p className="text-muted-foreground text-xs">Insufficient data</p>
-                          )}
-                        </div>
                       </div>
                       <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cohort Benchmarking */}
+          {alignment.cohortBenchmarks && (alignment.cohortBenchmarks.fit || alignment.cohortBenchmarks.ai_readiness || alignment.cohortBenchmarks.prompt_architecture || alignment.cohortBenchmarks.aiq) && (
+            <Card data-testid="card-cohort-benchmarking">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-amber-600" />
+                  Cohort Benchmarking
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  How this candidate compares to all assessed candidates (minimum 5 required)
+                </p>
+              </CardHeader>
+              <CardContent>
+                {alignment.cohortBenchmarks.overall && (
+                  <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-semibold">Overall Cohort Position</p>
+                        <p className="text-sm text-muted-foreground">
+                          Based on comparison with {alignment.cohortBenchmarks.overall.totalCandidates} candidates in the cohort
+                        </p>
+                      </div>
+                      <Badge 
+                        variant={alignment.cohortBenchmarks.overall.percentile >= 75 ? 'default' : alignment.cohortBenchmarks.overall.percentile >= 50 ? 'secondary' : 'outline'}
+                        className="text-lg px-4 py-2"
+                      >
+                        {alignment.cohortBenchmarks.overall.position}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 font-medium">Assessment Type</th>
+                        <th className="text-center py-2 font-medium">Skills Compared</th>
+                        <th className="text-center py-2 font-medium">Avg Percentile</th>
+                        <th className="text-center py-2 font-medium">Position</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alignment.cohortBenchmarks.fit && (
+                        <tr className="border-b">
+                          <td className="py-3">FIT Assessment (Behavioral)</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.fit.skillCount} skills</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.fit.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.ai_readiness && (
+                        <tr className="border-b">
+                          <td className="py-3">AI Readiness Assessment</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.skillCount} skills</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.prompt_architecture && (
+                        <tr className="border-b">
+                          <td className="py-3">Prompt Architecture</td>
+                          <td className="text-center">1 composite score</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.aiq && (
+                        <tr>
+                          <td className="py-3">Artificial Intelligence Quotient (AIQ)</td>
+                          <td className="text-center">1 composite score</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.aiq.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {!alignment.cohortBenchmarks.prompt_architecture && !alignment.cohortBenchmarks.aiq && (
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Note: Prompt Architecture and AIQ benchmarks require at least 5 completed assessments of each type
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

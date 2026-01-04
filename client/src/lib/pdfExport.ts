@@ -72,7 +72,13 @@ interface RoleFitData {
     }> | null;
     strengths: string[];
     gaps: string[];
-    cohortBenchmarks?: Record<string, { percentile: number; totalCandidates: number }> | null;
+    cohortBenchmarks?: {
+      overall?: { percentile: number; totalCandidates: number; position: string };
+      fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+      aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+    } | null;
     dataRiskIndicators?: Array<{
       type: string;
       severity: 'low' | 'medium' | 'high';
@@ -2245,7 +2251,14 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   }
   
   // ========== COHORT BENCHMARKING ==========
-  if (data.alignment.cohortBenchmarks && Object.keys(data.alignment.cohortBenchmarks).length > 0) {
+  const hasCohortData = data.alignment.cohortBenchmarks && (
+    data.alignment.cohortBenchmarks.fit || 
+    data.alignment.cohortBenchmarks.ai_readiness || 
+    data.alignment.cohortBenchmarks.prompt_architecture || 
+    data.alignment.cohortBenchmarks.aiq
+  );
+  
+  if (hasCohortData) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos += PDF_SPACING.medium;
     
@@ -2254,173 +2267,118 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     
     applySmallText(pdf);
     pdf.setTextColor(107, 114, 128);
-    pdf.text("Candidate's performance compared to recent assessment cohort (last 50 candidates)", 20, yPos);
+    pdf.text("Candidate's performance compared to all assessed candidates (minimum 5 required)", 20, yPos);
     yPos += 8;
     
-    // Get all skills with benchmarks and group by assessment type
-    const benchmarkedSkills = Object.entries(data.alignment.cohortBenchmarks);
+    const cohort = data.alignment.cohortBenchmarks!;
     
-    // Use explicit skill lists from alignments to categorize benchmarks correctly
-    const fitSkillNameSet = new Set(
-      (data.alignment.fitSkillAlignments || []).map(s => s.skillName)
-    );
-    const aiSkillNameSet = new Set(
-      (data.alignment.aiReadinessSkillAlignments || []).map(s => s.skillName)
-    );
-    
-    // Categorize based on which alignment array the skill appears in
-    const fitBenchmarks = benchmarkedSkills.filter(([name]) => fitSkillNameSet.has(name));
-    const aiBenchmarks = benchmarkedSkills.filter(([name]) => aiSkillNameSet.has(name));
-    
-    // Helper to calculate average percentile
-    const calcAvgPercentile = (skills: [string, { percentile: number; totalCandidates: number }][]) => {
-      if (skills.length === 0) return 0;
-      return Math.round(skills.reduce((sum, [_, b]) => sum + b.percentile, 0) / skills.length);
-    };
-    
-    // Overall assessment summary
-    const allPercentiles = benchmarkedSkills.map(([_, b]) => b.percentile);
-    const avgPercentile = Math.round(allPercentiles.reduce((a, b) => a + b, 0) / allPercentiles.length);
-    const totalCandidates = benchmarkedSkills[0]?.[1]?.totalCandidates || 0;
-    
-    // Summary box
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'FD');
-    
-    applySubheading(pdf);
-    pdf.setTextColor(17, 24, 39);
-    pdf.text('Overall Cohort Position', 25, yPos + 6);
-    
-    // Overall percentile badge
-    const overallColor: [number, number, number] = avgPercentile >= 75 ? [34, 197, 94] : 
-      avgPercentile >= 50 ? [59, 130, 246] : [245, 158, 11];
-    pdf.setFillColor(overallColor[0], overallColor[1], overallColor[2]);
-    pdf.roundedRect(85, yPos + 2, 22, 6, 1, 1, 'F');
-    pdf.setFontSize(8);
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    const percentileLabel = avgPercentile >= 50 ? `Top ${100 - avgPercentile}%` : `${avgPercentile}th`;
-    pdf.text(percentileLabel, 96, yPos + 6, { align: 'center' });
-    
-    applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`Based on comparison with ${totalCandidates} candidates in the cohort`, 25, yPos + 13);
-    
-    yPos += 25;
+    // Overall summary box
+    if (cohort.overall) {
+      pdf.setFillColor(249, 250, 251);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'FD');
+      
+      applySubheading(pdf);
+      pdf.setTextColor(17, 24, 39);
+      pdf.text('Overall Cohort Position', 25, yPos + 6);
+      
+      // Overall percentile badge
+      const overallColor: [number, number, number] = cohort.overall.percentile >= 75 ? [34, 197, 94] : 
+        cohort.overall.percentile >= 50 ? [59, 130, 246] : [245, 158, 11];
+      pdf.setFillColor(overallColor[0], overallColor[1], overallColor[2]);
+      pdf.roundedRect(85, yPos + 2, 22, 6, 1, 1, 'F');
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(cohort.overall.position, 96, yPos + 6, { align: 'center' });
+      
+      applySmallText(pdf);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`Based on comparison with ${cohort.overall.totalCandidates} candidates in the cohort`, 25, yPos + 13);
+      
+      yPos += 25;
+    }
     
     // Assessment breakdown table
-    const assessmentTypes = [
-      { name: 'FIT Assessment (Behavioral)', skills: fitBenchmarks, avgPerc: calcAvgPercentile(fitBenchmarks) },
-      { name: 'AI Readiness Assessment', skills: aiBenchmarks, avgPerc: calcAvgPercentile(aiBenchmarks) }
-    ].filter(a => a.skills.length > 0);
+    const assessmentTypes: Array<{ name: string; skills: string; avgPerc: number }> = [];
     
-    // Table header
-    pdf.setFillColor(243, 244, 246);
-    pdf.rect(20, yPos, pageWidth - 40, 7, 'F');
-    applySmallText(pdf);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text('Assessment Type', 25, yPos + 5);
-    pdf.text('Skills Compared', 95, yPos + 5);
-    pdf.text('Avg Percentile', 135, yPos + 5);
-    pdf.text('Position', 170, yPos + 5);
-    yPos += 7;
+    if (cohort.fit) {
+      assessmentTypes.push({ 
+        name: 'FIT Assessment (Behavioral)', 
+        skills: `${cohort.fit.skillCount} skills`, 
+        avgPerc: cohort.fit.percentile 
+      });
+    }
+    if (cohort.ai_readiness) {
+      assessmentTypes.push({ 
+        name: 'AI Readiness Assessment', 
+        skills: `${cohort.ai_readiness.skillCount} skills`, 
+        avgPerc: cohort.ai_readiness.percentile 
+      });
+    }
+    if (cohort.prompt_architecture) {
+      assessmentTypes.push({ 
+        name: 'Prompt Architecture', 
+        skills: '1 composite score', 
+        avgPerc: cohort.prompt_architecture.percentile 
+      });
+    }
+    if (cohort.aiq) {
+      assessmentTypes.push({ 
+        name: 'Artificial Intelligence Quotient (AIQ)', 
+        skills: '1 composite score', 
+        avgPerc: cohort.aiq.percentile 
+      });
+    }
     
-    assessmentTypes.forEach((assessment, index) => {
-      yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
-      
-      // Alternating row colors
-      if (index % 2 === 0) {
-        pdf.setFillColor(255, 255, 255);
-      } else {
-        pdf.setFillColor(249, 250, 251);
-      }
+    if (assessmentTypes.length > 0) {
+      // Table header
+      pdf.setFillColor(243, 244, 246);
       pdf.rect(20, yPos, pageWidth - 40, 7, 'F');
-      
       applySmallText(pdf);
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(assessment.name, 25, yPos + 5);
-      
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`${assessment.skills.length} skills`, 95, yPos + 5);
-      
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(`${assessment.avgPerc}th`, 140, yPos + 5);
-      
-      // Position badge
-      const posColor: [number, number, number] = assessment.avgPerc >= 75 ? [34, 197, 94] : 
-        assessment.avgPerc >= 50 ? [59, 130, 246] : [245, 158, 11];
-      const posLabel = assessment.avgPerc >= 75 ? 'Above Avg' : 
-        assessment.avgPerc >= 50 ? 'Average' : 'Below Avg';
-      pdf.setFillColor(posColor[0], posColor[1], posColor[2]);
-      pdf.roundedRect(165, yPos + 1, 18, 5, 1, 1, 'F');
-      pdf.setFontSize(5.5);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(posLabel, 174, yPos + 4.5, { align: 'center' });
-      
-      yPos += 7;
-    });
-    
-    yPos += 5;
-    
-    // Detailed skill breakdown in compact grid
-    applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Individual Skill Percentiles:', 20, yPos);
-    yPos += 5;
-    
-    const colWidth = (pageWidth - 40) / 3;
-    let col = 0;
-    let rowStartY = yPos;
-    
-    benchmarkedSkills.forEach(([skillName, benchmark]) => {
-      yPos = ensurePageSpace(pdf, rowStartY, 8, pageHeight, pageWidth);
-      if (yPos !== rowStartY) {
-        rowStartY = yPos;
-        col = 0;
-      }
-      
-      const x = 20 + (col * colWidth);
-      const displayName = skillName.length > 16 ? skillName.substring(0, 14) + '...' : skillName;
-      
-      const percentile = benchmark.percentile;
-      let percentileText: string;
-      let badgeColor: [number, number, number];
-      
-      if (percentile >= 90) {
-        percentileText = `Top ${Math.max(1, 100 - percentile)}%`;
-        badgeColor = [34, 197, 94];
-      } else if (percentile >= 75) {
-        percentileText = `Top ${100 - percentile}%`;
-        badgeColor = [59, 130, 246];
-      } else if (percentile >= 50) {
-        percentileText = `Top ${100 - percentile}%`;
-        badgeColor = [107, 114, 128];
-      } else {
-        percentileText = `${percentile}th`;
-        badgeColor = [245, 158, 11];
-      }
-      
-      applySmallText(pdf);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
-      pdf.text(displayName, x, rowStartY);
+      pdf.text('Assessment Type', 25, yPos + 5);
+      pdf.text('Skills Compared', 95, yPos + 5);
+      pdf.text('Avg Percentile', 135, yPos + 5);
+      pdf.text('Position', 170, yPos + 5);
+      yPos += 7;
       
-      const badgeX = x + 38;
-      pdf.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
-      pdf.roundedRect(badgeX, rowStartY - 3, 15, 4, 1, 1, 'F');
-      pdf.setFontSize(5.5);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(percentileText, badgeX + 7.5, rowStartY - 0.5, { align: 'center' });
+      assessmentTypes.forEach((assessment, index) => {
+        yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
+        
+        // Alternating row colors
+        if (index % 2 === 0) {
+          pdf.setFillColor(255, 255, 255);
+        } else {
+          pdf.setFillColor(249, 250, 251);
+        }
+        pdf.rect(20, yPos, pageWidth - 40, 7, 'F');
+        
+        applySmallText(pdf);
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(assessment.name, 25, yPos + 5);
+        
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(assessment.skills, 95, yPos + 5);
+        
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${assessment.avgPerc}th`, 140, yPos + 5);
+        
+        // Position badge
+        const posColor: [number, number, number] = assessment.avgPerc >= 50 ? [34, 197, 94] : [245, 158, 11];
+        const posLabel = assessment.avgPerc >= 50 ? 'Above Avg' : 'Below Avg';
+        pdf.setFillColor(posColor[0], posColor[1], posColor[2]);
+        pdf.roundedRect(165, yPos + 1, 18, 5, 1, 1, 'F');
+        pdf.setFontSize(5.5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(posLabel, 174, yPos + 4.5, { align: 'center' });
+        
+        yPos += 7;
+      });
       
-      col++;
-      if (col >= 3) {
-        col = 0;
-        rowStartY += 7;
-      }
-    });
-    
-    yPos = rowStartY + (col > 0 ? 10 : 5);
+      yPos += 5;
+    }
   }
   
   pdf.setTextColor(0, 0, 0);
