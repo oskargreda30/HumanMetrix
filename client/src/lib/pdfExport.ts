@@ -302,10 +302,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
     data.aiqAssessments
   ];
   
-  // Calculate dynamic column widths
+  // Calculate dynamic column widths - match right margin with ranking table
   const tableStartX = 20;
   const assessmentColWidth = 50;
-  const availableWidth = pageWidth - tableStartX - 10;
+  const rightMargin = 25; // Match the ranking table's right margin
+  const availableWidth = pageWidth - tableStartX - rightMargin;
   const candidateColWidth = Math.max(35, (availableWidth - assessmentColWidth) / data.candidates.length);
   const rowHeight = 7;
   
