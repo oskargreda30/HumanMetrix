@@ -698,7 +698,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
 
   // Overall Skills Comparison Chart
   if (data.overallSkillsChartImage) {
-    if (yPos > pageHeight - 140) {
+    if (yPos > pageHeight - 160) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
@@ -713,11 +713,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
     yPos += 8;
     
-    // Use larger dimensions to show all skill labels without truncation
-    // Capture is 680x520 (4:3 ratio), render at 170x128mm to preserve legibility
+    // Use larger dimensions - 150mm height for bigger radar chart
     const imgProps = pdf.getImageProperties(data.overallSkillsChartImage);
-    const maxWidth = pageWidth - 40; // Respect margins (170mm on A4)
-    const maxHeight = 128; // Larger height to prevent label truncation
+    const maxWidth = pageWidth - 30; // Wider margins for bigger chart
+    const maxHeight = 150; // Larger height for bigger chart display
     const scale = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
     const chartWidth = imgProps.width * scale;
     const chartHeight = imgProps.height * scale;
@@ -727,16 +726,17 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += chartHeight + 8;
   }
   
-  // ========== PAGE 3: DETAILED COMPARISONS ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  
-  yPos = 50;
-  
-  // AIQ Summary
+  // AIQ Summary - keep on same page as Overall Skills when possible
   const hasAIQ = data.aiqAssessments?.some(a => a !== null);
   if (hasAIQ) {
+    // Only add page break if not enough room for AIQ section (approximately 60mm needed)
+    if (yPos > pageHeight - 60) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 50;
+    }
+    
     yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY)', yPos, pageWidth);
     yPos += 2;
     
