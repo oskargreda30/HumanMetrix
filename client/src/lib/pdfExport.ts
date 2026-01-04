@@ -825,10 +825,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const strength = strengths[skillIndex];
       
       if (strength) {
-        // Skill name
+        // Skill name - allow full name display with wider column
         applySmallText(pdf);
-        const skillName = strength.name.length > 20 ? strength.name.substring(0, 18) + '...' : strength.name;
-        pdf.text(skillName, colX, yPos);
+        const maxNameWidth = columnWidth - 18; // Leave space for score
+        const skillName = strength.name;
+        pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
         
         // Score badge
         pdf.setFont('helvetica', 'bold');
@@ -857,10 +858,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const weakness = weaknesses[skillIndex];
       
       if (weakness) {
-        // Skill name
+        // Skill name - allow full name display with wider column
         applySmallText(pdf);
-        const skillName = weakness.name.length > 20 ? weakness.name.substring(0, 18) + '...' : weakness.name;
-        pdf.text(skillName, colX, yPos);
+        const maxNameWidth = columnWidth - 18; // Leave space for score
+        const skillName = weakness.name;
+        pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
         
         // Score badge
         pdf.setFont('helvetica', 'bold');
