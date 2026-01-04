@@ -76,3 +76,20 @@ export const PDF_MARGINS = {
   top: 30,
   bottom: 20,
 };
+
+// Mobile-friendly PDF save function
+// On mobile browsers, pdf.save() often only works once per session
+// This function opens the PDF in a new tab on mobile for reliable viewing
+export function savePdfMobile(pdf: jsPDF, filename: string) {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // On mobile, open PDF in new tab instead of downloading
+    // This works more reliably across multiple PDF generations
+    const blobUrl = pdf.output('bloburl');
+    window.open(blobUrl as string, '_blank');
+  } else {
+    // On desktop, use normal download
+    pdf.save(filename);
+  }
+}

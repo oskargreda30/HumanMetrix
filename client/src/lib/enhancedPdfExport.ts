@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 import { getAIQBandInterpretation } from '@/data/aiq-questions';
+import { savePdfMobile } from './pdfStyles';
 
 interface CandidateData {
   user: {
@@ -1531,7 +1532,7 @@ export async function exportEnhancedCandidatePDF(
   const timestamp = new Date().toISOString().split('T')[0];
   const safeCandidateName = candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
   const roleLabel = roleComparison ? `-${roleComparison.role.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}` : '';
-  pdf.save(`humanmetrix-report-${safeCandidateName}${roleLabel}-${timestamp}.pdf`);
+  savePdfMobile(pdf, `humanmetrix-report-${safeCandidateName}${roleLabel}-${timestamp}.pdf`);
 }
 
 // Capture radar chart from DOM

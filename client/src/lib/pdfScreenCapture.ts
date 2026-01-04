@@ -1,5 +1,6 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { savePdfMobile } from './pdfStyles';
 
 interface ScreenCapturePDFOptions {
   reportElementId: string;
@@ -112,7 +113,7 @@ export async function exportScreenCapturePDF(options: ScreenCapturePDFOptions): 
   }
 
   onProgress?.('Saving PDF...');
-  pdf.save(filename);
+  savePdfMobile(pdf, filename);
 }
 
 export function enableReportMode(rootElement: HTMLElement): void {

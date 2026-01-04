@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { FIT_SKILLS, AI_READINESS_SKILLS, ROLE_DEFINITIONS } from './assessmentSkills';
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
-import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabelText, PDF_SPACING } from './pdfStyles';
+import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabelText, PDF_SPACING, savePdfMobile } from './pdfStyles';
 import { getAIQBandInterpretation } from '@/data/aiq-questions';
 
 interface CandidateData {
@@ -1612,7 +1612,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Save
   const timestamp = new Date().toISOString().split('T')[0];
-  pdf.save(`comparison-report-${timestamp}.pdf`);
+  savePdfMobile(pdf, `comparison-report-${timestamp}.pdf`);
 }
 
 export async function exportRoleFitPDF(data: RoleFitData) {
@@ -2569,7 +2569,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   const timestamp = new Date().toISOString().split('T')[0];
   const safeCandidateName = candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
   const safeRoleName = data.role.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-  pdf.save(`role-fit-${safeCandidateName}-${safeRoleName}-${timestamp}.pdf`);
+  savePdfMobile(pdf, `role-fit-${safeCandidateName}-${safeRoleName}-${timestamp}.pdf`);
 }
 
 export async function exportCandidatePDF(candidate: CandidateData, skills: Array<{name: string, score: number, assessment: string}>) {
@@ -2672,5 +2672,5 @@ export async function exportCandidatePDF(candidate: CandidateData, skills: Array
   // Save
   const timestamp = new Date().toISOString().split('T')[0];
   const safeCandidateName = candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-  pdf.save(`candidate-report-${safeCandidateName}-${timestamp}.pdf`);
+  savePdfMobile(pdf, `candidate-report-${safeCandidateName}-${timestamp}.pdf`);
 }
