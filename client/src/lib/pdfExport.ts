@@ -588,7 +588,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const fitTableStartX = 20;
     const fitSkillColWidth = 60;
-    const fitAvailableWidth = pageWidth - fitTableStartX - 10;
+    const fitRightMargin = 25; // Match other tables' right margin
+    const fitAvailableWidth = pageWidth - fitTableStartX - fitRightMargin;
     const fitScoreColWidth = Math.max(25, (fitAvailableWidth - fitSkillColWidth) / data.candidates.length);
     const fitRowHeight = 6;
     
@@ -666,7 +667,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const aiTableStartX = 20;
     const aiSkillColWidth = 60;
-    const aiAvailableWidth = pageWidth - aiTableStartX - 10;
+    const aiRightMargin = 25; // Match other tables' right margin
+    const aiAvailableWidth = pageWidth - aiTableStartX - aiRightMargin;
     const aiScoreColWidth = Math.max(25, (aiAvailableWidth - aiSkillColWidth) / data.candidates.length);
     const aiRowHeight = 6;
     
