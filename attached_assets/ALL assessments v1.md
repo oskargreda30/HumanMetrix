@@ -239,17 +239,6 @@ This document contains all original questions, answer options, and scoring logic
 | CI | Creativity & Innovation |
 | CC | Collaboration & Communication |
 
-## Scoring Formula
-- Each answer awards 4 points to each associated skill
-- **Hybrid Scoring with Maximum Variance and Dynamic Floor:**
-  - Dynamic floor based on minimum raw % (not always stuck at 50)
-  - Ceiling at 100 for 100% raw performance, scaled down for lower performers
-  - **Floor Formula:** `floor = 50 + (minRawPct / 100)^0.5 × 10` (gives 50-60 range)
-  - **Ceiling Formula:** `ceiling = 50 + (maxRawPct / 100)^0.25 × 50` (gives up to 100)
-  - **Final Score:** `floor + (relativePosition × scoreRange)`
-  - Examples: minPct 20% → floor 54, minPct 40% → floor 56
-- This creates 34-42 point spreads for meaningful differentiation
-
 ---
 
 ## AI Readiness Questions
