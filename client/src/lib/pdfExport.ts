@@ -401,6 +401,183 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 3;
   pdf.setTextColor(0, 0, 0);
   
+  // --- OVERALL RANKING & COMPOSITE SCORE (moved to page 1) ---
+  yPos += 5;
+  yPos = addSectionHeader(pdf, 'OVERALL RANKING & COMPOSITE SCORE', yPos, pageWidth);
+  yPos += 3;
+  
+  // Add explanation text
+  applySmallText(pdf);
+  const compositeExplanation = 'This ranking applies fixed 25% weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
+  const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
+  pdf.text(splitCompositeExplanation, 20, yPos);
+  yPos += splitCompositeExplanation.length * 4 + 5;
+  
+  // Calculate composite scores with equal 25% weights
+  const calculatePDFCompositeScore = (candidateIndex: number): number => {
+    const assessmentData: Array<{ score: number; weight: number }> = [];
+    const equalWeight = 25; // 100% / 4 = 25% each
+    
+    // FIT average
+    const fitData = data.fitAssessments?.[candidateIndex];
+    if (fitData) {
+      const fitScores = Object.values(fitData.scores);
+      if (fitScores.length > 0) {
+        const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
+        assessmentData.push({ score: fitAvg, weight: equalWeight });
+      }
+    }
+    
+    // AI Readiness average
+    const aiData = data.aiReadinessAssessments?.[candidateIndex];
+    if (aiData) {
+      const aiScores = Object.values(aiData.scores);
+      if (aiScores.length > 0) {
+        const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
+        assessmentData.push({ score: aiAvg, weight: equalWeight });
+      }
+    }
+    
+    // Prompt Architecture
+    const promptData = data.promptArchitectureAssessments?.[candidateIndex];
+    if (promptData) {
+      assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
+    }
+    
+    // AIQ
+    const aiqData = data.aiqAssessments?.[candidateIndex];
+    if (aiqData) {
+      assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
+    }
+    
+    if (assessmentData.length === 0) return 0;
+    
+    const totalWeight = assessmentData.reduce((sum, d) => sum + d.weight, 0);
+    if (totalWeight === 0) return 0;
+    
+    const weightedSum = assessmentData.reduce((sum, d) => sum + d.score * d.weight, 0);
+    return Math.round(weightedSum / totalWeight);
+  };
+  
+  // Get all candidate skills for a given candidate
+  const getAllCandidateSkillsPDF = (candidateIndex: number): Record<string, number> => {
+    const skills: Record<string, number> = {};
+    
+    const fitData = data.fitAssessments?.[candidateIndex];
+    if (fitData) {
+      Object.entries(fitData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    const aiData = data.aiReadinessAssessments?.[candidateIndex];
+    if (aiData) {
+      Object.entries(aiData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    const aiqData = data.aiqAssessments?.[candidateIndex];
+    if (aiqData && aiqData.scores) {
+      Object.entries(aiqData.scores).forEach(([key, value]) => {
+        skills[key] = value;
+      });
+    }
+    
+    return skills;
+  };
+  
+  // Calculate rankings
+  const rankings = data.candidates.map((_, index) => ({
+    candidateIndex: index,
+    score: calculatePDFCompositeScore(index),
+    rank: 0,
+  }));
+  rankings.sort((a, b) => b.score - a.score);
+  rankings.forEach((item, idx) => {
+    item.rank = idx + 1;
+  });
+  
+  // Draw ranking table
+  const rankTableStartX = 20;
+  const rankColWidths = [15, 60, 30, 30, 30]; // Rank, Name, Composite, Avg, Status
+  const rankRowHeight = 7;
+  
+  // Header
+  drawTableRow(pdf, rankTableStartX, yPos, rankColWidths, 
+    ['Rank', 'Candidate', 'Composite', 'Avg Score', 'Status'], rankRowHeight, {
+    isBold: true,
+    fontSize: 8,
+    fillColor: [249, 250, 251],
+    textColor: [17, 24, 39]
+  });
+  yPos += rankRowHeight;
+  
+  // Data rows
+  rankings.forEach((ranking) => {
+    const candidate = data.candidates[ranking.candidateIndex];
+    const name = getCandidateName(candidate);
+    const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
+    const avgScore = data.averageScores[ranking.candidateIndex];
+    
+    const status = ranking.score >= 80 ? 'Excellent' : 
+                   ranking.score >= 70 ? 'Strong' :
+                   ranking.score >= 60 ? 'Good' : 'Developing';
+    
+    const candidateColor = CANDIDATE_COLORS[ranking.candidateIndex] || [100, 100, 100];
+    
+    // Draw rank with medal for top position
+    applySmallText(pdf);
+    pdf.setFont('helvetica', 'bold');
+    if (ranking.rank === 1) {
+      pdf.setTextColor(245, 158, 11); // Gold
+    } else if (ranking.rank === 2) {
+      pdf.setTextColor(156, 163, 175); // Silver
+    } else {
+      pdf.setTextColor(180, 83, 9); // Bronze
+    }
+    pdf.text(`#${ranking.rank}`, rankTableStartX + 7, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Draw name with candidate color
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(shortName, rankTableStartX + 15 + 2, yPos + rankRowHeight / 2 + 1);
+    
+    // Composite score
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${ranking.score}`, rankTableStartX + 75 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Avg score
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${avgScore}`, rankTableStartX + 105 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Status badge
+    const statusColor = status === 'Excellent' ? [34, 197, 94] :
+                        status === 'Strong' ? [59, 130, 246] :
+                        status === 'Good' ? [245, 158, 11] : [107, 114, 128];
+    pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+    pdf.text(status, rankTableStartX + 135 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    
+    // Draw cell borders
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.1);
+    let xOffset = rankTableStartX;
+    rankColWidths.forEach(width => {
+      pdf.rect(xOffset, yPos, width, rankRowHeight, 'S');
+      xOffset += width;
+    });
+    
+    yPos += rankRowHeight;
+  });
+  yPos += 5;
+  
+  // Note about weights
+  applySmallText(pdf);
+  pdf.setFont('helvetica', 'italic');
+  pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
+  yPos += 8;
+  pdf.setTextColor(0, 0, 0);
+  
   // ========== PAGE 2: RADAR CHARTS ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -883,182 +1060,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   addHeader(pdf, pageWidth);
   yPos = 50;
   
-  // --- 1. OVERALL RANKING & COMPOSITE SCORE ---
-  yPos = addSectionHeader(pdf, 'OVERALL RANKING & COMPOSITE SCORE', yPos, pageWidth);
-  yPos += 3;
-  
-  // Add explanation text
-  applySmallText(pdf);
-  const compositeExplanation = 'This ranking applies fixed 25% weights across FIT, AI Readiness, Prompt Architecture, and AIQ assessments to deliver a balanced composite score. Higher scores indicate stronger overall performance across all evaluated competencies.';
-  const splitCompositeExplanation = pdf.splitTextToSize(compositeExplanation, pageWidth - 40);
-  pdf.text(splitCompositeExplanation, 20, yPos);
-  yPos += splitCompositeExplanation.length * 4 + 5;
-  
-  // Calculate composite scores with equal 25% weights
-  const calculatePDFCompositeScore = (candidateIndex: number): number => {
-    const assessmentData: Array<{ score: number; weight: number }> = [];
-    const equalWeight = 25; // 100% / 4 = 25% each
-    
-    // FIT average
-    const fitData = data.fitAssessments?.[candidateIndex];
-    if (fitData) {
-      const fitScores = Object.values(fitData.scores);
-      if (fitScores.length > 0) {
-        const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
-        assessmentData.push({ score: fitAvg, weight: equalWeight });
-      }
-    }
-    
-    // AI Readiness average
-    const aiData = data.aiReadinessAssessments?.[candidateIndex];
-    if (aiData) {
-      const aiScores = Object.values(aiData.scores);
-      if (aiScores.length > 0) {
-        const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
-        assessmentData.push({ score: aiAvg, weight: equalWeight });
-      }
-    }
-    
-    // Prompt Architecture
-    const promptData = data.promptArchitectureAssessments?.[candidateIndex];
-    if (promptData) {
-      assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
-    }
-    
-    // AIQ
-    const aiqData = data.aiqAssessments?.[candidateIndex];
-    if (aiqData) {
-      assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
-    }
-    
-    if (assessmentData.length === 0) return 0;
-    
-    const totalWeight = assessmentData.reduce((sum, d) => sum + d.weight, 0);
-    if (totalWeight === 0) return 0;
-    
-    const weightedSum = assessmentData.reduce((sum, d) => sum + d.score * d.weight, 0);
-    return Math.round(weightedSum / totalWeight);
-  };
-  
-  // Get all candidate skills for a given candidate
-  const getAllCandidateSkillsPDF = (candidateIndex: number): Record<string, number> => {
-    const skills: Record<string, number> = {};
-    
-    const fitData = data.fitAssessments?.[candidateIndex];
-    if (fitData) {
-      Object.entries(fitData.scores).forEach(([key, value]) => {
-        skills[key] = value;
-      });
-    }
-    
-    const aiData = data.aiReadinessAssessments?.[candidateIndex];
-    if (aiData) {
-      Object.entries(aiData.scores).forEach(([key, value]) => {
-        skills[key] = value;
-      });
-    }
-    
-    const aiqData = data.aiqAssessments?.[candidateIndex];
-    if (aiqData && aiqData.scores) {
-      Object.entries(aiqData.scores).forEach(([key, value]) => {
-        skills[key] = value;
-      });
-    }
-    
-    return skills;
-  };
-  
-  // Calculate rankings
-  const rankings = data.candidates.map((_, index) => ({
-    candidateIndex: index,
-    score: calculatePDFCompositeScore(index),
-    rank: 0,
-  }));
-  rankings.sort((a, b) => b.score - a.score);
-  rankings.forEach((item, idx) => {
-    item.rank = idx + 1;
-  });
-  
-  // Draw ranking table
-  const rankTableStartX = 20;
-  const rankColWidths = [15, 60, 30, 30, 30]; // Rank, Name, Composite, Avg, Status
-  const rankRowHeight = 7;
-  
-  // Header
-  drawTableRow(pdf, rankTableStartX, yPos, rankColWidths, 
-    ['Rank', 'Candidate', 'Composite', 'Avg Score', 'Status'], rankRowHeight, {
-    isBold: true,
-    fontSize: 8,
-    fillColor: [249, 250, 251],
-    textColor: [17, 24, 39]
-  });
-  yPos += rankRowHeight;
-  
-  // Data rows
-  rankings.forEach((ranking) => {
-    const candidate = data.candidates[ranking.candidateIndex];
-    const name = getCandidateName(candidate);
-    const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
-    const avgScore = data.averageScores[ranking.candidateIndex];
-    
-    const status = ranking.score >= 80 ? 'Excellent' : 
-                   ranking.score >= 70 ? 'Strong' :
-                   ranking.score >= 60 ? 'Good' : 'Developing';
-    
-    const candidateColor = CANDIDATE_COLORS[ranking.candidateIndex] || [100, 100, 100];
-    
-    // Draw rank with medal for top position
-    applySmallText(pdf);
-    pdf.setFont('helvetica', 'bold');
-    if (ranking.rank === 1) {
-      pdf.setTextColor(245, 158, 11); // Gold
-    } else if (ranking.rank === 2) {
-      pdf.setTextColor(156, 163, 175); // Silver
-    } else {
-      pdf.setTextColor(180, 83, 9); // Bronze
-    }
-    pdf.text(`#${ranking.rank}`, rankTableStartX + 7, yPos + rankRowHeight / 2 + 1, { align: 'center' });
-    
-    // Draw name with candidate color
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(shortName, rankTableStartX + 15 + 2, yPos + rankRowHeight / 2 + 1);
-    
-    // Composite score
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${ranking.score}`, rankTableStartX + 75 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
-    
-    // Avg score
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`${avgScore}`, rankTableStartX + 105 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
-    
-    // Status badge
-    const statusColor = status === 'Excellent' ? [34, 197, 94] :
-                        status === 'Strong' ? [59, 130, 246] :
-                        status === 'Good' ? [245, 158, 11] : [107, 114, 128];
-    pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-    pdf.text(status, rankTableStartX + 135 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
-    
-    // Draw cell borders
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.1);
-    let xOffset = rankTableStartX;
-    rankColWidths.forEach(width => {
-      pdf.rect(xOffset, yPos, width, rankRowHeight, 'S');
-      xOffset += width;
-    });
-    
-    yPos += rankRowHeight;
-  });
-  yPos += 5;
-  
-  // Note about weights
-  applySmallText(pdf);
-  pdf.setFont('helvetica', 'italic');
-  pdf.text('* Composite score calculated with equal 25% weight for each assessment type', 20, yPos);
-  yPos += 8;
-  
-  // --- 2. ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
+  // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
   // Default role weights used only if we need them for later calculations
   const roleWeights: Record<string, number> = data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]
     ? ROLE_DEFINITIONS[data.selectedRole].weights
@@ -1221,90 +1223,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   }
   yPos += 5;
   } // End of role suitability conditional
-  
-  // --- 3. RISK INDICATORS ---
-  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-  yPos = addSectionHeader(pdf, 'RISK INDICATORS', yPos, pageWidth);
-  yPos += 10; // Increased spacing after header
-  
-  // Get risk indicators
-  const getRiskIndicatorsPDF = (candidateIndex: number): Array<{ message: string; severity: 'warning' | 'error' }> => {
-    const risks: Array<{ message: string; severity: 'warning' | 'error' }> = [];
-    
-    const skills = getAllCandidateSkillsPDF(candidateIndex);
-    Object.entries(skills).forEach(([name, score]) => {
-      if (score < 50) {
-        risks.push({
-          message: `${name}: ${score}/100 (below threshold)`,
-          severity: score < 40 ? 'error' : 'warning',
-        });
-      }
-    });
-    
-    const skillScores = Object.values(skills);
-    if (skillScores.length > 1) {
-      const avg = skillScores.reduce((a, b) => a + b, 0) / skillScores.length;
-      const variance = skillScores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / skillScores.length;
-      const stdDev = Math.sqrt(variance);
-      
-      if (stdDev > 20) {
-        risks.push({
-          message: `High skill variance (±${Math.round(stdDev)} pts)`,
-          severity: 'warning',
-        });
-      }
-    }
-    
-    if (!data.fitAssessments?.[candidateIndex]) risks.push({ message: 'FIT not completed', severity: 'warning' });
-    if (!data.aiReadinessAssessments?.[candidateIndex]) risks.push({ message: 'AI Readiness not completed', severity: 'warning' });
-    if (!data.promptArchitectureAssessments?.[candidateIndex]) risks.push({ message: 'Prompt Arch not completed', severity: 'warning' });
-    if (!data.aiqAssessments?.[candidateIndex]) risks.push({ message: 'AIQ not completed', severity: 'warning' });
-    
-    return risks.slice(0, 4);
-  };
-  
-  // Card spacing constants
-  const cardGutter = 6; // 6mm between cards
-  const cardPaddingTop = 6;
-  const cardPaddingLeft = 4;
-  const cardHeaderHeight = 7;
-  const riskCardWidth = Math.min(65, (pageWidth - 40 - (cardGutter * (data.candidates.length - 1))) / data.candidates.length);
-  
-  data.candidates.forEach((candidate, index) => {
-    const risks = getRiskIndicatorsPDF(index);
-    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-    const cardX = 20 + (index * (riskCardWidth + cardGutter));
-    
-    // Candidate header with better height
-    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(cardX, yPos, riskCardWidth, cardHeaderHeight, 'F');
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    const shortName = getCandidateName(candidate).substring(0, 18);
-    pdf.text(shortName, cardX + cardPaddingLeft, yPos + 5);
-    
-    // Content area starts after header with proper padding
-    let cardY = yPos + cardHeaderHeight + cardPaddingTop;
-    
-    if (risks.length === 0) {
-      pdf.setTextColor(17, 24, 39);
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('No significant risks', cardX + cardPaddingLeft, cardY);
-    } else {
-      risks.forEach((risk) => {
-        const isError = risk.severity === 'error';
-        pdf.setTextColor(isError ? 220 : 245, isError ? 38 : 158, isError ? 38 : 11);
-        pdf.setFontSize(6);
-        const riskMsg = risk.message.length > 28 ? risk.message.substring(0, 26) + '..' : risk.message;
-        pdf.text(`• ${riskMsg}`, cardX + cardPaddingLeft, cardY);
-        cardY += 4;
-      });
-    }
-  });
-  
-  yPos += 35; // More space after risk cards
   
   // ========== ROLE SUITABILITY SUMMARY (only if a role is selected) ==========
   if (data.selectedRole) {
