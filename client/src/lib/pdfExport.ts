@@ -1320,11 +1320,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Add Comparison Summary header for the selected role
   if (data.selectedRole) {
     const roleLabel = ROLE_DEFINITIONS[data.selectedRole]?.name ?? 'Selected Role';
-    pdf.setFontSize(9);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(`Comparison Summary for ${roleLabel}`, 20, yPos);
-    yPos += 7;
+    yPos += 8;
   }
   
   // Generate unbiased recommendation based on data
@@ -1351,7 +1351,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Sort by average score to identify top performers
   const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.avgScore - a.avgScore);
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
@@ -1360,21 +1360,22 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const lines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
   lines.forEach((line: string) => {
     pdf.text(line, 25, yPos);
-    yPos += 4;
+    yPos += 5;
   });
   
   // Individual candidate summaries
   rankedCandidates.forEach((candidate, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 25, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, 35, pageHeight, pageWidth);
     
     const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     pdf.text(`${candidate.name}`, 25, yPos);
-    yPos += 4;
+    yPos += 6;
     
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     
@@ -1388,25 +1389,25 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const summaryLines = pdf.splitTextToSize(summary, pageWidth - 50);
     summaryLines.forEach((line: string) => {
-      yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+      yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
       pdf.text(line, 25, yPos);
-      yPos += 4;
+      yPos += 5;
     });
     
-    yPos += 3;
+    yPos += 5;
   });
   
   // ========== RECOMMENDED NEXT STEPS ==========
-  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
   yPos += 5;
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text('Recommended Next Steps:', 25, yPos);
-  yPos += 6;
+  yPos += 8;
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   
   const comparisonNextSteps = [
@@ -1417,15 +1418,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   ];
   
   comparisonNextSteps.forEach(step => {
-    yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
     pdf.setTextColor(37, 99, 235);
     pdf.text('•', 27, yPos);
     pdf.setTextColor(55, 65, 81);
     const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
     stepLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 32, yPos + (idx * 3.5));
+      pdf.text(line, 32, yPos + (idx * 5));
     });
-    yPos += (stepLines.length * 3.5) + 2;
+    yPos += (stepLines.length * 5) + 3;
   });
   
   yPos += 5;
