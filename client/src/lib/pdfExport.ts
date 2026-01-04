@@ -417,19 +417,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
     const columnWidth = (pageWidth - 30) / chartsPerRow;
-    const chartSize = 65; // Square charts for proper radar appearance
+    const chartWidth = 78; // 4:3 aspect ratio for better horizontal fill
+    const chartHeight = 58;
     
     fitCharts.forEach((image, index) => {
       if (!image) return;
-      // Center the square chart within its column
+      // Center the chart within its column
       const columnStart = 15 + (index % chartsPerRow) * columnWidth;
-      const xPos = columnStart + (columnWidth - chartSize) / 2;
-      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartSize + 5);
+      const xPos = columnStart + (columnWidth - chartWidth) / 2;
+      const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartSize, chartSize);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
-    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartSize + 5) + 3;
+    yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
     
     // FIT Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
@@ -494,19 +495,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const aiChartsPerRow = Math.min(aiCharts.length, 2);
     const aiColumnWidth = (pageWidth - 30) / aiChartsPerRow;
-    const aiChartSize = 65; // Square charts for proper radar appearance
+    const aiChartWidth = 78; // 4:3 aspect ratio for better horizontal fill
+    const aiChartHeight = 58;
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
-      // Center the square chart within its column
+      // Center the chart within its column
       const columnStart = 15 + (index % aiChartsPerRow) * aiColumnWidth;
-      const xPos = columnStart + (aiColumnWidth - aiChartSize) / 2;
-      const chartYPos = yPos + Math.floor(index / aiChartsPerRow) * (aiChartSize + 5);
+      const xPos = columnStart + (aiColumnWidth - aiChartWidth) / 2;
+      const chartYPos = yPos + Math.floor(index / aiChartsPerRow) * (aiChartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, aiChartSize, aiChartSize);
+      pdf.addImage(image, 'PNG', xPos, chartYPos, aiChartWidth, aiChartHeight);
     });
     
-    yPos += Math.ceil(aiCharts.length / aiChartsPerRow) * (aiChartSize + 5) + 3;
+    yPos += Math.ceil(aiCharts.length / aiChartsPerRow) * (aiChartHeight + 5) + 3;
     
     // AI Readiness Score Table - PROPER TABLE FORMAT
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);

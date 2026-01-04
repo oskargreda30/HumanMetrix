@@ -2449,13 +2449,13 @@ export default function CompareTab() {
               <div 
                 key={`fit-${index}`}
                 id={`pdf-comparison-fit-${index}`}
-                style={{ width: '400px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+                style={{ width: '560px', height: '420px', backgroundColor: 'white', padding: '32px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
                   {getCandidateName(selectedCandidateData?.[index])} - FIT
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <RadarChart data={radarData}>
+                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
@@ -2485,13 +2485,13 @@ export default function CompareTab() {
               <div 
                 key={`ai-${index}`}
                 id={`pdf-comparison-ai-${index}`}
-                style={{ width: '400px', height: '400px', backgroundColor: 'white', padding: '20px' }}
+                style={{ width: '560px', height: '420px', backgroundColor: 'white', padding: '32px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
                   {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <RadarChart data={radarData}>
+                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
