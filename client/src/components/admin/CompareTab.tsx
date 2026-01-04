@@ -2245,11 +2245,14 @@ export default function CompareTab() {
                       {comparison.radarData && comparison.radarData.length > 0 && (
                         <div>
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
-                          <div id="pdf-comparison-overall-skills" className="bg-white p-4 rounded-lg">
-                          <ResponsiveContainer width="100%" height={400}>
-                            <RadarChart data={comparison.radarData}>
+                          <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
+                          <ResponsiveContainer width="100%" height={400} className="min-h-[320px] md:min-h-[400px]">
+                            <RadarChart data={comparison.radarData.map(item => ({
+                              ...item,
+                              skill: getSkillAcronym(item.skill)
+                            }))} cx="50%" cy="50%" outerRadius="70%">
                               <PolarGrid />
-                              <PolarAngleAxis dataKey="skill" />
+                              <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
                                 <Radar

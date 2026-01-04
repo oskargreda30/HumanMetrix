@@ -272,7 +272,7 @@ export default function RoleFitTab() {
               {analyzeRoleFitMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing with AI...
+                  Analyzing with AI... (this may take up to 2 minutes)
                 </>
               ) : (
                 <>
