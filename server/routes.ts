@@ -3634,7 +3634,7 @@ Format your response as JSON with this exact structure and skill names:
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      const allRoles = await storage.getJobRoles();
+      const allRoles = await storage.getAllJobRoles();
       const { forceRegenerate } = req.body || {};
       
       // If forceRegenerate is true, regenerate ALL roles; otherwise only those missing scores
