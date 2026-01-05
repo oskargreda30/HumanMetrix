@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +136,31 @@ export default function RoleFitTab() {
     },
   });
 
+  const regenerateAllScoresMutation = useMutation({
+    mutationFn: async () => {
+      // Use 300 second timeout for batch AI score generation
+      const res = await apiRequest('POST', '/api/admin/roles/batch-generate-scores', { forceRegenerate: true }, { timeoutMs: 300000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Batch regeneration started",
+        description: `Regenerating scores for ${data.rolesNeedingGeneration} roles. This may take a few minutes.`,
+      });
+      // Poll for completion by invalidating roles periodically
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['/api/admin/roles'] }), 10000);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['/api/admin/roles'] }), 30000);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['/api/admin/roles'] }), 60000);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Batch regeneration failed",
+        description: error.message || "Failed to start batch regeneration.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const analyzeRoleFitMutation = useMutation({
     mutationFn: async () => {
       // Use 120 second timeout for AI analysis which includes OpenAI API calls
@@ -229,6 +254,29 @@ export default function RoleFitTab() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Regenerate All Role Scores Button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => regenerateAllScoresMutation.mutate()}
+              disabled={regenerateAllScoresMutation.isPending}
+              data-testid="button-regenerate-all-scores"
+            >
+              {regenerateAllScoresMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting Regeneration...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Regenerate All Role Scores
+                </>
+              )}
+            </Button>
           </div>
 
           {selectedRole && selectedRoleData && !selectedRoleData.requiredSkillScores && (

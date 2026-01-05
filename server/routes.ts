@@ -3635,15 +3635,20 @@ Format your response as JSON with this exact structure and skill names:
       }
 
       const allRoles = await storage.getJobRoles();
-      const rolesNeedingGeneration = allRoles.filter(role => 
-        !role.requiredSkillScores || 
-        Object.keys(role.requiredSkillScores).length === 0 ||
-        !role.requiredSkillScores.skillCriticality ||
-        Object.keys(role.requiredSkillScores.skillCriticality).length === 0
-      );
+      const { forceRegenerate } = req.body || {};
+      
+      // If forceRegenerate is true, regenerate ALL roles; otherwise only those missing scores
+      const rolesNeedingGeneration = forceRegenerate 
+        ? allRoles 
+        : allRoles.filter(role => 
+            !role.requiredSkillScores || 
+            Object.keys(role.requiredSkillScores).length === 0 ||
+            !role.requiredSkillScores.skillCriticality ||
+            Object.keys(role.requiredSkillScores.skillCriticality).length === 0
+          );
 
       res.json({ 
-        message: `Starting batch generation for ${rolesNeedingGeneration.length} roles`,
+        message: `Starting batch generation for ${rolesNeedingGeneration.length} roles${forceRegenerate ? ' (force regenerate all)' : ''}`,
         totalRoles: allRoles.length,
         rolesNeedingGeneration: rolesNeedingGeneration.length,
         roleNames: rolesNeedingGeneration.map(r => r.name)
