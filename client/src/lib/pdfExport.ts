@@ -2599,7 +2599,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
   
-  applyBodyText(pdf);
+  // Use same font style as Recommended Next Steps section for consistency
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
   
   // Use recommendation from data if available, otherwise generate fallback
   const recommendationText = data.alignment.finalRecommendation || 
@@ -2609,32 +2612,35 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   recommendationLines.forEach((line: string) => {
     yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
     pdf.text(line, 25, yPos);
-    yPos += 4;
+    yPos += 5;
   });
   
   yPos += PDF_SPACING.medium;
   
   // Key action items - use passed-in next steps from dashboard
-  applySubheading(pdf);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
   pdf.text('Recommended Next Steps:', 25, yPos);
-  yPos += PDF_SPACING.medium;
+  yPos += 8;
   
-  applyBodyText(pdf);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
   const nextSteps = data.alignment.nextSteps || [
     'Review the detailed skill analysis in this report',
     'Consider scheduling follow-up interviews'
   ];
   
   nextSteps.forEach(step => {
-    yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
     pdf.setTextColor(37, 99, 235);
     pdf.text('•', 27, yPos);
     pdf.setTextColor(55, 65, 81);
     const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
     stepLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 32, yPos + (idx * 4));
+      pdf.text(line, 32, yPos + (idx * 5));
     });
-    yPos += (stepLines.length * 4) + 2;
+    yPos += (stepLines.length * 5) + 3;
   });
   
   yPos += PDF_SPACING.medium;

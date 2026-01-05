@@ -4347,22 +4347,6 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Key strengths section (use AI-generated text descriptions)
-      if (insights.strengths && insights.strengths.length > 0) {
-        finalRecommendation += `\n\nKEY STRENGTHS:\n`;
-        insights.strengths.slice(0, 3).forEach((strength: string) => {
-          finalRecommendation += `- ${strength}\n`;
-        });
-      }
-      
-      // Development areas section (use AI-generated text descriptions)
-      if (insights.gaps && insights.gaps.length > 0) {
-        finalRecommendation += `\nDEVELOPMENT AREAS:\n`;
-        insights.gaps.slice(0, 3).forEach((gap: string) => {
-          finalRecommendation += `- ${gap}\n`;
-        });
-      }
-      
       // Cohort context (if available)
       if (Object.keys(cohortBenchmarks).length > 0 && cohortBenchmarks.overall) {
         const percentile = cohortBenchmarks.overall.percentile;
