@@ -442,21 +442,25 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Skill abbreviation mapping (matching radar chart labels)
   const skillAbbreviations: Record<string, string> = {
+    // FIT Skills
     'High Agency': 'HA',
     'Intellectual Curiosity': 'IC',
     'Resilience': 'RES',
     'Empathy & Ethics': 'E&E',
     'Growth Mindset': 'GM',
-    'Collaboration & Communication': 'C&C',
+    'Interpersonal Agility': 'IA',
+    // AI Readiness Skills
     'AI Literacy & Prompt Engineering': 'AI-PE',
     'Technical Fundamentals': 'TF',
     'Data Fluency': 'DF',
     'Critical Thinking & Problem-Solving': 'CT-PS',
     'Adaptability & Continuous Learning': 'ACL',
-    'Human-AI Collaboration': 'HAC',
+    'Collaboration & Communication': 'C&C',
     'Responsible AI & Ethical Awareness': 'RA-EA',
+    'Creativity & Innovation': 'CI',
     'Domain Expertise': 'DE',
-    'Interpersonal Agility': 'IA',
+    // Legacy compatibility
+    'Human-AI Collaboration': 'HAC',
   };
   
   // Helper to get skill name with abbreviation
