@@ -50,6 +50,8 @@ interface ComparisonData {
     promptArchitecture: number;
     aiq: number;
   };
+  employerRecommendation?: string;
+  comparisonNextSteps?: string[];
 }
 
 interface RoleFitData {
@@ -1446,7 +1448,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // ========== EMPLOYER RECOMMENDATION ==========
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
   
-  yPos = addSectionHeader(pdf, 'HIRING RECOMMENDATION', yPos, pageWidth);
+  yPos = addSectionHeader(pdf, 'EMPLOYER RECOMMENDATION', yPos, pageWidth);
   yPos += 5;
   
   // Add Comparison Summary header for the selected role
@@ -1459,7 +1461,35 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 8;
   }
   
-  // Generate unbiased recommendation based on data
+  // Use passed-in employer recommendation from dashboard if available
+  if (data.employerRecommendation) {
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    
+    const recLines = pdf.splitTextToSize(data.employerRecommendation, pageWidth - 50);
+    recLines.forEach((line: string) => {
+      yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
+      pdf.text(line, 25, yPos);
+      yPos += 5;
+    });
+    yPos += 5;
+  } else {
+    // Fallback to generic recommendation if no dashboard data
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    
+    const fallbackText = 'Based on the comprehensive assessment data, review each candidate\'s performance metrics to determine the best fit for your role requirements.';
+    const lines = pdf.splitTextToSize(fallbackText, pageWidth - 50);
+    lines.forEach((line: string) => {
+      pdf.text(line, 25, yPos);
+      yPos += 5;
+    });
+    yPos += 5;
+  }
+  
+  // Individual candidate summaries
   const candidateAnalysis = data.candidates.map((candidate, index) => {
     const name = getCandidateName(candidate);
     const avgScore = data.averageScores[index];
@@ -1470,7 +1500,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
       data.aiqAssessments?.[index]
     ].filter(a => a !== null).length;
     
-    // Find top skills
     const candidateSkills = data.skillComparison
       .map(skill => ({ name: skill.skillName, score: skill.scores[index] }))
       .filter(s => s.score !== null)
@@ -1480,23 +1509,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return { name, avgScore, completedCount, topSkills: candidateSkills };
   });
   
-  // Sort by average score to identify top performers
   const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.avgScore - a.avgScore);
   
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  
-  const recommendationText = `Based on the comprehensive assessment data, the following analysis provides an objective overview of each candidate's performance:\n\n`;
-  
-  const lines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
-  lines.forEach((line: string) => {
-    pdf.text(line, 25, yPos);
-    yPos += 5;
-  });
-  
-  // Individual candidate summaries
-  rankedCandidates.forEach((candidate, index) => {
+  rankedCandidates.forEach((candidate) => {
     yPos = ensurePageSpace(pdf, yPos, 35, pageHeight, pageWidth);
     
     const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
@@ -1513,11 +1528,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const perfLevel = getPerformanceLevel(candidate.avgScore);
     const summary = `Average Score: ${candidate.avgScore}/100 (${perfLevel.label}) • Completed ${candidate.completedCount}/4 assessments\n` +
-      `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}\n` +
-      `Recommendation: ${candidate.avgScore >= 80 ? 'Strong candidate with demonstrated excellence across multiple competencies. Consider for roles requiring high performance and adaptability.' : 
-        candidate.avgScore >= 70 ? 'Solid candidate with good overall performance. Suitable for most positions with potential for growth in identified development areas.' :
-        candidate.avgScore >= 60 ? 'Developing candidate showing promise. May benefit from additional training or mentorship in lower-scoring areas.' :
-        'Candidate shows foundational skills but may require significant development. Consider for entry-level positions or roles with comprehensive onboarding support.'}`
+      `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
     
     const summaryLines = pdf.splitTextToSize(summary, pageWidth - 50);
     summaryLines.forEach((line: string) => {
@@ -1542,14 +1553,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   
-  const comparisonNextSteps = [
-    'Conduct combined technical and behavioral interviews with shortlisted candidates to validate assessment findings',
-    'Perform team fit analysis to understand how each candidate will integrate with the current or target team dynamics',
-    'Check professional references with emphasis on areas of demonstrated strength',
-    'Consider role-specific scenarios to assess practical application of identified skills'
+  // Use passed-in next steps from dashboard if available
+  const nextStepsToUse = data.comparisonNextSteps || [
+    'Review candidate assessment details to identify the best fit',
+    'Consider scheduling follow-up interviews with top performers'
   ];
   
-  comparisonNextSteps.forEach(step => {
+  nextStepsToUse.forEach(step => {
     yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
     pdf.setTextColor(37, 99, 235);
     pdf.text('•', 27, yPos);

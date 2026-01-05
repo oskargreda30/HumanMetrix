@@ -279,6 +279,11 @@ export default function CompareTab() {
         }
       }
 
+      // Generate employer recommendation and next steps for PDF using shared helper
+      const recommendations = generateComparisonRecommendations();
+      const employerRecommendation = recommendations?.employerRecommendation;
+      const comparisonNextSteps = recommendations?.nextSteps;
+
       await exportComparisonPDF({
         candidates: selectedCandidateData,
         skillComparison: comparison.skillComparison,
@@ -295,6 +300,8 @@ export default function CompareTab() {
         selectedRole: selectedRole || null,
         roleData: selectedRole ? getSelectedRoleData() : null,
         assessmentWeights,
+        employerRecommendation,
+        comparisonNextSteps,
       });
       
       toast({
@@ -842,6 +849,51 @@ export default function CompareTab() {
   // Backward-compatible wrapper that returns just the score
   const calculateRoleSuitability = (candidateIndex: number, roleId: string): number => {
     return calculateRoleSuitabilityWithCoverage(candidateIndex, roleId).score;
+  };
+
+  // Helper: Generate comparison recommendations (single source of truth for dashboard and PDF)
+  const generateComparisonRecommendations = (): { employerRecommendation: string; nextSteps: string[] } | null => {
+    if (!selectedRole || !selectedCandidateData || selectedCandidateData.length === 0) return null;
+    
+    const roleFitScores = selectedCandidateData.map((candidate: any, index: number) => ({
+      name: getCandidateName(candidate),
+      roleFit: calculateRoleSuitability(index, selectedRole),
+    })).sort((a, b) => b.roleFit - a.roleFit);
+    
+    if (roleFitScores.length === 0) return null;
+    
+    const topCandidate = roleFitScores[0];
+    const currentRoleName = dbRoles?.find(r => r.id === selectedRole)?.name || 'selected role';
+    const otherStrongCandidates = roleFitScores.filter((c, i) => i > 0 && c.roleFit >= 70);
+    
+    let employerRecommendation = '';
+    if (topCandidate.roleFit >= 75) {
+      employerRecommendation = `Based on comprehensive skill assessment data across all four evaluation dimensions, ${topCandidate.name} emerges as the strongest candidate for the ${currentRoleName} position with an overall fit score of ${topCandidate.roleFit}%. This candidate demonstrates excellent alignment with role requirements and would likely contribute effectively from day one with minimal ramp-up time.`;
+    } else if (topCandidate.roleFit >= 60) {
+      employerRecommendation = `After reviewing all assessment data, ${topCandidate.name} presents the strongest alignment with the ${currentRoleName} role at ${topCandidate.roleFit}% overall fit. While showing solid potential, targeted development in identified gap areas would accelerate their effectiveness in this position.`;
+    } else {
+      employerRecommendation = `The assessment comparison indicates that ${topCandidate.name} has the highest alignment score at ${topCandidate.roleFit}% for the ${currentRoleName} role. However, all candidates would benefit from additional development to fully meet role requirements. Consider this as part of a longer-term talent development strategy.`;
+    }
+    
+    if (otherStrongCandidates.length > 0) {
+      employerRecommendation += ` ${otherStrongCandidates.map(c => c.name).join(' and ')} ${otherStrongCandidates.length > 1 ? 'also show' : 'also shows'} strong potential as ${otherStrongCandidates.length > 1 ? 'alternatives' : 'an alternative'}.`;
+    }
+    
+    const nextSteps = topCandidate.roleFit >= 70 
+      ? [
+          `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
+          'Perform reference checks emphasizing leadership and collaboration competencies',
+          'Prepare competitive offer package based on candidate expectations',
+          'Design 90-day onboarding plan targeting identified development areas'
+        ]
+      : [
+          'Schedule in-depth technical interviews with top candidates to validate assessment findings',
+          'Assess development potential and learning agility through case-based scenarios',
+          'Consider rotational or project-based trial periods to evaluate practical performance',
+          'Explore alternative role placements that may better match current skill profiles'
+        ];
+    
+    return { employerRecommendation, nextSteps };
   };
 
   // Helper: Calculate composite score across all assessments
@@ -2513,6 +2565,54 @@ export default function CompareTab() {
               )}
               </div>
               {/* End of Report Container */}
+
+              {/* Employer Recommendation */}
+              {selectedRole && selectedCandidateData.length > 0 && (() => {
+                // Use shared helper function for single source of truth
+                const recommendations = generateComparisonRecommendations();
+                if (!recommendations) return null;
+                
+                const { employerRecommendation, nextSteps } = recommendations;
+                
+                return (
+                  <>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Award className="h-5 w-5 text-primary" />
+                          Employer Recommendation
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-employer-recommendation">
+                          {employerRecommendation}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Target className="h-5 w-5 text-blue-600" />
+                          Recommended Next Steps
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-3">
+                          {nextSteps.map((step, index) => (
+                            <li key={index} className="flex items-start gap-3" data-testid={`list-item-comparison-next-step-${index}`}>
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                                {index + 1}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{step}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
 
               {/* Additional Services On Request */}
               <Card className="border-dashed border-2 border-muted">
