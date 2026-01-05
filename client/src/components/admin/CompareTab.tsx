@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -2442,16 +2443,6 @@ export default function CompareTab() {
                       </div>
                       )}
 
-                      {/* Export Button */}
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleExportPDF}
-                          data-testid="button-export-comparison"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Export PDF
-                        </Button>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -2584,6 +2575,25 @@ export default function CompareTab() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Export Button */}
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white hover:bg-gray-100 text-gray-900 border"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['compare', selectedCandidates] })}
+                  data-testid="button-refresh-comparison"
+                >
+                  Refresh Analysis
+                </Button>
+                <Button 
+                  onClick={handleExportPDF}
+                  data-testid="button-export-comparison"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </Button>
+              </div>
 
               {!comparison.hasSkillData && (
                 <Card>
