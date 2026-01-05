@@ -2615,60 +2615,60 @@ export default function CompareTab() {
               })()}
 
               {/* Additional Services On Request */}
-              <Card className="border-primary/20 bg-primary/5">
+              <Card className="border-primary/20 bg-primary">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Sparkles className="h-5 w-5 text-white" />
                     Additional Services on Request
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-white/80">
                     Contact our team to unlock these premium insights for your hiring decisions
                   </p>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div className="p-4 rounded-lg bg-background border">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <MessageSquare className="h-4 w-4 text-primary" />
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                        <MessageSquare className="h-4 w-4 text-white" />
                         Suggested Interview Questions
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/70">
                         AI-generated questions based on candidates' assessment results and skill gaps
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg bg-background border">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <Users className="h-4 w-4 text-primary" />
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                        <Users className="h-4 w-4 text-white" />
                         Team Composition Fit
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/70">
                         Analysis of how candidates would complement your existing team dynamics
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg bg-background border">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <Clock className="h-4 w-4 text-primary" />
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                        <Clock className="h-4 w-4 text-white" />
                         Time to Productivity Estimate
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/70">
                         Projected onboarding timeline based on skill readiness and learning agility
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg bg-background border">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <ShieldAlert className="h-4 w-4 text-primary" />
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                        <ShieldAlert className="h-4 w-4 text-white" />
                         Hiring Risk Analysis
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/70">
                         Comprehensive risk assessment highlighting potential challenges and mitigations
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg bg-background border">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                        <DollarSign className="h-4 w-4 text-white" />
                         Development Investment Cost
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-white/70">
                         Estimated training and development investment to close identified skill gaps
                       </p>
                     </div>
@@ -2676,6 +2676,7 @@ export default function CompareTab() {
                   <div className="mt-4 text-center">
                     <Button 
                       variant="outline" 
+                      className="border-white text-white hover:bg-white/20"
                       onClick={() => window.location.href = '/for-employers'}
                       data-testid="button-contact-team-comparison"
                     >
