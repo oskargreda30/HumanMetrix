@@ -2611,21 +2611,28 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
     .trim();
   
+  // Convert section titles from ALL CAPS to Title Case
+  recommendationText = recommendationText
+    .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
+    .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
+    .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
+    .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:');
+  
   // Split recommendation into paragraphs (sections separated by double newlines)
   const recommendationParagraphs = recommendationText.split(/\n\n+/).filter(p => p.trim());
   
   recommendationParagraphs.forEach((paragraph) => {
-    // Use exact same font styling as Recommended Next Steps bullet content
-    pdf.setFontSize(10);
+    // Reduced font size for Final Recommendation content
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     
-    const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 60);
+    const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
     paragraphLines.forEach((line: string, idx: number) => {
-      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
-      pdf.text(line, 25, yPos + (idx * 5));
+      yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+      pdf.text(line, 25, yPos + (idx * 4));
     });
-    yPos += (paragraphLines.length * 5) + 3; // Same spacing as Next Steps bullets
+    yPos += (paragraphLines.length * 4) + 4; // Consistent spacing between paragraphs
   });
   
   yPos += PDF_SPACING.medium;

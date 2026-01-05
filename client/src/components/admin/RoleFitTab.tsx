@@ -778,6 +778,11 @@ export default function RoleFitTab() {
               .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/\n{3,}/g, '\n\n')
+              // Convert section titles from ALL CAPS to Title Case
+              .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
+              .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
+              .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
+              .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:')
               .trim();
             
             // Split into sections by double newlines or section headers
