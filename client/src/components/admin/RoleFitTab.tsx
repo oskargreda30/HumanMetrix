@@ -111,12 +111,9 @@ export default function RoleFitTab() {
   );
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
-    queryKey: ['/api/admin/role-alignment', selectedCandidate, selectedRole],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/role-alignment?userId=${selectedCandidate}&jobRoleId=${selectedRole}`);
-      if (!res.ok) throw new Error('Failed to fetch role alignment');
-      return res.json();
-    },
+    queryKey: selectedCandidate && selectedRole
+      ? [`/api/admin/role-alignment?userId=${selectedCandidate}&jobRoleId=${selectedRole}`]
+      : undefined as any,
     enabled: !!selectedCandidate && !!selectedRole,
   });
 
