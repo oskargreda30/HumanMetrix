@@ -486,17 +486,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   data.candidates.forEach((candidate, index) => {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
     
-    // Draw box with light background and colored left border
-    pdf.setFillColor(248, 250, 252); // Light gray background
+    // Draw box with light background and colored outline only
+    pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(0.5);
+    pdf.setLineWidth(1);
     pdf.roundedRect(candX, yPos, candidateBoxWidth, candidateBoxHeight, 2, 2, 'FD');
     
-    // Draw colored left accent bar
-    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(candX, yPos + 2, 2, candidateBoxHeight - 4, 'F');
-    
-    const textStartX = candX + 6;
+    const textStartX = candX + 5;
     
     // Name
     pdf.setFontSize(9);
@@ -1005,17 +1001,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const aiqData = data.aiqAssessments?.[index];
       const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
       
-      // Draw box with light background and colored border
+      // Draw box with light background and colored outline only
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      pdf.setLineWidth(0.5);
+      pdf.setLineWidth(1);
       pdf.roundedRect(aiqBoxX, yPos, aiqBoxWidth, aiqBoxHeight, 2, 2, 'FD');
       
-      // Colored left accent bar
-      pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      pdf.rect(aiqBoxX, yPos + 2, 2, aiqBoxHeight - 4, 'F');
-      
-      const textStartX = aiqBoxX + 5;
+      const textStartX = aiqBoxX + 4;
       
       // Candidate name
       const name = candidate.user.firstName || candidate.user.lastName
@@ -1045,11 +1037,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
         pdf.setTextColor(55, 65, 81);
         pdf.text(`Score: ${aiqData.totalScore}/100`, textStartX, yPos + 10);
         
-        // Status with band color
+        // Status with band color - use smaller font to fit full text
         const bandColor = getBandColor(aiqData.totalScore);
         pdf.setTextColor(bandColor[0], bandColor[1], bandColor[2]);
-        const statusText = aiqBand.title.length > 20 ? aiqBand.title.substring(0, 18) + '...' : aiqBand.title;
-        pdf.text(statusText, textStartX, yPos + 15);
+        pdf.setFontSize(7);
+        pdf.text(aiqBand.title, textStartX, yPos + 15);
       } else {
         pdf.setFontSize(8);
         pdf.setTextColor(150, 150, 150);
@@ -1847,17 +1839,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     yPos = ensurePageSpace(pdf, yPos, boxHeight + 8, pageHeight, pageWidth);
     
-    // Draw box with light background and colored left border
+    // Draw box with light background and colored outline only
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(0.5);
+    pdf.setLineWidth(1);
     pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
     
-    // Draw colored left accent bar
-    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.rect(20, yPos + 2, 2.5, boxHeight - 4, 'F');
-    
-    const textStartX = 28;
+    const textStartX = 26;
     let textY = yPos + 6;
     
     // Candidate name
