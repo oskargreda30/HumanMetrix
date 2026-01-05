@@ -4,6 +4,7 @@ import { FIT_SKILLS, AI_READINESS_SKILLS, ROLE_DEFINITIONS } from './assessmentS
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabelText, PDF_SPACING, savePdfMobile } from './pdfStyles';
 import { getAIQBandInterpretation } from '@/data/aiq-questions';
+import { PROMPT_ARCHITECTURE_DIMENSIONS, AIQ_BANDS } from '@/components/SkillsLegend';
 
 interface CandidateData {
   user: {
@@ -144,9 +145,22 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
 }
 
 // Helper to add footer to each page
-function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number) {
+function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: number, pageHeight: number, includeSkillsLegendNote: boolean = true) {
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
+  
+  // Skills Legend note (except on last page which IS the skills legend)
+  if (includeSkillsLegendNote && pageNum < totalPages) {
+    pdf.setFontSize(7);
+    pdf.text(
+      'Skills Legend available on last page',
+      pageWidth / 2,
+      pageHeight - 12,
+      { align: 'center' }
+    );
+    pdf.setFontSize(8);
+  }
+  
   pdf.text(
     `Page ${pageNum} of ${totalPages}`,
     pageWidth / 2,
@@ -164,6 +178,117 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
     15,
     pageHeight - 8
   );
+  
+  pdf.setTextColor(0, 0, 0);
+}
+
+// Helper to add Skills Legend page at the end of the PDF
+function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  let yPos = 38;
+  
+  // Page title
+  yPos = addSectionHeader(pdf, 'SKILLS LEGEND', yPos, pageWidth);
+  yPos += 3;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Reference guide for all assessed competencies across the four assessment types', 20, yPos);
+  yPos += 8;
+  
+  // FIT Assessment Skills
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(59, 130, 246);
+  pdf.text('FIT Assessment - Behavioral Skills', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  FIT_SKILLS.forEach((skill) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${skill.displayName}:`, 25, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(skill.description || '', 75, yPos);
+    yPos += 5;
+  });
+  yPos += 4;
+  
+  // AI Readiness Skills
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('AI Readiness - Technical Competencies', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  AI_READINESS_SKILLS.forEach((skill) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${skill.displayName}:`, 25, yPos);
+    pdf.setFont('helvetica', 'normal');
+    const descX = skill.displayName.length > 25 ? 95 : 75;
+    const descWidth = pageWidth - descX - 20;
+    const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
+    pdf.text(descLines[0], descX, yPos);
+    yPos += 5;
+  });
+  yPos += 4;
+  
+  // Prompt Architecture Dimensions
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(234, 179, 8);
+  pdf.text('Prompt Architecture - Evaluation Dimensions', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  PROMPT_ARCHITECTURE_DIMENSIONS.forEach((dim) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${dim.displayName}:`, 25, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(dim.description, 65, yPos);
+    yPos += 5;
+  });
+  yPos += 4;
+  
+  // Check if we need a new page for AIQ bands
+  if (yPos > pageHeight - 50) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 38;
+  }
+  
+  // AIQ Scoring Bands
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(147, 51, 234);
+  pdf.text('AIQ - Algorithmic Integrity Quotient Bands', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  AIQ_BANDS.forEach((band) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${band.range} (${band.title}):`, 25, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(band.description, 85, yPos);
+    yPos += 5;
+  });
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -1669,6 +1794,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   pdf.setTextColor(0, 0, 0);
   
+  // Add Skills Legend page at the end
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
+  
   // Add footers to all pages
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -2553,6 +2681,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   pdf.setTextColor(0, 0, 0);
   
+  // Add Skills Legend page at the end
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
+  
   // Add footers to all pages
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -2650,12 +2781,28 @@ export async function exportCandidatePDF(candidate: CandidateData, skills: Array
     }
   });
 
+  // Add Skills Legend page at the end
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
+
   // Footer
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
     pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);
+    
+    // Skills Legend note (except on last page which IS the skills legend)
+    if (i < totalPages) {
+      pdf.setFontSize(7);
+      pdf.text(
+        'Skills Legend available on last page',
+        pageWidth / 2,
+        pageHeight - 14,
+        { align: 'center' }
+      );
+      pdf.setFontSize(8);
+    }
+    
     pdf.text(
       `Page ${i} of ${totalPages} - HumanMetrix Assessment Platform`,
       pageWidth / 2,
