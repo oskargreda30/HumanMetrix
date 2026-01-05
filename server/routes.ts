@@ -4315,16 +4315,98 @@ Format your response as JSON with this structure:
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
       const topAlternativeRoles = roleFlexibility.slice(0, 5);
 
-      // Generate Final Recommendation text based on overallFit score
+      // Generate Final Recommendation - comprehensive analysis for employers
+      // Gather key data points for thorough recommendation
+      const recAllSkills = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
+      const recCriticalSkills = recAllSkills.filter(s => s.criticality === 'critical');
+      const recCriticalMet = recCriticalSkills.filter(s => s.candidateScore >= s.requiredScore);
+      const recCriticalGapSkills = recCriticalSkills.filter(s => s.candidateScore < s.requiredScore);
+      const recTopStrengths = recAllSkills
+        .filter(s => s.candidateScore >= s.requiredScore)
+        .sort((a, b) => (b.candidateScore - b.requiredScore) - (a.candidateScore - a.requiredScore))
+        .slice(0, 3);
+      const recTopGaps = recAllSkills
+        .filter(s => s.candidateScore < s.requiredScore)
+        .sort((a, b) => (b.requiredScore - b.candidateScore) - (a.requiredScore - a.candidateScore))
+        .slice(0, 3);
+      
+      // Build comprehensive recommendation text
       let finalRecommendation = '';
+      
+      // Opening assessment summary
       if (overallFit >= 85) {
-        finalRecommendation = `This candidate demonstrates excellent alignment with the ${role.name} position, scoring ${overallFit}/100 overall. They exhibit strong capabilities across the required competencies and would be a valuable addition to the team. The assessment data indicates readiness to contribute immediately with minimal onboarding time.`;
+        finalRecommendation = `OVERALL ASSESSMENT: STRONG FIT\n\nThis candidate demonstrates excellent alignment with the ${role.name} position, achieving an overall fit score of ${overallFit}/100. `;
       } else if (overallFit >= 70) {
-        finalRecommendation = `This candidate shows solid alignment with the ${role.name} role, achieving an overall score of ${overallFit}/100. They meet most of the key requirements and demonstrate potential for growth in identified development areas. With targeted support in weaker skill areas, they could become a strong contributor to the team.`;
+        finalRecommendation = `OVERALL ASSESSMENT: GOOD FIT\n\nThis candidate shows solid alignment with the ${role.name} role, achieving an overall fit score of ${overallFit}/100. `;
       } else if (overallFit >= 55) {
-        finalRecommendation = `This candidate displays moderate alignment with the ${role.name} position, scoring ${overallFit}/100. While showing promise in certain competencies, they would benefit from additional development in several key areas before fully meeting role requirements. Consider for positions where comprehensive training and mentorship are available.`;
+        finalRecommendation = `OVERALL ASSESSMENT: MODERATE FIT\n\nThis candidate displays moderate alignment with the ${role.name} position, with an overall fit score of ${overallFit}/100. `;
       } else {
-        finalRecommendation = `This candidate shows limited alignment with the ${role.name} role at this time, with an overall score of ${overallFit}/100. Significant skill gaps exist across multiple required competencies. They may be better suited for entry-level positions or roles with different skill requirements. If proceeding, ensure robust onboarding and development plans are in place.`;
+        finalRecommendation = `OVERALL ASSESSMENT: LIMITED FIT\n\nThis candidate shows limited alignment with the ${role.name} role at this time, with an overall fit score of ${overallFit}/100. `;
+      }
+      
+      // Critical skills analysis
+      if (recCriticalSkills.length > 0) {
+        finalRecommendation += `\n\nCRITICAL SKILLS ANALYSIS:\nOf the ${recCriticalSkills.length} critical skill${recCriticalSkills.length > 1 ? 's' : ''} required for this role, the candidate meets requirements for ${recCriticalMet.length}. `;
+        if (recCriticalGapSkills.length > 0) {
+          const gapNames = recCriticalGapSkills.map(s => s.skillName).join(', ');
+          finalRecommendation += `Critical gaps exist in: ${gapNames}. These areas would require focused development or may impact immediate role effectiveness.`;
+        } else {
+          finalRecommendation += `The candidate successfully meets all critical skill thresholds, indicating strong foundational readiness for core role responsibilities.`;
+        }
+      }
+      
+      // Key strengths section
+      if (recTopStrengths.length > 0) {
+        finalRecommendation += `\n\nKEY STRENGTHS:\n`;
+        recTopStrengths.forEach(s => {
+          const diff = s.candidateScore - s.requiredScore;
+          finalRecommendation += `- ${s.skillName}: Scores ${s.candidateScore}/100, exceeding the recommended level of ${s.requiredScore} by ${diff} points.\n`;
+        });
+      }
+      
+      // Development areas section
+      if (recTopGaps.length > 0) {
+        finalRecommendation += `\nDEVELOPMENT AREAS:\n`;
+        recTopGaps.forEach(s => {
+          const diff = s.requiredScore - s.candidateScore;
+          finalRecommendation += `- ${s.skillName}: Current score of ${s.candidateScore}/100 is ${diff} points below the recommended ${s.requiredScore}.\n`;
+        });
+      }
+      
+      // Cohort context (if available)
+      if (Object.keys(cohortBenchmarks).length > 0 && cohortBenchmarks.overall) {
+        const percentile = cohortBenchmarks.overall.percentile;
+        finalRecommendation += `\nCOHORT CONTEXT:\n`;
+        if (percentile >= 75) {
+          finalRecommendation += `This candidate ranks in the top quartile (${percentile}th percentile) compared to other candidates assessed for this role, indicating above-average performance relative to the talent pool.`;
+        } else if (percentile >= 50) {
+          finalRecommendation += `This candidate performs at or above the median (${percentile}th percentile) compared to other candidates assessed for this role.`;
+        } else if (percentile >= 25) {
+          finalRecommendation += `This candidate ranks in the ${percentile}th percentile compared to other candidates, performing below the median of the talent pool.`;
+        } else {
+          finalRecommendation += `This candidate ranks in the lower quartile (${percentile}th percentile) compared to other assessed candidates for this role.`;
+        }
+      }
+      
+      // Hiring recommendation
+      finalRecommendation += `\n\nHIRING RECOMMENDATION:\n`;
+      if (overallFit >= 85) {
+        finalRecommendation += `Strongly recommend advancing to final interview stages. This candidate shows readiness to contribute immediately with minimal ramp-up time. Their skill profile aligns well with role requirements and they would likely be a valuable addition to the team.`;
+      } else if (overallFit >= 70) {
+        finalRecommendation += `Recommend advancing with targeted interview focus on development areas. This candidate meets most key requirements and demonstrates good potential. With appropriate onboarding support in identified gap areas, they could become a strong contributor.`;
+      } else if (overallFit >= 55) {
+        finalRecommendation += `Consider for advancement if comprehensive training resources are available. This candidate shows promise in certain competencies but would require significant development in key areas. Best suited for organizations with robust mentorship programs or roles with extended ramp-up periods.`;
+      } else {
+        finalRecommendation += `Recommend exploring alternative roles or deferring this candidacy. Significant skill gaps across multiple required competencies suggest this may not be an optimal match at this time. Consider entry-level positions or roles with different skill requirements that better align with current capabilities.`;
+      }
+      
+      // Alternative roles insight (if better matches exist)
+      if (topAlternativeRoles.length > 0) {
+        const betterFits = topAlternativeRoles.filter(r => r.fitScore > overallFit);
+        if (betterFits.length > 0) {
+          const bestAlt = betterFits[0];
+          finalRecommendation += `\n\nALTERNATIVE ROLE INSIGHT:\nBased on skill alignment analysis, this candidate may show stronger fit for the ${bestAlt.roleName} role (${bestAlt.fitScore}/100 fit score). Consider evaluating for this alternative if the primary role is not an ideal match.`;
+        }
       }
 
       // Generate Recommended Next Steps based on overallFit score
