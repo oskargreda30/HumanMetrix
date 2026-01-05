@@ -430,7 +430,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   pdf.setTextColor(0, 0, 0);
   
-  yPos = 95;
+  yPos = 75;
   
   // Helper function to get candidate name
   function getCandidateName(candidate: any): string {
@@ -464,9 +464,50 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return abbr ? `${skillName} (${abbr})` : skillName;
   }
   
+  // ========== CANDIDATE DETAILS (Brief) ==========
+  yPos = addSectionHeader(pdf, 'CANDIDATE DETAILS', yPos, pageWidth);
+  yPos += 2;
+  
+  // Draw candidate details in a compact horizontal layout
+  const candidateBoxWidth = (pageWidth - 50) / data.candidates.length;
+  let candX = 20;
+  
+  data.candidates.forEach((candidate, index) => {
+    const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
+    
+    // Name
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.text(getCandidateName(candidate), candX, yPos);
+    
+    // Email
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const emailText = candidate.user.email.length > 28 ? candidate.user.email.substring(0, 25) + '...' : candidate.user.email;
+    pdf.text(emailText, candX, yPos + 4);
+    
+    // Application date
+    const appliedDate = candidate.user.createdAt 
+      ? new Date(candidate.user.createdAt).toLocaleDateString() 
+      : 'N/A';
+    pdf.text(`Applied: ${appliedDate}`, candX, yPos + 8);
+    
+    candX += candidateBoxWidth;
+  });
+  
+  yPos += 15;
+  
   // Assessment Completion Status - IMPROVED TABLE
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
-  yPos += 3;
+  
+  // Add description for completion status
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  const completionDesc = 'Tracks which of the four core assessments each candidate has completed.';
+  pdf.text(completionDesc, 20, yPos);
+  yPos += 5;
   
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentData = [
@@ -908,7 +949,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }
     
     yPos = addSectionHeader(pdf, 'AIQ (ARTIFICIAL INTELLIGENCE QUOTIENT)', yPos, pageWidth);
-    yPos += 2;
+    
+    // Add description for AIQ section
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    const aiqDesc = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
+    pdf.text(aiqDesc, 20, yPos);
+    yPos += 6;
     
     applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
@@ -991,11 +1038,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos += 8; // More breathing room before Prompt Architecture section
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text('Progressive difficulty levels (1-7) testing prompt design mastery', 25, yPos + 2);
-    yPos += 12; // More breathing room before levels table
+    
+    // Add description for Prompt Architecture section
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    const promptDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
+    const splitPromptDesc = pdf.splitTextToSize(promptDesc, pageWidth - 40);
+    pdf.text(splitPromptDesc, 20, yPos);
+    yPos += splitPromptDesc.length * 4 + 4;
     
     // Table header
     applySmallText(pdf);
@@ -1107,7 +1157,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
   }
   
   yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 3;
+  
+  // Add description for Strengths & Development section
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  const strengthsDesc = 'Highlights each candidate\'s top 3 strongest skills and areas requiring development, based on assessment scores across all completed evaluations.';
+  const splitStrengthsDesc = pdf.splitTextToSize(strengthsDesc, pageWidth - 40);
+  pdf.text(splitStrengthsDesc, 20, yPos);
+  yPos += splitStrengthsDesc.length * 4 + 4;
   
   // Helper to get candidate's top strengths and development areas
   const getCandidateStrengthsAndWeaknesses = (candidateIndex: number) => {
