@@ -2605,8 +2605,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setTextColor(55, 65, 81);
   
   // Use recommendation from data if available, otherwise generate fallback
-  const recommendationText = data.alignment.finalRecommendation || 
+  let recommendationText = data.alignment.finalRecommendation || 
     `${candidateName} has an overall fit score of ${overallFit}/100 for the ${data.role.name} position.`;
+  
+  // Strip out KEY STRENGTHS and DEVELOPMENT AREAS sections from the text (they appear separately)
+  recommendationText = recommendationText
+    .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+    .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+    .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
+    .trim();
   
   const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
   recommendationLines.forEach((line: string) => {
