@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -453,6 +453,96 @@ export default function RoleFitTab() {
               </CardContent>
             </Card>
           )}
+
+          {/* Critical Skills Analysis */}
+          {(() => {
+            const allSkills = [
+              ...(alignment.fitSkillAlignments || []),
+              ...(alignment.aiReadinessSkillAlignments || [])
+            ];
+            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
+            const criticalMet = criticalSkills.filter((s: any) => s.candidateScore >= s.requiredScore);
+            const criticalGaps = criticalSkills.filter((s: any) => s.candidateScore < s.requiredScore);
+            
+            if (criticalSkills.length === 0) return null;
+            
+            return (
+              <Card data-testid="card-critical-skills-analysis">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    Critical Skills Analysis
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Summary of skills marked as critical for the {selectedRole?.name || 'selected'} role
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-lg font-semibold">
+                          {criticalMet.length} of {criticalSkills.length} Critical Skills Met
+                        </p>
+                        <Badge 
+                          variant={criticalGaps.length === 0 ? 'default' : criticalGaps.length <= 1 ? 'secondary' : 'destructive'}
+                          className="text-sm"
+                        >
+                          {criticalGaps.length === 0 ? 'All Met' : `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
+                        </Badge>
+                      </div>
+                      <Progress 
+                        value={(criticalMet.length / criticalSkills.length) * 100} 
+                        className="h-3"
+                      />
+                    </div>
+                    
+                    {criticalGaps.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-destructive flex items-center gap-1">
+                          <TrendingDown className="h-4 w-4" />
+                          Critical Gaps Requiring Development
+                        </p>
+                        <div className="grid gap-2">
+                          {criticalGaps.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-muted-foreground">{skill.candidateScore}%</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-destructive font-medium">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {criticalMet.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-green-600 flex items-center gap-1">
+                          <TrendingUp className="h-4 w-4" />
+                          Critical Skills Met
+                        </p>
+                        <div className="grid gap-2">
+                          {criticalMet.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-green-600 font-medium">{skill.candidateScore}%</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Cohort Benchmarking */}
           {alignment.cohortBenchmarks && (alignment.cohortBenchmarks.fit || alignment.cohortBenchmarks.ai_readiness || alignment.cohortBenchmarks.prompt_architecture || alignment.cohortBenchmarks.aiq) && (
