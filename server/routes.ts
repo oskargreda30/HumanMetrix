@@ -3509,9 +3509,8 @@ ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 Based on this role, determine:
 1. The minimum required percentage scores (0-100) for each skill
 2. The CRITICALITY of each skill for this role:
-   - "critical": Must-have skills - gaps here are deal-breakers
-   - "important": Significant skills - gaps are concerning but manageable
-   - "nice-to-have": Beneficial but not essential - gaps are acceptable
+   - "critical": Must-have skills - gaps here are deal-breakers (typically 3-5 skills per role)
+   - "standard": All other skills that are not critical
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
@@ -3536,7 +3535,7 @@ For each skill, provide a realistic required score (0-100) that represents the M
 - Entry-level roles may require 50-60% for basic skills
 - Mid-level roles may require 65-75% for core competencies
 - Senior roles may require 80-90% for critical skills
-- Typically, 2-4 skills should be "critical", 4-6 should be "important", and the rest "nice-to-have"
+- Typically, 3-5 skills should be marked as "critical" per role
 
 Format your response as JSON with this exact structure and skill names:
 {
@@ -3560,21 +3559,21 @@ Format your response as JSON with this exact structure and skill names:
     "Creativity & Innovation": number
   },
   "skillCriticality": {
-    "Resilience": "critical" | "important" | "nice-to-have",
-    "High Agency": "critical" | "important" | "nice-to-have",
-    "Growth Mindset": "critical" | "important" | "nice-to-have",
-    "Empathy & Ethics": "critical" | "important" | "nice-to-have",
-    "Interpersonal Agility": "critical" | "important" | "nice-to-have",
-    "Intellectual Curiosity": "critical" | "important" | "nice-to-have",
-    "AI Literacy": "critical" | "important" | "nice-to-have",
-    "Collaboration": "critical" | "important" | "nice-to-have",
-    "Data Fluency": "critical" | "important" | "nice-to-have",
-    "Responsible AI & Ethical Awareness": "critical" | "important" | "nice-to-have",
-    "Domain Expertise": "critical" | "important" | "nice-to-have",
-    "Adaptability & Continuous Learning": "critical" | "important" | "nice-to-have",
-    "Critical Thinking & Problem-Solving": "critical" | "important" | "nice-to-have",
-    "Technical Fundamentals": "critical" | "important" | "nice-to-have",
-    "Creativity & Innovation": "critical" | "important" | "nice-to-have"
+    "Resilience": "critical" | "standard",
+    "High Agency": "critical" | "standard",
+    "Growth Mindset": "critical" | "standard",
+    "Empathy & Ethics": "critical" | "standard",
+    "Interpersonal Agility": "critical" | "standard",
+    "Intellectual Curiosity": "critical" | "standard",
+    "AI Literacy": "critical" | "standard",
+    "Collaboration": "critical" | "standard",
+    "Data Fluency": "critical" | "standard",
+    "Responsible AI & Ethical Awareness": "critical" | "standard",
+    "Domain Expertise": "critical" | "standard",
+    "Adaptability & Continuous Learning": "critical" | "standard",
+    "Critical Thinking & Problem-Solving": "critical" | "standard",
+    "Technical Fundamentals": "critical" | "standard",
+    "Creativity & Innovation": "critical" | "standard"
   }
 }`;
 
@@ -3596,6 +3595,107 @@ Format your response as JSON with this exact structure and skill names:
     } catch (error: any) {
       console.error("Error generating required scores:", error);
       res.status(500).json({ message: "Failed to generate required scores: " + error.message });
+    }
+  });
+
+  // Admin: Batch generate required scores for all roles
+  app.post("/api/admin/roles/batch-generate-scores", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+
+      const allRoles = await storage.getJobRoles();
+      const rolesNeedingGeneration = allRoles.filter(role => 
+        !role.requiredSkillScores || 
+        Object.keys(role.requiredSkillScores).length === 0 ||
+        !role.requiredSkillScores.skillCriticality ||
+        Object.keys(role.requiredSkillScores.skillCriticality).length === 0
+      );
+
+      res.json({ 
+        message: `Starting batch generation for ${rolesNeedingGeneration.length} roles`,
+        totalRoles: allRoles.length,
+        rolesNeedingGeneration: rolesNeedingGeneration.length,
+        roleNames: rolesNeedingGeneration.map(r => r.name)
+      });
+
+      // Process in background (non-blocking)
+      (async () => {
+        for (const role of rolesNeedingGeneration) {
+          try {
+            console.log(`[Batch] Generating scores for: ${role.name}`);
+            
+            const prompt = `You are an AI assistant that generates required skill scores for job roles.
+
+JOB ROLE: ${role.name}
+${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
+
+Based on this role, determine:
+1. The minimum required percentage scores (0-100) for each skill
+2. The CRITICALITY of each skill for this role:
+   - "critical": Must-have skills - gaps here are deal-breakers (typically 3-5 skills per role)
+   - "standard": All other skills that are not critical
+
+FIT ASSESSMENT SKILLS (Behavioral):
+1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
+2. High Agency - Taking initiative and ownership of outcomes
+3. Growth Mindset - Embracing challenges and viewing failures as learning opportunities
+4. Empathy & Ethics - Understanding others' perspectives and maintaining ethical standards
+5. Interpersonal Agility - Navigating diverse relationships and adapting communication styles
+6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
+
+AI READINESS SKILLS (Technical):
+1. AI Literacy - Understanding AI capabilities, limitations, and terminology
+2. Collaboration - Working effectively with AI systems and human teams
+3. Domain Fluency - Applying AI knowledge within specific professional contexts
+4. Responsible AI - Understanding ethical implications and biases in AI applications
+5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
+6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking - Evaluating AI outputs and making informed decisions
+8. Technical Fluency - Comfort with technical tools and systems
+9. Creative Innovation - Using AI to generate novel solutions and approaches
+
+For each skill, provide a realistic required score (0-100). Typically, 3-5 skills should be marked as "critical" per role.
+
+Format your response as JSON:
+{
+  "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
+  "aiReadinessSkills": { "AI Literacy": number, "Collaboration": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
+  "skillCriticality": { ... each skill as "critical" or "standard" ... }
+}`;
+
+            const completion = await openai.chat.completions.create({
+              model: "gpt-5",
+              messages: [{ role: "user", content: prompt }],
+              response_format: { type: "json_object" },
+            });
+
+            const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
+            requiredScores.generatedAt = new Date().toISOString();
+
+            await storage.updateJobRole(role.id, {
+              requiredSkillScores: requiredScores,
+            });
+
+            console.log(`[Batch] Completed: ${role.name}`);
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } catch (error: any) {
+            console.error(`[Batch] Error generating scores for ${role.name}:`, error.message);
+          }
+        }
+        console.log('[Batch] All role score generation completed');
+      })();
+
+    } catch (error: any) {
+      console.error("Error starting batch generation:", error);
+      res.status(500).json({ message: "Failed to start batch generation: " + error.message });
     }
   });
 
