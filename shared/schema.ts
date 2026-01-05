@@ -368,6 +368,8 @@ export const cachedRoleAlignments = pgTable("cached_role_alignments", {
     fitScore: number;
     description?: string;
   }[]>(),
+  finalRecommendation: text("final_recommendation"), // AI-generated recommendation text
+  nextSteps: jsonb("next_steps").$type<string[]>(), // Recommended next steps array
   promptHash: text("prompt_hash").notNull(), // to invalidate cache when prompt changes
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at").notNull(), // cache TTL

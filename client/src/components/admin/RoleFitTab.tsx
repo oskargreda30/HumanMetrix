@@ -71,12 +71,14 @@ export default function RoleFitTab() {
       roleName: string;
       fitScore: number;
       rawFitScore?: number;
-      roleSimilarity?: number;  // How similar the alternative role is to the target role
+      roleSimilarity?: number;
       coveragePercent?: number;
       coverageLabel?: 'High' | 'Medium' | 'Limited';
       missingCriticalSkills?: string[];
       description?: string;
     }> | null;
+    finalRecommendation?: string;
+    nextSteps?: string[];
   };
 
   const getPercentileBadge = (percentile: number) => {
@@ -705,6 +707,47 @@ export default function RoleFitTab() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Final Recommendation */}
+          {alignment.finalRecommendation && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  Final Recommendation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-final-recommendation">
+                  {alignment.finalRecommendation}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recommended Next Steps */}
+          {alignment.nextSteps && alignment.nextSteps.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-blue-600" />
+                  Recommended Next Steps
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {alignment.nextSteps.map((step, index) => (
+                    <li key={index} className="flex items-start gap-3" data-testid={`list-item-next-step-${index}`}>
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-muted-foreground">{step}</span>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           )}

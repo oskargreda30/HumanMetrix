@@ -4332,6 +4332,33 @@ Format your response as JSON with this structure:
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
       const topAlternativeRoles = roleFlexibility.slice(0, 5);
 
+      // Generate Final Recommendation text based on overallFit score
+      let finalRecommendation = '';
+      if (overallFit >= 85) {
+        finalRecommendation = `This candidate demonstrates excellent alignment with the ${role.name} position, scoring ${overallFit}/100 overall. They exhibit strong capabilities across the required competencies and would be a valuable addition to the team. The assessment data indicates readiness to contribute immediately with minimal onboarding time.`;
+      } else if (overallFit >= 70) {
+        finalRecommendation = `This candidate shows solid alignment with the ${role.name} role, achieving an overall score of ${overallFit}/100. They meet most of the key requirements and demonstrate potential for growth in identified development areas. With targeted support in weaker skill areas, they could become a strong contributor to the team.`;
+      } else if (overallFit >= 55) {
+        finalRecommendation = `This candidate displays moderate alignment with the ${role.name} position, scoring ${overallFit}/100. While showing promise in certain competencies, they would benefit from additional development in several key areas before fully meeting role requirements. Consider for positions where comprehensive training and mentorship are available.`;
+      } else {
+        finalRecommendation = `This candidate shows limited alignment with the ${role.name} role at this time, with an overall score of ${overallFit}/100. Significant skill gaps exist across multiple required competencies. They may be better suited for entry-level positions or roles with different skill requirements. If proceeding, ensure robust onboarding and development plans are in place.`;
+      }
+
+      // Generate Recommended Next Steps based on overallFit score
+      const nextSteps = overallFit >= 70 
+        ? [
+            'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+            'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+            'Check professional references with emphasis on areas of strength',
+            'Consider for final candidate pool'
+          ]
+        : [
+            'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+            'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+            'Explore development potential through scenario-based questions',
+            'Consider alternative roles that better match current skill profile'
+          ];
+
       const analysis = {
         overallFit,
         skillAlignments: allAlignments,  // Combined for backward compatibility
@@ -4344,7 +4371,9 @@ Format your response as JSON with this structure:
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : [],
         interviewQuestions: insights.interviewQuestions || null,
-        roleFlexibility: topAlternativeRoles // Always save array (empty if no matches) to distinguish from old null values
+        roleFlexibility: topAlternativeRoles, // Always save array (empty if no matches) to distinguish from old null values
+        finalRecommendation,
+        nextSteps
       };
 
       // Invalidate any existing cached alignment before creating new one
@@ -4370,6 +4399,8 @@ Format your response as JSON with this structure:
         interviewQuestions: analysis.interviewQuestions || null,
         dataRiskIndicators: analysis.dataRiskIndicators, // Already an array (empty if no issues)
         roleFlexibility: analysis.roleFlexibility, // Already an array (empty if no matches)
+        finalRecommendation: analysis.finalRecommendation,
+        nextSteps: analysis.nextSteps,
         promptHash,
         expiresAt,
       });
@@ -4560,10 +4591,47 @@ Format your response as JSON with this structure:
         };
       }
 
-      // Return alignment with fresh cohort benchmarks
+      // Generate finalRecommendation and nextSteps if not in cache (backwards compatibility)
+      const role = await storage.getJobRole(jobRoleId as string);
+      const overallFit = alignment.overallFit;
+      
+      let finalRecommendation = alignment.finalRecommendation;
+      let nextSteps = alignment.nextSteps;
+      
+      if (!finalRecommendation) {
+        if (overallFit >= 85) {
+          finalRecommendation = `This candidate demonstrates excellent alignment with the ${role?.name || 'target'} position, scoring ${overallFit}/100 overall. They exhibit strong capabilities across the required competencies and would be a valuable addition to the team. The assessment data indicates readiness to contribute immediately with minimal onboarding time.`;
+        } else if (overallFit >= 70) {
+          finalRecommendation = `This candidate shows solid alignment with the ${role?.name || 'target'} role, achieving an overall score of ${overallFit}/100. They meet most of the key requirements and demonstrate potential for growth in identified development areas. With targeted support in weaker skill areas, they could become a strong contributor to the team.`;
+        } else if (overallFit >= 55) {
+          finalRecommendation = `This candidate displays moderate alignment with the ${role?.name || 'target'} position, scoring ${overallFit}/100. While showing promise in certain competencies, they would benefit from additional development in several key areas before fully meeting role requirements. Consider for positions where comprehensive training and mentorship are available.`;
+        } else {
+          finalRecommendation = `This candidate shows limited alignment with the ${role?.name || 'target'} role at this time, with an overall score of ${overallFit}/100. Significant skill gaps exist across multiple required competencies. They may be better suited for entry-level positions or roles with different skill requirements. If proceeding, ensure robust onboarding and development plans are in place.`;
+        }
+      }
+      
+      if (!nextSteps) {
+        nextSteps = overallFit >= 70 
+          ? [
+              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+              'Check professional references with emphasis on areas of strength',
+              'Consider for final candidate pool'
+            ]
+          : [
+              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+              'Explore development potential through scenario-based questions',
+              'Consider alternative roles that better match current skill profile'
+            ];
+      }
+
+      // Return alignment with fresh cohort benchmarks and recommendations
       res.json({
         ...alignment,
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
+        finalRecommendation,
+        nextSteps,
       });
     } catch (error) {
       console.error("Error fetching role alignment:", error);

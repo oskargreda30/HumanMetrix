@@ -105,6 +105,8 @@ interface RoleFitData {
       missingCriticalSkills?: string[];
       description?: string;
     }> | null;
+    finalRecommendation?: string;
+    nextSteps?: string[];
   };
 }
 
@@ -2455,22 +2457,14 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'FINAL RECOMMENDATION', yPos, pageWidth);
   yPos += PDF_SPACING.medium;
   
-  // Overall fit assessment
+  // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
-  const perfLevel = getPerformanceLevel(overallFit);
   
   applyBodyText(pdf);
   
-  let recommendationText = '';
-  if (overallFit >= 85) {
-    recommendationText = `${candidateName} demonstrates excellent alignment with the ${data.role.name} position, scoring ${overallFit}/100 overall. This candidate exhibits strong capabilities across the required competencies and would be a valuable addition to the team. The assessment data indicates readiness to contribute immediately with minimal onboarding time.`;
-  } else if (overallFit >= 70) {
-    recommendationText = `${candidateName} shows solid alignment with the ${data.role.name} role, achieving an overall score of ${overallFit}/100. This candidate meets most of the key requirements and demonstrates potential for growth in identified development areas. With targeted support in weaker skill areas, they could become a strong contributor to the team.`;
-  } else if (overallFit >= 55) {
-    recommendationText = `${candidateName} displays moderate alignment with the ${data.role.name} position, scoring ${overallFit}/100. While showing promise in certain competencies, this candidate would benefit from additional development in several key areas before fully meeting role requirements. Consider for positions where comprehensive training and mentorship are available.`;
-  } else {
-    recommendationText = `${candidateName} shows limited alignment with the ${data.role.name} role at this time, with an overall score of ${overallFit}/100. Significant skill gaps exist across multiple required competencies. This candidate may be better suited for entry-level positions or roles with different skill requirements. If proceeding, ensure robust onboarding and development plans are in place.`;
-  }
+  // Use recommendation from data if available, otherwise generate fallback
+  const recommendationText = data.alignment.finalRecommendation || 
+    `${candidateName} has an overall fit score of ${overallFit}/100 for the ${data.role.name} position.`;
   
   const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
   recommendationLines.forEach((line: string) => {
@@ -2481,25 +2475,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += PDF_SPACING.medium;
   
-  // Key action items
+  // Key action items - use passed-in next steps from dashboard
   applySubheading(pdf);
   pdf.text('Recommended Next Steps:', 25, yPos);
   yPos += PDF_SPACING.medium;
   
   applyBodyText(pdf);
-  const nextSteps = overallFit >= 70 
-    ? [
-        'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-        'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-        'Check professional references with emphasis on areas of strength',
-        'Consider for final candidate pool'
-      ]
-    : [
-        'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-        'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-        'Explore development potential through scenario-based questions',
-        'Consider alternative roles that better match current skill profile'
-      ];
+  const nextSteps = data.alignment.nextSteps || [
+    'Review the detailed skill analysis in this report',
+    'Consider scheduling follow-up interviews'
+  ];
   
   nextSteps.forEach(step => {
     yPos = ensurePageSpace(pdf, yPos, 8, pageHeight, pageWidth);
