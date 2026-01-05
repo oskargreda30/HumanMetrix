@@ -1652,61 +1652,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos += priorityBoxHeight + 5;
   
-  // Candidate recommendation section
-  if (roleScoresSorted.length >= 2) {
-    const topRole = roleScoresSorted[0];
-    const secondRole = roleScoresSorted[1];
-    
-    // Find advantage skills (sorted by weight importance)
-    const advantageSkills = sortedRoleSkills
-      .map(([name]) => name)
-      .filter(skillName => {
-        const topScore = topRole.skills[skillName] ?? 0;
-        const secondScore = secondRole.skills[skillName] ?? 0;
-        return topScore > secondScore;
-      }).slice(0, 3);
-    
-    // Build differentiator text first to calculate height
-    let diffText = '';
-    if (advantageSkills.length > 0) {
-      const scoreDiff = topRole.score - secondRole.score;
-      const advantageDescriptions = advantageSkills.map(skill => {
-        const topScore = topRole.skills[skill] ?? 0;
-        const secondScore = secondRole.skills[skill] ?? 0;
-        return `${skill} (+${topScore - secondScore}pts)`;
-      });
-      
-      diffText = `Key differentiator: ${topRole.name} outperforms in ${advantageDescriptions.join(', ')}`;
-      diffText += `. This translates to a ${scoreDiff} percentage point lead in weighted role fit, `;
-      diffText += `with particular strength in skills most critical for the ${roleData.name} role.`;
-    }
-    
-    const splitDiffText = diffText ? pdf.splitTextToSize(diffText, pageWidth - 52) : [];
-    const boxHeight = advantageSkills.length > 0 ? 12 + (splitDiffText.length * 5) : 12;
-    
-    pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
-    
-    // Recommendation header with score
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`Recommendation: ${topRole.name}`, 24, yPos + 7);
-    pdf.text(`${topRole.score}%`, pageWidth - 28, yPos + 7, { align: 'right' });
-    
-    // Enhanced key differentiator with skill context
-    if (advantageSkills.length > 0 && splitDiffText.length > 0) {
-      pdf.setFontSize(9);
-      pdf.setTextColor(71, 85, 105);
-      
-      splitDiffText.forEach((line: string, i: number) => {
-        pdf.text(line, 24, yPos + 12 + (i * 4.5));
-      });
-    }
-    
-    yPos += boxHeight;
-  }
-  yPos += 5;
   } // End of role suitability conditional
   
   // ========== EMPLOYER RECOMMENDATION ==========
