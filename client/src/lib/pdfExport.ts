@@ -2264,19 +2264,30 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.text('Deep analysis of the most critical skills required for this role', 20, yPos);
     yPos += 8;
     
-    // Critical skills explanations
+    // Critical skills explanations - specific to each skill
     const criticalSkillExplanations: Record<string, string> = {
-      'Cognitive Flexibility': 'Essential for adapting to rapidly changing AI technologies and pivoting strategies when needed.',
-      'Ethical Reasoning': 'Critical for ensuring AI implementations align with ethical standards and regulatory requirements.',
-      'Collaboration & Communication': 'Vital for bridging technical and non-technical teams in AI initiatives.',
-      'Decision-Making Under Uncertainty': 'Key for navigating the inherent unpredictability of AI outcomes.',
-      'AI Literacy & Prompt Engineering': 'Core competency for effectively leveraging AI tools and systems.',
+      // FIT Assessment Skills
+      'High Agency': 'Enables proactive problem-solving and ownership of outcomes, reducing dependency on constant supervision in fast-moving AI environments.',
+      'Intellectual Curiosity': 'Drives continuous exploration of new AI capabilities and applications, essential for identifying innovative use cases.',
+      'Resilience': 'Critical for navigating the rapid iteration cycles and frequent setbacks inherent in AI implementation projects.',
+      'Empathy & Ethics': 'Ensures AI solutions consider human impact and ethical implications, vital for responsible AI deployment.',
+      'Growth Mindset': 'Enables adaptation to the rapidly evolving AI landscape and openness to learning new tools and methodologies.',
+      'Interpersonal Agility': 'Essential for effective collaboration across diverse teams and stakeholders in complex AI initiatives.',
+      // AI Readiness Skills
+      'AI Literacy & Prompt Engineering': 'Core competency for effectively leveraging AI tools and crafting prompts that yield optimal results.',
+      'Technical Fundamentals': 'Provides the foundation for understanding AI system architecture and integration requirements.',
+      'Data Fluency': 'Essential for interpreting AI outputs, validating data quality, and making data-driven decisions.',
+      'Critical Thinking & Problem-Solving': 'Key for evaluating AI recommendations and identifying optimal solutions to complex challenges.',
+      'Adaptability & Continuous Learning': 'Vital for staying current with rapidly evolving AI technologies and methodologies.',
+      'Human-AI Collaboration': 'Critical for optimizing workflows that effectively combine human judgment with AI capabilities.',
+      'Responsible AI & Ethical Awareness': 'Ensures AI implementations align with ethical standards, regulations, and organizational values.',
+      'Domain Expertise': 'Enables effective application of AI solutions to specific business contexts and industry requirements.',
+      'Creativity & Innovation': 'Key for discovering novel AI applications and designing innovative solutions to business challenges.',
+      // Legacy mappings
+      'Collaboration & Communication': 'Vital for bridging technical and non-technical teams in AI initiatives and ensuring alignment.',
       'Data Fluency & Interpretation': 'Essential for understanding AI inputs and outputs to make informed decisions.',
-      'Human-AI Collaboration': 'Critical for optimizing workflows that combine human and AI capabilities.',
-      'Continuous Learning Orientation': 'Vital for staying current with rapidly evolving AI landscape.',
-      'Risk Assessment & Mitigation': 'Important for identifying and managing AI-related risks.',
-      'Creativity & Innovation': 'Key for finding novel applications and solutions using AI.',
-      'Default': 'This skill is essential for successful performance in AI-integrated roles.'
+      'Continuous Learning Orientation': 'Vital for staying current with rapidly evolving AI landscape and emerging best practices.',
+      'Default': 'This skill directly impacts performance quality and team effectiveness in AI-integrated workflows.'
     };
     
     // Table for critical skills
@@ -2330,7 +2341,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setFont('helvetica', 'bold');
       pdf.text(`${skill.candidateScore}/100`, 60, yPos);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(` (Required: ${skill.requiredScore})`, 75, yPos);
+      pdf.text(` (Recommended: ${skill.requiredScore})`, 75, yPos);
       
       pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
       pdf.text(` ${gapText}`, 115, yPos);
