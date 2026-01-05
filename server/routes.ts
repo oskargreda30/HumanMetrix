@@ -4396,7 +4396,7 @@ Format your response as JSON with this structure:
       
       // Critical skills analysis
       if (recCriticalSkills.length > 0) {
-        finalRecommendation += `\n\nCRITICAL SKILLS ANALYSIS:\nOf the ${recCriticalSkills.length} critical skill${recCriticalSkills.length > 1 ? 's' : ''} required for this role, the candidate meets requirements for ${recCriticalMet.length}. `;
+        finalRecommendation += `\n\nCritical Skills Analysis:\nOf the ${recCriticalSkills.length} critical skill${recCriticalSkills.length > 1 ? 's' : ''} required for this role, the candidate meets requirements for ${recCriticalMet.length}. `;
         if (recCriticalGapSkills.length > 0) {
           const gapNames = recCriticalGapSkills.map(s => s.skillName).join(', ');
           finalRecommendation += `Critical gaps exist in: ${gapNames}. These areas would require focused development or may impact immediate role effectiveness.`;
@@ -4408,7 +4408,7 @@ Format your response as JSON with this structure:
       // Cohort context (if available)
       if (Object.keys(cohortBenchmarks).length > 0 && cohortBenchmarks.overall) {
         const percentile = cohortBenchmarks.overall.percentile;
-        finalRecommendation += `\nCOHORT CONTEXT:\n`;
+        finalRecommendation += `\n\nCohort Context:\n`;
         if (percentile >= 75) {
           finalRecommendation += `This candidate ranks in the top quartile (${percentile}th percentile) compared to other candidates assessed for this role, indicating above-average performance relative to the talent pool.`;
         } else if (percentile >= 50) {
@@ -4421,7 +4421,7 @@ Format your response as JSON with this structure:
       }
       
       // Hiring recommendation
-      finalRecommendation += `\n\nHIRING RECOMMENDATION:\n`;
+      finalRecommendation += `\n\nHiring Recommendation:\n`;
       if (overallFit >= 85) {
         finalRecommendation += `Strongly recommend advancing to final interview stages. This candidate shows readiness to contribute immediately with minimal ramp-up time. Their skill profile aligns well with role requirements and they would likely be a valuable addition to the team.`;
       } else if (overallFit >= 70) {
@@ -4437,7 +4437,7 @@ Format your response as JSON with this structure:
         const betterFits = topAlternativeRoles.filter(r => r.fitScore > overallFit);
         if (betterFits.length > 0) {
           const bestAlt = betterFits[0];
-          finalRecommendation += `\n\nALTERNATIVE ROLE INSIGHT:\nBased on skill alignment analysis, this candidate may show stronger fit for the ${bestAlt.roleName} role (${bestAlt.fitScore}/100 fit score). Consider evaluating for this alternative if the primary role is not an ideal match.`;
+          finalRecommendation += `\n\nAlternative Role Insight:\nBased on skill alignment analysis, this candidate may show stronger fit for the ${bestAlt.roleName} role (${bestAlt.fitScore}/100 fit score). Consider evaluating for this alternative if the primary role is not an ideal match.`;
         }
       }
 

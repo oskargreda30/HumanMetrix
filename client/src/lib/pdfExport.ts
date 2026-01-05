@@ -1978,7 +1978,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== KEY STRENGTHS (text descriptions) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
-  yPos += 1;
+  yPos += 2;
+  
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Areas where the candidate exceeds role requirements and demonstrates strong capability', 20, yPos);
+  yPos += 6;
   
   // Use text descriptions from alignment.strengths
   const strengthDescriptions = data.alignment.strengths?.slice(0, 6) || [];
@@ -2026,7 +2031,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== DEVELOPMENT AREAS (text descriptions) ==========
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
-  yPos += 1;
+  yPos += 2;
+  
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Skill gaps requiring targeted development to meet role requirements', 20, yPos);
+  yPos += 6;
   
   // Use text descriptions from alignment.gaps
   const gapDescriptions = data.alignment.gaps?.slice(0, 6) || [];
@@ -2076,10 +2086,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos = 32;
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
-  yPos += 3;
+  yPos += 2;
   
   applySmallText(pdf);
-  pdf.text('Skill-by-skill alignment with role requirements', 20, yPos);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Detailed comparison of candidate skills against role requirements from FIT and AI Readiness assessments', 20, yPos);
   yPos += 10;
   
   // Helper function to render skill line chart
@@ -2594,6 +2605,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += PDF_SPACING.large;
   
   yPos = addSectionHeader(pdf, 'FINAL RECOMMENDATION', yPos, pageWidth);
+  yPos += 2;
+  
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('AI-generated hiring guidance based on comprehensive assessment analysis', 20, yPos);
   yPos += PDF_SPACING.medium;
   
   // Use passed-in recommendation text from dashboard (ensures consistency)

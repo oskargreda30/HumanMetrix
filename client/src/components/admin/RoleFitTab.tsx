@@ -705,6 +705,9 @@ export default function RoleFitTab() {
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   Key Strengths
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Areas where the candidate exceeds role requirements and demonstrates strong capability
+                </p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
@@ -724,6 +727,9 @@ export default function RoleFitTab() {
                   <AlertCircle className="h-5 w-5 text-amber-600" />
                   Development Areas
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Skill gaps requiring targeted development to meet role requirements
+                </p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
