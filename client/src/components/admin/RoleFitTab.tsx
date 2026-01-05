@@ -771,24 +771,40 @@ export default function RoleFitTab() {
           )}
 
           {/* Final Recommendation */}
-          {alignment.finalRecommendation && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  Final Recommendation
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Overall hiring recommendation based on comprehensive assessment analysis and role alignment
-                </p>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-final-recommendation">
-                  {alignment.finalRecommendation}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {alignment.finalRecommendation && (() => {
+            // Clean up the recommendation text - remove KEY STRENGTHS and DEVELOPMENT AREAS sections
+            let cleanedText = alignment.finalRecommendation
+              .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+              .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
+            
+            // Split into sections by double newlines or section headers
+            const sections = cleanedText.split(/\n\n+/).filter(s => s.trim());
+            
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Final Recommendation
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Overall hiring recommendation based on comprehensive assessment analysis and role alignment
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4" data-testid="text-final-recommendation">
+                    {sections.map((section, index) => (
+                      <p key={index} className="text-sm text-muted-foreground leading-relaxed">
+                        {section.trim()}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Recommended Next Steps */}
           {alignment.nextSteps && alignment.nextSteps.length > 0 && (
