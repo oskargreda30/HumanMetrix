@@ -332,33 +332,6 @@ export default function RoleFitTab() {
             </CardContent>
           </Card>
 
-          {/* Data Quality Risk Indicators */}
-          {alignment.dataRiskIndicators && alignment.dataRiskIndicators.length > 0 && (
-            <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                  <AlertCircle className="h-5 w-5" />
-                  Data Quality Alerts
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {alignment.dataRiskIndicators.map((indicator: any, index: number) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Badge
-                        variant={indicator.severity === 'high' ? 'destructive' : 'secondary'}
-                        className="mt-0.5 shrink-0"
-                      >
-                        {indicator.severity}
-                      </Badge>
-                      <span className="text-sm">{indicator.message}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
           {/* FIT Skill Alignments */}
           {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
             <Card>

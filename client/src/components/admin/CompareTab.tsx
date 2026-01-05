@@ -2615,31 +2615,43 @@ export default function CompareTab() {
               })()}
 
               {/* Additional Services On Request */}
-              <Card className="border-dashed border-2 border-muted">
+              <Card className="border-primary/20 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
-                    Additional Services On Request
+                    Additional Services on Request
                   </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Contact our team to unlock these premium insights for your hiring decisions
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <div className="p-4 rounded-lg bg-background border">
                       <h4 className="font-medium flex items-center gap-2 mb-2">
                         <MessageSquare className="h-4 w-4 text-primary" />
-                        Interview Questions
+                        Suggested Interview Questions
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        Tailored interview questions to probe candidates' weaker areas
+                        AI-generated questions based on candidates' assessment results and skill gaps
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-background border">
+                      <h4 className="font-medium flex items-center gap-2 mb-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        Team Composition Fit
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Analysis of how candidates would complement your existing team dynamics
                       </p>
                     </div>
                     <div className="p-4 rounded-lg bg-background border">
                       <h4 className="font-medium flex items-center gap-2 mb-2">
                         <Clock className="h-4 w-4 text-primary" />
-                        Onboarding Timeline
+                        Time to Productivity Estimate
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        Projected onboarding timeline based on skill readiness
+                        Projected onboarding timeline based on skill readiness and learning agility
                       </p>
                     </div>
                     <div className="p-4 rounded-lg bg-background border">
@@ -2648,7 +2660,7 @@ export default function CompareTab() {
                         Hiring Risk Analysis
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        Comprehensive risk assessment highlighting potential challenges
+                        Comprehensive risk assessment highlighting potential challenges and mitigations
                       </p>
                     </div>
                     <div className="p-4 rounded-lg bg-background border">
@@ -2657,7 +2669,7 @@ export default function CompareTab() {
                         Development Investment Cost
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        Estimated training investment to close identified skill gaps
+                        Estimated training and development investment to close identified skill gaps
                       </p>
                     </div>
                   </div>
