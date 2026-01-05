@@ -1697,10 +1697,56 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 5;
   }
   
-  // Individual candidate summaries
+  // Individual candidate summaries using composite scores
+  // Calculate composite score for each candidate (weighted average across all 4 assessment types)
+  const calculateCompositeScore = (candidateIndex: number): number => {
+    const weights = data.assessmentWeights || { fit: 25, aiReadiness: 25, promptArchitecture: 25, aiq: 25 };
+    const assessmentScores: Array<{ score: number; weight: number }> = [];
+    
+    // FIT average
+    const fitData = data.fitAssessments?.[candidateIndex];
+    if (fitData) {
+      const fitScores = Object.values(fitData.scores);
+      if (fitScores.length > 0) {
+        const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
+        assessmentScores.push({ score: fitAvg, weight: weights.fit });
+      }
+    }
+    
+    // AI Readiness average
+    const aiData = data.aiReadinessAssessments?.[candidateIndex];
+    if (aiData) {
+      const aiScores = Object.values(aiData.scores);
+      if (aiScores.length > 0) {
+        const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
+        assessmentScores.push({ score: aiAvg, weight: weights.aiReadiness });
+      }
+    }
+    
+    // Prompt Architecture
+    const promptData = data.promptArchitectureAssessments?.[candidateIndex];
+    if (promptData) {
+      assessmentScores.push({ score: promptData.totalScore, weight: weights.promptArchitecture });
+    }
+    
+    // AIQ
+    const aiqData = data.aiqAssessments?.[candidateIndex];
+    if (aiqData) {
+      assessmentScores.push({ score: aiqData.totalScore, weight: weights.aiq });
+    }
+    
+    if (assessmentScores.length === 0) return 0;
+    
+    const totalWeight = assessmentScores.reduce((sum, d) => sum + d.weight, 0);
+    if (totalWeight === 0) return 0;
+    
+    const weightedSum = assessmentScores.reduce((sum, d) => sum + d.score * d.weight, 0);
+    return Math.round(weightedSum / totalWeight);
+  };
+
   const candidateAnalysis = data.candidates.map((candidate, index) => {
     const name = getCandidateName(candidate);
-    const avgScore = data.averageScores[index];
+    const compositeScore = calculateCompositeScore(index);
     const completedCount = [
       data.fitAssessments?.[index],
       data.aiReadinessAssessments?.[index],
@@ -1714,10 +1760,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
       .sort((a, b) => (b.score || 0) - (a.score || 0))
       .slice(0, 3);
     
-    return { name, avgScore, completedCount, topSkills: candidateSkills };
+    return { name, compositeScore, completedCount, topSkills: candidateSkills };
   });
   
-  const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.avgScore - a.avgScore);
+  const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.compositeScore - a.compositeScore);
   
   rankedCandidates.forEach((candidate) => {
     yPos = ensurePageSpace(pdf, yPos, 35, pageHeight, pageWidth);
@@ -1734,8 +1780,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     
-    const perfLevel = getPerformanceLevel(candidate.avgScore);
-    const summary = `Average Score: ${candidate.avgScore}/100 (${perfLevel.label}) • Completed ${candidate.completedCount}/4 assessments\n` +
+    const perfLevel = getPerformanceLevel(candidate.compositeScore);
+    const summary = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label}) • Completed ${candidate.completedCount}/4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ)\n` +
       `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
     
     const summaryLines = pdf.splitTextToSize(summary, pageWidth - 50);
@@ -1748,15 +1794,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 5;
   });
   
-  // ========== RECOMMENDED NEXT STEPS ==========
-  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
-  yPos += 5;
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
+  // Both sections on the same page - estimate space needed: ~120mm for both sections
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
   
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Recommended Next Steps:', 25, yPos);
-  yPos += 8;
+  // RECOMMENDED NEXT STEPS section
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += 3;
   
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
@@ -1768,7 +1815,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   ];
   
   nextStepsToUse.forEach(step => {
-    yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
     pdf.setTextColor(37, 99, 235);
     pdf.text('•', 27, yPos);
     pdf.setTextColor(55, 65, 81);
@@ -1779,14 +1825,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += (stepLines.length * 5) + 3;
   });
   
-  yPos += 5;
+  yPos += 10;
   
-  // ========== ADDITIONAL SERVICES ON REQUEST ==========
-  // Force new page for this section
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 32;
+  // ADDITIONAL SERVICES ON REQUEST section (same page)
   yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
   yPos += 3;
   
