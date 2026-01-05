@@ -425,8 +425,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Show role comparison info if a role is selected
   if (data.selectedRole) {
+    const roleName = data.roleData?.name || ROLE_DEFINITIONS[data.selectedRole]?.name || data.selectedRole;
     pdf.setFontSize(10);
-    pdf.text(`Role Comparison: ${data.selectedRole}`, pageWidth / 2, yPos + 33, { align: 'center' });
+    pdf.text(`Role Comparison: ${roleName}`, pageWidth / 2, yPos + 33, { align: 'center' });
   }
   
   pdf.setTextColor(0, 0, 0);
