@@ -489,7 +489,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Draw box with light background and colored outline only
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(1);
+    pdf.setLineWidth(0.5);
     pdf.roundedRect(candX, yPos, candidateBoxWidth, candidateBoxHeight, 2, 2, 'FD');
     
     const textStartX = candX + 5;
@@ -1004,7 +1004,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       // Draw box with light background and colored outline only
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      pdf.setLineWidth(1);
+      pdf.setLineWidth(0.5);
       pdf.roundedRect(aiqBoxX, yPos, aiqBoxWidth, aiqBoxHeight, 2, 2, 'FD');
       
       const textStartX = aiqBoxX + 4;
@@ -1842,7 +1842,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Draw box with light background and colored outline only
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(1);
+    pdf.setLineWidth(0.5);
     pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
     
     const textStartX = 26;
