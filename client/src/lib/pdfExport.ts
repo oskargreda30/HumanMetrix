@@ -2199,12 +2199,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     
     // Candidate score legend (filled circle)
     pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
-    const legendX = chartMarginLeft + 55;
+    const legendX = chartMarginLeft + 40;
     pdf.circle(legendX, yPos, 1.5, 'F');
     pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
     // Criticality legend - inline with other legend items (blue theme)
-    const criticalLegendX = legendX + 50;
+    const criticalLegendX = legendX + 38;
     pdf.setFillColor(37, 99, 235); // Blue-600
     pdf.roundedRect(criticalLegendX, yPos - 1.5, 10, 4, 1, 1, 'F');
     pdf.setFontSize(6);
