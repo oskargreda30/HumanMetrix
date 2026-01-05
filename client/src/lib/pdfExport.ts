@@ -494,8 +494,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text(emailText, candX, yPos + 4);
     
     // Application date
-    const appliedDate = candidate.user.createdAt 
-      ? new Date(candidate.user.createdAt).toLocaleDateString() 
+    const userAny = candidate.user as any;
+    const appliedDate = userAny.createdAt 
+      ? new Date(userAny.createdAt).toLocaleDateString() 
       : 'N/A';
     pdf.text(`Applied: ${appliedDate}`, candX, yPos + 8);
     
@@ -2756,17 +2757,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   const recommendationParagraphs = recommendationText.split(/\n\n+/).filter(p => p.trim());
   
   recommendationParagraphs.forEach((paragraph) => {
-    // Reduced font size for Final Recommendation content
-    pdf.setFontSize(9);
+    // Font size 10pt to match Next Steps section
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     
     const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
     paragraphLines.forEach((line: string, idx: number) => {
       yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
-      pdf.text(line, 25, yPos + (idx * 4));
+      pdf.text(line, 25, yPos + (idx * 5));
     });
-    yPos += (paragraphLines.length * 4) + 4; // Consistent spacing between paragraphs
+    yPos += (paragraphLines.length * 5) + 5; // Line spacing 5px to match Next Steps
   });
   
   yPos += PDF_SPACING.medium;
