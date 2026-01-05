@@ -420,6 +420,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.setFontSize(9);
   pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 27, { align: 'center' });
   
+  // Show role comparison info if a role is selected
+  if (data.selectedRole && data.selectedRole.name) {
+    pdf.setFontSize(10);
+    pdf.text(`Role Comparison: ${data.selectedRole.name}`, pageWidth / 2, yPos + 33, { align: 'center' });
+  }
+  
   pdf.setTextColor(0, 0, 0);
   
   yPos = 95;
@@ -429,6 +435,31 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return candidate.user.firstName || candidate.user.lastName
       ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
       : candidate.user.email.split('@')[0];
+  }
+  
+  // Skill abbreviation mapping (matching radar chart labels)
+  const skillAbbreviations: Record<string, string> = {
+    'High Agency': 'HA',
+    'Intellectual Curiosity': 'IC',
+    'Resilience': 'RES',
+    'Empathy & Ethics': 'E&E',
+    'Growth Mindset': 'GM',
+    'Collaboration & Communication': 'C&C',
+    'AI Literacy & Prompt Engineering': 'AI-PE',
+    'Technical Fundamentals': 'TF',
+    'Data Fluency': 'DF',
+    'Critical Thinking & Problem-Solving': 'CT-PS',
+    'Adaptability & Continuous Learning': 'ACL',
+    'Human-AI Collaboration': 'HAC',
+    'Responsible AI & Ethical Awareness': 'RA-EA',
+    'Domain Expertise': 'DE',
+    'Interpersonal Agility': 'IA',
+  };
+  
+  // Helper to get skill name with abbreviation
+  function getSkillWithAbbr(skillName: string): string {
+    const abbr = skillAbbreviations[skillName];
+    return abbr ? `${skillName} (${abbr})` : skillName;
   }
   
   // Assessment Completion Status - IMPROVED TABLE
@@ -603,12 +634,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Draw ranking table
   const rankTableStartX = 20;
-  const rankColWidths = [15, 60, 30, 30, 30]; // Rank, Name, Composite, Avg, Status
+  const rankColWidths = [15, 75, 40, 35]; // Rank, Name, Composite Score, Status
   const rankRowHeight = 7;
   
   // Header
   drawTableRow(pdf, rankTableStartX, yPos, rankColWidths, 
-    ['Rank', 'Candidate', 'Composite', 'Avg Score', 'Status'], rankRowHeight, {
+    ['Rank', 'Candidate', 'Composite Score', 'Status'], rankRowHeight, {
     isBold: true,
     fontSize: 8,
     fillColor: [249, 250, 251],
@@ -620,8 +651,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   rankings.forEach((ranking) => {
     const candidate = data.candidates[ranking.candidateIndex];
     const name = getCandidateName(candidate);
-    const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
-    const avgScore = data.averageScores[ranking.candidateIndex];
+    const shortName = name.length > 22 ? name.substring(0, 20) + '...' : name;
     
     const status = ranking.score >= 80 ? 'Excellent' : 
                    ranking.score >= 70 ? 'Strong' :
@@ -648,18 +678,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Composite score
     pdf.setTextColor(17, 24, 39);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${ranking.score}`, rankTableStartX + 75 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
-    
-    // Avg score
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`${avgScore}`, rankTableStartX + 105 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    pdf.text(`${ranking.score}`, rankTableStartX + 90 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
     
     // Status badge
     const statusColor = status === 'Excellent' ? [34, 197, 94] :
                         status === 'Strong' ? [59, 130, 246] :
                         status === 'Good' ? [245, 158, 11] : [107, 114, 128];
     pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-    pdf.text(status, rankTableStartX + 135 + 15, yPos + rankRowHeight / 2 + 1, { align: 'center' });
+    pdf.text(status, rankTableStartX + 130 + 17, yPos + rankRowHeight / 2 + 1, { align: 'center' });
     
     // Draw cell borders
     pdf.setDrawColor(200, 200, 200);
@@ -745,7 +771,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     // Data rows
     fitSkillData.forEach((skill) => {
-      const rowTexts = [skill.skillName];
+      const rowTexts = [getSkillWithAbbr(skill.skillName)];
       skill.scores.forEach(score => {
         rowTexts.push(score !== null ? `${score}` : '—');
       });
@@ -823,7 +849,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     // Data rows
     aiSkillData.forEach((skill) => {
-      const rowTexts = [skill.skillName];
+      const rowTexts = [getSkillWithAbbr(skill.skillName)];
       skill.scores.forEach(score => {
         rowTexts.push(score !== null ? `${score}` : '—');
       });
@@ -1367,13 +1393,21 @@ export async function exportComparisonPDF(data: ComparisonData) {
     return Math.round(score);
   };
   
-  // Draw role fit scores
+  // Draw role fit scores - aligned with other tables
   const roleTableStartX = 20;
-  const roleColWidths = [60, ...Array(data.candidates.length).fill(Math.min(40, (pageWidth - 80) / data.candidates.length))];
+  const roleRightMargin = 25;
+  const roleAvailableWidth = pageWidth - roleTableStartX - roleRightMargin;
+  const roleLabelColWidth = 50;
+  const roleCandidateColWidth = Math.max(30, (roleAvailableWidth - roleLabelColWidth) / data.candidates.length);
+  const roleColWidths = [roleLabelColWidth, ...Array(data.candidates.length).fill(roleCandidateColWidth)];
   
-  // Header
+  // Header - use shorter names to prevent cutoff
+  const roleHeaderNames = data.candidates.map(c => {
+    const name = getCandidateName(c);
+    return name.length > 15 ? name.substring(0, 13) + '...' : name;
+  });
   drawTableRow(pdf, roleTableStartX, yPos, roleColWidths,
-    ['Role Fit Score', ...data.candidates.map(c => getCandidateName(c).substring(0, 12))], 6, {
+    ['Role Fit Score', ...roleHeaderNames], 6, {
     isBold: true,
     fontSize: 8,
     fillColor: [249, 250, 251],
@@ -1390,10 +1424,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   let roleXOffset = roleTableStartX;
   pdf.setDrawColor(200, 200, 200);
-  pdf.rect(roleXOffset, yPos, roleColWidths[0], 8, 'S');
+  pdf.rect(roleXOffset, yPos, roleLabelColWidth, 8, 'S');
   pdf.setTextColor(55, 65, 81);
   pdf.text('Suitability %', roleXOffset + 2, yPos + 5);
-  roleXOffset += roleColWidths[0];
+  roleXOffset += roleLabelColWidth;
   
   roleFitScores.forEach((score, index) => {
     // Color coding
@@ -1408,13 +1442,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.setTextColor(161, 98, 7);
     }
     
-    pdf.rect(roleXOffset, yPos, roleColWidths[index + 1], 8, 'F');
+    pdf.rect(roleXOffset, yPos, roleCandidateColWidth, 8, 'F');
     pdf.setDrawColor(200, 200, 200);
-    pdf.rect(roleXOffset, yPos, roleColWidths[index + 1], 8, 'S');
+    pdf.rect(roleXOffset, yPos, roleCandidateColWidth, 8, 'S');
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${score}%`, roleXOffset + roleColWidths[index + 1] / 2, yPos + 5, { align: 'center' });
+    pdf.text(`${score}%`, roleXOffset + roleCandidateColWidth / 2, yPos + 5, { align: 'center' });
     
-    roleXOffset += roleColWidths[index + 1];
+    roleXOffset += roleCandidateColWidth;
   });
   yPos += 12; // 8mm for row height + 4mm padding before recommendation box
   
@@ -1464,7 +1498,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = ensurePageSpace(pdf, yPos, 55, pageHeight, pageWidth);
   
   // Build comprehensive explanation for top skills first to calculate box height
-  let priorityExplanation = `For ${roleData.name}, the weighted scoring model prioritizes: `;
+  let priorityExplanation = `For the ${roleData.name} role, the weighted scoring model prioritizes: `;
   topWeightedSkills.forEach((skillName, idx) => {
     const weight = roleWeights[skillName] as number;
     const criticality = getCriticality(weight);
@@ -1480,8 +1514,10 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   priorityExplanation += '.';
   
-  const priorityLines = pdf.splitTextToSize(priorityExplanation, pageWidth - 52);
-  const priorityBoxHeight = 12 + (priorityLines.length * 5);
+  // Use narrower text width to ensure text stays within box with padding
+  const priorityTextWidth = pageWidth - 60;
+  const priorityLines = pdf.splitTextToSize(priorityExplanation, priorityTextWidth);
+  const priorityBoxHeight = 14 + (priorityLines.length * 5);
   
   pdf.setFillColor(240, 249, 255); // Light blue background
   pdf.roundedRect(20, yPos, pageWidth - 40, priorityBoxHeight, 2, 2, 'F');
@@ -1491,12 +1527,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.setTextColor(30, 64, 175);
   pdf.text('Skill Prioritization Rationale', 24, yPos + 7);
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
   priorityLines.forEach((line: string, i: number) => {
-    pdf.text(line, 24, yPos + 14 + (i * 5));
+    pdf.text(line, 24, yPos + 14 + (i * 4.5));
   });
   
   yPos += priorityBoxHeight + 5;
@@ -1527,11 +1563,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       
       diffText = `Key differentiator: ${topRole.name} outperforms in ${advantageDescriptions.join(', ')}`;
       diffText += `. This translates to a ${scoreDiff} percentage point lead in weighted role fit, `;
-      diffText += `with particular strength in skills most critical for ${roleData.name} success.`;
+      diffText += `with particular strength in skills most critical for the ${roleData.name} role.`;
     }
     
     const splitDiffText = diffText ? pdf.splitTextToSize(diffText, pageWidth - 52) : [];
-    const boxHeight = advantageSkills.length > 0 ? 18 + (splitDiffText.length * 5) : 18;
+    const boxHeight = advantageSkills.length > 0 ? 12 + (splitDiffText.length * 5) : 12;
     
     pdf.setFillColor(248, 250, 252);
     pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
@@ -1543,18 +1579,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text(`Recommendation: ${topRole.name}`, 24, yPos + 7);
     pdf.text(`${topRole.score}%`, pageWidth - 28, yPos + 7, { align: 'right' });
     
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`vs ${secondRole.score}%`, pageWidth - 28, yPos + 13, { align: 'right' });
-    
     // Enhanced key differentiator with skill context
     if (advantageSkills.length > 0 && splitDiffText.length > 0) {
-      pdf.setFontSize(10);
+      pdf.setFontSize(9);
       pdf.setTextColor(71, 85, 105);
       
       splitDiffText.forEach((line: string, i: number) => {
-        pdf.text(line, 24, yPos + 16 + (i * 5));
+        pdf.text(line, 24, yPos + 12 + (i * 4.5));
       });
     }
     
@@ -1575,7 +1606,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(`Comparison Summary for ${roleLabel}`, 20, yPos);
+    pdf.text(`Comparison Summary for the ${roleLabel} role`, 20, yPos);
     yPos += 8;
   }
   
