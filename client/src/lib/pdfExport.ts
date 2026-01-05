@@ -483,20 +483,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.rect(currentX, yPos, candidateColWidth, rowHeight, 'S');
       
       if (isCompleted) {
-        // Draw green filled box
-        pdf.setFillColor(34, 197, 94); // Green-500
-        const boxSize = 3;
-        const boxX = currentX + (candidateColWidth - boxSize) / 2;
-        const boxY = yPos + (rowHeight - boxSize) / 2;
-        pdf.roundedRect(boxX, boxY, boxSize, boxSize, 0.5, 0.5, 'F');
-      } else {
-        // Draw red cross or dash
-        pdf.setTextColor(239, 68, 68); // Red-500
-        applySmallText(pdf);
-        pdf.setTextColor(239, 68, 68);
-        pdf.text('—', currentX + candidateColWidth / 2, yPos + rowHeight * 0.6, { align: 'center' });
+        // Show "Complete" text in green
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(34, 197, 94); // Green-500
+        pdf.text('Complete', currentX + candidateColWidth / 2, yPos + rowHeight * 0.6, { align: 'center' });
         pdf.setTextColor(75, 85, 99);
       }
+      // Leave blank if incomplete (no text or indicator)
       
       currentX += candidateColWidth;
     });
@@ -703,7 +697,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
     const columnWidth = (pageWidth - 30) / chartsPerRow;
-    const chartWidth = 78; // 4:3 aspect ratio for better horizontal fill
+    const chartWidth = 85; // Horizontally stretched within 4:3 aspect container
     const chartHeight = 58;
     
     fitCharts.forEach((image, index) => {
@@ -781,7 +775,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const aiChartsPerRow = Math.min(aiCharts.length, 2);
     const aiColumnWidth = (pageWidth - 30) / aiChartsPerRow;
-    const aiChartWidth = 78; // 4:3 aspect ratio for better horizontal fill
+    const aiChartWidth = 85; // Horizontally stretched within 4:3 aspect container
     const aiChartHeight = 58;
     
     aiCharts.forEach((image, index) => {
