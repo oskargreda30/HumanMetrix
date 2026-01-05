@@ -3537,6 +3537,8 @@ For each skill, provide a realistic required score (0-100) that represents the M
 - Senior roles may require 80-90% for critical skills
 - Typically, 3-5 skills should be marked as "critical" per role
 
+IMPORTANT: Use precise scores - do NOT round to intervals of 5 (e.g., 70, 75, 80). Use exact values like 67, 73, 82, etc. to accurately differentiate skill importance. Some skills are more important than others, and intervals of 5 do not provide enough differentiation.
+
 Format your response as JSON with this exact structure and skill names:
 {
   "fitSkills": {
@@ -3661,6 +3663,8 @@ AI READINESS SKILLS (Technical):
 9. Creative Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100). Typically, 3-5 skills should be marked as "critical" per role.
+
+IMPORTANT: Use precise scores - do NOT round to intervals of 5 (e.g., 70, 75, 80). Use exact values like 67, 73, 82, etc. to accurately differentiate skill importance. Some skills are more important than others, and intervals of 5 do not provide enough differentiation.
 
 Format your response as JSON:
 {
