@@ -4321,14 +4321,6 @@ Format your response as JSON with this structure:
       const recCriticalSkills = recAllSkills.filter(s => s.criticality === 'critical');
       const recCriticalMet = recCriticalSkills.filter(s => s.candidateScore >= s.requiredScore);
       const recCriticalGapSkills = recCriticalSkills.filter(s => s.candidateScore < s.requiredScore);
-      const recTopStrengths = recAllSkills
-        .filter(s => s.candidateScore >= s.requiredScore)
-        .sort((a, b) => (b.candidateScore - b.requiredScore) - (a.candidateScore - a.requiredScore))
-        .slice(0, 3);
-      const recTopGaps = recAllSkills
-        .filter(s => s.candidateScore < s.requiredScore)
-        .sort((a, b) => (b.requiredScore - b.candidateScore) - (a.requiredScore - a.candidateScore))
-        .slice(0, 3);
       
       // Build comprehensive recommendation text
       let finalRecommendation = '';
@@ -4355,21 +4347,19 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Key strengths section
-      if (recTopStrengths.length > 0) {
+      // Key strengths section (use AI-generated text descriptions)
+      if (insights.strengths && insights.strengths.length > 0) {
         finalRecommendation += `\n\nKEY STRENGTHS:\n`;
-        recTopStrengths.forEach(s => {
-          const diff = s.candidateScore - s.requiredScore;
-          finalRecommendation += `- ${s.skillName}: Scores ${s.candidateScore}/100, exceeding the recommended level of ${s.requiredScore} by ${diff} points.\n`;
+        insights.strengths.slice(0, 3).forEach((strength: string) => {
+          finalRecommendation += `- ${strength}\n`;
         });
       }
       
-      // Development areas section
-      if (recTopGaps.length > 0) {
+      // Development areas section (use AI-generated text descriptions)
+      if (insights.gaps && insights.gaps.length > 0) {
         finalRecommendation += `\nDEVELOPMENT AREAS:\n`;
-        recTopGaps.forEach(s => {
-          const diff = s.requiredScore - s.candidateScore;
-          finalRecommendation += `- ${s.skillName}: Current score of ${s.candidateScore}/100 is ${diff} points below the recommended ${s.requiredScore}.\n`;
+        insights.gaps.slice(0, 3).forEach((gap: string) => {
+          finalRecommendation += `- ${gap}\n`;
         });
       }
       
