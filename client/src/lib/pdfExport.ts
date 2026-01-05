@@ -87,11 +87,6 @@ interface RoleFitData {
       prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
       aiq?: { percentile: number; totalCandidates: number; avgScore: number };
     } | null;
-    dataRiskIndicators?: Array<{
-      type: string;
-      severity: 'low' | 'medium' | 'high';
-      message: string;
-    }> | null;
     interviewQuestions?: Array<{
       question: string;
       purpose: string;
@@ -1807,59 +1802,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setTextColor(0, 0, 0);
   yPos = 85 + finalCardHeight + 8;
   
-  // ========== DATA QUALITY ALERTS (if any) ==========
-  if (data.alignment.dataRiskIndicators && data.alignment.dataRiskIndicators.length > 0) {
-    yPos = addSectionHeader(pdf, 'DATA QUALITY ALERTS', yPos, pageWidth);
-    yPos += 2;
-    
-    // Calculate required height based on text wrapping
-    const maxMsgWidth = pageWidth - 65;
-    let totalHeight = 6;
-    const wrappedMessages: string[][] = [];
-    data.alignment.dataRiskIndicators.forEach((indicator) => {
-      const lines = pdf.splitTextToSize(indicator.message, maxMsgWidth);
-      wrappedMessages.push(lines);
-      totalHeight += Math.max(5, lines.length * 3.5);
-    });
-    
-    // Warning box background
-    pdf.setFillColor(254, 243, 199); // Amber-50
-    pdf.setDrawColor(251, 191, 36); // Amber-400
-    pdf.roundedRect(20, yPos, pageWidth - 40, totalHeight, 2, 2, 'FD');
-    yPos += 4;
-    
-    data.alignment.dataRiskIndicators.forEach((indicator, idx) => {
-      // Severity badge
-      const severityColors: Record<string, [number, number, number]> = {
-        high: [239, 68, 68],
-        medium: [234, 179, 8],
-        low: [107, 114, 128]
-      };
-      const badgeColor = severityColors[indicator.severity] || severityColors.medium;
-      
-      pdf.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
-      pdf.roundedRect(24, yPos - 2.5, 12, 4, 1, 1, 'F');
-      
-      pdf.setFontSize(6);
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(indicator.severity.toUpperCase(), 30, yPos, { align: 'center' });
-      
-      // Alert message with text wrapping
-      applySmallText(pdf);
-      pdf.setTextColor(127, 29, 29);
-      const msgLines = wrappedMessages[idx];
-      msgLines.forEach((line: string, lineIdx: number) => {
-        pdf.text(line, 40, yPos + (lineIdx * 3.5));
-      });
-      yPos += Math.max(5, msgLines.length * 3.5);
-    });
-    
-    yPos += 5;
-    pdf.setTextColor(0, 0, 0);
-  }
-  
-  // Add extra spacing before KEY STRENGTHS section
+  // Add spacing before KEY STRENGTHS section
   yPos += 8;
   
   // ========== KEY STRENGTHS (individual boxes) ==========

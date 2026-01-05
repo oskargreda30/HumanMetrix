@@ -4097,52 +4097,6 @@ Format your response as JSON with this structure:
         };
       }
 
-      // Calculate data quality risk indicators
-      const dataRiskIndicators: { type: string; severity: 'low' | 'medium' | 'high'; message: string }[] = [];
-      
-      // Check for missing assessments
-      const completedAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-      const requiredAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
-      const missingAssessments = requiredAssessmentTypes.filter(t => !completedAssessmentTypes.has(t));
-      if (missingAssessments.length > 0) {
-        dataRiskIndicators.push({
-          type: 'missing_data',
-          severity: missingAssessments.length >= 2 ? 'high' : 'medium',
-          message: `Missing ${missingAssessments.length} assessment(s): ${missingAssessments.join(', ')}`
-        });
-      }
-      
-      // Check for score variance (wide range suggests inconsistent performance)
-      const allScores = [...fitSkillAlignments, ...aiReadinessSkillAlignments].map(s => s.candidateScore);
-      if (allScores.length >= 3) {
-        const maxScore = Math.max(...allScores);
-        const minScore = Math.min(...allScores);
-        const variance = maxScore - minScore;
-        if (variance >= 50) {
-          dataRiskIndicators.push({
-            type: 'high_variance',
-            severity: 'medium',
-            message: `High score variance (${variance}% range) - candidate shows inconsistent performance across skills`
-          });
-        }
-      }
-      
-      // Check for stale results (>90 days old)
-      const oldestResult = completedResults.reduce((oldest: any, result: any) => {
-        if (!oldest) return result;
-        return new Date(result.completedAt) < new Date(oldest.completedAt) ? result : oldest;
-      }, null);
-      if (oldestResult) {
-        const daysSinceOldest = Math.floor((Date.now() - new Date(oldestResult.completedAt).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysSinceOldest > 90) {
-          dataRiskIndicators.push({
-            type: 'stale_results',
-            severity: daysSinceOldest > 180 ? 'high' : 'medium',
-            message: `Assessment results are ${daysSinceOldest} days old - consider requesting retake for current skills`
-          });
-        }
-      }
-
       // Calculate Role Flexibility - find alternative roles using ROLE SIMILARITY + CANDIDATE FIT
       // This combines two factors:
       // 1. Role Similarity: How similar is the alternative role's skill profile to the target role?
@@ -4369,7 +4323,6 @@ Format your response as JSON with this structure:
         recommendations: insights.recommendations || '',
         riskFlags: insights.riskFlags || [],
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
-        dataRiskIndicators: dataRiskIndicators.length > 0 ? dataRiskIndicators : [],
         interviewQuestions: insights.interviewQuestions || null,
         roleFlexibility: topAlternativeRoles, // Always save array (empty if no matches) to distinguish from old null values
         finalRecommendation,
@@ -4397,7 +4350,7 @@ Format your response as JSON with this structure:
         recommendations: analysis.recommendations,
         riskFlags: analysis.riskFlags || [],
         interviewQuestions: analysis.interviewQuestions || null,
-        dataRiskIndicators: analysis.dataRiskIndicators, // Already an array (empty if no issues)
+        dataRiskIndicators: [], // Risk indicators removed - no longer displayed
         roleFlexibility: analysis.roleFlexibility, // Already an array (empty if no matches)
         finalRecommendation: analysis.finalRecommendation,
         nextSteps: analysis.nextSteps,
@@ -4626,9 +4579,10 @@ Format your response as JSON with this structure:
             ];
       }
 
-      // Return alignment with fresh cohort benchmarks and recommendations
+      // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)
+      const { dataRiskIndicators: _unused, ...alignmentWithoutRiskIndicators } = alignment as any;
       res.json({
-        ...alignment,
+        ...alignmentWithoutRiskIndicators,
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         finalRecommendation,
         nextSteps,

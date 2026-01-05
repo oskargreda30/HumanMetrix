@@ -56,11 +56,6 @@ export default function RoleFitTab() {
       prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
       aiq?: { percentile: number; totalCandidates: number; avgScore: number };
     } | null;
-    dataRiskIndicators?: Array<{
-      type: string;
-      severity: 'low' | 'medium' | 'high';
-      message: string;
-    }> | null;
     interviewQuestions?: Array<{
       question: string;
       purpose: string;

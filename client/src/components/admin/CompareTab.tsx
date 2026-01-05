@@ -949,54 +949,6 @@ export default function CompareTab() {
     return Math.round(weightedSum / totalWeight);
   };
 
-  // Helper: Get risk indicators for a candidate
-  const getRiskIndicators = (candidateIndex: number): Array<{ type: 'low_score' | 'high_variance' | 'missing_assessment'; message: string; severity: 'warning' | 'error' }> => {
-    const risks: Array<{ type: 'low_score' | 'high_variance' | 'missing_assessment'; message: string; severity: 'warning' | 'error' }> = [];
-    
-    if (!comparison) return risks;
-    
-    // Check for low scores
-    const skills = getAllCandidateSkills(candidateIndex);
-    Object.entries(skills).forEach(([name, score]) => {
-      if (score < 50) {
-        risks.push({
-          type: 'low_score',
-          message: `${name}: ${score}/100 (below threshold)`,
-          severity: score < 40 ? 'error' : 'warning',
-        });
-      }
-    });
-    
-    // Check for high variance (unusual patterns)
-    const skillScores = Object.values(skills);
-    if (skillScores.length > 1) {
-      const avg = skillScores.reduce((a, b) => a + b, 0) / skillScores.length;
-      const variance = skillScores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / skillScores.length;
-      const stdDev = Math.sqrt(variance);
-      
-      if (stdDev > 20) {
-        risks.push({
-          type: 'high_variance',
-          message: `High skill variance (±${Math.round(stdDev)} points) - inconsistent profile`,
-          severity: 'warning',
-        });
-      }
-    }
-    
-    // Check for missing assessments
-    const fitCompleted = comparison.fitAssessments?.[candidateIndex] !== null;
-    const aiCompleted = comparison.aiReadinessAssessments?.[candidateIndex] !== null;
-    const promptCompleted = comparison.promptArchitectureAssessments?.[candidateIndex] !== null;
-    const aiqCompleted = comparison.aiqAssessments?.[candidateIndex] !== null;
-    
-    if (!fitCompleted) risks.push({ type: 'missing_assessment', message: 'FIT Assessment not completed', severity: 'warning' });
-    if (!aiCompleted) risks.push({ type: 'missing_assessment', message: 'AI Readiness not completed', severity: 'warning' });
-    if (!promptCompleted) risks.push({ type: 'missing_assessment', message: 'Prompt Architecture not completed', severity: 'warning' });
-    if (!aiqCompleted) risks.push({ type: 'missing_assessment', message: 'AIQ Assessment not completed', severity: 'warning' });
-    
-    return risks;
-  };
-
   // Helper: Get color class for score comparison
   const getScoreColorClass = (score: number, allScores: number[]): string => {
     const validScores = allScores.filter(s => s !== null && s !== undefined);
@@ -1864,83 +1816,6 @@ export default function CompareTab() {
                 </Card>
               )}
 
-              {/* 6. Risk Indicators */}
-              {comparison.hasSkillData && (
-                <Card data-testid="card-risk-indicators" data-report-section="risk-indicators">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      Risk Indicators
-                    </CardTitle>
-                    <CardDescription>
-                      Flags for low scores, incomplete assessments, and unusual skill patterns
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
-                        const risks = getRiskIndicators(index);
-                        const errorCount = risks.filter(r => r.severity === 'error').length;
-                        const warningCount = risks.filter(r => r.severity === 'warning').length;
-                        
-                        return (
-                          <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
-                            <CardHeader className="pb-2">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-base" style={{ color: CHART_COLORS[index] }}>
-                                  {getCandidateName(candidate)}
-                                </CardTitle>
-                                <div className="flex gap-1">
-                                  {errorCount > 0 && (
-                                    <Badge variant="destructive" className="text-xs">{errorCount} critical</Badge>
-                                  )}
-                                  {warningCount > 0 && (
-                                    <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">{warningCount} risks</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pt-4">
-                              {risks.length === 0 ? (
-                                <div className="flex items-center gap-3 py-2">
-                                  <div className="h-3 w-3 rounded-full bg-green-500 shrink-0" />
-                                  <span className="text-lg font-medium text-foreground">No significant risks detected</span>
-                                </div>
-                              ) : (
-                                <div className="space-y-2 max-h-48 overflow-y-auto">
-                                  {risks.slice(0, 6).map((risk, i) => (
-                                    <div 
-                                      key={i}
-                                      className={`flex items-start gap-2 p-2 rounded text-xs ${
-                                        risk.severity === 'error' 
-                                          ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                                          : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
-                                      }`}
-                                    >
-                                      {risk.severity === 'error' ? (
-                                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                                      ) : (
-                                        <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                                      )}
-                                      <span>{risk.message}</span>
-                                    </div>
-                                  ))}
-                                  {risks.length > 6 && (
-                                    <p className="text-xs text-muted-foreground text-center">
-                                      +{risks.length - 6} more indicators
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* ========== END ENHANCED ANALYSIS SECTION ========== */}
 
               {/* FIT Assessment Comparison */}
@@ -2487,7 +2362,6 @@ export default function CompareTab() {
                               roleFit: calculateRoleSuitability(index, currentRole),
                               strengths: getStrengthsAndWeaknesses(index).strengths,
                               weaknesses: getStrengthsAndWeaknesses(index).weaknesses,
-                              risks: getRiskIndicators(index),
                             })).sort((a, b) => b.roleFit - a.roleFit);
                             
                             const topCandidate = rankedCandidates[0];
@@ -2509,9 +2383,6 @@ export default function CompareTab() {
                                   {topCandidate.weaknesses.length > 0 && (
                                     <> Development areas include {topCandidate.weaknesses[0].name} ({topCandidate.weaknesses[0].score}/100), 
                                     which may require mentoring or targeted training.</>
-                                  )}
-                                  {topCandidate.risks.filter(r => r.severity === 'error').length > 0 && (
-                                    <span className="text-red-600 dark:text-red-400"> Note: Some critical skill gaps identified.</span>
                                   )}
                                 </p>
                                 
