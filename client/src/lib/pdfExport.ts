@@ -11,6 +11,7 @@ interface CandidateData {
     firstName?: string;
     lastName?: string;
     email: string;
+    createdAt?: string | Date;
   };
   results?: any[];
 }
@@ -473,36 +474,52 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.text('Overview of candidates included in this comparison report.', 20, yPos);
   yPos += 5;
   
-  // Draw candidate details in a compact horizontal layout
-  const candidateBoxWidth = (pageWidth - 50) / data.candidates.length;
+  // Draw candidate details in boxes - compact horizontal layout
+  const candidateBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 5) / data.candidates.length;
+  const candidateBoxHeight = 22;
   let candX = 20;
   
   data.candidates.forEach((candidate, index) => {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
     
+    // Draw box with light background and colored left border
+    pdf.setFillColor(248, 250, 252); // Light gray background
+    pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(candX, yPos, candidateBoxWidth, candidateBoxHeight, 2, 2, 'FD');
+    
+    // Draw colored left accent bar
+    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.rect(candX, yPos + 2, 2, candidateBoxHeight - 4, 'F');
+    
+    const textStartX = candX + 6;
+    
     // Name
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(getCandidateName(candidate), candX, yPos);
+    const nameText = getCandidateName(candidate);
+    const truncatedName = nameText.length > 20 ? nameText.substring(0, 18) + '...' : nameText;
+    pdf.text(truncatedName, textStartX, yPos + 6);
     
     // Email
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const emailText = candidate.user.email.length > 28 ? candidate.user.email.substring(0, 25) + '...' : candidate.user.email;
-    pdf.text(emailText, candX, yPos + 4);
+    const maxEmailLen = Math.floor(candidateBoxWidth / 2.5);
+    const emailText = candidate.user.email.length > maxEmailLen ? candidate.user.email.substring(0, maxEmailLen - 3) + '...' : candidate.user.email;
+    pdf.text(emailText, textStartX, yPos + 11);
     
     // Application date
     const appliedDate = candidate.user.createdAt 
       ? new Date(candidate.user.createdAt).toLocaleDateString() 
       : 'N/A';
-    pdf.text(`Applied: ${appliedDate}`, candX, yPos + 8);
+    pdf.text(`Applied: ${appliedDate}`, textStartX, yPos + 16);
     
-    candX += candidateBoxWidth;
+    candX += candidateBoxWidth + 5; // Add gap between boxes
   });
   
-  yPos += 15;
+  yPos += candidateBoxHeight + 5;
   
   // Assessment Completion Status - IMPROVED TABLE
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
