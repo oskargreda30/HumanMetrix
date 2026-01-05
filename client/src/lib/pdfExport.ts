@@ -2610,16 +2610,21 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
     .trim();
   
-  // Use exact same font styling as Recommended Next Steps bullet content
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
+  // Split recommendation into paragraphs (sections separated by double newlines)
+  const recommendationParagraphs = recommendationText.split(/\n\n+/).filter(p => p.trim());
   
-  const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 60);
-  recommendationLines.forEach((line: string) => {
-    yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
-    pdf.text(line, 25, yPos);
-    yPos += 5;
+  recommendationParagraphs.forEach((paragraph) => {
+    // Use exact same font styling as Recommended Next Steps bullet content
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    
+    const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 60);
+    paragraphLines.forEach((line: string, idx: number) => {
+      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+      pdf.text(line, 25, yPos + (idx * 5));
+    });
+    yPos += (paragraphLines.length * 5) + 3; // Same spacing as Next Steps bullets
   });
   
   yPos += PDF_SPACING.medium;
