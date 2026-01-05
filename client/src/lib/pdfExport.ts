@@ -1342,21 +1342,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const topWeightedSkills = sortedRoleSkills.slice(0, 3).map(([name]) => name);
   
   // Skill Prioritization Box - shows why these skills matter
-  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+  yPos = ensurePageSpace(pdf, yPos, 55, pageHeight, pageWidth);
   
-  pdf.setFillColor(240, 249, 255); // Light blue background
-  pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'F');
-  
-  pdf.setFontSize(7);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 64, 175);
-  pdf.text('Skill Prioritization Rationale', 24, yPos + 5);
-  
-  pdf.setFontSize(6);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  
-  // Build comprehensive explanation for top skills
+  // Build comprehensive explanation for top skills first to calculate box height
   let priorityExplanation = `For ${roleData.name}, the weighted scoring model prioritizes: `;
   topWeightedSkills.forEach((skillName, idx) => {
     const weight = roleWeights[skillName] as number;
@@ -1374,11 +1362,25 @@ export async function exportComparisonPDF(data: ComparisonData) {
   priorityExplanation += '.';
   
   const priorityLines = pdf.splitTextToSize(priorityExplanation, pageWidth - 52);
+  const priorityBoxHeight = 12 + (priorityLines.length * 5);
+  
+  pdf.setFillColor(240, 249, 255); // Light blue background
+  pdf.roundedRect(20, yPos, pageWidth - 40, priorityBoxHeight, 2, 2, 'F');
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text('Skill Prioritization Rationale', 24, yPos + 7);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
   priorityLines.forEach((line: string, i: number) => {
-    pdf.text(line, 24, yPos + 10 + (i * 3.5));
+    pdf.text(line, 24, yPos + 14 + (i * 5));
   });
   
-  yPos += 32;
+  yPos += priorityBoxHeight + 5;
   
   // Candidate recommendation section
   if (roleScoresSorted.length >= 2) {
@@ -1394,44 +1396,46 @@ export async function exportComparisonPDF(data: ComparisonData) {
         return topScore > secondScore;
       }).slice(0, 3);
     
-    // Calculate box height based on content
-    const boxHeight = advantageSkills.length > 0 ? 26 : 14;
-    
-    pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
-    
-    // Recommendation header with score
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`Recommendation: ${topRole.name}`, 24, yPos + 5);
-    pdf.text(`${topRole.score}%`, pageWidth - 28, yPos + 5, { align: 'right' });
-    
-    pdf.setFontSize(5.5);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`vs ${secondRole.score}%`, pageWidth - 28, yPos + 9, { align: 'right' });
-    
-    // Enhanced key differentiator with skill context
+    // Build differentiator text first to calculate height
+    let diffText = '';
     if (advantageSkills.length > 0) {
       const scoreDiff = topRole.score - secondRole.score;
-      pdf.setFontSize(6);
-      pdf.setTextColor(71, 85, 105);
-      
-      // Build detailed differentiator text
       const advantageDescriptions = advantageSkills.map(skill => {
         const topScore = topRole.skills[skill] ?? 0;
         const secondScore = secondRole.skills[skill] ?? 0;
         return `${skill} (+${topScore - secondScore}pts)`;
       });
       
-      let diffText = `Key differentiator: ${topRole.name} outperforms in ${advantageDescriptions.join(', ')}`;
+      diffText = `Key differentiator: ${topRole.name} outperforms in ${advantageDescriptions.join(', ')}`;
       diffText += `. This translates to a ${scoreDiff} percentage point lead in weighted role fit, `;
       diffText += `with particular strength in skills most critical for ${roleData.name} success.`;
+    }
+    
+    const splitDiffText = diffText ? pdf.splitTextToSize(diffText, pageWidth - 52) : [];
+    const boxHeight = advantageSkills.length > 0 ? 18 + (splitDiffText.length * 5) : 18;
+    
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
+    
+    // Recommendation header with score
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`Recommendation: ${topRole.name}`, 24, yPos + 7);
+    pdf.text(`${topRole.score}%`, pageWidth - 28, yPos + 7, { align: 'right' });
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(`vs ${secondRole.score}%`, pageWidth - 28, yPos + 13, { align: 'right' });
+    
+    // Enhanced key differentiator with skill context
+    if (advantageSkills.length > 0 && splitDiffText.length > 0) {
+      pdf.setFontSize(10);
+      pdf.setTextColor(71, 85, 105);
       
-      const splitDiffText = pdf.splitTextToSize(diffText, pageWidth - 52);
       splitDiffText.forEach((line: string, i: number) => {
-        pdf.text(line, 24, yPos + 12 + (i * 3.2));
+        pdf.text(line, 24, yPos + 16 + (i * 5));
       });
     }
     
