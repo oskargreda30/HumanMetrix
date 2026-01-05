@@ -1,0 +1,28 @@
+1. On the role fit pdf report the key strengths scores do not make sense - they are 90/75 etc. 
+
+2. In the development areas scores, if candidate got 63/70 that should not be a development area? 
+
+3. Leave a bit more space between the description of skill allignment “skill-by-skill allignment….” And the “Fit assessment skills (behavioural) 
+
+4. On the x axis of the allignment graphs, move the critical description to the right of ‘candidate score’ in line with those items, instead of below.
+
+5. Change the description of the cohort benchmarking to remove the 5 candidates, just keep it as other candiates without disclosing the number comoared with. 
+
+6. Also i dont think the logic works - it says 18th place for demo candiate 1 and recruiter role - have you evaluated the database scores, in production to get this figure? 
+
+7. There is no description for the ‘final recommendation’ section. 
+8. Can you adjust the font and style of the additional services on request section of the PDF to be the same as on the comparison PDF 
+
+For points 1, 2, 5, 6, 7 you actually need to work on the dashboard and then have the things move over to the pdf already calculated correctly. Points 3 and 4 and 8 are just cosmetic changes on the PDF 
+
+For the comparison section ( and the pdf) : 
+
+1. can we add a candiate details section at the top, with name email and data applied (on the dashboard and the PDF) on the pdf please keep it breif so the other two sections also fit on the first page. 
+2. Completion status needs a description 
+3. AIQ is also missing a description 
+4. Same with prompt architecture- basically all sections need a small description of what they show - check all 
+5. Employee recommendation does not name the tests correctly 
+6. Within the employer recommendation also instead of using average scores use composite scores
+7. Again strength and development section needs a description 
+
+We also need to add a skills legend - what they all are - short description, at the bottom of the dashboard tabs for comparison and job fit, and they should also be added at the bottom of the PDF reports, and a short note on the footer of each page that they skills legend is available on the last page of the report. This should also be available for the individual reports.

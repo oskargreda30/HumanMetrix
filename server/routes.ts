@@ -3918,17 +3918,19 @@ ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 OVERALL FIT SCORE: ${overallFit}/100
 
 FIT ASSESSMENT SKILLS (Behavioral):
-${fitSkillAlignments.map(s => `- ${s.skillName}: ${s.candidateScore}/${s.requiredScore} (${s.alignment})`).join('\n')}
+${fitSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
 
 AI READINESS SKILLS (Technical):
-${aiReadinessSkillAlignments.map(s => `- ${s.skillName}: ${s.candidateScore}/${s.requiredScore} (${s.alignment})`).join('\n')}
+${aiReadinessSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
 
 Based on this analysis, provide:
-1. Top 3-5 strengths specific to this role (areas where candidate exceeds requirements)
-2. Top 3-5 development areas/gaps (areas where candidate falls short)
+1. Top 3-5 strengths specific to this role. ONLY include skills where the candidate EXCEEDS the requirement (candidate score > required score). Write as qualitative descriptions WITHOUT including any numbers or scores.
+2. Top 3-5 development areas/gaps. ONLY include skills where the candidate falls SIGNIFICANTLY short - either the candidate scored below 60, or there is a gap of 15+ points below the requirement. Do NOT flag minor gaps (e.g., scoring 63 when 70 is required is NOT a significant gap). Write as qualitative descriptions WITHOUT including any numbers or scores.
 3. Brief practical recommendations for hiring manager (2-3 sentences)
 4. Any risk flags or concerns (if any critical gaps exist)
 5. 2-3 targeted interview questions to probe the candidate's weakest areas (focus on behavioral and situational questions that reveal true capability)
+
+IMPORTANT: Do NOT include any numeric scores, percentages, or score fractions (like "90/75" or "scored 85") in your strengths or gaps text. Describe skills qualitatively.
 
 Format your response as JSON with this structure:
 {

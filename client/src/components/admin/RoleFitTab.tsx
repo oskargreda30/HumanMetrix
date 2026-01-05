@@ -462,7 +462,7 @@ export default function RoleFitTab() {
                   Cohort Benchmarking
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  How this candidate compares to all assessed candidates (minimum 5 required)
+                  How this candidate compares to other assessed candidates across each assessment type
                 </p>
               </CardHeader>
               <CardContent>
@@ -472,7 +472,7 @@ export default function RoleFitTab() {
                       <div>
                         <p className="text-lg font-semibold">Overall Cohort Position</p>
                         <p className="text-sm text-muted-foreground">
-                          Based on comparison with {alignment.cohortBenchmarks.overall.totalCandidates} candidates in the cohort
+                          Ranking based on comparison with other assessed candidates in the cohort
                         </p>
                       </div>
                       <Badge 
@@ -550,7 +550,7 @@ export default function RoleFitTab() {
 
                 {!alignment.cohortBenchmarks.prompt_architecture && !alignment.cohortBenchmarks.aiq && (
                   <p className="text-xs text-muted-foreground mt-4">
-                    Note: Prompt Architecture and AIQ benchmarks require at least 5 completed assessments of each type
+                    Note: Some assessment type benchmarks may not be available if there are insufficient completed assessments
                   </p>
                 )}
               </CardContent>
@@ -687,6 +687,9 @@ export default function RoleFitTab() {
                   <Award className="h-5 w-5 text-primary" />
                   Final Recommendation
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Overall hiring recommendation based on comprehensive assessment analysis and role alignment
+                </p>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-final-recommendation">
