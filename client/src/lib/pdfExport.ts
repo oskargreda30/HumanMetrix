@@ -466,7 +466,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // ========== CANDIDATE DETAILS (Brief) ==========
   yPos = addSectionHeader(pdf, 'CANDIDATE DETAILS', yPos, pageWidth);
-  yPos += 2;
+  
+  // Add description for candidate details
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Overview of candidates included in this comparison report.', 20, yPos);
+  yPos += 5;
   
   // Draw candidate details in a compact horizontal layout
   const candidateBoxWidth = (pageWidth - 50) / data.candidates.length;
@@ -761,7 +766,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const hasFIT = data.fitAssessments?.some(a => a !== null);
   if (hasFIT && data.fitChartImages) {
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
-    yPos += 3;
+    
+    // Add description for FIT assessment
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Behavioral assessment measuring core competencies: agency, curiosity, resilience, empathy, and collaboration.', 20, yPos);
+    yPos += 6;
     
     const fitCharts = data.fitChartImages.filter(img => img !== null);
     const chartsPerRow = Math.min(fitCharts.length, 2);
@@ -839,7 +849,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = 32;
     
     yPos = addSectionHeader(pdf, 'AI READINESS COMPARISON', yPos, pageWidth);
-    yPos += 3;
+    
+    // Add description for AI Readiness assessment
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Evaluates preparedness for AI-augmented work across technical fluency, problem-solving, and human-AI collaboration.', 20, yPos);
+    yPos += 6;
     
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const aiChartsPerRow = Math.min(aiCharts.length, 2);
@@ -1657,7 +1672,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
   
   yPos = addSectionHeader(pdf, 'EMPLOYER RECOMMENDATION', yPos, pageWidth);
-  yPos += 5;
+  
+  // Add description for employer recommendation
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('AI-generated hiring guidance based on composite assessment scores and role alignment analysis.', 20, yPos);
+  yPos += 6;
   
   // Add Comparison Summary header for the selected role
   if (data.selectedRole && roleData) {
