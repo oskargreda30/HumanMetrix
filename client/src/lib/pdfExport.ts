@@ -421,9 +421,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
   pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 27, { align: 'center' });
   
   // Show role comparison info if a role is selected
-  if (data.selectedRole && data.selectedRole.name) {
+  if (data.selectedRole) {
     pdf.setFontSize(10);
-    pdf.text(`Role Comparison: ${data.selectedRole.name}`, pageWidth / 2, yPos + 33, { align: 'center' });
+    pdf.text(`Role Comparison: ${data.selectedRole}`, pageWidth / 2, yPos + 33, { align: 'center' });
   }
   
   pdf.setTextColor(0, 0, 0);
@@ -1959,8 +1959,20 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setTextColor(0, 0, 0);
   yPos = 85 + finalCardHeight + 8;
   
-  // Add spacing before KEY STRENGTHS section
-  yPos += 8;
+  // Calculate how much space the strengths and gaps sections need
+  const estimatedStrengthsHeight = Math.ceil(data.alignment.strengths.length / 2) * 16 + 12;
+  const estimatedGapsHeight = Math.ceil(data.alignment.gaps.length / 2) * 16 + 12;
+  const totalNeededHeight = estimatedStrengthsHeight + estimatedGapsHeight + 20;
+  
+  // Check if both sections will fit on current page, if not start new page
+  if (yPos + totalNeededHeight > pageHeight - 20) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  } else {
+    yPos += 5;
+  }
   
   // ========== KEY STRENGTHS (individual boxes) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
@@ -1977,10 +1989,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Calculate box height based on text wrapping (font size 9)
-    pdf.setFontSize(9);
-    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 12);
-    const boxHeight = Math.max(12, textLines.length * 4 + 5);
+    // Calculate box height based on text wrapping (font size 8 for better fit)
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 10);
+    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
     // Draw individual box with subtle green styling
     pdf.setFillColor(250, 255, 250); // Very light green
@@ -1988,19 +2001,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 9)
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
+    // Text content (font size 8)
     pdf.setTextColor(34, 84, 52); // Dark green text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 5, currentY + 5 + (lineIdx * 4));
+      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      strengthLeftY = currentY + boxHeight + 4;
+      strengthLeftY = currentY + boxHeight + 3;
     } else {
-      strengthRightY = currentY + boxHeight + 4;
+      strengthRightY = currentY + boxHeight + 3;
     }
   });
   
@@ -2019,10 +2030,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Calculate box height based on text wrapping (font size 9)
-    pdf.setFontSize(9);
-    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 12);
-    const boxHeight = Math.max(12, textLines.length * 4 + 5);
+    // Calculate box height based on text wrapping (font size 8 for better fit)
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 10);
+    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
     
     // Draw individual box with subtle amber styling
     pdf.setFillColor(255, 253, 245); // Very light amber
@@ -2030,19 +2042,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 9)
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
+    // Text content (font size 8)
     pdf.setTextColor(130, 90, 20); // Dark amber text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 5, currentY + 5 + (lineIdx * 4));
+      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
     });
     
     // Update column Y position
     if (isLeftCol) {
-      gapLeftY = currentY + boxHeight + 4;
+      gapLeftY = currentY + boxHeight + 3;
     } else {
-      gapRightY = currentY + boxHeight + 4;
+      gapRightY = currentY + boxHeight + 3;
     }
   });
   
