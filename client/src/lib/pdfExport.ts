@@ -994,48 +994,72 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setTextColor(107, 114, 128);
     const aiqDesc = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
     pdf.text(aiqDesc, 20, yPos);
-    yPos += 6;
-    
-    applySmallText(pdf);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Candidate', 25, yPos);
-    pdf.text('Score', 100, yPos);
-    pdf.text('Status', 130, yPos);
     yPos += 5;
+    
+    // AIQ candidates in boxes - horizontal layout to save space
+    const aiqBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 4) / data.candidates.length;
+    const aiqBoxHeight = 18;
+    let aiqBoxX = 20;
     
     data.candidates.forEach((candidate, index) => {
       const aiqData = data.aiqAssessments?.[index];
-      pdf.setFont('helvetica', 'normal');
       const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
-      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
       
+      // Draw box with light background and colored border
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      pdf.setLineWidth(0.5);
+      pdf.roundedRect(aiqBoxX, yPos, aiqBoxWidth, aiqBoxHeight, 2, 2, 'FD');
+      
+      // Colored left accent bar
+      pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      pdf.rect(aiqBoxX, yPos + 2, 2, aiqBoxHeight - 4, 'F');
+      
+      const textStartX = aiqBoxX + 5;
+      
+      // Candidate name
       const name = candidate.user.firstName || candidate.user.lastName
         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
         : `Candidate ${index + 1}`;
-      const shortName = name.length > 18 ? name.substring(0, 16) + '...' : name;
-      pdf.text(shortName, 25, yPos);
+      const maxNameLen = Math.floor(aiqBoxWidth / 3);
+      const shortName = name.length > maxNameLen ? name.substring(0, maxNameLen - 2) + '...' : name;
+      
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+      pdf.text(shortName, textStartX, yPos + 5);
       
       if (aiqData) {
         const aiqBand = getAIQBandInterpretation(aiqData.totalScore);
-        // Get band-specific color
         const getBandColor = (score: number): [number, number, number] => {
-          if (score >= 80) return [34, 197, 94];   // Green
-          if (score >= 60) return [59, 130, 246];  // Blue
-          if (score >= 40) return [245, 158, 11];  // Amber
-          if (score >= 20) return [249, 115, 22];  // Orange
-          return [239, 68, 68];                     // Red
+          if (score >= 80) return [34, 197, 94];
+          if (score >= 60) return [59, 130, 246];
+          if (score >= 40) return [245, 158, 11];
+          if (score >= 20) return [249, 115, 22];
+          return [239, 68, 68];
         };
-        pdf.setTextColor(17, 24, 39);
-        pdf.text(`${aiqData.totalScore}/100`, 100, yPos);
+        
+        // Score
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Score: ${aiqData.totalScore}/100`, textStartX, yPos + 10);
+        
+        // Status with band color
         const bandColor = getBandColor(aiqData.totalScore);
         pdf.setTextColor(bandColor[0], bandColor[1], bandColor[2]);
-        pdf.text(aiqBand.title, 130, yPos);
+        const statusText = aiqBand.title.length > 20 ? aiqBand.title.substring(0, 18) + '...' : aiqBand.title;
+        pdf.text(statusText, textStartX, yPos + 15);
       } else {
+        pdf.setFontSize(8);
         pdf.setTextColor(150, 150, 150);
-        pdf.text('N/A', 100, yPos);
+        pdf.text('N/A', textStartX, yPos + 10);
       }
-      yPos += 6;
+      
+      aiqBoxX += aiqBoxWidth + 4;
     });
+    
+    yPos += aiqBoxHeight + 3;
     
     // AIQ Comparison Explanation
     const aiqScoresSorted = data.candidates
