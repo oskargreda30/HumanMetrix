@@ -3850,11 +3850,24 @@ Format your response as JSON:
       const fitSkillAlignments: any[] = [];
       const aiReadinessSkillAlignments: any[] = [];
       
+      // Helper to ensure no multiples of 5 (defensive nudge for legacy data)
+      const ensureNoMultipleOf5 = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          // Deterministic nudge based on score value (not random, for consistency)
+          const nudge = score % 10 === 0 ? 2 : 1;
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+      
       // Process FIT skills
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
       if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
-        Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, requiredScore]) => {
+        Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
+          // Apply defensive nudge to ensure no multiples of 5
+          const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
           const candidateScore = fitSkills.get(skillName) || 0;
           const gap = requiredScore - candidateScore;
           let alignment: string;
@@ -3893,7 +3906,9 @@ Format your response as JSON:
       };
       
       if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
-        Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+        Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
+          // Apply defensive nudge to ensure no multiples of 5
+          const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
           // Look up using full name from mapping, fallback to original name
           const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
           const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
