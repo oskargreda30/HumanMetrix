@@ -3532,12 +3532,13 @@ AI READINESS SKILLS (Technical):
 9. Creative Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
-- Entry-level roles may require 50-60% for basic skills
-- Mid-level roles may require 65-75% for core competencies
-- Senior roles may require 80-90% for critical skills
+- Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
+- Mid-level roles: 52-65% for standard skills, 62-72% for critical skills  
+- Senior roles: 58-72% for standard skills, 68-78% for critical skills
+- Executive roles: 65-78% for standard skills, 72-82% for critical skills
 - Typically, 3-5 skills should be marked as "critical" per role
 
-IMPORTANT: Use precise scores - do NOT round to intervals of 5 (e.g., 70, 75, 80). Use exact values like 67, 73, 82, etc. to accurately differentiate skill importance. Some skills are more important than others, and intervals of 5 do not provide enough differentiation.
+CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score. Intervals of 5 provide insufficient differentiation between skills.
 
 Format your response as JSON with this exact structure and skill names:
 {
@@ -3587,6 +3588,28 @@ Format your response as JSON with this exact structure and skill names:
 
       const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
       requiredScores.generatedAt = new Date().toISOString();
+
+      // Post-process to ensure no multiples of 5 (nudge by 1-2 points)
+      const nudgeScore = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          // Nudge up or down by 1-2 points randomly
+          const nudge = Math.random() > 0.5 ? (Math.random() > 0.5 ? 1 : 2) : (Math.random() > 0.5 ? -1 : -2);
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+      
+      if (requiredScores.fitSkills) {
+        Object.keys(requiredScores.fitSkills).forEach(skill => {
+          requiredScores.fitSkills[skill] = nudgeScore(requiredScores.fitSkills[skill]);
+        });
+      }
+      if (requiredScores.aiReadinessSkills) {
+        Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
+          requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
+        });
+      }
 
       // Update the role with the generated scores
       await storage.updateJobRole(roleId, {
@@ -3662,9 +3685,14 @@ AI READINESS SKILLS (Technical):
 8. Technical Fluency - Comfort with technical tools and systems
 9. Creative Innovation - Using AI to generate novel solutions and approaches
 
-For each skill, provide a realistic required score (0-100). Typically, 3-5 skills should be marked as "critical" per role.
+For each skill, provide a realistic required score (0-100). Consider:
+- Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
+- Mid-level roles: 52-65% for standard skills, 62-72% for critical skills  
+- Senior roles: 58-72% for standard skills, 68-78% for critical skills
+- Executive roles: 65-78% for standard skills, 72-82% for critical skills
+- Typically, 3-5 skills should be marked as "critical" per role
 
-IMPORTANT: Use precise scores - do NOT round to intervals of 5 (e.g., 70, 75, 80). Use exact values like 67, 73, 82, etc. to accurately differentiate skill importance. Some skills are more important than others, and intervals of 5 do not provide enough differentiation.
+CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score.
 
 Format your response as JSON:
 {
@@ -3681,6 +3709,27 @@ Format your response as JSON:
 
             const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
             requiredScores.generatedAt = new Date().toISOString();
+
+            // Post-process to ensure no multiples of 5 (nudge by 1-2 points)
+            const nudgeScore = (score: number): number => {
+              if (typeof score !== 'number') return score;
+              if (score % 5 === 0) {
+                const nudge = Math.random() > 0.5 ? (Math.random() > 0.5 ? 1 : 2) : (Math.random() > 0.5 ? -1 : -2);
+                return Math.max(1, Math.min(99, score + nudge));
+              }
+              return score;
+            };
+            
+            if (requiredScores.fitSkills) {
+              Object.keys(requiredScores.fitSkills).forEach(skill => {
+                requiredScores.fitSkills[skill] = nudgeScore(requiredScores.fitSkills[skill]);
+              });
+            }
+            if (requiredScores.aiReadinessSkills) {
+              Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
+                requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
+              });
+            }
 
             await storage.updateJobRole(role.id, {
               requiredSkillScores: requiredScores,
