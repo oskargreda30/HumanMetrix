@@ -1976,9 +1976,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += 5;
   }
   
-  // ========== KEY STRENGTHS (individual boxes) ==========
+  // ========== KEY STRENGTHS (with scores) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 1;
+  
+  // Get skills where candidate meets or exceeds requirements (strengths)
+  const allSkillAlignments = [
+    ...(data.alignment.fitSkillAlignments || []),
+    ...(data.alignment.aiReadinessSkillAlignments || [])
+  ];
+  const strengthSkills = allSkillAlignments.filter(s => s.candidateScore >= s.requiredScore).slice(0, 6);
   
   // Two-column grid of individual boxes
   const itemBoxWidth = (pageWidth - 45) / 2;
@@ -1986,16 +1993,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   let strengthLeftY = yPos;
   let strengthRightY = yPos;
   
-  data.alignment.strengths.forEach((strength, index) => {
+  strengthSkills.forEach((skill, index) => {
     const isLeftCol = index % 2 === 0;
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Calculate box height based on text wrapping (font size 8 for better fit)
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 10);
-    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
+    const boxHeight = 14;
     
     // Draw individual box with subtle green styling
     pdf.setFillColor(250, 255, 250); // Very light green
@@ -2003,11 +2006,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 8)
+    // Skill name
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(34, 84, 52); // Dark green text
-    textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
-    });
+    const skillName = skill.skillName.length > 28 ? skill.skillName.substring(0, 26) + '...' : skill.skillName;
+    pdf.text(skillName, boxX + 4, currentY + 5);
+    
+    // Score line
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const scoreDiff = skill.candidateScore - skill.requiredScore;
+    pdf.text(`Score: ${skill.candidateScore}/100 (+${scoreDiff} above recommended ${skill.requiredScore})`, boxX + 4, currentY + 10);
     
     // Update column Y position
     if (isLeftCol) {
@@ -2020,23 +2030,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = Math.max(strengthLeftY, strengthRightY) + 3;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== DEVELOPMENT AREAS (individual boxes) ==========
+  // ========== DEVELOPMENT AREAS (with scores) ==========
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 1;
+  
+  // Get skills where candidate is below requirements (gaps)
+  const gapSkills = allSkillAlignments
+    .filter(s => s.candidateScore < s.requiredScore)
+    .sort((a, b) => (b.requiredScore - b.candidateScore) - (a.requiredScore - a.candidateScore))
+    .slice(0, 6);
   
   let gapLeftY = yPos;
   let gapRightY = yPos;
   
-  data.alignment.gaps.forEach((gap, index) => {
+  gapSkills.forEach((skill, index) => {
     const isLeftCol = index % 2 === 0;
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Calculate box height based on text wrapping (font size 8 for better fit)
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 10);
-    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
+    const boxHeight = 14;
     
     // Draw individual box with subtle amber styling
     pdf.setFillColor(255, 253, 245); // Very light amber
@@ -2044,11 +2056,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 8)
+    // Skill name
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(130, 90, 20); // Dark amber text
-    textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
-    });
+    const skillName = skill.skillName.length > 28 ? skill.skillName.substring(0, 26) + '...' : skill.skillName;
+    pdf.text(skillName, boxX + 4, currentY + 5);
+    
+    // Score line
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const scoreDiff = skill.requiredScore - skill.candidateScore;
+    pdf.text(`Score: ${skill.candidateScore}/100 (${scoreDiff} below recommended ${skill.requiredScore})`, boxX + 4, currentY + 10);
     
     // Update column Y position
     if (isLeftCol) {
