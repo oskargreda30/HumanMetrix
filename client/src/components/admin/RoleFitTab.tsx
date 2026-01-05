@@ -772,8 +772,9 @@ export default function RoleFitTab() {
 
           {/* Final Recommendation */}
           {alignment.finalRecommendation && (() => {
-            // Clean up the recommendation text - remove KEY STRENGTHS and DEVELOPMENT AREAS sections
+            // Clean up the recommendation text - remove redundant or separate sections
             let cleanedText = alignment.finalRecommendation
+              .replace(/OVERALL ASSESSMENT:.*?\n/gi, '') // Remove OVERALL ASSESSMENT line
               .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/\n{3,}/g, '\n\n')

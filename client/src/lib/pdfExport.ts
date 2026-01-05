@@ -2603,8 +2603,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   let recommendationText = data.alignment.finalRecommendation || 
     `${candidateName} has an overall fit score of ${overallFit}/100 for the ${data.role.name} position.`;
   
-  // Strip out KEY STRENGTHS and DEVELOPMENT AREAS sections from the text (they appear separately)
+  // Strip out sections that appear separately or are redundant
   recommendationText = recommendationText
+    .replace(/OVERALL ASSESSMENT:.*?\n/gi, '') // Remove OVERALL ASSESSMENT line
     .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
     .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
     .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
@@ -2629,14 +2630,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += PDF_SPACING.medium;
   
-  // Recommended Next Steps header
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Recommended Next Steps:', 25, yPos);
-  yPos += 8;
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
+  // Start new page for these sections together
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
   
-  // Next steps bullet content - same font as recommendation text above
+  // Recommended Next Steps section
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += PDF_SPACING.small;
+  
+  // Next steps bullet content
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   const nextSteps = data.alignment.nextSteps || [
@@ -2656,14 +2661,9 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += (stepLines.length * 5) + 3;
   });
   
-  yPos += PDF_SPACING.medium;
+  yPos += PDF_SPACING.large;
   
-  // ========== ADDITIONAL SERVICES ON REQUEST ==========
-  // Force new page for this section
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 32;
+  // Additional Services section on same page
   yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
   yPos += 2;
   
