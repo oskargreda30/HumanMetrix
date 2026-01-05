@@ -1865,10 +1865,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Calculate box height based on text wrapping (font size 8)
-    pdf.setFontSize(8);
-    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 10);
-    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
+    // Calculate box height based on text wrapping (font size 9)
+    pdf.setFontSize(9);
+    const textLines = pdf.splitTextToSize(strength, itemBoxWidth - 12);
+    const boxHeight = Math.max(12, textLines.length * 4 + 5);
     
     // Draw individual box with subtle green styling
     pdf.setFillColor(250, 255, 250); // Very light green
@@ -1876,12 +1876,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 8)
-    pdf.setFontSize(8);
+    // Text content (font size 9)
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(34, 84, 52); // Dark green text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
+      pdf.text(line, boxX + 5, currentY + 5 + (lineIdx * 4));
     });
     
     // Update column Y position
@@ -1907,10 +1907,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Calculate box height based on text wrapping (font size 8)
-    pdf.setFontSize(8);
-    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 10);
-    const boxHeight = Math.max(10, textLines.length * 3.5 + 4);
+    // Calculate box height based on text wrapping (font size 9)
+    pdf.setFontSize(9);
+    const textLines = pdf.splitTextToSize(gap, itemBoxWidth - 12);
+    const boxHeight = Math.max(12, textLines.length * 4 + 5);
     
     // Draw individual box with subtle amber styling
     pdf.setFillColor(255, 253, 245); // Very light amber
@@ -1918,12 +1918,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Text content (font size 8)
-    pdf.setFontSize(8);
+    // Text content (font size 9)
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(130, 90, 20); // Dark amber text
     textLines.forEach((line: string, lineIdx: number) => {
-      pdf.text(line, boxX + 4, currentY + 4 + (lineIdx * 3.5));
+      pdf.text(line, boxX + 5, currentY + 5 + (lineIdx * 4));
     });
     
     // Update column Y position
