@@ -1805,33 +1805,60 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.compositeScore - a.compositeScore);
   
-  rankedCandidates.forEach((candidate) => {
-    yPos = ensurePageSpace(pdf, yPos, 35, pageHeight, pageWidth);
-    
+  rankedCandidates.forEach((candidate, rankIndex) => {
     const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
+    const perfLevel = getPerformanceLevel(candidate.compositeScore);
     
+    // Calculate box height based on content
+    const scoreLine = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label})`;
+    const assessmentLine = `Completed ${candidate.completedCount}/4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ)`;
+    const strengthsLine = `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
+    
+    const strengthsLines = pdf.splitTextToSize(strengthsLine, pageWidth - 70);
+    const boxHeight = 28 + (strengthsLines.length - 1) * 5;
+    
+    yPos = ensurePageSpace(pdf, yPos, boxHeight + 8, pageHeight, pageWidth);
+    
+    // Draw box with light background and colored left border
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
+    
+    // Draw colored left accent bar
+    pdf.setFillColor(candidateColor[0], candidateColor[1], candidateColor[2]);
+    pdf.rect(20, yPos + 2, 2.5, boxHeight - 4, 'F');
+    
+    const textStartX = 28;
+    let textY = yPos + 6;
+    
+    // Candidate name
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(`${candidate.name}`, 25, yPos);
-    yPos += 6;
+    pdf.text(candidate.name, textStartX, textY);
+    textY += 6;
     
-    pdf.setFontSize(10);
+    // Composite score line
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
+    pdf.text(scoreLine, textStartX, textY);
+    textY += 5;
     
-    const perfLevel = getPerformanceLevel(candidate.compositeScore);
-    const summary = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label}) • Completed ${candidate.completedCount}/4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ)\n` +
-      `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
+    // Assessments completed line
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(assessmentLine, textStartX, textY);
+    textY += 5;
     
-    const summaryLines = pdf.splitTextToSize(summary, pageWidth - 50);
-    summaryLines.forEach((line: string) => {
-      yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
-      pdf.text(line, 25, yPos);
-      yPos += 5;
+    // Key strengths (may wrap)
+    pdf.setTextColor(55, 65, 81);
+    strengthsLines.forEach((line: string) => {
+      pdf.text(line, textStartX, textY);
+      textY += 5;
     });
     
-    yPos += 5;
+    yPos += boxHeight + 6; // Space between boxes
   });
   
   // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
