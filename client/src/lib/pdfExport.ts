@@ -2599,11 +2599,6 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
   
-  // Use same font style as Recommended Next Steps section for consistency
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  
   // Use recommendation from data if available, otherwise generate fallback
   let recommendationText = data.alignment.finalRecommendation || 
     `${candidateName} has an overall fit score of ${overallFit}/100 for the ${data.role.name} position.`;
@@ -2615,7 +2610,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
     .trim();
   
-  const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 50);
+  // Use exact same font styling as Recommended Next Steps bullet content
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  const recommendationLines = pdf.splitTextToSize(recommendationText, pageWidth - 60);
   recommendationLines.forEach((line: string) => {
     yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
     pdf.text(line, 25, yPos);
@@ -2624,13 +2624,14 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += PDF_SPACING.medium;
   
-  // Key action items - use passed-in next steps from dashboard
+  // Recommended Next Steps header
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text('Recommended Next Steps:', 25, yPos);
   yPos += 8;
   
+  // Next steps bullet content - same font as recommendation text above
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   const nextSteps = data.alignment.nextSteps || [
