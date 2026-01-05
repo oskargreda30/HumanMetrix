@@ -2070,7 +2070,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   applySmallText(pdf);
   pdf.text('Skill-by-skill alignment with role requirements', 20, yPos);
-  yPos += 6;
+  yPos += 10;
   
   // Helper function to render skill line chart
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
@@ -2203,22 +2203,20 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.circle(legendX, yPos, 1.5, 'F');
     pdf.text('Candidate Score', legendX + 6, yPos + 1);
     
-    // Criticality legend - simplified to only show CRITICAL
-    yPos += 5;
-    
-    // Critical legend only - blue theme
+    // Criticality legend - inline with other legend items (blue theme)
+    const criticalLegendX = legendX + 50;
     pdf.setFillColor(37, 99, 235); // Blue-600
-    pdf.roundedRect(chartMarginLeft + 5, yPos - 1.5, 10, 4, 1, 1, 'F');
+    pdf.roundedRect(criticalLegendX, yPos - 1.5, 10, 4, 1, 1, 'F');
     pdf.setFontSize(6);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text('CRITICAL', chartMarginLeft + 10, yPos + 1, { align: 'center' });
+    pdf.text('CRITICAL', criticalLegendX + 5, yPos + 1, { align: 'center' });
     applySmallText(pdf);
     pdf.setTextColor(55, 65, 81);
-    pdf.text('= Essential for role success', chartMarginLeft + 19, yPos + 1);
+    pdf.text('= Essential for role success', criticalLegendX + 14, yPos + 1);
     
     pdf.setFont('helvetica', 'normal');
-    yPos += 8;
+    yPos += 6;
   };
   
   // Render FIT skills if available
@@ -2396,7 +2394,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     
     applySmallText(pdf);
     pdf.setTextColor(107, 114, 128);
-    pdf.text("Candidate's performance compared to all assessed candidates (minimum 5 required)", 20, yPos);
+    pdf.text("Candidate's performance compared to other candidates in the cohort", 20, yPos);
     yPos += 8;
     
     const cohort = data.alignment.cohortBenchmarks!;
@@ -2423,7 +2421,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       
       applySmallText(pdf);
       pdf.setTextColor(107, 114, 128);
-      pdf.text(`Based on comparison with ${cohort.overall.totalCandidates} candidates in the cohort`, 25, yPos + 13);
+      pdf.text('Based on comparison with other candidates in the cohort', 25, yPos + 13);
       
       yPos += 25;
     }
