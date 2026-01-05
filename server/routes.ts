@@ -4077,25 +4077,52 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Calculate overall percentile (average across all assessed types)
-      const assessedPercentiles: number[] = [];
-      if (cohortBenchmarks.fit) assessedPercentiles.push(cohortBenchmarks.fit.percentile);
-      if (cohortBenchmarks.ai_readiness) assessedPercentiles.push(cohortBenchmarks.ai_readiness.percentile);
-      if (cohortBenchmarks.prompt_architecture) assessedPercentiles.push(cohortBenchmarks.prompt_architecture.percentile);
-      if (cohortBenchmarks.aiq) assessedPercentiles.push(cohortBenchmarks.aiq.percentile);
+      // Calculate overall percentile and position based on actual ranking
+      // Group all candidates by their average scores across all assessment types
+      const candidateOverallScores: { userId: number; avgScore: number }[] = [];
+      const uniqueUserIds = new Set<number>();
+      allResults.forEach((result: any) => {
+        if (result.userId && result.scores && result.status === 'completed') {
+          uniqueUserIds.add(result.userId);
+        }
+      });
       
-      if (assessedPercentiles.length > 0) {
-        const overallPercentile = Math.round(assessedPercentiles.reduce((a, b) => a + b, 0) / assessedPercentiles.length);
-        const totalCandidates = Math.min(
-          fitResults.length,
-          aiResults.length,
-          paResults.length || Infinity,
-          aiqResults.length || Infinity
-        );
+      uniqueUserIds.forEach(uid => {
+        const userResults = allResults.filter((r: any) => r.userId === uid && r.status === 'completed' && r.scores);
+        if (userResults.length > 0) {
+          const avgScores: number[] = [];
+          userResults.forEach((r: any) => {
+            const scores = Object.values(r.scores as Record<string, number>);
+            if (scores.length > 0) {
+              avgScores.push(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+            }
+          });
+          if (avgScores.length > 0) {
+            candidateOverallScores.push({
+              userId: uid,
+              avgScore: avgScores.reduce((a, b) => a + b, 0) / avgScores.length
+            });
+          }
+        }
+      });
+      
+      // Sort by score descending to get actual ranking
+      candidateOverallScores.sort((a, b) => b.avgScore - a.avgScore);
+      
+      // Find this candidate's position
+      const thisUserIndex = candidateOverallScores.findIndex(c => c.userId === userId);
+      
+      if (thisUserIndex !== -1 && candidateOverallScores.length >= 5) {
+        const actualPosition = thisUserIndex + 1; // 1-indexed position
+        const totalCandidates = candidateOverallScores.length;
+        // Calculate percentile: what % scored lower than this candidate
+        const belowCount = totalCandidates - actualPosition;
+        const overallPercentile = Math.round((belowCount / Math.max(totalCandidates - 1, 1)) * 100);
+        
         cohortBenchmarks.overall = {
           percentile: overallPercentile,
-          totalCandidates: Math.min(totalCandidates, 1000), // Cap display at reasonable number
-          position: getOrdinalSuffix(100 - overallPercentile) // Convert percentile to position
+          totalCandidates: totalCandidates,
+          position: getOrdinalSuffix(actualPosition) // Use actual rank position
         };
       }
 
@@ -4524,25 +4551,52 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Calculate overall percentile (average across all assessed types)
-      const assessedPercentiles: number[] = [];
-      if (cohortBenchmarks.fit) assessedPercentiles.push(cohortBenchmarks.fit.percentile);
-      if (cohortBenchmarks.ai_readiness) assessedPercentiles.push(cohortBenchmarks.ai_readiness.percentile);
-      if (cohortBenchmarks.prompt_architecture) assessedPercentiles.push(cohortBenchmarks.prompt_architecture.percentile);
-      if (cohortBenchmarks.aiq) assessedPercentiles.push(cohortBenchmarks.aiq.percentile);
+      // Calculate overall percentile and position based on actual ranking
+      // Group all candidates by their average scores across all assessment types
+      const candidateOverallScoresForCache: { uId: number; avgScore: number }[] = [];
+      const uniqueUserIdsForCache = new Set<number>();
+      allResults.forEach((result: any) => {
+        if (result.userId && result.scores && result.status === 'completed') {
+          uniqueUserIdsForCache.add(result.userId);
+        }
+      });
       
-      if (assessedPercentiles.length > 0) {
-        const overallPercentile = Math.round(assessedPercentiles.reduce((a, b) => a + b, 0) / assessedPercentiles.length);
-        const totalCandidates = Math.min(
-          fitResults.length || Infinity,
-          aiResults.length || Infinity,
-          paResults.length || Infinity,
-          aiqResults.length || Infinity
-        );
+      uniqueUserIdsForCache.forEach(uid => {
+        const userResultsForCache = allResults.filter((r: any) => r.userId === uid && r.status === 'completed' && r.scores);
+        if (userResultsForCache.length > 0) {
+          const avgScoresForCache: number[] = [];
+          userResultsForCache.forEach((r: any) => {
+            const scores = Object.values(r.scores as Record<string, number>);
+            if (scores.length > 0) {
+              avgScoresForCache.push(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+            }
+          });
+          if (avgScoresForCache.length > 0) {
+            candidateOverallScoresForCache.push({
+              uId: uid,
+              avgScore: avgScoresForCache.reduce((a, b) => a + b, 0) / avgScoresForCache.length
+            });
+          }
+        }
+      });
+      
+      // Sort by score descending to get actual ranking
+      candidateOverallScoresForCache.sort((a, b) => b.avgScore - a.avgScore);
+      
+      // Find this candidate's position
+      const thisUserIndexForCache = candidateOverallScoresForCache.findIndex(c => c.uId === userId);
+      
+      if (thisUserIndexForCache !== -1 && candidateOverallScoresForCache.length >= 5) {
+        const actualPositionForCache = thisUserIndexForCache + 1; // 1-indexed position
+        const totalCandidatesForCache = candidateOverallScoresForCache.length;
+        // Calculate percentile: what % scored lower than this candidate
+        const belowCountForCache = totalCandidatesForCache - actualPositionForCache;
+        const overallPercentileForCache = Math.round((belowCountForCache / Math.max(totalCandidatesForCache - 1, 1)) * 100);
+        
         cohortBenchmarks.overall = {
-          percentile: overallPercentile,
-          totalCandidates: Math.min(totalCandidates, 1000),
-          position: getOrdinalSuffix(100 - overallPercentile)
+          percentile: overallPercentileForCache,
+          totalCandidates: totalCandidatesForCache,
+          position: getOrdinalSuffix(actualPositionForCache) // Use actual rank position
         };
       }
 

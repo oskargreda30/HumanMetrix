@@ -890,11 +890,11 @@ export default function CompareTab() {
     } else {
       // General recommendation based on composite scores
       if (topCandidate.score >= 75) {
-        employerRecommendation = `Based on comprehensive assessment data across behavioral skills, AI readiness, prompt architecture, and AI integrity, ${topCandidate.name} emerges as the leading candidate with a composite score of ${topCandidate.score}%. This candidate demonstrates strong capabilities and would be a valuable addition to the team.`;
+        employerRecommendation = `Based on comprehensive assessment data across all four evaluation dimensions (FIT Assessment, AI Readiness, Prompt Architecture, and AIQ), ${topCandidate.name} emerges as the leading candidate with a composite score of ${topCandidate.score}%. This candidate demonstrates strong capabilities and would be a valuable addition to the team.`;
       } else if (topCandidate.score >= 60) {
-        employerRecommendation = `After analyzing all assessment results, ${topCandidate.name} shows the highest overall performance with a composite score of ${topCandidate.score}%. While showing solid potential across multiple competencies, targeted development in lower-scoring areas would further strengthen their effectiveness.`;
+        employerRecommendation = `After analyzing results from FIT Assessment, AI Readiness, Prompt Architecture, and AIQ, ${topCandidate.name} shows the highest overall performance with a composite score of ${topCandidate.score}%. While showing solid potential across multiple competencies, targeted development in lower-scoring areas would further strengthen their effectiveness.`;
       } else {
-        employerRecommendation = `The assessment comparison indicates that ${topCandidate.name} has the highest composite score at ${topCandidate.score}%. All candidates would benefit from additional development in certain areas. Consider this comparison as part of a comprehensive talent evaluation strategy.`;
+        employerRecommendation = `The assessment comparison across FIT, AI Readiness, Prompt Architecture, and AIQ indicates that ${topCandidate.name} has the highest composite score at ${topCandidate.score}%. All candidates would benefit from additional development in certain areas. Consider this comparison as part of a comprehensive talent evaluation strategy.`;
       }
     }
     
@@ -1118,7 +1118,18 @@ export default function CompareTab() {
                   </div>
                 )}
 
-              {/* Summary Cards */}
+              {/* Summary Cards - Candidate Details & Assessment Status */}
+              <Card data-testid="card-candidate-summary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Candidate Overview & Assessment Status
+                  </CardTitle>
+                  <CardDescription>
+                    Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {selectedCandidateData?.map((candidate: any, index: number) => {
                   const fitCompleted = comparison.fitAssessments?.[index] !== null;
@@ -1131,6 +1142,12 @@ export default function CompareTab() {
                     <Card key={candidate.user.id} data-testid={`summary-card-${index}`}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg">{getCandidateName(candidate)}</CardTitle>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">{candidate.user.email}</p>
+                          {candidate.user.createdAt && (
+                            <p className="text-xs text-muted-foreground">Applied: {new Date(candidate.user.createdAt).toLocaleDateString()}</p>
+                          )}
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
@@ -1162,6 +1179,8 @@ export default function CompareTab() {
                   );
                 })}
               </div>
+                </CardContent>
+              </Card>
 
               {/* ========== ENHANCED ANALYSIS SECTION ========== */}
               
