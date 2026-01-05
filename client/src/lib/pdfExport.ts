@@ -1717,7 +1717,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   applySmallText(pdf);
   pdf.setTextColor(107, 114, 128);
   pdf.text('AI-generated hiring guidance based on composite assessment scores and role alignment analysis.', 20, yPos);
-  yPos += 6;
+  yPos += 10;
   
   // Add Comparison Summary header for the selected role
   if (data.selectedRole && roleData) {
