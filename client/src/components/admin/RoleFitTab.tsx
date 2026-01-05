@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
+import SkillsLegend from "@/components/SkillsLegend";
 
 export default function RoleFitTab() {
   const [selectedCandidate, setSelectedCandidate] = useState("");
@@ -795,6 +796,9 @@ export default function RoleFitTab() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend />
 
           {/* Export Button */}
           <div className="flex justify-end gap-2">

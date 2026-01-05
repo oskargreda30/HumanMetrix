@@ -24,6 +24,7 @@ import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 import logoUrl from "@assets/logo_HumanMetrix_big_1766783080540.png";
+import SkillsLegend from "@/components/SkillsLegend";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -2594,6 +2595,9 @@ export default function CompareTab() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Skills Legend */}
+              <SkillsLegend />
 
               {/* Export Button */}
               <div className="flex justify-end gap-2">
