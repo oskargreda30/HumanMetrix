@@ -4604,9 +4604,27 @@ Format your response as JSON with this structure:
         aiq?: { percentile: number; totalCandidates: number; avgScore: number };
       } = {};
       
-      // Extract candidate's skills from stored alignments
-      const fitSkillAlignments = alignment.fitSkillAlignments || [];
-      const aiReadinessSkillAlignments = alignment.aiReadinessSkillAlignments || [];
+      // Helper to ensure no multiples of 5 (defensive nudge for legacy cached data)
+      const ensureNoMultipleOf5Cached = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          const nudge = score % 10 === 0 ? 2 : 1;
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+      
+      // Extract candidate's skills from stored alignments and apply defensive nudge to requiredScores
+      const fitSkillAlignments = (alignment.fitSkillAlignments || []).map((s: any) => ({
+        ...s,
+        requiredScore: ensureNoMultipleOf5Cached(s.requiredScore),
+        gap: ensureNoMultipleOf5Cached(s.requiredScore) - s.candidateScore
+      }));
+      const aiReadinessSkillAlignments = (alignment.aiReadinessSkillAlignments || []).map((s: any) => ({
+        ...s,
+        requiredScore: ensureNoMultipleOf5Cached(s.requiredScore),
+        gap: ensureNoMultipleOf5Cached(s.requiredScore) - s.candidateScore
+      }));
       
       // Calculate FIT benchmarks
       const fitResults = resultsByType['fit'];
@@ -4765,9 +4783,12 @@ Format your response as JSON with this structure:
       }
 
       // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)
-      const { dataRiskIndicators: _unused, ...alignmentWithoutRiskIndicators } = alignment as any;
+      // Use nudged skill alignments to ensure no multiples of 5 in required scores
+      const { dataRiskIndicators: _unused, fitSkillAlignments: _oldFit, aiReadinessSkillAlignments: _oldAi, ...alignmentWithoutRiskIndicators } = alignment as any;
       res.json({
         ...alignmentWithoutRiskIndicators,
+        fitSkillAlignments,
+        aiReadinessSkillAlignments,
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         finalRecommendation,
         nextSteps,
