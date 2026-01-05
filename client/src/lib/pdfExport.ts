@@ -765,10 +765,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   yPos += 5;
   
-  // Note about weights
+  // Note about weights - dynamically reflect actual weights
   applySmallText(pdf);
   pdf.setFont('helvetica', 'italic');
-  pdf.text('* Composite score calculated with equal weight for each assessment type', 20, yPos);
+  const weightsNote = isEqualWeights 
+    ? '* Composite score calculated with equal weight (25%) for each assessment type'
+    : `* Composite score calculated with weights: FIT ${weights.fit}%, AI Readiness ${weights.aiReadiness}%, Prompt ${weights.promptArchitecture}%, AIQ ${weights.aiq}%`;
+  pdf.text(weightsNote, 20, yPos);
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
   
