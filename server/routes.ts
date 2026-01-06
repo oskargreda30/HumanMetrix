@@ -5400,7 +5400,7 @@ Format your response as JSON with this structure:
       
       const { requestedBillingType, reason } = req.body;
       
-      if (!requestedBillingType || !['prepaid', 'auto_bill', 'invoice'].includes(requestedBillingType)) {
+      if (!requestedBillingType || !['payg', 'subscription', 'enterprise'].includes(requestedBillingType)) {
         return res.status(400).json({ message: "Invalid billing type requested" });
       }
       
@@ -5676,8 +5676,8 @@ Format your response as JSON with this structure:
         updates.quotaAlertEmail = quotaAlertEmail;
       }
       
-      // Auto top-up only for prepaid partners
-      if (matchingPartner.billingType === 'prepaid') {
+      // Auto top-up only for PAYG partners
+      if (matchingPartner.billingType === 'payg') {
         if (typeof autoTopUpEnabled === 'boolean') {
           updates.autoTopUpEnabled = autoTopUpEnabled;
         }
@@ -6070,10 +6070,10 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found for your organisation" });
       }
       
-      // Only prepaid and auto_bill billing type partners can self-purchase
-      if (matchingPartner.billingType !== 'prepaid' && matchingPartner.billingType !== 'auto_bill') {
+      // Only PAYG and Subscription billing type partners can self-purchase
+      if (matchingPartner.billingType !== 'payg' && matchingPartner.billingType !== 'subscription') {
         return res.status(400).json({ 
-          message: "Self-service purchasing is only available for prepaid and pay-as-you-go billing accounts. Invoice clients should contact their account manager." 
+          message: "Self-service purchasing is only available for Pay As You Go and Subscription billing accounts. Enterprise clients should contact their account manager." 
         });
       }
       
@@ -8004,8 +8004,8 @@ Format your response as JSON with this structure:
       }
       
       // Validate billing type
-      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
-      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
+      const validBillingTypes = ['payg', 'subscription', 'enterprise'];
+      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'payg';
       
       if (existingUser) {
         // Update existing user to be partner_admin and link to partner organization
@@ -8073,19 +8073,19 @@ Format your response as JSON with this structure:
         stripeCustomerId: stripeCustomerId || null,
         organizationId: finalOrganizationId,
         isActive: true,
-        // New billing type system: prepaid, auto_bill, or invoice
+        // New billing type system: payg, subscription, or enterprise
         billingType: selectedBillingType,
         freeTestsAllocated: freeTestsAllocated || 0,
         freeTestsExpiresAt: freeTestsExpiryDate,
-        // Prepaid fields
-        prepaidBalance: selectedBillingType === 'prepaid' ? (prepaidBalance || freeTestsAllocated || 0) : 0,
-        // Auto-bill fields
-        billingCycleAnchor: selectedBillingType === 'auto_bill' ? (billingCycleAnchor || 1) : null,
+        // PAYG and Enterprise use prepaid balance
+        prepaidBalance: (selectedBillingType === 'payg' || selectedBillingType === 'enterprise') ? (prepaidBalance || freeTestsAllocated || 0) : 0,
+        // Subscription uses billing cycle
+        billingCycleAnchor: selectedBillingType === 'subscription' ? (billingCycleAnchor || 1) : null,
         currentMonthUsage: 0,
-        // Invoice fields
-        paymentTermsDays: selectedBillingType === 'invoice' ? (paymentTermsDays || 30) : null,
-        invoiceNotes: selectedBillingType === 'invoice' ? invoiceNotes : null,
-        invoiceContact: selectedBillingType === 'invoice' ? invoiceContact : null,
+        // Enterprise uses invoice fields
+        paymentTermsDays: selectedBillingType === 'enterprise' ? (paymentTermsDays || 30) : null,
+        invoiceNotes: selectedBillingType === 'enterprise' ? invoiceNotes : null,
+        invoiceContact: selectedBillingType === 'enterprise' ? invoiceContact : null,
       });
       
       // Auto-credit free tests if allocated
@@ -8124,7 +8124,7 @@ Format your response as JSON with this structure:
             companyName: companyName || name,
             email,
             temporaryPassword,
-            billingType: selectedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+            billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
             freeTestsAllocated: freeTestsAllocated || 0,
           });
           console.log(`Sent welcome email to partner ${email}`);
@@ -8207,7 +8207,7 @@ Format your response as JSON with this structure:
       }
       
       // Validate billing type if provided
-      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
+      const validBillingTypes = ['payg', 'subscription', 'enterprise'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : partner.billingType;
       
       await storage.updatePartnerAccount(req.params.id, {
@@ -9008,9 +9008,9 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      // Verify partner is invoice-billed
-      if (partner.billingType !== 'invoice') {
-        return res.status(400).json({ message: "Partner is not configured for invoice billing" });
+      // Verify partner is enterprise-billed (pro-forma invoicing)
+      if (partner.billingType !== 'enterprise') {
+        return res.status(400).json({ message: "Partner is not configured for enterprise billing" });
       }
       
       const { periodStart, periodEnd, testsUsed, vatRate = 20, notes } = req.body;
@@ -10647,7 +10647,7 @@ Format your response as JSON with this structure:
       // If approved, update the partner's billing type
       if (action === 'approve') {
         await storage.updatePartnerAccount(request.partnerId, {
-          billingType: request.requestedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+          billingType: request.requestedBillingType as 'payg' | 'subscription' | 'enterprise',
         });
       }
       
@@ -11557,22 +11557,22 @@ async function runScheduledBillingCheck() {
   console.log(`[Billing Scheduler] Running billing check for day ${dayOfMonth} at ${today.toISOString()}`);
   
   try {
-    // Get all auto_bill partners whose billing cycle anchor matches today
+    // Get all subscription partners whose billing cycle anchor matches today
     const partners = await storage.getAllPartnerAccounts();
-    const autoBillPartners = partners.filter(
-      (p: PartnerAccount) => p.billingType === 'auto_bill' && 
+    const subscriptionPartners = partners.filter(
+      (p: PartnerAccount) => p.billingType === 'subscription' && 
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     
-    console.log(`[Billing Scheduler] Found ${autoBillPartners.length} auto-bill partners for day ${dayOfMonth}`);
+    console.log(`[Billing Scheduler] Found ${subscriptionPartners.length} subscription partners for day ${dayOfMonth}`);
     
-    for (const partner of autoBillPartners) {
+    for (const partner of subscriptionPartners) {
       await processAutoBillPartner(partner);
     }
     
-    // Archive monthly usage for all billable partners (auto_bill and invoice)
+    // Archive monthly usage for all billable partners (subscription and enterprise)
     const billablePartners = partners.filter(
-      (p: PartnerAccount) => (p.billingType === 'auto_bill' || p.billingType === 'invoice') &&
+      (p: PartnerAccount) => (p.billingType === 'subscription' || p.billingType === 'enterprise') &&
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     

@@ -34,7 +34,7 @@ interface Partner {
   activeApiKeys: number;
   totalApiKeys: number;
   lastApiActivity: string | null;
-  billingType: 'prepaid' | 'auto_bill' | 'invoice';
+  billingType: 'payg' | 'subscription' | 'enterprise';
   freeTestsAllocated: number;
   prepaidBalance: number;
   currentMonthUsage: number;
@@ -207,7 +207,7 @@ export default function PartnersTab() {
 
   const { data: partnerInvoices, isLoading: invoicesLoading, refetch: refetchInvoices } = useQuery<PartnerInvoice[]>({
     queryKey: ["/api/admin/partners", detailPartner?.id, "invoices"],
-    enabled: !!detailPartner && detailPartner.billingType === 'invoice',
+    enabled: !!detailPartner && detailPartner.billingType === 'enterprise',
   });
 
   // Partner organisations query
@@ -329,7 +329,7 @@ export default function PartnersTab() {
     return result;
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
-  const [billingType, setBillingType] = useState<"prepaid" | "auto_bill" | "invoice">("prepaid");
+  const [billingType, setBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
   const [freeTests, setFreeTests] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
@@ -342,7 +342,7 @@ export default function PartnersTab() {
       email: string; 
       pricePerAssessment: number; 
       organizationId?: string;
-      billingType: 'prepaid' | 'auto_bill' | 'invoice';
+      billingType: 'payg' | 'subscription' | 'enterprise';
       freeTestsAllocated: number;
       prepaidBalance?: number;
       billingCycleAnchor?: number;
@@ -357,7 +357,7 @@ export default function PartnersTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       setIsCreateOpen(false);
       setSelectedOrganizationId("");
-      setBillingType("prepaid");
+      setBillingType("payg");
       setFreeTests(0);
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
@@ -524,14 +524,14 @@ export default function PartnersTab() {
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
       billingType,
       freeTestsAllocated: freeTests,
-      // Prepaid fields
-      prepaidBalance: billingType === "prepaid" ? freeTests : undefined,
-      // Auto-bill fields
-      billingCycleAnchor: billingType === "auto_bill" ? billingCycleAnchor : undefined,
-      // Invoice fields
-      paymentTermsDays: billingType === "invoice" ? paymentTerms : undefined,
-      invoiceNotes: billingType === "invoice" ? (formData.get("invoiceNotes") as string) : undefined,
-      invoiceContact: billingType === "invoice" ? (formData.get("invoiceContact") as string) : undefined,
+      // PAYG and Enterprise use prepaid balance
+      prepaidBalance: (billingType === "payg" || billingType === "enterprise") ? freeTests : undefined,
+      // Subscription uses billing cycle
+      billingCycleAnchor: billingType === "subscription" ? billingCycleAnchor : undefined,
+      // Enterprise uses invoice fields
+      paymentTermsDays: billingType === "enterprise" ? paymentTerms : undefined,
+      invoiceNotes: billingType === "enterprise" ? (formData.get("invoiceNotes") as string) : undefined,
+      invoiceContact: billingType === "enterprise" ? (formData.get("invoiceContact") as string) : undefined,
     });
   };
 
@@ -919,25 +919,25 @@ export default function PartnersTab() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="text-white/60 text-sm">Billing Model:</span>
-                        {detailPartner.billingType === 'prepaid' ? (
-                          <Badge className="bg-cyan-500/20 text-cyan-300">Prepaid (Top-up)</Badge>
-                        ) : detailPartner.billingType === 'auto_bill' ? (
-                          <Badge className="bg-green-500/20 text-green-300">Auto-Bill (Card on File)</Badge>
+                        {detailPartner.billingType === 'payg' ? (
+                          <Badge className="bg-cyan-500/20 text-cyan-300">Pay As You Go (PAYG)</Badge>
+                        ) : detailPartner.billingType === 'subscription' ? (
+                          <Badge className="bg-green-500/20 text-green-300">Subscription + Auto-Bill</Badge>
                         ) : (
-                          <Badge className="bg-purple-500/20 text-purple-300">Invoice (Enterprise)</Badge>
+                          <Badge className="bg-purple-500/20 text-purple-300">Enterprise Prepayment</Badge>
                         )}
                       </div>
                       
-                      {/* Prepaid balance */}
-                      {detailPartner.billingType === 'prepaid' && (
+                      {/* PAYG balance */}
+                      {(detailPartner.billingType === 'payg' || detailPartner.billingType === 'enterprise') && (
                         <div className="flex items-center gap-3">
-                          <span className="text-white/60 text-sm">Prepaid Balance:</span>
+                          <span className="text-white/60 text-sm">Credit Balance:</span>
                           <span className="text-white font-bold">{detailPartner.prepaidBalance || 0} tests</span>
                         </div>
                       )}
                       
-                      {/* Auto-bill monthly usage */}
-                      {detailPartner.billingType === 'auto_bill' && (
+                      {/* Subscription monthly usage */}
+                      {detailPartner.billingType === 'subscription' && (
                         <>
                           <div className="flex items-center gap-3">
                             <span className="text-white/60 text-sm">Current Month Usage:</span>
@@ -954,14 +954,14 @@ export default function PartnersTab() {
                           ) : (
                             <div className="flex items-center gap-2">
                               <Badge className="bg-amber-500/20 text-amber-300">No Card on File</Badge>
-                              <span className="text-amber-300 text-xs">Card required for auto-billing</span>
+                              <span className="text-amber-300 text-xs">Card required for subscription</span>
                             </div>
                           )}
                         </>
                       )}
                       
-                      {/* Invoice settings */}
-                      {detailPartner.billingType === 'invoice' && (
+                      {/* Enterprise settings */}
+                      {detailPartner.billingType === 'enterprise' && (
                         <>
                           <div className="flex items-center gap-3">
                             <span className="text-white/60 text-sm">Current Month Usage:</span>
@@ -1016,7 +1016,7 @@ export default function PartnersTab() {
                   </div>
 
                   {/* Invoice Management Section - Only for Invoice-billed Partners */}
-                  {detailPartner.billingType === 'invoice' && (
+                  {detailPartner.billingType === 'enterprise' && (
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -1745,26 +1745,26 @@ export default function PartnersTab() {
 
                   <div className="space-y-2 mt-4">
                     <Label>Billing Model</Label>
-                    <Select value={billingType} onValueChange={(v) => setBillingType(v as "prepaid" | "auto_bill" | "invoice")}>
+                    <Select value={billingType} onValueChange={(v) => setBillingType(v as "payg" | "subscription" | "enterprise")}>
                       <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-billing-type">
                         <SelectValue placeholder="Select billing model..." />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700">
-                        <SelectItem value="prepaid" className="text-white">Prepaid (Top-up Packages)</SelectItem>
-                        <SelectItem value="auto_bill" className="text-white">Auto-Bill (Card on File)</SelectItem>
-                        <SelectItem value="invoice" className="text-white">Invoice (Enterprise)</SelectItem>
+                        <SelectItem value="payg" className="text-white">Pay As You Go (PAYG)</SelectItem>
+                        <SelectItem value="subscription" className="text-white">Subscription + Auto-Bill</SelectItem>
+                        <SelectItem value="enterprise" className="text-white">Enterprise Prepayment</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-slate-400">
-                      {billingType === "prepaid" 
-                        ? "Partner purchases test packages upfront via Stripe checkout" 
-                        : billingType === "auto_bill"
-                        ? "Partner's card is charged automatically at month-end based on usage"
-                        : "Partner receives invoices for usage at the end of each billing period"}
+                      {billingType === "payg" 
+                        ? "No card on file. Bulk discounts via upfront purchase. API suspended at zero credits." 
+                        : billingType === "subscription"
+                        ? "Card on file. Min monthly charge + auto-bill for additional usage at base rates."
+                        : "For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended."}
                     </p>
                   </div>
 
-                  {billingType === "auto_bill" && (
+                  {billingType === "subscription" && (
                     <div className="space-y-2 mt-4">
                       <Label>Billing Cycle Day</Label>
                       <Select value={String(billingCycleAnchor)} onValueChange={(v) => setBillingCycleAnchor(parseInt(v))}>
@@ -1781,7 +1781,7 @@ export default function PartnersTab() {
                     </div>
                   )}
 
-                  {billingType === "invoice" && (
+                  {billingType === "enterprise" && (
                     <>
                       <div className="space-y-2 mt-4">
                         <Label>Payment Terms</Label>

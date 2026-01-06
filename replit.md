@@ -36,14 +36,17 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Marketing Email Opt-in**: Subscribe page for job seeker emails.
 - **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts and daily runs.
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.
-- **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing (Prepaid, Auto-Bill, Invoice), a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
-  - **Card-on-File Overage Billing**: Prepaid partners can save a payment card for automatic overage billing. When prepaid credits are exhausted, partners with a saved card can continue using tests with overages tracked separately. API access remains active instead of being suspended. Overages are billed automatically on the 1st of each month via the `/api/internal/process-overage-billing` endpoint (called by cron job with CRON_SECRET authentication). Partners can manage their saved card and view overage history from the Partner Dashboard billing section.
+- **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing, a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
+  - **Billing Tiers**:
+    - **PAYG (Pay As You Go)**: No card on file required. Partners purchase bulk credits upfront with volume discounts. API/dashboard suspended at zero credits.
+    - **Subscription**: Card on file required. Minimum monthly charge plus auto-bill for additional usage at base rates. Continuous API access.
+    - **Enterprise**: For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended until payment received.
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.
   - **In-App Notifications**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), and mark-all-read functionality.
   - **Team Member Management**: Email invitations with 7-day expiry, role-based access (viewer/member/admin), and member removal.
-  - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for Prepaid partners, branded email invitations, and downloadable error reports.
+  - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for PAYG partners, branded email invitations, and downloadable error reports.
 - **Partner Integration Features**: 
   - **Webhook Notifications**: Event-based webhooks for assessment.started, assessment.completed, session.created, session.expired, results.ready with HMAC-SHA256 signature verification, exponential backoff retry logic, and delivery logging.
   - **ATS Integrations**: Connect with Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, or custom APIs with configurable sync modes (push/pull/bidirectional).

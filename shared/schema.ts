@@ -544,11 +544,11 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
-  // Billing configuration - 3 payment options:
-  // 'prepaid': Purchase test packages upfront, top up when needed
-  // 'auto_bill': Card on file, automatically billed at month-end based on usage
-  // 'invoice': Enterprise invoicing, we send invoices based on usage
-  billingType: varchar("billing_type").notNull().default("prepaid"), // 'prepaid', 'auto_bill', or 'invoice'
+  // Billing configuration - 3 payment tiers:
+  // 'payg': Pay As You Go - No card on file. Bulk discounts via upfront purchase. API/dashboard suspended at zero credits.
+  // 'subscription': Subscription + Auto-Bill (Ideal) - Card on file. No bulk discount. Min monthly charge + auto-bill for usage at base rates.
+  // 'enterprise': Enterprise Prepayment - For high-volume BPOs. Immediate pro-forma invoicing for bulk credit blocks. No credit extended.
+  billingType: varchar("billing_type").notNull().default("payg"), // 'payg', 'subscription', or 'enterprise'
   freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
   freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
@@ -1233,8 +1233,8 @@ export const billingChangeRequests = pgTable("billing_change_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
-  currentBillingType: varchar("current_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
-  requestedBillingType: varchar("requested_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
+  currentBillingType: varchar("current_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
+  requestedBillingType: varchar("requested_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
   reason: text("reason"), // Optional reason for the change request
   status: varchar("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
   reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),

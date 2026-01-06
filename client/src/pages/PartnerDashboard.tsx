@@ -1621,9 +1621,9 @@ export default function PartnerDashboard() {
                       <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
                       <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
                         <CreditCard className="h-4 w-4 text-primary" />
-                        {account?.partner?.billingType === 'prepaid' && 'Prepaid Credits'}
-                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                        {account?.partner?.billingType === 'invoice' && 'Enterprise Invoice'}
+                        {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
+                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                       </div>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/30 border">
@@ -1920,7 +1920,15 @@ export default function PartnerDashboard() {
 
             {/* Invitations Tab */}
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
-              <BulkInvitationsTab partnerId={partner?.id || ''} billingType={partner?.billingType || 'prepaid'} />
+              {partner?.id && partner?.billingType ? (
+                <BulkInvitationsTab partnerId={partner.id} billingType={partner.billingType} />
+              ) : (
+                <Card>
+                  <CardContent className="py-8 flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Organizations Tab */}
@@ -2434,26 +2442,26 @@ export default function PartnerDashboard() {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
-                          {account?.partner?.billingType === 'prepaid' && 'Prepaid Billing'}
-                          {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill Billing'}
-                          {account?.partner?.billingType === 'invoice' && 'Invoice Billing'}
+                          {account?.partner?.billingType === 'payg' && 'Pay As You Go (PAYG)'}
+                          {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
+                          {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
                         </CardTitle>
                         <CardDescription>
-                          {account?.partner?.billingType === 'prepaid' && 'Purchase test credits upfront and use them as needed'}
-                          {account?.partner?.billingType === 'auto_bill' && 'Card on file - automatically billed based on monthly usage'}
-                          {account?.partner?.billingType === 'invoice' && 'Enterprise invoicing with flexible payment terms'}
+                          {account?.partner?.billingType === 'payg' && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
+                          {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
+                          {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
-                        {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
-                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                        {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                        {account?.partner?.billingType === 'payg' && 'PAYG'}
+                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                       </Badge>
                     </CardHeader>
                   </Card>
 
                   {/* Card on File for Prepaid Partners */}
-                  {account?.partner?.billingType === 'prepaid' && (
+                  {account?.partner?.billingType === 'payg' && (
                     <PrepaidCardManagement partnerId={account.partner.id} />
                   )}
 
@@ -2471,9 +2479,9 @@ export default function PartnerDashboard() {
                               <p className="text-sm text-orange-900/80 dark:text-orange-100/80">
                                 Your request to change to{' '}
                                 <span className="font-medium">
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'invoice' && 'Invoice'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'payg' && 'Pay As You Go'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'subscription' && 'Subscription'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'enterprise' && 'Enterprise'}
                                 </span>{' '}
                                 billing is being reviewed.
                               </p>
@@ -2512,153 +2520,153 @@ export default function PartnerDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-4 md:grid-cols-3">
-                        {/* Prepaid Option */}
+                        {/* PAYG Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'prepaid' 
+                            account?.partner?.billingType === 'payg' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-prepaid"
+                          data-testid="billing-option-payg"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <Package className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Prepaid</span>
+                              <span className="font-semibold">Pay As You Go</span>
                             </div>
-                            {account?.partner?.billingType === 'prepaid' && (
+                            {account?.partner?.billingType === 'payg' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Purchase test credits upfront. Use them whenever you need without monthly commitments.
+                            No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pay as you go
+                              No recurring charges
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Volume discounts
+                              Bulk discounts available
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Credits valid for 12 months
+                              Control your spend
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'prepaid' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'payg' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('prepaid');
+                                setSelectedBillingType('payg');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-prepaid"
+                              data-testid="button-request-payg"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Auto-Bill Option */}
+                        {/* Subscription Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'auto_bill' 
+                            account?.partner?.billingType === 'subscription' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-auto-bill"
+                          data-testid="billing-option-subscription"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Auto-Bill</span>
+                              <span className="font-semibold">Subscription</span>
                             </div>
-                            {account?.partner?.billingType === 'auto_bill' && (
+                            {account?.partner?.billingType === 'subscription' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Card on file billed monthly based on actual usage. Simple and predictable.
+                            Card on file. Min monthly charge + auto-bill for additional usage at base rates.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              No upfront payment
+                              Predictable monthly base
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pay only for what you use
+                              Pay as you grow
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Automatic monthly billing
+                              Automatic billing
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'auto_bill' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'subscription' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('auto_bill');
+                                setSelectedBillingType('subscription');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-auto-bill"
+                              data-testid="button-request-subscription"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Invoice Option */}
+                        {/* Enterprise Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'invoice' 
+                            account?.partner?.billingType === 'enterprise' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-invoice"
+                          data-testid="billing-option-enterprise"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Invoice</span>
+                              <span className="font-semibold">Enterprise</span>
                             </div>
-                            {account?.partner?.billingType === 'invoice' && (
+                            {account?.partner?.billingType === 'enterprise' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Enterprise invoicing with flexible NET terms. Best for large organizations.
+                            For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              NET 30/60 payment terms
+                              Bulk credit blocks
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Dedicated support
+                              Pro-forma invoicing
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
                               Custom contracts
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'invoice' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'enterprise' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('invoice');
+                                setSelectedBillingType('enterprise');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-invoice"
+                              data-testid="button-request-enterprise"
                             >
                               Request Change
                             </Button>
@@ -2693,8 +2701,8 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* Prepaid Billing Stats */}
-                  {account?.partner?.billingType === 'prepaid' && (
+                  {/* PAYG Billing Stats */}
+                  {account?.partner?.billingType === 'payg' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2744,7 +2752,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Auto-Bill Billing Stats */}
-                  {account?.partner?.billingType === 'auto_bill' && (
+                  {account?.partner?.billingType === 'subscription' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2794,7 +2802,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Invoice Billing Stats */}
-                  {account?.partner?.billingType === 'invoice' && (
+                  {account?.partner?.billingType === 'enterprise' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2843,8 +2851,8 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* Buy More Tests - Only for prepaid and auto_bill billing types */}
-                  {(account?.partner?.billingType === 'prepaid' || account?.partner?.billingType === 'auto_bill') && (
+                  {/* Buy More Tests - Only for PAYG and Subscription billing types */}
+                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription') && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -2898,7 +2906,7 @@ export default function PartnerDashboard() {
                     <CardHeader>
                       <CardTitle className="text-lg">Billing History</CardTitle>
                       <CardDescription>
-                        {account?.partner?.billingType === 'invoice' 
+                        {account?.partner?.billingType === 'enterprise' 
                           ? 'Invoices and payment history' 
                           : 'Receipts and invoices'}
                       </CardDescription>
@@ -3045,13 +3053,13 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {settings?.settings?.billingType === 'prepaid' && (
+                  {settings?.settings?.billingType === 'payg' && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Auto Top-Up
-                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for prepaid accounts." />
+                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for PAYG accounts." />
                         </CardTitle>
                         <CardDescription>
                           Automatically purchase more tests when your balance runs low
@@ -3994,18 +4002,18 @@ export default function PartnerDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Current billing type</p>
                   <p className="font-medium">
-                    {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
-                    {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                    {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                    {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
+                    {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                    {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Requested billing type</p>
                   <p className="font-medium text-primary">
-                    {selectedBillingType === 'prepaid' && 'Prepaid'}
-                    {selectedBillingType === 'auto_bill' && 'Auto-Bill'}
-                    {selectedBillingType === 'invoice' && 'Invoice'}
+                    {selectedBillingType === 'payg' && 'Pay As You Go'}
+                    {selectedBillingType === 'subscription' && 'Subscription'}
+                    {selectedBillingType === 'enterprise' && 'Enterprise'}
                   </p>
                 </div>
               </div>
@@ -4026,7 +4034,7 @@ export default function PartnerDashboard() {
             </div>
 
             {/* Card Details Section - Only shown when requesting Auto-Bill */}
-            {selectedBillingType === 'auto_bill' && (
+            {selectedBillingType === 'subscription' && (
               <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
@@ -4077,7 +4085,7 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange || (selectedBillingType === 'auto_bill' && !cardComplete)}
+              disabled={isSubmittingBillingChange || (selectedBillingType === 'subscription' && !cardComplete)}
               data-testid="button-submit-billing-change"
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
