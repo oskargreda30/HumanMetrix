@@ -367,7 +367,6 @@ export default function IndividualReportTab() {
                     ))}
                   </div>
                 </div>
-                <SkillsLegend className="mt-4" />
               </CardContent>
             </Card>
           )}
@@ -414,7 +413,6 @@ export default function IndividualReportTab() {
                     ))}
                   </div>
                 </div>
-                <SkillsLegend className="mt-4" />
               </CardContent>
             </Card>
           )}
@@ -555,6 +553,10 @@ export default function IndividualReportTab() {
               </div>
             </CardContent>
           </Card>
+
+          {(fitData || aiData) && (
+            <SkillsLegend className="mt-4" />
+          )}
         </>
       )}
 
