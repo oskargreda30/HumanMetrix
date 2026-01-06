@@ -4058,12 +4058,19 @@ Format your response as JSON with this structure:
       };
       
       // Calculate percentile properly: what percentage of candidates scored lower?
+      // Calculate percentile using rank-based method for semantic correctness
+      // A score of 98/100 in position 4 out of 24 should show as ~87th percentile
       const calculatePercentile = (score: number, allScores: number[]): number => {
         if (allScores.length <= 1) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        // Use (n-1) denominator for proper percentile with small samples
-        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+        // Sort descending (highest first) to get ranking
+        const sortedScores = [...allScores].sort((a, b) => b - a);
+        // Find the candidate's rank (1-indexed, where 1 = highest score)
+        // For ties, use the best rank (first occurrence)
+        let rank = sortedScores.findIndex(s => s <= score) + 1;
+        if (rank === 0) rank = sortedScores.length; // Lower than all
+        // Calculate percentile: what % of candidates scored LOWER
+        const belowCount = sortedScores.length - rank;
+        return Math.round((belowCount / Math.max(sortedScores.length - 1, 1)) * 100);
       };
       
       // Group results by assessment type
@@ -4599,11 +4606,17 @@ Format your response as JSON with this structure:
       };
       
       // Calculate percentile properly: what percentage of candidates scored lower?
+      // Calculate percentile using rank-based method for semantic correctness
       const calculatePercentile = (score: number, allScores: number[]): number => {
         if (allScores.length <= 1) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+        // Sort descending (highest first) to get ranking
+        const sortedScores = [...allScores].sort((a, b) => b - a);
+        // Find the candidate's rank (1-indexed, where 1 = highest score)
+        let rank = sortedScores.findIndex(s => s <= score) + 1;
+        if (rank === 0) rank = sortedScores.length;
+        // Calculate percentile: what % of candidates scored LOWER
+        const belowCount = sortedScores.length - rank;
+        return Math.round((belowCount / Math.max(sortedScores.length - 1, 1)) * 100);
       };
       
       // Group results by assessment type
