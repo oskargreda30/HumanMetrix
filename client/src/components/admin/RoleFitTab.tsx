@@ -347,7 +347,7 @@ export default function RoleFitTab() {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
                   <div>
                     <p className="font-medium text-sm">Hiring Recommendation</p>
-                    <p className="text-xs text-muted-foreground">AI-generated summary with specific hiring guidance, interview focus areas, and onboarding considerations.</p>
+                    <p className="text-xs text-muted-foreground">Summary with specific hiring guidance, interview focus areas, and onboarding considerations.</p>
                   </div>
                 </div>
                 {/* What each assessment measures */}
