@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -262,6 +262,65 @@ export default function IndividualReportTab() {
                   ) : (
                     <span className="text-muted-foreground">Not taken</span>
                   )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* How to Read This Report */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BookOpen className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Overview Scores</p>
+                    <p className="text-xs text-muted-foreground">Average scores for each assessment type. <span className="font-medium text-green-600">80%+ = Strong</span>, <span className="font-medium text-amber-600">60-79% = Moderate</span>, <span className="font-medium text-red-600">Below 60% = Development needed</span>.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring skills across FIT and AI Readiness assessments. These inform interview focus and development planning.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">FIT Assessment (Behavioral)</p>
+                    <p className="text-xs text-muted-foreground">Measures 6 core behavioral competencies. Radar chart shows skill balance; progress bars show individual scores. These are trait-based - fit depends on role requirements.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">AI Readiness (Technical)</p>
+                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Shows technical aptitude for AI-driven roles including literacy, data fluency, and ethical awareness.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Prompt Architecture</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">AIQ (Ethics)</p>
+                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
