@@ -37,10 +37,19 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts and daily runs.
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.
 - **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing, a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
+  - **Volume-Based Pricing Model** ($1.00 = 1 Credit, 6-month expiration policy):
+    | Tier | Monthly Volume | Price Per Test | Comparisons (Base-30%) | Role Fit (Base-20%) | Trial Quota |
+    |------|---------------|----------------|------------------------|---------------------|-------------|
+    | Boutique | 1-100 | $20.00 | $14.00 | $16.00 | 5 tests |
+    | Growth | 101-500 | $10.00 | $7.00 | $8.00 | 10 tests |
+    | Small Enterprise | 501-2,500 | $5.00 | $3.50 | $4.00 | 20 tests |
+    | Enterprise | 2,501-9,999 | $2.50 | $1.75 | $2.00 | 50 tests |
+    | Pro | 10,000+ | $1.00 | $0.70 | $0.80 | 50 tests |
   - **Billing Tiers**:
     - **PAYG (Pay As You Go)**: No card on file required. Partners purchase bulk credits upfront with volume discounts. API/dashboard suspended at zero credits.
     - **Subscription**: Card on file required. Minimum monthly charge plus auto-bill for additional usage at base rates. Continuous API access.
     - **Enterprise**: For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended until payment received.
+  - **Unbundled Report Pricing**: Comparison Reports at 30% discount from base rate, Role Fit Reports at 20% discount from base rate.
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.

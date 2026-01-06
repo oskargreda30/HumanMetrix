@@ -503,6 +503,40 @@ export const ASSESSMENT_PRICES = {
 
 export const BASE_FEE = 1500; // £15.00 in pence
 
+// ============================================
+// B2B Volume-Based Pricing ($1.00 = 1 Credit, 6-month expiration)
+// ============================================
+
+// Volume tiers based on monthly volume commitment (prices in USD cents)
+export const B2B_VOLUME_TIERS = {
+  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 2000, trialQuota: 5 },      // $20/test
+  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 1000, trialQuota: 10 },       // $10/test
+  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 500, trialQuota: 20 }, // $5/test
+  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 250, trialQuota: 50 }, // $2.50/test
+  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 100, trialQuota: 50 },              // $1.00/test
+} as const;
+
+// Unbundled report pricing discounts
+export const REPORT_DISCOUNTS = {
+  COMPARISON: 0.30, // 30% discount from base rate for Comparison Reports
+  ROLE_FIT: 0.20,   // 20% discount from base rate for Role Fit Reports
+} as const;
+
+// Credit expiration policy
+export const CREDIT_EXPIRATION_MONTHS = 6;
+
+// Helper to get trial quota based on tier name
+export function getTrialQuotaForTier(tierName: string): number {
+  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
+  return tier?.trialQuota || B2B_VOLUME_TIERS.BOUTIQUE.trialQuota;
+}
+
+// Helper to get price per test based on tier name
+export function getPriceForTier(tierName: string): number {
+  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
+  return tier?.pricePerTest || B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest;
+}
+
 export function normalizeAssessmentId(id: string): keyof typeof ASSESSMENT_PRICES {
   const mapping: Record<string, keyof typeof ASSESSMENT_PRICES> = {
     "fit": "fit",
@@ -553,7 +587,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
   prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
-  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (12 months from purchase)
+  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (6 months from purchase per pricing policy)
   // Auto-bill fields
   stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
   cardOnFile: boolean("card_on_file").notNull().default(false), // Whether prepaid partner has saved card for overage billing

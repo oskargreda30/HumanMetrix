@@ -2865,13 +2865,13 @@ export default function PartnerDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="grid gap-4 md:grid-cols-3">
+                          {/* Volume-based pricing tiers: Boutique $20, Growth $10, Small Enterprise $5, Enterprise $2.50, Pro $1.00 */}
                           {[
-                            { size: 10, name: 'Starter', price: 50 },
-                            { size: 25, name: 'Growth', price: 112.50 },
-                            { size: 50, name: 'Professional', price: 200 },
-                            { size: 100, name: 'Business', price: 350 },
-                            { size: 250, name: 'Enterprise', price: 750 },
-                            { size: 500, name: 'Enterprise+', price: 1250 },
+                            { size: 50, name: 'Boutique', price: 1000, pricePerTest: 20.00 },
+                            { size: 250, name: 'Growth', price: 2500, pricePerTest: 10.00 },
+                            { size: 1000, name: 'Small Enterprise', price: 5000, pricePerTest: 5.00 },
+                            { size: 5000, name: 'Enterprise', price: 12500, pricePerTest: 2.50 },
+                            { size: 10000, name: 'Pro', price: 10000, pricePerTest: 1.00 },
                           ].map((pkg) => (
                             <div 
                               key={pkg.size} 
@@ -2879,10 +2879,10 @@ export default function PartnerDashboard() {
                             >
                               <div className="font-semibold text-lg">{pkg.name}</div>
                               <div className="text-2xl font-bold text-primary">
-                                {pkg.size} tests
+                                {pkg.size.toLocaleString()} tests
                               </div>
                               <div className="text-sm text-muted-foreground mb-3">
-                                £{pkg.price.toFixed(2)} (£{(pkg.price / pkg.size).toFixed(2)}/test)
+                                ${pkg.price.toLocaleString()} (${pkg.pricePerTest.toFixed(2)}/test)
                               </div>
                               <Button 
                                 className="w-full" 

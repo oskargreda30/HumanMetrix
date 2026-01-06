@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2B_VOLUME_TIERS } from "@shared/schema";
 import { getQuestionLocale } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -22,14 +22,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover" as any,
 });
 
-// Package tiers for auto top-up pricing
+// Volume-based pricing tiers using shared constants from schema
+// Prices in USD cents - Tier assignment based on monthly volume commitment ($1.00 = 1 Credit, 6-month expiration)
 const PACKAGE_TIERS = [
-  { id: 'starter', size: 10, pricePerTest: 500, name: "Starter" },
-  { id: 'growth', size: 25, pricePerTest: 450, name: "Growth" },
-  { id: 'professional', size: 50, pricePerTest: 400, name: "Professional" },
-  { id: 'business', size: 100, pricePerTest: 350, name: "Business" },
-  { id: 'enterprise', size: 250, pricePerTest: 300, name: "Enterprise" },
-  { id: 'enterprise_plus', size: 500, pricePerTest: 250, name: "Enterprise+" },
+  { id: 'boutique', size: 50, pricePerTest: B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest, name: B2B_VOLUME_TIERS.BOUTIQUE.name, tierVolume: B2B_VOLUME_TIERS.BOUTIQUE.volumeRange },
+  { id: 'growth', size: 250, pricePerTest: B2B_VOLUME_TIERS.GROWTH.pricePerTest, name: B2B_VOLUME_TIERS.GROWTH.name, tierVolume: B2B_VOLUME_TIERS.GROWTH.volumeRange },
+  { id: 'small_enterprise', size: 1000, pricePerTest: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.volumeRange },
+  { id: 'enterprise', size: 5000, pricePerTest: B2B_VOLUME_TIERS.ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.ENTERPRISE.volumeRange },
+  { id: 'pro', size: 10000, pricePerTest: B2B_VOLUME_TIERS.PRO.pricePerTest, name: B2B_VOLUME_TIERS.PRO.name, tierVolume: B2B_VOLUME_TIERS.PRO.volumeRange },
 ];
 
 // Process automatic top-up for a partner when their quota falls below threshold

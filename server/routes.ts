@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
-import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
+import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
@@ -8638,14 +8638,14 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner package pricing tiers (minimum 10 tests)
+  // Volume-based pricing tiers using shared constants from schema
+  // Prices in USD cents - Tier assignment based on monthly volume commitment ($1.00 = 1 Credit, 6-month expiration)
   const PACKAGE_TIERS = [
-    { size: 10, pricePerTest: 500, name: "Starter" },      // £5 per test = £50 total
-    { size: 25, pricePerTest: 450, name: "Growth" },       // £4.50 per test = £112.50 total
-    { size: 50, pricePerTest: 400, name: "Professional" }, // £4 per test = £200 total
-    { size: 100, pricePerTest: 350, name: "Business" },    // £3.50 per test = £350 total
-    { size: 250, pricePerTest: 300, name: "Enterprise" },  // £3 per test = £750 total
-    { size: 500, pricePerTest: 250, name: "Enterprise+" }, // £2.50 per test = £1,250 total
+    { size: 50, pricePerTest: B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest, name: B2B_VOLUME_TIERS.BOUTIQUE.name, tierVolume: B2B_VOLUME_TIERS.BOUTIQUE.volumeRange, trialQuota: B2B_VOLUME_TIERS.BOUTIQUE.trialQuota },
+    { size: 250, pricePerTest: B2B_VOLUME_TIERS.GROWTH.pricePerTest, name: B2B_VOLUME_TIERS.GROWTH.name, tierVolume: B2B_VOLUME_TIERS.GROWTH.volumeRange, trialQuota: B2B_VOLUME_TIERS.GROWTH.trialQuota },
+    { size: 1000, pricePerTest: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.volumeRange, trialQuota: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.trialQuota },
+    { size: 5000, pricePerTest: B2B_VOLUME_TIERS.ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.ENTERPRISE.volumeRange, trialQuota: B2B_VOLUME_TIERS.ENTERPRISE.trialQuota },
+    { size: 10000, pricePerTest: B2B_VOLUME_TIERS.PRO.pricePerTest, name: B2B_VOLUME_TIERS.PRO.name, tierVolume: B2B_VOLUME_TIERS.PRO.volumeRange, trialQuota: B2B_VOLUME_TIERS.PRO.trialQuota },
   ];
 
   // Get available package tiers
@@ -8653,8 +8653,9 @@ Format your response as JSON with this structure:
     const tiers = PACKAGE_TIERS.map(tier => ({
       ...tier,
       totalPrice: tier.size * tier.pricePerTest,
-      displayPrice: `£${(tier.size * tier.pricePerTest / 100).toFixed(2)}`,
-      displayPricePerTest: `£${(tier.pricePerTest / 100).toFixed(2)}`,
+      displayPrice: `$${(tier.size * tier.pricePerTest / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      displayPricePerTest: `$${(tier.pricePerTest / 100).toFixed(2)}`,
+      currency: 'usd',
     }));
     res.json(tiers);
   });
@@ -8679,9 +8680,9 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
       
-      // Find matching tier or use custom pricing
+      // Find matching tier or use custom pricing based on volume-based tiers
       const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
-      const pricePerTest = tier?.pricePerTest || 500; // Default to £5 per test for custom sizes
+      const pricePerTest = tier?.pricePerTest || 2000; // Default to $20/test (Boutique tier) for custom sizes
       const totalPrice = packageSize * pricePerTest;
       
       // Create package record (pending)
@@ -8690,7 +8691,7 @@ Format your response as JSON with this structure:
         packageSize,
         pricePerTest,
         totalPrice,
-        currency: 'gbp',
+        currency: 'usd',
         status: 'pending',
       });
       
@@ -8704,10 +8705,10 @@ Format your response as JSON with this structure:
         customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
         line_items: [{
           price_data: {
-            currency: 'gbp',
+            currency: 'usd',
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at £${(pricePerTest / 100).toFixed(2)} per test`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at $${(pricePerTest / 100).toFixed(2)} per test`,
             },
             unit_amount: totalPrice,
           },

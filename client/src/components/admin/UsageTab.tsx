@@ -255,13 +255,15 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
   );
 }
 
+// Volume-based pricing tiers per pricing document ($1.00 = 1 Credit, 6-month expiration)
+// Boutique (1-100): $20/test, Growth (101-500): $10/test, Small Enterprise (501-2,500): $5/test
+// Enterprise (2,501-9,999): $2.50/test, Pro (10,000+): $1.00/test
 const PACKAGE_TIERS: PackageTier[] = [
-  { size: 10, pricePerTest: 5.00, name: "Starter", totalPrice: 50, displayPrice: "£50", displayPricePerTest: "£5.00" },
-  { size: 25, pricePerTest: 4.50, name: "Basic", totalPrice: 112.50, displayPrice: "£112.50", displayPricePerTest: "£4.50" },
-  { size: 50, pricePerTest: 4.00, name: "Standard", totalPrice: 200, displayPrice: "£200", displayPricePerTest: "£4.00" },
-  { size: 100, pricePerTest: 3.50, name: "Professional", totalPrice: 350, displayPrice: "£350", displayPricePerTest: "£3.50" },
-  { size: 250, pricePerTest: 3.00, name: "Enterprise", totalPrice: 750, displayPrice: "£750", displayPricePerTest: "£3.00" },
-  { size: 500, pricePerTest: 2.50, name: "Enterprise+", totalPrice: 1250, displayPrice: "£1,250", displayPricePerTest: "£2.50" },
+  { size: 50, pricePerTest: 20.00, name: "Boutique", totalPrice: 1000, displayPrice: "$1,000", displayPricePerTest: "$20.00" },
+  { size: 250, pricePerTest: 10.00, name: "Growth", totalPrice: 2500, displayPrice: "$2,500", displayPricePerTest: "$10.00" },
+  { size: 1000, pricePerTest: 5.00, name: "Small Enterprise", totalPrice: 5000, displayPrice: "$5,000", displayPricePerTest: "$5.00" },
+  { size: 5000, pricePerTest: 2.50, name: "Enterprise", totalPrice: 12500, displayPrice: "$12,500", displayPricePerTest: "$2.50" },
+  { size: 10000, pricePerTest: 1.00, name: "Pro", totalPrice: 10000, displayPrice: "$10,000", displayPricePerTest: "$1.00" },
 ];
 
 function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {

@@ -1928,17 +1928,19 @@ export class DatabaseStorage implements IStorage {
     const newPurchased = balance.testsPurchased + amount;
     const newRemaining = newPurchased - balance.testsConsumed;
     
-    // Calculate 12-month expiry: extend from existing expiry (if future) or from now
+    // Calculate expiry per pricing policy: extend from existing expiry (if future) or from now
+    // Uses CREDIT_EXPIRATION_MONTHS from schema (6 months per pricing document)
+    const { CREDIT_EXPIRATION_MONTHS } = await import("@shared/schema");
     const now = new Date();
     const existingExpiry = partner?.prepaidCreditsExpiresAt ? new Date(partner.prepaidCreditsExpiresAt) : null;
     const baseDate = (existingExpiry && existingExpiry > now) ? existingExpiry : now;
     const prepaidExpiry = new Date(baseDate);
-    prepaidExpiry.setMonth(prepaidExpiry.getMonth() + 12);
+    prepaidExpiry.setMonth(prepaidExpiry.getMonth() + CREDIT_EXPIRATION_MONTHS);
     
     // Update partner account
     await db.update(partnerAccounts).set({
       testsPurchased: newPurchased,
-      // Set prepaid credits expiry to 12 months from base date
+      // Set prepaid credits expiry to 6 months from base date per pricing policy
       prepaidCreditsExpiresAt: prepaidExpiry,
       // Clear suspension if they had remaining credits = 0 before
       apiAccessSuspendedAt: null,
