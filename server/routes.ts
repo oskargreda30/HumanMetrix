@@ -3864,6 +3864,22 @@ Format your response as JSON:
       // Process FIT skills
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
+      // Helper to find criticality with flexible name matching
+      const findCriticality = (skillName: string): string => {
+        // Direct match
+        if (skillCriticality[skillName]) return skillCriticality[skillName];
+        // Case-insensitive match
+        const lowerName = skillName.toLowerCase();
+        for (const [key, value] of Object.entries(skillCriticality)) {
+          if (key.toLowerCase() === lowerName) return value as string;
+          // Partial match (e.g., "Critical Thinking" matches "Critical Thinking & Problem-Solving")
+          if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase())) {
+            return value as string;
+          }
+        }
+        return 'important';
+      };
+      
       if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
         Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
           // Apply defensive nudge to ensure no multiples of 5
@@ -3882,7 +3898,7 @@ Format your response as JSON:
             requiredScore,
             gap,
             alignment,
-            criticality: skillCriticality[skillName] || 'important'
+            criticality: findCriticality(skillName)
           });
         });
       }
@@ -3925,7 +3941,7 @@ Format your response as JSON:
             requiredScore,
             gap,
             alignment,
-            criticality: skillCriticality[skillName] || skillCriticality[fullSkillName] || 'important'
+            criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName)
           });
         });
       }
