@@ -183,6 +183,139 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
   pdf.setTextColor(0, 0, 0);
 }
 
+// Helper to add "How to Read Our Reports" guide page
+function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, reportType: 'rolefit' | 'comparison'): void {
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  let yPos = 38;
+  
+  // Title with blue background
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(0, yPos, pageWidth, 28, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOW TO READ OUR REPORTS', pageWidth / 2, yPos + 12, { align: 'center' });
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A step-by-step guide for hiring managers and stakeholders', pageWidth / 2, yPos + 21, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
+  yPos = 75;
+  
+  // Helper for numbered items
+  const addGuideItem = (num: number, title: string, description: string, y: number): number => {
+    // Numbered circle
+    pdf.setFillColor(59, 130, 246);
+    pdf.circle(25, y, 4, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(String(num), 25, y + 1, { align: 'center' });
+    
+    // Title
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, 34, y + 1);
+    
+    // Description
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const lines = pdf.splitTextToSize(description, pageWidth - 55);
+    lines.forEach((line: string, idx: number) => {
+      pdf.text(line, 34, y + 7 + (idx * 5));
+    });
+    
+    return y + 10 + (lines.length * 5) + 6;
+  };
+  
+  if (reportType === 'rolefit') {
+    // Role Fit Report Guide
+    yPos = addGuideItem(1, 'Overall Role Fit Score', 
+      'The weighted average of all skill scores against role requirements. 80%+ = Strong fit, 60-79% = Good potential, Below 60% = Development needed. This is your primary indicator.', yPos);
+    
+    yPos = addGuideItem(2, 'Skill Alignments (FIT & AI Readiness)', 
+      'Compare candidate scores vs. role requirements for each skill. Look for skills marked "C" (Critical) - these are essential for success. Green bars indicate alignment, gaps show development areas.', yPos);
+    
+    yPos = addGuideItem(3, 'Cohort Benchmarking', 
+      'See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing (e.g., 75th percentile = better than 75% of candidates).', yPos);
+    
+    yPos = addGuideItem(4, 'Role Flexibility Analysis', 
+      'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility and identifying hidden potential.', yPos);
+    
+    yPos = addGuideItem(5, 'Critical Skills Analysis', 
+      'Deep dive into the most important skills for this role. Each skill includes an explanation of why it matters and how the candidate performs.', yPos);
+    
+    yPos = addGuideItem(6, 'Hiring Recommendation', 
+      'Summary with specific hiring guidance, interview focus areas, and onboarding considerations to help you make informed decisions.', yPos);
+  } else {
+    // Comparison Report Guide
+    yPos = addGuideItem(1, 'Candidate Overview', 
+      'Quick view of each candidate\'s assessment completion status. All 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ) should be completed for a complete picture.', yPos);
+    
+    yPos = addGuideItem(2, 'Composite Score', 
+      'Weighted average across all assessments for each candidate. The default weights are equal (25% each), but you can adjust them based on role priorities in the dashboard.', yPos);
+    
+    yPos = addGuideItem(3, 'Skill-by-Skill Breakdown', 
+      'Radar charts and tables show each candidate\'s strengths across all measured skills. Look for the highest scores in skills critical to your role.', yPos);
+    
+    yPos = addGuideItem(4, 'Role Fit Analysis (Separate Tool)', 
+      'For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.', yPos);
+    
+    yPos = addGuideItem(5, 'Read the Recommendations', 
+      'Review strengths, development areas, and insights for each candidate to inform your final decision.', yPos);
+  }
+  
+  // What each assessment measures - box at bottom
+  yPos += 5;
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 55, 3, 3, 'FD');
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text('What Each Assessment Measures', 25, yPos + 8);
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  
+  const assessmentY = yPos + 16;
+  const colWidth = (pageWidth - 50) / 2;
+  
+  // Left column
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('FIT Assessment', 25, assessmentY);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Behavioral traits like resilience, curiosity, ethics -', 25, assessmentY + 5);
+  pdf.text('predictors of cultural fit and mindset.', 25, assessmentY + 10);
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('AI Readiness', 25, assessmentY + 20);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Technical AI skills including prompt engineering,', 25, assessmentY + 25);
+  pdf.text('data fluency, and human-AI collaboration.', 25, assessmentY + 30);
+  
+  // Right column
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Prompt Architecture', 25 + colWidth, assessmentY);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Real-world prompt writing ability tested across', 25 + colWidth, assessmentY + 5);
+  pdf.text('multiple difficulty levels with AI evaluation.', 25 + colWidth, assessmentY + 10);
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('AIQ (AI Quotient)', 25 + colWidth, assessmentY + 20);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('AI ethics, judgment, and responsible AI awareness.', 25 + colWidth, assessmentY + 25);
+  pdf.text('Critical for roles involving AI decision-making.', 25 + colWidth, assessmentY + 30);
+}
+
 // Helper to add Skills Legend page at the end of the PDF
 function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
   pdf.addPage();
@@ -402,7 +535,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   let yPos = 30;
   
-  // ========== PAGE 1: COVER + SUMMARY ==========
+  // ========== PAGE 1: HOW TO READ OUR REPORTS GUIDE ==========
+  addReportGuidePage(pdf, pageWidth, pageHeight, 'comparison');
+  
+  // ========== PAGE 2: COVER + SUMMARY ==========
+  pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
@@ -1974,7 +2111,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     ? `${data.candidate.user.firstName || ''} ${data.candidate.user.lastName || ''}`.trim()
     : 'Candidate';
   
-  // ========== PAGE 1: COVER + OVERALL FIT SCORE ==========
+  // ========== PAGE 1: HOW TO READ OUR REPORTS GUIDE ==========
+  addReportGuidePage(pdf, pageWidth, pageHeight, 'rolefit');
+  
+  // ========== PAGE 2: COVER + OVERALL FIT SCORE ==========
+  pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
