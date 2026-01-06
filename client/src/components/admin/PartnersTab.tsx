@@ -340,9 +340,11 @@ export default function PartnersTab() {
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [selectedPhoneCode, setSelectedPhoneCode] = useState<string>("+44");
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<string>("GB");
   const [countryOpen, setCountryOpen] = useState(false);
   const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
+  
+  const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
@@ -371,7 +373,7 @@ export default function PartnersTab() {
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
       setSelectedCountry("");
-      setSelectedPhoneCode("+44");
+      setSelectedPhoneCountry("GB");
       setSelectedCurrency("GBP");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
@@ -1728,13 +1730,13 @@ export default function PartnersTab() {
                           className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
                           data-testid="select-phone-code"
                         >
-                          {selectedPhoneCode ? (
+                          {selectedPhoneCountryData ? (
                             <>
-                              {COUNTRIES.find(c => c.dialCode === selectedPhoneCode)?.flag}{" "}
-                              {selectedPhoneCode}
+                              {selectedPhoneCountryData.flag}{" "}
+                              {selectedPhoneCountryData.dialCode}
                             </>
                           ) : (
-                            "+44"
+                            "🇬🇧 +44"
                           )}
                           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -1748,15 +1750,15 @@ export default function PartnersTab() {
                               {COUNTRIES.map((country) => (
                                 <CommandItem
                                   key={country.code}
-                                  value={`${country.name} ${country.dialCode}`}
+                                  value={`${country.name} ${country.dialCode} ${country.code}`}
                                   onSelect={() => {
-                                    setSelectedPhoneCode(country.dialCode);
+                                    setSelectedPhoneCountry(country.code);
                                     setPhoneCodeOpen(false);
                                   }}
                                   className="text-white hover:bg-slate-700 cursor-pointer"
                                 >
                                   <Check
-                                    className={`mr-2 h-4 w-4 ${selectedPhoneCode === country.dialCode ? "opacity-100" : "opacity-0"}`}
+                                    className={`mr-2 h-4 w-4 ${selectedPhoneCountry === country.code ? "opacity-100" : "opacity-0"}`}
                                   />
                                   <span className="mr-2">{country.flag}</span>
                                   <span className="mr-2">{country.name}</span>
@@ -1777,7 +1779,7 @@ export default function PartnersTab() {
                       data-testid="input-partner-phone" 
                     />
                   </div>
-                  <input type="hidden" name="phone" value={selectedPhoneCode} />
+                  <input type="hidden" name="phone" value={selectedPhoneCountryData?.dialCode || '+44'} />
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
