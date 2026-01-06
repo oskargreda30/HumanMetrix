@@ -340,8 +340,18 @@ export default function EmbedAssessment() {
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-loading">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-cyan-500 mx-auto mb-4" />
-          <p className={textSecondary}>Loading assessment...</p>
+          <div className="relative mb-6">
+            <img 
+              src="/assets/humanmetrix-logo.png" 
+              alt="HumanMetrix" 
+              className="h-16 w-16 mx-auto animate-pulse"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-20 w-20 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+            </div>
+          </div>
+          <p className={`${textSecondary} font-medium`}>Loading assessment...</p>
+          <p className={`${textMuted} text-sm mt-1`}>Powered by HumanMetrix</p>
         </div>
       </div>
     );
