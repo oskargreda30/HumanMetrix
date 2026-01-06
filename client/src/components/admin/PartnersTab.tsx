@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { CURRENCIES } from "@shared/currencies";
 
 interface Partner {
   id: string;
@@ -1669,48 +1670,17 @@ export default function PartnersTab() {
                       <SelectValue placeholder="Select currency..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                      {/* Tier 1 - Developed Markets */}
-                      <SelectItem value="GBP" className="text-white">GBP (£) - British Pound</SelectItem>
-                      <SelectItem value="USD" className="text-white">USD ($) - US Dollar</SelectItem>
-                      <SelectItem value="EUR" className="text-white">EUR (€) - Euro</SelectItem>
-                      <SelectItem value="SGD" className="text-white">SGD (S$) - Singapore Dollar</SelectItem>
-                      <SelectItem value="AUD" className="text-white">AUD (A$) - Australian Dollar</SelectItem>
-                      <SelectItem value="CAD" className="text-white">CAD (C$) - Canadian Dollar</SelectItem>
-                      <SelectItem value="JPY" className="text-white">JPY (¥) - Japanese Yen</SelectItem>
-                      <SelectItem value="CHF" className="text-white">CHF (Fr) - Swiss Franc</SelectItem>
-                      <SelectItem value="NZD" className="text-white">NZD (NZ$) - New Zealand Dollar</SelectItem>
-                      <SelectItem value="HKD" className="text-white">HKD (HK$) - Hong Kong Dollar</SelectItem>
-                      {/* Tier 2 - Emerging Markets */}
-                      <SelectItem value="MYR" className="text-white">MYR (RM) - Malaysian Ringgit</SelectItem>
-                      <SelectItem value="THB" className="text-white">THB (฿) - Thai Baht</SelectItem>
-                      <SelectItem value="PHP" className="text-white">PHP (₱) - Philippine Peso</SelectItem>
-                      <SelectItem value="INR" className="text-white">INR (₹) - Indian Rupee</SelectItem>
-                      <SelectItem value="AED" className="text-white">AED (د.إ) - UAE Dirham</SelectItem>
-                      <SelectItem value="SAR" className="text-white">SAR (﷼) - Saudi Riyal</SelectItem>
-                      <SelectItem value="ZAR" className="text-white">ZAR (R) - South African Rand</SelectItem>
-                      <SelectItem value="BRL" className="text-white">BRL (R$) - Brazilian Real</SelectItem>
-                      <SelectItem value="MXN" className="text-white">MXN (Mex$) - Mexican Peso</SelectItem>
-                      <SelectItem value="KRW" className="text-white">KRW (₩) - South Korean Won</SelectItem>
-                      <SelectItem value="TWD" className="text-white">TWD (NT$) - Taiwan Dollar</SelectItem>
-                      {/* Tier 3 - SEA Emerging Markets */}
-                      <SelectItem value="IDR" className="text-white">IDR (Rp) - Indonesian Rupiah</SelectItem>
-                      <SelectItem value="VND" className="text-white">VND (₫) - Vietnamese Dong</SelectItem>
-                      <SelectItem value="MMK" className="text-white">MMK (K) - Myanmar Kyat</SelectItem>
-                      <SelectItem value="KHR" className="text-white">KHR (៛) - Cambodian Riel</SelectItem>
-                      <SelectItem value="LAK" className="text-white">LAK (₭) - Lao Kip</SelectItem>
-                      <SelectItem value="BND" className="text-white">BND (B$) - Brunei Dollar</SelectItem>
-                      <SelectItem value="PKR" className="text-white">PKR (₨) - Pakistani Rupee</SelectItem>
-                      <SelectItem value="BDT" className="text-white">BDT (৳) - Bangladeshi Taka</SelectItem>
-                      <SelectItem value="LKR" className="text-white">LKR (Rs) - Sri Lankan Rupee</SelectItem>
-                      <SelectItem value="NPR" className="text-white">NPR (₨) - Nepalese Rupee</SelectItem>
-                      <SelectItem value="TRY" className="text-white">TRY (₺) - Turkish Lira</SelectItem>
-                      <SelectItem value="EGP" className="text-white">EGP (E£) - Egyptian Pound</SelectItem>
-                      <SelectItem value="NGN" className="text-white">NGN (₦) - Nigerian Naira</SelectItem>
-                      <SelectItem value="KES" className="text-white">KES (KSh) - Kenyan Shilling</SelectItem>
-                      <SelectItem value="CLP" className="text-white">CLP (CLP$) - Chilean Peso</SelectItem>
-                      <SelectItem value="COP" className="text-white">COP (COL$) - Colombian Peso</SelectItem>
-                      <SelectItem value="PEN" className="text-white">PEN (S/) - Peruvian Sol</SelectItem>
-                      <SelectItem value="ARS" className="text-white">ARS (AR$) - Argentine Peso</SelectItem>
+                      {Object.values(CURRENCIES)
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((currency) => (
+                          <SelectItem 
+                            key={currency.code} 
+                            value={currency.code} 
+                            className="text-white"
+                          >
+                            {currency.code} ({currency.symbol}) - {currency.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-slate-400">Partner's preferred billing currency</p>
