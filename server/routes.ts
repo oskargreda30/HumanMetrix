@@ -5113,16 +5113,103 @@ Format your response as JSON with this structure:
         .map(([gap]) => gap)
         .slice(0, 3);
 
-      // Key differentiators - what sets top performer apart
-      const keyDifferentiators: string[] = [];
-      if (candidateEntries.length >= 2) {
-        const topEntry = candidateEntries[0];
-        const secondEntry = candidateEntries[1];
+      // Generate hiring recommendation with detailed reasoning
+      const topEntry = candidateEntries[0];
+      const runnerUp = candidateEntries.length > 1 ? candidateEntries[1] : null;
+      
+      // Find skills where top candidate beats runner-up (and by how much)
+      const topAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      const runnerUpAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      
+      if (runnerUp) {
         topEntry.skillScores.forEach((skill: any) => {
-          const secondSkill = secondEntry.skillScores.find((s: any) => s.skillName === skill.skillName);
-          if (secondSkill && skill.score - secondSkill.score > 10) {
-            keyDifferentiators.push(`${topEntry.userName} excels in ${skill.skillName}`);
+          const runnerUpSkill = runnerUp.skillScores.find((s: any) => s.skillName === skill.skillName);
+          if (runnerUpSkill) {
+            const diff = skill.score - runnerUpSkill.score;
+            if (diff > 5) {
+              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
+            } else if (diff < -5) {
+              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'important' });
+            }
           }
+        });
+      }
+      
+      // Sort by criticality first (critical > important > nice-to-have), then by advantage
+      const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
+      topAdvantages.sort((a, b) => {
+        const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                         (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+        return critDiff !== 0 ? critDiff : b.advantage - a.advantage;
+      });
+      runnerUpAdvantages.sort((a, b) => {
+        const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                         (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+        return critDiff !== 0 ? critDiff : b.advantage - a.advantage;
+      });
+      
+      // Build hiring recommendation
+      const topCriticalAdvantages = topAdvantages.filter(a => a.criticality === 'critical');
+      const runnerUpCriticalAdvantages = runnerUpAdvantages.filter(a => a.criticality === 'critical');
+      
+      // Generate recommendation reasons
+      const recommendationReasons: string[] = [];
+      if (topEntry.overallFit - (runnerUp?.overallFit || 0) > 10) {
+        recommendationReasons.push(`${topEntry.overallFit - (runnerUp?.overallFit || 0)} points higher overall fit score`);
+      }
+      if (topCriticalAdvantages.length > 0) {
+        recommendationReasons.push(`Stronger on ${topCriticalAdvantages.length} critical skill(s): ${topCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
+      }
+      if (topAdvantages.length > runnerUpAdvantages.length) {
+        recommendationReasons.push(`Outperforms on ${topAdvantages.length} skills vs ${runnerUpAdvantages.length} for runner-up`);
+      }
+      if ((topEntry.riskFlags || []).length === 0 && (runnerUp?.riskFlags || []).length > 0) {
+        recommendationReasons.push('No critical skill gaps (runner-up has gaps)');
+      }
+      
+      // Generate runner-up consideration
+      const runnerUpConsideration: string[] = [];
+      if (runnerUp) {
+        if (runnerUpCriticalAdvantages.length > 0) {
+          runnerUpConsideration.push(`Better on critical skill(s): ${runnerUpCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
+        }
+        if (runnerUpAdvantages.length > 0) {
+          runnerUpConsideration.push(`Outperforms top pick on ${runnerUpAdvantages.length} skill(s)`);
+        }
+        if ((runnerUp.riskFlags || []).length === 0) {
+          runnerUpConsideration.push('No critical skill gaps');
+        }
+      }
+      
+      // Head-to-head skill comparison (who wins each skill)
+      const skillComparison: { skillName: string; winner: string; winnerScore: number; loserScore: number; margin: number; criticality: string }[] = [];
+      if (candidateEntries.length >= 2) {
+        const allSkillNames = new Set<string>();
+        candidateEntries.forEach(e => e.skillScores.forEach((s: any) => allSkillNames.add(s.skillName)));
+        
+        allSkillNames.forEach(skillName => {
+          const scores = candidateEntries.map(e => {
+            const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+            return { name: e.userName, score: skill?.score || 0, criticality: skill?.criticality || 'important' };
+          }).sort((a, b) => b.score - a.score);
+          
+          if (scores.length >= 2 && scores[0].score !== scores[1].score) {
+            skillComparison.push({
+              skillName,
+              winner: scores[0].name,
+              winnerScore: scores[0].score,
+              loserScore: scores[1].score,
+              margin: scores[0].score - scores[1].score,
+              criticality: scores[0].criticality
+            });
+          }
+        });
+        
+        // Sort by criticality then margin
+        skillComparison.sort((a, b) => {
+          const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                           (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+          return critDiff !== 0 ? critDiff : b.margin - a.margin;
         });
       }
 
@@ -5132,7 +5219,27 @@ Format your response as JSON with this structure:
         fitDistribution,
         commonStrengths,
         commonGaps,
-        keyDifferentiators: keyDifferentiators.slice(0, 3)
+        // New recommendation-focused fields
+        recommendation: {
+          recommendedCandidate: topEntry.userName,
+          recommendedUserId: topEntry.userId,
+          fitScore: topEntry.overallFit,
+          fitTier: topEntry.fitTier,
+          reasons: recommendationReasons.slice(0, 4),
+          criticalSkillAdvantages: topCriticalAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        },
+        runnerUp: runnerUp ? {
+          name: runnerUp.userName,
+          userId: runnerUp.userId,
+          fitScore: runnerUp.overallFit,
+          fitTier: runnerUp.fitTier,
+          consideration: runnerUpConsideration.slice(0, 3),
+          advantagesOverTop: runnerUpAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        } : null,
+        skillComparison: skillComparison.slice(0, 10),
+        keyDifferentiators: topAdvantages.slice(0, 5).map(a => 
+          `${topEntry.userName} leads in ${a.skill} by ${a.advantage} points${a.criticality === 'critical' ? ' (CRITICAL)' : ''}`
+        ),
       };
 
       // Create and save comparison
