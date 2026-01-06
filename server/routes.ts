@@ -4311,8 +4311,9 @@ Format your response as JSON with this structure:
           ? Math.round((roleSimilarityScore / totalRoleSimilarityWeight) * 100)
           : 0;
         
-        // Skip roles that are too dissimilar (less than 40% similar)
-        if (roleSimilarity < 40) continue;
+        // Skip roles that are too dissimilar (less than 60% similar)
+        // This filters out unrelated roles like Video Producer for Network Engineer
+        if (roleSimilarity < 60) continue;
         
         // ---- STEP 2: Calculate CANDIDATE FIT to alternative role ----
         const altAlignments: Array<{ candidateScore: number; requiredScore: number; weight: number }> = [];
@@ -4400,9 +4401,7 @@ Format your response as JSON with this structure:
           
           // Apply penalty for missing critical skills (8% per missing critical skill)
           const criticalPenalty = missingCriticalSkills.length * 8;
-          // Cap at 85% to ensure only perfect matches can reach 90%+
-          const cappedScore = Math.min(combinedScore, 85);
-          const finalScore = Math.max(0, cappedScore - criticalPenalty);
+          const finalScore = Math.max(0, combinedScore - criticalPenalty);
           
           roleFlexibility.push({
             roleId: altRole.id,
