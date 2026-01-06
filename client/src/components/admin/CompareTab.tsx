@@ -1121,6 +1121,70 @@ export default function CompareTab() {
                   </div>
                 )}
 
+              {/* Executive Summary - Guide for Hiring Managers */}
+              {!isCapturingPDF && (
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                    How to Use This Comparison
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    A guide to comparing {selectedCandidates.length} candidates side-by-side
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Step 1 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                      <div>
+                        <p className="font-medium text-sm">Candidate Overview</p>
+                        <p className="text-xs text-muted-foreground">Quick view of each candidate's assessment completion. All 4 assessments should be completed for a complete picture.</p>
+                      </div>
+                    </div>
+                    {/* Step 2 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                      <div>
+                        <p className="font-medium text-sm">Composite Score</p>
+                        <p className="text-xs text-muted-foreground">Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).</p>
+                      </div>
+                    </div>
+                    {/* Step 3 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                      <div>
+                        <p className="font-medium text-sm">Skill-by-Skill Breakdown</p>
+                        <p className="text-xs text-muted-foreground">Radar charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
+                      </div>
+                    </div>
+                    {/* Step 4 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                      <div>
+                        <p className="font-medium text-sm">Role-Based Analysis</p>
+                        <p className="text-xs text-muted-foreground">Select a target role to see how each candidate aligns with specific job requirements and critical skills.</p>
+                      </div>
+                    </div>
+                    {/* What assessments mean */}
+                    <div className="flex gap-3 md:col-span-2">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">?</div>
+                      <div>
+                        <p className="font-medium text-sm">What Each Assessment Measures</p>
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium">FIT:</span> Behavioral traits like resilience, curiosity, ethics (predictors of cultural fit). 
+                          <span className="font-medium ml-2">AI Readiness:</span> Technical AI skills including prompt engineering and data fluency. 
+                          <span className="font-medium ml-2">Prompt Architecture:</span> Real-world prompt writing ability across difficulty levels. 
+                          <span className="font-medium ml-2">AIQ:</span> AI ethics, judgment, and responsible AI awareness.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              )}
+
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
                 <CardHeader>
