@@ -1686,9 +1686,17 @@ export default function PartnersTab() {
                   <p className="text-xs text-slate-400">Partner's preferred billing currency</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pricePerAssessment">Price Per Assessment (pence)</Label>
+                  <Label htmlFor="pricePerAssessment">
+                    Price Per Assessment ({selectedCurrency && CURRENCIES[selectedCurrency] 
+                      ? `${CURRENCIES[selectedCurrency].code} minor units` 
+                      : 'minor units'})
+                  </Label>
                   <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
-                  <p className="text-xs text-slate-400">500 pence = £5.00</p>
+                  <p className="text-xs text-slate-400">
+                    {selectedCurrency && CURRENCIES[selectedCurrency] 
+                      ? `500 = ${CURRENCIES[selectedCurrency].symbol}${CURRENCIES[selectedCurrency].decimalPlaces === 0 ? '500' : '5.00'}`
+                      : '500 = 5.00 in major units'}
+                  </p>
                 </div>
                 
                 <div className="border-t border-slate-700 pt-4 mt-4">
