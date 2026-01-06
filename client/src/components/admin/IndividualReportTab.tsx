@@ -194,9 +194,69 @@ export default function IndividualReportTab() {
 
       {selectedCandidate && candidateReport && selectedCandidateData && (
         <>
+          {/* How to Read This Report - First */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BookOpen className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Understanding Trait-Based Scores</p>
+                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <span className="font-medium">trait-based assessments</span>. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Trait Profile Summary</p>
+                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">FIT Assessment (Behavioral)</p>
+                    <p className="text-xs text-muted-foreground">Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">AI Readiness (Technical)</p>
+                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Prompt Architecture</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">AIQ (Ethics)</p>
+                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Candidate Overview - After How to Read */}
           <Card data-testid="card-candidate-overview">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <CardTitle className="text-xl">{getCandidateName(selectedCandidateData)}</CardTitle>
                   <CardDescription>{selectedCandidateData.user.email}</CardDescription>
@@ -214,7 +274,7 @@ export default function IndividualReportTab() {
                     <span className="text-sm font-medium">FIT</span>
                   </div>
                   {fitData ? (
-                    <span className={`text-2xl font-bold ${getScoreColor(fitData.scores ? Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length : 0)}`}>
+                    <span className="text-2xl font-bold">
                       {Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)}%
                     </span>
                   ) : (
@@ -228,7 +288,7 @@ export default function IndividualReportTab() {
                     <span className="text-sm font-medium">AI Readiness</span>
                   </div>
                   {aiData ? (
-                    <span className={`text-2xl font-bold ${getScoreColor(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)}`}>
+                    <span className="text-2xl font-bold">
                       {Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)}%
                     </span>
                   ) : (
@@ -267,106 +327,50 @@ export default function IndividualReportTab() {
             </CardContent>
           </Card>
 
-          {/* How to Read This Report */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BookOpen className="h-5 w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <p className="font-medium text-sm">Overview Scores</p>
-                    <p className="text-xs text-muted-foreground">Average scores for each assessment type. <span className="font-medium text-green-600">80%+ = Strong</span>, <span className="font-medium text-amber-600">60-79% = Moderate</span>, <span className="font-medium text-red-600">Below 60% = Development needed</span>.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm">Strengths & Development Areas</p>
-                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring skills across FIT and AI Readiness assessments. These inform interview focus and development planning.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm">FIT Assessment (Behavioral)</p>
-                    <p className="text-xs text-muted-foreground">Measures 6 core behavioral competencies. Radar chart shows skill balance; progress bars show individual scores. These are trait-based - fit depends on role requirements.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm">AI Readiness (Technical)</p>
-                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Shows technical aptitude for AI-driven roles including literacy, data fluency, and ethical awareness.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-medium text-sm">Prompt Architecture</p>
-                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
-                    <p className="font-medium text-sm">AIQ (Ethics)</p>
-                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {(fitData || aiData) && (
             <Card data-testid="card-strengths-weaknesses">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5" />
-                  Strengths & Development Areas
+                  Trait Profile Summary
                 </CardTitle>
+                <CardDescription>
+                  Highest and lowest scoring traits. Whether these align with role requirements determines fit.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <h4 className="flex items-center gap-2 mb-4 font-semibold text-green-600">
+                    <h4 className="flex items-center gap-2 mb-4 font-semibold text-blue-600">
                       <TrendingUp className="h-4 w-4" />
-                      Top Strengths
+                      Highest Scoring Traits
                     </h4>
                     <div className="space-y-3">
                       {getStrengthsAndWeaknesses().strengths.map((skill, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
                           <div>
                             <span className="font-medium">{skill.name}</span>
                             <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                           </div>
-                          <span className="font-bold text-green-600">{skill.score}</span>
+                          <span className="font-bold text-blue-600">{skill.score}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="flex items-center gap-2 mb-4 font-semibold text-amber-600">
+                    <h4 className="flex items-center gap-2 mb-4 font-semibold text-slate-600 dark:text-slate-400">
                       <TrendingDown className="h-4 w-4" />
-                      Development Areas
+                      Lowest Scoring Traits
                     </h4>
                     <div className="space-y-3">
                       {getStrengthsAndWeaknesses().weaknesses.map((skill, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20">
                           <div>
                             <span className="font-medium">{skill.name}</span>
                             <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                           </div>
-                          <span className="font-bold text-amber-600">{skill.score}</span>
+                          <span className="font-bold text-slate-600 dark:text-slate-400">{skill.score}</span>
                         </div>
                       ))}
                     </div>
@@ -384,7 +388,7 @@ export default function IndividualReportTab() {
                   FIT Assessment Details
                 </CardTitle>
                 <CardDescription>
-                  Behavioral traits and competencies
+                  Behavioral trait scores - higher values indicate stronger trait presence
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -430,7 +434,7 @@ export default function IndividualReportTab() {
                   AI Readiness Assessment Details
                 </CardTitle>
                 <CardDescription>
-                  Technical AI competencies and adaptability
+                  Technical capability scores - higher values indicate stronger aptitude in each area
                 </CardDescription>
               </CardHeader>
               <CardContent>
