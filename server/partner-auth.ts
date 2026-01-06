@@ -189,7 +189,8 @@ export async function trackUsage(
   assessmentType?: string,
   billable: boolean = false,
   billedAmount?: number,
-  partnerOrganisationId?: string | null
+  partnerOrganisationId?: string | null,
+  isTestMode: boolean = false
 ) {
   try {
     await storage.createUsageEvent({
@@ -199,8 +200,9 @@ export async function trackUsage(
       sessionId,
       eventType,
       assessmentType,
-      billable,
-      billedAmount,
+      isTestMode,
+      billable: isTestMode ? false : billable, // Test mode events are never billable
+      billedAmount: isTestMode ? undefined : billedAmount,
     });
   } catch (error) {
     console.error("Failed to track usage event:", error);

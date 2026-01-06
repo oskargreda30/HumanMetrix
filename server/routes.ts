@@ -5022,7 +5022,17 @@ Format your response as JSON with this structure:
         currentMonthSessions: partnerStats.reduce((sum, p) => sum + p.currentMonthSessions, 0),
       };
       
-      res.json({ totals, partners: partnerStats });
+      // Get test mode usage stats for all partners in the current month
+      const testModeStats = await storage.getTestModeUsageStats(startOfMonth, endOfMonth);
+      
+      // Calculate test mode totals
+      const testModeTotals = {
+        totalTestSessions: testModeStats.reduce((sum, p) => sum + p.testSessions, 0),
+        totalTestCompletions: testModeStats.reduce((sum, p) => sum + p.testCompletions, 0),
+        partnersUsingTestMode: testModeStats.length,
+      };
+      
+      res.json({ totals, partners: partnerStats, testMode: { totals: testModeTotals, byPartner: testModeStats } });
     } catch (error) {
       console.error("Error fetching platform usage stats:", error);
       res.status(500).json({ message: "Failed to fetch platform usage stats" });

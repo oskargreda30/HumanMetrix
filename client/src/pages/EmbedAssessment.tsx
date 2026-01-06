@@ -34,6 +34,7 @@ interface SessionData {
   savedAnswers?: Record<string, any> | null;
   lastAnsweredIndex?: number | null;
   lastActivityAt?: string | null;
+  isTestSession?: boolean; // True if created with a test API key
 }
 
 type Question = {
@@ -467,6 +468,18 @@ export default function EmbedAssessment() {
     
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
+        {/* Test Mode Banner */}
+        {session?.isTestSession && (
+          <div 
+            className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 text-center py-1.5 px-4 font-semibold text-sm shadow-md"
+            data-testid="banner-test-mode-ready"
+          >
+            <span className="inline-flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              TEST MODE - Results from test API key sessions cannot be accessed.
+            </span>
+          </div>
+        )}
         <Card className={`max-w-lg ${bgCard}`}>
           <CardHeader className="text-center">
             {branding?.logoUrl ? (
@@ -539,7 +552,19 @@ export default function EmbedAssessment() {
 
   return (
     <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-assessment">
-      <div className="max-w-2xl mx-auto">
+      {/* Test Mode Banner */}
+      {session?.isTestSession && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 text-center py-1.5 px-4 font-semibold text-sm shadow-md"
+          data-testid="banner-test-mode"
+        >
+          <span className="inline-flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            TEST MODE - This session was created with a test API key. Results cannot be accessed.
+          </span>
+        </div>
+      )}
+      <div className={`max-w-2xl mx-auto ${session?.isTestSession ? 'pt-8' : ''}`}>
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge 

@@ -298,6 +298,7 @@ export interface IStorage {
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
   getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
+  getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]>;
   
   // Partner quota operations
   createPartnerTestPackage(pkg: InsertPartnerTestPackage): Promise<PartnerTestPackage>;
@@ -1689,6 +1690,30 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(usageEvents.createdAt));
+  }
+
+  async getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]> {
+    const result = await db
+      .select({
+        partnerId: usageEvents.partnerId,
+        partnerName: partnerAccounts.name,
+        companyName: partnerAccounts.companyName,
+        testSessions: sql<number>`count(case when ${usageEvents.eventType} = 'session_created' then 1 end)::int`,
+        testCompletions: sql<number>`count(case when ${usageEvents.eventType} = 'session_completed' then 1 end)::int`,
+        lastTestUsage: sql<Date | null>`max(${usageEvents.createdAt})`,
+      })
+      .from(usageEvents)
+      .innerJoin(partnerAccounts, eq(usageEvents.partnerId, partnerAccounts.id))
+      .where(
+        and(
+          eq(usageEvents.isTestMode, true),
+          sql`${usageEvents.createdAt} >= ${startDate}`,
+          sql`${usageEvents.createdAt} <= ${endDate}`
+        )
+      )
+      .groupBy(usageEvents.partnerId, partnerAccounts.name, partnerAccounts.companyName);
+    
+    return result;
   }
 
   // Partner quota operations

@@ -731,6 +731,7 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "set null" }), // Which client organisation this session belongs to
   apiKeyId: varchar("api_key_id").references(() => partnerApiKeys.id, { onDelete: "set null" }), // Nullable for invite-based sessions
+  isTestSession: boolean("is_test_session").notNull().default(false), // True if created with a test API key - no billing, results blocked
   externalUserId: varchar("external_user_id"), // Partner's user ID
   externalEmail: varchar("external_email"),
   assessmentType: varchar("assessment_type").notNull(),
@@ -774,6 +775,7 @@ export const usageEvents = pgTable("usage_events", {
   sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
   eventType: varchar("event_type").notNull(), // session_created, session_started, session_completed, results_fetched
   assessmentType: varchar("assessment_type"),
+  isTestMode: boolean("is_test_mode").notNull().default(false), // True if this event was from a test API key
   billable: boolean("billable").notNull().default(false),
   billedAmount: integer("billed_amount"), // Amount in pence
   stripeUsageRecordId: varchar("stripe_usage_record_id"),

@@ -167,47 +167,52 @@ export function registerPartnerRoutes(app: Express) {
       try {
         const partner = req.partner!;
         const apiKey = req.apiKey!;
+        const isTestKey = apiKey.environment === 'test';
         
-        // Check if partner has remaining quota before creating a session
-        // Partners MUST have purchased test credits to use the API
-        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
         // Generate purchase portal link
         const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
         const purchaseUrl = domain 
           ? `https://${domain}/developers?tab=billing&action=purchase` 
           : 'http://localhost:5000/developers?tab=billing&action=purchase';
         
-        if (quotaBalance.testsPurchased <= 0) {
-          return res.status(402).json({
-            error: "No Credits Purchased",
-            code: "NO_CREDITS",
-            message: "You must purchase test credits before creating assessment sessions.",
-            action: {
-              label: "Purchase Credits",
-              url: purchaseUrl,
-            },
-            quotaStatus: {
-              testsPurchased: quotaBalance.testsPurchased,
-              testsConsumed: quotaBalance.testsConsumed,
-              remaining: quotaBalance.remaining,
-            },
-          });
-        }
-        if (quotaBalance.remaining <= 0) {
-          return res.status(402).json({
-            error: "Quota Exhausted",
-            code: "QUOTA_EXHAUSTED",
-            message: "Your test quota has been exhausted. Purchase additional credits to continue.",
-            action: {
-              label: "Purchase More Credits",
-              url: purchaseUrl,
-            },
-            quotaStatus: {
-              testsPurchased: quotaBalance.testsPurchased,
-              testsConsumed: quotaBalance.testsConsumed,
-              remaining: quotaBalance.remaining,
-            },
-          });
+        // Only check quota for live API keys - test keys bypass quota checks
+        if (!isTestKey) {
+          // Check if partner has remaining quota before creating a session
+          // Partners MUST have purchased test credits to use the API
+          const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+          
+          if (quotaBalance.testsPurchased <= 0) {
+            return res.status(402).json({
+              error: "No Credits Purchased",
+              code: "NO_CREDITS",
+              message: "You must purchase test credits before creating assessment sessions.",
+              action: {
+                label: "Purchase Credits",
+                url: purchaseUrl,
+              },
+              quotaStatus: {
+                testsPurchased: quotaBalance.testsPurchased,
+                testsConsumed: quotaBalance.testsConsumed,
+                remaining: quotaBalance.remaining,
+              },
+            });
+          }
+          if (quotaBalance.remaining <= 0) {
+            return res.status(402).json({
+              error: "Quota Exhausted",
+              code: "QUOTA_EXHAUSTED",
+              message: "Your test quota has been exhausted. Purchase additional credits to continue.",
+              action: {
+                label: "Purchase More Credits",
+                url: purchaseUrl,
+              },
+              quotaStatus: {
+                testsPurchased: quotaBalance.testsPurchased,
+                testsConsumed: quotaBalance.testsConsumed,
+                remaining: quotaBalance.remaining,
+              },
+            });
+          }
         }
         
         const parseResult = createSessionSchema.safeParse(req.body);
@@ -231,6 +236,7 @@ export function registerPartnerRoutes(app: Express) {
           partnerId: partner.id,
           partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
           apiKeyId: apiKey.id,
+          isTestSession: isTestKey, // Mark as test session if created with a test API key
           assessmentType: normalizedType,
           externalUserId: data.externalUserId,
           externalEmail: data.externalEmail,
@@ -249,7 +255,8 @@ export function registerPartnerRoutes(app: Express) {
           normalizedType,
           false,
           undefined, // billedAmount
-          apiKey.partnerOrganisationId // Track usage per organisation
+          apiKey.partnerOrganisationId, // Track usage per organisation
+          isTestKey // Track as test mode usage
         );
         
         const widgetUrl = `${getBaseUrl(req)}/embed/assessment?session=${session.id}`;
@@ -261,6 +268,7 @@ export function registerPartnerRoutes(app: Express) {
           expiresAt: session.expiresAt,
           widgetUrl,
           metadata: session.metadata,
+          testMode: isTestKey, // Indicate to the client this is a test session
         });
       } catch (error) {
         console.error("Error creating session:", error);
@@ -310,12 +318,23 @@ export function registerPartnerRoutes(app: Express) {
     async (req: PartnerRequest, res) => {
       try {
         const partner = req.partner!;
+        const apiKey = req.apiKey!;
         const { sessionId } = req.params;
         
         const session = await storage.getAssessmentSession(sessionId);
         
         if (!session || session.partnerId !== partner.id) {
           return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Block access to results for test sessions
+        if (session.isTestSession) {
+          return res.status(403).json({
+            error: "Test Session Results Blocked",
+            code: "TEST_SESSION_RESULTS_BLOCKED",
+            message: "Results from test API key sessions cannot be accessed. Test sessions are for integration testing only. Use a live API key to create production sessions with accessible results.",
+            testMode: true,
+          });
         }
         
         if (session.status !== "completed") {
@@ -325,14 +344,18 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
+        const isTestKey = apiKey.environment === 'test';
+        
         await trackUsage(
           partner.id,
-          req.apiKey!.id,
+          apiKey.id,
           sessionId,
           "results_fetched",
           session.assessmentType,
-          true,
-          partner.pricePerAssessment ?? undefined
+          !isTestKey, // Only billable for live API keys
+          isTestKey ? undefined : (partner.pricePerAssessment ?? undefined),
+          apiKey.partnerOrganisationId,
+          isTestKey
         );
         
         res.json({
@@ -529,6 +552,7 @@ export function registerPartnerRoutes(app: Express) {
           partnerName: partner?.companyName || partner?.name,
           expiresAt: session.expiresAt,
           questionLocale: session.questionLocale || 'default',
+          isTestSession: session.isTestSession || false, // Indicate if this is a test API key session
           // Include saved progress for resume functionality
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,
@@ -739,71 +763,79 @@ export function registerPartnerRoutes(app: Express) {
           completedAt: new Date(),
         } as any);
         
+        // Check if this is a test session (created with test API key)
+        const isTestSession = session.isTestSession === true;
+        
         await trackUsage(
           session.partnerId,
           session.apiKeyId,
           sessionId,
           "session_completed",
           session.assessmentType,
-          true,
-          partner?.pricePerAssessment || 500
+          !isTestSession, // Only billable for non-test sessions
+          isTestSession ? undefined : (partner?.pricePerAssessment || 500),
+          null, // partnerOrganisationId
+          isTestSession // Mark as test mode
         );
         
-        // Consume a test credit from the partner's prepaid quota
-        const quotaResult = await consumeTestCredit(
-          session.partnerId,
-          sessionId,
-          session.assessmentType
-        );
-        
-        // Handle quota consumption failure - block result delivery if quota couldn't be deducted
-        if (!quotaResult.success) {
-          console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
-          // Return error but assessment data is saved - admin can add credits for retry
-          return res.status(402).json({
-            error: "Quota Consumption Failed",
-            message: "Unable to deduct test credit. Please ensure you have available quota.",
-            sessionId: session.id,
-            status: "billing_pending",
-          });
-        }
-        
-        // Send quota warning emails if thresholds are crossed
-        if (partner) {
-          const balance = await storage.getPartnerQuotaBalance(session.partnerId);
-          const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+        // Skip credit consumption and quota warnings for test sessions
+        if (!isTestSession) {
+          // Consume a test credit from the partner's prepaid quota
+          const quotaResult = await consumeTestCredit(
+            session.partnerId,
+            sessionId,
+            session.assessmentType
+          );
           
-          if (quotaResult.shouldNotifyFirst) {
-            await sendPartnerQuotaWarning70(
-              alertEmail,
-              partner.companyName || partner.name,
-              balance.testsConsumed,
-              balance.testsPurchased,
-              balance.remaining
-            );
-          }
-          if (quotaResult.shouldNotifyUrgent) {
-            await sendPartnerQuotaWarning90(
-              alertEmail,
-              partner.companyName || partner.name,
-              balance.testsConsumed,
-              balance.testsPurchased,
-              balance.remaining
-            );
-          }
-          if (quotaResult.suspended) {
-            await sendPartnerAccessSuspendedEmail(
-              alertEmail,
-              partner.companyName || partner.name
-            );
+          // Handle quota consumption failure - block result delivery if quota couldn't be deducted
+          if (!quotaResult.success) {
+            console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
+            // Return error but assessment data is saved - admin can add credits for retry
+            return res.status(402).json({
+              error: "Quota Consumption Failed",
+              message: "Unable to deduct test credit. Please ensure you have available quota.",
+              sessionId: session.id,
+              status: "billing_pending",
+            });
           }
           
-          // Handle auto top-up if triggered
-          if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
-            try {
-              await processAutoTopUp(partner);
-            } catch (err) {
-              console.error('Auto top-up failed:', err);
+          // Send quota warning emails if thresholds are crossed
+          if (partner) {
+            const balance = await storage.getPartnerQuotaBalance(session.partnerId);
+            const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+            
+            if (quotaResult.shouldNotifyFirst) {
+              await sendPartnerQuotaWarning70(
+                alertEmail,
+                partner.companyName || partner.name,
+                balance.testsConsumed,
+                balance.testsPurchased,
+                balance.remaining
+              );
+            }
+            if (quotaResult.shouldNotifyUrgent) {
+              await sendPartnerQuotaWarning90(
+                alertEmail,
+                partner.companyName || partner.name,
+                balance.testsConsumed,
+                balance.testsPurchased,
+                balance.remaining
+              );
+            }
+            if (quotaResult.suspended) {
+              await sendPartnerAccessSuspendedEmail(
+                alertEmail,
+                partner.companyName || partner.name
+              );
+            }
+            
+            // Handle auto top-up if triggered
+            if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
+              try {
+                await processAutoTopUp(partner);
+              } catch (err) {
+                console.error('Auto top-up failed:', err);
+              }
             }
           }
         }

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity, Plus, ShoppingCart } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity, Plus, ShoppingCart, Key } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -24,6 +24,15 @@ interface PartnerUsageStats {
   freeTestsAllocated: number;
 }
 
+interface TestModePartnerStats {
+  partnerId: string;
+  partnerName: string;
+  companyName: string | null;
+  testSessions: number;
+  testCompletions: number;
+  lastTestUsage: string | null;
+}
+
 interface PlatformUsageStats {
   totals: {
     totalPartners: number;
@@ -35,6 +44,14 @@ interface PlatformUsageStats {
     currentMonthSessions: number;
   };
   partners: PartnerUsageStats[];
+  testMode?: {
+    totals: {
+      totalTestSessions: number;
+      totalTestCompletions: number;
+      partnersUsingTestMode: number;
+    };
+    byPartner: TestModePartnerStats[];
+  };
 }
 
 interface OrgUsageStats {
@@ -252,6 +269,96 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Test API Key Usage Monitoring */}
+      {stats.testMode && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Test API Key Usage
+              <Badge variant="outline" className="ml-2">This Month</Badge>
+            </CardTitle>
+            <CardDescription>
+              Monitor test API key activity to detect potential abuse
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-amber-600" data-testid="text-test-sessions">
+                  {stats.testMode.totals.totalTestSessions}
+                </div>
+                <div className="text-sm text-muted-foreground">Test Sessions Created</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-amber-600" data-testid="text-test-completions">
+                  {stats.testMode.totals.totalTestCompletions}
+                </div>
+                <div className="text-sm text-muted-foreground">Test Completions</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold" data-testid="text-partners-test-mode">
+                  {stats.testMode.totals.partnersUsingTestMode}
+                </div>
+                <div className="text-sm text-muted-foreground">Partners Using Test Keys</div>
+              </div>
+            </div>
+
+            {stats.testMode.byPartner.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                No test API key usage this month
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">Usage By Partner</h4>
+                {stats.testMode.byPartner.map((partner) => {
+                  const isHighUsage = partner.testCompletions > 10;
+                  return (
+                    <div
+                      key={partner.partnerId}
+                      className={`flex items-center justify-between p-3 border rounded-lg ${isHighUsage ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                      data-testid={`test-usage-${partner.partnerId}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-md ${isHighUsage ? 'bg-amber-500/20' : 'bg-muted'}`}>
+                          <Key className={`h-4 w-4 ${isHighUsage ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {partner.companyName || partner.partnerName}
+                            {isHighUsage && (
+                              <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 border-amber-500/30 text-xs">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                High Usage
+                              </Badge>
+                            )}
+                          </div>
+                          {partner.lastTestUsage && (
+                            <div className="text-xs text-muted-foreground">
+                              Last activity: {new Date(partner.lastTestUsage).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-semibold">{partner.testSessions}</div>
+                          <div className="text-muted-foreground text-xs">Sessions</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`font-semibold ${isHighUsage ? 'text-amber-600' : ''}`}>{partner.testCompletions}</div>
+                          <div className="text-muted-foreground text-xs">Completed</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
