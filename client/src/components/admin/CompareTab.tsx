@@ -137,7 +137,7 @@ export default function CompareTab() {
       if (!response.ok) throw new Error('Failed to fetch comparison');
       return response.json();
     },
-    enabled: selectedCandidates.length >= 2,
+    enabled: selectedCandidates.length >= 1,
   });
 
   const toggleCandidate = (userId: string) => {
@@ -1064,7 +1064,7 @@ export default function CompareTab() {
         </CardContent>
       </Card>
 
-      {selectedCandidates.length >= 2 && (
+      {selectedCandidates.length >= 1 && (
         <>
           {isComparing ? (
             <Card>
@@ -2611,19 +2611,8 @@ export default function CompareTab() {
         </>
       )}
 
-      {selectedCandidates.length === 1 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground">
-              Select at least one more candidate to view comparison
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Hidden radar charts for PDF export */}
-      {comparison && selectedCandidates.length >= 2 && (
+      {comparison && selectedCandidates.length >= 1 && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
           {/* FIT radar charts */}
           {comparison.fitAssessments?.map((fitData, index) => {
