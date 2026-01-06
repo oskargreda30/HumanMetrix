@@ -1163,8 +1163,16 @@ export default function CompareTab() {
                     <div className="flex gap-3">
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                       <div>
-                        <p className="font-medium text-sm">Role-Based Analysis</p>
-                        <p className="text-xs text-muted-foreground">Select a target role to see how each candidate aligns with specific job requirements and critical skills.</p>
+                        <p className="font-medium text-sm">Role Fit Analysis (Separate Tool)</p>
+                        <p className="text-xs text-muted-foreground">For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.</p>
+                      </div>
+                    </div>
+                    {/* Step 5 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                      <div>
+                        <p className="font-medium text-sm">Read the Recommendations</p>
+                        <p className="text-xs text-muted-foreground">Review strengths, development areas, and AI-generated insights for each candidate to inform your final decision.</p>
                       </div>
                     </div>
                     {/* What assessments mean */}
