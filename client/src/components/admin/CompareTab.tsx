@@ -668,17 +668,8 @@ export default function CompareTab() {
       });
     }
     
-    // Add Prompt Architecture total score as a single skill
-    const promptData = comparison.promptArchitectureAssessments?.[candidateIndex];
-    if (promptData) {
-      skills['Prompt Architecture'] = promptData.totalScore;
-    }
-    
-    // Add AIQ total score as a single skill
-    const aiqData = comparison.aiqAssessments?.[candidateIndex];
-    if (aiqData) {
-      skills['AIQ (Ethics & Fairness)'] = aiqData.totalScore;
-    }
+    // Note: Prompt Architecture and AIQ are NOT included as skills
+    // They are total scores without individual skill breakdowns
     
     return skills;
   };
