@@ -5195,10 +5195,10 @@ Format your response as JSON with this structure:
       
       // Head-to-head skill comparison (who wins each skill)
       const skillComparison: { skillName: string; winner: string; winnerScore: number; loserScore: number; margin: number; criticality: string }[] = [];
+      const allSkillNames = new Set<string>();
+      candidateEntries.forEach(e => e.skillScores.forEach((s: any) => allSkillNames.add(s.skillName)));
+      
       if (candidateEntries.length >= 2) {
-        const allSkillNames = new Set<string>();
-        candidateEntries.forEach(e => e.skillScores.forEach((s: any) => allSkillNames.add(s.skillName)));
-        
         allSkillNames.forEach(skillName => {
           const scores = candidateEntries.map(e => {
             const skill = e.skillScores.find((s: any) => s.skillName === skillName);
@@ -5222,6 +5222,95 @@ Format your response as JSON with this structure:
           const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
                            (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
           return critDiff !== 0 ? critDiff : b.margin - a.margin;
+        });
+      }
+
+      // NEW METRICS: Skill Dominance Count - how many skills each candidate wins
+      const skillDominance: { candidateName: string; candidateId: string; winsCount: number; totalSkills: number; dominancePercent: number }[] = [];
+      candidateEntries.forEach(entry => {
+        const wins = skillComparison.filter(sc => sc.winner === entry.userName).length;
+        skillDominance.push({
+          candidateName: entry.userName,
+          candidateId: entry.userId,
+          winsCount: wins,
+          totalSkills: allSkillNames.size,
+          dominancePercent: allSkillNames.size > 0 ? Math.round((wins / allSkillNames.size) * 100) : 0
+        });
+      });
+      skillDominance.sort((a, b) => b.winsCount - a.winsCount);
+
+      // NEW METRICS: Consistency Score - how evenly a candidate performs (lower std dev = more consistent)
+      const consistencyScores: { candidateName: string; candidateId: string; consistencyScore: number; interpretation: string }[] = [];
+      candidateEntries.forEach(entry => {
+        const scores = entry.skillScores.map((s: any) => s.score);
+        if (scores.length > 0) {
+          const mean = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+          const variance = scores.reduce((sum: number, s: number) => sum + Math.pow(s - mean, 2), 0) / scores.length;
+          const stdDev = Math.sqrt(variance);
+          // Consistency score: 100 - stdDev (higher = more consistent, max stdDev ~50 for 0-100 range)
+          const consistencyScore = Math.max(0, Math.round(100 - stdDev * 2));
+          let interpretation = 'Moderate';
+          if (consistencyScore >= 85) interpretation = 'Very Consistent';
+          else if (consistencyScore >= 70) interpretation = 'Consistent';
+          else if (consistencyScore < 50) interpretation = 'Variable';
+          
+          consistencyScores.push({
+            candidateName: entry.userName,
+            candidateId: entry.userId,
+            consistencyScore,
+            interpretation
+          });
+        }
+      });
+      consistencyScores.sort((a, b) => b.consistencyScore - a.consistencyScore);
+
+      // NEW METRICS: Critical Gap Ratio - % of critical skills below 60% threshold
+      const criticalGapRatios: { candidateName: string; candidateId: string; criticalGaps: number; totalCritical: number; gapRatio: number; riskLevel: string }[] = [];
+      candidateEntries.forEach(entry => {
+        const criticalSkills = entry.skillScores.filter((s: any) => s.criticality === 'critical');
+        const gapsCount = criticalSkills.filter((s: any) => s.score < 60).length;
+        const ratio = criticalSkills.length > 0 ? Math.round((gapsCount / criticalSkills.length) * 100) : 0;
+        let riskLevel = 'Low Risk';
+        if (ratio >= 50) riskLevel = 'High Risk';
+        else if (ratio >= 25) riskLevel = 'Moderate Risk';
+        else if (ratio > 0) riskLevel = 'Low Risk';
+        else riskLevel = 'No Risk';
+        
+        criticalGapRatios.push({
+          candidateName: entry.userName,
+          candidateId: entry.userId,
+          criticalGaps: gapsCount,
+          totalCritical: criticalSkills.length,
+          gapRatio: ratio,
+          riskLevel
+        });
+      });
+      criticalGapRatios.sort((a, b) => a.gapRatio - b.gapRatio); // Lower ratio = better
+
+      // NEW METRICS: Largest Skill Differential - the skill with biggest spread between candidates
+      let largestDifferential: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number; spread: number; criticality: string } | null = null;
+      if (candidateEntries.length >= 2 && allSkillNames.size > 0) {
+        allSkillNames.forEach(skillName => {
+          const scores = candidateEntries.map(e => {
+            const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+            return { name: e.userName, score: skill?.score || 0, criticality: skill?.criticality || 'important' };
+          }).sort((a, b) => b.score - a.score);
+          
+          // Guard against empty scores array (should not happen but be safe)
+          if (scores.length < 2) return;
+          
+          const spread = scores[0].score - scores[scores.length - 1].score;
+          if (!largestDifferential || spread > largestDifferential.spread) {
+            largestDifferential = {
+              skillName,
+              topCandidate: scores[0].name,
+              topScore: scores[0].score,
+              bottomCandidate: scores[scores.length - 1].name,
+              bottomScore: scores[scores.length - 1].score,
+              spread,
+              criticality: scores[0].criticality
+            };
+          }
         });
       }
 
@@ -5252,6 +5341,11 @@ Format your response as JSON with this structure:
         keyDifferentiators: topAdvantages.slice(0, 5).map(a => 
           `${topEntry.userName} leads in ${a.skill} by ${a.advantage} points${a.criticality === 'critical' ? ' (CRITICAL)' : ''}`
         ),
+        // NEW: Advanced analytics metrics
+        skillDominance,
+        consistencyScores,
+        criticalGapRatios,
+        largestDifferential,
       };
 
       // Create and save comparison

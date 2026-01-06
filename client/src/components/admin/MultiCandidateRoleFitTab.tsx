@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, FileText, BarChart2, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -92,6 +92,37 @@ type MultiCandidateComparison = {
       advantagesOverTop: string[];
     } | null;
     skillComparison?: SkillComparison[];
+    // Advanced analytics
+    skillDominance?: Array<{
+      candidateName: string;
+      candidateId: string;
+      winsCount: number;
+      totalSkills: number;
+      dominancePercent: number;
+    }>;
+    consistencyScores?: Array<{
+      candidateName: string;
+      candidateId: string;
+      consistencyScore: number;
+      interpretation: string;
+    }>;
+    criticalGapRatios?: Array<{
+      candidateName: string;
+      candidateId: string;
+      criticalGaps: number;
+      totalCritical: number;
+      gapRatio: number;
+      riskLevel: string;
+    }>;
+    largestDifferential?: {
+      skillName: string;
+      topCandidate: string;
+      topScore: number;
+      bottomCandidate: string;
+      bottomScore: number;
+      spread: number;
+      criticality: string;
+    } | null;
   };
   createdAt: string;
 };
@@ -596,6 +627,145 @@ export default function MultiCandidateRoleFitTab() {
                   </ul>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Advanced Analytics Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart2 className="h-5 w-5" />
+                Advanced Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Skill Dominance */}
+                {(comparison.summaryInsights.skillDominance?.length || 0) > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                      Skill Dominance Count
+                    </h4>
+                    <p className="text-xs text-muted-foreground">How many skills each candidate leads in</p>
+                    <div className="space-y-2">
+                      {comparison.summaryInsights.skillDominance?.map((sd: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                          <span className="font-medium">{sd.candidateName}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={i === 0 ? "default" : "outline"}>
+                              {sd.winsCount}/{sd.totalSkills} skills
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              ({sd.dominancePercent}%)
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Consistency Scores */}
+                {(comparison.summaryInsights.consistencyScores?.length || 0) > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Target className="h-4 w-4 text-blue-500" />
+                      Consistency Score
+                    </h4>
+                    <p className="text-xs text-muted-foreground">How evenly candidates perform across skills (higher = more consistent)</p>
+                    <div className="space-y-2">
+                      {comparison.summaryInsights.consistencyScores?.map((cs: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                          <span className="font-medium">{cs.candidateName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{cs.consistencyScore}%</span>
+                            <Badge 
+                              variant="outline"
+                              className={
+                                cs.interpretation === 'Very Consistent' ? 'border-green-500 text-green-600' :
+                                cs.interpretation === 'Consistent' ? 'border-blue-500 text-blue-600' :
+                                cs.interpretation === 'Variable' ? 'border-amber-500 text-amber-600' :
+                                ''
+                              }
+                            >
+                              {cs.interpretation}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Critical Gap Ratio */}
+                {(comparison.summaryInsights.criticalGapRatios?.length || 0) > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                      Critical Gap Ratio
+                    </h4>
+                    <p className="text-xs text-muted-foreground">% of critical skills below 60% threshold</p>
+                    <div className="space-y-2">
+                      {comparison.summaryInsights.criticalGapRatios?.map((cgr: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                          <span className="font-medium">{cgr.candidateName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">
+                              {cgr.criticalGaps}/{cgr.totalCritical} gaps
+                            </span>
+                            <Badge 
+                              variant="outline"
+                              className={
+                                cgr.riskLevel === 'No Risk' ? 'border-green-500 text-green-600' :
+                                cgr.riskLevel === 'Low Risk' ? 'border-blue-500 text-blue-600' :
+                                cgr.riskLevel === 'Moderate Risk' ? 'border-amber-500 text-amber-600' :
+                                'border-red-500 text-red-600'
+                              }
+                            >
+                              {cgr.riskLevel}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Largest Skill Differential */}
+                {comparison.summaryInsights.largestDifferential && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-purple-500" />
+                      Largest Skill Differential
+                    </h4>
+                    <p className="text-xs text-muted-foreground">The skill with the biggest performance gap between candidates</p>
+                    <div className="p-4 rounded-lg border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-purple-700 dark:text-purple-400">
+                          {comparison.summaryInsights.largestDifferential.skillName}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {comparison.summaryInsights.largestDifferential.criticality}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <div>
+                          <span className="text-green-600 font-medium">{comparison.summaryInsights.largestDifferential.topCandidate}</span>
+                          <span className="text-muted-foreground ml-1">({comparison.summaryInsights.largestDifferential.topScore}%)</span>
+                        </div>
+                        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                          {comparison.summaryInsights.largestDifferential.spread} pt spread
+                        </Badge>
+                        <div>
+                          <span className="text-red-600 font-medium">{comparison.summaryInsights.largestDifferential.bottomCandidate}</span>
+                          <span className="text-muted-foreground ml-1">({comparison.summaryInsights.largestDifferential.bottomScore}%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
