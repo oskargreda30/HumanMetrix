@@ -361,6 +361,41 @@ export default function PartnersTab() {
     }
   };
 
+  // Country to currency mapping for auto-recommendation
+  const COUNTRY_TO_CURRENCY: Record<string, string> = {
+    // Europe
+    GB: 'GBP', UK: 'GBP', IE: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', PT: 'EUR', NL: 'EUR', BE: 'EUR',
+    AT: 'EUR', GR: 'EUR', FI: 'EUR', LU: 'EUR', MT: 'EUR', CY: 'EUR', EE: 'EUR', LV: 'EUR', LT: 'EUR', SK: 'EUR',
+    SI: 'EUR', HR: 'EUR', CH: 'CHF', NO: 'NOK', SE: 'SEK', DK: 'DKK', PL: 'PLN', CZ: 'CZK', HU: 'HUF', RO: 'RON',
+    BG: 'BGN', RS: 'RSD', UA: 'UAH', RU: 'RUB', BY: 'BYN', MD: 'MDL', AL: 'ALL', MK: 'MKD', BA: 'BAM', ME: 'EUR',
+    XK: 'EUR', IS: 'ISK', LI: 'CHF', AD: 'EUR', MC: 'EUR', SM: 'EUR', VA: 'EUR',
+    // Americas
+    US: 'USD', CA: 'CAD', MX: 'MXN', BR: 'BRL', AR: 'ARS', CL: 'CLP', CO: 'COP', PE: 'PEN', VE: 'VES', EC: 'USD',
+    BO: 'BOB', PY: 'PYG', UY: 'UYU', GY: 'GYD', SR: 'SRD', GT: 'GTQ', HN: 'HNL', SV: 'USD', NI: 'NIO', CR: 'CRC',
+    PA: 'USD', BZ: 'BZD', CU: 'CUP', DO: 'DOP', HT: 'HTG', JM: 'JMD', TT: 'TTD', BB: 'BBD', BS: 'BSD', PR: 'USD',
+    // Asia Pacific
+    AU: 'AUD', NZ: 'NZD', JP: 'JPY', KR: 'KRW', CN: 'CNY', HK: 'HKD', TW: 'TWD', SG: 'SGD', MY: 'MYR', TH: 'THB',
+    ID: 'IDR', PH: 'PHP', VN: 'VND', IN: 'INR', PK: 'PKR', BD: 'BDT', LK: 'LKR', NP: 'NPR', MM: 'MMK', KH: 'KHR',
+    LA: 'LAK', BN: 'BND', MO: 'MOP', MN: 'MNT', KZ: 'KZT', UZ: 'UZS', TM: 'TMT', KG: 'KGS', TJ: 'TJS', AZ: 'AZN',
+    AM: 'AMD', GE: 'GEL', FJ: 'FJD', PG: 'PGK', WS: 'WST', TO: 'TOP', VU: 'VUV', SB: 'SBD',
+    // Middle East & North Africa
+    AE: 'AED', SA: 'SAR', QA: 'QAR', KW: 'KWD', BH: 'BHD', OM: 'OMR', JO: 'JOD', LB: 'LBP', IQ: 'IQD', IR: 'IRR',
+    IL: 'ILS', PS: 'ILS', SY: 'SYP', YE: 'YER', EG: 'EGP', LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', TR: 'TRY',
+    // Sub-Saharan Africa
+    ZA: 'ZAR', NG: 'NGN', KE: 'KES', GH: 'GHS', TZ: 'TZS', UG: 'UGX', RW: 'RWF', ET: 'ETB', MW: 'MWK', ZM: 'ZMW',
+    ZW: 'ZWL', BW: 'BWP', NA: 'NAD', MZ: 'MZN', AO: 'AOA', CM: 'XAF', CI: 'XOF', SN: 'XOF', ML: 'XOF', BF: 'XOF',
+    NE: 'XOF', TG: 'XOF', BJ: 'XOF', GA: 'XAF', CG: 'XAF', CD: 'CDF', MU: 'MUR', SC: 'SCR', MG: 'MGA',
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    // Auto-recommend currency based on country
+    const recommendedCurrency = COUNTRY_TO_CURRENCY[countryCode];
+    if (recommendedCurrency && CURRENCIES[recommendedCurrency]) {
+      setSelectedCurrency(recommendedCurrency);
+    }
+  };
+
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
       name: string; 
@@ -1722,7 +1757,7 @@ export default function PartnersTab() {
                                 key={country.code}
                                 value={`${country.name} ${country.code}`}
                                 onSelect={() => {
-                                  setSelectedCountry(country.code);
+                                  handleCountryChange(country.code);
                                   setCountryOpen(false);
                                 }}
                                 className="text-white hover:bg-slate-700 cursor-pointer"
