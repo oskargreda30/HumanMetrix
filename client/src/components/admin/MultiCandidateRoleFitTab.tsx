@@ -50,6 +50,15 @@ type CandidateEntry = {
   riskFlags: string[];
 };
 
+type SkillComparison = {
+  skillName: string;
+  winner: string;
+  winnerScore: number;
+  loserScore: number;
+  margin: number;
+  criticality: string;
+};
+
 type MultiCandidateComparison = {
   id: string;
   jobRoleId: string;
@@ -66,6 +75,23 @@ type MultiCandidateComparison = {
     commonStrengths: string[];
     commonGaps: string[];
     keyDifferentiators: string[];
+    recommendation?: {
+      recommendedCandidate: string;
+      recommendedUserId: string;
+      fitScore: number;
+      fitTier: string;
+      reasons: string[];
+      criticalSkillAdvantages: string[];
+    };
+    runnerUp?: {
+      name: string;
+      userId: string;
+      fitScore: number;
+      fitTier: string;
+      consideration: string[];
+      advantagesOverTop: string[];
+    } | null;
+    skillComparison?: SkillComparison[];
   };
   createdAt: string;
 };
@@ -352,27 +378,191 @@ export default function MultiCandidateRoleFitTab() {
 
       {comparison && (
         <>
+          {/* Hiring Recommendation - Most Important Section */}
+          {comparison.summaryInsights.recommendation && (
+            <Card className="border-2 border-green-500">
+              <CardHeader className="bg-green-50 dark:bg-green-950/30">
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Trophy className="h-6 w-6" />
+                  Hiring Recommendation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* Recommended Candidate */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white text-2xl font-bold">
+                        1
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold">{comparison.summaryInsights.recommendation.recommendedCandidate}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-2xl font-bold text-green-600">{comparison.summaryInsights.recommendation.fitScore}%</span>
+                          {getFitTierBadge(comparison.summaryInsights.recommendation.fitTier)}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {(comparison.summaryInsights.recommendation.reasons?.length || 0) > 0 && (
+                      <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                        <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">Why This Candidate?</h4>
+                        <ul className="space-y-2">
+                          {comparison.summaryInsights.recommendation.reasons.map((reason, i) => (
+                            <li key={i} className="text-sm flex items-start gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span>{reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {(comparison.summaryInsights.recommendation.criticalSkillAdvantages?.length || 0) > 0 && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Critical Skill Advantages</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {comparison.summaryInsights.recommendation.criticalSkillAdvantages.map((adv, i) => (
+                            <Badge key={i} className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                              {adv}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Runner-Up Alternative */}
+                  {comparison.summaryInsights.runnerUp && (
+                    <div className="space-y-4 border-l-2 border-gray-200 dark:border-gray-700 pl-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
+                          2
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">Runner-Up Alternative</div>
+                          <div className="text-lg font-bold">{comparison.summaryInsights.runnerUp.name}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-lg font-semibold">{comparison.summaryInsights.runnerUp.fitScore}%</span>
+                            {getFitTierBadge(comparison.summaryInsights.runnerUp.fitTier)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {(comparison.summaryInsights.runnerUp.consideration?.length || 0) > 0 && (
+                        <div className="p-3 bg-muted rounded-lg">
+                          <h4 className="font-medium text-sm mb-2">Why Consider as Alternative?</h4>
+                          <ul className="space-y-1">
+                            {comparison.summaryInsights.runnerUp.consideration.map((c, i) => (
+                              <li key={i} className="text-sm text-muted-foreground">{c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {(comparison.summaryInsights.runnerUp.advantagesOverTop?.length || 0) > 0 && (
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                          <h4 className="font-medium text-sm text-amber-700 dark:text-amber-400 mb-2">
+                            Where Runner-Up Outperforms
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {comparison.summaryInsights.runnerUp.advantagesOverTop.map((adv, i) => (
+                              <Badge key={i} variant="outline" className="text-amber-700 border-amber-300">
+                                {adv}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Head-to-Head Skill Comparison */}
+          {comparison.summaryInsights.skillComparison && comparison.summaryInsights.skillComparison.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Skill-by-Skill Comparison: Who Wins Each Skill?
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Head-to-head comparison showing which candidate leads on each skill
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {comparison.summaryInsights.skillComparison.map((skill, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        skill.criticality === 'critical' 
+                          ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' 
+                          : skill.criticality === 'important'
+                          ? 'bg-amber-50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-800'
+                          : 'bg-muted border-border'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            skill.criticality === 'critical' 
+                              ? 'text-red-700 border-red-400 bg-red-100 dark:bg-red-900/50' 
+                              : skill.criticality === 'important'
+                              ? 'text-amber-700 border-amber-400 bg-amber-100 dark:bg-amber-900/50'
+                              : ''
+                          }
+                        >
+                          {skill.criticality}
+                        </Badge>
+                        <span className="font-medium">{skill.skillName}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="font-bold text-green-600">{skill.winner}</span>
+                          <span className="text-muted-foreground mx-2">wins by</span>
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                            +{skill.margin} pts
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          ({skill.winnerScore} vs {skill.loserScore})
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Summary Statistics */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-amber-500" />
-                Comparison Results: {comparison.roleSnapshot.roleName}
+                <TrendingUp className="h-5 w-5" />
+                Comparison Summary: {comparison.roleSnapshot.roleName}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-4">
-                <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600">{comparison.summaryInsights.topPerformer.userName.split(' ')[0]}</div>
-                  <div className="text-sm text-muted-foreground">Top Performer</div>
-                  <div className="text-lg font-semibold text-green-600">{comparison.summaryInsights.topPerformer.overallFit}%</div>
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-3xl font-bold">{comparison.candidateEntries.length}</div>
+                  <div className="text-sm text-muted-foreground">Candidates Compared</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
                   <div className="text-3xl font-bold">{comparison.summaryInsights.averageFit}%</div>
                   <div className="text-sm text-muted-foreground">Average Fit</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-3xl font-bold">{comparison.candidateEntries.length}</div>
-                  <div className="text-sm text-muted-foreground">Candidates Compared</div>
+                  <div className="text-3xl font-bold">
+                    {comparison.summaryInsights.topPerformer.overallFit - (comparison.summaryInsights.runnerUp?.fitScore || comparison.summaryInsights.averageFit)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Point Gap to Runner-Up</div>
                 </div>
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="text-sm font-medium mb-2">Fit Distribution</div>
@@ -393,38 +583,7 @@ export default function MultiCandidateRoleFitTab() {
                 </div>
               </div>
 
-              {(comparison.summaryInsights.commonStrengths.length > 0 || comparison.summaryInsights.commonGaps.length > 0) && (
-                <div className="grid gap-4 md:grid-cols-2 mt-6">
-                  {comparison.summaryInsights.commonStrengths.length > 0 && (
-                    <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                      <h4 className="font-medium text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Common Strengths
-                      </h4>
-                      <ul className="space-y-1">
-                        {comparison.summaryInsights.commonStrengths.map((s, i) => (
-                          <li key={i} className="text-sm text-green-600 dark:text-green-300">{s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {comparison.summaryInsights.commonGaps.length > 0 && (
-                    <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                      <h4 className="font-medium text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Common Gaps
-                      </h4>
-                      <ul className="space-y-1">
-                        {comparison.summaryInsights.commonGaps.map((g, i) => (
-                          <li key={i} className="text-sm text-amber-600 dark:text-amber-300">{g}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {comparison.summaryInsights.keyDifferentiators.length > 0 && (
+              {(comparison.summaryInsights.keyDifferentiators?.length || 0) > 0 && (
                 <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
                   <h4 className="font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
@@ -568,7 +727,7 @@ export default function MultiCandidateRoleFitTab() {
                           )}
                         </div>
 
-                        {entry.riskFlags.length > 0 && (
+                        {(entry.riskFlags?.length || 0) > 0 && (
                           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
                             <h5 className="font-medium text-red-600 mb-1 flex items-center gap-2">
                               <AlertTriangle className="h-4 w-4" />
@@ -583,32 +742,50 @@ export default function MultiCandidateRoleFitTab() {
                         )}
 
                         <div>
-                          <h5 className="font-medium mb-3">Skill Breakdown</h5>
+                          <h5 className="font-medium mb-3">Skill Comparison vs Other Candidates</h5>
                           <div className="grid gap-2 md:grid-cols-2">
-                            {entry.skillScores.map((skill, i) => (
-                              <div key={i} className="p-2 rounded bg-muted/50">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium truncate">{skill.skillName}</span>
-                                  <Badge 
-                                    variant={skill.criticality === 'critical' ? 'default' : 'outline'}
-                                    className="text-xs ml-1"
-                                  >
-                                    {skill.criticality === 'critical' ? 'C' : skill.criticality === 'important' ? 'I' : 'N'}
-                                  </Badge>
+                            {entry.skillScores.map((skill, i) => {
+                              // Calculate rank for this skill among all candidates
+                              const allScoresForSkill = comparison.candidateEntries
+                                .map(c => c.skillScores.find(s => s.skillName === skill.skillName)?.score || 0)
+                                .sort((a, b) => b - a);
+                              const skillRank = allScoresForSkill.indexOf(skill.score) + 1;
+                              const isLeader = skillRank === 1;
+                              const topScore = allScoresForSkill[0];
+                              const gap = topScore - skill.score;
+                              
+                              return (
+                                <div key={i} className={`p-2 rounded ${isLeader ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' : 'bg-muted/50'}`}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium truncate">{skill.skillName}</span>
+                                    <div className="flex items-center gap-1">
+                                      <Badge 
+                                        variant={skill.criticality === 'critical' ? 'default' : 'outline'}
+                                        className="text-xs"
+                                      >
+                                        {skill.criticality === 'critical' ? 'C' : skill.criticality === 'important' ? 'I' : 'N'}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className={`font-medium ${isLeader ? 'text-green-600' : ''}`}>
+                                      {isLeader ? (
+                                        <span className="flex items-center gap-1">
+                                          <Trophy className="h-3 w-3" /> Leads
+                                        </span>
+                                      ) : (
+                                        `Rank ${skillRank}/${comparison.candidateEntries.length}`
+                                      )}
+                                    </span>
+                                    {!isLeader && gap > 0 && (
+                                      <span className="text-muted-foreground text-xs">
+                                        {gap} pts behind leader
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Progress 
-                                    value={skill.score} 
-                                    className="h-2 flex-1"
-                                  />
-                                  <span className={`text-xs font-medium ${
-                                    skill.score >= skill.requiredScore ? 'text-green-600' : 'text-amber-600'
-                                  }`}>
-                                    {skill.score}/{skill.requiredScore}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       </div>

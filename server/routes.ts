@@ -5154,8 +5154,9 @@ Format your response as JSON with this structure:
       
       // Generate recommendation reasons
       const recommendationReasons: string[] = [];
-      if (topEntry.overallFit - (runnerUp?.overallFit || 0) > 10) {
-        recommendationReasons.push(`${topEntry.overallFit - (runnerUp?.overallFit || 0)} points higher overall fit score`);
+      const fitGap = topEntry.overallFit - (runnerUp?.overallFit || 0);
+      if (fitGap > 0) {
+        recommendationReasons.push(`${fitGap} point${fitGap !== 1 ? 's' : ''} higher overall fit score than runner-up`);
       }
       if (topCriticalAdvantages.length > 0) {
         recommendationReasons.push(`Stronger on ${topCriticalAdvantages.length} critical skill(s): ${topCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
@@ -5165,6 +5166,10 @@ Format your response as JSON with this structure:
       }
       if ((topEntry.riskFlags || []).length === 0 && (runnerUp?.riskFlags || []).length > 0) {
         recommendationReasons.push('No critical skill gaps (runner-up has gaps)');
+      }
+      // Add default reason if no specific advantages found
+      if (recommendationReasons.length === 0) {
+        recommendationReasons.push(`Highest overall fit score among compared candidates (${topEntry.overallFit}%)`);
       }
       
       // Generate runner-up consideration
@@ -5178,6 +5183,13 @@ Format your response as JSON with this structure:
         }
         if ((runnerUp.riskFlags || []).length === 0) {
           runnerUpConsideration.push('No critical skill gaps');
+        }
+        // Add default consideration if none found
+        if (runnerUpConsideration.length === 0) {
+          runnerUpConsideration.push(`Second highest fit score (${runnerUp.overallFit}%)`);
+          if (fitGap <= 5) {
+            runnerUpConsideration.push('Very close to top candidate - consider as strong alternative');
+          }
         }
       }
       
