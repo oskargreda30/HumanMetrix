@@ -1895,7 +1895,7 @@ export default function CompareTab() {
                                     fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? renderInsideLabel : false}
+                                    label={false}
                                     isAnimationActive={!isCapturingPDF}
                                   />
                                 );
@@ -2012,7 +2012,7 @@ export default function CompareTab() {
                                     fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? renderInsideLabel : false}
+                                    label={false}
                                     isAnimationActive={!isCapturingPDF}
                                   />
                                 );

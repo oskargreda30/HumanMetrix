@@ -273,46 +273,50 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
   
   // What each assessment measures - box at bottom (positioned to avoid footer)
   // Cap yPos to ensure box doesn't overlap with footer
-  const maxBoxY = pageHeight - 75; // Leave room for footer
+  const maxBoxY = pageHeight - 80; // Leave room for footer
   if (yPos > maxBoxY) yPos = maxBoxY;
   
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 48, 3, 3, 'FD');
+  pdf.roundedRect(20, yPos, pageWidth - 40, 58, 3, 3, 'FD');
   
-  pdf.setFontSize(9);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text('What Each Assessment Measures', 25, yPos + 7);
+  pdf.text('What Each Assessment Measures', 25, yPos + 9);
   
-  pdf.setFontSize(7);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  const assessmentY = yPos + 14;
+  const assessmentY = yPos + 18;
   const colWidth = (pageWidth - 50) / 2;
   
   // Left column
   pdf.setFont('helvetica', 'bold');
   pdf.text('FIT Assessment', 25, assessmentY);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Behavioral traits like resilience, curiosity, ethics - predictors of cultural fit.', 25, assessmentY + 4);
+  pdf.text('Behavioral traits like resilience, curiosity, ethics -', 25, assessmentY + 5);
+  pdf.text('predictors of cultural fit and mindset.', 25, assessmentY + 10);
   
   pdf.setFont('helvetica', 'bold');
-  pdf.text('AI Readiness', 25, assessmentY + 12);
+  pdf.text('AI Readiness', 25, assessmentY + 19);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Technical AI skills including prompt engineering, data fluency, collaboration.', 25, assessmentY + 16);
+  pdf.text('Technical AI skills including prompt engineering,', 25, assessmentY + 24);
+  pdf.text('data fluency, and human-AI collaboration.', 25, assessmentY + 29);
   
   // Right column
   pdf.setFont('helvetica', 'bold');
   pdf.text('Prompt Architecture', 25 + colWidth, assessmentY);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Real-world prompt writing ability tested across difficulty levels.', 25 + colWidth, assessmentY + 4);
+  pdf.text('Real-world prompt writing ability tested across', 25 + colWidth, assessmentY + 5);
+  pdf.text('multiple difficulty levels with AI evaluation.', 25 + colWidth, assessmentY + 10);
   
   pdf.setFont('helvetica', 'bold');
-  pdf.text('AIQ (AI Quotient)', 25 + colWidth, assessmentY + 12);
+  pdf.text('AIQ (AI Quotient)', 25 + colWidth, assessmentY + 19);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('AI ethics, judgment, and responsible AI awareness.', 25 + colWidth, assessmentY + 16);
+  pdf.text('AI ethics, judgment, and responsible AI awareness.', 25 + colWidth, assessmentY + 24);
+  pdf.text('Critical for roles involving AI decision-making.', 25 + colWidth, assessmentY + 29);
 }
 
 // Helper to add Skills Legend page at the end of the PDF
