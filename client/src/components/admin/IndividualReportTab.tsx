@@ -341,7 +341,7 @@ export default function IndividualReportTab() {
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
-                        <PolarGrid />
+                        <PolarGrid strokeDasharray="3 3" />
                         <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                         <Radar
@@ -388,7 +388,7 @@ export default function IndividualReportTab() {
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
-                        <PolarGrid />
+                        <PolarGrid strokeDasharray="3 3" />
                         <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                         <Radar

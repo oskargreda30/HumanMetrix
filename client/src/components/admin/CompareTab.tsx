@@ -1872,7 +1872,7 @@ export default function CompareTab() {
                                 return dataPoint;
                               });
                             })()}>
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
@@ -1932,7 +1932,7 @@ export default function CompareTab() {
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
-                                      <PolarGrid />
+                                      <PolarGrid strokeDasharray="3 3" />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
@@ -1989,7 +1989,7 @@ export default function CompareTab() {
                                 return dataPoint;
                               });
                             })()}>
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
@@ -2049,7 +2049,7 @@ export default function CompareTab() {
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
-                                      <PolarGrid />
+                                      <PolarGrid strokeDasharray="3 3" />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
@@ -2302,7 +2302,7 @@ export default function CompareTab() {
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))} cx="50%" cy="50%" outerRadius="70%">
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
@@ -2645,7 +2645,7 @@ export default function CompareTab() {
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
-                    <PolarGrid />
+                    <PolarGrid strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
@@ -2681,7 +2681,7 @@ export default function CompareTab() {
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
-                    <PolarGrid />
+                    <PolarGrid strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
@@ -2709,7 +2709,7 @@ export default function CompareTab() {
                   outerRadius="68%"
                   margin={{ top: 10, right: 70, bottom: 40, left: 90 }}
                 >
-                  <PolarGrid />
+                  <PolarGrid strokeDasharray="3 3" />
                   <PolarAngleAxis dataKey="skill" tick={{ fontSize: 13 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                   {selectedCandidateData?.map((candidate: any, index: number) => (
