@@ -69,7 +69,15 @@ interface OverageHistoryItem {
   createdAt: string;
 }
 
-function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
+function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId: string; currency?: string }) {
+  const currencySymbols: Record<string, string> = {
+    gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
+    inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
+    lkr: 'Rs', mmk: 'K', khr: '៛', npr: '₨', try: '₺', egp: 'E£', ngn: '₦', kes: 'KSh',
+    zar: 'R', brl: 'R$', mxn: 'MX$', ars: 'AR$',
+  };
+  const currSymbol = currencySymbols[currency.toLowerCase()] || '£';
+  const formatAmount = (pence: number) => `${currSymbol}${(pence / 100).toFixed(2)}`;
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -207,7 +215,7 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
                     {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Overage rate: £{((cardStatus.overageRatePerTest || 500) / 100).toFixed(2)} per test
+                    Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
                   </p>
                 </div>
               </div>
@@ -251,7 +259,7 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
                         <tr key={item.id}>
                           <td className="px-3 py-2">{item.billingMonth}</td>
                           <td className="px-3 py-2 text-right">{item.overageTests}</td>
-                          <td className="px-3 py-2 text-right">£{(item.overageAmount / 100).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right">{formatAmount(item.overageAmount)}</td>
                           <td className="px-3 py-2 text-right">
                             <Badge 
                               variant="outline" 
@@ -349,10 +357,10 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
   );
 }
 
-function PrepaidCardManagement({ partnerId }: { partnerId: string }) {
+function PrepaidCardManagement({ partnerId, currency }: { partnerId: string; currency?: string }) {
   return (
     <Elements stripe={stripePromise}>
-      <PrepaidCardManagementInner partnerId={partnerId} />
+      <PrepaidCardManagementInner partnerId={partnerId} currency={currency} />
     </Elements>
   );
 }
@@ -2463,7 +2471,7 @@ export default function PartnerDashboard() {
 
                   {/* Card on File for Prepaid Partners */}
                   {account?.partner?.billingType === 'payg' && (
-                    <PrepaidCardManagement partnerId={account.partner.id} />
+                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} />
                   )}
 
                   {/* Pending Billing Change Request Alert */}
