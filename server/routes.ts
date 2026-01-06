@@ -3864,16 +3864,24 @@ Format your response as JSON:
       // Process FIT skills
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
+      // Helper to normalize skill names for matching (strip punctuation, spaces, lowercase)
+      const normalizeSkillName = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+      
       // Helper to find criticality with flexible name matching
       const findCriticality = (skillName: string): string => {
-        // Direct match
+        // Direct match first
         if (skillCriticality[skillName]) return skillCriticality[skillName];
-        // Case-insensitive match
-        const lowerName = skillName.toLowerCase();
+        
+        // Normalized matching
+        const normalizedInput = normalizeSkillName(skillName);
         for (const [key, value] of Object.entries(skillCriticality)) {
-          if (key.toLowerCase() === lowerName) return value as string;
-          // Partial match (e.g., "Critical Thinking" matches "Critical Thinking & Problem-Solving")
-          if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase())) {
+          const normalizedKey = normalizeSkillName(key);
+          // Exact normalized match
+          if (normalizedKey === normalizedInput) return value as string;
+          // Partial normalized match (either contains the other)
+          if (normalizedKey.includes(normalizedInput) || normalizedInput.includes(normalizedKey)) {
             return value as string;
           }
         }
