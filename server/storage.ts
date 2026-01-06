@@ -44,6 +44,9 @@ import {
   type InsertCandidateNote,
   type CachedRoleAlignment,
   type InsertCachedRoleAlignment,
+  multiCandidateComparisons,
+  type MultiCandidateComparison,
+  type InsertMultiCandidateComparison,
   type ReportExport,
   type InsertReportExport,
   type UserReference,
@@ -212,6 +215,12 @@ export interface IStorage {
   getRoleAlignment(userId: string, jobRoleId: string): Promise<CachedRoleAlignment | undefined>;
   getRoleAlignmentsByCandidate(userId: string): Promise<CachedRoleAlignment[]>;
   invalidateRoleAlignmentCache(userId: string, jobRoleId: string): Promise<void>;
+  
+  // Multi-candidate comparison operations
+  createMultiCandidateComparison(comparison: InsertMultiCandidateComparison): Promise<MultiCandidateComparison>;
+  getMultiCandidateComparison(id: string): Promise<MultiCandidateComparison | undefined>;
+  getMultiCandidateComparisonsByRole(jobRoleId: string): Promise<MultiCandidateComparison[]>;
+  getMultiCandidateComparisonsByCreator(createdBy: string): Promise<MultiCandidateComparison[]>;
   
   // Report export operations
   createReportExport(report: InsertReportExport): Promise<ReportExport>;
@@ -1090,6 +1099,39 @@ export class DatabaseStorage implements IStorage {
           eq(cachedRoleAlignments.jobRoleId, jobRoleId)
         )
       );
+  }
+
+  // Multi-candidate comparison operations
+  async createMultiCandidateComparison(comparison: InsertMultiCandidateComparison): Promise<MultiCandidateComparison> {
+    const [created] = await db
+      .insert(multiCandidateComparisons)
+      .values(comparison)
+      .returning();
+    return created;
+  }
+
+  async getMultiCandidateComparison(id: string): Promise<MultiCandidateComparison | undefined> {
+    const [comparison] = await db
+      .select()
+      .from(multiCandidateComparisons)
+      .where(eq(multiCandidateComparisons.id, id));
+    return comparison;
+  }
+
+  async getMultiCandidateComparisonsByRole(jobRoleId: string): Promise<MultiCandidateComparison[]> {
+    return await db
+      .select()
+      .from(multiCandidateComparisons)
+      .where(eq(multiCandidateComparisons.jobRoleId, jobRoleId))
+      .orderBy(desc(multiCandidateComparisons.createdAt));
+  }
+
+  async getMultiCandidateComparisonsByCreator(createdBy: string): Promise<MultiCandidateComparison[]> {
+    return await db
+      .select()
+      .from(multiCandidateComparisons)
+      .where(eq(multiCandidateComparisons.createdBy, createdBy))
+      .orderBy(desc(multiCandidateComparisons.createdAt));
   }
 
   // Report export operations

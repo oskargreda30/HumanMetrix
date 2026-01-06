@@ -3183,3 +3183,512 @@ export async function exportCandidatePDF(candidate: CandidateData, skills: Array
   const safeCandidateName = candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
   savePdfMobile(pdf, `candidate-report-${safeCandidateName}-${timestamp}.pdf`);
 }
+
+// Multi-Candidate Role Fit Comparison data structure
+interface MultiCandidateComparisonData {
+  roleSnapshot: {
+    roleId: string;
+    roleName: string;
+    requiredSkillScores: any;
+  };
+  candidateEntries: Array<{
+    userId: string;
+    userName: string;
+    email: string;
+    overallFit: number;
+    rank: number;
+    fitTier: 'strong' | 'moderate' | 'development-needed';
+    skillScores: Array<{
+      skillName: string;
+      score: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+      criticality: 'critical' | 'important' | 'nice-to-have';
+      category: 'fit' | 'ai_readiness';
+    }>;
+    strengths: string[];
+    gaps: string[];
+    riskFlags: string[];
+  }>;
+  summaryInsights: {
+    topPerformer: { userId: string; userName: string; overallFit: number };
+    averageFit: number;
+    fitDistribution: { strong: number; moderate: number; developmentNeeded: number };
+    commonStrengths: string[];
+    commonGaps: string[];
+    keyDifferentiators: string[];
+  };
+  barChartImage?: string | null;
+}
+
+export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  
+  let yPos = 30;
+  
+  // ========== PAGE 1: COVER PAGE ==========
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  // Title Section with blue background
+  yPos = 40;
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(0, yPos, pageWidth, 40, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(22);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('MULTI-CANDIDATE ROLE FIT COMPARISON', pageWidth / 2, yPos + 15, { align: 'center' });
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Target Role: ${data.roleSnapshot.roleName}`, pageWidth / 2, yPos + 28, { align: 'center' });
+  
+  pdf.setFontSize(9);
+  pdf.text(`Generated: ${new Date().toLocaleDateString()} | ${data.candidateEntries.length} Candidates Analyzed`, pageWidth / 2, yPos + 36, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
+  yPos = 90;
+  
+  // Summary Cards
+  const cardWidth = (pageWidth - 50) / 4;
+  const cardHeight = 35;
+  const cardGap = 5;
+  
+  // Card 1: Top Performer
+  pdf.setFillColor(236, 253, 245);
+  pdf.setDrawColor(34, 197, 94);
+  pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
+  applyLabelText(pdf);
+  pdf.text('TOP PERFORMER', 22, yPos + 8);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  const topName = data.summaryInsights.topPerformer.userName.length > 15 
+    ? data.summaryInsights.topPerformer.userName.slice(0, 13) + '...' 
+    : data.summaryInsights.topPerformer.userName;
+  pdf.text(topName, 22, yPos + 17);
+  pdf.setFontSize(16);
+  pdf.text(`${data.summaryInsights.topPerformer.overallFit}%`, 22, yPos + 28);
+  
+  // Card 2: Average Fit
+  const card2X = 20 + cardWidth + cardGap;
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
+  applyLabelText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('AVERAGE FIT', card2X + 2, yPos + 8);
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(`${data.summaryInsights.averageFit}%`, card2X + 2, yPos + 25);
+  
+  // Card 3: Total Candidates
+  const card3X = card2X + cardWidth + cardGap;
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
+  applyLabelText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('CANDIDATES', card3X + 2, yPos + 8);
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(`${data.candidateEntries.length}`, card3X + 2, yPos + 25);
+  
+  // Card 4: Distribution
+  const card4X = card3X + cardWidth + cardGap;
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(card4X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
+  applyLabelText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('DISTRIBUTION', card4X + 2, yPos + 8);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card4X + 2, yPos + 17);
+  pdf.setTextColor(234, 179, 8);
+  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card4X + 2, yPos + 23);
+  pdf.setTextColor(239, 68, 68);
+  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card4X + 2, yPos + 29);
+  
+  pdf.setTextColor(0, 0, 0);
+  yPos += cardHeight + 15;
+  
+  // Common Insights Section
+  if (data.summaryInsights.commonStrengths.length > 0 || data.summaryInsights.commonGaps.length > 0) {
+    yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
+    yPos += 5;
+    
+    const halfWidth = (pageWidth - 45) / 2;
+    
+    // Common Strengths
+    if (data.summaryInsights.commonStrengths.length > 0) {
+      pdf.setFillColor(236, 253, 245);
+      pdf.setDrawColor(134, 239, 172);
+      pdf.roundedRect(20, yPos, halfWidth, 30, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(34, 197, 94);
+      pdf.text('Common Strengths', 25, yPos + 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(22, 101, 52);
+      data.summaryInsights.commonStrengths.slice(0, 3).forEach((s, i) => {
+        const truncated = s.length > 40 ? s.slice(0, 38) + '...' : s;
+        pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 5));
+      });
+    }
+    
+    // Common Gaps
+    if (data.summaryInsights.commonGaps.length > 0) {
+      pdf.setFillColor(254, 252, 232);
+      pdf.setDrawColor(253, 224, 71);
+      pdf.roundedRect(25 + halfWidth, yPos, halfWidth, 30, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(161, 98, 7);
+      pdf.text('Common Development Areas', 30 + halfWidth, yPos + 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(133, 77, 14);
+      data.summaryInsights.commonGaps.slice(0, 3).forEach((g, i) => {
+        const truncated = g.length > 40 ? g.slice(0, 38) + '...' : g;
+        pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 14 + (i * 5));
+      });
+    }
+    
+    yPos += 38;
+  }
+  
+  // Key Differentiators
+  if (data.summaryInsights.keyDifferentiators.length > 0) {
+    pdf.setFillColor(239, 246, 255);
+    pdf.setDrawColor(147, 197, 253);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 25, 2, 2, 'FD');
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Key Differentiators', 25, yPos + 8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(30, 64, 175);
+    data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
+      const truncated = d.length > 80 ? d.slice(0, 78) + '...' : d;
+      pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 4));
+    });
+    yPos += 32;
+  }
+  
+  // Bar Chart Image (if provided)
+  if (data.barChartImage) {
+    yPos = addSectionHeader(pdf, 'OVERALL FIT COMPARISON', yPos, pageWidth);
+    yPos += 3;
+    
+    try {
+      const chartHeight = Math.min(60, pageHeight - yPos - 30);
+      pdf.addImage(data.barChartImage, 'PNG', 20, yPos, pageWidth - 40, chartHeight);
+      yPos += chartHeight + 10;
+    } catch (e) {
+      console.error('Error adding bar chart image:', e);
+    }
+  }
+  
+  // ========== PAGE 2+: CANDIDATE RANKINGS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 35;
+  
+  yPos = addSectionHeader(pdf, 'CANDIDATE RANKINGS', yPos, pageWidth);
+  yPos += 5;
+  
+  // Table header
+  const colWidths = { rank: 15, name: 55, fit: 25, tier: 30, strengths: 35, gaps: 30 };
+  const tableX = 20;
+  
+  pdf.setFillColor(249, 250, 251);
+  pdf.rect(tableX, yPos, pageWidth - 40, 8, 'F');
+  
+  applyLabelText(pdf);
+  pdf.text('RANK', tableX + 2, yPos + 5);
+  pdf.text('CANDIDATE', tableX + colWidths.rank + 2, yPos + 5);
+  pdf.text('FIT %', tableX + colWidths.rank + colWidths.name + 2, yPos + 5);
+  pdf.text('TIER', tableX + colWidths.rank + colWidths.name + colWidths.fit + 2, yPos + 5);
+  pdf.text('KEY NOTES', tableX + colWidths.rank + colWidths.name + colWidths.fit + colWidths.tier + 2, yPos + 5);
+  
+  yPos += 10;
+  
+  // Table rows
+  data.candidateEntries.forEach((candidate, idx) => {
+    // Check page break
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    const rowHeight = 16;
+    
+    // Alternating row background
+    if (idx % 2 === 0) {
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(tableX, yPos - 2, pageWidth - 40, rowHeight, 'F');
+    }
+    
+    // Rank with medal for top 3
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    if (idx === 0) {
+      pdf.setTextColor(234, 179, 8); // Gold
+    } else if (idx === 1) {
+      pdf.setTextColor(156, 163, 175); // Silver
+    } else if (idx === 2) {
+      pdf.setTextColor(180, 83, 9); // Bronze
+    } else {
+      pdf.setTextColor(107, 114, 128);
+    }
+    pdf.text(`${candidate.rank}`, tableX + 5, yPos + 5);
+    
+    // Name and email
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFont('helvetica', 'bold');
+    const truncName = candidate.userName.length > 22 ? candidate.userName.slice(0, 20) + '...' : candidate.userName;
+    pdf.text(truncName, tableX + colWidths.rank + 2, yPos + 4);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(107, 114, 128);
+    const truncEmail = candidate.email.length > 30 ? candidate.email.slice(0, 28) + '...' : candidate.email;
+    pdf.text(truncEmail, tableX + colWidths.rank + 2, yPos + 10);
+    
+    // Fit percentage
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    const fitColor = candidate.fitTier === 'strong' ? [34, 197, 94] : 
+                     candidate.fitTier === 'moderate' ? [234, 179, 8] : [239, 68, 68];
+    pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
+    pdf.text(`${candidate.overallFit}%`, tableX + colWidths.rank + colWidths.name + 2, yPos + 6);
+    
+    // Tier badge
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    const tierLabel = candidate.fitTier === 'strong' ? 'Strong' : 
+                      candidate.fitTier === 'moderate' ? 'Moderate' : 'Dev Needed';
+    pdf.text(tierLabel, tableX + colWidths.rank + colWidths.name + colWidths.fit + 2, yPos + 6);
+    
+    // Key notes (strengths or gaps)
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const notes = candidate.riskFlags.length > 0 
+      ? candidate.riskFlags[0] 
+      : candidate.strengths.length > 0 
+        ? candidate.strengths[0].replace('Strong ', '')
+        : '';
+    const truncNotes = notes.length > 25 ? notes.slice(0, 23) + '...' : notes;
+    pdf.text(truncNotes, tableX + colWidths.rank + colWidths.name + colWidths.fit + colWidths.tier + 2, yPos + 6);
+    
+    yPos += rowHeight;
+  });
+  
+  // ========== DETAILED CANDIDATE PAGES ==========
+  data.candidateEntries.forEach((candidate, idx) => {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+    
+    // Candidate header
+    pdf.setFillColor(candidate.fitTier === 'strong' ? 236 : candidate.fitTier === 'moderate' ? 254 : 254,
+                     candidate.fitTier === 'strong' ? 253 : candidate.fitTier === 'moderate' ? 243 : 226,
+                     candidate.fitTier === 'strong' ? 245 : candidate.fitTier === 'moderate' ? 199 : 226);
+    pdf.rect(0, yPos - 5, pageWidth, 30, 'F');
+    
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`#${candidate.rank} - ${candidate.userName}`, 20, yPos + 5);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(candidate.email, 20, yPos + 12);
+    
+    // Fit score badge
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    const fitColor = candidate.fitTier === 'strong' ? [34, 197, 94] : 
+                     candidate.fitTier === 'moderate' ? [234, 179, 8] : [239, 68, 68];
+    pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
+    pdf.text(`${candidate.overallFit}%`, pageWidth - 45, yPos + 8);
+    
+    pdf.setFontSize(10);
+    const tierLabel = candidate.fitTier === 'strong' ? 'Strong Fit' : 
+                      candidate.fitTier === 'moderate' ? 'Moderate Fit' : 'Development Needed';
+    pdf.text(tierLabel, pageWidth - 45, yPos + 16);
+    
+    yPos += 30;
+    
+    // Strengths and Gaps side by side
+    const halfWidth = (pageWidth - 45) / 2;
+    
+    // Strengths box
+    pdf.setFillColor(236, 253, 245);
+    pdf.setDrawColor(134, 239, 172);
+    pdf.roundedRect(20, yPos, halfWidth, 35, 2, 2, 'FD');
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text('Strengths', 25, yPos + 8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(22, 101, 52);
+    candidate.strengths.slice(0, 4).forEach((s, i) => {
+      const truncated = s.length > 35 ? s.slice(0, 33) + '...' : s;
+      pdf.text(`\u2022 ${truncated}`, 25, yPos + 15 + (i * 5));
+    });
+    
+    // Gaps box
+    pdf.setFillColor(254, 252, 232);
+    pdf.setDrawColor(253, 224, 71);
+    pdf.roundedRect(25 + halfWidth, yPos, halfWidth, 35, 2, 2, 'FD');
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(161, 98, 7);
+    pdf.text('Development Areas', 30 + halfWidth, yPos + 8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(133, 77, 14);
+    candidate.gaps.slice(0, 4).forEach((g, i) => {
+      const truncated = g.length > 35 ? g.slice(0, 33) + '...' : g;
+      pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 15 + (i * 5));
+    });
+    
+    yPos += 42;
+    
+    // Risk flags
+    if (candidate.riskFlags.length > 0) {
+      pdf.setFillColor(254, 226, 226);
+      pdf.setDrawColor(252, 165, 165);
+      pdf.roundedRect(20, yPos, pageWidth - 40, 15, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(220, 38, 38);
+      pdf.text('Risk Flags:', 25, yPos + 6);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(candidate.riskFlags.join(' | '), 60, yPos + 6);
+      yPos += 20;
+    }
+    
+    // Skill scores table
+    yPos = addSectionHeader(pdf, 'DETAILED SKILL SCORES', yPos, pageWidth);
+    yPos += 3;
+    
+    // Group skills by category
+    const fitSkills = candidate.skillScores.filter(s => s.category === 'fit');
+    const aiSkills = candidate.skillScores.filter(s => s.category === 'ai_readiness');
+    
+    const renderSkillGroup = (skills: typeof candidate.skillScores, title: string) => {
+      if (skills.length === 0) return;
+      
+      if (yPos > pageHeight - 50) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(59, 130, 246);
+      pdf.text(title, 20, yPos);
+      yPos += 6;
+      
+      skills.forEach((skill, i) => {
+        if (yPos > pageHeight - 20) {
+          pdf.addPage();
+          addBackgroundPattern(pdf, pageWidth, pageHeight);
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+        }
+        
+        // Skill name
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(17, 24, 39);
+        const skillLabel = skill.skillName.length > 30 ? skill.skillName.slice(0, 28) + '...' : skill.skillName;
+        pdf.text(skillLabel, 25, yPos);
+        
+        // Criticality badge
+        if (skill.criticality === 'critical') {
+          pdf.setFillColor(239, 68, 68);
+          pdf.circle(95, yPos - 1, 2, 'F');
+          pdf.setFontSize(6);
+          pdf.setTextColor(255, 255, 255);
+          pdf.text('C', 93.8, yPos);
+        }
+        
+        // Score bar
+        const barX = 100;
+        const barWidth = 60;
+        const barHeight = 4;
+        
+        // Background bar
+        pdf.setFillColor(229, 231, 235);
+        pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
+        
+        // Score fill
+        const scoreColor = skill.score >= skill.requiredScore ? [34, 197, 94] : 
+                           skill.score >= skill.requiredScore * 0.8 ? [234, 179, 8] : [239, 68, 68];
+        pdf.setFillColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+        const fillWidth = Math.min((skill.score / 100) * barWidth, barWidth);
+        pdf.roundedRect(barX, yPos - 3, fillWidth, barHeight, 1, 1, 'F');
+        
+        // Required marker
+        const reqX = barX + (skill.requiredScore / 100) * barWidth;
+        pdf.setDrawColor(17, 24, 39);
+        pdf.setLineWidth(0.5);
+        pdf.line(reqX, yPos - 4, reqX, yPos + 2);
+        
+        // Score text
+        pdf.setFontSize(8);
+        pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+        pdf.text(`${skill.score}`, barX + barWidth + 3, yPos);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`/ ${skill.requiredScore}`, barX + barWidth + 12, yPos);
+        
+        yPos += 7;
+      });
+      
+      yPos += 5;
+    };
+    
+    renderSkillGroup(fitSkills, 'FIT Skills (Behavioral)');
+    renderSkillGroup(aiSkills, 'AI Readiness Skills (Technical)');
+  });
+  
+  // Add footers to all pages
+  const totalPages = pdf.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(
+      `Page ${i} of ${totalPages} - HumanMetrix Multi-Candidate Comparison`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' }
+    );
+  }
+  
+  // Save
+  const timestamp = new Date().toISOString().split('T')[0];
+  const safeRoleName = data.roleSnapshot.roleName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  savePdfMobile(pdf, `multi-candidate-comparison-${safeRoleName}-${timestamp}.pdf`);
+}

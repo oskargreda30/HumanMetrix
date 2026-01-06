@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -16,8 +16,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MultiCandidateRoleFitTab from "./MultiCandidateRoleFitTab";
 
-export default function RoleFitTab() {
+function SingleCandidateRoleFit() {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const { toast } = useToast();
@@ -1012,5 +1014,28 @@ export default function RoleFitTab() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function RoleFitTab() {
+  return (
+    <Tabs defaultValue="single" className="w-full">
+      <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsTrigger value="single" className="flex items-center gap-2" data-testid="tab-single-candidate">
+          <User className="h-4 w-4" />
+          Single Candidate
+        </TabsTrigger>
+        <TabsTrigger value="multi" className="flex items-center gap-2" data-testid="tab-multi-candidate">
+          <Users className="h-4 w-4" />
+          Compare Candidates
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="single" className="mt-6">
+        <SingleCandidateRoleFit />
+      </TabsContent>
+      <TabsContent value="multi" className="mt-6">
+        <MultiCandidateRoleFitTab />
+      </TabsContent>
+    </Tabs>
   );
 }

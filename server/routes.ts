@@ -4845,6 +4845,341 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Admin: Multi-candidate role fit comparison - compare multiple candidates against one role
+  app.post("/api/admin/multi-candidate-comparison", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { jobRoleId, candidateIds } = req.body;
+      
+      if (!jobRoleId || !candidateIds || !Array.isArray(candidateIds) || candidateIds.length < 2) {
+        return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
+      }
+      
+      if (candidateIds.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
+      }
+
+      // Get job role
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      if (!role.requiredSkillScores) {
+        return res.status(400).json({ 
+          message: "Role does not have required skill scores. Please generate them first.",
+          requiresGeneration: true
+        });
+      }
+
+      // Helper functions
+      const ensureNoMultipleOf5 = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          const nudge = score % 10 === 0 ? 2 : 1;
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+
+      const normalizeSkillName = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+
+      const skillCriticality = role.requiredSkillScores.skillCriticality || {};
+      
+      const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
+        if (skillCriticality[skillName]) return skillCriticality[skillName] as any;
+        const normalizedInput = normalizeSkillName(skillName);
+        for (const [key, value] of Object.entries(skillCriticality)) {
+          const normalizedKey = normalizeSkillName(key);
+          if (normalizedKey === normalizedInput || normalizedKey.includes(normalizedInput) || normalizedInput.includes(normalizedKey)) {
+            return value as any;
+          }
+        }
+        return 'important';
+      };
+
+      const getSkillWeight = (criticality: string): number => {
+        if (criticality === 'critical') return 2.0;
+        if (criticality === 'important') return 1.5;
+        return 1.0;
+      };
+
+      // AI Readiness skill mapping
+      const aiReadinessSkillMapping: Record<string, string> = {
+        'AI Literacy': 'AI Literacy & Prompt Engineering',
+        'Collaboration': 'Collaboration & Communication',
+        'Domain Fluency': 'Data Fluency',
+        'Responsible AI': 'Responsible AI & Ethical Awareness',
+        'Data Fluency': 'Data Fluency',
+        'Technical Fundamentals': 'Technical Fundamentals',
+        'Technical Fluency': 'Technical Fundamentals',
+        'Critical Thinking': 'Critical Thinking & Problem-Solving',
+        'Adaptability': 'Adaptability & Continuous Learning',
+        'Adaptive Learning': 'Adaptability & Continuous Learning',
+        'Creativity': 'Creativity & Innovation',
+        'Creative Innovation': 'Creativity & Innovation',
+        'Domain Expertise': 'Domain Expertise',
+      };
+
+      // Process each candidate
+      const candidateEntries: any[] = [];
+      
+      for (const candidateId of candidateIds) {
+        const user = await storage.getUser(candidateId);
+        if (!user) continue;
+
+        const resultsRaw = await storage.getResultsByUser(candidateId);
+        const results = resultsRaw.map(recalculateScores);
+        const completedResults = results.filter((r) => r.status === 'completed');
+        
+        if (completedResults.length === 0) continue;
+
+        // Aggregate skills
+        const fitSkills = new Map<string, number>();
+        const aiReadinessSkills = new Map<string, number>();
+        
+        completedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              if (result.assessmentType === 'fit') {
+                fitSkills.set(skill, score as number);
+              } else if (result.assessmentType === 'ai_readiness') {
+                aiReadinessSkills.set(skill, score as number);
+              }
+            });
+          }
+        });
+
+        // Build skill alignments
+        const skillScores: any[] = [];
+        
+        // Process FIT skills
+        if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
+          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const candidateScore = fitSkills.get(skillName) || 0;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            skillScores.push({
+              skillName,
+              score: candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName),
+              category: 'fit' as const
+            });
+          });
+        }
+        
+        // Process AI Readiness skills
+        if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            skillScores.push({
+              skillName: fullSkillName,
+              score: candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              category: 'ai_readiness' as const
+            });
+          });
+        }
+
+        // Calculate overall fit score with criticality weighting
+        let weightedTotal = 0;
+        let weightSum = 0;
+        let criticalGaps = 0;
+        let totalCriticalSkills = 0;
+        const strengths: string[] = [];
+        const gaps: string[] = [];
+        
+        skillScores.forEach(skill => {
+          const weight = getSkillWeight(skill.criticality || 'important');
+          const isCritical = skill.criticality === 'critical';
+          
+          if (isCritical) totalCriticalSkills++;
+          
+          const matchPercent = skill.score >= skill.requiredScore
+            ? 100
+            : (skill.score / skill.requiredScore) * 100;
+          
+          weightedTotal += matchPercent * weight;
+          weightSum += weight;
+          
+          if (isCritical && skill.score < skill.requiredScore) {
+            criticalGaps++;
+          }
+
+          // Identify strengths and gaps
+          if (skill.score > skill.requiredScore + 5) {
+            strengths.push(`Strong ${skill.skillName}`);
+          } else if (skill.gap > 15) {
+            gaps.push(`Gap in ${skill.skillName}`);
+          }
+        });
+        
+        let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
+        
+        if (criticalGaps > 0 && totalCriticalSkills > 0) {
+          const criticalPenalty = criticalGaps * 0.10;
+          overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
+        }
+        
+        overallFit = Math.round(overallFit);
+
+        const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+
+        candidateEntries.push({
+          userId: candidateId,
+          userName,
+          email: user.email,
+          overallFit,
+          rank: 0, // Will be calculated after all candidates are processed
+          fitTier: overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed',
+          skillScores,
+          strengths: strengths.slice(0, 5),
+          gaps: gaps.slice(0, 5),
+          riskFlags: criticalGaps > 0 ? [`${criticalGaps} critical skill gap(s)`] : []
+        });
+      }
+
+      if (candidateEntries.length < 2) {
+        return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
+      }
+
+      // Sort and assign ranks
+      candidateEntries.sort((a, b) => b.overallFit - a.overallFit);
+      candidateEntries.forEach((entry, index) => {
+        entry.rank = index + 1;
+      });
+
+      // Calculate summary insights
+      const fitScores = candidateEntries.map(e => e.overallFit);
+      const topPerformer = candidateEntries[0];
+      const averageFit = Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length);
+      
+      const fitDistribution = {
+        strong: candidateEntries.filter(e => e.fitTier === 'strong').length,
+        moderate: candidateEntries.filter(e => e.fitTier === 'moderate').length,
+        developmentNeeded: candidateEntries.filter(e => e.fitTier === 'development-needed').length
+      };
+
+      // Find common strengths and gaps across candidates
+      const strengthCounts: Record<string, number> = {};
+      const gapCounts: Record<string, number> = {};
+      
+      candidateEntries.forEach(entry => {
+        entry.strengths.forEach((s: string) => {
+          strengthCounts[s] = (strengthCounts[s] || 0) + 1;
+        });
+        entry.gaps.forEach((g: string) => {
+          gapCounts[g] = (gapCounts[g] || 0) + 1;
+        });
+      });
+
+      const commonStrengths = Object.entries(strengthCounts)
+        .filter(([_, count]) => count >= Math.ceil(candidateEntries.length / 2))
+        .map(([strength]) => strength)
+        .slice(0, 3);
+
+      const commonGaps = Object.entries(gapCounts)
+        .filter(([_, count]) => count >= Math.ceil(candidateEntries.length / 2))
+        .map(([gap]) => gap)
+        .slice(0, 3);
+
+      // Key differentiators - what sets top performer apart
+      const keyDifferentiators: string[] = [];
+      if (candidateEntries.length >= 2) {
+        const topEntry = candidateEntries[0];
+        const secondEntry = candidateEntries[1];
+        topEntry.skillScores.forEach((skill: any) => {
+          const secondSkill = secondEntry.skillScores.find((s: any) => s.skillName === skill.skillName);
+          if (secondSkill && skill.score - secondSkill.score > 10) {
+            keyDifferentiators.push(`${topEntry.userName} excels in ${skill.skillName}`);
+          }
+        });
+      }
+
+      const summaryInsights = {
+        topPerformer: { userId: topPerformer.userId, userName: topPerformer.userName, overallFit: topPerformer.overallFit },
+        averageFit,
+        fitDistribution,
+        commonStrengths,
+        commonGaps,
+        keyDifferentiators: keyDifferentiators.slice(0, 3)
+      };
+
+      // Create and save comparison
+      const comparison = await storage.createMultiCandidateComparison({
+        jobRoleId,
+        createdBy: adminId,
+        candidateEntries,
+        roleSnapshot: {
+          roleId: role.id,
+          roleName: role.name,
+          requiredSkillScores: role.requiredSkillScores
+        },
+        summaryInsights,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      });
+
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error creating multi-candidate comparison:", error);
+      res.status(500).json({ message: "Failed to create comparison" });
+    }
+  });
+
+  // Admin: Get multi-candidate comparison
+  app.get("/api/admin/multi-candidate-comparison/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const comparison = await storage.getMultiCandidateComparison(req.params.id);
+      
+      if (!comparison) {
+        return res.status(404).json({ message: "Comparison not found" });
+      }
+
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error fetching multi-candidate comparison:", error);
+      res.status(500).json({ message: "Failed to fetch comparison" });
+    }
+  });
+
   // Get prompt architecture evaluations for a specific assessment result
   app.get("/api/prompt-evaluations/:resultId", isAuthenticated, async (req: any, res) => {
     try {
