@@ -1310,8 +1310,8 @@ export default function CompareTab() {
                 </Card>
               )}
 
-              {/* 2. Role Suitability Scoring */}
-              {comparison.hasSkillData && (
+              {/* 2. Role Suitability Scoring - TEMPORARILY DISABLED */}
+              {false && comparison.hasSkillData && (
                 <Card data-testid="card-role-suitability" data-report-section="role-suitability">
                   <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
