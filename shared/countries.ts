@@ -216,3 +216,199 @@ export function getCountryByCode(code: string): Country | undefined {
 export function getCountryByDialCode(dialCode: string): Country | undefined {
   return COUNTRIES.find(c => c.dialCode === dialCode);
 }
+
+// Phone number formatting patterns by country code
+// Returns formatted phone number based on country-specific format
+export function formatPhoneNumber(phone: string, countryCode: string): string {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '');
+  
+  switch (countryCode) {
+    // North American Numbering Plan: (XXX) XXX-XXXX
+    case 'US':
+    case 'CA':
+    case 'PR': // Puerto Rico
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    
+    // UK: XXXX XXXXXX or XXXXX XXXXXX (varies by area)
+    case 'GB':
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 10) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+      return `${digits.slice(0, 5)} ${digits.slice(5, 11)}`;
+    
+    // Germany: XXXX XXXXXXX
+    case 'DE':
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 11)}`;
+    
+    // France: XX XX XX XX XX
+    case 'FR':
+      const frParts = digits.match(/.{1,2}/g) || [];
+      return frParts.slice(0, 5).join(' ');
+    
+    // Italy: XXX XXX XXXX
+    case 'IT':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    
+    // Spain: XXX XX XX XX
+    case 'ES':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`;
+    
+    // Netherlands: XX XXXX XXXX
+    case 'NL':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+    
+    // Australia: XXXX XXX XXX
+    case 'AU':
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 10)}`;
+    
+    // Japan: XXX-XXXX-XXXX
+    case 'JP':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+    
+    // China: XXX XXXX XXXX
+    case 'CN':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+    
+    // India: XXXXX XXXXX
+    case 'IN':
+      if (digits.length <= 5) return digits;
+      return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+    
+    // Brazil: (XX) XXXXX-XXXX
+    case 'BR':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+    
+    // Mexico: XX XXXX XXXX
+    case 'MX':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+    
+    // Singapore: XXXX XXXX
+    case 'SG':
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    
+    // Hong Kong: XXXX XXXX
+    case 'HK':
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    
+    // South Korea: XXX-XXXX-XXXX
+    case 'KR':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+    
+    // Thailand: XXX XXX XXXX
+    case 'TH':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    
+    // Philippines: XXX XXX XXXX
+    case 'PH':
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    
+    // Malaysia: XX-XXX XXXX
+    case 'MY':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+      return `${digits.slice(0, 2)}-${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    
+    // Indonesia: XXXX-XXXX-XXXX
+    case 'ID':
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 8) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+      return `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8, 12)}`;
+    
+    // UAE: XX XXX XXXX
+    case 'AE':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    
+    // South Africa: XX XXX XXXX
+    case 'ZA':
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    
+    // Default: group in 3s or 4s
+    default:
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 10) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8)}`;
+  }
+}
+
+// Get placeholder text for phone input based on country
+export function getPhonePlaceholder(countryCode: string): string {
+  switch (countryCode) {
+    case 'US':
+    case 'CA':
+      return '(555) 123-4567';
+    case 'GB':
+      return '7123 456789';
+    case 'DE':
+      return '1234 5678901';
+    case 'FR':
+      return '12 34 56 78 90';
+    case 'IT':
+      return '312 345 6789';
+    case 'ES':
+      return '612 34 56 78';
+    case 'NL':
+      return '61 2345 6789';
+    case 'AU':
+      return '0412 345 678';
+    case 'JP':
+      return '090-1234-5678';
+    case 'CN':
+      return '138 1234 5678';
+    case 'IN':
+      return '98765 43210';
+    case 'BR':
+      return '(11) 91234-5678';
+    case 'MX':
+      return '55 1234 5678';
+    case 'SG':
+    case 'HK':
+      return '9123 4567';
+    case 'KR':
+      return '010-1234-5678';
+    case 'TH':
+    case 'PH':
+      return '812 345 6789';
+    case 'MY':
+      return '12-345 6789';
+    case 'ID':
+      return '0812-3456-7890';
+    case 'AE':
+    case 'ZA':
+      return '50 123 4567';
+    default:
+      return '123 456 7890';
+  }
+}

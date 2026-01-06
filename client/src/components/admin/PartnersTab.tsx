@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CURRENCIES } from "@shared/currencies";
-import { COUNTRIES } from "@shared/countries";
+import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -341,10 +341,24 @@ export default function PartnersTab() {
   const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<string>("GB");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [countryOpen, setCountryOpen] = useState(false);
   const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
   
   const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
+  
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value, selectedPhoneCountry);
+    setPhoneNumber(formatted);
+  };
+  
+  const handlePhoneCountryChange = (countryCode: string) => {
+    setSelectedPhoneCountry(countryCode);
+    if (phoneNumber) {
+      const formatted = formatPhoneNumber(phoneNumber, countryCode);
+      setPhoneNumber(formatted);
+    }
+  };
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
@@ -374,6 +388,7 @@ export default function PartnersTab() {
       setBillingCycleAnchor(1);
       setSelectedCountry("");
       setSelectedPhoneCountry("GB");
+      setPhoneNumber("");
       setSelectedCurrency("GBP");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
@@ -1752,7 +1767,7 @@ export default function PartnersTab() {
                                   key={country.code}
                                   value={`${country.name} ${country.dialCode} ${country.code}`}
                                   onSelect={() => {
-                                    setSelectedPhoneCountry(country.code);
+                                    handlePhoneCountryChange(country.code);
                                     setPhoneCodeOpen(false);
                                   }}
                                   className="text-white hover:bg-slate-700 cursor-pointer"
@@ -1774,7 +1789,9 @@ export default function PartnersTab() {
                       id="phoneNumber" 
                       name="phoneNumber" 
                       type="tel" 
-                      placeholder="7123 456789" 
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder={getPhonePlaceholder(selectedPhoneCountry)} 
                       className="flex-1 bg-slate-800 border-slate-600" 
                       data-testid="input-partner-phone" 
                     />
