@@ -1203,7 +1203,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
+    pdf.text('Measures ethical reasoning and decision-making in AI-related scenarios through a single integrated score', 20, yPos);
     yPos += 8;
     
     // Get band interpretation for display

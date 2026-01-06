@@ -1728,10 +1728,10 @@ export default function CompareTab() {
                                 <td className="p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      AIQ (Ethics & Fairness)
+                                      Algorithmic Integrity (AIQ)
                                       <Badge variant="outline" className="ml-2 text-xs">AIQ</Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent>Algorithmic Integrity Quotient - AI ethics, bias, and responsibility assessment</TooltipContent>
+                                    <TooltipContent>Single integrated score measuring ethical reasoning in AI-related scenarios</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
