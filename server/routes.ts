@@ -4275,16 +4275,17 @@ Format your response as JSON with this structure:
           const altCrit = getCriticalityWeight(altCriticality[skillName]);
           const weight = Math.max(targetCrit, altCrit);
           
-          // Calculate similarity: penalize differences more heavily for critical skills
-          // Difference of 0 = 100% similar, difference of 100 = 0% similar
+          // Calculate similarity: use squared difference for sharper differentiation
+          // Small differences (5-10 pts) should still reduce similarity meaningfully
           const scoreDiff = Math.abs(targetScore - altScore);
-          const skillSimilarity = Math.max(0, 100 - scoreDiff);
+          // Use exponential decay: e.g., 10 point diff = ~60% similarity, 20 point diff = ~35%
+          const skillSimilarity = Math.max(0, 100 * Math.exp(-scoreDiff / 25));
           
           // Apply penalty if skill is in one role but not the other (0 vs non-zero)
           let effectiveSimilarity = skillSimilarity;
           if ((targetScore === 0 && altScore > 0) || (targetScore > 0 && altScore === 0)) {
-            // One role requires this skill, the other doesn't - apply 50% penalty
-            effectiveSimilarity = skillSimilarity * 0.5;
+            // One role requires this skill, the other doesn't - apply 70% penalty (was 50%)
+            effectiveSimilarity = skillSimilarity * 0.3;
           }
           
           roleSimilarityScore += effectiveSimilarity * weight;
@@ -4377,14 +4378,16 @@ Format your response as JSON with this structure:
           // ---- STEP 3: Combine role similarity and candidate fit ----
           // Final score = (roleSimilarity * 0.4) + (candidateFit * 0.6) * coverageAdjustment
           // This gives more weight to actual candidate fit but role similarity filters out irrelevant matches
-          const coverageAdjustment = coveragePercent / 100;
+          const coverageAdjustment = Math.pow(coveragePercent / 100, 1.5); // Steeper coverage penalty
           const combinedScore = Math.round(
             ((roleSimilarity * 0.4) + (rawFitScore * 0.6)) * coverageAdjustment
           );
           
-          // Apply penalty for missing critical skills
-          const criticalPenalty = missingCriticalSkills.length * 10;
-          const finalScore = Math.max(0, combinedScore - criticalPenalty);
+          // Apply penalty for missing critical skills (8% per missing critical skill)
+          const criticalPenalty = missingCriticalSkills.length * 8;
+          // Cap at 85% to ensure only perfect matches can reach 90%+
+          const cappedScore = Math.min(combinedScore, 85);
+          const finalScore = Math.max(0, cappedScore - criticalPenalty);
           
           roleFlexibility.push({
             roleId: altRole.id,
