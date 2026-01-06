@@ -2381,7 +2381,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   }
   
   // ========== CRITICAL SKILLS ANALYSIS ==========
-  // Get top 4 critical skills from both FIT and AI Readiness alignments
+  // Get all critical skills from both FIT and AI Readiness alignments (up to 6)
   // Prioritize by: 1) criticality='critical', 2) largest gaps (most need for development)
   const allSkillsWithSource = [
     ...(data.alignment.fitSkillAlignments || []).map(s => ({ ...s, source: 'fit' as const })),
@@ -2395,7 +2395,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       const gapB = b.requiredScore - b.candidateScore;
       return gapB - gapA;
     })
-    .slice(0, 4);
+    .slice(0, 6);
   
   if (criticalSkills.length > 0) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
