@@ -47,6 +47,7 @@ interface Partner {
   paymentTermsDays: number | null;
   invoiceNotes: string | null;
   invoiceContact: string | null;
+  currency: string;
 }
 
 interface ApiKey {
@@ -579,8 +580,15 @@ export default function PartnersTab() {
     }
   };
 
-  const formatCurrency = (pence: number) => {
-    return `£${(pence / 100).toFixed(2)}`;
+  const formatCurrency = (pence: number, currency?: string) => {
+    const currencySymbols: Record<string, string> = {
+      gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
+      inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
+      lkr: 'Rs', mmk: 'K', khr: '៛', npr: '₨', try: '₺', egp: 'E£', ngn: '₦', kes: 'KSh',
+      zar: 'R', brl: 'R$', mxn: 'MX$', ars: 'AR$',
+    };
+    const symbol = currencySymbols[(currency || 'gbp').toLowerCase()] || '£';
+    return `${symbol}${(pence / 100).toFixed(2)}`;
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -644,7 +652,7 @@ export default function PartnersTab() {
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-white/60 text-sm mb-1">Monthly Billable</div>
-                <div className="text-2xl font-bold text-cyan-400">{formatCurrency(detailPartner.currentMonthBillable)}</div>
+                <div className="text-2xl font-bold text-cyan-400">{formatCurrency(detailPartner.currentMonthBillable, detailPartner.currency)}</div>
                 <div className="text-white/50 text-xs">this period</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
@@ -709,7 +717,7 @@ export default function PartnersTab() {
                             )}
                           </TableCell>
                           <TableCell className="text-white/80">
-                            {event.billedAmount ? formatCurrency(event.billedAmount) : "-"}
+                            {event.billedAmount ? formatCurrency(event.billedAmount, detailPartner.currency) : "-"}
                           </TableCell>
                           <TableCell className="text-white/60 text-sm">{formatDate(event.createdAt)}</TableCell>
                         </TableRow>
@@ -935,7 +943,7 @@ export default function PartnersTab() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="text-white/60 text-sm mb-1">Price Per Assessment</div>
-                      <div className="text-xl font-bold text-white">{formatCurrency(detailPartner.pricePerAssessment)}</div>
+                      <div className="text-xl font-bold text-white">{formatCurrency(detailPartner.pricePerAssessment, detailPartner.currency)}</div>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="text-white/60 text-sm mb-1">Monthly Quota</div>
@@ -1533,7 +1541,7 @@ export default function PartnersTab() {
                 />
                 {invoiceTestsUsed && detailPartner.pricePerAssessment && (
                   <p className="text-sm text-slate-400">
-                    Subtotal: £{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}
+                    Subtotal: {formatCurrency(parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment, detailPartner.currency)}
                   </p>
                 )}
               </div>
@@ -1569,19 +1577,19 @@ export default function PartnersTab() {
                   <div className="text-sm text-slate-400 mb-2">Invoice Preview</div>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-white/70">{invoiceTestsUsed} tests @ £{(detailPartner.pricePerAssessment / 100).toFixed(2)}</span>
-                      <span className="text-white">£{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}</span>
+                      <span className="text-white/70">{invoiceTestsUsed} tests @ {formatCurrency(detailPartner.pricePerAssessment, detailPartner.currency)}</span>
+                      <span className="text-white">{formatCurrency(parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment, detailPartner.currency)}</span>
                     </div>
                     {parseInt(invoiceVatRate) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-white/70">VAT ({invoiceVatRate}%)</span>
-                        <span className="text-white">£{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (parseInt(invoiceVatRate) / 100)).toFixed(2)}</span>
+                        <span className="text-white">{formatCurrency(Math.round((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) * (parseInt(invoiceVatRate) / 100)), detailPartner.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between pt-2 border-t border-slate-600 font-medium">
                       <span className="text-white">Total</span>
                       <span className="text-cyan-400">
-                        £{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (1 + parseInt(invoiceVatRate) / 100)).toFixed(2)}
+                        {formatCurrency(Math.round((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) * (1 + parseInt(invoiceVatRate) / 100)), detailPartner.currency)}
                       </span>
                     </div>
                     <div className="text-white/50 text-xs mt-2">
@@ -2027,7 +2035,7 @@ export default function PartnersTab() {
               </div>
               <div className="bg-white/5 rounded-lg p-3">
                 <div className="text-white/60 text-xs mb-1">Monthly Revenue</div>
-                <div className="text-xl font-bold text-amber-400">{formatCurrency(partners.reduce((sum, p) => sum + p.currentMonthBillable, 0))}</div>
+                <div className="text-xl font-bold text-amber-400">{formatCurrency(partners.reduce((sum, p) => sum + p.currentMonthBillable, 0), 'gbp')}</div>
               </div>
             </div>
           )}
@@ -2066,7 +2074,7 @@ export default function PartnersTab() {
                       <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300">{partner.currentMonthSessions}</Badge>
                     </TableCell>
                     <TableCell className="text-white/80">{partner.totalTestsCompleted}</TableCell>
-                    <TableCell className="text-amber-300 font-medium">{formatCurrency(partner.currentMonthBillable)}</TableCell>
+                    <TableCell className="text-amber-300 font-medium">{formatCurrency(partner.currentMonthBillable, partner.currency)}</TableCell>
                     <TableCell>
                       <span className="text-white/80">{partner.activeApiKeys}</span>
                       <span className="text-white/40">/{partner.totalApiKeys}</span>
