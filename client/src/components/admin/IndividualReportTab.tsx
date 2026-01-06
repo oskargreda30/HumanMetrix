@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, BarChart3, Download, Award, Brain, Target, TrendingUp, TrendingDown, FileText, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -98,14 +98,6 @@ export default function IndividualReportTab() {
     if (score >= 80) return 'default';
     if (score >= 60) return 'secondary';
     return 'destructive';
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   const getCompletedAssessments = () => {
@@ -493,66 +485,15 @@ export default function IndividualReportTab() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-6">
-                  <div className="text-center p-6 rounded-lg bg-muted">
-                    <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
-                      {aiqData.totalScore}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
+                <div className="text-center p-6 rounded-lg bg-muted inline-block">
+                  <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
+                    {aiqData.totalScore}
                   </div>
-                  
-                  {aiqData.scores && Object.keys(aiqData.scores).length > 0 && (
-                    <div className="flex-1 space-y-3">
-                      {Object.entries(aiqData.scores).map(([category, score]) => (
-                        <div key={category} className="space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span>{category}</span>
-                            <span className={`font-medium ${getScoreColor(score as number)}`}>{score as number}%</span>
-                          </div>
-                          <Progress value={score as number} className="h-2" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
                 </div>
               </CardContent>
             </Card>
           )}
-
-          <Card data-testid="card-assessment-history">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Assessment History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {getCompletedAssessments().map((result) => (
-                  <div key={result.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <div>
-                        <span className="font-medium capitalize">{result.assessmentType.replace(/_/g, ' ')}</span>
-                        <p className="text-sm text-muted-foreground">
-                          Completed {formatDate(result.completedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={getScoreBadgeVariant(result.totalScore)}>
-                      {result.totalScore}%
-                    </Badge>
-                  </div>
-                ))}
-                
-                {getCompletedAssessments().length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No completed assessments yet
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {(fitData || aiData) && (
             <SkillsLegend className="mt-4" />
