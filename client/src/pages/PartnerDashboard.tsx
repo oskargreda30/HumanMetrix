@@ -2726,7 +2726,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold" data-testid="text-total-purchased">
-                            {partner?.testsPurchased || 0} tests
+                            {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} tests
                           </div>
                           <p className="text-xs text-muted-foreground">
                             All time credits

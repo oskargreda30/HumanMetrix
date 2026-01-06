@@ -5007,6 +5007,7 @@ Format your response as JSON with this structure:
           isSuspended: !!partner.apiAccessSuspendedAt,
           currentMonthSessions,
           totalTestsCompleted,
+          freeTestsAllocated: partner.freeTestsAllocated || 0,
         };
       }));
       
@@ -5097,6 +5098,7 @@ Format your response as JSON with this structure:
           isSuspended: !!matchingPartner.apiAccessSuspendedAt,
           currentMonthSessions,
           totalTestsCompleted,
+          freeTestsAllocated: matchingPartner.freeTestsAllocated || 0,
         },
       });
     } catch (error) {

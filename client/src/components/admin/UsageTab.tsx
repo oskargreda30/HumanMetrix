@@ -21,6 +21,7 @@ interface PartnerUsageStats {
   isSuspended: boolean;
   currentMonthSessions: number;
   totalTestsCompleted: number;
+  freeTestsAllocated: number;
 }
 
 interface PlatformUsageStats {
@@ -229,7 +230,7 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
                   </div>
                   <div className="flex items-center gap-6 text-sm ml-4">
                     <div className="text-center">
-                      <div className="font-semibold">{partner.testsPurchased}</div>
+                      <div className="font-semibold">{Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0))}</div>
                       <div className="text-muted-foreground text-xs">Purchased</div>
                     </div>
                     <div className="text-center">
@@ -338,7 +339,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="text-org-tests-purchased">
-              {partner.testsPurchased.toLocaleString()}
+              {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               Total prepaid tests
@@ -507,7 +508,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-primary">{partner.testsPurchased}</div>
+              <div className="text-2xl font-bold text-primary">{Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0))}</div>
               <div className="text-sm text-muted-foreground">Total Purchased</div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
