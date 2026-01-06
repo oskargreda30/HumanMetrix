@@ -250,10 +250,14 @@ export type InsertAiqRationale = z.infer<typeof insertAiqRationaleSchema>;
 export type AiqRationale = typeof aiqRationales.$inferSelect;
 
 // Job Roles - predefined and custom roles for candidate matching
+// Job role domains for semantic filtering in Role Flexibility Analysis
+export type JobRoleDomain = 'technology' | 'creative' | 'business' | 'healthcare' | 'education' | 'finance' | 'operations' | 'sales' | 'other';
+
 export const jobRoles = pgTable("job_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
+  domain: text("domain").$type<JobRoleDomain>(), // Semantic domain for role flexibility matching
   competencies: jsonb("competencies").notNull().$type<{
     skillName: string;
     importance: number; // 1-5 scale

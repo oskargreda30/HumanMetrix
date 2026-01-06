@@ -4263,6 +4263,13 @@ Format your response as JSON with this structure:
         // Skip current role and roles without required scores
         if (altRole.id === jobRoleId || !altRole.requiredSkillScores) continue;
         
+        // ---- SEMANTIC DOMAIN FILTER ----
+        // Only compare roles within the same domain (e.g., technology with technology)
+        // This prevents nonsensical matches like Video Producer for Network Engineer
+        const targetDomain = role.domain || 'other';
+        const altDomain = altRole.domain || 'other';
+        if (targetDomain !== altDomain) continue;
+        
         const altFitSkills = (altRole.requiredSkillScores.fitSkills || {}) as Record<string, number>;
         const altAiSkills = (altRole.requiredSkillScores.aiReadinessSkills || {}) as Record<string, number>;
         const altCriticality = (altRole.requiredSkillScores.skillCriticality || {}) as Record<string, string>;
