@@ -1672,7 +1672,7 @@ export default function PartnerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                      {partner.testsPurchased.toLocaleString()}
+                      {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground">Total credits</p>
                   </CardContent>
@@ -1733,6 +1733,7 @@ export default function PartnerDashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
+                    {partner.freeTestsAllocated > 0 && ` (includes ${partner.freeTestsAllocated} free)`}
                   </p>
                 </CardContent>
               </Card>
