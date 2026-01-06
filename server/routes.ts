@@ -3182,8 +3182,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? req.query.userIds as string[]
         : [req.query.userIds as string];
 
-      if (!userIds || userIds.length < 2) {
-        return res.status(400).json({ message: "At least 2 user IDs required" });
+      if (!userIds || userIds.length < 1) {
+        return res.status(400).json({ message: "At least 1 user ID required" });
       }
 
       // Get results for all selected candidates and recalculate scores
