@@ -166,11 +166,6 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Widget Test
-                </TabsTrigger>
-              )}
-              {isSuperAdmin && (
                 <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Billing
                 </TabsTrigger>
@@ -183,6 +178,11 @@ export default function AdminDashboard() {
               {isSuperAdmin && (
                 <TabsTrigger value="settings" data-testid="tab-settings" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Settings
+                </TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Widget Test
                 </TabsTrigger>
               )}
             </TabsList>
