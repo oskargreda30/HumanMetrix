@@ -330,21 +330,29 @@ export default function RoleFitTab() {
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                   <div>
-                    <p className="font-medium text-sm">Cohort Benchmarking</p>
-                    <p className="text-xs text-muted-foreground">See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.</p>
+                    <p className="font-medium text-sm">Critical Skills Analysis</p>
+                    <p className="text-xs text-muted-foreground">Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.</p>
                   </div>
                 </div>
                 {/* Step 4 */}
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                   <div>
-                    <p className="font-medium text-sm">Role Flexibility Analysis</p>
-                    <p className="text-xs text-muted-foreground">Alternative roles where this candidate might excel if the primary role isn't ideal. Useful for internal mobility.</p>
+                    <p className="font-medium text-sm">Cohort Benchmarking</p>
+                    <p className="text-xs text-muted-foreground">See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.</p>
                   </div>
                 </div>
                 {/* Step 5 */}
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Role Flexibility Analysis</p>
+                    <p className="text-xs text-muted-foreground">Alternative roles where this candidate might excel if the primary role isn't ideal. Useful for internal mobility.</p>
+                  </div>
+                </div>
+                {/* Step 6 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
                   <div>
                     <p className="font-medium text-sm">Hiring Recommendation</p>
                     <p className="text-xs text-muted-foreground">Summary with specific hiring guidance, interview focus areas, and onboarding considerations.</p>

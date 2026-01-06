@@ -242,13 +242,16 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(2, 'Skill Alignments (FIT & AI Readiness)', 
       'Compare candidate scores vs. role requirements. Look for skills marked "C" (Critical) - these are essential for success.', yPos);
     
-    yPos = addGuideItem(3, 'Cohort Benchmarking', 
+    yPos = addGuideItem(3, 'Critical Skills Analysis', 
+      'Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.', yPos);
+    
+    yPos = addGuideItem(4, 'Cohort Benchmarking', 
       'See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.', yPos);
     
-    yPos = addGuideItem(4, 'Role Flexibility Analysis', 
+    yPos = addGuideItem(5, 'Role Flexibility Analysis', 
       'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility.', yPos);
     
-    yPos = addGuideItem(5, 'Hiring Recommendation', 
+    yPos = addGuideItem(6, 'Hiring Recommendation', 
       'Summary with specific hiring guidance, interview focus areas, and onboarding considerations.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly
