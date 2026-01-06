@@ -2399,13 +2399,11 @@ export default function CompareTab() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Award className="h-5 w-5 text-primary" />
-                          HIRING RECOMMENDATION
+                          Hiring Recommendation
                         </CardTitle>
-                        {!selectedRole && (
-                          <p className="text-xs text-muted-foreground">
-                            Based on overall assessment scores. Select a role above for role-specific analysis.
-                          </p>
-                        )}
+                        <CardDescription>
+                          Based on comprehensive assessment data across all four evaluation types
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-employer-recommendation">
