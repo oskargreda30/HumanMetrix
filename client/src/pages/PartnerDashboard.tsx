@@ -624,6 +624,8 @@ export default function PartnerDashboard() {
   const [showCreateKeyDialog, setShowCreateKeyDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEnvironment, setNewKeyEnvironment] = useState<"test" | "live">("test");
+  const [creatingKeyType, setCreatingKeyType] = useState<'test' | 'live' | null>(null);
+  const [newKeyData, setNewKeyData] = useState<{ fullKey: string; environment: string } | null>(null);
   
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
@@ -1016,15 +1018,14 @@ export default function PartnerDashboard() {
       const response = await apiRequest("POST", "/api/partner/me/api-keys", data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       
       // Ensure the API key data is present in response
       if (data?.apiKey?.fullKey) {
-        setNewApiKey(data.apiKey.fullKey);
+        setNewKeyData({ fullKey: data.apiKey.fullKey, environment: variables.environment });
         setShowCreateKeyDialog(false);
-        setShowNewKeyDialog(true);
         setNewKeyName("");
         setNewKeyEnvironment("test");
         toast({
@@ -1039,6 +1040,7 @@ export default function PartnerDashboard() {
           variant: "destructive",
         });
       }
+      setCreatingKeyType(null);
     },
     onError: (error: Error) => {
       toast({
@@ -1046,6 +1048,7 @@ export default function PartnerDashboard() {
         description: error.message,
         variant: "destructive",
       });
+      setCreatingKeyType(null);
     },
   });
 
@@ -1077,6 +1080,20 @@ export default function PartnerDashboard() {
   const handleCreateKey = () => {
     if (!newKeyName) return;
     createKeyMutation.mutate({ name: newKeyName, environment: newKeyEnvironment });
+  };
+
+  const handleCreateTestKey = () => {
+    setCreatingKeyType('test');
+    createKeyMutation.mutate({ name: `Test Key - ${new Date().toLocaleDateString()}`, environment: 'test' });
+  };
+
+  const handleCreateLiveKey = () => {
+    setCreatingKeyType('live');
+    createKeyMutation.mutate({ name: `Live Key - ${new Date().toLocaleDateString()}`, environment: 'live' });
+  };
+
+  const handleClearNewKey = () => {
+    setNewKeyData(null);
   };
 
   const handleRevokeKey = (keyId: string) => {
@@ -3407,11 +3424,15 @@ export default function PartnerDashboard() {
               <DeveloperSubTabs 
                 apiKeys={apiKeys}
                 apiKeysLoading={apiKeysLoading}
-                onCreateKey={() => setShowCreateKeyDialog(true)}
+                onCreateTestKey={handleCreateTestKey}
+                onCreateLiveKey={handleCreateLiveKey}
                 onRotateKey={handleRotateKey}
                 onRevokeKey={handleRevokeKey}
                 rotatingKeyId={rotatingKeyId}
                 revokingKeyId={revokingKeyId}
+                creatingKeyType={creatingKeyType}
+                newKeyData={newKeyData}
+                onClearNewKey={handleClearNewKey}
               />
             </TabsContent>
 
