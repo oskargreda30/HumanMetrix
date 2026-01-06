@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
+import { apiRequest } from "@/lib/queryClient";
 
 const CHART_COLOR = "#3b82f6";
 
@@ -59,6 +60,8 @@ interface CandidateData {
 
 export default function IndividualReportTab() {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
+  const [profileInsights, setProfileInsights] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<CandidateData[]>({
@@ -75,6 +78,23 @@ export default function IndividualReportTab() {
       return response.json();
     },
     enabled: !!selectedCandidate,
+  });
+
+  const generateInsightsMutation = useMutation({
+    mutationFn: async (data: { userId: string; assessmentData: any }) => {
+      const response = await apiRequest('POST', '/api/admin/profile-insights', data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setProfileInsights(data.insights);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate profile insights",
+        variant: "destructive",
+      });
+    },
   });
 
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
@@ -146,6 +166,65 @@ export default function IndividualReportTab() {
       strengths: skills.slice(0, 3),
       weaknesses: skills.slice(-3).reverse(),
     };
+  };
+
+  const handleGenerateInsights = () => {
+    if (!selectedCandidate || !candidateReport) return;
+    
+    const assessmentData = {
+      candidateName: getCandidateName(selectedCandidateData),
+      fit: fitData ? {
+        average: Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length),
+        scores: fitData.scores,
+      } : null,
+      aiReadiness: aiData ? {
+        average: Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length),
+        scores: aiData.scores,
+      } : null,
+      promptArchitecture: promptData ? { totalScore: promptData.totalScore } : null,
+      aiq: aiqData ? { totalScore: aiqData.totalScore } : null,
+      strengths: getStrengthsAndWeaknesses().strengths,
+      lowestScoring: getStrengthsAndWeaknesses().weaknesses,
+    };
+    
+    generateInsightsMutation.mutate({ userId: selectedCandidate, assessmentData });
+  };
+
+  const handleExportPDF = async () => {
+    if (!selectedCandidateData || !candidateReport) return;
+    
+    setIsExporting(true);
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we prepare your report...",
+      });
+      
+      // Dynamic import for PDF generation
+      const { generateIndividualReportPDF } = await import('@/lib/pdfExport');
+      await generateIndividualReportPDF({
+        candidate: selectedCandidateData,
+        candidateName: getCandidateName(selectedCandidateData),
+        fitData,
+        aiData,
+        promptData,
+        aiqData,
+        profileInsights,
+      });
+      
+      toast({
+        title: "PDF Generated",
+        description: "Your individual report has been downloaded.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to generate PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -558,9 +637,160 @@ export default function IndividualReportTab() {
             </Card>
           )}
 
+          {/* AI-Powered Profile Insights */}
+          <Card data-testid="card-profile-insights">
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-amber-500" />
+                    AI-Powered Profile Insights
+                  </CardTitle>
+                  <CardDescription>
+                    AI-generated analysis of {getCandidateName(selectedCandidateData)}'s trait profile
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateInsights}
+                  disabled={generateInsightsMutation.isPending || !candidateReport}
+                  data-testid="button-generate-insights"
+                >
+                  {generateInsightsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : profileInsights ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Regenerate
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Insights
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {profileInsights ? (
+                <div className="prose prose-sm max-w-none dark:prose-invert" data-testid="text-profile-insights">
+                  {profileInsights.split('\n').map((paragraph, i) => (
+                    paragraph.trim() && <p key={i} className="text-sm text-muted-foreground mb-3">{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p className="text-sm">Click "Generate Insights" to create an AI-powered analysis of this candidate's trait profile.</p>
+                  <p className="text-xs mt-2">The analysis considers all completed assessments and provides hiring-relevant observations.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Additional Services On Request */}
+          <Card className="border-primary/20 bg-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-white" />
+                Additional Services on Request
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                Contact our team to unlock these premium insights for your hiring decisions
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                    Suggested Interview Questions
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    AI-generated questions based on this candidate's assessment results and trait gaps
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Users className="h-4 w-4 text-white" />
+                    Team Composition Fit
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Analysis of how this candidate would complement your existing team dynamics
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Clock className="h-4 w-4 text-white" />
+                    Time to Productivity Estimate
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Projected onboarding timeline based on skill readiness and learning agility
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <ShieldAlert className="h-4 w-4 text-white" />
+                    Hiring Risk Analysis
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Comprehensive risk assessment highlighting potential challenges and mitigations
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <DollarSign className="h-4 w-4 text-white" />
+                    Development Investment Cost
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Estimated training and development investment to close identified skill gaps
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white/20"
+                  onClick={() => window.location.href = '/for-employers'}
+                  data-testid="button-contact-team-individual"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Speak to the Team
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skills Legend */}
           {(fitData || aiData) && (
             <SkillsLegend className="mt-4" />
           )}
+
+          {/* Export Options */}
+          <div className="flex justify-end gap-2">
+            <Button 
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              data-testid="button-export-individual-report"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </>
+              )}
+            </Button>
+          </div>
         </>
       )}
 

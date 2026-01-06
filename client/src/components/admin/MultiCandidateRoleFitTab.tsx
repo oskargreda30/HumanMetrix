@@ -28,6 +28,9 @@ import {
 } from "recharts";
 import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
+import SkillsLegend from "@/components/SkillsLegend";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Info } from "lucide-react";
 
 type CandidateEntry = {
   userId: string;
@@ -409,6 +412,54 @@ export default function MultiCandidateRoleFitTab() {
 
       {comparison && (
         <>
+          {/* How to Read This Report Section */}
+          <Card className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <Collapsible>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors rounded-t-lg flex flex-row items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="text-base text-blue-800 dark:text-blue-300">How to Read This Report</CardTitle>
+                  <ChevronDown className="h-4 w-4 ml-auto text-blue-600 dark:text-blue-400" />
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="grid gap-4 md:grid-cols-2 text-sm">
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Role Alignment Tiers</h4>
+                        <p className="text-muted-foreground text-xs mb-2">These indicate how well a candidate's trait profile matches what the role requires - NOT trait quality:</p>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li><Badge className="bg-green-500 text-white mr-2">75%+</Badge> High alignment with role requirements</li>
+                          <li><Badge className="bg-amber-500 text-white mr-2">50-74%</Badge> Moderate alignment with role requirements</li>
+                          <li><Badge className="bg-red-500 text-white mr-2">&lt;50%</Badge> Lower alignment - may need development for this role</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Skill Criticality</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li><Badge variant="default" className="mr-2">C</Badge> Critical - Must-have for the role</li>
+                          <li><Badge variant="outline" className="mr-2">I</Badge> Important - Significant impact</li>
+                          <li><Badge variant="outline" className="mr-2">N</Badge> Nice-to-have - Beneficial but not essential</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Understanding Trait Scores</h4>
+                        <p className="text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong> assessments. Higher scores indicate stronger presence of that trait - whether that's beneficial depends entirely on what the role requires. A high score is not inherently "good" or "bad".</p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Gap Analysis</h4>
+                        <p className="text-muted-foreground">Gaps show the difference between candidate score and role requirement. This helps identify where trait profiles differ from role needs.</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+
           {/* Hiring Recommendation - Most Important Section */}
           {comparison.summaryInsights.recommendation && (
             <Card className="border-2 border-green-500">
@@ -965,6 +1016,9 @@ export default function MultiCandidateRoleFitTab() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend />
         </>
       )}
     </div>

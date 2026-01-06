@@ -3757,6 +3757,83 @@ Format your response as JSON:
     }
   });
 
+  // Admin: Generate AI profile insights for individual candidate
+  app.post("/api/admin/profile-insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, assessmentData } = req.body;
+      
+      if (!userId || !assessmentData) {
+        return res.status(400).json({ message: "User ID and assessment data are required" });
+      }
+
+      // Get candidate info
+      const candidate = await storage.getUser(userId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const candidateName = assessmentData.candidateName || 
+        `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
+        candidate.email?.split('@')[0] || 'Unknown';
+
+      // Build prompt for OpenAI
+      const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
+
+CANDIDATE: ${candidateName}
+
+ASSESSMENT DATA:
+${assessmentData.fit ? `FIT (Behavioral Traits) - Average: ${assessmentData.fit.average}%
+Individual Scores: ${JSON.stringify(assessmentData.fit.scores, null, 2)}` : 'FIT Assessment: Not completed'}
+
+${assessmentData.aiReadiness ? `AI Readiness (Technical) - Average: ${assessmentData.aiReadiness.average}%
+Individual Scores: ${JSON.stringify(assessmentData.aiReadiness.scores, null, 2)}` : 'AI Readiness Assessment: Not completed'}
+
+${assessmentData.promptArchitecture ? `Prompt Architecture: ${assessmentData.promptArchitecture.totalScore}%` : 'Prompt Architecture: Not completed'}
+
+${assessmentData.aiq ? `AIQ (AI Ethics): ${assessmentData.aiq.totalScore}%` : 'AIQ Assessment: Not completed'}
+
+HIGHEST SCORING TRAITS: ${assessmentData.strengths?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+LOWEST SCORING TRAITS: ${assessmentData.lowestScoring?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements. Do NOT label traits as strengths or weaknesses - just describe what the scores indicate about the candidate's profile.
+
+Write 2-3 paragraphs (max 200 words total) covering:
+1. Overall profile characteristics and distinctive traits
+2. Types of roles/environments where this profile typically thrives
+3. Key considerations for role matching (without making value judgments about high/low scores)
+
+Keep the tone professional and objective. Focus on describing the candidate's profile, not evaluating it.`;
+
+      const openai = new (await import('openai')).default();
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+
+      const insights = completion.choices[0]?.message?.content || "Unable to generate insights.";
+
+      res.json({ insights });
+    } catch (error) {
+      console.error("Error generating profile insights:", error);
+      res.status(500).json({ message: "Failed to generate profile insights" });
+    }
+  });
+
   // Admin: Create job role
   app.post("/api/admin/roles", isAuthenticated, async (req: any, res) => {
     try {
