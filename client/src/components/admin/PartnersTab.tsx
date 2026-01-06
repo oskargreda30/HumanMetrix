@@ -16,6 +16,10 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CURRENCIES } from "@shared/currencies";
+import { COUNTRIES } from "@shared/countries";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 interface Partner {
   id: string;
@@ -335,6 +339,10 @@ export default function PartnersTab() {
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedPhoneCode, setSelectedPhoneCode] = useState<string>("+44");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
@@ -362,6 +370,9 @@ export default function PartnersTab() {
       setFreeTests(0);
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
+      setSelectedCountry("");
+      setSelectedPhoneCode("+44");
+      setSelectedCurrency("GBP");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -1653,15 +1664,120 @@ export default function PartnersTab() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" name="email" type="email" required className="bg-slate-800 border-slate-600" data-testid="input-partner-email" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input id="country" name="country" placeholder="e.g. United Kingdom" className="bg-slate-800 border-slate-600" data-testid="input-partner-country" />
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={countryOpen}
+                        className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                        data-testid="select-partner-country"
+                      >
+                        {selectedCountry ? (
+                          <>
+                            {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{" "}
+                            {COUNTRIES.find(c => c.code === selectedCountry)?.name}
+                          </>
+                        ) : (
+                          "Select country..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700" align="start">
+                      <Command className="bg-slate-800">
+                        <CommandInput placeholder="Search country..." className="text-white" />
+                        <CommandList>
+                          <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
+                          <CommandGroup>
+                            {COUNTRIES.map((country) => (
+                              <CommandItem
+                                key={country.code}
+                                value={`${country.name} ${country.code}`}
+                                onSelect={() => {
+                                  setSelectedCountry(country.code);
+                                  setCountryOpen(false);
+                                }}
+                                className="text-white hover:bg-slate-700 cursor-pointer"
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${selectedCountry === country.code ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="mr-2">{country.flag}</span>
+                                {country.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <input type="hidden" name="country" value={selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry)?.name || '' : ''} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <div className="flex gap-2">
+                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={phoneCodeOpen}
+                          className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                          data-testid="select-phone-code"
+                        >
+                          {selectedPhoneCode ? (
+                            <>
+                              {COUNTRIES.find(c => c.dialCode === selectedPhoneCode)?.flag}{" "}
+                              {selectedPhoneCode}
+                            </>
+                          ) : (
+                            "+44"
+                          )}
+                          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700" align="start">
+                        <Command className="bg-slate-800">
+                          <CommandInput placeholder="Search country code..." className="text-white" />
+                          <CommandList>
+                            <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {COUNTRIES.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={`${country.name} ${country.dialCode}`}
+                                  onSelect={() => {
+                                    setSelectedPhoneCode(country.dialCode);
+                                    setPhoneCodeOpen(false);
+                                  }}
+                                  className="text-white hover:bg-slate-700 cursor-pointer"
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${selectedPhoneCode === country.dialCode ? "opacity-100" : "opacity-0"}`}
+                                  />
+                                  <span className="mr-2">{country.flag}</span>
+                                  <span className="mr-2">{country.name}</span>
+                                  <span className="text-slate-400">{country.dialCode}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <Input 
+                      id="phoneNumber" 
+                      name="phoneNumber" 
+                      type="tel" 
+                      placeholder="7123 456789" 
+                      className="flex-1 bg-slate-800 border-slate-600" 
+                      data-testid="input-partner-phone" 
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" name="phone" type="tel" placeholder="+44 7..." className="bg-slate-800 border-slate-600" data-testid="input-partner-phone" />
-                  </div>
+                  <input type="hidden" name="phone" value={selectedPhoneCode} />
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
