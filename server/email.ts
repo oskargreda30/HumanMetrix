@@ -625,7 +625,9 @@ export async function sendPartnerQuotaWarning70(
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  const topUpUrl = domain 
+    ? `https://${domain}/developers?tab=billing&action=purchase` 
+    : 'http://localhost:5000/developers?tab=billing&action=purchase';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -734,7 +736,9 @@ export async function sendPartnerQuotaWarning90(
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  const topUpUrl = domain 
+    ? `https://${domain}/developers?tab=billing&action=purchase` 
+    : 'http://localhost:5000/developers?tab=billing&action=purchase';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -843,7 +847,9 @@ export async function sendPartnerAccessSuspendedEmail(
   }
   
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
+  const topUpUrl = domain 
+    ? `https://${domain}/developers?tab=billing&action=purchase` 
+    : 'http://localhost:5000/developers?tab=billing&action=purchase';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,

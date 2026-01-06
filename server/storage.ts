@@ -1851,13 +1851,25 @@ export class DatabaseStorage implements IStorage {
       
       await this.suspendPartnerApiAccess(partnerId);
       
+      // Generate purchase URL for notification
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+      const purchaseUrl = domain 
+        ? `https://${domain}/developers?tab=billing&action=purchase` 
+        : 'http://localhost:5000/developers?tab=billing&action=purchase';
+      
       // Create quota exceeded notification
       await this.createPartnerNotification({
         partnerId,
         type: 'quota_exceeded',
         title: 'Quota Exceeded',
         message: 'Your assessment credits have been exhausted. Purchase more credits to continue using the API.',
-        metadata: { remaining: 0, purchased: balance.testsPurchased, consumed: newConsumed },
+        metadata: { 
+          remaining: 0, 
+          purchased: balance.testsPurchased, 
+          consumed: newConsumed,
+          actionUrl: purchaseUrl,
+          actionLabel: 'Purchase Credits Now',
+        },
       });
       
       return { success: true, remaining: 0, suspended: true };
@@ -1886,6 +1898,12 @@ export class DatabaseStorage implements IStorage {
     const threshold = partner.quotaAlertThreshold || 80;
     const urgentThreshold = Math.min(threshold + 15, 95);
     
+    // Generate purchase URL for notifications
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    const purchaseUrl = domain 
+      ? `https://${domain}/developers?tab=billing&action=purchase` 
+      : 'http://localhost:5000/developers?tab=billing&action=purchase';
+    
     // Check if usage just crossed the partner's configured threshold (warning)
     // Note: We only create in-app notifications here, timestamps are updated by partner-auth.ts
     // to ensure email notifications are also sent
@@ -1898,7 +1916,13 @@ export class DatabaseStorage implements IStorage {
           type: 'quota_warning',
           title: 'Quota Warning',
           message: `You have used ${usagePercentage}% of your assessment credits. ${remaining} credits remaining.`,
-          metadata: { usagePercentage, remaining, threshold },
+          metadata: { 
+            usagePercentage, 
+            remaining, 
+            threshold,
+            actionUrl: purchaseUrl,
+            actionLabel: 'Purchase Credits',
+          },
         });
       }
     }
@@ -1913,7 +1937,12 @@ export class DatabaseStorage implements IStorage {
           type: 'quota_critical',
           title: 'Critical: Quota Almost Exhausted',
           message: `You have used ${usagePercentage}% of your assessment credits. Only ${remaining} credits remaining. Purchase more to avoid service interruption.`,
-          metadata: { usagePercentage, remaining },
+          metadata: { 
+            usagePercentage, 
+            remaining,
+            actionUrl: purchaseUrl,
+            actionLabel: 'Top Up Now',
+          },
         });
       }
     }

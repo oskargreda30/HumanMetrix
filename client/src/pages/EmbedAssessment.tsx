@@ -90,8 +90,9 @@ export default function EmbedAssessment() {
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired" | "unavailable">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [partnerContactInfo, setPartnerContactInfo] = useState<{ name?: string; email?: string } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -281,6 +282,18 @@ export default function EmbedAssessment() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        
+        // Check for billing/quota related errors - show friendly "unavailable" message
+        if (res.status === 402 || data.error === "Quota Consumption Failed" || data.code === "QUOTA_EXHAUSTED") {
+          setPartnerContactInfo({ 
+            name: session?.partnerName,
+            email: undefined // We don't expose partner emails to candidates
+          });
+          setStatus("unavailable");
+          setIsSubmitting(false);
+          return;
+        }
+        
         setStatus("error");
         setErrorMessage(getHumanReadableError(data, "Failed to submit answers"));
         setIsSubmitting(false);
@@ -355,6 +368,45 @@ export default function EmbedAssessment() {
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Session Expired</h2>
             <p className={textSecondary}>This assessment session has expired. Please request a new link.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === "unavailable") {
+    const displayName = partnerContactInfo?.name || 'The assessment provider';
+    
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-unavailable">
+        <Card className={`max-w-md ${bgCard} border-slate-500/30`}>
+          <CardContent className="pt-6 text-center">
+            <div className="h-12 w-12 rounded-full bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-6 w-6 text-slate-400" />
+            </div>
+            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Temporarily Unavailable</h2>
+            <p className={`${textSecondary} mb-4`}>
+              This assessment is temporarily unavailable. Your responses have been saved.
+            </p>
+            <div className={`${bgCardAlt} rounded-lg p-4 text-left`}>
+              <p className={`text-sm ${textMuted} mb-2`}>
+                Please contact {displayName} for assistance or to request a new assessment link.
+              </p>
+              <p className={`text-xs ${textMuted}`}>
+                If you're the employer, please check your partner dashboard for account status.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <img 
+                  src="/assets/humanmetrix-logo.png" 
+                  alt="HumanMetrix" 
+                  className="h-5 w-5 object-contain"
+                />
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

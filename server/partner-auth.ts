@@ -35,6 +35,8 @@ export async function validateApiKey(apiKey: string): Promise<{
   partner?: PartnerAccount;
   keyRecord?: PartnerApiKey;
   error?: string;
+  code?: string;
+  action?: { label: string; url: string };
 }> {
   if (!apiKey) {
     return { valid: false, error: "API key is required" };
@@ -71,9 +73,19 @@ export async function validateApiKey(apiKey: string): Promise<{
   
   // Check if partner is suspended due to quota exhaustion
   if (partner.apiAccessSuspendedAt) {
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    const purchaseUrl = domain 
+      ? `https://${domain}/developers?tab=billing&action=purchase` 
+      : 'http://localhost:5000/developers?tab=billing&action=purchase';
+    
     return { 
       valid: false, 
-      error: "API access suspended: Test quota exhausted. Please purchase more tests to continue." 
+      error: "API access suspended: Test quota exhausted.",
+      code: "ACCESS_SUSPENDED",
+      action: {
+        label: "Purchase Credits",
+        url: purchaseUrl,
+      },
     };
   }
   
@@ -117,10 +129,20 @@ export function partnerAuth(requiredPermissions: string[] = []) {
       const result = await validateApiKey(apiKey);
       
       if (!result.valid) {
-        return res.status(401).json({
-          error: "Unauthorized",
+        // Use 403 for suspended accounts (not 401)
+        const statusCode = result.code === "ACCESS_SUSPENDED" ? 403 : 401;
+        const response: Record<string, any> = {
+          error: result.code === "ACCESS_SUSPENDED" ? "Forbidden" : "Unauthorized",
+          code: result.code,
           message: result.error,
-        });
+        };
+        
+        // Include action if provided (for suspended accounts)
+        if (result.action) {
+          response.action = result.action;
+        }
+        
+        return res.status(statusCode).json(response);
       }
       
       const rateLimit = result.keyRecord!.rateLimit || 100;

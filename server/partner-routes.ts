@@ -171,10 +171,21 @@ export function registerPartnerRoutes(app: Express) {
         // Check if partner has remaining quota before creating a session
         // Partners MUST have purchased test credits to use the API
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        // Generate purchase portal link
+        const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+        const purchaseUrl = domain 
+          ? `https://${domain}/developers?tab=billing&action=purchase` 
+          : 'http://localhost:5000/developers?tab=billing&action=purchase';
+        
         if (quotaBalance.testsPurchased <= 0) {
           return res.status(402).json({
             error: "No Credits Purchased",
-            message: "You must purchase test credits before creating assessment sessions. Please visit the partner portal to purchase a test package.",
+            code: "NO_CREDITS",
+            message: "You must purchase test credits before creating assessment sessions.",
+            action: {
+              label: "Purchase Credits",
+              url: purchaseUrl,
+            },
             quotaStatus: {
               testsPurchased: quotaBalance.testsPurchased,
               testsConsumed: quotaBalance.testsConsumed,
@@ -185,7 +196,12 @@ export function registerPartnerRoutes(app: Express) {
         if (quotaBalance.remaining <= 0) {
           return res.status(402).json({
             error: "Quota Exhausted",
-            message: "Your test quota has been exhausted. Please purchase additional test credits to continue.",
+            code: "QUOTA_EXHAUSTED",
+            message: "Your test quota has been exhausted. Purchase additional credits to continue.",
+            action: {
+              label: "Purchase More Credits",
+              url: purchaseUrl,
+            },
             quotaStatus: {
               testsPurchased: quotaBalance.testsPurchased,
               testsConsumed: quotaBalance.testsConsumed,
