@@ -235,34 +235,31 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
   };
   
   if (reportType === 'rolefit') {
-    // Role Fit Report Guide
+    // Role Fit Report Guide - matches RoleFitTab.tsx exactly
     yPos = addGuideItem(1, 'Overall Role Fit Score', 
-      'The weighted average of all skill scores against role requirements. 80%+ = Strong fit, 60-79% = Good potential, Below 60% = Development needed. This is your primary indicator.', yPos);
+      'The weighted average of all skill scores against role requirements. 80%+ = Strong fit, 60-79% = Good potential, Below 60% = Development needed.', yPos);
     
     yPos = addGuideItem(2, 'Skill Alignments (FIT & AI Readiness)', 
-      'Compare candidate scores vs. role requirements for each skill. Look for skills marked "C" (Critical) - these are essential for success. Green bars indicate alignment, gaps show development areas.', yPos);
+      'Compare candidate scores vs. role requirements. Look for skills marked "C" (Critical) - these are essential for success.', yPos);
     
     yPos = addGuideItem(3, 'Cohort Benchmarking', 
-      'See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing (e.g., 75th percentile = better than 75% of candidates).', yPos);
+      'See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.', yPos);
     
     yPos = addGuideItem(4, 'Role Flexibility Analysis', 
-      'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility and identifying hidden potential.', yPos);
+      'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility.', yPos);
     
-    yPos = addGuideItem(5, 'Critical Skills Analysis', 
-      'Deep dive into the most important skills for this role. Each skill includes an explanation of why it matters and how the candidate performs.', yPos);
-    
-    yPos = addGuideItem(6, 'Hiring Recommendation', 
-      'Summary with specific hiring guidance, interview focus areas, and onboarding considerations to help you make informed decisions.', yPos);
+    yPos = addGuideItem(5, 'Hiring Recommendation', 
+      'Summary with specific hiring guidance, interview focus areas, and onboarding considerations.', yPos);
   } else {
-    // Comparison Report Guide
+    // Comparison Report Guide - matches CompareTab.tsx exactly
     yPos = addGuideItem(1, 'Candidate Overview', 
-      'Quick view of each candidate\'s assessment completion status. All 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ) should be completed for a complete picture.', yPos);
+      'Quick view of each candidate\'s assessment completion. All 4 assessments should be completed for a complete picture.', yPos);
     
     yPos = addGuideItem(2, 'Composite Score', 
-      'Weighted average across all assessments for each candidate. The default weights are equal (25% each), but you can adjust them based on role priorities in the dashboard.', yPos);
+      'Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).', yPos);
     
     yPos = addGuideItem(3, 'Skill-by-Skill Breakdown', 
-      'Radar charts and tables show each candidate\'s strengths across all measured skills. Look for the highest scores in skills critical to your role.', yPos);
+      'Radar charts and tables show each candidate\'s strengths. Look for the highest scores in skills critical to your role.', yPos);
     
     yPos = addGuideItem(4, 'Role Fit Analysis (Separate Tool)', 
       'For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.', yPos);
