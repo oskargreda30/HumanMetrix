@@ -96,8 +96,9 @@ function calculateDataCoverage(
   totalRequiredSkills: number,
   missingAssessments: string[]
 ): DataCoverage {
+  // Use floor to be conservative - don't round up (e.g. 39.6% should not become 40%)
   const percentage = totalRequiredSkills > 0 
-    ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+    ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
     : 0;
     
   return {

@@ -36,8 +36,8 @@ type CandidateEntry = {
   userId: string;
   userName: string;
   email: string;
-  overallFit: number;
-  rank: number;
+  overallFit: number | null;
+  rank: number | null;
   fitTier: 'strong' | 'moderate' | 'development-needed' | 'insufficient-data';
   skillScores: Array<{
     skillName: string;
@@ -57,8 +57,10 @@ type CandidateEntry = {
     assessedSkillCount: number;
     totalRequiredSkills: number;
     missingAssessments: string[];
+    hasSufficientData?: boolean;
   };
   missingAssessments?: string[];
+  hasSufficientData?: boolean;
 };
 
 type SkillComparison = {
@@ -240,12 +242,15 @@ export default function MultiCandidateRoleFitTab() {
 
   const prepareBarChartData = () => {
     if (!comparison) return [];
-    return comparison.candidateEntries.map((entry) => ({
-      name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
-      fullName: entry.userName,
-      'Overall Fit': entry.overallFit,
-      tier: entry.fitTier,
-    }));
+    // Only include candidates with valid data in the chart
+    return comparison.candidateEntries
+      .filter((entry) => entry.overallFit != null && entry.fitTier !== 'insufficient-data')
+      .map((entry) => ({
+        name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
+        fullName: entry.userName,
+        'Overall Fit': entry.overallFit as number,
+        tier: entry.fitTier,
+      }));
   };
 
   const handleExportPDF = async () => {
@@ -911,7 +916,9 @@ export default function MultiCandidateRoleFitTab() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {comparison.candidateEntries.map((entry, idx) => (
+                {comparison.candidateEntries.map((entry, idx) => {
+                  const hasInsufficientData = entry.fitTier === 'insufficient-data' || entry.overallFit == null || !entry.dataCoverage?.hasSufficientData;
+                  return (
                   <div 
                     key={entry.userId} 
                     className="border rounded-lg overflow-hidden"
@@ -923,19 +930,37 @@ export default function MultiCandidateRoleFitTab() {
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                          hasInsufficientData ? 'bg-muted text-muted-foreground' : 
                           idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-amber-700' : 'bg-muted text-foreground'
                         }`}>
-                          {entry.rank}
+                          {hasInsufficientData ? '—' : entry.rank}
                         </div>
                         <div>
                           <div className="font-medium">{entry.userName}</div>
                           <div className="text-sm text-muted-foreground">{entry.email}</div>
+                          {hasInsufficientData && entry.dataCoverage && (
+                            <div className="text-xs text-amber-600 mt-1">
+                              {entry.dataCoverage.assessedSkillCount === 0 
+                                ? 'No completed assessments'
+                                : `${entry.dataCoverage.percentage}% coverage (${entry.dataCoverage.assessedSkillCount}/${entry.dataCoverage.totalRequiredSkills} skills)`
+                              }
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-2xl font-bold">{entry.overallFit}%</div>
-                          {getFitTierBadge(entry.fitTier)}
+                          {hasInsufficientData ? (
+                            <>
+                              <div className="text-lg font-medium text-muted-foreground">N/A</div>
+                              <Badge variant="outline" className="bg-amber-50 border-amber-300 text-amber-700">Insufficient Data</Badge>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-2xl font-bold">{entry.overallFit}%</div>
+                              {getFitTierBadge(entry.fitTier)}
+                            </>
+                          )}
                         </div>
                         {expandedCandidate === entry.userId ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                       </div>
@@ -1059,7 +1084,8 @@ export default function MultiCandidateRoleFitTab() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

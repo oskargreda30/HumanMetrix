@@ -4085,9 +4085,9 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         }
       }
 
-      // Calculate data coverage percentage
+      // Calculate data coverage percentage (use floor to be conservative - don't round up)
       const dataCoverage = totalRequiredSkills > 0 
-        ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+        ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
         : 0;
       
       // Determine if candidate has sufficient data for meaningful analysis
@@ -5213,9 +5213,9 @@ Format your response as JSON with this structure:
           });
         }
 
-        // Calculate data coverage percentage
+        // Calculate data coverage percentage (use floor to be conservative - don't round up)
         const dataCoverage = totalRequiredSkills > 0 
-          ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+          ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
           : 0;
         
         // Determine if candidate has sufficient data for comparison
