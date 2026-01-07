@@ -258,8 +258,8 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(1, 'Understanding Trait-Based Scores', 
       'FIT and AI Readiness are trait-based assessments. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.', yPos);
     
-    yPos = addGuideItem(2, 'Trait Profile Summary', 
-      'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.', yPos);
+    yPos = addGuideItem(2, 'AIQ (Ethics)', 
+      'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.', yPos);
     
     yPos = addGuideItem(3, 'FIT Assessment (Behavioral)', 
       'Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.', yPos);
@@ -270,8 +270,8 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(5, 'Prompt Architecture', 
       'Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.', yPos);
     
-    yPos = addGuideItem(6, 'AIQ (Ethics)', 
-      'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.', yPos);
+    yPos = addGuideItem(6, 'Trait Profile Summary', 
+      'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis or Candidate Comparison tool to determine which traits matter for specific positions.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly
     yPos = addGuideItem(1, 'Candidate Overview', 
