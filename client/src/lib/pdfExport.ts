@@ -3760,6 +3760,8 @@ interface IndividualReportData {
   promptData: { totalScore: number; percentile?: number; levels?: Array<{ level: number; totalScore: number }> } | null;
   aiqData: { totalScore: number } | null;
   profileInsights: string | null;
+  fitChartImage?: string | null;
+  aiChartImage?: string | null;
 }
 
 // Helper to generate assessment summary text
@@ -4025,53 +4027,96 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   yPos = addSectionHeader(pdf, 'SKILLS VISUALIZATION', yPos, pageWidth);
   yPos += 8;
   
+  const halfWidth = (pageWidth - 40) / 2;
+  const leftColStart = 20;
+  const rightColStart = leftColStart + halfWidth + 10;
+  const chartWidth = halfWidth - 5;
+  const chartHeight = 55;
+  
   // FIT Assessment Skills
   if (data.fitData) {
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
-    pdf.text('FIT Assessment - Behavioral Skills', 20, yPos);
+    pdf.text('FIT Assessment - Behavioral Skills', leftColStart, yPos);
     yPos += 5;
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, Interpersonal Agility', 20, yPos);
+    pdf.text('Measures: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, Interpersonal Agility', leftColStart, yPos);
     yPos += 10;
     
+    const fitScoresStartY = yPos;
+    
+    // Left column - Individual Skill Scores
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('Individual Skill Scores:', 20, yPos);
-    yPos += 8;
+    pdf.text('Individual Skill Scores:', leftColStart, yPos);
+    yPos += 7;
     
     Object.entries(data.fitData.scores).forEach(([skillName, score]) => {
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      pdf.text(`${skillName}:`, 25, yPos);
+      pdf.text(`${skillName}:`, leftColStart + 5, yPos);
       
       const perf = getPerformanceLevel(score);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-      pdf.text(`${score}`, pageWidth - 25, yPos, { align: 'right' });
+      pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
       
-      // Progress bar
-      const barWidth = 60;
-      const barX = pageWidth - 90;
-      pdf.setFillColor(229, 231, 235);
-      pdf.rect(barX, yPos - 3, barWidth, 4, 'F');
-      pdf.setFillColor(perf.color[0], perf.color[1], perf.color[2]);
-      pdf.rect(barX, yPos - 3, (barWidth * score) / 100, 4, 'F');
-      
-      yPos += 8;
+      yPos += 7;
     });
-    yPos += 8;
+    
+    // Right column - Radar Chart
+    if (data.fitChartImage) {
+      try {
+        pdf.addImage(data.fitChartImage, 'PNG', rightColStart, fitScoresStartY - 5, chartWidth, chartHeight);
+      } catch (e) {
+        // Fallback: draw placeholder box
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setFillColor(249, 250, 251);
+        pdf.roundedRect(rightColStart, fitScoresStartY - 5, chartWidth, chartHeight, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text('FIT Assessment Chart', rightColStart + chartWidth / 2, fitScoresStartY + chartHeight / 2, { align: 'center' });
+      }
+    } else {
+      // Draw placeholder box if no chart image
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setFillColor(249, 250, 251);
+      pdf.roundedRect(rightColStart, fitScoresStartY - 5, chartWidth, chartHeight, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text('FIT Assessment', rightColStart + chartWidth / 2, fitScoresStartY + 10, { align: 'center' });
+      // Draw simple radar placeholder
+      const centerX = rightColStart + chartWidth / 2;
+      const centerY = fitScoresStartY + chartHeight / 2 + 5;
+      const radius = 18;
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setFillColor(59, 130, 246);
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        if (i === 0) {
+          pdf.setLineWidth(0.3);
+        }
+        pdf.line(centerX, centerY, x, y);
+      }
+      pdf.setFillColor(59, 130, 246);
+      pdf.circle(centerX, centerY, 2, 'F');
+    }
+    
+    yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 10;
   }
   
   // AI Readiness Skills
   if (data.aiData) {
-    if (yPos > pageHeight - 80) {
+    if (yPos > pageHeight - 100) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
@@ -4081,54 +4126,83 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(34, 197, 94);
-    pdf.text('AI Readiness Assessment', 20, yPos);
+    pdf.text('AI Readiness Assessment', leftColStart, yPos);
     yPos += 5;
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     const aiMeasures = 'Measures: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise';
     const aiMeasureLines = pdf.splitTextToSize(aiMeasures, pageWidth - 40);
     aiMeasureLines.forEach((line: string) => {
-      pdf.text(line, 20, yPos);
+      pdf.text(line, leftColStart, yPos);
       yPos += 4;
     });
     yPos += 6;
     
+    const aiScoresStartY = yPos;
+    
+    // Left column - Individual Skill Scores
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
-    pdf.text('Individual Skill Scores:', 20, yPos);
-    yPos += 8;
+    pdf.text('Individual Skill Scores:', leftColStart, yPos);
+    yPos += 7;
     
     Object.entries(data.aiData.scores).forEach(([skillName, score]) => {
-      if (yPos > pageHeight - 20) {
-        pdf.addPage();
-        addBackgroundPattern(pdf, pageWidth, pageHeight);
-        addHeader(pdf, pageWidth);
-        yPos = 35;
-      }
-      
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      pdf.text(`${skillName}:`, 25, yPos);
+      pdf.text(`${skillName}:`, leftColStart + 5, yPos);
       
       const perf = getPerformanceLevel(score);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
-      pdf.text(`${score}`, pageWidth - 25, yPos, { align: 'right' });
+      pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
       
-      // Progress bar
-      const barWidth = 60;
-      const barX = pageWidth - 90;
-      pdf.setFillColor(229, 231, 235);
-      pdf.rect(barX, yPos - 3, barWidth, 4, 'F');
-      pdf.setFillColor(perf.color[0], perf.color[1], perf.color[2]);
-      pdf.rect(barX, yPos - 3, (barWidth * score) / 100, 4, 'F');
-      
-      yPos += 8;
+      yPos += 7;
     });
+    
+    // Right column - Radar Chart
+    const aiChartHeight = 70; // Slightly taller for more skills
+    if (data.aiChartImage) {
+      try {
+        pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight);
+      } catch (e) {
+        // Fallback: draw placeholder box
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setFillColor(249, 250, 251);
+        pdf.roundedRect(rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text('AI Readiness Chart', rightColStart + chartWidth / 2, aiScoresStartY + aiChartHeight / 2, { align: 'center' });
+      }
+    } else {
+      // Draw placeholder box if no chart image
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setFillColor(249, 250, 251);
+      pdf.roundedRect(rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text('AI Readiness', rightColStart + chartWidth / 2, aiScoresStartY + 10, { align: 'center' });
+      // Draw simple radar placeholder
+      const centerX = rightColStart + chartWidth / 2;
+      const centerY = aiScoresStartY + aiChartHeight / 2 + 5;
+      const radius = 22;
+      pdf.setDrawColor(34, 197, 94);
+      for (let i = 0; i < 9; i++) {
+        const angle = (i * Math.PI * 2) / 9 - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        pdf.setLineWidth(0.3);
+        pdf.line(centerX, centerY, x, y);
+      }
+      pdf.setFillColor(34, 197, 94);
+      pdf.circle(centerX, centerY, 2, 'F');
+    }
+    
+    yPos = Math.max(yPos, aiScoresStartY + aiChartHeight) + 5;
   }
   
   // ========== PAGE 4: PROMPT ARCHITECTURE & AIQ ==========

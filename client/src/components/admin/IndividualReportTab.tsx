@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { apiRequest } from "@/lib/queryClient";
+import html2canvas from "html2canvas";
 
 const CHART_COLOR = "#3b82f6";
 
@@ -63,6 +64,9 @@ export default function IndividualReportTab() {
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
+  
+  const fitChartRef = useRef<HTMLDivElement>(null);
+  const aiChartRef = useRef<HTMLDivElement>(null);
 
   const { data: candidates, isLoading } = useQuery<CandidateData[]>({
     queryKey: ['/api/admin/candidates'],
@@ -200,6 +204,38 @@ export default function IndividualReportTab() {
         description: "Please wait while we prepare your report...",
       });
       
+      // Capture radar charts as images
+      let fitChartImage: string | null = null;
+      let aiChartImage: string | null = null;
+      
+      if (fitChartRef.current) {
+        try {
+          const canvas = await html2canvas(fitChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          fitChartImage = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture FIT chart:', e);
+        }
+      }
+      
+      if (aiChartRef.current) {
+        try {
+          const canvas = await html2canvas(aiChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          aiChartImage = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture AI chart:', e);
+        }
+      }
+      
       // Dynamic import for PDF generation
       const { generateIndividualReportPDF } = await import('@/lib/pdfExport');
       await generateIndividualReportPDF({
@@ -210,6 +246,8 @@ export default function IndividualReportTab() {
         promptData,
         aiqData,
         profileInsights,
+        fitChartImage,
+        aiChartImage,
       });
       
       toast({
@@ -472,7 +510,7 @@ export default function IndividualReportTab() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="h-80">
+                  <div ref={fitChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid strokeDasharray="3 3" />
@@ -518,7 +556,7 @@ export default function IndividualReportTab() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="h-80">
+                  <div ref={aiChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid strokeDasharray="3 3" />
