@@ -1239,6 +1239,30 @@ export default function CompareTab() {
                               <span className={aiqCompleted ? 'text-foreground' : 'text-muted-foreground'}>AIQ</span>
                             </div>
                           </div>
+                          
+                          {/* Recommended Next Steps for incomplete assessments */}
+                          {totalCompleted < 4 && (
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Recommended Next Steps
+                              </p>
+                              <div className="space-y-1">
+                                {!fitCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete FIT Assessment for behavioral insights</p>
+                                )}
+                                {!aiReadinessCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete AI Readiness for technical skills evaluation</p>
+                                )}
+                                {!promptCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete Prompt Architecture for real-world AI skills</p>
+                                )}
+                                {!aiqCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete AIQ for ethics & judgment assessment</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
