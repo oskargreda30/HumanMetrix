@@ -731,6 +731,68 @@ export default function IndividualReportTab() {
             </CardContent>
           </Card>
 
+          {/* Recommended Next Steps */}
+          <Card data-testid="card-recommended-next-steps">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-500" />
+                Recommended Next Steps
+              </CardTitle>
+              <CardDescription>
+                Based on assessment results, consider these next steps for {getCandidateName(selectedCandidateData)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(() => {
+                  const fitScoresArr = fitData ? Object.values(fitData.scores) : [];
+                  const aiScoresArr = aiData ? Object.values(aiData.scores) : [];
+                  const allScoresArr = [
+                    ...fitScoresArr,
+                    ...aiScoresArr,
+                    ...(promptData ? [promptData.totalScore] : []),
+                    ...(aiqData ? [aiqData.totalScore] : [])
+                  ];
+                  const avgScoreVal = allScoresArr.length > 0 
+                    ? Math.round(allScoresArr.reduce((a, b) => a + b, 0) / allScoresArr.length) 
+                    : 0;
+                  
+                  const steps: string[] = [];
+                  
+                  if (avgScoreVal >= 80) {
+                    steps.push('Schedule a final interview to validate exceptional assessment results with practical scenarios.');
+                    steps.push('Consider for accelerated onboarding or leadership development programs.');
+                    steps.push('Evaluate for cross-functional project opportunities that leverage diverse strengths.');
+                  } else if (avgScoreVal >= 60) {
+                    steps.push('Conduct a structured interview focusing on identified development areas.');
+                    steps.push('Discuss tailored training and mentorship opportunities during onboarding.');
+                    steps.push('Consider pairing with experienced team members for knowledge transfer.');
+                  } else {
+                    steps.push('Assess alignment with entry-level or developmental role requirements.');
+                    steps.push('Explore structured upskilling programs to address skill gaps.');
+                    steps.push('Consider role modifications that play to existing strengths while building capabilities.');
+                  }
+                  
+                  if (promptData && promptData.totalScore >= 75) {
+                    steps.push('Leverage strong prompt engineering skills for AI integration initiatives.');
+                  }
+                  if (aiqData && aiqData.totalScore >= 80) {
+                    steps.push('Consider for roles involving AI governance or ethical AI implementation.');
+                  }
+                  
+                  return steps.map((step, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{i + 1}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{step}</p>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Additional Services On Request */}
           <Card className="border-primary/20 bg-primary">
             <CardHeader>

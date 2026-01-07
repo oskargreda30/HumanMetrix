@@ -4698,7 +4698,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
-    addFooter(pdf, i, totalPages, pageWidth, pageHeight, false);
+    addFooter(pdf, i, totalPages, pageWidth, pageHeight);
   }
   
   // Save
