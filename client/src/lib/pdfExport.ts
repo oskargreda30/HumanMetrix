@@ -184,7 +184,7 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
 }
 
 // Helper to add "How to Read Our Reports" guide page
-function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, reportType: 'rolefit' | 'comparison'): void {
+function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, reportType: 'rolefit' | 'comparison' | 'individual'): void {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
@@ -253,6 +253,25 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     
     yPos = addGuideItem(6, 'Hiring Recommendation', 
       'Summary with specific hiring guidance, interview focus areas, and onboarding considerations.', yPos);
+  } else if (reportType === 'individual') {
+    // Individual Report Guide - matches IndividualReportTab.tsx
+    yPos = addGuideItem(1, 'Understanding Trait-Based Scores', 
+      'FIT and AI Readiness are trait-based assessments. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.', yPos);
+    
+    yPos = addGuideItem(2, 'Trait Profile Summary', 
+      'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.', yPos);
+    
+    yPos = addGuideItem(3, 'FIT Assessment (Behavioral)', 
+      'Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.', yPos);
+    
+    yPos = addGuideItem(4, 'AI Readiness (Technical)', 
+      'Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.', yPos);
+    
+    yPos = addGuideItem(5, 'Prompt Architecture', 
+      'Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.', yPos);
+    
+    yPos = addGuideItem(6, 'AIQ (Ethics)', 
+      'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly
     yPos = addGuideItem(1, 'Candidate Overview', 
