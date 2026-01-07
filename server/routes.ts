@@ -2249,6 +2249,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pause assessment endpoint - called when window is closed/hidden
+  // Allows one 30-minute grace period to return and resume
+  app.post("/api/assessments/:id/pause", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { timeRemainingMs } = req.body;
+      const userId = req.user.id;
+      
+      if (typeof timeRemainingMs !== 'number' || timeRemainingMs < 0) {
+        return res.status(400).json({ message: "Invalid timeRemainingMs" });
+      }
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Only allow pausing in-progress assessments
+      if (result.status !== "in_progress") {
+        return res.status(400).json({
+          message: `Cannot pause assessment. Status is "${result.status}". Only in-progress assessments can be paused.`,
+        });
+      }
+      
+      // Check if already used their one grace period (resumeCount >= 1)
+      if ((result.resumeCount || 0) >= 1) {
+        // Already used grace period - expire the assessment immediately
+        await storage.updateAssessmentResult(id, { 
+          status: "expired",
+          pausedAt: new Date(),
+        });
+        return res.status(400).json({ 
+          message: "You have already used your one-time resume. The assessment has expired.",
+        });
+      }
+      
+      // Check if already paused
+      if (result.pausedAt) {
+        return res.status(400).json({
+          message: "Assessment is already paused. Use the resume endpoint to continue.",
+        });
+      }
+      
+      // Set 30-minute grace period
+      const now = new Date();
+      const graceExpiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+      
+      await storage.updateAssessmentResult(id, {
+        pausedAt: now,
+        pausedTimeRemainingMs: Math.floor(timeRemainingMs),
+        pauseGraceExpiresAt: graceExpiresAt,
+      });
+      
+      console.log(`[Assessment Pause] Assessment ${id} paused with ${Math.floor(timeRemainingMs / 1000)}s remaining. Grace expires at ${graceExpiresAt.toISOString()}`);
+      
+      res.json({
+        success: true,
+        pausedAt: now.toISOString(),
+        graceExpiresAt: graceExpiresAt.toISOString(),
+        timeRemainingMs: Math.floor(timeRemainingMs),
+      });
+    } catch (error) {
+      console.error("Error pausing assessment:", error);
+      res.status(500).json({ message: "Failed to pause assessment" });
+    }
+  });
+
+  // Resume assessment endpoint - called when returning to a paused assessment
+  app.post("/api/assessments/:id/resume", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if assessment is paused
+      if (!result.pausedAt) {
+        return res.status(400).json({
+          message: "Assessment is not currently paused.",
+        });
+      }
+      
+      // Check if grace period has expired
+      const now = new Date();
+      if (result.pauseGraceExpiresAt && new Date(result.pauseGraceExpiresAt) < now) {
+        // Grace period expired - expire the assessment
+        await storage.updateAssessmentResult(id, { 
+          status: "expired",
+        });
+        return res.status(400).json({
+          message: "The 30-minute grace period has expired. The assessment has been marked as expired.",
+        });
+      }
+      
+      // Resume the assessment - increment resume count and clear pause state
+      const newResumeCount = (result.resumeCount || 0) + 1;
+      
+      await storage.updateAssessmentResult(id, {
+        pausedAt: null,
+        resumeCount: newResumeCount,
+      });
+      
+      console.log(`[Assessment Resume] Assessment ${id} resumed. Resume count: ${newResumeCount}. Time remaining: ${result.pausedTimeRemainingMs}ms`);
+      
+      res.json({
+        success: true,
+        resumedAt: now.toISOString(),
+        timeRemainingMs: result.pausedTimeRemainingMs || 0,
+        resumeCount: newResumeCount,
+        canPauseAgain: false, // Only one grace period allowed
+      });
+    } catch (error) {
+      console.error("Error resuming assessment:", error);
+      res.status(500).json({ message: "Failed to resume assessment" });
+    }
+  });
+
   // Submit assessment answers
   app.post("/api/assessments/:id/submit", isAuthenticated, async (req: any, res) => {
     const { id } = req.params;

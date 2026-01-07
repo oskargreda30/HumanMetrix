@@ -723,6 +723,138 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Pause session endpoint - called when window is closed/hidden
+  // Allows one 30-minute grace period to return and resume
+  app.post(
+    "/api/embed/session/:sessionId/pause",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const { timeRemainingMs } = req.body;
+        
+        if (typeof timeRemainingMs !== 'number' || timeRemainingMs < 0) {
+          return res.status(400).json({ error: "Invalid timeRemainingMs" });
+        }
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Only allow pausing started sessions that aren't already completed/expired
+        if (session.status !== "started") {
+          return res.status(400).json({
+            error: "Cannot pause session",
+            message: `Session status is "${session.status}". Only started sessions can be paused.`,
+          });
+        }
+        
+        // Check if already used their one grace period (resumeCount >= 1)
+        if ((session.resumeCount || 0) >= 1) {
+          // Already used grace period - expire the session immediately
+          await storage.updateAssessmentSession(sessionId, { 
+            status: "expired",
+            pausedAt: new Date(),
+          } as any);
+          return res.status(400).json({ 
+            error: "Session expired",
+            message: "You have already used your one-time resume. The session has expired.",
+          });
+        }
+        
+        // Check if already paused
+        if (session.pausedAt) {
+          return res.status(400).json({
+            error: "Session already paused",
+            message: "Session is already paused. Use the resume endpoint to continue.",
+          });
+        }
+        
+        // Set 30-minute grace period
+        const now = new Date();
+        const graceExpiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+        
+        await storage.updateAssessmentSession(sessionId, {
+          pausedAt: now,
+          pausedTimeRemainingMs: Math.floor(timeRemainingMs),
+          pauseGraceExpiresAt: graceExpiresAt,
+        } as any);
+        
+        console.log(`[Session Pause] Session ${sessionId} paused with ${Math.floor(timeRemainingMs / 1000)}s remaining. Grace expires at ${graceExpiresAt.toISOString()}`);
+        
+        res.json({
+          success: true,
+          pausedAt: now.toISOString(),
+          graceExpiresAt: graceExpiresAt.toISOString(),
+          timeRemainingMs: Math.floor(timeRemainingMs),
+        });
+      } catch (error) {
+        console.error("Error pausing session:", error);
+        res.status(500).json({ error: "Failed to pause session" });
+      }
+    }
+  );
+
+  // Resume session endpoint - called when returning to a paused session
+  app.post(
+    "/api/embed/session/:sessionId/resume",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Check if session is paused
+        if (!session.pausedAt) {
+          return res.status(400).json({
+            error: "Session not paused",
+            message: "Session is not currently paused.",
+          });
+        }
+        
+        // Check if grace period has expired
+        const now = new Date();
+        if (session.pauseGraceExpiresAt && new Date(session.pauseGraceExpiresAt) < now) {
+          // Grace period expired - expire the session
+          await storage.updateAssessmentSession(sessionId, { 
+            status: "expired",
+          } as any);
+          return res.status(400).json({
+            error: "Grace period expired",
+            message: "The 30-minute grace period has expired. The session has been marked as expired.",
+          });
+        }
+        
+        // Resume the session - increment resume count and clear pause state
+        const newResumeCount = (session.resumeCount || 0) + 1;
+        
+        await storage.updateAssessmentSession(sessionId, {
+          pausedAt: null,
+          resumeCount: newResumeCount,
+          lastActivityAt: now,
+        } as any);
+        
+        console.log(`[Session Resume] Session ${sessionId} resumed. Resume count: ${newResumeCount}. Time remaining: ${session.pausedTimeRemainingMs}ms`);
+        
+        res.json({
+          success: true,
+          resumedAt: now.toISOString(),
+          timeRemainingMs: session.pausedTimeRemainingMs || 0,
+          resumeCount: newResumeCount,
+          canPauseAgain: false, // Only one grace period allowed
+        });
+      } catch (error) {
+        console.error("Error resuming session:", error);
+        res.status(500).json({ error: "Failed to resume session" });
+      }
+    }
+  );
+
   app.post(
     "/api/embed/session/:sessionId/submit",
     async (req: Request, res: Response) => {

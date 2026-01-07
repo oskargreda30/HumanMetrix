@@ -160,6 +160,7 @@ export interface IStorage {
   getResultByPartnerInvitationAndType(partnerInvitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
   updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void>;
+  updateAssessmentResult(id: string, updates: Partial<AssessmentResult>): Promise<void>;
   
   // Invitation operations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
@@ -790,6 +791,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(assessmentResults)
       .set({ scores, totalScore, percentile })
+      .where(eq(assessmentResults.id, id));
+  }
+
+  async updateAssessmentResult(id: string, updates: Partial<AssessmentResult>): Promise<void> {
+    await db
+      .update(assessmentResults)
+      .set(updates as any)
       .where(eq(assessmentResults.id, id));
   }
 
