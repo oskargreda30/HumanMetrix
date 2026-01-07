@@ -986,17 +986,11 @@ export default function MultiCandidateRoleFitTab() {
                         </Badge>
                         <span className="font-medium">{skill.skillName}</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="font-bold text-green-600">{skill.winner}</span>
-                          <span className="text-muted-foreground mx-2">wins by</span>
-                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                            +{skill.margin} pts
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          ({skill.winnerScore} vs {skill.loserScore})
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-green-600">{skill.winner}</span>
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                          {skill.winnerScore}%
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -1004,65 +998,6 @@ export default function MultiCandidateRoleFitTab() {
               </CardContent>
             </Card>
           )}
-
-          {/* Summary Statistics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Comparison Summary: {comparison.roleSnapshot.roleName}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-3xl font-bold">{comparison.candidateEntries.length}</div>
-                  <div className="text-sm text-muted-foreground">Candidates Compared</div>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-3xl font-bold">{comparison.summaryInsights.averageFit}%</div>
-                  <div className="text-sm text-muted-foreground">Average Fit</div>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-3xl font-bold">
-                    {comparison.summaryInsights.topPerformer.overallFit - (comparison.summaryInsights.runnerUp?.fitScore || comparison.summaryInsights.averageFit)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Point Gap to Runner-Up</div>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm font-medium mb-2">Fit Distribution</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-green-600">Strong (80%+)</span>
-                      <span className="font-medium">{comparison.summaryInsights.fitDistribution.strong}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-amber-600">Moderate (60-79%)</span>
-                      <span className="font-medium">{comparison.summaryInsights.fitDistribution.moderate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-red-600">Development (&lt;60%)</span>
-                      <span className="font-medium">{comparison.summaryInsights.fitDistribution.developmentNeeded}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {(comparison.summaryInsights.keyDifferentiators?.length || 0) > 0 && (
-                <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                  <h4 className="font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Key Differentiators
-                  </h4>
-                  <ul className="space-y-1">
-                    {comparison.summaryInsights.keyDifferentiators.map((d, i) => (
-                      <li key={i} className="text-sm text-blue-600 dark:text-blue-300">{d}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Advanced Analytics Section */}
           <Card>
