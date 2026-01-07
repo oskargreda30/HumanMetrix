@@ -4192,26 +4192,19 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     const aiqBand = getAIQBandInterpretation(data.aiqData.totalScore);
     const aiqPerf = getPerformanceLevel(data.aiqData.totalScore);
     
-    // Large centered score
-    pdf.setFontSize(24);
+    // Centered score - smaller size
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
     pdf.text(`${data.aiqData.totalScore}%`, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 8;
+    yPos += 7;
     
     // Band title
-    pdf.setFontSize(12);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(55, 65, 81);
     pdf.text(aiqBand.title, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 5;
-    
-    // Band range
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`(${aiqBand.range})`, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 10;
+    yPos += 8;
     
     // Band description
     pdf.setFontSize(9);
