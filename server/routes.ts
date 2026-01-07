@@ -2018,20 +2018,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
-          // Calculate remaining time based on assessment type
-          const timeLimit = getAssessmentTimeLimit(assessmentType);
-          const startTime = new Date(existing.startedAt).getTime();
+          // Check if paused and handle accordingly
           const now = Date.now();
-          const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, timeLimit - elapsed);
+          const nowDate = new Date();
           
-          // If time has expired, give full time again
-          if (remaining <= 0 && existing.status === 'in_progress') {
-            console.log(`[START ASSESSMENT] Partner invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-            return res.json({ ...existing, timeRemaining: timeLimit });
+          // Check if paused session's grace period has expired
+          if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+            await storage.updateAssessmentResult(existing.id, { status: "expired" });
+            return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
           }
           
-          return res.json({ ...existing, timeRemaining: remaining });
+          // Calculate remaining time based on assessment type
+          // If paused, use the saved time remaining
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
+          let remaining: number;
+          
+          if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+            // Session is paused - return saved time remaining (in seconds)
+            remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+          } else {
+            const startTime = new Date(existing.startedAt).getTime();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            remaining = Math.max(0, timeLimit - elapsed);
+          }
+          
+          // If time has expired, give full time again
+          if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+            console.log(`[START ASSESSMENT] Partner invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ 
+              ...existing, 
+              timeRemaining: timeLimit,
+              isPaused: false,
+              pausedAt: null,
+              pausedTimeRemainingMs: null,
+              pauseGraceExpiresAt: null,
+              resumeCount: existing.resumeCount || 0,
+              canPauseAgain: (existing.resumeCount || 0) < 1,
+            });
+          }
+          
+          return res.json({ 
+            ...existing, 
+            timeRemaining: remaining,
+            isPaused: !!existing.pausedAt,
+            pausedAt: existing.pausedAt || null,
+            pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+            pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
         }
 
         // Update partner invitation status to started if needed
@@ -2060,11 +2095,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const timeLimit = getAssessmentTimeLimit(assessmentType);
         const startTime = new Date(result.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
+        const nowMs = Date.now();
+        const elapsed = Math.floor((nowMs - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
 
-        return res.json({ ...result, timeRemaining: remaining });
+        return res.json({ 
+          ...result, 
+          timeRemaining: remaining,
+          isPaused: false,
+          pausedAt: null,
+          pausedTimeRemainingMs: null,
+          pauseGraceExpiresAt: null,
+          resumeCount: 0,
+          canPauseAgain: true,
+        });
       }
 
       // Check if this is an invitation-based assessment (synthetic ID format: invitation::{invitationId}::{assessmentType})
@@ -2106,22 +2150,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
-          // Calculate remaining time based on assessment type
-          const timeLimit = getAssessmentTimeLimit(assessmentType);
-          const startTime = new Date(existing.startedAt).getTime();
-          const now = Date.now();
-          const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, timeLimit - elapsed);
-          
-          // If time has expired, give full time again (not just grace period)
-          // This allows users to properly complete assessments that timed out
-          if (remaining <= 0 && existing.status === 'in_progress') {
-            // Give full time limit back to allow proper completion
-            console.log(`[START ASSESSMENT] Invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-            return res.json({ ...existing, timeRemaining: timeLimit });
+          // Check if paused session's grace period has expired
+          const nowDate = new Date();
+          if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+            await storage.updateAssessmentResult(existing.id, { status: "expired" });
+            return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
           }
           
-          return res.json({ ...existing, timeRemaining: remaining });
+          // Calculate remaining time based on assessment type
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
+          const now = Date.now();
+          let remaining: number;
+          
+          if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+            remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+          } else {
+            const startTime = new Date(existing.startedAt).getTime();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            remaining = Math.max(0, timeLimit - elapsed);
+          }
+          
+          // If time has expired, give full time again (not just grace period)
+          if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+            console.log(`[START ASSESSMENT] Invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ 
+              ...existing, 
+              timeRemaining: timeLimit,
+              isPaused: false,
+              pausedAt: null,
+              pausedTimeRemainingMs: null,
+              pauseGraceExpiresAt: null,
+              resumeCount: existing.resumeCount || 0,
+              canPauseAgain: (existing.resumeCount || 0) < 1,
+            });
+          }
+          
+          return res.json({ 
+            ...existing, 
+            timeRemaining: remaining,
+            isPaused: !!existing.pausedAt,
+            pausedAt: existing.pausedAt || null,
+            pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+            pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
         }
 
         // Create new assessment result for invitation
@@ -2141,11 +2214,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const timeLimit = getAssessmentTimeLimit(assessmentType);
         const startTime = new Date(result.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
+        const nowMs = Date.now();
+        const elapsed = Math.floor((nowMs - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
 
-        return res.json({ ...result, timeRemaining: remaining });
+        return res.json({ 
+          ...result, 
+          timeRemaining: remaining,
+          isPaused: false,
+          pausedAt: null,
+          pausedTimeRemainingMs: null,
+          pauseGraceExpiresAt: null,
+          resumeCount: 0,
+          canPauseAgain: true,
+        });
       }
 
       // Handle purchase-based assessment (existing logic)
@@ -2200,24 +2282,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Assessment already completed" });
         }
         
-        // Calculate remaining time based on assessment type
-        const timeLimit = getAssessmentTimeLimit(item.assessmentType);
-        const startTime = new Date(existing.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        const remaining = Math.max(0, timeLimit - elapsed);
-        
-        console.log(`[START ASSESSMENT] Time calculation: timeLimit=${timeLimit}s, elapsed=${elapsed}s, remaining=${remaining}s`);
-        
-        // If time has expired, give full time again (not just grace period)
-        // This allows users to properly complete assessments that timed out
-        if (remaining <= 0 && existing.status === 'in_progress') {
-          // Give full time limit back to allow proper completion
-          console.log(`[START ASSESSMENT] Assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-          return res.json({ ...existing, timeRemaining: timeLimit });
+        // Check if paused session's grace period has expired
+        const nowDate = new Date();
+        if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+          await storage.updateAssessmentResult(existing.id, { status: "expired" });
+          return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
         }
         
-        return res.json({ ...existing, timeRemaining: remaining });
+        // Calculate remaining time based on assessment type
+        const timeLimit = getAssessmentTimeLimit(item.assessmentType);
+        const now = Date.now();
+        let remaining: number;
+        
+        if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+          remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+        } else {
+          const startTime = new Date(existing.startedAt).getTime();
+          const elapsed = Math.floor((now - startTime) / 1000);
+          remaining = Math.max(0, timeLimit - elapsed);
+        }
+        
+        console.log(`[START ASSESSMENT] Time calculation: timeLimit=${timeLimit}s, remaining=${remaining}s, isPaused=${!!existing.pausedAt}`);
+        
+        // If time has expired, give full time again (not just grace period)
+        if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+          console.log(`[START ASSESSMENT] Assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+          return res.json({ 
+            ...existing, 
+            timeRemaining: timeLimit,
+            isPaused: false,
+            pausedAt: null,
+            pausedTimeRemainingMs: null,
+            pauseGraceExpiresAt: null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
+        }
+        
+        return res.json({ 
+          ...existing, 
+          timeRemaining: remaining,
+          isPaused: !!existing.pausedAt,
+          pausedAt: existing.pausedAt || null,
+          pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+          pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+          resumeCount: existing.resumeCount || 0,
+          canPauseAgain: (existing.resumeCount || 0) < 1,
+        });
       }
 
       // Create new assessment result
@@ -2238,11 +2349,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate initial remaining time based on assessment type
       const timeLimit = getAssessmentTimeLimit(item.assessmentType);
       const startTime = new Date(result.startedAt).getTime();
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
+      const nowMs = Date.now();
+      const elapsed = Math.floor((nowMs - startTime) / 1000);
       const remaining = Math.max(0, timeLimit - elapsed);
 
-      res.json({ ...result, timeRemaining: remaining });
+      res.json({ 
+        ...result, 
+        timeRemaining: remaining,
+        isPaused: false,
+        pausedAt: null,
+        pausedTimeRemainingMs: null,
+        pauseGraceExpiresAt: null,
+        resumeCount: 0,
+        canPauseAgain: true,
+      });
     } catch (error) {
       console.error("Error starting assessment:", error);
       res.status(500).json({ message: "Failed to start assessment" });

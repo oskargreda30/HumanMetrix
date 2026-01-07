@@ -539,9 +539,21 @@ export function registerPartnerRoutes(app: Express) {
           return res.status(404).json({ error: "Session not found" });
         }
         
-        if (new Date(session.expiresAt) < new Date() && session.status !== "completed") {
+        const now = new Date();
+        
+        // Check for session expiry
+        if (new Date(session.expiresAt) < now && session.status !== "completed") {
           await storage.updateAssessmentSession(sessionId, { status: "expired" });
           return res.status(400).json({ error: "Session has expired" });
+        }
+        
+        // Check if paused session's grace period has expired
+        if (session.pausedAt && session.pauseGraceExpiresAt && new Date(session.pauseGraceExpiresAt) < now) {
+          await storage.updateAssessmentSession(sessionId, { status: "expired" } as any);
+          return res.status(400).json({ 
+            error: "Session expired",
+            message: "The 30-minute grace period has expired. The session has been marked as expired."
+          });
         }
         
         const partner = await storage.getPartnerAccount(session.partnerId);
@@ -560,6 +572,13 @@ export function registerPartnerRoutes(app: Express) {
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,
           lastActivityAt: session.lastActivityAt || null,
+          // Pause state for timer synchronization
+          isPaused: !!session.pausedAt,
+          pausedAt: session.pausedAt || null,
+          pausedTimeRemainingMs: session.pausedTimeRemainingMs ?? null,
+          pauseGraceExpiresAt: session.pauseGraceExpiresAt || null,
+          resumeCount: session.resumeCount || 0,
+          canPauseAgain: (session.resumeCount || 0) < 1, // Can only pause once
         };
         
         if (partner?.brandingEnabled) {
