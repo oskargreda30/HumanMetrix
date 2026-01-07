@@ -3893,7 +3893,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   const metricsData = [
     { label: 'Skills Assessed', value: String(skillsAssessed) },
     { label: 'Average Score', value: `${avgScore}/100` },
-    { label: 'Top Skill', value: topSkill.length > 20 ? topSkill.substring(0, 18) + '...' : topSkill },
+    { label: 'Top Skill', value: topSkill.length > 25 ? topSkill.substring(0, 23) + '...' : topSkill },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -3950,98 +3950,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     yPos += 10;
   });
   
-  // ========== PAGE 2: UNDERSTANDING THE ASSESSMENTS ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'UNDERSTANDING THE ASSESSMENTS', yPos, pageWidth);
-  yPos += 5;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(75, 85, 99);
-  const introText = 'This report evaluates the candidate across four critical dimensions of AI-era workplace performance. Each assessment measures specific competencies that predict success in modern, AI-augmented work environments.';
-  const introLines = pdf.splitTextToSize(introText, pageWidth - 40);
-  introLines.forEach((line: string) => {
-    pdf.text(line, 20, yPos);
-    yPos += 5;
-  });
-  yPos += 8;
-  
-  // Assessment explanations
-  const assessmentExplanations = [
-    {
-      title: 'FIT ASSESSMENT (15 Questions)',
-      whatMeasures: 'Six core behavioral skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.',
-      impact: 'Predicts adaptability, initiative, collaboration quality, and resilience under pressure. High scorers drive innovation, navigate ambiguity effectively, and build strong team dynamics.'
-    },
-    {
-      title: 'AI READINESS ASSESSMENT (21 Questions)',
-      whatMeasures: 'Nine AI-specific competencies including AI Literacy, Prompting Effectiveness, Technical Fluency, Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.',
-      impact: 'Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions, and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.'
-    },
-    {
-      title: 'PROMPT ARCHITECTURE ASSESSMENT (7 Levels)',
-      whatMeasures: 'Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.',
-      impact: 'Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.'
-    },
-    {
-      title: 'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (8 Questions)',
-      whatMeasures: 'AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%).',
-      impact: 'Graded scoring captures nuanced ethical judgment that senior strategists demonstrate. Identifies candidates who balance ethical imperatives with operational realities, making them valuable for AI governance and deployment oversight roles.'
-    }
-  ];
-  
-  assessmentExplanations.forEach((exp) => {
-    if (yPos > pageHeight - 50) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(exp.title, 20, yPos);
-    yPos += 6;
-    
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
-    pdf.setFontSize(9);
-    pdf.text('What It Measures:', 20, yPos);
-    yPos += 4;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
-    pdf.setFontSize(8);
-    const measureLines = pdf.splitTextToSize(exp.whatMeasures, pageWidth - 40);
-    measureLines.forEach((line: string) => {
-      pdf.text(line, 20, yPos);
-      yPos += 4;
-    });
-    yPos += 2;
-    
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(55, 65, 81);
-    pdf.setFontSize(9);
-    pdf.text('Workplace Impact:', 20, yPos);
-    yPos += 4;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
-    pdf.setFontSize(8);
-    const impactLines = pdf.splitTextToSize(exp.impact, pageWidth - 40);
-    impactLines.forEach((line: string) => {
-      pdf.text(line, 20, yPos);
-      yPos += 4;
-    });
-    yPos += 8;
-  });
-  
-  // ========== PAGE 3: SKILLS VISUALIZATION ==========
+  // ========== PAGE 2: SKILLS VISUALIZATION ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
