@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -6250,9 +6250,8 @@ Format your response as JSON with this structure:
       const rates = await getExchangeRates();
       const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
       
-      // Zero-decimal currencies (no cents/smallest unit subdivision)
-      const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'GNF', 'RWF', 'DJF', 'BIF', 'KMF', 'XAF', 'XOF', 'XPF'];
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency);
+      // Check if this is a zero-decimal currency (using shared constant)
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency as any);
       
       // Rates are GBP-based (how many units of currency per 1 GBP)
       // Example: USD = 1.27 means 1 GBP = 1.27 USD
@@ -6263,19 +6262,27 @@ Format your response as JSON with this structure:
       // Check if we have a valid rate for this currency
       if (targetRate === undefined) {
         console.warn(`[Partner Pricing] No exchange rate found for ${partnerCurrency}, falling back to GBP`);
-        // Fall back to GBP pricing
+        // Fall back to GBP pricing using the same roundPriceUp framework
+        // Base prices in USD: $20, $10, $5, $2.50, $1 per test
+        const usdToGbpRate = 1 / usdRate;
         const gbpPackages = [
-          { size: 50, name: 'Boutique', price: 78740, pricePerTest: 1575 },   // ~$1000 USD
-          { size: 250, name: 'Growth', price: 196850, pricePerTest: 787 },    // ~$2500 USD
-          { size: 1000, name: 'Small Enterprise', price: 393701, pricePerTest: 394 }, // ~$5000 USD
-          { size: 5000, name: 'Enterprise', price: 984252, pricePerTest: 197 },       // ~$12500 USD
-          { size: 10000, name: 'Pro', price: 787402, pricePerTest: 79 },              // ~$10000 USD
-        ];
+          { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
+          { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
+          { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
+          { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
+          { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
+        ].map(pkg => ({
+          size: pkg.size,
+          name: pkg.name,
+          price: roundPriceUp(pkg.priceUsd * usdToGbpRate) * 100, // Convert to pence after rounding
+          pricePerTest: roundPriceUp(pkg.pricePerTestUsd * usdToGbpRate) * 100,
+        }));
         return res.json({
           currency: 'GBP',
           packages: gbpPackages,
-          exchangeRate: 1 / usdRate,
+          exchangeRate: usdToGbpRate,
           lastUpdated: rates.date,
+          isZeroDecimal: false,
         });
       }
       
@@ -6285,37 +6292,32 @@ Format your response as JSON with this structure:
       // Combined: usd_amount * (targetRate / usdRate) = target_amount
       const usdToTargetRate = targetRate / usdRate;
       
-      // Base prices in USD cents (documentation prices: $20, $10, $5, $2.50, $1 per test)
+      // Base prices in USD (documentation prices: $20, $10, $5, $2.50, $1 per test)
       const basePackages = [
-        { size: 50, name: 'Boutique', priceUsdCents: 100000, pricePerTestUsdCents: 2000 },
-        { size: 250, name: 'Growth', priceUsdCents: 250000, pricePerTestUsdCents: 1000 },
-        { size: 1000, name: 'Small Enterprise', priceUsdCents: 500000, pricePerTestUsdCents: 500 },
-        { size: 5000, name: 'Enterprise', priceUsdCents: 1250000, pricePerTestUsdCents: 250 },
-        { size: 10000, name: 'Pro', priceUsdCents: 1000000, pricePerTestUsdCents: 100 },
+        { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
+        { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
+        { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
+        { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
+        { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
       ];
       
-      // Convert prices to partner's currency
+      // Convert prices using roundPriceUp (same as home page pricing)
       const convertedPackages = basePackages.map(pkg => {
-        // For zero-decimal currencies, convert USD cents to whole units
-        // For regular currencies, convert USD cents to target cents
-        let priceInTarget: number;
-        let pricePerTestInTarget: number;
+        // Convert USD to target currency (in main units, e.g. PHP not PHP cents)
+        const priceInTargetUnits = pkg.priceUsd * usdToTargetRate;
+        const pricePerTestInTargetUnits = pkg.pricePerTestUsd * usdToTargetRate;
         
-        if (isZeroDecimal) {
-          // Convert cents to dollars first, then to target currency (no cents)
-          priceInTarget = Math.round((pkg.priceUsdCents / 100) * usdToTargetRate);
-          pricePerTestInTarget = Math.round((pkg.pricePerTestUsdCents / 100) * usdToTargetRate);
-        } else {
-          // Convert cents to target currency cents
-          priceInTarget = Math.round(pkg.priceUsdCents * usdToTargetRate);
-          pricePerTestInTarget = Math.round(pkg.pricePerTestUsdCents * usdToTargetRate);
-        }
+        // Apply roundPriceUp for clean display prices
+        const roundedPrice = roundPriceUp(priceInTargetUnits);
+        const roundedPricePerTest = roundPriceUp(pricePerTestInTargetUnits);
         
+        // For zero-decimal currencies, return the rounded amount directly
+        // For regular currencies, multiply by 100 to get cents/smallest units
         return {
           size: pkg.size,
           name: pkg.name,
-          price: priceInTarget,
-          pricePerTest: pricePerTestInTarget,
+          price: isZeroDecimal ? roundedPrice : roundedPrice * 100,
+          pricePerTest: isZeroDecimal ? roundedPricePerTest : roundedPricePerTest * 100,
         };
       });
       
@@ -6326,6 +6328,7 @@ Format your response as JSON with this structure:
         packages: convertedPackages,
         exchangeRate: usdToTargetRate,
         lastUpdated: rates.date,
+        isZeroDecimal,
       });
     } catch (error) {
       console.error("Error fetching partner pricing:", error);

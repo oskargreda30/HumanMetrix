@@ -664,6 +664,7 @@ export default function PartnerDashboard() {
     }>;
     exchangeRate: number;
     lastUpdated: string;
+    isZeroDecimal: boolean;
   }
 
   const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
@@ -1213,7 +1214,9 @@ export default function PartnerDashboard() {
 
   const partnerCurrency = account?.partner?.currency || 'GBP';
   
-  const formatCurrency = (amount: number, currency?: string) => {
+  // Format currency using API-provided isZeroDecimal flag
+  // Uses the same roundPriceUp approach as home page pricing
+  const formatCurrency = (amount: number, currency?: string, isZeroDecimalOverride?: boolean) => {
     const curr = currency || partnerCurrency;
     const currencySymbols: Record<string, string> = {
       // Tier 1 - Developed Markets
@@ -1259,9 +1262,9 @@ export default function PartnerDashboard() {
       pen: 'S/',
       ars: 'AR$',
     };
-    // Zero-decimal currencies (no cents subdivision)
-    const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'GNF', 'RWF', 'DJF', 'BIF', 'KMF', 'XAF', 'XOF', 'XPF'];
-    const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(curr.toUpperCase());
+    
+    // Use API-provided flag if available, otherwise fallback to local check
+    const isZeroDecimal = isZeroDecimalOverride ?? pricing?.isZeroDecimal ?? false;
     
     const symbol = currencySymbols[curr.toLowerCase()] || '£';
     
@@ -1270,7 +1273,14 @@ export default function PartnerDashboard() {
       return `${symbol}${amount.toLocaleString()}`;
     }
     // Regular currencies: amount is in cents, divide by 100
-    return `${symbol}${(amount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Display without decimals since roundPriceUp already gives clean numbers
+    const displayAmount = amount / 100;
+    // Show decimals only if the amount has fractional cents after division
+    const hasDecimals = displayAmount % 1 !== 0;
+    return `${symbol}${displayAmount.toLocaleString(undefined, { 
+      minimumFractionDigits: hasDecimals ? 2 : 0, 
+      maximumFractionDigits: 2 
+    })}`;
   };
 
   const formatDate = (dateString: string) => {
