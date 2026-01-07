@@ -896,19 +896,50 @@ export default function CompareTab() {
       employerRecommendation += ` ${otherStrongCandidates.map(c => c.name).join(' and ')} ${otherStrongCandidates.length > 1 ? 'also show' : 'also shows'} strong potential as ${otherStrongCandidates.length > 1 ? 'alternatives' : 'an alternative'}.`;
     }
     
-    const nextSteps = topCandidate.score >= 70 
-      ? [
-          `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
-          'Perform reference checks emphasizing leadership and collaboration competencies',
-          'Prepare competitive offer package based on candidate expectations',
-          'Design 90-day onboarding plan targeting identified development areas'
-        ]
-      : [
-          'Schedule in-depth technical interviews with top candidates to validate assessment findings',
-          'Assess development potential and learning agility through case-based scenarios',
-          'Consider rotational or project-based trial periods to evaluate practical performance',
-          'Explore alternative role placements that may better match current skill profiles'
-        ];
+    // Check for candidates with missing assessments
+    const candidatesWithMissingAssessments: Array<{ name: string; missing: string[] }> = [];
+    selectedCandidateData?.forEach((candidate: any, index: number) => {
+      const missing: string[] = [];
+      if (!comparison?.fitAssessments?.[index]) missing.push('FIT');
+      if (!comparison?.aiReadinessAssessments?.[index]) missing.push('AI Readiness');
+      if (!comparison?.promptArchitectureAssessments?.[index]) missing.push('Prompt Architecture');
+      if (!comparison?.aiqAssessments?.[index]) missing.push('AIQ');
+      if (missing.length > 0) {
+        candidatesWithMissingAssessments.push({ name: getCandidateName(candidate), missing });
+      }
+    });
+    
+    const nextSteps: string[] = [];
+    
+    // Add missing assessment recommendations first (priority)
+    if (candidatesWithMissingAssessments.length > 0) {
+      candidatesWithMissingAssessments.forEach(({ name, missing }) => {
+        if (missing.length === 1) {
+          nextSteps.push(`Have ${name} complete the ${missing[0]} assessment for a complete skills picture`);
+        } else if (missing.length <= 3) {
+          nextSteps.push(`Have ${name} complete ${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]} assessments`);
+        } else {
+          nextSteps.push(`Have ${name} complete all outstanding assessments (${missing.length} remaining)`);
+        }
+      });
+    }
+    
+    // Add hiring-focused steps
+    if (topCandidate.score >= 70) {
+      nextSteps.push(
+        `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
+        'Perform reference checks emphasizing leadership and collaboration competencies',
+        'Prepare competitive offer package based on candidate expectations',
+        'Design 90-day onboarding plan targeting identified development areas'
+      );
+    } else {
+      nextSteps.push(
+        'Schedule in-depth technical interviews with top candidates to validate assessment findings',
+        'Assess development potential and learning agility through case-based scenarios',
+        'Consider rotational or project-based trial periods to evaluate practical performance',
+        'Explore alternative role placements that may better match current skill profiles'
+      );
+    }
     
     return { employerRecommendation, nextSteps };
   };
