@@ -4139,7 +4139,8 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
       
       // Apply critical gap penalty: 10% reduction per critical gap (capped at 50%)
-      if (criticalGaps > 0 && totalCriticalSkills > 0) {
+      // IMPORTANT: Only apply if we actually ASSESSED critical skills - don't penalize for missing data
+      if (criticalGaps > 0 && assessedCriticalSkills > 0) {
         const criticalPenalty = criticalGaps * 0.10;
         overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
       }
@@ -5100,7 +5101,8 @@ Format your response as JSON with this structure:
         const results = resultsRaw.map(recalculateScores);
         const completedResults = results.filter((r) => r.status === 'completed');
         
-        if (completedResults.length === 0) continue;
+        // Don't skip candidates with no results - include them as insufficient data
+        // This allows them to be shown in the comparison with proper messaging
 
         // Aggregate skills
         const fitSkills = new Map<string, number>();
@@ -5275,7 +5277,8 @@ Format your response as JSON with this structure:
         
         let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
         
-        if (criticalGaps > 0 && totalCriticalSkills > 0) {
+        // IMPORTANT: Only apply penalty if we actually ASSESSED critical skills - don't penalize for missing data
+        if (criticalGaps > 0 && assessedCriticalSkills > 0) {
           const criticalPenalty = criticalGaps * 0.10;
           overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
         }
