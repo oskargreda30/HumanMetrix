@@ -1331,8 +1331,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
       
       const promptLevel = topPrompt.score >= 80 ? 'advanced' : topPrompt.score >= 70 ? 'proficient' : topPrompt.score >= 60 ? 'competent' : 'developing';
       let promptText = `Prompt Analysis: ${topPrompt.name} shows ${promptLevel} prompt engineering skills with a score of ${topPrompt.score}/100.`;
-      if (promptDiff > 0) {
+      // Only compare if second candidate actually completed the assessment (score > 0)
+      if (promptDiff > 0 && secondPrompt.score > 0) {
         promptText += ` This is ${promptDiff} points ahead of ${secondPrompt.name} (${secondPrompt.score}/100).`;
+      } else if (secondPrompt.score === 0) {
+        promptText += ` ${secondPrompt.name} has not completed this assessment.`;
       }
       promptText += ' Strong prompt architecture indicates ability to effectively leverage AI tools.';
       
@@ -1893,12 +1896,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   const candidateAnalysis = data.candidates.map((candidate, index) => {
     const name = getCandidateName(candidate);
     const compositeScore = calculateCompositeScore(index);
-    const completedCount = [
-      data.fitAssessments?.[index],
-      data.aiReadinessAssessments?.[index],
-      data.promptArchitectureAssessments?.[index],
-      data.aiqAssessments?.[index]
-    ].filter(a => a !== null).length;
+    
+    // Track which assessments are completed
+    const completedAssessments: string[] = [];
+    if (data.fitAssessments?.[index]) completedAssessments.push('FIT');
+    if (data.aiReadinessAssessments?.[index]) completedAssessments.push('AI Readiness');
+    if (data.promptArchitectureAssessments?.[index]) completedAssessments.push('Prompt Architecture');
+    if (data.aiqAssessments?.[index]) completedAssessments.push('AIQ');
+    
+    const completedCount = completedAssessments.length;
     
     const candidateSkills = data.skillComparison
       .map(skill => ({ name: skill.skillName, score: skill.scores[index] }))
@@ -1906,7 +1912,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       .sort((a, b) => (b.score || 0) - (a.score || 0))
       .slice(0, 3);
     
-    return { name, compositeScore, completedCount, topSkills: candidateSkills };
+    return { name, compositeScore, completedCount, completedAssessments, topSkills: candidateSkills };
   });
   
   const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.compositeScore - a.compositeScore);
@@ -1917,7 +1923,9 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     // Calculate box height based on content
     const scoreLine = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label})`;
-    const assessmentLine = `Completed ${candidate.completedCount}/4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ)`;
+    const assessmentLine = candidate.completedCount === 4 
+      ? 'Completed all 4 assessments'
+      : `Completed ${candidate.completedCount}/4 assessments (${candidate.completedAssessments.join(', ')})`;
     const strengthsLine = `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
     
     const strengthsLines = pdf.splitTextToSize(strengthsLine, pageWidth - 70);
