@@ -471,13 +471,13 @@ function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidt
   return yPosition + 16;
 }
 
-// Helper to determine performance level
+// Helper to determine performance level - muted professional colors
 function getPerformanceLevel(score: number): { label: string; color: [number, number, number] } {
-  if (score >= 85) return { label: 'Excellent', color: [34, 197, 94] };
-  if (score >= 70) return { label: 'Good', color: [59, 130, 246] };
-  if (score >= 55) return { label: 'Fair', color: [234, 179, 8] };
-  if (score >= 40) return { label: 'Developing', color: [249, 115, 22] };
-  return { label: 'Needs Development', color: [239, 68, 68] };
+  if (score >= 85) return { label: 'Excellent', color: [71, 85, 105] };    // Slate-600
+  if (score >= 70) return { label: 'Good', color: [71, 85, 105] };         // Slate-600
+  if (score >= 55) return { label: 'Fair', color: [100, 116, 139] };       // Slate-500
+  if (score >= 40) return { label: 'Developing', color: [148, 163, 184] }; // Slate-400
+  return { label: 'Needs Development', color: [148, 163, 184] };           // Slate-400
 }
 
 // Candidate color palette for comparison - different shades of blue
