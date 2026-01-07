@@ -653,6 +653,24 @@ export default function PartnerDashboard() {
     enabled: !!account?.hasPartnerAccount,
   });
 
+  // Credit package pricing with currency conversion
+  interface PricingData {
+    currency: string;
+    packages: Array<{
+      size: number;
+      name: string;
+      price: number;
+      pricePerTest: number;
+    }>;
+    exchangeRate: number;
+    lastUpdated: string;
+  }
+
+  const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
+    queryKey: ["/api/partner/me/pricing"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
   // Billing change request data
   interface BillingChangeRequestData {
     pendingRequest: {
@@ -1241,8 +1259,18 @@ export default function PartnerDashboard() {
       pen: 'S/',
       ars: 'AR$',
     };
+    // Zero-decimal currencies (no cents subdivision)
+    const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'GNF', 'RWF', 'DJF', 'BIF', 'KMF', 'XAF', 'XOF', 'XPF'];
+    const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(curr.toUpperCase());
+    
     const symbol = currencySymbols[curr.toLowerCase()] || '£';
-    return `${symbol}${(amount / 100).toFixed(2)}`;
+    
+    if (isZeroDecimal) {
+      // Zero-decimal currencies: amount is already in whole units
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+    // Regular currencies: amount is in cents, divide by 100
+    return `${symbol}${(amount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -2890,40 +2918,46 @@ export default function PartnerDashboard() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid gap-4 md:grid-cols-3">
-                          {/* Volume-based pricing tiers: Boutique $20, Growth $10, Small Enterprise $5, Enterprise $2.50, Pro $1.00 */}
-                          {[
-                            { size: 50, name: 'Boutique', price: 1000, pricePerTest: 20.00 },
-                            { size: 250, name: 'Growth', price: 2500, pricePerTest: 10.00 },
-                            { size: 1000, name: 'Small Enterprise', price: 5000, pricePerTest: 5.00 },
-                            { size: 5000, name: 'Enterprise', price: 12500, pricePerTest: 2.50 },
-                            { size: 10000, name: 'Pro', price: 10000, pricePerTest: 1.00 },
-                          ].map((pkg) => (
-                            <div 
-                              key={pkg.size} 
-                              className="border rounded-lg p-4 hover:border-primary transition-colors"
-                            >
-                              <div className="font-semibold text-lg">{pkg.name}</div>
-                              <div className="text-2xl font-bold text-primary">
-                                {pkg.size.toLocaleString()} tests
-                              </div>
-                              <div className="text-sm text-muted-foreground mb-3">
-                                {formatCurrency(pkg.price * 100)} ({formatCurrency(pkg.pricePerTest * 100)}/test)
-                              </div>
-                              <Button 
-                                className="w-full" 
-                                onClick={() => handlePurchase(pkg.size)}
-                                disabled={purchasingPackageSize !== null}
-                                data-testid={`button-buy-${pkg.size}`}
+                        {pricingLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
+                        ) : !pricing?.packages ? (
+                          <div className="py-8 text-center text-muted-foreground">
+                            <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="font-medium">Unable to load pricing</p>
+                            <p className="text-sm mt-1">Please refresh the page or contact support if this persists.</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-3">
+                            {/* Volume-based pricing tiers converted to partner's currency */}
+                            {pricing.packages.map((pkg) => (
+                              <div 
+                                key={pkg.size} 
+                                className="border rounded-lg p-4 hover:border-primary transition-colors"
                               >
-                                {purchasingPackageSize === pkg.size ? (
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                ) : null}
-                                Purchase
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
+                                <div className="font-semibold text-lg">{pkg.name}</div>
+                                <div className="text-2xl font-bold text-primary">
+                                  {pkg.size.toLocaleString()} tests
+                                </div>
+                                <div className="text-sm text-muted-foreground mb-3">
+                                  {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
+                                </div>
+                                <Button 
+                                  className="w-full" 
+                                  onClick={() => handlePurchase(pkg.size)}
+                                  disabled={purchasingPackageSize !== null}
+                                  data-testid={`button-buy-${pkg.size}`}
+                                >
+                                  {purchasingPackageSize === pkg.size ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
+                                  Purchase
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )}

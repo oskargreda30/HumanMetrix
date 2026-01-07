@@ -6221,6 +6221,118 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Get credit package pricing converted to partner's currency
+  app.get("/api/partner/me/pricing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get exchange rates
+      const rates = await getExchangeRates();
+      const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
+      
+      // Zero-decimal currencies (no cents/smallest unit subdivision)
+      const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'GNF', 'RWF', 'DJF', 'BIF', 'KMF', 'XAF', 'XOF', 'XPF'];
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency);
+      
+      // Rates are GBP-based (how many units of currency per 1 GBP)
+      // Example: USD = 1.27 means 1 GBP = 1.27 USD
+      // Example: PHP = 71.5 means 1 GBP = 71.5 PHP
+      const targetRate = rates.rates[partnerCurrency];
+      const usdRate = rates.rates['USD'] ?? 1.27;            // USD per GBP
+      
+      // Check if we have a valid rate for this currency
+      if (targetRate === undefined) {
+        console.warn(`[Partner Pricing] No exchange rate found for ${partnerCurrency}, falling back to GBP`);
+        // Fall back to GBP pricing
+        const gbpPackages = [
+          { size: 50, name: 'Boutique', price: 78740, pricePerTest: 1575 },   // ~$1000 USD
+          { size: 250, name: 'Growth', price: 196850, pricePerTest: 787 },    // ~$2500 USD
+          { size: 1000, name: 'Small Enterprise', price: 393701, pricePerTest: 394 }, // ~$5000 USD
+          { size: 5000, name: 'Enterprise', price: 984252, pricePerTest: 197 },       // ~$12500 USD
+          { size: 10000, name: 'Pro', price: 787402, pricePerTest: 79 },              // ~$10000 USD
+        ];
+        return res.json({
+          currency: 'GBP',
+          packages: gbpPackages,
+          exchangeRate: 1 / usdRate,
+          lastUpdated: rates.date,
+        });
+      }
+      
+      // To convert USD to target currency:
+      // 1. Convert USD to GBP: usd_amount / usdRate = gbp_amount
+      // 2. Convert GBP to target: gbp_amount * targetRate = target_amount
+      // Combined: usd_amount * (targetRate / usdRate) = target_amount
+      const usdToTargetRate = targetRate / usdRate;
+      
+      // Base prices in USD cents (documentation prices: $20, $10, $5, $2.50, $1 per test)
+      const basePackages = [
+        { size: 50, name: 'Boutique', priceUsdCents: 100000, pricePerTestUsdCents: 2000 },
+        { size: 250, name: 'Growth', priceUsdCents: 250000, pricePerTestUsdCents: 1000 },
+        { size: 1000, name: 'Small Enterprise', priceUsdCents: 500000, pricePerTestUsdCents: 500 },
+        { size: 5000, name: 'Enterprise', priceUsdCents: 1250000, pricePerTestUsdCents: 250 },
+        { size: 10000, name: 'Pro', priceUsdCents: 1000000, pricePerTestUsdCents: 100 },
+      ];
+      
+      // Convert prices to partner's currency
+      const convertedPackages = basePackages.map(pkg => {
+        // For zero-decimal currencies, convert USD cents to whole units
+        // For regular currencies, convert USD cents to target cents
+        let priceInTarget: number;
+        let pricePerTestInTarget: number;
+        
+        if (isZeroDecimal) {
+          // Convert cents to dollars first, then to target currency (no cents)
+          priceInTarget = Math.round((pkg.priceUsdCents / 100) * usdToTargetRate);
+          pricePerTestInTarget = Math.round((pkg.pricePerTestUsdCents / 100) * usdToTargetRate);
+        } else {
+          // Convert cents to target currency cents
+          priceInTarget = Math.round(pkg.priceUsdCents * usdToTargetRate);
+          pricePerTestInTarget = Math.round(pkg.pricePerTestUsdCents * usdToTargetRate);
+        }
+        
+        return {
+          size: pkg.size,
+          name: pkg.name,
+          price: priceInTarget,
+          pricePerTest: pricePerTestInTarget,
+        };
+      });
+      
+      console.log(`[Partner Pricing] Currency: ${partnerCurrency}, USD rate: ${usdRate}, Target rate: ${targetRate}, Conversion: ${usdToTargetRate.toFixed(4)}, Zero-decimal: ${isZeroDecimal}`);
+      
+      res.json({
+        currency: partnerCurrency,
+        packages: convertedPackages,
+        exchangeRate: usdToTargetRate,
+        lastUpdated: rates.date,
+      });
+    } catch (error) {
+      console.error("Error fetching partner pricing:", error);
+      res.status(500).json({ message: "Failed to fetch pricing" });
+    }
+  });
+
   // Partner self-service: Get pending billing change request
   app.get("/api/partner/me/billing-change-request", isAuthenticated, async (req: any, res) => {
     try {
