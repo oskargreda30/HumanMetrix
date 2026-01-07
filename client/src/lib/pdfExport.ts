@@ -3197,19 +3197,27 @@ interface MultiCandidateComparisonData {
     email: string;
     overallFit: number;
     rank: number;
-    fitTier: 'strong' | 'moderate' | 'development-needed';
+    fitTier: 'strong' | 'moderate' | 'development-needed' | 'insufficient-data';
     skillScores: Array<{
       skillName: string;
-      score: number;
+      score: number | null;
       requiredScore: number;
-      gap: number;
+      gap: number | null;
       alignment: string;
       criticality: 'critical' | 'important' | 'nice-to-have';
       category: 'fit' | 'ai_readiness';
+      dataAvailable?: boolean;
     }>;
     strengths: string[];
     gaps: string[];
     riskFlags: string[];
+    dataCoverage?: {
+      percentage: number;
+      assessedSkillCount: number;
+      totalRequiredSkills: number;
+      missingAssessments: string[];
+    };
+    missingAssessments?: string[];
   }>;
   summaryInsights: {
     topPerformer: { userId: string; userName: string; overallFit: number };
@@ -3639,29 +3647,47 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         const barWidth = 60;
         const barHeight = 4;
         
-        // Background bar
-        pdf.setFillColor(229, 231, 235);
-        pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
+        // Check if skill has data
+        const hasData = skill.dataAvailable !== false && skill.score !== null;
         
-        // Score fill
-        const scoreColor = skill.score >= skill.requiredScore ? [34, 197, 94] : 
-                           skill.score >= skill.requiredScore * 0.8 ? [234, 179, 8] : [239, 68, 68];
-        pdf.setFillColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-        const fillWidth = Math.min((skill.score / 100) * barWidth, barWidth);
-        pdf.roundedRect(barX, yPos - 3, fillWidth, barHeight, 1, 1, 'F');
-        
-        // Required marker
-        const reqX = barX + (skill.requiredScore / 100) * barWidth;
-        pdf.setDrawColor(17, 24, 39);
-        pdf.setLineWidth(0.5);
-        pdf.line(reqX, yPos - 4, reqX, yPos + 2);
-        
-        // Score text
-        pdf.setFontSize(8);
-        pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-        pdf.text(`${skill.score}`, barX + barWidth + 3, yPos);
-        pdf.setTextColor(107, 114, 128);
-        pdf.text(`/ ${skill.requiredScore}`, barX + barWidth + 12, yPos);
+        if (!hasData) {
+          // Show N/A for skills without data
+          pdf.setFillColor(229, 231, 235);
+          pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
+          
+          pdf.setFontSize(8);
+          pdf.setTextColor(156, 163, 175);
+          pdf.setFont('helvetica', 'italic');
+          pdf.text('N/A - Not Assessed', barX + 5, yPos);
+          pdf.setFont('helvetica', 'normal');
+        } else {
+          // Score is guaranteed non-null here due to hasData check
+          const actualScore = skill.score as number;
+          
+          // Background bar
+          pdf.setFillColor(229, 231, 235);
+          pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
+          
+          // Score fill
+          const scoreColor = actualScore >= skill.requiredScore ? [34, 197, 94] : 
+                             actualScore >= skill.requiredScore * 0.8 ? [234, 179, 8] : [239, 68, 68];
+          pdf.setFillColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+          const fillWidth = Math.min((actualScore / 100) * barWidth, barWidth);
+          pdf.roundedRect(barX, yPos - 3, fillWidth, barHeight, 1, 1, 'F');
+          
+          // Required marker
+          const reqX = barX + (skill.requiredScore / 100) * barWidth;
+          pdf.setDrawColor(17, 24, 39);
+          pdf.setLineWidth(0.5);
+          pdf.line(reqX, yPos - 4, reqX, yPos + 2);
+          
+          // Score text
+          pdf.setFontSize(8);
+          pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+          pdf.text(`${actualScore}`, barX + barWidth + 3, yPos);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(`/ ${skill.requiredScore}`, barX + barWidth + 12, yPos);
+        }
         
         yPos += 7;
       });

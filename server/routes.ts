@@ -3965,27 +3965,59 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return 'important';
       };
       
-      if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
+      // Track data coverage - we do NOT penalize for missing assessments
+      let totalRequiredSkills = 0;
+      let assessedSkillCount = 0;
+      const missingAssessments: string[] = [];
+      
+      // Track which assessment types are missing
+      const hasFitData = fitSkills.size > 0;
+      const hasAiReadinessData = aiReadinessSkills.size > 0;
+      
+      // Process FIT skills - include ALL required skills, mark availability
+      if (role.requiredSkillScores.fitSkills) {
         Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
-          // Apply defensive nudge to ensure no multiples of 5
+          totalRequiredSkills++;
           const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-          const candidateScore = fitSkills.get(skillName) || 0;
-          const gap = requiredScore - candidateScore;
-          let alignment: string;
-          if (gap <= -10) alignment = 'excellent';
-          else if (gap <= 0) alignment = 'good';
-          else if (gap <= 15) alignment = 'fair';
-          else alignment = 'poor';
+          const candidateScoreRaw = fitSkills.get(skillName);
+          const dataAvailable = candidateScoreRaw !== undefined;
           
-          fitSkillAlignments.push({
-            skillName,
-            candidateScore,
-            requiredScore,
-            gap,
-            alignment,
-            criticality: findCriticality(skillName)
-          });
+          if (dataAvailable) {
+            assessedSkillCount++;
+            const candidateScore = candidateScoreRaw;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            fitSkillAlignments.push({
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName),
+              dataAvailable: true
+            });
+          } else {
+            // Skill not assessed - mark as unavailable, do NOT use 0
+            fitSkillAlignments.push({
+              skillName,
+              candidateScore: null,
+              requiredScore,
+              gap: null,
+              alignment: 'not_assessed',
+              criticality: findCriticality(skillName),
+              dataAvailable: false
+            });
+          }
         });
+        
+        if (!hasFitData && Object.keys(role.requiredSkillScores.fitSkills).length > 0) {
+          missingAssessments.push('FIT Assessment');
+        }
       }
       
       // Process AI Readiness skills
@@ -4006,32 +4038,63 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         'Domain Expertise': 'Domain Expertise',
       };
       
-      if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
+      // Process AI Readiness skills - include ALL required skills, mark availability
+      if (role.requiredSkillScores.aiReadinessSkills) {
         Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
-          // Apply defensive nudge to ensure no multiples of 5
+          totalRequiredSkills++;
           const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-          // Look up using full name from mapping, fallback to original name
           const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
-          const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
-          const gap = requiredScore - candidateScore;
-          let alignment: string;
-          if (gap <= -10) alignment = 'excellent';
-          else if (gap <= 0) alignment = 'good';
-          else if (gap <= 15) alignment = 'fair';
-          else alignment = 'poor';
+          const candidateScoreRaw = aiReadinessSkills.get(fullSkillName) ?? aiReadinessSkills.get(skillName);
+          const dataAvailable = candidateScoreRaw !== undefined;
           
-          aiReadinessSkillAlignments.push({
-            skillName: fullSkillName, // Use full skill name for proper cohort benchmark matching
-            candidateScore,
-            requiredScore,
-            gap,
-            alignment,
-            criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName)
-          });
+          if (dataAvailable) {
+            assessedSkillCount++;
+            const candidateScore = candidateScoreRaw;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            aiReadinessSkillAlignments.push({
+              skillName: fullSkillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              dataAvailable: true
+            });
+          } else {
+            // Skill not assessed - mark as unavailable, do NOT use 0
+            aiReadinessSkillAlignments.push({
+              skillName: fullSkillName,
+              candidateScore: null,
+              requiredScore,
+              gap: null,
+              alignment: 'not_assessed',
+              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              dataAvailable: false
+            });
+          }
         });
+        
+        if (!hasAiReadinessData && Object.keys(role.requiredSkillScores.aiReadinessSkills).length > 0) {
+          missingAssessments.push('AI Readiness Assessment');
+        }
       }
 
-      // Calculate overall fit score with criticality weighting and critical gap penalties
+      // Calculate data coverage percentage
+      const dataCoverage = totalRequiredSkills > 0 
+        ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+        : 0;
+      
+      // Determine if candidate has sufficient data for meaningful analysis
+      // Minimum 40% coverage required AND must have at least one assessed skill
+      const hasSufficientData = totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoverage >= 40;
+
+      // Calculate overall fit score ONLY from assessed skills (don't penalize missing data)
       // Critical skills are weighted 2x, Important 1.5x, Nice-to-have 1x
       // Additional penalty applied for each critical skill where candidate falls short
       const allAlignments = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
@@ -4046,24 +4109,29 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       let weightSum = 0;
       let criticalGaps = 0;
       let totalCriticalSkills = 0;
+      let assessedCriticalSkills = 0;
       
       allAlignments.forEach(skill => {
-        const weight = getSkillWeight(skill.criticality || 'important');
         const isCritical = skill.criticality === 'critical';
-        
         if (isCritical) totalCriticalSkills++;
         
-        // Calculate match percentage (capped at 100%)
-        const matchPercent = skill.candidateScore >= skill.requiredScore
-          ? 100
-          : (skill.candidateScore / skill.requiredScore) * 100;
-        
-        weightedTotal += matchPercent * weight;
-        weightSum += weight;
-        
-        // Track critical gaps
-        if (isCritical && skill.candidateScore < skill.requiredScore) {
-          criticalGaps++;
+        // Only include skills WITH data in the weighted calculation
+        if (skill.dataAvailable) {
+          const weight = getSkillWeight(skill.criticality || 'important');
+          if (isCritical) assessedCriticalSkills++;
+          
+          // Calculate match percentage (capped at 100%)
+          const matchPercent = skill.candidateScore >= skill.requiredScore
+            ? 100
+            : (skill.candidateScore / skill.requiredScore) * 100;
+          
+          weightedTotal += matchPercent * weight;
+          weightSum += weight;
+          
+          // Track critical gaps (only for assessed skills)
+          if (isCritical && skill.candidateScore < skill.requiredScore) {
+            criticalGaps++;
+          }
         }
       });
       
@@ -4084,18 +4152,23 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         apiKey: process.env.OPENAI_API_KEY,
       });
 
+      // Filter to only assessed skills for the prompt
+      const assessedFitSkills = fitSkillAlignments.filter(s => s.dataAvailable);
+      const assessedAiReadinessSkills = aiReadinessSkillAlignments.filter(s => s.dataAvailable);
+      
       const prompt = `You are an expert HR consultant analyzing candidate-role fit.
 
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-OVERALL FIT SCORE: ${overallFit}/100
+OVERALL FIT SCORE: ${overallFit}/100 (based on ${dataCoverage}% of required skills assessed)
+${missingAssessments.length > 0 ? `NOTE: Candidate is missing the following assessments: ${missingAssessments.join(', ')}\n` : ''}
 
-FIT ASSESSMENT SKILLS (Behavioral):
-${fitSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
+FIT ASSESSMENT SKILLS (Behavioral)${assessedFitSkills.length === 0 ? ' - NOT ASSESSED' : ''}:
+${assessedFitSkills.length > 0 ? assessedFitSkills.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n') : 'No FIT assessment data available'}
 
-AI READINESS SKILLS (Technical):
-${aiReadinessSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
+AI READINESS SKILLS (Technical)${assessedAiReadinessSkills.length === 0 ? ' - NOT ASSESSED' : ''}:
+${assessedAiReadinessSkills.length > 0 ? assessedAiReadinessSkills.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n') : 'No AI Readiness assessment data available'}
 
 Based on this analysis, provide:
 1. Top 3-5 strengths specific to this role. ONLY include skills where the candidate EXCEEDS the requirement (candidate score > required score). Write as qualitative descriptions WITHOUT including any numbers or scores.
@@ -4601,7 +4674,15 @@ Format your response as JSON with this structure:
         interviewQuestions: insights.interviewQuestions || null,
         roleFlexibility: topAlternativeRoles, // Always save array (empty if no matches) to distinguish from old null values
         finalRecommendation,
-        nextSteps
+        nextSteps,
+        // Coverage information - indicates completeness of assessment data
+        dataCoverage: {
+          percentage: dataCoverage,
+          assessedSkillCount,
+          totalRequiredSkills,
+          missingAssessments,
+          hasSufficientData
+        }
       };
 
       // Invalidate any existing cached alignment before creating new one
@@ -5036,88 +5117,158 @@ Format your response as JSON with this structure:
           }
         });
 
-        // Build skill alignments
+        // Build skill alignments with coverage tracking
+        // IMPORTANT: We do NOT penalize candidates for missing assessments
+        // Skills without data are marked as 'not_assessed' and excluded from scoring
         const skillScores: any[] = [];
+        let totalRequiredSkills = 0;
+        let assessedSkillCount = 0;
         
-        // Process FIT skills
-        if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
+        // Process FIT skills - include ALL required skills, mark availability
+        if (role.requiredSkillScores.fitSkills) {
           Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
             const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-            const candidateScore = fitSkills.get(skillName) || 0;
-            const gap = requiredScore - candidateScore;
-            let alignment: string;
-            if (gap <= -10) alignment = 'excellent';
-            else if (gap <= 0) alignment = 'good';
-            else if (gap <= 15) alignment = 'fair';
-            else alignment = 'poor';
+            const candidateScoreRaw = fitSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
             
-            skillScores.push({
-              skillName,
-              score: candidateScore,
-              requiredScore,
-              gap,
-              alignment,
-              criticality: findCriticality(skillName),
-              category: 'fit' as const
-            });
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: true
+              });
+            } else {
+              // Skill not assessed - mark as unavailable, do NOT use 0
+              skillScores.push({
+                skillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: false
+              });
+            }
           });
         }
         
-        // Process AI Readiness skills
-        if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
+        // Process AI Readiness skills - include ALL required skills, mark availability
+        if (role.requiredSkillScores.aiReadinessSkills) {
           Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
             const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
             const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
-            const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
-            const gap = requiredScore - candidateScore;
-            let alignment: string;
-            if (gap <= -10) alignment = 'excellent';
-            else if (gap <= 0) alignment = 'good';
-            else if (gap <= 15) alignment = 'fair';
-            else alignment = 'poor';
+            const candidateScoreRaw = aiReadinessSkills.get(fullSkillName) ?? aiReadinessSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
             
-            skillScores.push({
-              skillName: fullSkillName,
-              score: candidateScore,
-              requiredScore,
-              gap,
-              alignment,
-              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
-              category: 'ai_readiness' as const
-            });
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName: fullSkillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: true
+              });
+            } else {
+              // Skill not assessed - mark as unavailable, do NOT use 0
+              skillScores.push({
+                skillName: fullSkillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: false
+              });
+            }
           });
         }
 
-        // Calculate overall fit score with criticality weighting
+        // Calculate data coverage percentage
+        const dataCoverage = totalRequiredSkills > 0 
+          ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+          : 0;
+        
+        // Determine if candidate has sufficient data for comparison
+        // Minimum 40% coverage required AND must have at least one assessed skill
+        // If role has no required skills, comparison is not meaningful
+        const hasSufficientData = totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoverage >= 40;
+
+        // Calculate overall fit score ONLY from assessed skills (don't penalize missing data)
         let weightedTotal = 0;
         let weightSum = 0;
         let criticalGaps = 0;
         let totalCriticalSkills = 0;
+        let assessedCriticalSkills = 0;
         const strengths: string[] = [];
         const gaps: string[] = [];
+        const missingAssessments: string[] = [];
+        
+        // Track which assessment types are missing
+        const hasFitData = fitSkills.size > 0;
+        const hasAiReadinessData = aiReadinessSkills.size > 0;
+        if (!hasFitData && role.requiredSkillScores.fitSkills && Object.keys(role.requiredSkillScores.fitSkills).length > 0) {
+          missingAssessments.push('FIT Assessment');
+        }
+        if (!hasAiReadinessData && role.requiredSkillScores.aiReadinessSkills && Object.keys(role.requiredSkillScores.aiReadinessSkills).length > 0) {
+          missingAssessments.push('AI Readiness Assessment');
+        }
         
         skillScores.forEach(skill => {
-          const weight = getSkillWeight(skill.criticality || 'important');
           const isCritical = skill.criticality === 'critical';
-          
           if (isCritical) totalCriticalSkills++;
           
-          const matchPercent = skill.score >= skill.requiredScore
-            ? 100
-            : (skill.score / skill.requiredScore) * 100;
-          
-          weightedTotal += matchPercent * weight;
-          weightSum += weight;
-          
-          if (isCritical && skill.score < skill.requiredScore) {
-            criticalGaps++;
-          }
+          // Only include skills WITH data in the weighted calculation
+          if (skill.dataAvailable) {
+            const weight = getSkillWeight(skill.criticality || 'important');
+            if (isCritical) assessedCriticalSkills++;
+            
+            const matchPercent = skill.score >= skill.requiredScore
+              ? 100
+              : (skill.score / skill.requiredScore) * 100;
+            
+            weightedTotal += matchPercent * weight;
+            weightSum += weight;
+            
+            if (isCritical && skill.score < skill.requiredScore) {
+              criticalGaps++;
+            }
 
-          // Identify strengths and gaps
-          if (skill.score > skill.requiredScore + 5) {
-            strengths.push(`Strong ${skill.skillName}`);
-          } else if (skill.gap > 15) {
-            gaps.push(`Gap in ${skill.skillName}`);
+            // Identify strengths and gaps (only for assessed skills)
+            if (skill.score > skill.requiredScore + 5) {
+              strengths.push(`Strong ${skill.skillName}`);
+            } else if (skill.gap > 15) {
+              gaps.push(`Gap in ${skill.skillName}`);
+            }
           }
         });
         
@@ -5132,46 +5283,90 @@ Format your response as JSON with this structure:
 
         const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
 
+        // Build risk flags including missing assessments
+        const riskFlags: string[] = [];
+        if (criticalGaps > 0) {
+          riskFlags.push(`${criticalGaps} critical skill gap(s)`);
+        }
+        if (missingAssessments.length > 0) {
+          riskFlags.push(`Missing: ${missingAssessments.join(', ')}`);
+        }
+        if (!hasSufficientData) {
+          riskFlags.push('Insufficient data for reliable comparison');
+        }
+
         candidateEntries.push({
           userId: candidateId,
           userName,
           email: user.email,
-          overallFit,
+          overallFit: hasSufficientData ? overallFit : null, // null if insufficient data
           rank: 0, // Will be calculated after all candidates are processed
-          fitTier: overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed',
+          fitTier: !hasSufficientData ? 'insufficient-data' : (overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed'),
           skillScores,
           strengths: strengths.slice(0, 5),
           gaps: gaps.slice(0, 5),
-          riskFlags: criticalGaps > 0 ? [`${criticalGaps} critical skill gap(s)`] : []
+          riskFlags,
+          // New coverage fields
+          dataCoverage,
+          hasSufficientData,
+          missingAssessments,
+          assessedSkillCount,
+          totalRequiredSkills
         });
       }
 
-      if (candidateEntries.length < 2) {
+      // Separate candidates with sufficient data from those without
+      const comparableCandidates = candidateEntries.filter(e => e.hasSufficientData);
+      const insufficientDataCandidates = candidateEntries.filter(e => !e.hasSufficientData);
+
+      if (comparableCandidates.length < 2) {
+        // Check if we have at least 2 total candidates but not enough with sufficient data
+        if (candidateEntries.length >= 2) {
+          return res.status(400).json({ 
+            message: "Not enough candidates with sufficient assessment data for comparison. Candidates need at least 40% of required skills assessed.",
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage,
+              missingAssessments: c.missingAssessments
+            }))
+          });
+        }
         return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
       }
 
-      // Sort and assign ranks
-      candidateEntries.sort((a, b) => b.overallFit - a.overallFit);
-      candidateEntries.forEach((entry, index) => {
+      // Sort and assign ranks - only rank candidates with sufficient data
+      // Candidates without sufficient data get rank = null
+      comparableCandidates.sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
+      comparableCandidates.forEach((entry, index) => {
         entry.rank = index + 1;
       });
+      
+      // Candidates with insufficient data are not ranked
+      insufficientDataCandidates.forEach((entry) => {
+        entry.rank = null;
+      });
+      
+      // Combine back for final results (ranked first, then unranked)
+      const allCandidateEntries = [...comparableCandidates, ...insufficientDataCandidates];
 
-      // Calculate summary insights
-      const fitScores = candidateEntries.map(e => e.overallFit);
-      const topPerformer = candidateEntries[0];
-      const averageFit = Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length);
+      // Calculate summary insights ONLY from comparable candidates
+      const fitScores = comparableCandidates.map(e => e.overallFit as number);
+      const topPerformer = comparableCandidates[0];
+      const averageFit = fitScores.length > 0 ? Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length) : 0;
       
       const fitDistribution = {
-        strong: candidateEntries.filter(e => e.fitTier === 'strong').length,
-        moderate: candidateEntries.filter(e => e.fitTier === 'moderate').length,
-        developmentNeeded: candidateEntries.filter(e => e.fitTier === 'development-needed').length
+        strong: comparableCandidates.filter(e => e.fitTier === 'strong').length,
+        moderate: comparableCandidates.filter(e => e.fitTier === 'moderate').length,
+        developmentNeeded: comparableCandidates.filter(e => e.fitTier === 'development-needed').length,
+        insufficientData: insufficientDataCandidates.length
       };
 
-      // Find common strengths and gaps across candidates
+      // Find common strengths and gaps across comparable candidates
       const strengthCounts: Record<string, number> = {};
       const gapCounts: Record<string, number> = {};
       
-      candidateEntries.forEach(entry => {
+      comparableCandidates.forEach(entry => {
         entry.strengths.forEach((s: string) => {
           strengthCounts[s] = (strengthCounts[s] || 0) + 1;
         });
@@ -5181,27 +5376,30 @@ Format your response as JSON with this structure:
       });
 
       const commonStrengths = Object.entries(strengthCounts)
-        .filter(([_, count]) => count >= Math.ceil(candidateEntries.length / 2))
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
         .map(([strength]) => strength)
         .slice(0, 3);
 
       const commonGaps = Object.entries(gapCounts)
-        .filter(([_, count]) => count >= Math.ceil(candidateEntries.length / 2))
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
         .map(([gap]) => gap)
         .slice(0, 3);
 
-      // Generate hiring recommendation with detailed reasoning
-      const topEntry = candidateEntries[0];
-      const runnerUp = candidateEntries.length > 1 ? candidateEntries[1] : null;
+      // Generate hiring recommendation with detailed reasoning (from comparable candidates only)
+      const topEntry = comparableCandidates[0];
+      const runnerUp = comparableCandidates.length > 1 ? comparableCandidates[1] : null;
       
       // Find skills where top candidate beats runner-up (and by how much)
+      // Only compare skills where BOTH candidates have data
       const topAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
       const runnerUpAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
       
       if (runnerUp) {
         topEntry.skillScores.forEach((skill: any) => {
+          // Only compare if both candidates have data for this skill
+          if (!skill.dataAvailable) return;
           const runnerUpSkill = runnerUp.skillScores.find((s: any) => s.skillName === skill.skillName);
-          if (runnerUpSkill) {
+          if (runnerUpSkill && runnerUpSkill.dataAvailable) {
             const diff = skill.score - runnerUpSkill.score;
             if (diff > 5) {
               topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
@@ -5270,17 +5468,24 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Head-to-head skill comparison (who wins each skill)
+      // Head-to-head skill comparison (who wins each skill) - only for comparable candidates with available data
       const skillComparison: { skillName: string; winner: string; winnerScore: number; loserScore: number; margin: number; criticality: string }[] = [];
       const allSkillNames = new Set<string>();
-      candidateEntries.forEach(e => e.skillScores.forEach((s: any) => allSkillNames.add(s.skillName)));
+      comparableCandidates.forEach(e => e.skillScores.forEach((s: any) => {
+        if (s.dataAvailable) allSkillNames.add(s.skillName);
+      }));
       
-      if (candidateEntries.length >= 2) {
+      if (comparableCandidates.length >= 2) {
         allSkillNames.forEach(skillName => {
-          const scores = candidateEntries.map(e => {
-            const skill = e.skillScores.find((s: any) => s.skillName === skillName);
-            return { name: e.userName, score: skill?.score || 0, criticality: skill?.criticality || 'important' };
-          }).sort((a, b) => b.score - a.score);
+          // Only include candidates who have data for this skill
+          const scores = comparableCandidates
+            .map(e => {
+              const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+              if (!skill || !skill.dataAvailable) return null;
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+            })
+            .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
+            .sort((a, b) => b.score - a.score);
           
           if (scores.length >= 2 && scores[0].score !== scores[1].score) {
             skillComparison.push({
@@ -5302,9 +5507,9 @@ Format your response as JSON with this structure:
         });
       }
 
-      // NEW METRICS: Skill Dominance Count - how many skills each candidate wins
+      // NEW METRICS: Skill Dominance Count - how many skills each comparable candidate wins
       const skillDominance: { candidateName: string; candidateId: string; winsCount: number; totalSkills: number; dominancePercent: number }[] = [];
-      candidateEntries.forEach(entry => {
+      comparableCandidates.forEach(entry => {
         const wins = skillComparison.filter(sc => sc.winner === entry.userName).length;
         skillDominance.push({
           candidateName: entry.userName,
@@ -5316,10 +5521,13 @@ Format your response as JSON with this structure:
       });
       skillDominance.sort((a, b) => b.winsCount - a.winsCount);
 
-      // NEW METRICS: Consistency Score - how evenly a candidate performs (lower std dev = more consistent)
+      // NEW METRICS: Consistency Score - how evenly a candidate performs (only for assessed skills)
       const consistencyScores: { candidateName: string; candidateId: string; consistencyScore: number; interpretation: string }[] = [];
-      candidateEntries.forEach(entry => {
-        const scores = entry.skillScores.map((s: any) => s.score);
+      comparableCandidates.forEach(entry => {
+        // Only consider skills with available data
+        const scores = entry.skillScores
+          .filter((s: any) => s.dataAvailable)
+          .map((s: any) => s.score);
         if (scores.length > 0) {
           const mean = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
           const variance = scores.reduce((sum: number, s: number) => sum + Math.pow(s - mean, 2), 0) / scores.length;
@@ -5341,10 +5549,11 @@ Format your response as JSON with this structure:
       });
       consistencyScores.sort((a, b) => b.consistencyScore - a.consistencyScore);
 
-      // NEW METRICS: Critical Gap Ratio - % of critical skills below 60% threshold
+      // NEW METRICS: Critical Gap Ratio - % of assessed critical skills below 60% threshold
       const criticalGapRatios: { candidateName: string; candidateId: string; criticalGaps: number; totalCritical: number; gapRatio: number; riskLevel: string }[] = [];
-      candidateEntries.forEach(entry => {
-        const criticalSkills = entry.skillScores.filter((s: any) => s.criticality === 'critical');
+      comparableCandidates.forEach(entry => {
+        // Only consider assessed critical skills
+        const criticalSkills = entry.skillScores.filter((s: any) => s.criticality === 'critical' && s.dataAvailable);
         const gapsCount = criticalSkills.filter((s: any) => s.score < 60).length;
         const ratio = criticalSkills.length > 0 ? Math.round((gapsCount / criticalSkills.length) * 100) : 0;
         let riskLevel = 'Low Risk';
@@ -5366,14 +5575,19 @@ Format your response as JSON with this structure:
 
       // NEW METRICS: Largest Skill Differential - the skill with biggest spread between candidates
       let largestDifferential: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number; spread: number; criticality: string } | null = null;
-      if (candidateEntries.length >= 2 && allSkillNames.size > 0) {
+      if (comparableCandidates.length >= 2 && allSkillNames.size > 0) {
         allSkillNames.forEach(skillName => {
-          const scores = candidateEntries.map(e => {
-            const skill = e.skillScores.find((s: any) => s.skillName === skillName);
-            return { name: e.userName, score: skill?.score || 0, criticality: skill?.criticality || 'important' };
-          }).sort((a, b) => b.score - a.score);
+          // Only include candidates with data for this skill
+          const scores = comparableCandidates
+            .map(e => {
+              const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+              if (!skill || !skill.dataAvailable) return null;
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+            })
+            .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
+            .sort((a, b) => b.score - a.score);
           
-          // Guard against empty scores array (should not happen but be safe)
+          // Guard against empty scores array
           if (scores.length < 2) return;
           
           const spread = scores[0].score - scores[scores.length - 1].score;
@@ -5425,17 +5639,30 @@ Format your response as JSON with this structure:
         largestDifferential,
       };
 
-      // Create and save comparison
+      // Create and save comparison (use allCandidateEntries which includes coverage info)
       const comparison = await storage.createMultiCandidateComparison({
         jobRoleId,
         createdBy: adminId,
-        candidateEntries,
+        candidateEntries: allCandidateEntries,
         roleSnapshot: {
           roleId: role.id,
           roleName: role.name,
           requiredSkillScores: role.requiredSkillScores
         },
-        summaryInsights,
+        summaryInsights: {
+          ...summaryInsights,
+          // Add coverage summary
+          coverageSummary: {
+            comparableCandidatesCount: comparableCandidates.length,
+            insufficientDataCandidatesCount: insufficientDataCandidates.length,
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage,
+              missingAssessments: c.missingAssessments
+            }))
+          }
+        },
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       });
 

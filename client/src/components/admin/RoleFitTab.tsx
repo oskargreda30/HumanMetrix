@@ -33,22 +33,24 @@ function SingleCandidateRoleFit() {
   });
 
   type RoleAlignment = {
-    overallFit: number;
+    overallFit: number | null;
     fitSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number;
+      candidateScore: number | null;
       requiredScore: number;
-      gap: number;
+      gap: number | null;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
     }> | null;
     aiReadinessSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number;
+      candidateScore: number | null;
       requiredScore: number;
-      gap: number;
+      gap: number | null;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
     }> | null;
     strengths: string[];
     gaps: string[];
@@ -77,6 +79,13 @@ function SingleCandidateRoleFit() {
     }> | null;
     finalRecommendation?: string;
     nextSteps?: string[];
+    dataCoverage?: {
+      percentage: number;
+      assessedSkillCount: number;
+      totalRequiredSkills: number;
+      missingAssessments: string[];
+      hasSufficientData: boolean;
+    };
   };
 
   const getPercentileBadge = (percentile: number) => {
@@ -373,35 +382,84 @@ function SingleCandidateRoleFit() {
           </Card>
 
           {/* Overall Fit Score */}
+          {(() => {
+            // Defensive handling for missing dataCoverage (legacy responses) or null/undefined scores
+            // Treat any of these as insufficient data:
+            // - Explicit hasSufficientData === false
+            // - Missing dataCoverage block entirely (legacy responses)
+            // - Null/undefined/non-numeric overallFit
+            const hasInsufficientData = 
+              alignment.dataCoverage?.hasSufficientData === false || 
+              !alignment.dataCoverage ||
+              alignment.overallFit == null ||
+              (typeof alignment.overallFit !== 'number');
+            const fitScore = hasInsufficientData ? 0 : alignment.overallFit;
+            
+            return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Overall Role Fit</span>
-                <Badge
-                  variant={
-                    alignment.overallFit >= 80
-                      ? 'default'
-                      : alignment.overallFit >= 60
-                      ? 'secondary'
-                      : 'outline'
-                  }
-                  className="text-lg px-3 py-1"
-                >
-                  {alignment.overallFit}%
-                </Badge>
+                {hasInsufficientData ? (
+                  <Badge variant="outline" className="text-lg px-3 py-1 bg-amber-50 border-amber-300 text-amber-700">
+                    Insufficient Data
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant={
+                      fitScore >= 80
+                        ? 'default'
+                        : fitScore >= 60
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                    className="text-lg px-3 py-1"
+                  >
+                    {fitScore}%
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Progress value={alignment.overallFit} className="h-3" />
-              <p className="text-sm text-muted-foreground mt-2">
-                {alignment.overallFit >= 80
-                  ? 'Excellent match for this role'
-                  : alignment.overallFit >= 60
-                  ? 'Good potential for this role'
-                  : 'May need additional training for this role'}
-              </p>
+              {hasInsufficientData ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">Not enough assessment data for reliable analysis</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    This candidate has completed {alignment.dataCoverage?.assessedSkillCount || 0} of {alignment.dataCoverage?.totalRequiredSkills || 0} required skill assessments ({alignment.dataCoverage?.percentage || 0}% coverage).
+                    At least 40% coverage is needed for a meaningful role fit analysis.
+                  </p>
+                  {alignment.dataCoverage?.missingAssessments && alignment.dataCoverage.missingAssessments.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-medium">Missing assessments: </span>
+                      <span className="text-muted-foreground">{alignment.dataCoverage.missingAssessments.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Progress value={fitScore} className="h-3" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {fitScore >= 80
+                      ? 'Excellent match for this role'
+                      : fitScore >= 60
+                      ? 'Good potential for this role'
+                      : 'May need additional training for this role'}
+                  </p>
+                  {alignment.dataCoverage && alignment.dataCoverage.percentage < 100 && (
+                    <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>Based on {alignment.dataCoverage.percentage}% of required assessments ({alignment.dataCoverage.assessedSkillCount}/{alignment.dataCoverage.totalRequiredSkills} skills)</span>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
+            );
+          })()}
 
           {/* FIT Skill Alignments */}
           {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
@@ -418,12 +476,14 @@ function SingleCandidateRoleFit() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.fitSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality)}
-                          {skill.gap > 0 ? (
+                          {skill.dataAvailable === false ? (
+                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
+                          ) : skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
                             <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
@@ -431,33 +491,44 @@ function SingleCandidateRoleFit() {
                         </div>
                         <Badge
                           variant={
-                            skill.alignment === 'excellent'
+                            skill.alignment === 'not_assessed'
+                              ? 'outline'
+                              : skill.alignment === 'excellent'
                               ? 'default'
                               : skill.alignment === 'good'
                               ? 'secondary'
                               : 'outline'
                           }
+                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
                         >
-                          {skill.alignment}
+                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Candidate Score</p>
-                          <p className="font-semibold">{skill.candidateScore}%</p>
+                      {skill.dataAvailable === false ? (
+                        <div className="text-sm text-muted-foreground italic">
+                          Assessment not completed - Required score: {skill.requiredScore}%
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Required Score</p>
-                          <p className="font-semibold">{skill.requiredScore}%</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Gap</p>
-                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                          </p>
-                        </div>
-                      </div>
-                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Candidate Score</p>
+                              <p className="font-semibold">{skill.candidateScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Required Score</p>
+                              <p className="font-semibold">{skill.requiredScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Gap</p>
+                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                              </p>
+                            </div>
+                          </div>
+                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                        </>
+                      )}
                     </div>
                   ))}
                   <CriticalityLegend />
@@ -481,12 +552,14 @@ function SingleCandidateRoleFit() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality)}
-                          {skill.gap > 0 ? (
+                          {skill.dataAvailable === false ? (
+                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
+                          ) : skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
                             <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
@@ -494,33 +567,44 @@ function SingleCandidateRoleFit() {
                         </div>
                         <Badge
                           variant={
-                            skill.alignment === 'excellent'
+                            skill.alignment === 'not_assessed'
+                              ? 'outline'
+                              : skill.alignment === 'excellent'
                               ? 'default'
                               : skill.alignment === 'good'
                               ? 'secondary'
                               : 'outline'
                           }
+                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
                         >
-                          {skill.alignment}
+                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Candidate Score</p>
-                          <p className="font-semibold">{skill.candidateScore}%</p>
+                      {skill.dataAvailable === false ? (
+                        <div className="text-sm text-muted-foreground italic">
+                          Assessment not completed - Required score: {skill.requiredScore}%
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Required Score</p>
-                          <p className="font-semibold">{skill.requiredScore}%</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Gap</p>
-                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                          </p>
-                        </div>
-                      </div>
-                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Candidate Score</p>
+                              <p className="font-semibold">{skill.candidateScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Required Score</p>
+                              <p className="font-semibold">{skill.requiredScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Gap</p>
+                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                              </p>
+                            </div>
+                          </div>
+                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                        </>
+                      )}
                     </div>
                   ))}
                   <CriticalityLegend />
@@ -535,7 +619,9 @@ function SingleCandidateRoleFit() {
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
+            // Only analyze skills with available data
+            const assessedSkills = allSkills.filter((s: any) => s.dataAvailable !== false);
+            const criticalSkills = assessedSkills.filter((s: any) => s.criticality === 'critical');
             const criticalMet = criticalSkills.filter((s: any) => s.candidateScore >= s.requiredScore);
             const criticalGaps = criticalSkills.filter((s: any) => s.candidateScore < s.requiredScore);
             

@@ -38,19 +38,27 @@ type CandidateEntry = {
   email: string;
   overallFit: number;
   rank: number;
-  fitTier: 'strong' | 'moderate' | 'development-needed';
+  fitTier: 'strong' | 'moderate' | 'development-needed' | 'insufficient-data';
   skillScores: Array<{
     skillName: string;
-    score: number;
+    score: number | null;
     requiredScore: number;
-    gap: number;
+    gap: number | null;
     alignment: string;
     criticality: 'critical' | 'important' | 'nice-to-have';
     category: 'fit' | 'ai_readiness';
+    dataAvailable?: boolean;
   }>;
   strengths: string[];
   gaps: string[];
   riskFlags: string[];
+  dataCoverage?: {
+    percentage: number;
+    assessedSkillCount: number;
+    totalRequiredSkills: number;
+    missingAssessments: string[];
+  };
+  missingAssessments?: string[];
 };
 
 type SkillComparison = {
@@ -138,8 +146,24 @@ const getFitTierBadge = (tier: string) => {
       return <Badge className="bg-green-600 text-white">Strong Fit</Badge>;
     case 'moderate':
       return <Badge className="bg-amber-500 text-white">Moderate Fit</Badge>;
+    case 'insufficient-data':
+      return <Badge className="bg-gray-400 text-white">Insufficient Data</Badge>;
     default:
       return <Badge variant="destructive">Development Needed</Badge>;
+  }
+};
+
+const getCoverageBadge = (coverage?: { percentage: number }) => {
+  if (!coverage) return null;
+  const pct = coverage.percentage;
+  if (pct >= 100) {
+    return <Badge className="bg-green-100 text-green-800">Full Coverage</Badge>;
+  } else if (pct >= 70) {
+    return <Badge className="bg-blue-100 text-blue-800">{pct}% Coverage</Badge>;
+  } else if (pct >= 40) {
+    return <Badge className="bg-amber-100 text-amber-800">{pct}% Coverage</Badge>;
+  } else {
+    return <Badge className="bg-red-100 text-red-800">Low Coverage ({pct}%)</Badge>;
   }
 };
 
@@ -966,14 +990,35 @@ export default function MultiCandidateRoleFitTab() {
                           <h5 className="font-medium mb-3">Skill Comparison vs Other Candidates</h5>
                           <div className="grid gap-2 md:grid-cols-2">
                             {entry.skillScores.map((skill, i) => {
-                              // Calculate rank for this skill among all candidates
+                              const hasData = skill.dataAvailable !== false && skill.score !== null;
+                              
+                              if (!hasData) {
+                                return (
+                                  <div key={i} className="p-2 rounded bg-muted/30 border border-dashed border-muted-foreground/30">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-medium truncate text-muted-foreground">{skill.skillName}</span>
+                                      <div className="flex items-center gap-1">
+                                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-500">
+                                          {skill.criticality === 'critical' ? 'C' : skill.criticality === 'important' ? 'I' : 'N'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-muted-foreground italic">N/A - Not Assessed</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
                               const allScoresForSkill = comparison.candidateEntries
-                                .map(c => c.skillScores.find(s => s.skillName === skill.skillName)?.score || 0)
+                                .map(c => c.skillScores.find(s => s.skillName === skill.skillName))
+                                .filter(s => s && s.dataAvailable !== false && s.score !== null)
+                                .map(s => s!.score as number)
                                 .sort((a, b) => b - a);
-                              const skillRank = allScoresForSkill.indexOf(skill.score) + 1;
-                              const isLeader = skillRank === 1;
-                              const topScore = allScoresForSkill[0];
-                              const gap = topScore - skill.score;
+                              const skillRank = allScoresForSkill.indexOf(skill.score as number) + 1;
+                              const isLeader = skillRank === 1 && allScoresForSkill.length > 1;
+                              const topScore = allScoresForSkill[0] || 0;
+                              const gapToLeader = topScore - (skill.score as number);
                               
                               return (
                                 <div key={i} className={`p-2 rounded ${isLeader ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' : 'bg-muted/50'}`}>
@@ -994,13 +1039,15 @@ export default function MultiCandidateRoleFitTab() {
                                         <span className="flex items-center gap-1">
                                           <Trophy className="h-3 w-3" /> Leads
                                         </span>
+                                      ) : allScoresForSkill.length > 1 ? (
+                                        `Rank ${skillRank}/${allScoresForSkill.length}`
                                       ) : (
-                                        `Rank ${skillRank}/${comparison.candidateEntries.length}`
+                                        `Score: ${skill.score}`
                                       )}
                                     </span>
-                                    {!isLeader && gap > 0 && (
+                                    {!isLeader && gapToLeader > 0 && allScoresForSkill.length > 1 && (
                                       <span className="text-muted-foreground text-xs">
-                                        {gap} pts behind leader
+                                        {gapToLeader} pts behind leader
                                       </span>
                                     )}
                                   </div>
