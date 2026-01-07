@@ -581,12 +581,28 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Validation schema for session start
+  const sessionStartSchema = z.object({
+    email: z.string().email("Invalid email format").optional(),
+    countryCode: z.string().length(2, "Country code must be 2 characters").regex(/^[A-Za-z]{2}$/, "Invalid country code format").transform(c => c.toUpperCase()).optional(),
+  }).optional();
+
   app.post(
     "/api/embed/session/:sessionId/start",
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
-        const { email, countryCode } = req.body || {};
+        
+        // Validate input
+        const parseResult = sessionStartSchema.safeParse(req.body);
+        if (!parseResult.success) {
+          return res.status(400).json({ 
+            error: "Invalid input", 
+            details: parseResult.error.errors.map(e => e.message).join(', ') 
+          });
+        }
+        
+        const { email, countryCode } = parseResult.data || {};
         
         const session = await storage.getAssessmentSession(sessionId);
         
