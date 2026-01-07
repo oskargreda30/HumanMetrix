@@ -43,6 +43,7 @@ export default function Assessment() {
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const answersRef = useRef<Record<string, string>>({});
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -198,6 +199,10 @@ export default function Assessment() {
   useEffect(() => {
     canPauseAgainRef.current = canPauseAgain;
   }, [canPauseAgain]);
+  
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   // Show warning when user tries to leave during assessment (but don't force logout)
   useEffect(() => {
@@ -372,7 +377,8 @@ export default function Assessment() {
           
           // Only auto-submit if user has answered at least one question
           // This prevents submitting an empty assessment
-          if (Object.keys(answers).length > 0) {
+          // Use ref to avoid stale closure issue
+          if (Object.keys(answersRef.current).length > 0) {
             toast({
               title: "Time's Up!",
               description: "Assessment will be auto-submitted with current answers",
