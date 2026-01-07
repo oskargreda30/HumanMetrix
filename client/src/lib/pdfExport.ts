@@ -291,6 +291,9 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
   }
   
   // What each assessment measures - box at bottom (positioned to avoid footer)
+  // Add spacing before the box
+  yPos += 5;
+  
   // Cap yPos to ensure box doesn't overlap with footer
   const maxBoxY = pageHeight - 80; // Leave room for footer
   if (yPos > maxBoxY) yPos = maxBoxY;
