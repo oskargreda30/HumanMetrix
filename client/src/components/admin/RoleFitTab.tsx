@@ -1147,7 +1147,7 @@ export default function RoleFitTab() {
         </TabsTrigger>
         <TabsTrigger value="multi" className="flex items-center gap-2" data-testid="tab-multi-candidate">
           <Users className="h-4 w-4" />
-          Compare Candidates
+          Multiple Candidates
         </TabsTrigger>
       </TabsList>
       <TabsContent value="single" className="mt-6">
