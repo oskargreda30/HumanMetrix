@@ -37,6 +37,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts and daily runs.
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.
 - **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing, a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
+- **B2B Test-Taker Results Monetization**: Test-takers can view results immediately for 75% of location-based B2C pricing or wait 30 days for free access. Email workflow: collect email at test start → congratulatory email after completion with payment link → results email with PDF attachment after payment.
   - **Volume-Based Pricing Model** ($1.00 = 1 Credit, 6-month expiration policy):
     | Tier | Monthly Volume | Price Per Test | Comparisons (Base-30%) | Role Fit (Base-20%) | Trial Quota |
     |------|---------------|----------------|------------------------|---------------------|-------------|
