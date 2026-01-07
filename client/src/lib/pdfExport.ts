@@ -4276,169 +4276,152 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
   yPos += 8;
   
-  // Generate recommendations based on scores
-  const suitableRoles: string[] = [];
-  const thriveEnvironments: string[] = [];
-  const roleStrengths: string[] = [];
-  const developmentAreas: string[] = [];
+  // Generate recommendation paragraphs based on scores
+  let roleRecommendation = '';
+  let environmentRecommendation = '';
+  let strengthsRecommendation = '';
+  let developmentRecommendation = '';
   
-  // Determine suitable roles based on profile
+  // Build role recommendation paragraph
   if (fitAvg >= 80 && aiAvg >= 70) {
-    suitableRoles.push('AI Project Lead – Strong interpersonal and technical AI skills.');
-    suitableRoles.push('Innovation Manager – Combines creativity with AI capabilities.');
+    roleRecommendation = `Based on ${data.candidateName}'s exceptional combination of interpersonal skills and technical AI capabilities, they would excel in leadership positions such as AI Project Lead or Innovation Manager. Their strong behavioral foundation paired with advanced AI readiness makes them well-suited for roles that bridge technical implementation with team coordination.`;
   } else if (fitAvg >= 70) {
-    suitableRoles.push('Team Coordinator – Strong collaboration and communication skills.');
-    suitableRoles.push('Client Success Manager – Empathy and relationship building strengths.');
-  }
-  if (data.promptData && data.promptData.totalScore >= 80) {
-    suitableRoles.push('Prompt Engineer – Strong prompt architecture capabilities.');
-    suitableRoles.push('AI Content Strategist – Effective AI-assisted content creation.');
-  }
-  if (aiAvg >= 75) {
-    suitableRoles.push('AI Integration Specialist – Technical AI implementation skills.');
-  }
-  if (suitableRoles.length === 0) {
-    suitableRoles.push('Technical Writer – Clear communication skills translate complex concepts effectively.');
-    suitableRoles.push('Content Strategist – Structured thinking enables cohesive content planning.');
-    suitableRoles.push('Knowledge Manager – Information organization abilities support institutional learning.');
+    roleRecommendation = `${data.candidateName} demonstrates solid interpersonal strengths that would translate well into people-focused positions. Roles such as Team Coordinator or Client Success Manager would leverage their natural empathy and relationship-building capabilities effectively.`;
+  } else {
+    roleRecommendation = `${data.candidateName}'s profile suggests potential in roles requiring structured thinking and clear communication. Positions like Technical Writer, Content Strategist, or Knowledge Manager would allow them to apply their organizational abilities while continuing to develop other competencies.`;
   }
   
-  // Environments
+  if (data.promptData && data.promptData.totalScore >= 80) {
+    roleRecommendation += ` Their exceptional prompt engineering abilities also open opportunities in specialized AI roles such as Prompt Engineer or AI Content Strategist.`;
+  } else if (aiAvg >= 75) {
+    roleRecommendation += ` Their strong AI readiness scores indicate they could also succeed in AI Integration Specialist roles requiring hands-on technical implementation.`;
+  }
+  
+  // Build environment recommendation paragraph
+  const envFactors: string[] = [];
   if (fitAvg >= 75) {
-    thriveEnvironments.push('Environments requiring clear documentation');
-    thriveEnvironments.push('Roles involving training or knowledge transfer');
+    envFactors.push('environments that value clear documentation and knowledge sharing');
   }
   if (data.aiqData && data.aiqData.totalScore >= 70) {
-    thriveEnvironments.push('Organizations with strong ethical frameworks');
+    envFactors.push('organizations with strong ethical frameworks');
   }
   if (aiAvg >= 70) {
-    thriveEnvironments.push('AI-forward organizations embracing new technologies');
+    envFactors.push('AI-forward companies embracing emerging technologies');
   }
-  if (thriveEnvironments.length === 0) {
-    thriveEnvironments.push('Structured environments with clear processes');
-    thriveEnvironments.push('Teams valuing collaboration and growth');
+  if (envFactors.length === 0) {
+    envFactors.push('structured environments with clear processes');
+    envFactors.push('collaborative teams focused on continuous improvement');
   }
   
-  // Strengths
+  environmentRecommendation = `This candidate would thrive in ${envFactors.slice(0, -1).join(', ')}${envFactors.length > 1 ? ' and ' : ''}${envFactors[envFactors.length - 1]}. Their assessment profile suggests they perform best when given clear objectives while having the autonomy to determine how to achieve them.`;
+  
+  // Build strengths paragraph
+  const strengthFactors: string[] = [];
   if (data.fitData) {
     const sortedFit = Object.entries(data.fitData.scores).sort(([,a], [,b]) => b - a);
-    if (sortedFit[0]) roleStrengths.push(`Strong ${sortedFit[0][0].toLowerCase()} capabilities`);
+    if (sortedFit[0]) strengthFactors.push(`strong ${sortedFit[0][0].toLowerCase()}`);
+    if (sortedFit[1]) strengthFactors.push(`solid ${sortedFit[1][0].toLowerCase()}`);
   }
   if (data.promptData && data.promptData.totalScore >= 75) {
-    roleStrengths.push('Articulating requirements with precision and clarity');
-    roleStrengths.push('Structuring information for maximum comprehension');
+    strengthFactors.push('excellent ability to articulate requirements with precision');
   }
   if (data.aiqData && data.aiqData.totalScore >= 70) {
-    roleStrengths.push('Identifying potential risks before they become problems');
-  }
-  if (roleStrengths.length === 0) {
-    roleStrengths.push('Willingness to learn and adapt');
-    roleStrengths.push('Foundation for skill development');
+    strengthFactors.push('keen awareness of potential risks and ethical considerations');
   }
   
-  // Development areas
+  if (strengthFactors.length > 0) {
+    strengthsRecommendation = `${data.candidateName}'s key strengths include ${strengthFactors.join(', ')}. These capabilities position them to add immediate value in roles that require clear communication and thoughtful problem-solving.`;
+  } else {
+    strengthsRecommendation = `${data.candidateName} demonstrates a willingness to learn and adapt, providing a solid foundation for skill development. With appropriate mentorship and training, they have potential for growth across multiple competency areas.`;
+  }
+  
+  // Build development paragraph
+  const devFactors: string[] = [];
   if (data.fitData) {
     const sortedFit = Object.entries(data.fitData.scores).sort(([,a], [,b]) => a - b);
     if (sortedFit[0] && sortedFit[0][1] < 70) {
-      developmentAreas.push(`Priority development in ${sortedFit[0][0]} through targeted training and practical exercises.`);
+      devFactors.push(`${sortedFit[0][0]} through targeted training and practical exercises`);
     }
   }
   if (data.aiData) {
     const sortedAI = Object.entries(data.aiData.scores).sort(([,a], [,b]) => a - b);
     if (sortedAI[0] && sortedAI[0][1] < 65) {
-      developmentAreas.push(`Strengthen ${sortedAI[0][0]} skills through hands-on projects and peer collaboration.`);
+      devFactors.push(`${sortedAI[0][0]} skills through hands-on projects`);
     }
   }
   if (data.aiqData && data.aiqData.totalScore < 60) {
-    developmentAreas.push('Focus on AI ethics training and responsible AI practices.');
-  }
-  if (developmentAreas.length === 0) {
-    developmentAreas.push('Pursue leadership training to translate technical strengths into team impact.');
+    devFactors.push('AI ethics awareness through dedicated training programs');
   }
   
-  // Render recommendations in two-column layout with proper alignment
-  const colWidth = (pageWidth - 50) / 2;
-  const leftColX = 20;
-  const rightColX = 25 + colWidth;
+  if (devFactors.length > 0) {
+    developmentRecommendation = `To maximize ${data.candidateName}'s potential, we recommend focusing development efforts on ${devFactors.join(' and ')}. Structured learning combined with real-world application will accelerate their growth in these areas.`;
+  } else {
+    developmentRecommendation = `${data.candidateName} shows a well-rounded profile with no critical gaps. To further their development, consider leadership training and cross-functional project exposure to translate their technical strengths into broader organizational impact.`;
+  }
   
-  // Top row headers
+  // Render paragraphs
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('MOST SUITABLE ROLES', leftColX, yPos);
-  pdf.text('WHERE THIS CANDIDATE WOULD THRIVE', rightColX, yPos);
-  yPos += 8;
+  pdf.text('ROLE SUITABILITY', 20, yPos);
+  yPos += 6;
   
-  // Calculate heights for each column to keep them separate
-  let leftYPos = yPos;
-  let rightYPos = yPos;
-  
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
-  
-  // Render left column - Suitable Roles
-  suitableRoles.forEach((role) => {
-    const roleLines = pdf.splitTextToSize(`• ${role}`, colWidth - 10);
-    roleLines.forEach((line: string) => {
-      pdf.text(line, leftColX, leftYPos);
-      leftYPos += 4;
-    });
-    leftYPos += 1;
+  const roleLines = pdf.splitTextToSize(roleRecommendation, pageWidth - 40);
+  roleLines.forEach((line: string) => {
+    pdf.text(line, 20, yPos);
+    yPos += 5;
   });
+  yPos += 8;
   
-  // Render right column - Thrive Environments
-  thriveEnvironments.forEach((env) => {
-    const envLines = pdf.splitTextToSize(`• ${env}`, colWidth - 10);
-    envLines.forEach((line: string) => {
-      pdf.text(line, rightColX, rightYPos);
-      rightYPos += 4;
-    });
-    rightYPos += 1;
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(59, 130, 246);
+  pdf.text('OPTIMAL ENVIRONMENT', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  const envLines = pdf.splitTextToSize(environmentRecommendation, pageWidth - 40);
+  envLines.forEach((line: string) => {
+    pdf.text(line, 20, yPos);
+    yPos += 5;
   });
+  yPos += 8;
   
-  // Move to the max of both columns
-  yPos = Math.max(leftYPos, rightYPos) + 12;
-  
-  // Bottom row headers - Strengths and Development
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  pdf.text('ROLE STRENGTHS', leftColX, yPos);
+  pdf.text('KEY STRENGTHS', 20, yPos);
+  yPos += 6;
   
-  pdf.setTextColor(234, 179, 8);
-  pdf.text('DEVELOPMENT RECOMMENDATIONS', rightColX, yPos);
-  yPos += 8;
-  
-  // Reset column positions
-  leftYPos = yPos;
-  rightYPos = yPos;
-  
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
-  
-  // Render left column - Role Strengths
-  roleStrengths.forEach((strength) => {
-    const strengthLines = pdf.splitTextToSize(`• ${strength}`, colWidth - 10);
-    strengthLines.forEach((line: string) => {
-      pdf.text(line, leftColX, leftYPos);
-      leftYPos += 4;
-    });
-    leftYPos += 1;
+  const strengthLines = pdf.splitTextToSize(strengthsRecommendation, pageWidth - 40);
+  strengthLines.forEach((line: string) => {
+    pdf.text(line, 20, yPos);
+    yPos += 5;
   });
+  yPos += 8;
   
-  // Render right column - Development Areas
-  developmentAreas.forEach((dev) => {
-    const devLines = pdf.splitTextToSize(`• ${dev}`, colWidth - 10);
-    devLines.forEach((line: string) => {
-      pdf.text(line, rightColX, rightYPos);
-      rightYPos += 4;
-    });
-    rightYPos += 1;
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(234, 179, 8);
+  pdf.text('DEVELOPMENT FOCUS', 20, yPos);
+  yPos += 6;
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  const devLines = pdf.splitTextToSize(developmentRecommendation, pageWidth - 40);
+  devLines.forEach((line: string) => {
+    pdf.text(line, 20, yPos);
+    yPos += 5;
   });
-  
-  yPos = Math.max(leftYPos, rightYPos);
   
   // ========== AI PROFILE INSIGHTS (if available) ==========
   if (data.profileInsights) {
