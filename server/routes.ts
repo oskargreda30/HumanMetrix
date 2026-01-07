@@ -2499,6 +2499,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get assessment status (for pause/resume state checking)
+  app.get("/api/assessments/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if paused session's grace period has expired
+      const now = new Date();
+      if (result.pausedAt && result.pauseGraceExpiresAt && new Date(result.pauseGraceExpiresAt) < now) {
+        await storage.updateAssessmentResult(id, { status: "expired" });
+        return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
+      }
+      
+      res.json({
+        id: result.id,
+        status: result.status,
+        isPaused: !!result.pausedAt,
+        pausedAt: result.pausedAt || null,
+        pausedTimeRemainingMs: result.pausedTimeRemainingMs ?? null,
+        pauseGraceExpiresAt: result.pauseGraceExpiresAt || null,
+        resumeCount: result.resumeCount || 0,
+        canPauseAgain: (result.resumeCount || 0) < 1,
+      });
+    } catch (error) {
+      console.error("Error getting assessment status:", error);
+      res.status(500).json({ message: "Failed to get assessment status" });
+    }
+  });
+
   // Submit assessment answers
   app.post("/api/assessments/:id/submit", isAuthenticated, async (req: any, res) => {
     const { id } = req.params;

@@ -105,6 +105,12 @@ export default function EmbedAssessment() {
   const [testerEmail, setTesterEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
   const [detectedCountry, setDetectedCountry] = useState<string>("GB");
+  
+  // Pause/resume state tracking
+  const [isPaused, setIsPaused] = useState(false);
+  const [canPauseAgain, setCanPauseAgain] = useState(true);
+  // Use a ref for canPauseAgain that updates synchronously for event handlers
+  const canPauseAgainRef = useRef(true);
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -144,6 +150,112 @@ export default function EmbedAssessment() {
 
     fetchSession();
   }, [sessionId]);
+  
+  // Keep ref in sync with state for event handlers
+  useEffect(() => {
+    canPauseAgainRef.current = canPauseAgain;
+  }, [canPauseAgain]);
+  
+  // Window close detection for pause functionality (B2B - uses beforeunload/pagehide)
+  // Only triggers on actual window close, not tab switches
+  useEffect(() => {
+    if (!sessionId || status !== "started" || isSubmitting) return;
+    
+    const handleWindowClose = () => {
+      // Use ref for synchronous check - state updates are async and would be stale
+      if (!canPauseAgainRef.current) return;
+      
+      // Immediately mark as used to prevent double-pause race conditions
+      canPauseAgainRef.current = false;
+      
+      // Use sendBeacon for reliable delivery on page unload
+      const payload = JSON.stringify({ timeRemainingMs: 0 }); // B2B tracks time server-side
+      navigator.sendBeacon(`/api/embed/session/${sessionId}/pause`, new Blob([payload], { type: 'application/json' }));
+    };
+    
+    // pagehide is more reliable than beforeunload for mobile browsers
+    window.addEventListener("pagehide", handleWindowClose);
+    window.addEventListener("beforeunload", handleWindowClose);
+    
+    return () => {
+      window.removeEventListener("pagehide", handleWindowClose);
+      window.removeEventListener("beforeunload", handleWindowClose);
+    };
+  }, [sessionId, status, isSubmitting]);
+  
+  // On page load/focus, check if session was paused and needs to be resumed
+  useEffect(() => {
+    if (!sessionId || status !== "started" || isSubmitting) return;
+    
+    const checkAndResumeSession = async () => {
+      try {
+        // Re-fetch session state to check if it was paused
+        const res = await fetch(`/api/embed/session/${sessionId}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data.error?.includes("expired") || data.message?.includes("expired")) {
+            setStatus("expired");
+            setErrorMessage("The 30-minute grace period has expired.");
+          }
+          return;
+        }
+        
+        const data = await res.json();
+        
+        // IMMEDIATELY sync local state with server state
+        setIsPaused(data.isPaused || false);
+        
+        if (data.isPaused) {
+          // Session is paused - IMMEDIATELY disable pausing to prevent race condition
+          // Update ref synchronously so beforeunload handler sees the change immediately
+          canPauseAgainRef.current = false;
+          setCanPauseAgain(false);
+          
+          // Attempt to resume
+          const resumeResponse = await fetch(`/api/embed/session/${sessionId}/resume`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          
+          if (resumeResponse.ok) {
+            const resumeData = await resumeResponse.json().catch(() => ({}));
+            // Update state from server response - trust only server
+            setIsPaused(false);
+            // After resume, server returns canPauseAgain: false (single-resume rule)
+            // Update ref synchronously so beforeunload sees it immediately
+            const resumeCanPause = resumeData.canPauseAgain === true;
+            canPauseAgainRef.current = resumeCanPause;
+            setCanPauseAgain(resumeCanPause);
+          } else {
+            const errorData = await resumeResponse.json().catch(() => ({}));
+            if (errorData.message?.includes("expired") || errorData.error?.includes("expired")) {
+              setStatus("expired");
+              setErrorMessage("The 30-minute grace period has expired.");
+            }
+          }
+        } else {
+          // Not paused - trust server for canPauseAgain
+          // Update ref synchronously FIRST so beforeunload sees it immediately
+          const serverCanPause = data.canPauseAgain === true;
+          canPauseAgainRef.current = serverCanPause;
+          setCanPauseAgain(serverCanPause);
+        }
+      } catch (err) {
+        console.error("Failed to check session state:", err);
+      }
+    };
+    
+    // Check when window regains focus
+    const handleFocus = () => {
+      checkAndResumeSession();
+    };
+    
+    window.addEventListener("focus", handleFocus);
+    
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [sessionId, status, isSubmitting]);
 
   const fetchSession = async () => {
     try {
@@ -162,6 +274,12 @@ export default function EmbedAssessment() {
 
       const data = await res.json();
       setSession(data);
+      
+      // Initialize pause state from server - update ref synchronously first
+      const initialCanPause = data.canPauseAgain ?? true;
+      canPauseAgainRef.current = initialCanPause;
+      setIsPaused(data.isPaused || false);
+      setCanPauseAgain(initialCanPause);
       
       // Load questions
       const loadedQuestions = getQuestions(data.assessmentType, data.questionLocale || 'default');

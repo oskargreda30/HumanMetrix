@@ -95,6 +95,12 @@ export default function Assessment() {
       setResultId(data.id);
       setShowInstructions(false); // Only close instructions AFTER successful start
       
+      // Initialize pause state from server - update ref synchronously first
+      const initialCanPause = data.canPauseAgain ?? true;
+      canPauseAgainRef.current = initialCanPause;
+      setIsPaused(data.isPaused || false);
+      setCanPauseAgain(initialCanPause);
+      
       // For Prompt Architecture, set 2 minutes per question instead of total time
       const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
       if (isPromptArch) {
@@ -177,6 +183,22 @@ export default function Assessment() {
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
 
+  // Pause/resume state tracking
+  const [isPaused, setIsPaused] = useState(false);
+  const [canPauseAgain, setCanPauseAgain] = useState(true);
+  const timeRemainingRef = useRef(timeRemaining);
+  // Use a ref for canPauseAgain that updates synchronously for event handlers
+  const canPauseAgainRef = useRef(true);
+  
+  // Keep refs in sync with state for use in event handlers
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
+  
+  useEffect(() => {
+    canPauseAgainRef.current = canPauseAgain;
+  }, [canPauseAgain]);
+
   // Show warning when user tries to leave during assessment (but don't force logout)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -193,10 +215,136 @@ export default function Assessment() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [resultId, submitMutation.isSuccess, answers]);
+  
+  // Window close detection for pause functionality (uses beforeunload/pagehide)
+  // Only triggers on actual window close, not tab switches
+  useEffect(() => {
+    if (!resultId || submitMutation.isSuccess || isSubmitting) return;
+    
+    const handleWindowClose = () => {
+      // Use ref for synchronous check - state updates are async and would be stale
+      if (!canPauseAgainRef.current) return;
+      
+      // Immediately mark as used to prevent double-pause race conditions
+      canPauseAgainRef.current = false;
+      
+      // Use sendBeacon for reliable delivery on page unload
+      const payload = JSON.stringify({ timeRemainingMs: timeRemainingRef.current * 1000 });
+      navigator.sendBeacon(`/api/assessments/${resultId}/pause`, new Blob([payload], { type: 'application/json' }));
+    };
+    
+    // pagehide is more reliable than beforeunload for mobile browsers
+    window.addEventListener("pagehide", handleWindowClose);
+    window.addEventListener("beforeunload", handleWindowClose);
+    
+    return () => {
+      window.removeEventListener("pagehide", handleWindowClose);
+      window.removeEventListener("beforeunload", handleWindowClose);
+    };
+  }, [resultId, submitMutation.isSuccess, isSubmitting]);
+  
+  // On page load/focus, check if session was paused and needs to be resumed
+  useEffect(() => {
+    if (!resultId || submitMutation.isSuccess || isSubmitting) return;
+    
+    const checkAndResumeSession = async () => {
+      try {
+        // Fetch current assessment state using GET endpoint
+        const response = await fetch(`/api/assessments/${resultId}/status`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.message?.includes("expired")) {
+            toast({
+              title: "Session Expired",
+              description: "The assessment has expired.",
+              variant: "destructive",
+            });
+            setLocation("/dashboard");
+          }
+          return;
+        }
+        
+        const data = await response.json();
+        
+        // IMMEDIATELY sync local state with server state
+        // This stops the timer right away if session is paused (via timer effect dependency)
+        setIsPaused(data.isPaused || false);
+        
+        // Stop timer immediately if paused (belt and suspenders - effect should handle this too)
+        if (data.isPaused && timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        
+        if (data.isPaused) {
+          // Session is paused - IMMEDIATELY disable pausing to prevent race condition
+          // Update ref synchronously so beforeunload handler sees the change immediately
+          canPauseAgainRef.current = false;
+          setCanPauseAgain(false);
+          
+          // Attempt to resume
+          const resumeResponse = await apiRequest("POST", `/api/assessments/${resultId}/resume`);
+          
+          if (resumeResponse.ok) {
+            const resumeData = await resumeResponse.json();
+            // Update state from server response - trust only server
+            setIsPaused(false);
+            // After resume, server returns canPauseAgain: false (single-resume rule)
+            // Update ref synchronously so beforeunload sees it immediately
+            const resumeCanPause = resumeData.canPauseAgain === true;
+            canPauseAgainRef.current = resumeCanPause;
+            setCanPauseAgain(resumeCanPause);
+            
+            // Restore the saved time remaining
+            if (resumeData.timeRemainingMs !== undefined) {
+              setTimeRemaining(Math.floor(resumeData.timeRemainingMs / 1000));
+            }
+            
+            toast({
+              title: "Session Resumed",
+              description: "Your timer has been restored. This was your one pause opportunity.",
+            });
+          } else {
+            const errorData = await resumeResponse.json();
+            if (errorData.message?.includes("expired")) {
+              toast({
+                title: "Session Expired",
+                description: "The 30-minute grace period has expired.",
+                variant: "destructive",
+              });
+              setLocation("/dashboard");
+            }
+          }
+        } else {
+          // Not paused - trust server for canPauseAgain and sync time if provided
+          // Update ref synchronously FIRST so beforeunload sees it immediately
+          const serverCanPause = data.canPauseAgain === true;
+          canPauseAgainRef.current = serverCanPause;
+          setCanPauseAgain(serverCanPause);
+          if (data.pausedTimeRemainingMs !== null && data.pausedTimeRemainingMs !== undefined) {
+            setTimeRemaining(Math.floor(data.pausedTimeRemainingMs / 1000));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check session state:", err);
+      }
+    };
+    
+    // Check when window regains focus
+    const handleFocus = () => {
+      checkAndResumeSession();
+    };
+    
+    window.addEventListener("focus", handleFocus);
+    
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [resultId, submitMutation.isSuccess, isSubmitting, toast, setLocation]);
 
   // Timer effect
   useEffect(() => {
-    if (!resultId || isSubmitting || submitMutation.isPending) return; // Don't run timer if submitting
+    if (!resultId || isSubmitting || submitMutation.isPending || isPaused) return; // Don't run timer if submitting or paused
 
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -255,7 +403,7 @@ export default function Assessment() {
         timerRef.current = null;
       }
     };
-  }, [resultId, showTimeWarning, submitMutation, isSubmitting]);
+  }, [resultId, showTimeWarning, submitMutation, isSubmitting, isPaused]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
