@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -99,6 +100,11 @@ export default function EmbedAssessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedScores, setCompletedScores] = useState<any>(null);
+  
+  // B2B Test-Taker Email Collection
+  const [testerEmail, setTesterEmail] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [detectedCountry, setDetectedCountry] = useState<string>("GB");
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -109,6 +115,25 @@ export default function EmbedAssessment() {
   const textMuted = isLight ? "text-gray-500" : "text-slate-400";
   const borderColor = isLight ? "border-gray-300" : "border-slate-600";
   const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
+
+  // Detect user's country for pricing
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.country_code) {
+            setDetectedCountry(data.country_code);
+          }
+        }
+      } catch (e) {
+        // Fallback to GB if detection fails
+        console.log('Country detection failed, using default');
+      }
+    };
+    detectCountry();
+  }, []);
 
   useEffect(() => {
     if (!sessionId) {
@@ -175,10 +200,29 @@ export default function EmbedAssessment() {
   };
 
   const startAssessment = async () => {
+    // Validate email if session doesn't have one
+    if (!session?.externalEmail && !testerEmail) {
+      setEmailError("Please enter your email address");
+      return;
+    }
+    
+    // Basic email validation
+    const emailToUse = session?.externalEmail || testerEmail;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!session?.externalEmail && !emailRegex.test(testerEmail)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setEmailError("");
+    
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailToUse,
+          countryCode: detectedCountry
+        }),
       });
 
       if (!res.ok) {
@@ -530,6 +574,37 @@ export default function EmbedAssessment() {
                 <li>Take your time - there is no time limit</li>
               </ul>
             </div>
+            
+            {/* Email collection for B2B test-takers (when email not provided by partner) */}
+            {!session?.externalEmail && (
+              <div className="space-y-2">
+                <Label htmlFor="tester-email" className={textSecondary}>
+                  Email Address <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${textMuted}`} />
+                  <Input
+                    id="tester-email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={testerEmail}
+                    onChange={(e) => {
+                      setTesterEmail(e.target.value);
+                      setEmailError("");
+                    }}
+                    className={`pl-10 ${inputBg} ${emailError ? 'border-red-500' : ''}`}
+                    data-testid="input-tester-email"
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
+                )}
+                <p className={`text-xs ${textMuted}`}>
+                  We'll send your results to this email once complete.
+                </p>
+              </div>
+            )}
+            
             <Button
               onClick={startAssessment}
               className="w-full"

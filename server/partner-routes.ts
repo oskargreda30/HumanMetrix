@@ -2,9 +2,11 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BResultsEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2B_VOLUME_TIERS } from "@shared/schema";
-import { getQuestionLocale } from "@shared/currencies";
+import { getQuestionLocale, getPPPAdjustedPriceInPence, getStripeCurrencyCode, COUNTRY_CURRENCY_MAP, ZERO_DECIMAL_CURRENCIES, roundPriceUp, convertAndRoundToLocalCurrency } from "@shared/currencies";
+import { getExchangeRates } from "./exchange-rates";
+import { ASSESSMENT_PRICES, BASE_FEE } from "@shared/schema";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
@@ -584,6 +586,7 @@ export function registerPartnerRoutes(app: Express) {
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
+        const { email, countryCode } = req.body || {};
         
         const session = await storage.getAssessmentSession(sessionId);
         
@@ -613,10 +616,23 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        await storage.updateAssessmentSession(sessionId, {
+        // Build update object with email and country if provided
+        const updateData: any = {
           status: "started",
           startedAt: new Date(),
-        } as any);
+        };
+        
+        // Save email if provided and session doesn't already have one
+        if (email && !session.externalEmail) {
+          updateData.externalEmail = email;
+        }
+        
+        // Save country code for pricing calculation
+        if (countryCode) {
+          updateData.testerCountryCode = countryCode;
+        }
+        
+        await storage.updateAssessmentSession(sessionId, updateData);
         
         await trackUsage(
           session.partnerId,
@@ -865,6 +881,92 @@ export function registerPartnerRoutes(app: Express) {
           }).catch((err) => console.error("Webhook failed:", err));
         }
         
+        // B2B Test-Taker Results Monetization: Set results unlock date (30 days) and send congratulatory email
+        const completedAt = new Date();
+        const resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+        
+        // Update session with results unlock date
+        await storage.updateAssessmentSession(sessionId, {
+          resultsUnlockAt,
+          resultsPaymentStatus: 'unpaid',
+        } as any);
+        
+        // If test-taker has an email, send congratulatory email with payment option
+        if (session.externalEmail && partner) {
+          try {
+            // Calculate 75% of B2C price for test-taker's location
+            const countryCode = session.testerCountryCode || 'GB';
+            const assessmentType = normalizeAssessmentId(session.assessmentType);
+            const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
+            const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
+            
+            // 75% discount for B2B test-takers
+            const discountedPence = Math.round(pppAdjustedPence * 0.75);
+            
+            // Get currency for the country
+            const currencyCode = getStripeCurrencyCode(countryCode);
+            const exchangeRates = await getExchangeRates();
+            
+            // Convert to local currency with rounding
+            let displayPrice: string;
+            let stripeAmount: number;
+            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+            
+            if (currencyCode.toUpperCase() === 'GBP') {
+              // Already in pence
+              stripeAmount = discountedPence;
+              displayPrice = `£${(discountedPence / 100).toFixed(2)}`;
+            } else {
+              // Convert from GBP to local currency
+              const gbpRate = exchangeRates.rates['GBP'] || 1;
+              const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+              const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
+              const roundedAmount = roundPriceUp(localAmount);
+              
+              if (isZeroDecimal) {
+                stripeAmount = Math.round(roundedAmount);
+                displayPrice = `${currencyCode.toUpperCase()} ${stripeAmount.toLocaleString()}`;
+              } else {
+                stripeAmount = Math.round(roundedAmount * 100);
+                displayPrice = `${currencyCode.toUpperCase()} ${roundedAmount.toFixed(2)}`;
+              }
+            }
+            
+            // Store pricing info in session for checkout
+            await storage.updateAssessmentSession(sessionId, {
+              resultsPaymentAmount: stripeAmount,
+              resultsPaymentCurrency: currencyCode,
+            } as any);
+            
+            // Generate payment URL
+            const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+              : 'https://humanmetrix.co.uk';
+            const paymentUrl = `${baseUrl}/b2b-results-payment/${sessionId}`;
+            
+            // Send congratulatory email
+            await sendB2BCongratulatoryEmail({
+              email: session.externalEmail,
+              candidateName: session.externalUserId || undefined,
+              assessmentType: session.assessmentType,
+              partnerCompanyName: partner.companyName || partner.name,
+              paymentUrl,
+              paymentAmount: displayPrice,
+              freeUnlockDate: resultsUnlockAt,
+            });
+            
+            // Mark email as sent
+            await storage.updateAssessmentSession(sessionId, {
+              congratsEmailSentAt: new Date(),
+            } as any);
+            
+            console.log(`[B2B Results] Congratulatory email sent to ${session.externalEmail} for session ${sessionId}`);
+          } catch (emailError) {
+            console.error(`[B2B Results] Failed to send congratulatory email for session ${sessionId}:`, emailError);
+            // Don't fail the request if email fails
+          }
+        }
+        
         res.json({
           sessionId: session.id,
           status: "completed",
@@ -878,6 +980,248 @@ export function registerPartnerRoutes(app: Express) {
       }
     }
   );
+
+  // ========================================
+  // B2B TEST-TAKER RESULTS PAYMENT
+  // ========================================
+  
+  // Get B2B test-taker results pricing for a session
+  app.get("/api/b2b-results/:sessionId/pricing", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await storage.getAssessmentSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      if (session.status !== 'completed') {
+        return res.status(400).json({ error: "Assessment not completed" });
+      }
+      
+      // Check if already paid or free period passed
+      if (session.resultsPaymentStatus === 'paid') {
+        return res.json({
+          unlocked: true,
+          method: 'paid',
+          paidAt: session.resultsPaidAt,
+        });
+      }
+      
+      if (session.resultsUnlockAt && new Date(session.resultsUnlockAt) <= new Date()) {
+        // Mark as free unlock
+        await storage.updateAssessmentSession(sessionId, {
+          resultsPaymentStatus: 'free',
+        } as any);
+        
+        return res.json({
+          unlocked: true,
+          method: 'free',
+          freeUnlockAt: session.resultsUnlockAt,
+        });
+      }
+      
+      // Results not yet unlocked - return pricing
+      const countryCode = session.testerCountryCode || 'GB';
+      const assessmentType = normalizeAssessmentId(session.assessmentType);
+      const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
+      const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
+      const discountedPence = Math.round(pppAdjustedPence * 0.75); // 75% of B2C price
+      
+      const currencyCode = getStripeCurrencyCode(countryCode);
+      const exchangeRates = await getExchangeRates();
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+      
+      let displayPrice: string;
+      let stripeAmount: number;
+      
+      if (currencyCode.toUpperCase() === 'GBP') {
+        stripeAmount = discountedPence;
+        displayPrice = `£${(discountedPence / 100).toFixed(2)}`;
+      } else {
+        const gbpRate = exchangeRates.rates['GBP'] || 1;
+        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+        const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
+        const roundedAmount = roundPriceUp(localAmount);
+        
+        if (isZeroDecimal) {
+          stripeAmount = Math.round(roundedAmount);
+          displayPrice = `${roundedAmount.toLocaleString()}`;
+        } else {
+          stripeAmount = Math.round(roundedAmount * 100);
+          displayPrice = roundedAmount.toFixed(2);
+        }
+      }
+      
+      const partner = await storage.getPartnerAccount(session.partnerId);
+      
+      res.json({
+        unlocked: false,
+        sessionId: session.id,
+        assessmentType: session.assessmentType,
+        partnerCompanyName: partner?.companyName || partner?.name || 'Partner',
+        pricing: {
+          amount: stripeAmount,
+          currency: currencyCode,
+          displayPrice,
+          isZeroDecimal,
+        },
+        freeUnlockAt: session.resultsUnlockAt,
+        daysUntilFree: session.resultsUnlockAt 
+          ? Math.ceil((new Date(session.resultsUnlockAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+          : 30,
+      });
+    } catch (error) {
+      console.error("Error fetching B2B results pricing:", error);
+      res.status(500).json({ error: "Failed to fetch pricing" });
+    }
+  });
+  
+  // Create Stripe checkout session for B2B results payment
+  app.post("/api/b2b-results/:sessionId/checkout", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await storage.getAssessmentSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      if (session.status !== 'completed') {
+        return res.status(400).json({ error: "Assessment not completed" });
+      }
+      
+      if (session.resultsPaymentStatus === 'paid') {
+        return res.status(400).json({ error: "Results already unlocked" });
+      }
+      
+      // Check if free period has passed
+      if (session.resultsUnlockAt && new Date(session.resultsUnlockAt) <= new Date()) {
+        return res.status(400).json({ error: "Results are now free to access" });
+      }
+      
+      // Calculate pricing
+      const countryCode = session.testerCountryCode || 'GB';
+      const assessmentType = normalizeAssessmentId(session.assessmentType);
+      const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
+      const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
+      const discountedPence = Math.round(pppAdjustedPence * 0.75);
+      
+      const currencyCode = getStripeCurrencyCode(countryCode);
+      const exchangeRates = await getExchangeRates();
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+      
+      let stripeAmount: number;
+      
+      if (currencyCode.toUpperCase() === 'GBP') {
+        stripeAmount = discountedPence;
+      } else {
+        const gbpRate = exchangeRates.rates['GBP'] || 1;
+        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+        const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
+        const roundedAmount = roundPriceUp(localAmount);
+        
+        if (isZeroDecimal) {
+          stripeAmount = Math.round(roundedAmount);
+        } else {
+          stripeAmount = Math.round(roundedAmount * 100);
+        }
+      }
+      
+      const partner = await storage.getPartnerAccount(session.partnerId);
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'https://humanmetrix.co.uk';
+      
+      const assessmentNames: Record<string, string> = {
+        'fit': 'FIT Assessment',
+        'ai_readiness': 'AI Readiness Assessment',
+        'prompt_architecture': 'Prompt Architecture Assessment',
+        'aiq': 'AIQ Assessment',
+      };
+      
+      // Create Stripe checkout session
+      const checkoutSession = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: currencyCode.toLowerCase(),
+            product_data: {
+              name: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
+              description: `Unlock your detailed assessment results and personalized insights`,
+            },
+            unit_amount: stripeAmount,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${baseUrl}/b2b-results-success/${sessionId}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/b2b-results-payment/${sessionId}`,
+        customer_email: session.externalEmail || undefined,
+        metadata: {
+          type: 'b2b_results_unlock',
+          sessionId: session.id,
+          assessmentType: session.assessmentType,
+          partnerId: session.partnerId,
+        },
+      });
+      
+      // Store Stripe session ID
+      await storage.updateAssessmentSession(sessionId, {
+        resultsStripeSessionId: checkoutSession.id,
+      } as any);
+      
+      res.json({
+        checkoutUrl: checkoutSession.url,
+        stripeSessionId: checkoutSession.id,
+      });
+    } catch (error) {
+      console.error("Error creating B2B results checkout:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+  
+  // Verify B2B results payment and unlock results
+  app.post("/api/b2b-results/:sessionId/verify-payment", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { stripeSessionId } = req.body;
+      
+      const session = await storage.getAssessmentSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Verify the Stripe session
+      const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      
+      if (stripeSession.payment_status !== 'paid') {
+        return res.status(400).json({ error: "Payment not completed" });
+      }
+      
+      if (stripeSession.metadata?.sessionId !== sessionId) {
+        return res.status(400).json({ error: "Payment session mismatch" });
+      }
+      
+      // Mark as paid
+      await storage.updateAssessmentSession(sessionId, {
+        resultsPaymentStatus: 'paid',
+        resultsPaidAt: new Date(),
+        resultsPaymentAmount: stripeSession.amount_total,
+        resultsPaymentCurrency: stripeSession.currency,
+      } as any);
+      
+      res.json({
+        success: true,
+        unlocked: true,
+        paidAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error verifying B2B results payment:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
 
   // Serve embed test page
   app.get("/embed-test.html", (req, res) => {

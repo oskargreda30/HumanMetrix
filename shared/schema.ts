@@ -800,10 +800,21 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // B2B test-taker results monetization fields
+  testerCountryCode: varchar("tester_country_code"), // Test-taker's country for location-based pricing
+  resultsPaymentStatus: varchar("results_payment_status").default("unpaid"), // unpaid, paid, free (after 30 days)
+  resultsUnlockAt: timestamp("results_unlock_at"), // 30 days after completion for free access
+  resultsPaymentAmount: integer("results_payment_amount"), // Amount paid in smallest currency unit
+  resultsPaymentCurrency: varchar("results_payment_currency"), // Currency used for payment
+  resultsStripeSessionId: varchar("results_stripe_session_id"), // Stripe checkout session ID
+  resultsPaidAt: timestamp("results_paid_at"), // When payment was made
+  congratsEmailSentAt: timestamp("congrats_email_sent_at"), // When congratulatory email was sent
+  resultsEmailSentAt: timestamp("results_email_sent_at"), // When results email with PDF was sent
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
   index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
+  index("idx_assessment_sessions_payment").on(table.resultsPaymentStatus),
 ]);
 
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({

@@ -42,6 +42,8 @@ import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
 import Team from "@/pages/Team";
+import B2BResultsPayment from "@/pages/B2BResultsPayment";
+import B2BResultsSuccess from "@/pages/B2BResultsSuccess";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -124,6 +126,8 @@ function Router() {
       </Route>
       <Route path="/admin/widget-test" component={WidgetTest} />
       <Route path="/partner-package-success" component={PartnerPackageSuccess} />
+      <Route path="/b2b-results-payment/:sessionId" component={B2BResultsPayment} />
+      <Route path="/b2b-results-success/:sessionId" component={B2BResultsSuccess} />
       <Route path="/partner">
         {() => (
           <ProtectedRoute>

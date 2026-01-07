@@ -1694,3 +1694,257 @@ Powered by HumanMetrix - AI Assessment Platform
     return { success: false, error: error.message };
   }
 }
+
+// B2B Test-Taker Congratulatory Email - sent after assessment completion
+interface B2BCongratulatoryEmailDetails {
+  email: string;
+  candidateName?: string;
+  assessmentType: string;
+  partnerCompanyName: string;
+  paymentUrl: string;
+  paymentAmount: string; // Formatted price string (e.g., "£15.00")
+  freeUnlockDate: Date; // 30 days after completion
+}
+
+export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmailDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`B2B congratulatory email not sent to ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  const assessmentName = formatAssessmentName(details.assessmentType);
+  const candidateName = details.candidateName || 'there';
+  const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `Congratulations! You've completed your ${assessmentName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .options-box { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .option { padding: 15px; margin: 10px 0; border-radius: 6px; }
+            .option-immediate { background: #e0f2fe; border-left: 4px solid #0891b2; }
+            .option-free { background: #f0fdf4; border-left: 4px solid #10b981; }
+            .price { font-size: 24px; font-weight: bold; color: #0891b2; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Assessment Complete</span>
+              </div>
+              
+              <h2 style="text-align: center;">Congratulations, ${candidateName}!</h2>
+              
+              <p style="text-align: center;">You've successfully completed the <strong>${assessmentName}</strong> as part of your assessment with <strong>${details.partnerCompanyName}</strong>.</p>
+              
+              <div class="options-box">
+                <h3 style="margin-top: 0;">Access Your Results</h3>
+                
+                <div class="option option-immediate">
+                  <strong>Immediate Access</strong>
+                  <p style="margin: 5px 0;">Get your detailed results right now for just <span class="price">${details.paymentAmount}</span></p>
+                  <p style="margin: 5px 0; font-size: 14px; color: #0369a1;">Receive a comprehensive PDF report with insights and recommendations.</p>
+                </div>
+                
+                <div style="text-align: center;">
+                  <a href="${details.paymentUrl}" class="button">Unlock Results Now</a>
+                </div>
+                
+                <div class="option option-free" style="margin-top: 20px;">
+                  <strong>Free Access</strong>
+                  <p style="margin: 5px 0;">Your results will be available for free on <strong>${freeDate}</strong></p>
+                  <p style="margin: 5px 0; font-size: 14px; color: #059669;">We'll send you an email when your results are ready.</p>
+                </div>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Thank you for completing your assessment. Your insights are valuable!
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Congratulations, ${candidateName}!
+
+You've successfully completed the ${assessmentName} as part of your assessment with ${details.partnerCompanyName}.
+
+ACCESS YOUR RESULTS
+==================
+
+IMMEDIATE ACCESS
+Get your detailed results right now for just ${details.paymentAmount}
+Receive a comprehensive PDF report with insights and recommendations.
+
+Click here to unlock your results: ${details.paymentUrl}
+
+FREE ACCESS
+Your results will be available for free on ${freeDate}.
+We'll send you an email when your results are ready.
+
+---
+Thank you for completing your assessment!
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ B2B congratulatory email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send B2B congratulatory email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// B2B Test-Taker Results Email - sent after payment with PDF attachment
+interface B2BResultsEmailDetails {
+  email: string;
+  candidateName?: string;
+  assessmentType: string;
+  partnerCompanyName: string;
+  pdfBuffer: Buffer; // PDF file as buffer
+  pdfFilename: string; // e.g., "FIT_Assessment_Results.pdf"
+}
+
+export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`B2B results email not sent to ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  const assessmentName = formatAssessmentName(details.assessmentType);
+  const candidateName = details.candidateName || 'there';
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'https://humanmetrix.co.uk';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `Your ${assessmentName} Results Are Ready`,
+    attachments: [
+      {
+        filename: details.pdfFilename,
+        content: details.pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .attachment-box { background: #f0f9ff; border: 2px dashed #0891b2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+            .pdf-icon { font-size: 48px; margin-bottom: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Results Ready</span>
+              </div>
+              
+              <h2 style="text-align: center;">Hello ${candidateName},</h2>
+              
+              <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now available.</p>
+              
+              <div class="attachment-box">
+                <div class="pdf-icon">📄</div>
+                <p style="margin: 0; font-weight: 600; color: #0891b2;">${details.pdfFilename}</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">Your detailed assessment report is attached to this email.</p>
+              </div>
+              
+              <h3>What's in your report?</h3>
+              <ul>
+                <li>Your overall assessment score and percentile ranking</li>
+                <li>Detailed breakdown of your performance across key areas</li>
+                <li>Personalized insights and recommendations</li>
+                <li>Industry benchmarking data</li>
+              </ul>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Hello ${candidateName},
+
+Thank you for your payment! Your ${assessmentName} results are now available.
+
+ATTACHED: ${details.pdfFilename}
+
+Your detailed assessment report is attached to this email.
+
+WHAT'S IN YOUR REPORT?
+- Your overall assessment score and percentile ranking
+- Detailed breakdown of your performance across key areas
+- Personalized insights and recommendations
+- Industry benchmarking data
+
+Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+
+---
+Questions about your results? Contact us at ${baseUrl}/contact
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ B2B results email with PDF sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send B2B results email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
