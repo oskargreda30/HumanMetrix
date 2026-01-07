@@ -1212,6 +1212,38 @@ export function registerPartnerRoutes(app: Express) {
         resultsPaymentCurrency: stripeSession.currency,
       } as any);
       
+      // Send results email with PDF if email is available
+      if (session.externalEmail) {
+        try {
+          const partner = await storage.getPartnerAccount(session.partnerId);
+          const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+          
+          // Generate PDF buffer - simplified placeholder for now
+          // In production, this would generate a proper PDF with results
+          const pdfBuffer = Buffer.from(`Assessment Results for ${session.assessmentType}`);
+          const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
+          
+          await sendB2BResultsEmail({
+            email: session.externalEmail,
+            candidateName: session.externalUserId || undefined,
+            assessmentType: session.assessmentType,
+            partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+            pdfBuffer,
+            pdfFilename,
+          });
+          
+          // Mark results email as sent
+          await storage.updateAssessmentSession(sessionId, {
+            resultsEmailSentAt: new Date(),
+          } as any);
+          
+          console.log(`[B2B Results] Results email sent to ${session.externalEmail} after payment for session ${sessionId}`);
+        } catch (emailError) {
+          console.error(`[B2B Results] Failed to send results email for session ${sessionId}:`, emailError);
+          // Don't fail the request if email fails
+        }
+      }
+      
       res.json({
         success: true,
         unlocked: true,
