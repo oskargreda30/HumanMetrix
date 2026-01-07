@@ -2627,21 +2627,38 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       pdf.setFont('helvetica', 'normal');
       yPos += 2;
       
-      // Score comparison
-      const gap = skill.candidateScore - skill.requiredScore;
-      const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
-      const gapText = gap >= 0 ? `+${gap} above requirement` : `${Math.abs(gap)} below requirement`;
+      // Check if assessment was completed (dataAvailable flag or null score indicates not completed)
+      const isNotCompleted = skill.dataAvailable === false || skill.candidateScore == null;
       
       applyBodyText(pdf);
       pdf.setTextColor(55, 65, 81);
-      pdf.text(`Candidate Score: `, 25, yPos);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${skill.candidateScore}/100`, 60, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(` (Recommended: ${skill.requiredScore})`, 75, yPos);
       
-      pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
-      pdf.text(` ${gapText}`, 115, yPos);
+      if (isNotCompleted) {
+        // Show "Assessment not completed" instead of misleading gap
+        pdf.text(`Candidate Score: `, 25, yPos);
+        pdf.setTextColor(217, 119, 6); // Amber-600
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(`No data`, 60, yPos);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(` (Recommended: ${skill.requiredScore})`, 75, yPos);
+        pdf.setTextColor(217, 119, 6); // Amber-600
+        pdf.text(` Assessment not completed`, 115, yPos);
+      } else {
+        // Score comparison with gap
+        const gap = skill.candidateScore - skill.requiredScore;
+        const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
+        const gapText = gap >= 0 ? `+${gap} above requirement` : `${Math.abs(gap)} below requirement`;
+        
+        pdf.text(`Candidate Score: `, 25, yPos);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${skill.candidateScore}/100`, 60, yPos);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(` (Recommended: ${skill.requiredScore})`, 75, yPos);
+        
+        pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
+        pdf.text(` ${gapText}`, 115, yPos);
+      }
       
       yPos += 8;
     });

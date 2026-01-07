@@ -4649,19 +4649,27 @@ Format your response as JSON with this structure:
       }
 
       // Generate Recommended Next Steps based on overallFit score
-      const nextSteps = overallFit >= 70 
-        ? [
-            'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-            'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-            'Check professional references with emphasis on areas of strength',
-            'Consider for final candidate pool'
-          ]
-        : [
-            'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-            'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-            'Explore development potential through scenario-based questions',
-            'Consider alternative roles that better match current skill profile'
-          ];
+      // Start with assessment completion recommendation if there are missing assessments
+      const assessmentCompletionStep = missingAssessments.length > 0
+        ? [`Have candidate complete ${missingAssessments.join(' and ')} assessment${missingAssessments.length > 1 ? 's' : ''} for a complete capability picture`]
+        : [];
+        
+      const nextSteps = [
+        ...assessmentCompletionStep,
+        ...(overallFit >= 70 
+          ? [
+              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+              'Check professional references with emphasis on areas of strength',
+              'Consider for final candidate pool'
+            ]
+          : [
+              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+              'Explore development potential through scenario-based questions',
+              'Consider alternative roles that better match current skill profile'
+            ])
+      ];
 
       const analysis = {
         overallFit,
@@ -4973,19 +4981,28 @@ Format your response as JSON with this structure:
       }
       
       if (!nextSteps) {
-        nextSteps = overallFit >= 70 
-          ? [
-              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-              'Check professional references with emphasis on areas of strength',
-              'Consider for final candidate pool'
-            ]
-          : [
-              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-              'Explore development potential through scenario-based questions',
-              'Consider alternative roles that better match current skill profile'
-            ];
+        // Get missing assessments from cached data if available
+        const cachedMissingAssessments = (alignment as any).dataCoverage?.missingAssessments || [];
+        const assessmentCompletionStep = cachedMissingAssessments.length > 0
+          ? [`Have candidate complete ${cachedMissingAssessments.join(' and ')} assessment${cachedMissingAssessments.length > 1 ? 's' : ''} for a complete capability picture`]
+          : [];
+          
+        nextSteps = [
+          ...assessmentCompletionStep,
+          ...(overallFit >= 70 
+            ? [
+                'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+                'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+                'Check professional references with emphasis on areas of strength',
+                'Consider for final candidate pool'
+              ]
+            : [
+                'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+                'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+                'Explore development potential through scenario-based questions',
+                'Consider alternative roles that better match current skill profile'
+              ])
+        ];
       }
 
       // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)

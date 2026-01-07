@@ -383,26 +383,24 @@ function SingleCandidateRoleFit() {
 
           {/* Overall Fit Score */}
           {(() => {
-            // Defensive handling for missing dataCoverage (legacy responses) or null/undefined scores
-            // Treat any of these as insufficient data:
-            // - Explicit hasSufficientData === false
-            // - Missing dataCoverage block entirely (legacy responses)
-            // - Null/undefined/non-numeric overallFit
-            const hasInsufficientData = 
-              alignment.dataCoverage?.hasSufficientData === false || 
-              !alignment.dataCoverage ||
-              alignment.overallFit == null ||
-              (typeof alignment.overallFit !== 'number');
-            const fitScore = hasInsufficientData ? 0 : alignment.overallFit;
+            // Always show score if we have any data, even if incomplete
+            const hasPartialData = alignment.dataCoverage && 
+              alignment.dataCoverage.percentage > 0 && 
+              alignment.dataCoverage.percentage < 100;
+            const hasNoData = !alignment.dataCoverage || 
+              alignment.overallFit == null || 
+              (typeof alignment.overallFit !== 'number') ||
+              alignment.dataCoverage.percentage === 0;
+            const fitScore = hasNoData ? 0 : alignment.overallFit;
             
             return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Overall Role Fit</span>
-                {hasInsufficientData ? (
+                {hasNoData ? (
                   <Badge variant="outline" className="text-lg px-3 py-1 bg-amber-50 border-amber-300 text-amber-700">
-                    Insufficient Data
+                    No Data
                   </Badge>
                 ) : (
                   <Badge
@@ -421,22 +419,15 @@ function SingleCandidateRoleFit() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {hasInsufficientData ? (
+              {hasNoData ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-amber-600">
                     <AlertTriangle className="h-5 w-5" />
-                    <span className="font-medium">Not enough assessment data for reliable analysis</span>
+                    <span className="font-medium">No assessment data available</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    This candidate has completed {alignment.dataCoverage?.assessedSkillCount || 0} of {alignment.dataCoverage?.totalRequiredSkills || 0} required skill assessments ({alignment.dataCoverage?.percentage || 0}% coverage).
-                    At least 40% coverage is needed for a meaningful role fit analysis.
+                    This candidate has not completed any assessments yet. Please have them complete the required assessments for a role fit analysis.
                   </p>
-                  {alignment.dataCoverage?.missingAssessments && alignment.dataCoverage.missingAssessments.length > 0 && (
-                    <div className="text-sm">
-                      <span className="font-medium">Missing assessments: </span>
-                      <span className="text-muted-foreground">{alignment.dataCoverage.missingAssessments.join(', ')}</span>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <>
@@ -448,10 +439,22 @@ function SingleCandidateRoleFit() {
                       ? 'Good potential for this role'
                       : 'May need additional training for this role'}
                   </p>
-                  {alignment.dataCoverage && alignment.dataCoverage.percentage < 100 && (
-                    <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>Based on {alignment.dataCoverage.percentage}% of required assessments ({alignment.dataCoverage.assessedSkillCount}/{alignment.dataCoverage.totalRequiredSkills} skills)</span>
+                  {hasPartialData && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-amber-700 mb-1">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-medium text-sm">Incomplete Picture</span>
+                      </div>
+                      <p className="text-sm text-amber-700">
+                        Based on {alignment.dataCoverage!.percentage}% of required assessments ({alignment.dataCoverage!.assessedSkillCount}/{alignment.dataCoverage!.totalRequiredSkills} skills). 
+                        Complete all assessments for a full capability picture.
+                      </p>
+                      {alignment.dataCoverage?.missingAssessments && alignment.dataCoverage.missingAssessments.length > 0 && (
+                        <p className="text-sm text-amber-600 mt-1">
+                          <span className="font-medium">Missing: </span>
+                          {alignment.dataCoverage.missingAssessments.join(', ')}
+                        </p>
+                      )}
                     </div>
                   )}
                 </>
@@ -619,11 +622,14 @@ function SingleCandidateRoleFit() {
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            // Only analyze skills with available data
-            const assessedSkills = allSkills.filter((s: any) => s.dataAvailable !== false);
-            const criticalSkills = assessedSkills.filter((s: any) => s.criticality === 'critical');
-            const criticalMet = criticalSkills.filter((s: any) => s.candidateScore >= s.requiredScore);
-            const criticalGaps = criticalSkills.filter((s: any) => s.candidateScore < s.requiredScore);
+            // Get ALL critical skills (including those with no data)
+            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
+            // Separate into assessed vs no data (check both dataAvailable flag AND null candidateScore)
+            const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;
+            const assessedCritical = criticalSkills.filter(hasData);
+            const noDataCritical = criticalSkills.filter((s: any) => !hasData(s));
+            const criticalMet = assessedCritical.filter((s: any) => s.candidateScore >= s.requiredScore);
+            const criticalGaps = assessedCritical.filter((s: any) => s.candidateScore < s.requiredScore);
             
             if (criticalSkills.length === 0) return null;
             
@@ -635,7 +641,7 @@ function SingleCandidateRoleFit() {
                     Critical Skills Analysis
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Summary of skills marked as critical for the {selectedRole?.name || 'selected'} role
+                    Summary of skills marked as critical for the {selectedRoleData?.name || 'selected'} role
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -646,17 +652,45 @@ function SingleCandidateRoleFit() {
                           {criticalMet.length} of {criticalSkills.length} Critical Skills Met
                         </p>
                         <Badge 
-                          variant={criticalGaps.length === 0 ? 'default' : criticalGaps.length <= 1 ? 'secondary' : 'destructive'}
+                          variant={criticalGaps.length === 0 && noDataCritical.length === 0 ? 'default' : criticalGaps.length > 1 ? 'destructive' : 'secondary'}
                           className="text-sm"
                         >
-                          {criticalGaps.length === 0 ? 'All Met' : `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
+                          {criticalGaps.length === 0 && noDataCritical.length === 0 ? 'All Met' : 
+                           noDataCritical.length > 0 && criticalGaps.length === 0 ? `${noDataCritical.length} Pending` :
+                           `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
                         </Badge>
                       </div>
                       <Progress 
                         value={(criticalMet.length / criticalSkills.length) * 100} 
                         className="h-3"
                       />
+                      {noDataCritical.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {noDataCritical.length} critical skill{noDataCritical.length > 1 ? 's' : ''} awaiting assessment data
+                        </p>
+                      )}
                     </div>
+                    
+                    {noDataCritical.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-amber-600 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          No Data Received
+                        </p>
+                        <div className="grid gap-2">
+                          {noDataCritical.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-amber-600">No data</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {criticalGaps.length > 0 && (
                       <div className="space-y-2">
