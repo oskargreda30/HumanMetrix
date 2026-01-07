@@ -592,7 +592,361 @@ export default function MultiCandidateRoleFitTab() {
             </Card>
           )}
 
-          {/* Head-to-Head Skill Comparison */}
+          {/* Critical Skills Dashboard - Most Important for Hiring Decision */}
+          <Card className="border-2 border-red-200 dark:border-red-800">
+            <CardHeader className="bg-red-50 dark:bg-red-950/30">
+              <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-6 w-6" />
+                Critical Skills Dashboard
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Must-have skills for this role. Candidates must meet thresholds (60+) on these skills to be considered.
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {(() => {
+                // Extract critical skills from role snapshot (authoritative source)
+                const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+                const skillCriticality = roleSkills?.skillCriticality || {};
+                
+                // Build critical skill list with required scores from role definition
+                const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' }> = [];
+                
+                // Check FIT skills
+                if (roleSkills?.fitSkills) {
+                  Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
+                    if (skillCriticality[skillName] === 'critical') {
+                      criticalSkillsWithRequirements.push({
+                        skillName,
+                        requiredScore: requiredScore as number,
+                        category: 'fit'
+                      });
+                    }
+                  });
+                }
+                
+                // Check AI Readiness skills
+                if (roleSkills?.aiReadinessSkills) {
+                  Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+                    if (skillCriticality[skillName] === 'critical') {
+                      criticalSkillsWithRequirements.push({
+                        skillName,
+                        requiredScore: requiredScore as number,
+                        category: 'ai_readiness'
+                      });
+                    }
+                  });
+                }
+                
+                if (criticalSkillsWithRequirements.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <p>No critical skills defined for this role.</p>
+                    </div>
+                  );
+                }
+                
+                // Show ALL candidates - including those with insufficient data
+                const allCandidates = comparison.candidateEntries;
+                // Sort: ranked candidates first (by rank), then insufficient data
+                const sortedCandidates = [...allCandidates].sort((a, b) => {
+                  // Use hasSufficientData to determine if candidate should be at end
+                  const aHasData = a.hasSufficientData !== false && a.dataCoverage?.hasSufficientData !== false && a.overallFit != null;
+                  const bHasData = b.hasSufficientData !== false && b.dataCoverage?.hasSufficientData !== false && b.overallFit != null;
+                  
+                  if (!aHasData && !bHasData) return 0;
+                  if (!aHasData) return 1;
+                  if (!bHasData) return -1;
+                  
+                  // Both have data, sort by rank
+                  if (a.rank === null && b.rank === null) return 0;
+                  if (a.rank === null) return 1;
+                  if (b.rank === null) return -1;
+                  return a.rank - b.rank;
+                });
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3 font-semibold bg-muted/50">Critical Skill</th>
+                          <th className="text-center p-3 font-semibold bg-muted/50">Required</th>
+                          {sortedCandidates.map((candidate, idx) => {
+                            // Use hasSufficientData and dataCoverage for more accurate assessment
+                            const hasInsufficientData = candidate.hasSufficientData === false || 
+                              candidate.dataCoverage?.hasSufficientData === false || 
+                              candidate.fitTier === 'insufficient-data' || 
+                              candidate.overallFit == null;
+                            return (
+                              <th key={candidate.userId} className={`text-center p-3 font-semibold ${idx === 0 && !hasInsufficientData ? 'bg-green-50 dark:bg-green-950/30' : hasInsufficientData ? 'bg-gray-100 dark:bg-gray-800' : 'bg-muted/50'}`}>
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="truncate max-w-[100px]">{candidate.userName.split(' ')[0]}</span>
+                                  {idx === 0 && !hasInsufficientData && <Badge className="bg-green-600 text-white text-xs">Top</Badge>}
+                                  {hasInsufficientData && <Badge variant="outline" className="text-xs text-gray-500">Incomplete</Badge>}
+                                </div>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {criticalSkillsWithRequirements.map((criticalSkill, skillIdx) => {
+                          return (
+                            <tr key={criticalSkill.skillName} className={skillIdx % 2 === 0 ? 'bg-muted/20' : ''}>
+                              <td className="p-3 font-medium">{criticalSkill.skillName}</td>
+                              <td className="text-center p-3">
+                                <Badge variant="outline" className="text-red-600 border-red-300">{criticalSkill.requiredScore}+</Badge>
+                              </td>
+                              {sortedCandidates.map((candidate, idx) => {
+                                // Use hasSufficientData and dataCoverage for more accurate assessment
+                                const hasInsufficientData = candidate.hasSufficientData === false || 
+                                  candidate.dataCoverage?.hasSufficientData === false || 
+                                  candidate.fitTier === 'insufficient-data' || 
+                                  candidate.overallFit == null;
+                                const skill = candidate.skillScores.find(s => s.skillName === criticalSkill.skillName);
+                                const hasData = skill?.dataAvailable !== false && skill?.score != null;
+                                const score = skill?.score || 0;
+                                const meetsThreshold = hasData && score >= 60;
+                                const meetsRequired = hasData && score >= criticalSkill.requiredScore;
+                                
+                                return (
+                                  <td key={candidate.userId} className={`text-center p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                    {!hasData ? (
+                                      <span className="text-muted-foreground italic">N/A</span>
+                                    ) : (
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className={`font-bold text-lg ${meetsRequired ? 'text-green-600' : meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
+                                          {score}
+                                        </span>
+                                        {meetsRequired ? (
+                                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                        ) : meetsThreshold ? (
+                                          <AlertCircle className="h-5 w-5 text-amber-500" />
+                                        ) : (
+                                          <AlertTriangle className="h-5 w-5 text-red-500" />
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 font-semibold">
+                          <td className="p-3">Critical Skills Met</td>
+                          <td className="text-center p-3">—</td>
+                          {sortedCandidates.map((candidate, idx) => {
+                            // Use hasSufficientData and dataCoverage for more accurate assessment
+                            const hasInsufficientData = candidate.hasSufficientData === false || 
+                              candidate.dataCoverage?.hasSufficientData === false || 
+                              candidate.fitTier === 'insufficient-data' || 
+                              candidate.overallFit == null;
+                            const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
+                              const skill = candidate.skillScores.find(s => s.skillName === cs.skillName);
+                              return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
+                            }).length;
+                            const totalCritical = criticalSkillsWithRequirements.length;
+                            const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
+                              const skill = candidate.skillScores.find(s => s.skillName === cs.skillName);
+                              return skill?.dataAvailable !== false && skill?.score != null;
+                            }).length;
+                            const allMet = criticalSkillsMet === totalCritical && totalCritical > 0;
+                            
+                            return (
+                              <td key={candidate.userId} className={`text-center p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                {assessedCritical === 0 ? (
+                                  <span className="text-muted-foreground italic">No data</span>
+                                ) : (
+                                  <>
+                                    <span className={`text-lg font-bold ${allMet ? 'text-green-600' : 'text-red-600'}`}>
+                                      {criticalSkillsMet}/{assessedCritical}
+                                    </span>
+                                    {assessedCritical < totalCritical && (
+                                      <span className="text-xs text-muted-foreground block">({totalCritical - assessedCritical} not assessed)</span>
+                                    )}
+                                    {allMet && assessedCritical === totalCritical && <Badge className="ml-2 bg-green-600 text-white">All Met</Badge>}
+                                  </>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                );
+              })()}
+              
+              {/* Critical Skills Legend */}
+              <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>Meets or exceeds required score</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <span>Above 60 but below required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span>Below minimum threshold (60)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hiring Decision Matrix */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Hiring Decision Matrix
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Quick reference for hiring band classification and decision drivers
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {(() => {
+                  // Get critical skill required scores from role snapshot
+                  const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+                  const skillCriticality = roleSkills?.skillCriticality || {};
+                  
+                  // Build list of critical skill names with their required scores
+                  const criticalSkillRequirements = new Map<string, number>();
+                  if (roleSkills?.fitSkills) {
+                    Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
+                      if (skillCriticality[skillName] === 'critical') {
+                        criticalSkillRequirements.set(skillName, requiredScore as number);
+                      }
+                    });
+                  }
+                  if (roleSkills?.aiReadinessSkills) {
+                    Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+                      if (skillCriticality[skillName] === 'critical') {
+                        criticalSkillRequirements.set(skillName, requiredScore as number);
+                      }
+                    });
+                  }
+                  
+                  // Sort: ranked candidates first (by rank), then insufficient data
+                  const sortedCandidates = [...comparison.candidateEntries].sort((a, b) => {
+                    // Use hasSufficientData to determine if candidate should be at end
+                    const aHasData = a.hasSufficientData !== false && a.dataCoverage?.hasSufficientData !== false && a.overallFit != null;
+                    const bHasData = b.hasSufficientData !== false && b.dataCoverage?.hasSufficientData !== false && b.overallFit != null;
+                    
+                    if (!aHasData && !bHasData) return 0;
+                    if (!aHasData) return 1;
+                    if (!bHasData) return -1;
+                    
+                    // Both have data, sort by rank
+                    if (a.rank === null && b.rank === null) return 0;
+                    if (a.rank === null) return 1;
+                    if (b.rank === null) return -1;
+                    return a.rank - b.rank;
+                  });
+                  
+                  return sortedCandidates.map((candidate, idx) => {
+                    // Use hasSufficientData and dataCoverage for more accurate assessment
+                    const hasInsufficientData = candidate.hasSufficientData === false || 
+                      candidate.dataCoverage?.hasSufficientData === false || 
+                      candidate.fitTier === 'insufficient-data' || 
+                      candidate.overallFit == null;
+                    
+                    // Calculate critical gaps using role snapshot requirements
+                    const criticalGaps = Array.from(criticalSkillRequirements.entries()).filter(([skillName, requiredScore]) => {
+                      const skill = candidate.skillScores.find(s => s.skillName === skillName);
+                      return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) < requiredScore;
+                    }).length;
+                    
+                    let hiringBand: { label: string; color: string; bgColor: string };
+                    
+                    if (hasInsufficientData) {
+                      hiringBand = { label: 'INSUFFICIENT DATA', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-800 border-gray-300' };
+                    } else if (candidate.overallFit! >= 80 && criticalGaps === 0) {
+                      hiringBand = { label: 'STRONG HIRE', color: 'text-green-700', bgColor: 'bg-green-100 dark:bg-green-900/30 border-green-300' };
+                    } else if (candidate.overallFit! >= 70 && criticalGaps <= 1) {
+                      hiringBand = { label: 'HIRE', color: 'text-blue-700', bgColor: 'bg-blue-100 dark:bg-blue-900/30 border-blue-300' };
+                    } else if (candidate.overallFit! >= 60 && criticalGaps <= 2) {
+                      hiringBand = { label: 'MAYBE', color: 'text-amber-700', bgColor: 'bg-amber-100 dark:bg-amber-900/30 border-amber-300' };
+                    } else {
+                      hiringBand = { label: 'NO HIRE', color: 'text-red-700', bgColor: 'bg-red-100 dark:bg-red-900/30 border-red-300' };
+                    }
+                    
+                    // Key decision drivers
+                    const topStrengths = candidate.strengths.slice(0, 2);
+                    const topGaps = candidate.gaps.slice(0, 2);
+                    
+                    return (
+                      <Card key={candidate.userId} className={`border-2 ${hiringBand.bgColor}`}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <div className="font-bold text-lg">{candidate.userName}</div>
+                              {hasInsufficientData ? (
+                                <div className="text-xl text-muted-foreground">N/A</div>
+                              ) : (
+                                <div className="text-2xl font-bold">{candidate.overallFit}%</div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <Badge className={`text-sm font-bold ${hiringBand.color} bg-white dark:bg-gray-800`}>
+                                {hiringBand.label}
+                              </Badge>
+                              {idx === 0 && !hasInsufficientData && (
+                                <div className="mt-1">
+                                  <Badge className="bg-amber-500 text-white">Top Pick</Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            {hasInsufficientData ? (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                <span>Complete assessments required for evaluation</span>
+                              </div>
+                            ) : (
+                              <>
+                                {criticalGaps > 0 && (
+                                  <div className="flex items-center gap-2 text-red-600">
+                                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                                    <span>{criticalGaps} critical skill gap{criticalGaps > 1 ? 's' : ''}</span>
+                                  </div>
+                                )}
+                                
+                                {topStrengths.length > 0 && (
+                                  <div className="flex items-start gap-2 text-green-600">
+                                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                    <span>{topStrengths.join(', ')}</span>
+                                  </div>
+                                )}
+                                
+                                {topGaps.length > 0 && (
+                                  <div className="flex items-start gap-2 text-amber-600">
+                                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                    <span>{topGaps.join(', ')}</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  });
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Head-to-Head Skill Comparison - Now Filtered to Critical First */}
           {comparison.summaryInsights.skillComparison && comparison.summaryInsights.skillComparison.length > 0 && (
             <Card>
               <CardHeader>
@@ -601,7 +955,7 @@ export default function MultiCandidateRoleFitTab() {
                   Skill-by-Skill Comparison: Who Wins Each Skill?
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Head-to-head comparison showing which candidate leads on each skill
+                  Head-to-head comparison showing which candidate leads on each skill (critical skills shown first)
                 </p>
               </CardHeader>
               <CardContent>

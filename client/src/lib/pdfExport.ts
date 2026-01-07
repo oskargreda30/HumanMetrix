@@ -3202,8 +3202,8 @@ interface MultiCandidateComparisonData {
     userId: string;
     userName: string;
     email: string;
-    overallFit: number;
-    rank: number;
+    overallFit: number | null;
+    rank: number | null;
     fitTier: 'strong' | 'moderate' | 'development-needed' | 'insufficient-data';
     skillScores: Array<{
       skillName: string;
@@ -3223,8 +3223,10 @@ interface MultiCandidateComparisonData {
       assessedSkillCount: number;
       totalRequiredSkills: number;
       missingAssessments: string[];
+      hasSufficientData?: boolean;
     };
     missingAssessments?: string[];
+    hasSufficientData?: boolean;
   }>;
   summaryInsights: {
     topPerformer: { userId: string; userName: string; overallFit: number };
