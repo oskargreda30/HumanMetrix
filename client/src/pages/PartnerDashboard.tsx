@@ -2908,7 +2908,7 @@ export default function PartnerDashboard() {
                                 {pkg.size.toLocaleString()} tests
                               </div>
                               <div className="text-sm text-muted-foreground mb-3">
-                                ${pkg.price.toLocaleString()} (${pkg.pricePerTest.toFixed(2)}/test)
+                                {formatCurrency(pkg.price * 100)} ({formatCurrency(pkg.pricePerTest * 100)}/test)
                               </div>
                               <Button 
                                 className="w-full" 
