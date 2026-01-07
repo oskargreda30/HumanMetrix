@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BResultsEmail } from "./email";
+import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2B_VOLUME_TIERS } from "@shared/schema";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getStripeCurrencyCode, COUNTRY_CURRENCY_MAP, ZERO_DECIMAL_CURRENCIES, roundPriceUp, convertAndRoundToLocalCurrency } from "@shared/currencies";
 import { getExchangeRates } from "./exchange-rates";
@@ -1234,9 +1235,18 @@ export function registerPartnerRoutes(app: Express) {
           const partner = await storage.getPartnerAccount(session.partnerId);
           const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
           
-          // Generate PDF buffer - simplified placeholder for now
-          // In production, this would generate a proper PDF with results
-          const pdfBuffer = Buffer.from(`Assessment Results for ${session.assessmentType}`);
+          // Generate proper PDF with real assessment results
+          const pdfBuffer = generateB2BResultsPDF({
+            candidateName: session.externalUserId || undefined,
+            candidateEmail: session.externalEmail,
+            assessmentType: session.assessmentType,
+            scores: session.scores || {},
+            totalScore: session.totalScore || undefined,
+            percentile: session.percentile || undefined,
+            evaluations: session.evaluations || undefined,
+            completedAt: session.completedAt || new Date(),
+            partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+          });
           const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
           
           await sendB2BResultsEmail({
