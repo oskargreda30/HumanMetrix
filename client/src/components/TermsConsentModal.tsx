@@ -30,7 +30,7 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
       return apiRequest("POST", "/api/user/accept-terms", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome to HumanMetrix",
         description: "Your preferences have been saved. Let's begin your assessment journey.",

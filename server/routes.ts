@@ -1337,16 +1337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Terms must be accepted to continue" });
       }
       
-      const now = new Date();
-      await db.update(users)
-        .set({
-          termsAccepted: true,
-          termsAcceptedAt: now,
-          dataShareConsent: dataShareConsent === true,
-          dataShareConsentAt: dataShareConsent === true ? now : null,
-          updatedAt: now,
-        })
-        .where(eq(users.id, userId));
+      await storage.acceptTerms(userId, termsAccepted, dataShareConsent === true);
       
       res.json({ success: true });
     } catch (error) {

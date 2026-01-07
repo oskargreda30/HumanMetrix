@@ -1,5 +1,5 @@
 import { Link, useLocation, Redirect } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -116,8 +116,7 @@ export default function Dashboard() {
   
   // Terms consent modal - show for candidates who haven't accepted terms
   const showTermsModal = user?.role === 'candidate' && user?.termsAccepted !== true;
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const queryClientHook = useQueryClient();
+  const [hasAcceptedInSession, setHasAcceptedInSession] = useState(false);
   
   // Change password state
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -258,10 +257,9 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col relative">
       {/* Terms consent modal for first-time candidates */}
       <TermsConsentModal
-        open={showTermsModal && !termsAccepted}
+        open={showTermsModal && !hasAcceptedInSession}
         onAccept={() => {
-          setTermsAccepted(true);
-          queryClientHook.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          setHasAcceptedInSession(true);
         }}
       />
       
