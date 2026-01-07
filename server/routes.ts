@@ -1295,6 +1295,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         organizationId: user.organizationId,
         isInvitationOnly: !hasCompletedPurchase,
         resultsRetentionConsent: user.resultsRetentionConsent,
+        termsAccepted: user.termsAccepted,
+        dataShareConsent: user.dataShareConsent,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -1318,6 +1320,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating results retention consent:", error);
       res.status(500).json({ message: "Failed to update consent" });
+    }
+  });
+
+  // Accept terms and conditions
+  app.post('/api/user/accept-terms', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { termsAccepted, dataShareConsent } = req.body;
+      
+      if (typeof termsAccepted !== 'boolean') {
+        return res.status(400).json({ message: "termsAccepted must be a boolean value" });
+      }
+      
+      if (!termsAccepted) {
+        return res.status(400).json({ message: "Terms must be accepted to continue" });
+      }
+      
+      const now = new Date();
+      await db.update(users)
+        .set({
+          termsAccepted: true,
+          termsAcceptedAt: now,
+          dataShareConsent: dataShareConsent === true,
+          dataShareConsentAt: dataShareConsent === true ? now : null,
+          updatedAt: now,
+        })
+        .where(eq(users.id, userId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      res.status(500).json({ message: "Failed to save preferences" });
     }
   });
 
