@@ -29,7 +29,6 @@ import {
 import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Info } from "lucide-react";
 
 type CandidateEntry = {
@@ -441,52 +440,45 @@ export default function MultiCandidateRoleFitTab() {
 
       {comparison && (
         <>
-          {/* How to Read This Report Section */}
+          {/* How to Read This Report Section - Always Visible */}
           <Card className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-            <Collapsible>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors rounded-t-lg flex flex-row items-center gap-2">
-                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <CardTitle className="text-base text-blue-800 dark:text-blue-300">How to Read This Report</CardTitle>
-                  <ChevronDown className="h-4 w-4 ml-auto text-blue-600 dark:text-blue-400" />
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="grid gap-4 md:grid-cols-2 text-sm">
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Role Alignment Tiers</h4>
-                        <p className="text-muted-foreground text-xs mb-2">These indicate how well a candidate's trait profile matches what the role requires - NOT trait quality:</p>
-                        <ul className="space-y-1 text-muted-foreground">
-                          <li><Badge className="bg-green-500 text-white mr-2">75%+</Badge> High alignment with role requirements</li>
-                          <li><Badge className="bg-amber-500 text-white mr-2">50-74%</Badge> Moderate alignment with role requirements</li>
-                          <li><Badge className="bg-red-500 text-white mr-2">&lt;50%</Badge> Lower alignment - may need development for this role</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Skill Criticality</h4>
-                        <ul className="space-y-1 text-muted-foreground">
-                          <li><Badge variant="default" className="mr-2">C</Badge> Critical - Must-have for the role</li>
-                          <li><Badge variant="outline" className="mr-2">I</Badge> Important - Significant impact</li>
-                          <li><Badge variant="outline" className="mr-2">N</Badge> Nice-to-have - Beneficial but not essential</li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Understanding Trait Scores</h4>
-                        <p className="text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong> assessments. Higher scores indicate stronger presence of that trait - whether that's beneficial depends entirely on what the role requires. A high score is not inherently "good" or "bad".</p>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Gap Analysis</h4>
-                        <p className="text-muted-foreground">Gaps show the difference between candidate score and role requirement. This helps identify where trait profiles differ from role needs.</p>
-                      </div>
-                    </div>
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <CardTitle className="text-base text-blue-800 dark:text-blue-300">How to Read This Report</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Role Alignment Tiers</h4>
+                    <p className="text-muted-foreground text-xs mb-2">These indicate how well a candidate's trait profile matches what the role requires - NOT trait quality:</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li><Badge className="bg-green-500 text-white mr-2">75%+</Badge> High alignment with role requirements</li>
+                      <li><Badge className="bg-amber-500 text-white mr-2">50-74%</Badge> Moderate alignment with role requirements</li>
+                      <li><Badge className="bg-red-500 text-white mr-2">&lt;50%</Badge> Lower alignment - may need development for this role</li>
+                    </ul>
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Skill Criticality</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li><Badge variant="default" className="mr-2">C</Badge> Critical - Must-have for the role</li>
+                      <li><Badge variant="outline" className="mr-2">I</Badge> Important - Significant impact</li>
+                      <li><Badge variant="outline" className="mr-2">N</Badge> Nice-to-have - Beneficial but not essential</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Understanding Trait Scores</h4>
+                    <p className="text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong> assessments. Higher scores indicate stronger presence of that trait - whether that's beneficial depends entirely on what the role requires. A high score is not inherently "good" or "bad".</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Gap Analysis</h4>
+                    <p className="text-muted-foreground">Gaps show the difference between candidate score and role requirement. This helps identify where trait profiles differ from role needs.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Hiring Recommendation - Most Important Section */}
@@ -1006,20 +998,26 @@ export default function MultiCandidateRoleFitTab() {
                 <BarChart2 className="h-5 w-5" />
                 Advanced Analytics
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Deep-dive metrics to help you understand candidate differences beyond overall fit scores
+              </p>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Skill Dominance */}
                 {(comparison.summaryInsights.skillDominance?.length || 0) > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Trophy className="h-4 w-4 text-amber-500" />
                       Skill Dominance Count
                     </h4>
-                    <p className="text-xs text-muted-foreground">How many skills each candidate leads in</p>
+                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
+                      <p>Shows how many individual skills each candidate leads in compared to others.</p>
+                      <p className="text-xs italic">Why it matters: A candidate who leads in more skills may be more versatile, while one who dominates fewer but critical skills might still be the better choice for specific roles.</p>
+                    </div>
                     <div className="space-y-2">
                       {comparison.summaryInsights.skillDominance?.map((sd: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
                           <span className="font-medium">{sd.candidateName}</span>
                           <div className="flex items-center gap-2">
                             <Badge variant={i === 0 ? "default" : "outline"}>
@@ -1037,15 +1035,18 @@ export default function MultiCandidateRoleFitTab() {
 
                 {/* Consistency Scores */}
                 {(comparison.summaryInsights.consistencyScores?.length || 0) > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Target className="h-4 w-4 text-blue-500" />
                       Consistency Score
                     </h4>
-                    <p className="text-xs text-muted-foreground">How evenly candidates perform across skills (higher = more consistent)</p>
+                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
+                      <p>Measures how evenly a candidate performs across all required skills (higher = more balanced performance).</p>
+                      <p className="text-xs italic">Why it matters: Highly consistent candidates are predictable performers with no major gaps. Variable candidates may excel in some areas but struggle in others, which could be fine depending on team composition.</p>
+                    </div>
                     <div className="space-y-2">
                       {comparison.summaryInsights.consistencyScores?.map((cs: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
                           <span className="font-medium">{cs.candidateName}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-bold">{cs.consistencyScore}%</span>
@@ -1069,15 +1070,18 @@ export default function MultiCandidateRoleFitTab() {
 
                 {/* Critical Gap Ratio */}
                 {(comparison.summaryInsights.criticalGapRatios?.length || 0) > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                     <h4 className="font-semibold flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-red-500" />
                       Critical Gap Ratio
                     </h4>
-                    <p className="text-xs text-muted-foreground">% of critical skills below 60% threshold</p>
+                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
+                      <p>Identifies how many critical skills fall below the 60% threshold - the minimum acceptable level for role success.</p>
+                      <p className="text-xs italic">Why it matters: Critical skills are non-negotiable for the role. Gaps here represent significant hiring risks that may require additional training, support, or could lead to performance issues.</p>
+                    </div>
                     <div className="space-y-2">
                       {comparison.summaryInsights.criticalGapRatios?.map((cgr: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
                           <span className="font-medium">{cgr.candidateName}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm">
@@ -1103,12 +1107,15 @@ export default function MultiCandidateRoleFitTab() {
 
                 {/* Largest Skill Differential */}
                 {comparison.summaryInsights.largestDifferential && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                     <h4 className="font-semibold flex items-center gap-2">
                       <ArrowUpDown className="h-4 w-4 text-purple-500" />
                       Largest Skill Differential
                     </h4>
-                    <p className="text-xs text-muted-foreground">The skill with the biggest performance gap between candidates</p>
+                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
+                      <p>Highlights the skill with the biggest performance gap between the top and bottom candidates.</p>
+                      <p className="text-xs italic">Why it matters: Large differentials on critical skills can be decisive factors. If this skill is essential for the role, it may clearly separate suitable candidates from unsuitable ones.</p>
+                    </div>
                     <div className="p-4 rounded-lg border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/20">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="font-bold text-purple-700 dark:text-purple-400">
@@ -1375,6 +1382,50 @@ export default function MultiCandidateRoleFitTab() {
                   </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Next Steps Section */}
+          <Card className="border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <CardTitle className="text-base text-green-800 dark:text-green-300">Next Steps</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                    <div>
+                      <h4 className="font-semibold text-green-800 dark:text-green-300">Review Critical Skills</h4>
+                      <p className="text-muted-foreground text-xs">Focus on candidates who meet or exceed the required scores for critical skills. These are non-negotiable for role success.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">2</div>
+                    <div>
+                      <h4 className="font-semibold text-green-800 dark:text-green-300">Consider Development Potential</h4>
+                      <p className="text-muted-foreground text-xs">Candidates with gaps in "Important" or "Nice-to-have" skills may still be strong hires if they show potential for growth.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
+                    <div>
+                      <h4 className="font-semibold text-green-800 dark:text-green-300">Use Interviews to Validate</h4>
+                      <p className="text-muted-foreground text-xs">Assessment data provides objective insights. Use structured interviews to explore specific skills and cultural fit in more depth.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">4</div>
+                    <div>
+                      <h4 className="font-semibold text-green-800 dark:text-green-300">Export & Share</h4>
+                      <p className="text-muted-foreground text-xs">Download the PDF report to share with hiring stakeholders. Use the comparison data to support data-driven hiring decisions.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
