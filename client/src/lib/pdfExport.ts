@@ -4119,31 +4119,31 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.text('Progressive evaluation of prompt engineering skills across 7 difficulty levels', 20, yPos);
     yPos += 12;
     
-    // Overall score box
+    // Overall score box - compact version
     const promptPerf = getPerformanceLevel(data.promptData.totalScore);
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
     pdf.setLineWidth(1);
-    pdf.roundedRect(50, yPos, pageWidth - 100, 35, 3, 3, 'FD');
+    pdf.roundedRect(60, yPos, pageWidth - 120, 24, 3, 3, 'FD');
     pdf.setLineWidth(0.2);
     
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 10, { align: 'center' });
+    pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 7, { align: 'center' });
     
-    pdf.setFontSize(18);
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
-    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2, yPos + 21, { align: 'center' });
-    
     const levelsCompleted = data.promptData.levels?.length || 7;
-    pdf.setFontSize(9);
+    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2 - 20, yPos + 17, { align: 'center' });
+    
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(`${levelsCompleted} level(s) completed`, pageWidth / 2, yPos + 30, { align: 'center' });
+    pdf.text(`(${levelsCompleted} levels)`, pageWidth / 2 + 20, yPos + 17, { align: 'center' });
     
-    yPos += 45;
+    yPos += 32;
     
     // Level breakdown
     if (data.promptData.levels && data.promptData.levels.length > 0) {
