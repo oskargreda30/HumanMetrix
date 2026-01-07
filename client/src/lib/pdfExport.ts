@@ -4350,74 +4350,89 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     developmentAreas.push('Pursue leadership training to translate technical strengths into team impact.');
   }
   
-  // Render recommendations in two columns
+  // Render recommendations in two-column layout with proper alignment
   const colWidth = (pageWidth - 50) / 2;
+  const leftColX = 20;
+  const rightColX = 25 + colWidth;
   
-  // Left column - Roles
+  // Top row headers
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('MOST SUITABLE ROLES', 20, yPos);
+  pdf.text('MOST SUITABLE ROLES', leftColX, yPos);
+  pdf.text('WHERE THIS CANDIDATE WOULD THRIVE', rightColX, yPos);
+  yPos += 8;
   
-  // Right column - Thrive
-  pdf.text('WHERE THIS CANDIDATE WOULD THRIVE', 25 + colWidth, yPos);
-  yPos += 6;
+  // Calculate heights for each column to keep them separate
+  let leftYPos = yPos;
+  let rightYPos = yPos;
   
-  const maxItems = Math.max(suitableRoles.length, thriveEnvironments.length);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  for (let i = 0; i < maxItems; i++) {
-    if (suitableRoles[i]) {
-      const roleLines = pdf.splitTextToSize(`• ${suitableRoles[i]}`, colWidth - 5);
-      roleLines.forEach((line: string) => {
-        pdf.text(line, 20, yPos);
-        yPos += 4;
-      });
-    }
-    if (thriveEnvironments[i]) {
-      const envLines = pdf.splitTextToSize(`• ${thriveEnvironments[i]}`, colWidth - 5);
-      envLines.forEach((line: string, idx: number) => {
-        pdf.text(line, 25 + colWidth, yPos - (4 * (envLines.length - 1 - idx)));
-      });
-    }
-    yPos += 2;
-  }
+  // Render left column - Suitable Roles
+  suitableRoles.forEach((role) => {
+    const roleLines = pdf.splitTextToSize(`• ${role}`, colWidth - 10);
+    roleLines.forEach((line: string) => {
+      pdf.text(line, leftColX, leftYPos);
+      leftYPos += 4;
+    });
+    leftYPos += 1;
+  });
   
-  yPos += 10;
+  // Render right column - Thrive Environments
+  thriveEnvironments.forEach((env) => {
+    const envLines = pdf.splitTextToSize(`• ${env}`, colWidth - 10);
+    envLines.forEach((line: string) => {
+      pdf.text(line, rightColX, rightYPos);
+      rightYPos += 4;
+    });
+    rightYPos += 1;
+  });
   
-  // Bottom section - Strengths and Development
+  // Move to the max of both columns
+  yPos = Math.max(leftYPos, rightYPos) + 12;
+  
+  // Bottom row headers - Strengths and Development
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  pdf.text('ROLE STRENGTHS', 20, yPos);
+  pdf.text('ROLE STRENGTHS', leftColX, yPos);
   
   pdf.setTextColor(234, 179, 8);
-  pdf.text('DEVELOPMENT RECOMMENDATIONS', 25 + colWidth, yPos);
-  yPos += 6;
+  pdf.text('DEVELOPMENT RECOMMENDATIONS', rightColX, yPos);
+  yPos += 8;
+  
+  // Reset column positions
+  leftYPos = yPos;
+  rightYPos = yPos;
   
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  const maxBottomItems = Math.max(roleStrengths.length, developmentAreas.length);
-  for (let i = 0; i < maxBottomItems; i++) {
-    if (roleStrengths[i]) {
-      const strengthLines = pdf.splitTextToSize(`• ${roleStrengths[i]}`, colWidth - 5);
-      strengthLines.forEach((line: string) => {
-        pdf.text(line, 20, yPos);
-        yPos += 4;
-      });
-    }
-    if (developmentAreas[i]) {
-      const devLines = pdf.splitTextToSize(`• ${developmentAreas[i]}`, colWidth - 5);
-      devLines.forEach((line: string, idx: number) => {
-        pdf.text(line, 25 + colWidth, yPos - (4 * (devLines.length - 1 - idx)));
-      });
-    }
-    yPos += 2;
-  }
+  // Render left column - Role Strengths
+  roleStrengths.forEach((strength) => {
+    const strengthLines = pdf.splitTextToSize(`• ${strength}`, colWidth - 10);
+    strengthLines.forEach((line: string) => {
+      pdf.text(line, leftColX, leftYPos);
+      leftYPos += 4;
+    });
+    leftYPos += 1;
+  });
+  
+  // Render right column - Development Areas
+  developmentAreas.forEach((dev) => {
+    const devLines = pdf.splitTextToSize(`• ${dev}`, colWidth - 10);
+    devLines.forEach((line: string) => {
+      pdf.text(line, rightColX, rightYPos);
+      rightYPos += 4;
+    });
+    rightYPos += 1;
+  });
+  
+  yPos = Math.max(leftYPos, rightYPos);
   
   // ========== AI PROFILE INSIGHTS (if available) ==========
   if (data.profileInsights) {
