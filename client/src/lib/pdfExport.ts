@@ -4119,35 +4119,64 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.text('Progressive evaluation of prompt engineering skills across 7 difficulty levels', 20, yPos);
     yPos += 12;
     
-    // Overall score box - compact inline version
+    // Overall score box - properly sized with text inside
     const promptPerf = getPerformanceLevel(data.promptData.totalScore);
+    const levelsCompleted = data.promptData.levels?.length || 7;
+    
+    // Measure text widths to calculate proper box size
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const labelText = 'Overall Score:';
+    const labelWidth = pdf.getTextWidth(labelText);
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    const scoreText = `${data.promptData.totalScore}/100`;
+    const scoreWidth = pdf.getTextWidth(scoreText);
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const levelsText = `(${levelsCompleted} levels)`;
+    const levelsWidth = pdf.getTextWidth(levelsText);
+    
+    const totalTextWidth = labelWidth + scoreWidth + levelsWidth + 12; // 12 for gaps
+    const boxPadding = 10;
+    const boxWidth = totalTextWidth + boxPadding * 2;
+    const boxX = (pageWidth - boxWidth) / 2;
     const boxY = yPos;
-    const boxHeight = 14;
+    const boxHeight = 12;
+    
+    // Draw box
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
     pdf.setLineWidth(0.8);
-    pdf.roundedRect(70, boxY, pageWidth - 140, boxHeight, 2, 2, 'FD');
+    pdf.roundedRect(boxX, boxY, boxWidth, boxHeight, 2, 2, 'FD');
     pdf.setLineWidth(0.2);
     
-    const levelsCompleted = data.promptData.levels?.length || 7;
-    const textY = boxY + boxHeight / 2 + 3; // Centered vertically in box
+    // Calculate vertical center (baseline adjustment for font)
+    const textY = boxY + boxHeight / 2 + 3;
     
-    pdf.setFontSize(8);
+    // Draw text left-to-right from box start
+    let textX = boxX + boxPadding;
+    
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Overall Score:', pageWidth / 2 - 30, textY, { align: 'center' });
+    pdf.text(labelText, textX, textY);
+    textX += labelWidth + 4;
     
-    pdf.setFontSize(11);
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
-    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2 + 5, textY, { align: 'center' });
+    pdf.text(scoreText, textX, textY);
+    textX += scoreWidth + 4;
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(`(${levelsCompleted} levels)`, pageWidth / 2 + 35, textY, { align: 'center' });
+    pdf.text(levelsText, textX, textY);
     
-    yPos += boxHeight + 6;
+    yPos += boxHeight + 8;
     
     // Level breakdown - compact bars
     if (data.promptData.levels && data.promptData.levels.length > 0) {
