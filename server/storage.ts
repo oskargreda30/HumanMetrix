@@ -119,7 +119,7 @@ import {
   type InsertSystemSetting,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -300,6 +300,7 @@ export interface IStorage {
   getAssessmentSession(id: string): Promise<AssessmentSession | undefined>;
   getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
   updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
+  getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]>;
   
   // Usage event operations
   createUsageEvent(event: InsertUsageEvent): Promise<UsageEvent>;
@@ -1662,6 +1663,32 @@ export class DatabaseStorage implements IStorage {
     await db.update(assessmentSessions)
       .set(updates)
       .where(eq(assessmentSessions.id, id));
+  }
+
+  async getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]> {
+    const now = new Date();
+    // Get completed sessions that need results email:
+    // 1. Unpaid sessions that have reached their 30-day free unlock date
+    // 2. Paid sessions that haven't received their results email yet (failed delivery)
+    // Exclude sessions that have permanently failed (max retries reached)
+    return await db.select().from(assessmentSessions)
+      .where(
+        and(
+          eq(assessmentSessions.status, 'completed'),
+          isNull(assessmentSessions.resultsEmailSentAt),
+          // Exclude permanently failed sessions - delivery status must not be 'failed'
+          sql`COALESCE(${assessmentSessions.resultsDeliveryStatus}, 'pending') != 'failed'`,
+          or(
+            // Case 1: Free unlock - session has reached unlock date
+            and(
+              isNotNull(assessmentSessions.resultsUnlockAt),
+              sql`${assessmentSessions.resultsUnlockAt} <= ${now}`
+            ),
+            // Case 2: Paid but email failed - paid session without email sent
+            eq(assessmentSessions.resultsPaymentStatus, 'paid')
+          )
+        )
+      );
   }
 
   // Usage event operations

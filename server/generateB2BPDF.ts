@@ -13,24 +13,37 @@ const logoMatch = pdfAssetsContent.match(/export const HUMANMETRIX_LOGO_BASE64 =
 const HUMANMETRIX_LOGO_BASE64 = logoMatch ? logoMatch[1] : '';
 
 const FIT_SKILLS = [
-  { key: 'High Agency', displayName: 'High Agency', description: 'Takes initiative and ownership of outcomes' },
-  { key: 'Intellectual Curiosity', displayName: 'Intellectual Curiosity', description: 'Seeks knowledge and understanding' },
-  { key: 'Resilience', displayName: 'Resilience', description: 'Adapts and perseveres through challenges' },
-  { key: 'Empathy & Ethics', displayName: 'Empathy & Ethics', description: 'Considers impact on others and ethical implications' },
-  { key: 'Growth Mindset', displayName: 'Growth Mindset', description: 'Views challenges as learning opportunities' },
-  { key: 'Interpersonal Agility', displayName: 'Interpersonal Agility', description: 'Navigates social dynamics effectively' },
+  { key: 'High Agency', legacyKey: 'highAgency', displayName: 'High Agency', description: 'Takes initiative and ownership of outcomes' },
+  { key: 'Intellectual Curiosity', legacyKey: 'intellectualCuriosity', displayName: 'Intellectual Curiosity', description: 'Seeks knowledge and understanding' },
+  { key: 'Resilience', legacyKey: 'resilience', displayName: 'Resilience', description: 'Adapts and perseveres through challenges' },
+  { key: 'Empathy & Ethics', legacyKey: 'empathyEthics', displayName: 'Empathy & Ethics', description: 'Considers impact on others and ethical implications' },
+  { key: 'Growth Mindset', legacyKey: 'growthMindset', displayName: 'Growth Mindset', description: 'Views challenges as learning opportunities' },
+  { key: 'Interpersonal Agility', legacyKey: 'interpersonalAgility', displayName: 'Interpersonal Agility', description: 'Navigates social dynamics effectively' },
 ];
 
+// Helper to get score with fallback to legacy keys
+function getSkillScore(scores: Record<string, number>, skill: { key: string; legacyKey?: string }): number {
+  // First try canonical key
+  if (skill.key in scores) {
+    return scores[skill.key];
+  }
+  // Fall back to legacy key if defined
+  if (skill.legacyKey && skill.legacyKey in scores) {
+    return scores[skill.legacyKey];
+  }
+  return 0;
+}
+
 const AI_READINESS_SKILLS = [
-  { key: 'AI Literacy & Prompt Engineering', displayName: 'AI Literacy & Prompt Engineering', description: 'Understanding AI capabilities and effective prompt engineering' },
-  { key: 'Technical Fundamentals', displayName: 'Technical Fundamentals', description: 'Core technical knowledge and system understanding' },
-  { key: 'Data Fluency', displayName: 'Data Fluency', description: 'Ability to work with and interpret data effectively' },
-  { key: 'Critical Thinking & Problem-Solving', displayName: 'Critical Thinking & Problem-Solving', description: 'Analytical reasoning and solution development' },
-  { key: 'Adaptability & Continuous Learning', displayName: 'Adaptability & Continuous Learning', description: 'Embracing change and ongoing skill development' },
-  { key: 'Collaboration & Communication', displayName: 'Collaboration & Communication', description: 'Effective teamwork and information sharing' },
-  { key: 'Responsible AI & Ethical Awareness', displayName: 'Responsible AI & Ethical Awareness', description: 'Ethical AI practices and responsible deployment' },
-  { key: 'Creativity & Innovation', displayName: 'Creativity & Innovation', description: 'Generating novel ideas and innovative solutions' },
-  { key: 'Domain Expertise', displayName: 'Domain Expertise', description: 'Deep specialized knowledge in specific field' },
+  { key: 'AI Literacy & Prompt Engineering', legacyKey: 'aiLiteracy', displayName: 'AI Literacy & Prompt Engineering', description: 'Understanding AI capabilities and effective prompt engineering' },
+  { key: 'Technical Fundamentals', legacyKey: 'technicalFluency', displayName: 'Technical Fundamentals', description: 'Core technical knowledge and system understanding' },
+  { key: 'Data Fluency', legacyKey: 'domainFluency', displayName: 'Data Fluency', description: 'Ability to work with and interpret data effectively' },
+  { key: 'Critical Thinking & Problem-Solving', legacyKey: 'criticalThinking', displayName: 'Critical Thinking & Problem-Solving', description: 'Analytical reasoning and solution development' },
+  { key: 'Adaptability & Continuous Learning', legacyKey: 'adaptiveLearning', displayName: 'Adaptability & Continuous Learning', description: 'Embracing change and ongoing skill development' },
+  { key: 'Collaboration & Communication', legacyKey: 'collaboration', displayName: 'Collaboration & Communication', description: 'Effective teamwork and information sharing' },
+  { key: 'Responsible AI & Ethical Awareness', legacyKey: 'responsibleAI', displayName: 'Responsible AI & Ethical Awareness', description: 'Ethical AI practices and responsible deployment' },
+  { key: 'Creativity & Innovation', legacyKey: 'creativeInnovation', displayName: 'Creativity & Innovation', description: 'Generating novel ideas and innovative solutions' },
+  { key: 'Domain Expertise', legacyKey: 'domainExpertise', displayName: 'Domain Expertise', description: 'Deep specialized knowledge in specific field' },
 ];
 
 const PROMPT_ARCHITECTURE_DIMENSIONS = [
@@ -356,7 +369,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     FIT_SKILLS.forEach((skill) => {
       yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
       
-      const score = data.scores[skill.key] || 0;
+      const score = getSkillScore(data.scores, skill);
       const skillPerf = getPerformanceLevel(score);
       
       pdf.setFillColor(249, 250, 251);
@@ -394,7 +407,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     AI_READINESS_SKILLS.forEach((skill) => {
       yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
       
-      const score = data.scores[skill.key] || 0;
+      const score = getSkillScore(data.scores, skill);
       const skillPerf = getPerformanceLevel(score);
       
       pdf.setFillColor(249, 250, 251);

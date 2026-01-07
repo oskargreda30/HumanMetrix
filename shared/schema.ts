@@ -810,6 +810,10 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   resultsPaidAt: timestamp("results_paid_at"), // When payment was made
   congratsEmailSentAt: timestamp("congrats_email_sent_at"), // When congratulatory email was sent
   resultsEmailSentAt: timestamp("results_email_sent_at"), // When results email with PDF was sent
+  // Delivery attempt tracking for retry resilience
+  resultsDeliveryAttemptCount: integer("results_delivery_attempt_count").default(0), // Number of delivery attempts
+  lastResultsDeliveryAttemptAt: timestamp("last_results_delivery_attempt_at"), // When last attempt was made
+  resultsDeliveryStatus: varchar("results_delivery_status").default("pending"), // pending, sent, failed (max retries reached)
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),

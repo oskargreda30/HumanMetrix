@@ -8,7 +8,8 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail } from "./email";
+import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -12662,5 +12663,153 @@ async function archiveMonthlyUsage(partner: PartnerAccount) {
     await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
     
     console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+// ========================================
+// B2B FREE UNLOCK SCHEDULER
+// Sends results emails to test-takers who have waited 30 days
+// ========================================
+
+let freeUnlockSchedulerStarted = false;
+
+export function startFreeUnlockScheduler() {
+  if (freeUnlockSchedulerStarted) {
+    console.log('[Free Unlock Scheduler] Already started, skipping');
+    return;
+  }
+  
+  freeUnlockSchedulerStarted = true;
+  
+  // Run immediately, then every hour to check for sessions due for free unlock
+  console.log('[Free Unlock Scheduler] Starting scheduler, will check every hour');
+  
+  // Run first check after 1 minute to allow server startup
+  setTimeout(() => {
+    processB2BFreeUnlocks();
+    
+    // Then run every hour
+    setInterval(() => {
+      processB2BFreeUnlocks();
+    }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 1000); // 1 minute delay
+}
+
+async function processB2BFreeUnlocks() {
+  console.log(`[Free Unlock Scheduler] Checking for sessions due for free unlock at ${new Date().toISOString()}`);
+  
+  try {
+    const sessionsDue = await storage.getSessionsDueForFreeUnlock();
+    
+    if (sessionsDue.length === 0) {
+      console.log('[Free Unlock Scheduler] No sessions due for free unlock');
+      return;
+    }
+    
+    console.log(`[Free Unlock Scheduler] Found ${sessionsDue.length} sessions due for free unlock`);
+    
+    for (const session of sessionsDue) {
+      await sendFreeUnlockResultsEmail(session);
+    }
+    
+    console.log(`[Free Unlock Scheduler] Completed processing ${sessionsDue.length} free unlock emails`);
+  } catch (error: any) {
+    console.error('[Free Unlock Scheduler] Error:', error.message);
+  }
+}
+
+// Constants for delivery retry logic
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BACKOFF_HOURS = 24;
+
+async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
+  if (!session.externalEmail) {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} has no email, skipping`);
+    return;
+  }
+  
+  // Check for previous failures using persistent columns
+  const attemptCount = session.resultsDeliveryAttemptCount || 0;
+  const lastAttempt = session.lastResultsDeliveryAttemptAt;
+  const deliveryStatus = session.resultsDeliveryStatus || 'pending';
+  
+  // Skip if already marked as permanently failed
+  if (deliveryStatus === 'failed') {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} marked as failed, manual intervention needed`);
+    return;
+  }
+  
+  // Check backoff period if there were previous attempts
+  if (attemptCount > 0 && lastAttempt) {
+    const hoursSinceLastAttempt = (Date.now() - new Date(lastAttempt).getTime()) / (1000 * 60 * 60);
+    
+    if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+      // Mark as permanently failed after max attempts
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.log(`[Free Unlock Scheduler] Session ${session.id} exceeded max retries (${MAX_RETRY_ATTEMPTS}), marked as failed`);
+      return;
+    }
+    
+    if (hoursSinceLastAttempt < RETRY_BACKOFF_HOURS) {
+      console.log(`[Free Unlock Scheduler] Session ${session.id} in backoff period, ${Math.round(RETRY_BACKOFF_HOURS - hoursSinceLastAttempt)}h remaining`);
+      return;
+    }
+  }
+  
+  // Record the attempt before trying
+  await storage.updateAssessmentSession(session.id, {
+    resultsDeliveryAttemptCount: attemptCount + 1,
+    lastResultsDeliveryAttemptAt: new Date(),
+  } as any);
+  
+  try {
+    const partner = await storage.getPartnerAccount(session.partnerId);
+    const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+    const paymentStatus = session.resultsPaymentStatus || 'unpaid';
+    
+    // Generate proper PDF with real assessment results
+    const pdfBuffer = generateB2BResultsPDF({
+      candidateName: session.externalUserId || undefined,
+      candidateEmail: session.externalEmail,
+      assessmentType: session.assessmentType,
+      scores: session.scores || {},
+      totalScore: session.totalScore || undefined,
+      percentile: session.percentile || undefined,
+      evaluations: session.evaluations || undefined,
+      completedAt: session.completedAt || new Date(),
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+    });
+    const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
+    
+    await sendB2BResultsEmail({
+      email: session.externalEmail,
+      candidateName: session.externalUserId || undefined,
+      assessmentType: session.assessmentType,
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+      pdfBuffer,
+      pdfFilename,
+    });
+    
+    // Mark email as sent - update both email sent time and delivery status
+    await storage.updateAssessmentSession(session.id, {
+      resultsEmailSentAt: new Date(),
+      resultsDeliveryStatus: 'sent',
+    } as any);
+    
+    const deliveryType = paymentStatus === 'paid' ? 'paid results' : paymentStatus === 'free' ? 'free unlock' : '30-day free unlock';
+    console.log(`[Free Unlock Scheduler] Sent ${deliveryType} email to ${session.externalEmail} for session ${session.id}`);
+  } catch (error: any) {
+    // Check if this was the final attempt
+    const newAttemptCount = attemptCount + 1;
+    if (newAttemptCount >= MAX_RETRY_ATTEMPTS) {
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (final attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}), marked as failed:`, error.message);
+    } else {
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    }
   }
 }
