@@ -3841,7 +3841,11 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   ];
   const avgScore = allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
   
-  // ========== PAGE 1: COVER PAGE WITH ASSESSMENT SUMMARY ==========
+  // ========== PAGE 1: HOW TO READ OUR REPORTS GUIDE ==========
+  addReportGuidePage(pdf, pageWidth, pageHeight, 'individual');
+  
+  // ========== PAGE 2: COVER PAGE WITH ASSESSMENT SUMMARY ==========
+  pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
@@ -4559,6 +4563,136 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       yPos += 6;
     });
   }
+  
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  
+  // RECOMMENDED NEXT STEPS section
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += 5;
+  
+  pdf.setFontSize(10);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Based on the assessment results, consider these next steps:', 20, yPos);
+  yPos += 10;
+  
+  // Generate next steps based on candidate profile
+  const nextSteps: string[] = [];
+  
+  if (avgScore >= 80) {
+    nextSteps.push('Schedule a final interview to validate exceptional assessment results with practical scenarios.');
+    nextSteps.push('Consider for accelerated onboarding or leadership development programs.');
+    nextSteps.push('Evaluate for cross-functional project opportunities that leverage diverse strengths.');
+  } else if (avgScore >= 60) {
+    nextSteps.push('Conduct a structured interview focusing on identified development areas.');
+    nextSteps.push('Discuss tailored training and mentorship opportunities during onboarding.');
+    nextSteps.push('Consider pairing with experienced team members for knowledge transfer.');
+  } else {
+    nextSteps.push('Assess alignment with entry-level or developmental role requirements.');
+    nextSteps.push('Explore structured upskilling programs to address skill gaps.');
+    nextSteps.push('Consider role modifications that play to existing strengths while building capabilities.');
+  }
+  
+  // Add assessment-specific next steps
+  if (data.promptData && data.promptData.totalScore >= 75) {
+    nextSteps.push('Leverage strong prompt engineering skills for AI integration initiatives.');
+  }
+  if (data.aiqData && data.aiqData.totalScore >= 80) {
+    nextSteps.push('Consider for roles involving AI governance or ethical AI implementation.');
+  }
+  
+  nextSteps.forEach(step => {
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('•', 27, yPos);
+    pdf.setTextColor(55, 65, 81);
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    stepLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 5));
+    });
+    yPos += (stepLines.length * 5) + 3;
+  });
+  
+  yPos += 10;
+  
+  // ADDITIONAL SERVICES ON REQUEST section
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 3;
+  
+  pdf.setFontSize(10);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 10;
+  
+  const additionalServices = [
+    {
+      name: 'Role Fit Analysis',
+      description: 'Detailed analysis of candidate alignment with specific role requirements and skill criticality mapping'
+    },
+    {
+      name: 'Suggested Interview Questions',
+      description: 'Customized interview questions based on assessment results and identified skill gaps'
+    },
+    {
+      name: 'Team Composition Fit',
+      description: 'Analysis of how the candidate would integrate with your existing team dynamics and structure'
+    },
+    {
+      name: 'Time to Productivity Estimate',
+      description: 'Projected timeline for the candidate to reach full productivity in the role'
+    },
+    {
+      name: 'Hiring Risk Analysis',
+      description: 'Comprehensive risk assessment including potential challenges and mitigation strategies'
+    }
+  ];
+  
+  additionalServices.forEach((service, index) => {
+    if (yPos > pageHeight - 30) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    // Service number badge
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${index + 1}`, 23, yPos + 2, { align: 'center' });
+    
+    // Service name
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(service.name, 30, yPos + 2);
+    
+    // Service description
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 30, yPos + 8 + (idx * 5));
+    });
+    
+    yPos += 8 + (descLines.length * 5) + 4;
+  });
+  
+  // Contact information
+  yPos += 5;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Contact us at assessments@humanmetrix.co.uk for more information about these services.', 20, yPos);
+  
+  // ========== SKILLS LEGEND PAGE ==========
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
   
   // Add footers to all pages
   const totalPages = pdf.getNumberOfPages();
