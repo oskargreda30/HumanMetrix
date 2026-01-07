@@ -88,7 +88,19 @@ function calculateWeightedFitScore(alignments: SkillAlignment[]): number {
     overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
   }
   
-  return Math.round(overallFit);
+  // Round and ensure no multiples of 5 (consistent scoring policy)
+  return ensureNoMultipleOf5(Math.round(overallFit));
+}
+
+// Helper to ensure no multiples of 5 (matches server implementation)
+function ensureNoMultipleOf5(score: number): number {
+  if (typeof score !== 'number') return score;
+  if (score % 5 === 0) {
+    // Deterministic nudge based on score value (not random, for consistency)
+    const nudge = score % 10 === 0 ? 2 : 1;
+    return Math.max(1, Math.min(99, score + nudge));
+  }
+  return score;
 }
 
 function calculateDataCoverage(
@@ -388,6 +400,34 @@ describe('Coverage-Aware Scoring Logic', () => {
         coverage.percentage
       );
       expect(hasSufficient).toBe(false);
+    });
+  });
+  
+  describe('No Multiples of 5 Scoring Policy', () => {
+    it('should nudge scores that are multiples of 5', () => {
+      expect(ensureNoMultipleOf5(50)).toBe(52); // Multiple of 10 nudges by 2
+      expect(ensureNoMultipleOf5(55)).toBe(56); // Multiple of 5 (not 10) nudges by 1
+      expect(ensureNoMultipleOf5(60)).toBe(62);
+      expect(ensureNoMultipleOf5(65)).toBe(66);
+      expect(ensureNoMultipleOf5(70)).toBe(72);
+      expect(ensureNoMultipleOf5(75)).toBe(76);
+      expect(ensureNoMultipleOf5(80)).toBe(82);
+      expect(ensureNoMultipleOf5(85)).toBe(86);
+      expect(ensureNoMultipleOf5(90)).toBe(92);
+    });
+    
+    it('should not change scores that are not multiples of 5', () => {
+      expect(ensureNoMultipleOf5(53)).toBe(53);
+      expect(ensureNoMultipleOf5(67)).toBe(67);
+      expect(ensureNoMultipleOf5(78)).toBe(78);
+      expect(ensureNoMultipleOf5(91)).toBe(91);
+    });
+    
+    it('should handle edge cases near boundaries', () => {
+      expect(ensureNoMultipleOf5(0)).toBe(2); // 0 is multiple of 10
+      expect(ensureNoMultipleOf5(5)).toBe(6);
+      expect(ensureNoMultipleOf5(100)).toBe(99); // Capped at 99 after nudge
+      expect(ensureNoMultipleOf5(95)).toBe(96);
     });
   });
 });

@@ -4144,7 +4144,8 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
       }
       
-      overallFit = Math.round(overallFit);
+      // Round and ensure no multiples of 5 (consistent scoring policy)
+      overallFit = ensureNoMultipleOf5(Math.round(overallFit));
 
       // Use OpenAI to generate strengths, gaps, and recommendations
       const OpenAI = await import('openai');
@@ -5279,7 +5280,8 @@ Format your response as JSON with this structure:
           overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
         }
         
-        overallFit = Math.round(overallFit);
+        // Round and ensure no multiples of 5 (consistent scoring policy)
+        overallFit = ensureNoMultipleOf5(Math.round(overallFit));
 
         const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
 
