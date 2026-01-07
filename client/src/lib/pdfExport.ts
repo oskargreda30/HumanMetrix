@@ -134,13 +134,13 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setTextColor(30, 58, 138);
   pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HUMANMETRIX', 34, 16);
+  pdf.text('HUMANMETRIX', 34, 18);
   
   // Tagline - positioned below company name
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 34, 24);
+  pdf.text('AI-Powered Assessment Platform', 34, 25);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -4236,7 +4236,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     const aiqPerf = getPerformanceLevel(data.aiqData.totalScore);
     
     // Large centered score
-    pdf.setFontSize(36);
+    pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(aiqPerf.color[0], aiqPerf.color[1], aiqPerf.color[2]);
     pdf.text(`${data.aiqData.totalScore}%`, pageWidth / 2, yPos, { align: 'center' });
