@@ -4210,14 +4210,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       });
     }
     
-    yPos += 5;
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Assessed Dimensions:', 20, yPos);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Clarity (20%) • Structure (20%) • Context Relevance (20%) • Creativity (20%) • Iterative Improvement (20%)', 65, yPos);
-    yPos += 15;
+    yPos += 10;
   }
   
   // AIQ Section
