@@ -781,9 +781,15 @@ export function registerPartnerRoutes(app: Express) {
         const savedAnswers = session.answers || {};
         const answers = { ...savedAnswers, ...submittedAnswers };
         
+        // Check if this is a test session (created with test API key)
+        const isTestSession = session.isTestSession === true;
+        
+        // For test sessions, use dummy scores without AI computation
+        // This saves API costs and is appropriate since test sessions are for developer integration only
         const { scores, totalScore, percentile, evaluations } = await calculateScores(
           session.assessmentType,
-          answers
+          answers,
+          isTestSession // Skip AI computation for test sessions
         );
         
         await storage.updateAssessmentSession(sessionId, {
@@ -795,9 +801,6 @@ export function registerPartnerRoutes(app: Express) {
           evaluations,
           completedAt: new Date(),
         } as any);
-        
-        // Check if this is a test session (created with test API key)
-        const isTestSession = session.isTestSession === true;
         
         await trackUsage(
           session.partnerId,
@@ -899,17 +902,21 @@ export function registerPartnerRoutes(app: Express) {
         }
         
         // B2B Test-Taker Results Monetization: Set results unlock date (30 days) and send congratulatory email
-        const completedAt = new Date();
-        const resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
-        
-        // Update session with results unlock date
-        await storage.updateAssessmentSession(sessionId, {
-          resultsUnlockAt,
-          resultsPaymentStatus: 'unpaid',
-        } as any);
+        // Skip email workflow for test sessions - these are for developer integration only
+        if (!isTestSession) {
+          const completedAt = new Date();
+          const resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+          
+          // Update session with results unlock date
+          await storage.updateAssessmentSession(sessionId, {
+            resultsUnlockAt,
+            resultsPaymentStatus: 'unpaid',
+          } as any);
+        }
         
         // If test-taker has an email, send congratulatory email with payment option
-        if (session.externalEmail && partner) {
+        // Skip for test sessions - no emails should be sent for test API key sessions
+        if (session.externalEmail && partner && !isTestSession) {
           try {
             // Calculate 75% of B2C price for test-taker's location
             const countryCode = session.testerCountryCode || 'GB';
@@ -2237,13 +2244,26 @@ function getBaseUrl(req: Request): string {
 
 async function calculateScores(
   assessmentType: string,
-  answers: Record<string, any>
+  answers: Record<string, any>,
+  isTestSession: boolean = false
 ): Promise<{
   scores: Record<string, number>;
   totalScore: number;
   percentile: number;
   evaluations?: any[];
 }> {
+  // For test sessions, return dummy scores without any AI computation
+  // Test API keys are for developer integration testing only
+  if (isTestSession) {
+    console.log(`[Test Session] Skipping AI scoring, returning dummy scores`);
+    return {
+      scores: { overall: 75, test_mode: 100 },
+      totalScore: 75,
+      percentile: 60,
+      evaluations: [{ note: 'Test session - dummy scores for integration testing' }],
+    };
+  }
+  
   const questionCount = Object.keys(answers).length || 1;
   const answeredQuestions = Object.values(answers).filter((a) => a !== null && a !== undefined);
   

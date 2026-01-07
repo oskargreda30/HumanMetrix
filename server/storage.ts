@@ -1670,12 +1670,16 @@ export class DatabaseStorage implements IStorage {
     // Get completed sessions that need results email:
     // 1. Unpaid sessions that have reached their 30-day free unlock date
     // 2. Paid sessions that haven't received their results email yet (failed delivery)
-    // Exclude sessions that have permanently failed (max retries reached)
+    // Exclude:
+    // - Sessions that have permanently failed (max retries reached)
+    // - Test sessions (created with test API key - no emails should be sent)
     return await db.select().from(assessmentSessions)
       .where(
         and(
           eq(assessmentSessions.status, 'completed'),
           isNull(assessmentSessions.resultsEmailSentAt),
+          // Exclude test sessions - they don't receive emails
+          sql`COALESCE(${assessmentSessions.isTestSession}, false) = false`,
           // Exclude permanently failed sessions - delivery status must not be 'failed'
           sql`COALESCE(${assessmentSessions.resultsDeliveryStatus}, 'pending') != 'failed'`,
           or(

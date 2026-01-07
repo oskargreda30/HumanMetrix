@@ -122,7 +122,7 @@ export function DeveloperSubTabs({
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle>API Keys</CardTitle>
-                  <InfoTooltip content="API keys authenticate your applications with HumanMetrix. Use 'test' keys for development (no charges, results blocked) and 'live' keys for production. Rotate keys periodically for security." />
+                  <InfoTooltip content="API keys authenticate your applications with HumanMetrix. Test keys are for developer integration only: no emails sent, no AI computation (dummy scores returned), no charges, and results are blocked. Use live keys for production with full functionality including AI scoring, emails, and billing." />
                 </div>
                 <CardDescription>Manage your API keys for accessing the HumanMetrix API</CardDescription>
               </div>
@@ -226,14 +226,23 @@ export function DeveloperSubTabs({
                             {key.keyPrefix}...{key.keyHint}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={key.environment === 'live' ? 'default' : 'secondary'}
-                              className={key.environment === 'live' 
-                                ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30' 
-                                : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'}
-                            >
-                              {key.environment}
-                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge 
+                                  variant={key.environment === 'live' ? 'default' : 'secondary'}
+                                  className={key.environment === 'live' 
+                                    ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30 cursor-help' 
+                                    : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 cursor-help'}
+                                >
+                                  {key.environment}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                {key.environment === 'live' 
+                                  ? 'Live keys enable full functionality: AI scoring, emails, billing, and results access.'
+                                  : 'Test keys are for integration testing only: no emails, no AI computation, no billing, results blocked.'}
+                              </TooltipContent>
+                            </Tooltip>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {key.lastUsedAt ? formatDate(key.lastUsedAt) : "Never"}
