@@ -422,13 +422,22 @@ function addSectionHeader(pdf: jsPDF, title: string, yPosition: number, pageWidt
   return yPosition + 16;
 }
 
-// Helper to determine performance level - muted professional colors
+// Helper to determine performance level - full color palette
 function getPerformanceLevel(score: number): { label: string; color: [number, number, number] } {
-  if (score >= 85) return { label: 'Excellent', color: [71, 85, 105] };    // Slate-600
-  if (score >= 70) return { label: 'Good', color: [71, 85, 105] };         // Slate-600
-  if (score >= 55) return { label: 'Fair', color: [100, 116, 139] };       // Slate-500
-  if (score >= 40) return { label: 'Developing', color: [148, 163, 184] }; // Slate-400
-  return { label: 'Needs Development', color: [148, 163, 184] };           // Slate-400
+  if (score >= 85) return { label: 'Excellent', color: [34, 197, 94] };    // Green-500
+  if (score >= 70) return { label: 'Good', color: [34, 197, 94] };         // Green-500
+  if (score >= 55) return { label: 'Fair', color: [234, 179, 8] };         // Yellow-500
+  if (score >= 40) return { label: 'Developing', color: [249, 115, 22] };  // Orange-500
+  return { label: 'Needs Development', color: [239, 68, 68] };             // Red-500
+}
+
+// Helper to determine performance level for FIT and AI Readiness - blue shades only
+function getBluePerformanceLevel(score: number): { label: string; color: [number, number, number] } {
+  if (score >= 85) return { label: 'Excellent', color: [30, 64, 175] };    // Blue-800
+  if (score >= 70) return { label: 'Good', color: [37, 99, 235] };         // Blue-600
+  if (score >= 55) return { label: 'Fair', color: [59, 130, 246] };        // Blue-500
+  if (score >= 40) return { label: 'Developing', color: [96, 165, 250] };  // Blue-400
+  return { label: 'Needs Development', color: [147, 197, 253] };           // Blue-300
 }
 
 // Candidate color palette for comparison - different shades of blue
@@ -3889,7 +3898,8 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.setTextColor(17, 24, 39);
     pdf.text(item.name, 20, yPos);
     
-    const perf = getPerformanceLevel(item.score);
+    // Use blue colors for FIT and AI Readiness, standard colors for others
+    const perf = (idx === 0 || idx === 1) ? getBluePerformanceLevel(item.score) : getPerformanceLevel(item.score);
     pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
     pdf.text(`${item.score}/100`, pageWidth - 20, yPos, { align: 'right' });
     
@@ -3948,7 +3958,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setTextColor(55, 65, 81);
       pdf.text(`${skillName}:`, leftColStart + 5, yPos);
       
-      const perf = getPerformanceLevel(score);
+      const perf = getBluePerformanceLevel(score);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
       pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
@@ -4041,7 +4051,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setTextColor(55, 65, 81);
       pdf.text(`${skillName}:`, leftColStart + 5, yPos);
       
-      const perf = getPerformanceLevel(score);
+      const perf = getBluePerformanceLevel(score);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
       pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
