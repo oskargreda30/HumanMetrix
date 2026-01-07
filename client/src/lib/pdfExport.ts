@@ -4163,15 +4163,15 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.roundedRect(50, yPos, pageWidth - 100, 35, 3, 3, 'FD');
     pdf.setLineWidth(0.2);
     
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Overall Prompt Engineering Score', pageWidth / 2, yPos + 10, { align: 'center' });
     
-    pdf.setFontSize(22);
+    pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
-    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2, yPos + 22, { align: 'center' });
+    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2, yPos + 21, { align: 'center' });
     
     const levelsCompleted = data.promptData.levels?.length || 7;
     pdf.setFontSize(9);
