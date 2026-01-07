@@ -136,6 +136,11 @@ export const assessmentResults = pgTable("assessment_results", {
   status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
+  // Pause/resume tracking - allows one 30-min grace period if window is closed
+  pausedAt: timestamp("paused_at"), // When timer was paused (null if running)
+  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Milliseconds left when paused
+  resumeCount: integer("resume_count").notNull().default(0), // Times resumed (max 1 allowed)
+  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // 30 mins after pause
 }, (table) => [
   index("idx_results_user").on(table.userId),
   index("idx_results_type").on(table.assessmentType),
@@ -814,6 +819,11 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   resultsDeliveryAttemptCount: integer("results_delivery_attempt_count").default(0), // Number of delivery attempts
   lastResultsDeliveryAttemptAt: timestamp("last_results_delivery_attempt_at"), // When last attempt was made
   resultsDeliveryStatus: varchar("results_delivery_status").default("pending"), // pending, sent, failed (max retries reached)
+  // Pause/resume tracking - allows one 30-min grace period if window is closed
+  pausedAt: timestamp("paused_at"), // When timer was paused (null if running)
+  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Milliseconds left when paused
+  resumeCount: integer("resume_count").notNull().default(0), // Times resumed (max 1 allowed)
+  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // 30 mins after pause
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
