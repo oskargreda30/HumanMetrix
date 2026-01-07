@@ -5618,12 +5618,16 @@ Format your response as JSON with this structure:
           strengths: strengths.slice(0, 5),
           gaps: gaps.slice(0, 5),
           riskFlags,
-          // New coverage fields
-          dataCoverage,
+          // Coverage fields as object for frontend compatibility
+          dataCoverage: {
+            percentage: dataCoverage,
+            assessedSkillCount,
+            totalRequiredSkills,
+            missingAssessments,
+            hasSufficientData
+          },
           hasSufficientData,
-          missingAssessments,
-          assessedSkillCount,
-          totalRequiredSkills
+          missingAssessments
         });
       }
 
@@ -5639,7 +5643,7 @@ Format your response as JSON with this structure:
             insufficientDataCandidates: insufficientDataCandidates.map(c => ({
               userName: c.userName,
               email: c.email,
-              dataCoverage: c.dataCoverage,
+              dataCoverage: c.dataCoverage.percentage,
               missingAssessments: c.missingAssessments
             }))
           });

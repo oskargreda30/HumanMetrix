@@ -60,6 +60,10 @@ export const users = pgTable("users", {
   resetTokenExpiry: timestamp("reset_token_expiry"),
   resultsRetentionConsent: boolean("results_retention_consent"),
   resultsRetentionConsentDate: timestamp("results_retention_consent_date"),
+  termsAccepted: boolean("terms_accepted").default(false),
+  termsAcceptedAt: timestamp("terms_accepted_at"),
+  dataShareConsent: boolean("data_share_consent").default(false),
+  dataShareConsentAt: timestamp("data_share_consent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
