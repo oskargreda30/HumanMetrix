@@ -4121,29 +4121,33 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     
     // Overall score box - compact inline version
     const promptPerf = getPerformanceLevel(data.promptData.totalScore);
+    const boxY = yPos;
+    const boxHeight = 14;
     pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
     pdf.setLineWidth(0.8);
-    pdf.roundedRect(70, yPos, pageWidth - 140, 16, 2, 2, 'FD');
+    pdf.roundedRect(70, boxY, pageWidth - 140, boxHeight, 2, 2, 'FD');
     pdf.setLineWidth(0.2);
     
     const levelsCompleted = data.promptData.levels?.length || 7;
+    const textY = boxY + boxHeight / 2 + 3; // Centered vertically in box
+    
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Overall Score:', pageWidth / 2 - 30, yPos + 10, { align: 'center' });
+    pdf.text('Overall Score:', pageWidth / 2 - 30, textY, { align: 'center' });
     
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
-    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2 + 5, yPos + 10, { align: 'center' });
+    pdf.text(`${data.promptData.totalScore}/100`, pageWidth / 2 + 5, textY, { align: 'center' });
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(`(${levelsCompleted} levels)`, pageWidth / 2 + 35, yPos + 10, { align: 'center' });
+    pdf.text(`(${levelsCompleted} levels)`, pageWidth / 2 + 35, textY, { align: 'center' });
     
-    yPos += 22;
+    yPos += boxHeight + 6;
     
     // Level breakdown - compact bars
     if (data.promptData.levels && data.promptData.levels.length > 0) {
