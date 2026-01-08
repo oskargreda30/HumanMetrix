@@ -18,7 +18,7 @@ import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
-import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent } from "./airwallex";
+import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 
 // Use Airwallex as primary payment processor if configured
 const useAirwallex = () => isAirwallexConfigured();
@@ -1338,6 +1338,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to process payment: " + error.message 
       });
+    }
+  });
+
+  // Airwallex webhook handler for payment confirmations
+  app.post("/api/webhooks/airwallex", async (req: any, res) => {
+    try {
+      const signature = req.headers['x-signature'] as string;
+      const timestamp = req.headers['x-timestamp'] as string;
+      const rawBody = req.rawBody?.toString() || JSON.stringify(req.body);
+      
+      // Verify webhook signature if secret is configured
+      const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET;
+      if (webhookSecret) {
+        // When secret is configured, require valid signature
+        if (!signature || !timestamp) {
+          console.error('[Airwallex Webhook] Missing signature or timestamp headers');
+          return res.status(401).json({ error: 'Missing signature headers' });
+        }
+        
+        const isValid = verifyAirwallexWebhookSignature(rawBody, signature, timestamp, webhookSecret);
+        if (!isValid) {
+          console.error('[Airwallex Webhook] Invalid signature');
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+      } else {
+        console.warn('[Airwallex Webhook] No webhook secret configured - signature verification skipped');
+      }
+      
+      const event: AirwallexWebhookEvent = req.body;
+      console.log(`[Airwallex Webhook] Received event: ${event.name}, id: ${event.id}`);
+      
+      // Handle payment intent events
+      if (event.name === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        const metadata = paymentIntent.metadata;
+        
+        if (!metadata) {
+          console.log('[Airwallex Webhook] No metadata in payment intent');
+          return res.json({ received: true });
+        }
+        
+        // Handle B2C results payment
+        if (metadata.isResultsPayment === 'true' && metadata.purchaseId) {
+          const purchaseId = metadata.purchaseId;
+          const userId = metadata.userId;
+          
+          // Check if already processed
+          const purchase = await storage.getPurchase(purchaseId);
+          if (purchase?.resultsAccessPaid) {
+            console.log(`[Airwallex Webhook] Purchase ${purchaseId} already unlocked, skipping`);
+            return res.json({ received: true, alreadyProcessed: true });
+          }
+          
+          // Update purchase to grant results access
+          await storage.updatePurchase(purchaseId, {
+            resultsAccessPaid: true,
+          });
+          
+          console.log(`[Airwallex Webhook] ✓ Unlocked results for purchase ${purchaseId}`);
+          
+          // Send receipt email
+          if (userId) {
+            try {
+              const user = await storage.getUser(userId);
+              const purchaseItems = await storage.getPurchaseItems(purchaseId);
+              const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
+              
+              if (user) {
+                const amount = Math.round((paymentIntent.amount || 0) * 100);
+                const currency = (paymentIntent.currency || 'gbp').toLowerCase();
+                await sendPaymentReceiptEmail(
+                  user.email,
+                  user.firstName || 'Customer',
+                  assessmentTypes,
+                  amount,
+                  paymentIntent.id,
+                  currency
+                );
+                console.log(`[Airwallex Webhook] ✓ Receipt email sent to ${user.email}`);
+              }
+            } catch (emailError) {
+              console.error(`[Airwallex Webhook] Failed to send receipt email:`, emailError);
+            }
+          }
+        }
+        
+        // Handle B2B results payment
+        if (metadata.type === 'b2b_results_unlock' && metadata.sessionId) {
+          const sessionId = metadata.sessionId;
+          
+          // Check if already processed
+          const session = await storage.getAssessmentSession(sessionId);
+          if (!session) {
+            console.log(`[Airwallex Webhook] Session ${sessionId} not found`);
+            return res.json({ received: true });
+          }
+          
+          if (session.resultsPaymentStatus === 'paid') {
+            console.log(`[Airwallex Webhook] Session ${sessionId} already paid, skipping`);
+            return res.json({ received: true, alreadyProcessed: true });
+          }
+          
+          // Mark as paid
+          await storage.updateAssessmentSession(sessionId, {
+            resultsPaymentStatus: 'paid',
+            resultsPaidAt: new Date(),
+            resultsPaymentAmount: Math.round((paymentIntent.amount || 0) * 100),
+            resultsPaymentCurrency: (paymentIntent.currency || 'gbp').toLowerCase(),
+          } as any);
+          
+          console.log(`[Airwallex Webhook] ✓ B2B session ${sessionId} marked as paid`);
+          
+          // Send results email if email is available
+          if (session.externalEmail) {
+            try {
+              const partner = await storage.getPartnerAccount(session.partnerId);
+              const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+              
+              const pdfBuffer = generateB2BResultsPDF({
+                candidateName: session.externalUserId || undefined,
+                candidateEmail: session.externalEmail,
+                assessmentType: session.assessmentType,
+                scores: session.scores || {},
+                totalScore: session.totalScore || undefined,
+                percentile: session.percentile || undefined,
+                evaluations: session.evaluations || undefined,
+                completedAt: session.completedAt || new Date(),
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+              });
+              
+              await sendB2BResultsEmail({
+                email: session.externalEmail,
+                candidateName: session.externalUserId || undefined,
+                assessmentType: session.assessmentType,
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+                pdfBuffer,
+                pdfFilename: `${assessmentName.replace(/\s/g, '_')}_Results.pdf`,
+              });
+              
+              await storage.updateAssessmentSession(sessionId, {
+                resultsEmailSentAt: new Date(),
+              } as any);
+              
+              console.log(`[Airwallex Webhook] ✓ Results email sent to ${session.externalEmail}`);
+            } catch (emailError) {
+              console.error(`[Airwallex Webhook] Failed to send B2B results email:`, emailError);
+            }
+          }
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[Airwallex Webhook ERROR]', error);
+      res.status(500).json({ error: error.message });
     }
   });
 

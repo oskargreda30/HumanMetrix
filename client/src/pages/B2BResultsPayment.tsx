@@ -87,9 +87,9 @@ export default function B2BResultsPayment() {
           intent_id: data.intentId,
           client_secret: data.clientSecret,
           currency: data.currency,
-          country_code: data.countryCode,
+          country_code: data.countryCode || 'GB',
           successUrl: `${window.location.origin}/b2b-results-success/${sessionId}?intent_id=${data.intentId}&provider=airwallex`,
-          logoUrl: 'https://humanmetrix.co.uk/assets/humanmetrix-logo.png',
+          failUrl: `${window.location.origin}/b2b-results-payment/${sessionId}?error=payment_failed`,
         });
       } else if (data.checkoutUrl) {
         // Fall back to Stripe checkout

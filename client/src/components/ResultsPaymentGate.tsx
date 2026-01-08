@@ -96,9 +96,9 @@ export function ResultsPaymentGate() {
           intent_id: data.intentId,
           client_secret: data.clientSecret,
           currency: data.currency,
-          country_code: countryCode,
+          country_code: countryCode || 'GB',
           successUrl: `${window.location.origin}/payment-callback?intent_id=${data.intentId}&provider=airwallex&purchaseId=${currentPurchase?.id}`,
-          logoUrl: 'https://humanmetrix.co.uk/assets/humanmetrix-logo.png',
+          failUrl: `${window.location.origin}/payment-cancel-callback`,
         });
       } else if (data.sessionUrl) {
         // Fall back to Stripe checkout

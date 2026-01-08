@@ -107,3 +107,37 @@ export function formatAmountForAirwallex(amountInPence: number): number {
 export function formatAmountFromAirwallex(amount: number): number {
   return Math.round(amount * 100);
 }
+
+import crypto from 'crypto';
+
+export function verifyAirwallexWebhookSignature(
+  payload: string,
+  signature: string,
+  timestamp: string,
+  webhookSecret: string
+): boolean {
+  if (!webhookSecret) {
+    console.warn('[Airwallex Webhook] No webhook secret configured, skipping signature verification');
+    return true;
+  }
+  
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+export interface AirwallexWebhookEvent {
+  id: string;
+  name: string;
+  account_id: string;
+  data: {
+    object: any;
+  };
+  created_at: string;
+}
