@@ -364,7 +364,7 @@ export default function ForEmployers() {
                 <div className="grid md:grid-cols-3 gap-8 mb-8">
                   <div className="text-center">
                     <Clock className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-primary mb-2">20-30 min</div>
+                    <div className="text-2xl font-bold text-primary mb-2">14-20 min</div>
                     <div className="text-sm text-muted-foreground">Per assessment</div>
                   </div>
                   <div className="text-center">
