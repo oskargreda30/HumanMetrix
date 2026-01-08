@@ -322,7 +322,7 @@ export interface IStorage {
   updatePartnerTestPackage(id: string, updates: Partial<InsertPartnerTestPackage>): Promise<void>;
   createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
   getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
-  getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }>;
+  getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }>;
   consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
   creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
   updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
@@ -1867,20 +1867,26 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }> {
+  async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }> {
     const [partner] = await db.select({
       testsPurchased: partnerAccounts.testsPurchased,
       testsConsumed: partnerAccounts.testsConsumed,
+      freeTestsAllocated: partnerAccounts.freeTestsAllocated,
     }).from(partnerAccounts).where(eq(partnerAccounts.id, partnerId));
     
     if (!partner) {
-      return { testsPurchased: 0, testsConsumed: 0, remaining: 0 };
+      return { testsPurchased: 0, testsConsumed: 0, remaining: 0, freeTestsAllocated: 0 };
     }
     
+    // Total available = purchased credits + free tests allocated
+    // Remaining = total available - consumed
+    const totalAvailable = partner.testsPurchased + (partner.freeTestsAllocated || 0);
+    
     return {
-      testsPurchased: partner.testsPurchased,
+      testsPurchased: totalAvailable, // Return total available (purchased + free) for backward compatibility
       testsConsumed: partner.testsConsumed,
-      remaining: partner.testsPurchased - partner.testsConsumed,
+      remaining: totalAvailable - partner.testsConsumed,
+      freeTestsAllocated: partner.freeTestsAllocated || 0,
     };
   }
 
