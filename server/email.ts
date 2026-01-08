@@ -854,7 +854,7 @@ export async function sendPartnerAccessSuspendedEmail(
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `🔴 API Access Suspended - Quota Exhausted`,
+    subject: `API Access Suspended - Quota Exhausted`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -862,7 +862,7 @@ export async function sendPartnerAccessSuspendedEmail(
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
             .button { display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
             .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
@@ -872,8 +872,8 @@ export async function sendPartnerAccessSuspendedEmail(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">🔴 Access Suspended</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Your Test Quota Has Been Exhausted</p>
+              <h1 style="margin: 0; color: #ffffff;">Access Suspended</h1>
+              <p style="margin: 10px 0 0 0; color: #e0e7ff;">Your Test Quota Has Been Exhausted</p>
             </div>
             <div class="content">
               <h2>Hello ${companyName},</h2>
