@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, FileText, BarChart2, ArrowUpDown } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, FileText, BarChart2, ArrowUpDown, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1401,46 +1401,121 @@ export default function MultiCandidateRoleFitTab() {
             </CardContent>
           </Card>
 
-          {/* Next Steps Section */}
-          <Card className="border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
-            <CardHeader className="flex flex-row items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-              <CardTitle className="text-base text-green-800 dark:text-green-300">Next Steps</CardTitle>
+          {/* Recommended Next Steps - Matching Individual Tab Style */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                Recommended Next Steps
+              </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid gap-4 md:grid-cols-2 text-sm">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
-                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
-                    <div>
-                      <h4 className="font-semibold text-green-800 dark:text-green-300">Review Critical Skills</h4>
-                      <p className="text-muted-foreground text-xs">Focus on candidates who meet or exceed the required scores for critical skills. These are non-negotiable for role success.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
-                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">2</div>
-                    <div>
-                      <h4 className="font-semibold text-green-800 dark:text-green-300">Consider Development Potential</h4>
-                      <p className="text-muted-foreground text-xs">Candidates with gaps in "Important" or "Nice-to-have" skills may still be strong hires if they show potential for growth.</p>
-                    </div>
-                  </div>
+            <CardContent>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                    1
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Conduct final-round interviews with {comparison.summaryInsights.recommendation?.recommendedCandidate || 'the top candidate'} focusing on team dynamics and cultural alignment
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                    2
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Perform reference checks emphasizing leadership and collaboration competencies
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                    3
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Prepare competitive offer package based on candidate expectations
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                    4
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Design 90-day onboarding plan targeting identified development areas
+                  </span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* Additional Services on Request - Matching Individual Tab Style */}
+          <Card className="border-primary/20 bg-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-white" />
+                Additional Services on Request
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                Contact our team to unlock these premium insights for your hiring decisions
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                    Suggested Interview Questions
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    AI-generated questions based on candidates' assessment results and skill gaps
+                  </p>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
-                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
-                    <div>
-                      <h4 className="font-semibold text-green-800 dark:text-green-300">Use Interviews to Validate</h4>
-                      <p className="text-muted-foreground text-xs">Assessment data provides objective insights. Use structured interviews to explore specific skills and cultural fit in more depth.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-background rounded-lg border">
-                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">4</div>
-                    <div>
-                      <h4 className="font-semibold text-green-800 dark:text-green-300">Export & Share</h4>
-                      <p className="text-muted-foreground text-xs">Download the PDF report to share with hiring stakeholders. Use the comparison data to support data-driven hiring decisions.</p>
-                    </div>
-                  </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Users className="h-4 w-4 text-white" />
+                    Team Composition Fit
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Analysis of how candidates would complement your existing team dynamics
+                  </p>
                 </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Clock className="h-4 w-4 text-white" />
+                    Time to Productivity Estimate
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Projected onboarding timeline based on skill readiness and learning agility
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <ShieldAlert className="h-4 w-4 text-white" />
+                    Hiring Risk Analysis
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Comprehensive risk assessment highlighting potential challenges and mitigations
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <DollarSign className="h-4 w-4 text-white" />
+                    Development Investment Cost
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Estimated training and development investment to close identified skill gaps
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white/20"
+                  onClick={() => window.location.href = '/for-employers'}
+                  data-testid="button-contact-team-services-multi"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Speak to the Team
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -210,13 +210,13 @@ export default function AdminDashboard() {
                     Role Fit
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="individual" className="mt-4">
+                <TabsContent value="individual" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <IndividualReportTab />
                 </TabsContent>
-                <TabsContent value="compare" className="mt-4">
+                <TabsContent value="compare" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <CompareTab />
                 </TabsContent>
-                <TabsContent value="role-fit" className="mt-4">
+                <TabsContent value="role-fit" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <RoleFitTab />
                 </TabsContent>
               </Tabs>
