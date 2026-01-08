@@ -2908,7 +2908,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   applySmallText(pdf);
   pdf.setTextColor(107, 114, 128);
   pdf.text('AI-generated hiring guidance based on comprehensive assessment analysis', 20, yPos);
-  yPos += PDF_SPACING.medium;
+  yPos += PDF_SPACING.large; // Extra spacing between description and content
   
   // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
