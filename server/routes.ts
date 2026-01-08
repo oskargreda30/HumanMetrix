@@ -5678,7 +5678,30 @@ Format your response as JSON with this structure:
 
       // Sort and assign ranks - only rank candidates with sufficient data
       // Candidates without sufficient data get rank = null
-      comparableCandidates.sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
+      // Sort by "hirability" which considers both overall fit AND critical skill gaps
+      // This aligns with the Hiring Decision Matrix logic
+      const getHiringBandScore = (candidate: any): number => {
+        const overallFit = candidate.overallFit || 0;
+        // Count critical skill gaps (skills below required threshold)
+        const criticalGaps = candidate.skillScores.filter((skill: any) => {
+          if (skill.criticality !== 'critical' || skill.dataAvailable === false || skill.score == null) return false;
+          const requiredScore = skill.requiredScore || 60;
+          return skill.score < requiredScore;
+        }).length;
+        
+        // Assign hiring band score (higher = better hire)
+        if (overallFit >= 80 && criticalGaps === 0) return 4; // STRONG HIRE
+        if (overallFit >= 70 && criticalGaps <= 1) return 3;  // HIRE
+        if (overallFit >= 60 && criticalGaps <= 2) return 2;  // MAYBE
+        return 1; // NO HIRE
+      };
+      
+      comparableCandidates.sort((a, b) => {
+        const bandDiff = getHiringBandScore(b) - getHiringBandScore(a);
+        if (bandDiff !== 0) return bandDiff;
+        // Tiebreaker: higher overall fit score
+        return (b.overallFit || 0) - (a.overallFit || 0);
+      });
       comparableCandidates.forEach((entry, index) => {
         entry.rank = index + 1;
       });
