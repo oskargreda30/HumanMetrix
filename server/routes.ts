@@ -6453,11 +6453,48 @@ Format your response as JSON with this structure:
           // Currency and prepaid expiry
           currency: matchingPartner.currency || 'GBP',
           prepaidCreditsExpiresAt: matchingPartner.prepaidCreditsExpiresAt,
+          // Tour completion status (persists across devices)
+          tourCompleted: matchingPartner.tourCompleted ?? false,
         },
       });
     } catch (error) {
       console.error("Error fetching partner account:", error);
       res.status(500).json({ message: "Failed to fetch partner account" });
+    }
+  });
+
+  // Partner self-service: Update tour completion status
+  app.post("/api/partner/me/tour-completed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Update tour completion status
+      await storage.updatePartnerAccount(matchingPartner.id, { tourCompleted: true });
+      
+      res.json({ success: true, message: "Tour marked as completed" });
+    } catch (error) {
+      console.error("Error updating tour status:", error);
+      res.status(500).json({ message: "Failed to update tour status" });
     }
   });
 

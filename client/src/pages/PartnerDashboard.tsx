@@ -384,6 +384,7 @@ interface PartnerAccount {
     freeTestsExpiresAt: string | null;
     currency: string;
     prepaidCreditsExpiresAt: string | null;
+    tourCompleted: boolean;
   };
 }
 
@@ -781,13 +782,23 @@ export default function PartnerDashboard() {
     }
   };
 
-  // Check if user needs to see tutorial on first login
+  // Tour completion mutation - saves to database for cross-device persistence
+  const tourCompleteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/partner/me/tour-completed");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+    },
+  });
+
+  // Check if user needs to see tutorial on first login (uses database-backed tourCompleted flag)
   useEffect(() => {
     if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked) {
       setTutorialChecked(true);
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      const hasCompletedTutorial = localStorage.getItem(tutorialKey);
-      if (!hasCompletedTutorial) {
+      // Check database-backed tourCompleted flag instead of localStorage
+      if (!account.partner.tourCompleted) {
         // Small delay to let the dashboard load first
         setTimeout(() => setShowTutorial(true), 500);
       }
@@ -796,10 +807,8 @@ export default function PartnerDashboard() {
 
   // Tour handlers
   const handleTourComplete = () => {
-    if (account?.partner?.id) {
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      localStorage.setItem(tutorialKey, 'true');
-    }
+    // Save to database for cross-device persistence
+    tourCompleteMutation.mutate();
     setShowTutorial(false);
     setActiveTab('home');
     toast({
@@ -809,10 +818,8 @@ export default function PartnerDashboard() {
   };
 
   const handleTourClose = () => {
-    if (account?.partner?.id) {
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      localStorage.setItem(tutorialKey, 'true');
-    }
+    // Save to database for cross-device persistence
+    tourCompleteMutation.mutate();
     setShowTutorial(false);
   };
 
