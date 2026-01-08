@@ -10058,6 +10058,12 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
+      // Find and delete the associated user account (partner_admin with same email)
+      const partnerUser = await storage.getUserByEmail(partner.email);
+      if (partnerUser && partnerUser.role === 'partner_admin') {
+        await storage.deleteUser(partnerUser.id);
+      }
+      
       // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
       await storage.deletePartnerAccount(req.params.id);
       
