@@ -56,6 +56,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
     - **Enterprise**: For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended until payment received.
   - **Unbundled Report Pricing**: Comparison Reports at 30% discount from base rate, Role Fit Reports at 20% discount from base rate.
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
+  - **Candidate Analysis Tab**: Partners can view individual candidate reports, compare 2-3 candidates side-by-side with radar charts, and analyze role fit alignment. Uses partner-scoped API endpoints (`/api/partner/me/candidates`, `/api/partner/me/compare`, `/api/partner/me/role-alignment`).
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.
   - **In-App Notifications**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), and mark-all-read functionality.
