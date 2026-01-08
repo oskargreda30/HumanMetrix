@@ -146,13 +146,13 @@ export default function SampleReportsSection() {
           {reports.map((report, index) => (
             <div 
               key={index} 
-              className={`rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-3 md:space-y-4 ${report.comingSoon ? 'opacity-80' : 'hover-elevate'}`}
+              className={`rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center space-y-3 md:space-y-4 ${report.comingSoon ? 'opacity-80' : 'hover-elevate'}`}
               data-testid={`card-report-${report.testId}`}
             >
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
                 <report.icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
               </div>
-              <h3 className="text-sm md:text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
+              <h3 className="text-sm md:text-lg font-semibold text-white text-center flex-grow flex items-center" data-testid={`text-report-${report.testId}-title`}>
                 {report.title}
               </h3>
               {report.comingSoon ? (
