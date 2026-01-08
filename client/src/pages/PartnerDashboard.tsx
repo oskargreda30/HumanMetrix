@@ -466,6 +466,7 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
+  isActive: boolean;
 }
 
 interface ApiKeysData {
@@ -2923,7 +2924,7 @@ export default function PartnerDashboard() {
 
                   {/* Buy More Tests - Only for PAYG and Subscription billing types */}
                   {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription') && (
-                    <Card>
+                    <Card data-testid="section-purchase-credits">
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
@@ -3483,6 +3484,15 @@ export default function PartnerDashboard() {
                 creatingKeyType={creatingKeyType}
                 newKeyData={newKeyData}
                 onClearNewKey={handleClearNewKey}
+                onReactivateKey={() => {
+                  setActiveTab('billing');
+                  setTimeout(() => {
+                    const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
+                    if (purchaseSection) {
+                      purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                }}
               />
             </TabsContent>
 

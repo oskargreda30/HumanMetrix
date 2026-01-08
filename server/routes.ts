@@ -7230,6 +7230,7 @@ Format your response as JSON with this structure:
         lastUsedAt: key.lastUsedAt,
         createdAt: key.createdAt,
         organisationId: key.partnerOrganisationId,
+        isActive: key.isActive,
       }));
       
       res.json({

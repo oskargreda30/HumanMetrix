@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Key, Webhook, TestTube, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Zap, Copy, Eye, EyeOff } from "lucide-react";
+import { Key, Webhook, TestTube, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Zap, Copy, Eye, EyeOff, CreditCard } from "lucide-react";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -39,6 +39,7 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
+  isActive: boolean;
 }
 
 interface ApiKeysData {
@@ -58,6 +59,7 @@ interface DeveloperSubTabsProps {
   creatingKeyType: 'test' | 'live' | null;
   newKeyData: { fullKey: string; environment: string } | null;
   onClearNewKey: () => void;
+  onReactivateKey?: () => void;
 }
 
 function formatDate(dateString: string): string {
@@ -80,6 +82,7 @@ export function DeveloperSubTabs({
   creatingKeyType,
   newKeyData,
   onClearNewKey,
+  onReactivateKey,
 }: DeveloperSubTabsProps) {
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
   const [showFullKey, setShowFullKey] = useState(false);
@@ -214,13 +217,14 @@ export function DeveloperSubTabs({
                         <TableHead>Name</TableHead>
                         <TableHead>Key</TableHead>
                         <TableHead>Environment</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Last Used</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {apiKeys.apiKeys.map((key) => (
-                        <TableRow key={key.id} data-testid={`api-key-row-${key.id}`}>
+                        <TableRow key={key.id} data-testid={`api-key-row-${key.id}`} className={!key.isActive ? 'opacity-70 bg-muted/30' : ''}>
                           <TableCell className="font-medium">{key.name}</TableCell>
                           <TableCell className="font-mono text-sm text-muted-foreground">
                             {key.keyPrefix}...{key.keyHint}
@@ -244,48 +248,81 @@ export function DeveloperSubTabs({
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
+                          <TableCell>
+                            {key.isActive ? (
+                              <Badge variant="secondary" className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30">
+                                Active
+                              </Badge>
+                            ) : (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="destructive" className="cursor-help">
+                                    Deactivated
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  This key was deactivated due to quota exhaustion. Purchase more credits to reactivate.
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {key.lastUsedAt ? formatDate(key.lastUsedAt) : "Never"}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => onRotateKey(key.id)}
-                                    disabled={rotatingKeyId === key.id}
-                                    data-testid={`button-rotate-key-${key.id}`}
-                                  >
-                                    {rotatingKeyId === key.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <RefreshCw className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Rotate key</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => onRevokeKey(key.id)}
-                                    disabled={revokingKeyId === key.id}
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    data-testid={`button-revoke-key-${key.id}`}
-                                  >
-                                    {revokingKeyId === key.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Revoke key</TooltipContent>
-                              </Tooltip>
+                              {!key.isActive && onReactivateKey ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={onReactivateKey}
+                                  className="text-primary border-primary/50 hover:bg-primary/10"
+                                  data-testid={`button-reactivate-key-${key.id}`}
+                                >
+                                  <CreditCard className="h-4 w-4 mr-1.5" />
+                                  Reactivate
+                                </Button>
+                              ) : (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => onRotateKey(key.id)}
+                                        disabled={rotatingKeyId === key.id || !key.isActive}
+                                        data-testid={`button-rotate-key-${key.id}`}
+                                      >
+                                        {rotatingKeyId === key.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <RefreshCw className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Rotate key</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => onRevokeKey(key.id)}
+                                        disabled={revokingKeyId === key.id}
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        data-testid={`button-revoke-key-${key.id}`}
+                                      >
+                                        {revokingKeyId === key.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Revoke key</TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
