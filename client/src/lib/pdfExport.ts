@@ -3293,111 +3293,116 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setTextColor(0, 0, 0);
   yPos = 70;
   
-  // Summary Cards (3 cards: Top Performer, Candidates, Distribution)
+  // Summary Cards (3 cards: Top Performer, Candidates, Distribution) - Compact
   const cardWidth = (pageWidth - 45) / 3;
-  const cardHeight = 35;
+  const cardHeight = 22;
   const cardGap = 5;
   
   // Card 1: Top Performer
   pdf.setFillColor(236, 253, 245);
   pdf.setDrawColor(34, 197, 94);
   pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  applyLabelText(pdf);
-  pdf.text('TOP PERFORMER', 22, yPos + 8);
-  pdf.setFontSize(11);
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('TOP PERFORMER', 22, yPos + 5);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  const topName = data.summaryInsights.topPerformer.userName.length > 15 
-    ? data.summaryInsights.topPerformer.userName.slice(0, 13) + '...' 
+  const topName = data.summaryInsights.topPerformer.userName.length > 12 
+    ? data.summaryInsights.topPerformer.userName.slice(0, 10) + '...' 
     : data.summaryInsights.topPerformer.userName;
-  pdf.text(topName, 22, yPos + 17);
-  pdf.setFontSize(16);
-  pdf.text(`${data.summaryInsights.topPerformer.overallFit}%`, 22, yPos + 28);
+  pdf.text(`${topName} - ${data.summaryInsights.topPerformer.overallFit}%`, 22, yPos + 14);
   
   // Card 2: Total Candidates
   const card2X = 20 + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  applyLabelText(pdf);
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('CANDIDATES', card2X + 2, yPos + 8);
-  pdf.setFontSize(20);
+  pdf.text('CANDIDATES', card2X + 2, yPos + 5);
+  pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(`${data.candidateEntries.length}`, card2X + 2, yPos + 25);
+  pdf.text(`${data.candidateEntries.length}`, card2X + 2, yPos + 16);
   
   // Card 3: Distribution
   const card3X = card2X + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  applyLabelText(pdf);
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('DISTRIBUTION', card3X + 2, yPos + 8);
-  pdf.setFontSize(8);
+  pdf.text('DISTRIBUTION', card3X + 2, yPos + 5);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(34, 197, 94);
-  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + 2, yPos + 17);
+  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + 2, yPos + 12);
   pdf.setTextColor(234, 179, 8);
-  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + 2, yPos + 23);
+  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + 2, yPos + 17);
   pdf.setTextColor(239, 68, 68);
-  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + 2, yPos + 29);
+  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + 2, yPos + 22);
   
   pdf.setTextColor(0, 0, 0);
-  yPos += cardHeight + 15;
+  yPos += cardHeight + 10;
   
-  // Common Insights Section
-  if (data.summaryInsights.commonStrengths.length > 0 || data.summaryInsights.commonGaps.length > 0) {
-    yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
-    yPos += 5;
-    
-    const halfWidth = (pageWidth - 45) / 2;
-    
-    // Common Strengths
-    if (data.summaryInsights.commonStrengths.length > 0) {
-      pdf.setFillColor(236, 253, 245);
-      pdf.setDrawColor(134, 239, 172);
-      pdf.roundedRect(20, yPos, halfWidth, 30, 2, 2, 'FD');
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(34, 197, 94);
-      pdf.text('Common Strengths', 25, yPos + 8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      pdf.setTextColor(22, 101, 52);
-      data.summaryInsights.commonStrengths.slice(0, 3).forEach((s, i) => {
-        const truncated = s.length > 40 ? s.slice(0, 38) + '...' : s;
-        pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 5));
-      });
-    }
-    
-    // Common Gaps
-    if (data.summaryInsights.commonGaps.length > 0) {
-      pdf.setFillColor(254, 252, 232);
-      pdf.setDrawColor(253, 224, 71);
-      pdf.roundedRect(25 + halfWidth, yPos, halfWidth, 30, 2, 2, 'FD');
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(161, 98, 7);
-      pdf.text('Common Development Areas', 30 + halfWidth, yPos + 8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      pdf.setTextColor(133, 77, 14);
-      data.summaryInsights.commonGaps.slice(0, 3).forEach((g, i) => {
-        const truncated = g.length > 40 ? g.slice(0, 38) + '...' : g;
-        pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 14 + (i * 5));
-      });
-    }
-    
-    yPos += 38;
+  // Common Insights Section - Expanded with AI Suggestions
+  yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
+  yPos += 5;
+  
+  const halfWidth = (pageWidth - 45) / 2;
+  const insightBoxHeight = 40;
+  
+  // Common Strengths
+  pdf.setFillColor(236, 253, 245);
+  pdf.setDrawColor(134, 239, 172);
+  pdf.roundedRect(20, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('Common Strengths', 25, yPos + 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(22, 101, 52);
+  if (data.summaryInsights.commonStrengths.length > 0) {
+    data.summaryInsights.commonStrengths.slice(0, 4).forEach((s, i) => {
+      const truncated = s.length > 38 ? s.slice(0, 36) + '...' : s;
+      pdf.text(`\u2022 ${truncated}`, 25, yPos + 15 + (i * 6));
+    });
+  } else {
+    pdf.text('No common strengths identified', 25, yPos + 18);
   }
+  
+  // Common Gaps
+  pdf.setFillColor(254, 252, 232);
+  pdf.setDrawColor(253, 224, 71);
+  pdf.roundedRect(25 + halfWidth, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(161, 98, 7);
+  pdf.text('Common Development Areas', 30 + halfWidth, yPos + 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(133, 77, 14);
+  if (data.summaryInsights.commonGaps.length > 0) {
+    data.summaryInsights.commonGaps.slice(0, 4).forEach((g, i) => {
+      const truncated = g.length > 38 ? g.slice(0, 36) + '...' : g;
+      pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 15 + (i * 6));
+    });
+  } else {
+    pdf.text('No common gaps identified', 30 + halfWidth, yPos + 18);
+  }
+  
+  yPos += insightBoxHeight + 8;
   
   // Key Differentiators
   if (data.summaryInsights.keyDifferentiators.length > 0) {
     pdf.setFillColor(239, 246, 255);
     pdf.setDrawColor(147, 197, 253);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 25, 2, 2, 'FD');
+    pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'FD');
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
@@ -3405,22 +3410,75 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
     pdf.setTextColor(30, 64, 175);
-    data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
-      const truncated = d.length > 80 ? d.slice(0, 78) + '...' : d;
+    data.summaryInsights.keyDifferentiators.slice(0, 4).forEach((d, i) => {
+      const truncated = d.length > 85 ? d.slice(0, 83) + '...' : d;
       pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 4));
     });
-    yPos += 32;
+    yPos += 35;
   }
+  
+  // AI Hiring Suggestions Box
+  pdf.setFillColor(250, 245, 255);
+  pdf.setDrawColor(196, 181, 253);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(124, 58, 237);
+  pdf.text('AI Hiring Suggestions', 25, yPos + 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(91, 33, 182);
+  
+  // Generate contextual AI suggestions based on data
+  const strongCount = data.summaryInsights.fitDistribution.strong;
+  const totalCount = data.candidateEntries.length;
+  const topPerformerFit = data.summaryInsights.topPerformer.overallFit;
+  
+  const aiSuggestions = [];
+  if (strongCount >= 2) {
+    aiSuggestions.push(`${strongCount} candidates show strong fit (80%+). Consider prioritizing interviews for top performers.`);
+  } else if (strongCount === 1) {
+    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding your candidate pool or adjusting role requirements.`);
+  } else {
+    aiSuggestions.push(`No candidates meet the 80% strong fit threshold. Review role requirements or source additional candidates.`);
+  }
+  
+  if (topPerformerFit >= 85) {
+    aiSuggestions.push(`Top performer (${topPerformerFit}%) is an excellent match. Fast-track to final interview stage.`);
+  } else if (topPerformerFit >= 70) {
+    aiSuggestions.push(`Top performer (${topPerformerFit}%) shows good potential with targeted development opportunities.`);
+  }
+  
+  if (data.summaryInsights.commonGaps.length > 0) {
+    aiSuggestions.push(`Common gap identified: Consider structured training programs for "${data.summaryInsights.commonGaps[0]}".`);
+  }
+  
+  aiSuggestions.slice(0, 4).forEach((suggestion, i) => {
+    const truncated = suggestion.length > 95 ? suggestion.slice(0, 93) + '...' : suggestion;
+    pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 5));
+  });
+  
+  // ========== OVERALL FIT COMPARISON - NEW PAGE ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 35;
   
   // Bar Chart Image (if provided)
   if (data.barChartImage) {
     yPos = addSectionHeader(pdf, 'OVERALL FIT COMPARISON', yPos, pageWidth);
     yPos += 3;
     
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Visual comparison of role fit scores across all candidates', 20, yPos);
+    yPos += 8;
+    
     try {
-      const chartHeight = Math.min(60, pageHeight - yPos - 30);
+      // Smaller chart height for compact bars
+      const chartHeight = Math.min(45, pageHeight - yPos - 40);
       pdf.addImage(data.barChartImage, 'PNG', 20, yPos, pageWidth - 40, chartHeight);
-      yPos += chartHeight + 10;
+      yPos += chartHeight + 15;
     } catch (e) {
       console.error('Error adding bar chart image:', e);
     }
