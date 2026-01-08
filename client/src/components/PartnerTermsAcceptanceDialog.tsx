@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -90,11 +89,15 @@ export default function PartnerTermsAcceptanceDialog({
                 className="text-sm leading-relaxed cursor-pointer"
               >
                 I have read and accept the{" "}
-                <Link href="/eula" target="_blank">
-                  <span className="text-primary hover:underline font-medium">
-                    End User License Agreement (EULA)
-                  </span>
-                </Link>
+                <a 
+                  href="/eula" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  End User License Agreement (EULA)
+                </a>
               </Label>
             </div>
 
@@ -110,11 +113,15 @@ export default function PartnerTermsAcceptanceDialog({
                 className="text-sm leading-relaxed cursor-pointer"
               >
                 I have read and accept the{" "}
-                <Link href="/privacy" target="_blank">
-                  <span className="text-primary hover:underline font-medium">
-                    Privacy Policy
-                  </span>
-                </Link>
+                <a 
+                  href="/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Privacy Policy
+                </a>
               </Label>
             </div>
           </div>
