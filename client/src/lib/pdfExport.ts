@@ -3293,8 +3293,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setTextColor(0, 0, 0);
   yPos = 70;
   
-  // Summary Cards
-  const cardWidth = (pageWidth - 50) / 4;
+  // Summary Cards (3 cards: Top Performer, Candidates, Distribution)
+  const cardWidth = (pageWidth - 45) / 3;
   const cardHeight = 35;
   const cardGap = 5;
   
@@ -3314,48 +3314,35 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setFontSize(16);
   pdf.text(`${data.summaryInsights.topPerformer.overallFit}%`, 22, yPos + 28);
   
-  // Card 2: Average Fit
+  // Card 2: Total Candidates
   const card2X = 20 + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   applyLabelText(pdf);
   pdf.setTextColor(107, 114, 128);
-  pdf.text('AVERAGE FIT', card2X + 2, yPos + 8);
+  pdf.text('CANDIDATES', card2X + 2, yPos + 8);
   pdf.setFontSize(20);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(`${data.summaryInsights.averageFit}%`, card2X + 2, yPos + 25);
+  pdf.text(`${data.candidateEntries.length}`, card2X + 2, yPos + 25);
   
-  // Card 3: Total Candidates
+  // Card 3: Distribution
   const card3X = card2X + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   applyLabelText(pdf);
   pdf.setTextColor(107, 114, 128);
-  pdf.text('CANDIDATES', card3X + 2, yPos + 8);
-  pdf.setFontSize(20);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text(`${data.candidateEntries.length}`, card3X + 2, yPos + 25);
-  
-  // Card 4: Distribution
-  const card4X = card3X + cardWidth + cardGap;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(card4X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  applyLabelText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('DISTRIBUTION', card4X + 2, yPos + 8);
+  pdf.text('DISTRIBUTION', card3X + 2, yPos + 8);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(34, 197, 94);
-  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card4X + 2, yPos + 17);
+  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + 2, yPos + 17);
   pdf.setTextColor(234, 179, 8);
-  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card4X + 2, yPos + 23);
+  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + 2, yPos + 23);
   pdf.setTextColor(239, 68, 68);
-  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card4X + 2, yPos + 29);
+  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + 2, yPos + 29);
   
   pdf.setTextColor(0, 0, 0);
   yPos += cardHeight + 15;
