@@ -1758,7 +1758,10 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
         <body>
           <div class="container">
             <div class="header">
-              <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="max-height: 50px; max-width: 200px; margin-bottom: 10px;" />
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
