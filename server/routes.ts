@@ -6749,6 +6749,9 @@ Format your response as JSON with this structure:
           prepaidCreditsExpiresAt: matchingPartner.prepaidCreditsExpiresAt,
           // Tour completion status (persists across devices)
           tourCompleted: matchingPartner.tourCompleted ?? false,
+          // Terms acceptance status
+          termsAccepted: matchingPartner.termsAccepted ?? false,
+          termsAcceptedAt: matchingPartner.termsAcceptedAt,
         },
       });
     } catch (error) {
@@ -6789,6 +6792,44 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error updating tour status:", error);
       res.status(500).json({ message: "Failed to update tour status" });
+    }
+  });
+
+  // Partner self-service: Accept terms (EULA and Privacy Policy)
+  app.post("/api/partner/me/accept-terms", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Update terms acceptance status
+      await storage.updatePartnerAccount(matchingPartner.id, { 
+        termsAccepted: true,
+        termsAcceptedAt: new Date()
+      });
+      
+      res.json({ success: true, message: "Terms accepted successfully" });
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      res.status(500).json({ message: "Failed to accept terms" });
     }
   });
 

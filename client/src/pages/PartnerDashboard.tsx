@@ -31,6 +31,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
+import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -385,6 +386,8 @@ interface PartnerAccount {
     currency: string;
     prepaidCreditsExpiresAt: string | null;
     tourCompleted: boolean;
+    termsAccepted: boolean;
+    termsAcceptedAt: string | null;
   };
 }
 
@@ -590,6 +593,10 @@ export default function PartnerDashboard() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
   
+  // Terms acceptance state
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
+  
   // Organization state
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [showAddOrgDialog, setShowAddOrgDialog] = useState(false);
@@ -794,9 +801,20 @@ export default function PartnerDashboard() {
     },
   });
 
-  // Check if user needs to see tutorial on first login (uses database-backed tourCompleted flag)
+  // Check if user needs to accept terms (must accept before accessing dashboard)
   useEffect(() => {
-    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked) {
+    if (account?.hasPartnerAccount && account?.partner?.id && !termsChecked) {
+      setTermsChecked(true);
+      if (!account.partner.termsAccepted) {
+        setShowTermsDialog(true);
+      }
+    }
+  }, [account, termsChecked]);
+
+  // Check if user needs to see tutorial on first login (uses database-backed tourCompleted flag)
+  // Only show after terms are accepted
+  useEffect(() => {
+    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked && account.partner.termsAccepted) {
       setTutorialChecked(true);
       // Check database-backed tourCompleted flag instead of localStorage
       if (!account.partner.tourCompleted) {
@@ -4208,6 +4226,18 @@ export default function PartnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Terms Acceptance Dialog - blocks dashboard access until accepted */}
+      <PartnerTermsAcceptanceDialog
+        open={showTermsDialog}
+        onAccepted={() => {
+          setShowTermsDialog(false);
+          // After accepting terms, check if tutorial should be shown
+          if (account?.partner && !account.partner.tourCompleted) {
+            setTimeout(() => setShowTutorial(true), 500);
+          }
+        }}
+      />
 
       {/* Interactive Spotlight Tour */}
       <PartnerTour

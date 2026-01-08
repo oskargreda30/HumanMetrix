@@ -687,6 +687,9 @@ export const partnerAccounts = pgTable("partner_accounts", {
   brandingCompanyDisplayName: varchar("branding_company_display_name"), // Display name shown to candidates (can differ from companyName)
   // Dashboard tour tracking
   tourCompleted: boolean("tour_completed").notNull().default(false), // Whether the partner has completed the dashboard tour (persists across devices)
+  // Terms acceptance tracking
+  termsAccepted: boolean("terms_accepted").notNull().default(false), // Whether partner has accepted EULA and Privacy Policy
+  termsAcceptedAt: timestamp("terms_accepted_at"), // When terms were accepted
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
