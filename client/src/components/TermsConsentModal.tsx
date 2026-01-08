@@ -72,7 +72,7 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -153,15 +153,18 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
           </div>
         </div>
 
-        <Button
-          onClick={handleAccept}
-          disabled={!termsAccepted || acceptTermsMutation.isPending}
-          className="w-full gap-2"
-          data-testid="button-continue-dashboard"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          {acceptTermsMutation.isPending ? "Saving..." : "Continue to Dashboard"}
-        </Button>
+        <div className="pt-4 border-t">
+          <Button
+            onClick={handleAccept}
+            disabled={!termsAccepted || acceptTermsMutation.isPending}
+            className="w-full gap-2"
+            size="lg"
+            data-testid="button-continue-dashboard"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            {acceptTermsMutation.isPending ? "Saving..." : "Continue to Dashboard"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
