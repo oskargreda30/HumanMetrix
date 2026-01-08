@@ -1069,26 +1069,8 @@ export default function MultiCandidateRoleFitTab() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardHeader>
               <CardTitle>Overall Fit Comparison</CardTitle>
-              <Button
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                variant="outline"
-                data-testid="button-export-multi-comparison"
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export as PDF
-                  </>
-                )}
-              </Button>
             </CardHeader>
             <CardContent>
               <div className="h-80" ref={chartRef} id="multi-candidate-bar-chart">
@@ -1250,6 +1232,28 @@ export default function MultiCandidateRoleFitTab() {
 
           {/* Skills Legend */}
           <SkillsLegend />
+
+          {/* Export PDF Button - Bottom of Dashboard */}
+          <div className="flex justify-center pt-6 pb-4">
+            <Button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              size="lg"
+              data-testid="button-export-multi-comparison"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </>
+              )}
+            </Button>
+          </div>
         </>
       )}
     </div>
