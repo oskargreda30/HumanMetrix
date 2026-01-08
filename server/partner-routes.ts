@@ -1456,8 +1456,44 @@ export function registerPartnerRoutes(app: Express) {
   // BULK CANDIDATE INVITATIONS
   // ========================================
 
-  // Get partner's prepaid balance for token preview
-  app.get("/api/partner/me/quota", partnerAuth, async (req: PartnerRequest, res: Response) => {
+  // Get partner's prepaid balance for token preview (session-based auth for dashboard)
+  app.get("/api/partner/me/quota", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      // Get partner account from user session
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      const balance = await storage.getPartnerQuotaBalance(partner.id);
+      
+      res.json({
+        billingType: partner.billingType || 'prepaid',
+        testsPurchased: balance.testsPurchased,
+        testsConsumed: balance.testsConsumed,
+        testsRemaining: balance.remaining,
+        freeTestsRemaining: partner.freeTestsAllocated || 0,
+        prepaidBalance: partner.prepaidBalance || 0,
+        prepaidCreditsExpiresAt: partner.prepaidCreditsExpiresAt,
+      });
+    } catch (error) {
+      console.error("Error fetching quota:", error);
+      res.status(500).json({ error: "Failed to fetch quota" });
+    }
+  });
+  
+  // Get partner's prepaid balance via API key (for external API access)
+  app.get("/api/partner/quota", partnerAuth(), async (req: PartnerRequest, res: Response) => {
     try {
       const partner = req.partner!;
       const balance = await storage.getPartnerQuotaBalance(partner.id);

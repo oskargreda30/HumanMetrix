@@ -387,7 +387,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/30">FIT</Badge>
-                      <Badge variant="outline" className="text-xs">40 questions</Badge>
+                      <Badge variant="outline" className="text-xs">15 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">Behavioural FIT Assessment</CardTitle>
                   </CardHeader>
@@ -410,7 +410,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~15 minutes to complete</span>
+                      <span>~8 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -419,7 +419,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-green-500/10 text-green-600 border-green-500/30">AI Readiness</Badge>
-                      <Badge variant="outline" className="text-xs">30 questions</Badge>
+                      <Badge variant="outline" className="text-xs">21 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">AI Readiness Assessment</CardTitle>
                   </CardHeader>
@@ -442,7 +442,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~12 minutes to complete</span>
+                      <span>~10 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -472,7 +472,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~25 minutes to complete (2 min per level)</span>
+                      <span>~21 minutes to complete (~3 min per level)</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -481,7 +481,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">AIQ</Badge>
-                      <Badge variant="outline" className="text-xs">15 questions</Badge>
+                      <Badge variant="outline" className="text-xs">9 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">Algorithmic Integrity Quotient</CardTitle>
                   </CardHeader>
@@ -504,7 +504,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~10 minutes to complete</span>
+                      <span>~5 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>
