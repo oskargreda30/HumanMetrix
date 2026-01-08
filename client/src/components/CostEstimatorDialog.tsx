@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,9 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
 import {
-  CURRENCIES,
   COUNTRY_PRICING_TIER,
   getPPPMultiplier,
   getCurrencyForCountry,
@@ -41,18 +39,7 @@ interface CostEstimatorDialogProps {
   onRequestDemo?: () => void;
 }
 
-const POPULAR_COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "AU", name: "Australia" },
-  { code: "SG", name: "Singapore" },
-  { code: "PH", name: "Philippines" },
-  { code: "IN", name: "India" },
-  { code: "DE", name: "Germany" },
-  { code: "AE", name: "United Arab Emirates" },
-];
-
-const ALL_COUNTRIES = [
+const COUNTRIES = [
   { code: "AR", name: "Argentina" },
   { code: "AU", name: "Australia" },
   { code: "AT", name: "Austria" },
@@ -89,6 +76,7 @@ const ALL_COUNTRIES = [
   { code: "KR", name: "South Korea" },
   { code: "KW", name: "Kuwait" },
   { code: "LV", name: "Latvia" },
+  { code: "LI", name: "Liechtenstein" },
   { code: "LT", name: "Lithuania" },
   { code: "LU", name: "Luxembourg" },
   { code: "MY", name: "Malaysia" },
@@ -181,19 +169,8 @@ export default function CostEstimatorDialog({
   const [countryCode, setCountryCode] = useState("US");
   const [companySize, setCompanySize] = useState("GROWTH");
   const [assessmentCount, setAssessmentCount] = useState([50]);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredCountries = useMemo(() => {
-    if (!searchQuery) return ALL_COUNTRIES;
-    const query = searchQuery.toLowerCase();
-    return ALL_COUNTRIES.filter(
-      (c) =>
-        c.name.toLowerCase().includes(query) ||
-        c.code.toLowerCase().includes(query)
-    );
-  }, [searchQuery]);
-
-  const selectedCountry = ALL_COUNTRIES.find((c) => c.code === countryCode) || ALL_COUNTRIES[0];
+  const selectedCountry = COUNTRIES.find((c) => c.code === countryCode) || COUNTRIES[0];
   const currency = getCurrencyForCountry(countryCode);
   const pppMultiplier = getPPPMultiplier(countryCode);
   const tier = B2B_VOLUME_TIERS[companySize as keyof typeof B2B_VOLUME_TIERS];
@@ -212,7 +189,7 @@ export default function CostEstimatorDialog({
 
   const pricingTierLabel = COUNTRY_PRICING_TIER[countryCode] || "tier1";
   const regionLabel = pricingTierLabel === "tier1" 
-    ? "Standard pricing" 
+    ? null 
     : pricingTierLabel === "tier2" 
       ? "30% regional discount applied" 
       : "50% emerging market discount applied";
@@ -244,55 +221,23 @@ export default function CostEstimatorDialog({
                 </TooltipContent>
               </Tooltip>
             </div>
-            
-            <div className="flex flex-wrap gap-2 mb-2">
-              {POPULAR_COUNTRIES.map((c) => (
-                <Button
-                  key={c.code}
-                  variant={countryCode === c.code ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCountryCode(c.code)}
-                  data-testid={`country-quick-${c.code}`}
-                >
-                  {c.name}
-                </Button>
-              ))}
-            </div>
-
-            <div className="relative">
-              <Input
-                placeholder="Search for your country..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="mb-2"
-                data-testid="input-country-search"
-              />
-              {searchQuery && filteredCountries.length > 0 && (
-                <div className="absolute z-10 w-full bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {filteredCountries.slice(0, 10).map((c) => (
-                    <button
-                      key={c.code}
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                      onClick={() => {
-                        setCountryCode(c.code);
-                        setSearchQuery("");
-                      }}
-                      data-testid={`country-search-${c.code}`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
-              <span>Selected: <strong>{selectedCountry.name}</strong></span>
-              <span className="text-primary">({currency.code})</span>
-              {pppMultiplier < 1 && (
-                <span className="text-green-600 dark:text-green-400 ml-2">{regionLabel}</span>
-              )}
-            </div>
+            <Select value={countryCode} onValueChange={setCountryCode}>
+              <SelectTrigger data-testid="select-country">
+                <SelectValue placeholder="Select your country" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code} data-testid={`country-option-${c.code}`}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {regionLabel && (
+              <div className="text-xs text-green-600 dark:text-green-400">
+                {regionLabel}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
