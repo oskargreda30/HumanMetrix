@@ -815,19 +815,14 @@ export default function CompareTab() {
     const totalRequiredSkills = requiredSkillEntries.length;
     const coverage = totalRequiredSkills > 0 ? matchCount / totalRequiredSkills : 0;
     
-    // Calculate weighted average match
-    const weightedAvgMatch = weightSum > 0 ? weightedTotal / weightSum : 0;
+    // Calculate weighted average match (matches backend formula)
+    let adjustedScore = weightSum > 0 ? weightedTotal / weightSum : 0;
     
-    // Apply gentle coverage penalty (Option B: less harsh)
-    // Use square root of coverage to soften the penalty for partial coverage
-    const gentleCoverage = Math.sqrt(coverage);
-    let adjustedScore = weightedAvgMatch * gentleCoverage;
-    
-    // Apply reduced critical gap penalty: 5% per gap (was 10%), capped at 25% (was 50%)
-    // This ensures critical deficits impact the score but don't devastate it
+    // Apply critical gap penalty: 10% per gap, capped at 50% (matches backend formula)
+    // IMPORTANT: Only apply if we actually assessed critical skills
     if (criticalGaps > 0 && totalCriticalSkills > 0) {
-      const criticalPenalty = criticalGaps * 0.05; // 5% penalty per critical gap (gentler)
-      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.25)); // Cap penalty at 25%
+      const criticalPenalty = criticalGaps * 0.10;
+      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.50));
     }
     
     return { 

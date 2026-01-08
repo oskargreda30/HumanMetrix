@@ -132,18 +132,14 @@ export default function ForEmployers() {
                 Request Demo
               </Button>
               <Link href="/assessments">
-                <a>
-                  <Button size="lg" variant="outline" data-testid="button-view-assessments">
-                    View Assessments
-                  </Button>
-                </a>
+                <Button size="lg" variant="outline" data-testid="button-view-assessments">
+                  View Assessments
+                </Button>
               </Link>
               <Link href="/#sample-reports">
-                <a>
-                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
-                    View Sample Reports
-                  </Button>
-                </a>
+                <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                  View Sample Reports
+                </Button>
               </Link>
             </div>
           </div>
