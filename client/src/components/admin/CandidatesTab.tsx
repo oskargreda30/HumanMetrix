@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, MapPin } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -235,50 +234,45 @@ export default function CandidatesTab() {
       ) : filteredCandidates && filteredCandidates.length > 0 ? (
         <div className="grid gap-4">
           {filteredCandidates.map((candidate: any) => (
-            <Card key={candidate.user.id} className="hover-elevate" data-testid={`card-candidate-${candidate.user.id}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">
-                      {candidate.user.firstName || candidate.user.lastName
-                        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-                        : 'No Name'}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-muted-foreground">{candidate.user.email}</p>
+            <Card 
+              key={candidate.user.id} 
+              className="hover-elevate cursor-pointer" 
+              data-testid={`card-candidate-${candidate.user.id}`}
+              onClick={() => {
+                setSelectedCandidate(candidate);
+                setDialogOpen(true);
+              }}
+            >
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base truncate">
+                        {candidate.user.firstName || candidate.user.lastName
+                          ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+                          : 'No Name'}
+                      </CardTitle>
                       {candidate.user.resultsRetentionConsent === true ? (
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 shrink-0" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
                           <UserCheck className="h-3 w-3 mr-1" />
                           Shared
                         </Badge>
                       ) : candidate.user.resultsRetentionConsent === false ? (
-                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30 shrink-0" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
                           <UserX className="h-3 w-3 mr-1" />
                           Private
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30 shrink-0" data-testid={`badge-consent-pending-${candidate.user.id}`}>
                           <HelpCircle className="h-3 w-3 mr-1" />
                           Pending
                         </Badge>
                       )}
                     </div>
+                    <p className="text-sm text-muted-foreground truncate">{candidate.user.email}</p>
                   </div>
                   
                   <Dialog open={dialogOpen && selectedCandidate?.user?.id === candidate.user.id} onOpenChange={handleDialogChange}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCandidate(candidate);
-                          setDialogOpen(true);
-                        }}
-                        data-testid={`button-view-details-${candidate.user.id}`}
-                      >
-                        View Details
-                      </Button>
-                    </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>
@@ -589,55 +583,17 @@ export default function CandidatesTab() {
                   </Dialog>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Assessments</p>
-                    <p className="font-semibold">{new Set(candidate.results?.map((r: any) => r.assessmentType) || []).size}</p>
+              <CardContent className="py-2 px-4">
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">{candidate.user.country || 'Unknown'}</span>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Completed</p>
-                    <p className="font-semibold">
-                      {new Set(candidate.results?.filter((r: any) => r.status === 'completed').map((r: any) => r.assessmentType) || []).size}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Top Skill</p>
-                    <p className="font-semibold">
-                      {(() => {
-                        const completedResults = candidate.results?.filter((r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores);
-                        if (!completedResults || completedResults.length === 0) return 'N/A';
-                        
-                        const allSkills: Array<{name: string, score: number}> = [];
-                        completedResults.forEach((r: any) => {
-                          const topSkills = getTopSkills(r.scores, r.assessmentType, 1);
-                          if (topSkills.length > 0) {
-                            allSkills.push({name: topSkills[0].name, score: topSkills[0].score});
-                          }
-                        });
-                        
-                        if (allSkills.length === 0) return 'N/A';
-                        allSkills.sort((a, b) => b.score - a.score);
-                        return `${allSkills[0].name} (${allSkills[0].score})`;
-                      })()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Areas to Improve</p>
-                    <p className="font-semibold">
-                      {(() => {
-                        const completedResults = candidate.results?.filter((r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores);
-                        if (!completedResults || completedResults.length === 0) return 0;
-                        
-                        const allGrowthAreas: Array<{name: string, score: number}> = [];
-                        completedResults.forEach((r: any) => {
-                          const growthAreas = getGrowthAreas(r.scores, r.assessmentType, 3);
-                          allGrowthAreas.push(...growthAreas);
-                        });
-                        
-                        return allGrowthAreas.length > 0 ? Math.min(5, allGrowthAreas.length) : 0;
-                      })()}
-                    </p>
+                    <span className="text-muted-foreground">Assessments: </span>
+                    <span className="font-medium">
+                      {new Set(candidate.results?.filter((r: any) => r.status === 'completed').map((r: any) => r.assessmentType) || []).size}/4
+                    </span>
                   </div>
                 </div>
               </CardContent>
