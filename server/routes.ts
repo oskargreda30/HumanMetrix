@@ -5650,6 +5650,30 @@ Format your response as JSON with this structure:
         ];
       }
 
+      // Compute dataCoverage from skill alignments since it's not stored in DB
+      // This tells the frontend whether there's sufficient data for analysis
+      const allSkills = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
+      const totalRequiredSkills = allSkills.length;
+      const assessedSkillCount = allSkills.filter((s: any) => s.dataAvailable !== false && s.candidateScore !== null).length;
+      const dataCoveragePercentage = totalRequiredSkills > 0 
+        ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
+        : 0;
+      
+      // Determine missing assessments
+      const missingAssessments: string[] = [];
+      const hasFitData = fitSkillAlignments.some((s: any) => s.dataAvailable !== false && s.candidateScore !== null);
+      const hasAiData = aiReadinessSkillAlignments.some((s: any) => s.dataAvailable !== false && s.candidateScore !== null);
+      if (!hasFitData && fitSkillAlignments.length > 0) missingAssessments.push('FIT Assessment');
+      if (!hasAiData && aiReadinessSkillAlignments.length > 0) missingAssessments.push('AI Readiness Assessment');
+      
+      const dataCoverage = {
+        percentage: dataCoveragePercentage,
+        assessedSkillCount,
+        totalRequiredSkills,
+        missingAssessments,
+        hasSufficientData: totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoveragePercentage >= 40
+      };
+
       // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)
       // Use nudged skill alignments to ensure no multiples of 5 in required scores
       const { dataRiskIndicators: _unused, fitSkillAlignments: _oldFit, aiReadinessSkillAlignments: _oldAi, ...alignmentWithoutRiskIndicators } = alignment as any;
@@ -5660,6 +5684,7 @@ Format your response as JSON with this structure:
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         finalRecommendation,
         nextSteps,
+        dataCoverage,
       });
     } catch (error) {
       console.error("Error fetching role alignment:", error);
