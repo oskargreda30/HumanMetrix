@@ -1702,7 +1702,8 @@ interface B2BCongratulatoryEmailDetails {
   assessmentType: string;
   partnerCompanyName: string;
   paymentUrl: string;
-  paymentAmount: string; // Formatted price string (e.g., "£15.00")
+  paymentAmount: string; // Formatted discounted price string (e.g., "£15.00")
+  originalPaymentAmount?: string; // Formatted original price string (e.g., "£20.00")
   freeUnlockDate: Date; // 30 days after completion
 }
 
@@ -1715,12 +1716,21 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
   }
   
   const assessmentName = formatAssessmentName(details.assessmentType);
-  const candidateName = details.candidateName || 'there';
+  // Use email as the display name instead of externalUserId
+  const displayName = details.email;
   const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
     day: 'numeric', 
     month: 'long', 
     year: 'numeric' 
   });
+  
+  // Build price display with original price crossed out if available
+  const priceDisplay = details.originalPaymentAmount 
+    ? `<span style="text-decoration: line-through; color: #6b7280; font-size: 18px;">${details.originalPaymentAmount}</span> <span class="price">${details.paymentAmount}</span> <span style="color: #059669; font-size: 14px; font-weight: 600;">25% off</span>`
+    : `<span class="price">${details.paymentAmount}</span>`;
+  const textPriceDisplay = details.originalPaymentAmount
+    ? `${details.originalPaymentAmount} → ${details.paymentAmount} (25% off)`
+    : details.paymentAmount;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -1756,7 +1766,7 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
                 <span class="success-badge">Assessment Complete</span>
               </div>
               
-              <h2 style="text-align: center;">Congratulations, ${candidateName}!</h2>
+              <h2 style="text-align: center;">Congratulations, ${displayName}!</h2>
               
               <p style="text-align: center;">You've successfully completed the <strong>${assessmentName}</strong> as part of your assessment with <strong>${details.partnerCompanyName}</strong>.</p>
               
@@ -1765,7 +1775,7 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
                 
                 <div class="option option-immediate">
                   <strong>Immediate Access</strong>
-                  <p style="margin: 5px 0;">Get your detailed results right now for just <span class="price">${details.paymentAmount}</span></p>
+                  <p style="margin: 5px 0;">Get your detailed results right now for just ${priceDisplay}</p>
                   <p style="margin: 5px 0; font-size: 14px; color: #0369a1;">Receive a comprehensive PDF report with insights and recommendations.</p>
                 </div>
                 
@@ -1792,7 +1802,7 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
       </html>
     `,
     text: `
-Congratulations, ${candidateName}!
+Congratulations, ${displayName}!
 
 You've successfully completed the ${assessmentName} as part of your assessment with ${details.partnerCompanyName}.
 
@@ -1800,7 +1810,7 @@ ACCESS YOUR RESULTS
 ==================
 
 IMMEDIATE ACCESS
-Get your detailed results right now for just ${details.paymentAmount}
+Get your detailed results right now for just ${textPriceDisplay}
 Receive a comprehensive PDF report with insights and recommendations.
 
 Click here to unlock your results: ${details.paymentUrl}

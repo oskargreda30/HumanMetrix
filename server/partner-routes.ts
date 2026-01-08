@@ -1093,6 +1093,7 @@ export function registerPartnerRoutes(app: Express) {
             
             // Convert to local currency with rounding
             let displayPrice: string;
+            let originalDisplayPrice: string;
             let stripeAmount: number;
             const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
             
@@ -1100,19 +1101,24 @@ export function registerPartnerRoutes(app: Express) {
               // Already in pence
               stripeAmount = discountedPence;
               displayPrice = `£${(discountedPence / 100).toFixed(2)}`;
+              originalDisplayPrice = `£${(pppAdjustedPence / 100).toFixed(2)}`;
             } else {
               // Convert from GBP to local currency
               const gbpRate = exchangeRates.rates['GBP'] || 1;
               const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
               const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
+              const originalLocalAmount = (pppAdjustedPence / 100) * (targetRate / gbpRate);
               const roundedAmount = roundPriceUp(localAmount);
+              const roundedOriginalAmount = roundPriceUp(originalLocalAmount);
               
               if (isZeroDecimal) {
                 stripeAmount = Math.round(roundedAmount);
                 displayPrice = `${currencyCode.toUpperCase()} ${stripeAmount.toLocaleString()}`;
+                originalDisplayPrice = `${currencyCode.toUpperCase()} ${Math.round(roundedOriginalAmount).toLocaleString()}`;
               } else {
                 stripeAmount = Math.round(roundedAmount * 100);
                 displayPrice = `${currencyCode.toUpperCase()} ${roundedAmount.toFixed(2)}`;
+                originalDisplayPrice = `${currencyCode.toUpperCase()} ${roundedOriginalAmount.toFixed(2)}`;
               }
             }
             
@@ -1131,11 +1137,11 @@ export function registerPartnerRoutes(app: Express) {
             // Send congratulatory email
             await sendB2BCongratulatoryEmail({
               email: session.externalEmail,
-              candidateName: session.externalUserId || undefined,
               assessmentType: session.assessmentType,
               partnerCompanyName: partner.companyName || partner.name,
               paymentUrl,
               paymentAmount: displayPrice,
+              originalPaymentAmount: originalDisplayPrice,
               freeUnlockDate: resultsUnlockAt,
             });
             
@@ -1217,23 +1223,29 @@ export function registerPartnerRoutes(app: Express) {
       const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
       
       let displayPrice: string;
+      let originalDisplayPrice: string;
       let stripeAmount: number;
       
       if (currencyCode.toUpperCase() === 'GBP') {
         stripeAmount = discountedPence;
-        displayPrice = `£${(discountedPence / 100).toFixed(2)}`;
+        displayPrice = `${(discountedPence / 100).toFixed(2)}`;
+        originalDisplayPrice = `${(pppAdjustedPence / 100).toFixed(2)}`;
       } else {
         const gbpRate = exchangeRates.rates['GBP'] || 1;
         const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
         const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
+        const originalLocalAmount = (pppAdjustedPence / 100) * (targetRate / gbpRate);
         const roundedAmount = roundPriceUp(localAmount);
+        const roundedOriginalAmount = roundPriceUp(originalLocalAmount);
         
         if (isZeroDecimal) {
           stripeAmount = Math.round(roundedAmount);
           displayPrice = `${roundedAmount.toLocaleString()}`;
+          originalDisplayPrice = `${roundedOriginalAmount.toLocaleString()}`;
         } else {
           stripeAmount = Math.round(roundedAmount * 100);
           displayPrice = roundedAmount.toFixed(2);
+          originalDisplayPrice = roundedOriginalAmount.toFixed(2);
         }
       }
       
@@ -1248,6 +1260,7 @@ export function registerPartnerRoutes(app: Express) {
           amount: stripeAmount,
           currency: currencyCode,
           displayPrice,
+          originalDisplayPrice,
           isZeroDecimal,
         },
         freeUnlockAt: session.resultsUnlockAt,

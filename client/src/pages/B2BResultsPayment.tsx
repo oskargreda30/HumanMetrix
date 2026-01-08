@@ -20,6 +20,7 @@ interface PricingData {
     amount: number;
     currency: string;
     displayPrice: string;
+    originalDisplayPrice: string;
     isZeroDecimal: boolean;
   };
   daysUntilFree?: number;
@@ -157,12 +158,20 @@ export default function B2BResultsPayment() {
                     Get your detailed results and personalized insights right now.
                   </p>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl font-bold text-primary">
-                      {pricing?.pricing?.currency && getCurrencySymbol(pricing.pricing.currency)}
-                      {pricing?.pricing?.displayPrice}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl font-bold text-primary">
+                        {pricing?.pricing?.currency && getCurrencySymbol(pricing.pricing.currency)}
+                        {pricing?.pricing?.displayPrice}
+                      </span>
+                      {pricing?.pricing?.originalDisplayPrice && (
+                        <span className="text-lg text-muted-foreground line-through">
+                          {getCurrencySymbol(pricing.pricing.currency)}
+                          {pricing.pricing.originalDisplayPrice}
+                        </span>
+                      )}
+                    </div>
                     <Badge variant="outline" className="text-green-600 border-green-600">
-                      25% off B2C price
+                      25% off
                     </Badge>
                   </div>
                   <Button 
