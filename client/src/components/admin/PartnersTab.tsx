@@ -2098,6 +2098,7 @@ export default function PartnersTab() {
                   <TableHead className="text-white/70 cursor-pointer" onClick={() => handleSort("name")}>
                     Partner {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                   </TableHead>
+                  <TableHead className="text-white/70">Email</TableHead>
                   <TableHead className="text-white/70 cursor-pointer" onClick={() => handleSort("currentMonthSessions")}>
                     This Month {sortField === "currentMonthSessions" && (sortDirection === "asc" ? "↑" : "↓")}
                   </TableHead>
@@ -2120,6 +2121,9 @@ export default function PartnersTab() {
                         <div>{partner.companyName || partner.name}</div>
                         {partner.companyName && <div className="text-sm text-white/60">{partner.name}</div>}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-white/80 text-sm">
+                      {partner.email}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300">{partner.currentMonthSessions}</Badge>
