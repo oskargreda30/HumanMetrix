@@ -73,7 +73,26 @@ export default function B2BResultsPayment() {
         throw new Error(data.error || "Failed to create checkout");
       }
       
-      if (data.checkoutUrl) {
+      if (data.provider === 'airwallex') {
+        // Use Airwallex hosted payment page
+        const { init } = await import('@airwallex/components-sdk');
+        const env = window.location.hostname.includes('humanmetrix.co.uk') ? 'prod' : 'demo';
+        
+        const { payments } = await init({
+          env,
+          enabledElements: ['payments'],
+        });
+        
+        payments.redirectToCheckout({
+          intent_id: data.intentId,
+          client_secret: data.clientSecret,
+          currency: data.currency,
+          country_code: data.countryCode,
+          successUrl: `${window.location.origin}/b2b-results-success/${sessionId}?intent_id=${data.intentId}&provider=airwallex`,
+          logoUrl: 'https://humanmetrix.co.uk/assets/humanmetrix-logo.png',
+        });
+      } else if (data.checkoutUrl) {
+        // Fall back to Stripe checkout
         window.location.href = data.checkoutUrl;
       }
     } catch (err: any) {

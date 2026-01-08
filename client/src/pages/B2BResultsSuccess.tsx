@@ -19,8 +19,10 @@ export default function B2BResultsSuccess() {
     const verifyPayment = async () => {
       const params = new URLSearchParams(window.location.search);
       const stripeSessionId = params.get("session_id");
+      const airwallexIntentId = params.get("intent_id");
+      const provider = params.get("provider") || (airwallexIntentId ? 'airwallex' : 'stripe');
 
-      if (!stripeSessionId) {
+      if (!stripeSessionId && !airwallexIntentId) {
         setError("Missing payment session information");
         setLoading(false);
         return;
@@ -30,7 +32,11 @@ export default function B2BResultsSuccess() {
         const res = await fetch(`/api/b2b-results/${sessionId}/verify-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stripeSessionId }),
+          body: JSON.stringify({ 
+            stripeSessionId,
+            airwallexIntentId,
+            provider,
+          }),
         });
 
         const data = await res.json();

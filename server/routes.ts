@@ -18,6 +18,10 @@ import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
+import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent } from "./airwallex";
+
+// Use Airwallex as primary payment processor if configured
+const useAirwallex = () => isAirwallexConfigured();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -1081,41 +1085,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
       console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
       
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: stripeCurrency,
-              product_data: {
-                name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        allow_promotion_codes: true,
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-cancel-callback`,
-        metadata: {
-          userId: userId.toString(),
-          purchaseId: unpaidPurchase.id.toString(),
-          isResultsPayment: 'true',
-          countryCode: currencyCountry,
-          pricingTier,
-          localCurrency: currencyCode,
-          isVPN: isVPN ? 'true' : 'false',
-        },
-      });
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `${req.protocol}://${req.hostname}`;
       
-      res.json({ 
-        success: true, 
-        sessionUrl: session.url,
-        free: false 
-      });
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (isAirwallexConfigured()) {
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: currencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/payment-callback`,
+          customerEmail: user.email,
+          description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+          metadata: {
+            userId: userId.toString(),
+            purchaseId: unpaidPurchase.id.toString(),
+            isResultsPayment: 'true',
+            countryCode: currencyCountry,
+            pricingTier,
+            localCurrency: currencyCode,
+            isVPN: isVPN ? 'true' : 'false',
+          },
+        });
+        
+        res.json({ 
+          success: true,
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: currencyCode.toUpperCase(),
+          amount: airwallexAmount,
+          free: false 
+        });
+      } else {
+        // Fall back to Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: stripeCurrency,
+                product_data: {
+                  name: 'Assessment Results Access',
+                  description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+                },
+                unit_amount: stripeAmount,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/payment-cancel-callback`,
+          metadata: {
+            userId: userId.toString(),
+            purchaseId: unpaidPurchase.id.toString(),
+            isResultsPayment: 'true',
+            countryCode: currencyCountry,
+            pricingTier,
+            localCurrency: currencyCode,
+            isVPN: isVPN ? 'true' : 'false',
+          },
+        });
+        
+        res.json({ 
+          success: true,
+          provider: 'stripe',
+          sessionUrl: session.url,
+          free: false 
+        });
+      }
     } catch (error: any) {
       console.error("Error unlocking results:", error);
       res.status(500).json({ 
@@ -1124,38 +1168,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process results payment success (non-authenticated callback for Stripe redirects)
-  // This endpoint doesn't require authentication because session cookies can be lost during Stripe redirects
-  // Security is ensured by validating the Stripe session instead
+  // Process results payment success (non-authenticated callback for Stripe/Airwallex redirects)
+  // This endpoint doesn't require authentication because session cookies can be lost during payment redirects
+  // Security is ensured by validating the payment session instead
   app.post("/api/process-results-payment", async (req: any, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, intentId, provider } = req.body;
       
-      console.log(`[Payment Callback] Processing session: ${sessionId}`);
+      console.log(`[Payment Callback] Processing payment - provider: ${provider || 'stripe'}, sessionId: ${sessionId}, intentId: ${intentId}`);
       
-      if (!sessionId) {
-        console.error("[Payment Callback] No session ID provided");
+      let metadata: any = null;
+      let paymentAmount: number = 0;
+      let paymentCurrency: string = 'gbp';
+      
+      if (provider === 'airwallex' && intentId) {
+        // Verify Airwallex payment intent
+        const paymentIntent = await getPaymentIntent(intentId);
+        
+        console.log(`[Payment Callback] Airwallex intent retrieved - Status: ${paymentIntent.status}`);
+        
+        if (paymentIntent.status !== 'SUCCEEDED') {
+          console.error(`[Payment Callback] Airwallex payment not succeeded: ${paymentIntent.status}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "Payment not completed" 
+          });
+        }
+        
+        metadata = paymentIntent.metadata;
+        paymentAmount = Math.round((paymentIntent.amount || 0) * 100);
+        paymentCurrency = (paymentIntent.currency || 'gbp').toLowerCase();
+      } else if (sessionId) {
+        // Verify Stripe session
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        console.log(`[Payment Callback] Stripe session retrieved - Status: ${session.payment_status}, Mode: ${session.mode}`);
+        
+        // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
+        if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
+          console.error(`[Payment Callback] Invalid payment status: ${session?.payment_status}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "Payment not completed" 
+          });
+        }
+        
+        metadata = session.metadata;
+        paymentAmount = session.amount_total ?? 0;
+        paymentCurrency = session.currency || 'gbp';
+      } else {
+        console.error("[Payment Callback] No session ID or intent ID provided");
         return res.status(400).json({ 
           success: false,
-          message: "Session ID required" 
+          message: "Payment session required" 
         });
       }
       
-      // Retrieve and validate Stripe session
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      console.log(`[Payment Callback] Stripe session retrieved - Status: ${session.payment_status}, Mode: ${session.mode}`);
-      
-      // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
-      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
-        console.error(`[Payment Callback] Invalid payment status: ${session?.payment_status}`);
-        return res.status(400).json({ 
-          success: false,
-          message: "Payment not completed" 
-        });
-      }
-      
-      const metadata = session.metadata;
       if (!metadata || metadata.isResultsPayment !== 'true') {
         console.error(`[Payment Callback] Invalid session metadata - isResultsPayment: ${metadata?.isResultsPayment}`);
         return res.status(400).json({ 
@@ -1200,17 +1268,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
         
         if (user) {
-          const amount = session.amount_total ?? 0; // Handle 0 for FREE orders
-          const currency = session.currency || 'gbp';
+          const transactionId = intentId || sessionId;
           await sendPaymentReceiptEmail(
             user.email,
             user.firstName || 'Customer',
             assessmentTypes,
-            amount,
-            sessionId,
-            currency
+            paymentAmount,
+            transactionId,
+            paymentCurrency
           );
-          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${currency.toUpperCase()} ${(amount / 100).toFixed(2)})`);
+          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${paymentCurrency.toUpperCase()} ${(paymentAmount / 100).toFixed(2)})`);
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
@@ -1422,27 +1489,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create checkout session with local currency
-      const session = await stripe.checkout.sessions.create({
-        customer_email: customerEmail,
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/assessments`,
-        metadata: {
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `${req.protocol}://${req.hostname}`;
+      
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (isAirwallexConfigured()) {
+        // Calculate total amount for Airwallex (single payment intent)
+        let totalAmount = baseFeeInLocalCurrency;
+        for (const assessmentId of assessmentIds) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
+        }
+        
+        const airwallexAmount = formatAmountForAirwallex(totalAmount);
+        const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: localCurrencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/purchase/success`,
           customerEmail,
-          customerName,
-          firstName,
-          lastName,
-          assessmentIds: JSON.stringify(assessmentIds),
-          isGuestCheckout: "true",
+          description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
+          metadata: {
+            customerEmail,
+            customerName,
+            firstName,
+            lastName,
+            assessmentIds: JSON.stringify(assessmentIds),
+            isGuestCheckout: "true",
+            countryCode: userCountry,
+            pricingTier,
+            localCurrency: localCurrencyCode,
+          },
+        });
+        
+        res.json({ 
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: localCurrencyCode.toUpperCase(),
           countryCode: userCountry,
-          pricingTier,
-          localCurrency: localCurrencyCode,
-        },
-      });
+          amount: airwallexAmount,
+          returnUrl: `${baseUrl}/purchase/success`,
+        });
+      } else {
+        // Fall back to Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          customer_email: customerEmail,
+          line_items: lineItems,
+          mode: "payment",
+          success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/assessments`,
+          metadata: {
+            customerEmail,
+            customerName,
+            firstName,
+            lastName,
+            assessmentIds: JSON.stringify(assessmentIds),
+            isGuestCheckout: "true",
+            countryCode: userCountry,
+            pricingTier,
+            localCurrency: localCurrencyCode,
+          },
+        });
 
-      res.json({ url: session.url });
+        res.json({ provider: 'stripe', url: session.url });
+      }
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });

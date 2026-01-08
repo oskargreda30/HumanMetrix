@@ -17,6 +17,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
+import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } from "./airwallex";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,6 +25,9 @@ const __dirname = dirname(__filename);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover" as any,
 });
+
+// Use Airwallex as the primary payment processor if configured, otherwise fall back to Stripe
+const useAirwallex = () => isAirwallexConfigured();
 
 // Volume-based pricing tiers using shared constants from schema
 // Prices in USD cents - Tier assignment based on monthly volume commitment ($1.00 = 1 Credit, 6-month expiration)
@@ -1337,41 +1341,78 @@ export function registerPartnerRoutes(app: Express) {
         'aiq': 'AIQ Assessment',
       };
       
-      // Create Stripe checkout session
-      const checkoutSession = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [{
-          price_data: {
-            currency: currencyCode.toLowerCase(),
-            product_data: {
-              name: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
-              description: `Unlock your detailed assessment results and personalized insights`,
-            },
-            unit_amount: stripeAmount,
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (useAirwallex()) {
+        // Create Airwallex payment intent
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `b2b_results_${sessionId}_${Date.now()}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: currencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/b2b-results-success/${sessionId}`,
+          customerEmail: session.externalEmail || undefined,
+          description: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
+          metadata: {
+            type: 'b2b_results_unlock',
+            sessionId: session.id,
+            assessmentType: session.assessmentType,
+            partnerId: session.partnerId,
           },
-          quantity: 1,
-        }],
-        mode: 'payment',
-        success_url: `${baseUrl}/b2b-results-success/${sessionId}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/b2b-results-payment/${sessionId}`,
-        customer_email: session.externalEmail || undefined,
-        metadata: {
-          type: 'b2b_results_unlock',
-          sessionId: session.id,
-          assessmentType: session.assessmentType,
-          partnerId: session.partnerId,
-        },
-      });
-      
-      // Store Stripe session ID
-      await storage.updateAssessmentSession(sessionId, {
-        resultsStripeSessionId: checkoutSession.id,
-      } as any);
-      
-      res.json({
-        checkoutUrl: checkoutSession.url,
-        stripeSessionId: checkoutSession.id,
-      });
+        });
+        
+        // Store Airwallex payment intent ID
+        await storage.updateAssessmentSession(sessionId, {
+          resultsAirwallexIntentId: paymentIntent.id,
+        } as any);
+        
+        res.json({
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: currencyCode.toUpperCase(),
+          countryCode: countryCode,
+          amount: airwallexAmount,
+        });
+      } else {
+        // Fall back to Stripe checkout session
+        const checkoutSession = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency: currencyCode.toLowerCase(),
+              product_data: {
+                name: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
+                description: `Unlock your detailed assessment results and personalized insights`,
+              },
+              unit_amount: stripeAmount,
+            },
+            quantity: 1,
+          }],
+          mode: 'payment',
+          success_url: `${baseUrl}/b2b-results-success/${sessionId}?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/b2b-results-payment/${sessionId}`,
+          customer_email: session.externalEmail || undefined,
+          metadata: {
+            type: 'b2b_results_unlock',
+            sessionId: session.id,
+            assessmentType: session.assessmentType,
+            partnerId: session.partnerId,
+          },
+        });
+        
+        // Store Stripe session ID
+        await storage.updateAssessmentSession(sessionId, {
+          resultsStripeSessionId: checkoutSession.id,
+        } as any);
+        
+        res.json({
+          provider: 'stripe',
+          checkoutUrl: checkoutSession.url,
+          stripeSessionId: checkoutSession.id,
+        });
+      }
     } catch (error) {
       console.error("Error creating B2B results checkout:", error);
       res.status(500).json({ error: "Failed to create checkout session" });
@@ -1382,7 +1423,7 @@ export function registerPartnerRoutes(app: Express) {
   app.post("/api/b2b-results/:sessionId/verify-payment", async (req: Request, res: Response) => {
     try {
       const { sessionId } = req.params;
-      const { stripeSessionId } = req.body;
+      const { stripeSessionId, airwallexIntentId, provider } = req.body;
       
       const session = await storage.getAssessmentSession(sessionId);
       
@@ -1390,23 +1431,48 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Session not found" });
       }
       
-      // Verify the Stripe session
-      const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      let paymentAmount: number | null = null;
+      let paymentCurrency: string | null = null;
       
-      if (stripeSession.payment_status !== 'paid') {
-        return res.status(400).json({ error: "Payment not completed" });
-      }
-      
-      if (stripeSession.metadata?.sessionId !== sessionId) {
-        return res.status(400).json({ error: "Payment session mismatch" });
+      if (provider === 'airwallex' && airwallexIntentId) {
+        // Verify Airwallex payment intent
+        const { getPaymentIntent } = await import("./airwallex");
+        const paymentIntent = await getPaymentIntent(airwallexIntentId);
+        
+        if (paymentIntent.status !== 'SUCCEEDED') {
+          return res.status(400).json({ error: "Payment not completed" });
+        }
+        
+        if (paymentIntent.metadata?.sessionId !== sessionId) {
+          return res.status(400).json({ error: "Payment session mismatch" });
+        }
+        
+        paymentAmount = Math.round(paymentIntent.amount * 100); // Convert to pence
+        paymentCurrency = paymentIntent.currency?.toLowerCase();
+      } else if (stripeSessionId) {
+        // Verify the Stripe session (fallback)
+        const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+        
+        if (stripeSession.payment_status !== 'paid') {
+          return res.status(400).json({ error: "Payment not completed" });
+        }
+        
+        if (stripeSession.metadata?.sessionId !== sessionId) {
+          return res.status(400).json({ error: "Payment session mismatch" });
+        }
+        
+        paymentAmount = stripeSession.amount_total;
+        paymentCurrency = stripeSession.currency;
+      } else {
+        return res.status(400).json({ error: "No payment session provided" });
       }
       
       // Mark as paid
       await storage.updateAssessmentSession(sessionId, {
         resultsPaymentStatus: 'paid',
         resultsPaidAt: new Date(),
-        resultsPaymentAmount: stripeSession.amount_total,
-        resultsPaymentCurrency: stripeSession.currency,
+        resultsPaymentAmount: paymentAmount,
+        resultsPaymentCurrency: paymentCurrency,
       } as any);
       
       // Send results email with PDF if email is available

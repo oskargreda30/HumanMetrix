@@ -82,8 +82,26 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
-      if (data.sessionUrl) {
-        // Redirect to Stripe checkout
+      if (data.provider === 'airwallex') {
+        // Use Airwallex hosted payment page
+        const { init } = await import('@airwallex/components-sdk');
+        const env = window.location.hostname.includes('humanmetrix.co.uk') ? 'prod' : 'demo';
+        
+        const { payments } = await init({
+          env,
+          enabledElements: ['payments'],
+        });
+        
+        payments.redirectToCheckout({
+          intent_id: data.intentId,
+          client_secret: data.clientSecret,
+          currency: data.currency,
+          country_code: countryCode,
+          successUrl: `${window.location.origin}/payment-callback?intent_id=${data.intentId}&provider=airwallex&purchaseId=${currentPurchase?.id}`,
+          logoUrl: 'https://humanmetrix.co.uk/assets/humanmetrix-logo.png',
+        });
+      } else if (data.sessionUrl) {
+        // Fall back to Stripe checkout
         window.location.href = data.sessionUrl;
       }
     },
