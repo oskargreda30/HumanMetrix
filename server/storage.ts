@@ -2139,10 +2139,15 @@ export class DatabaseStorage implements IStorage {
       updatedAt: new Date(),
     }).where(eq(partnerAccounts.id, partnerId));
     
-    // Deactivate all API keys
+    // Only deactivate LIVE API keys - test keys should remain active for developer testing
     await db.update(partnerApiKeys).set({
       isActive: false,
-    }).where(eq(partnerApiKeys.partnerId, partnerId));
+    }).where(
+      and(
+        eq(partnerApiKeys.partnerId, partnerId),
+        eq(partnerApiKeys.environment, 'live')
+      )
+    );
   }
 
   async reactivatePartnerApiAccess(partnerId: string): Promise<void> {

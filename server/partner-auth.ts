@@ -72,7 +72,9 @@ export async function validateApiKey(apiKey: string): Promise<{
   }
   
   // Check if partner is suspended due to quota exhaustion
-  if (partner.apiAccessSuspendedAt) {
+  // Test keys are allowed through even when suspended - they're for developer testing only
+  const isTestKey = keyRecord.environment === 'test';
+  if (partner.apiAccessSuspendedAt && !isTestKey) {
     const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
     const purchaseUrl = domain 
       ? `https://${domain}/developers?tab=billing&action=purchase` 
