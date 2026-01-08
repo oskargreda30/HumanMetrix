@@ -1054,9 +1054,10 @@ export function registerPartnerRoutes(app: Express) {
         
         // B2B Test-Taker Results Monetization: Set results unlock date (30 days) and send congratulatory email
         // Skip email workflow for test sessions - these are for developer integration only
+        let resultsUnlockAt: Date | undefined;
         if (!isTestSession) {
           const completedAt = new Date();
-          const resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+          resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
           
           // Update session with results unlock date
           await storage.updateAssessmentSession(sessionId, {
@@ -1067,7 +1068,7 @@ export function registerPartnerRoutes(app: Express) {
         
         // If test-taker has an email, send congratulatory email with payment option
         // Skip for test sessions - no emails should be sent for test API key sessions
-        if (session.externalEmail && partner && !isTestSession) {
+        if (session.externalEmail && partner && !isTestSession && resultsUnlockAt) {
           try {
             // Calculate 75% of B2C price for test-taker's location
             const countryCode = session.testerCountryCode || 'GB';
