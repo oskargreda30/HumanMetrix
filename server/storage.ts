@@ -294,6 +294,7 @@ export interface IStorage {
   getPartnerApiKey(id: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeyByPrefix(prefix: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
+  getAllPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
   updatePartnerApiKey(id: string, updates: Partial<{ keyHash: string; keyHint: string; name: string; permissions: string[]; rateLimit: number }>): Promise<void>;
   updatePartnerApiKeyLastUsed(id: string): Promise<void>;
   revokePartnerApiKey(id: string): Promise<void>;
@@ -1652,6 +1653,12 @@ export class DatabaseStorage implements IStorage {
         eq(partnerApiKeys.partnerId, partnerId),
         eq(partnerApiKeys.isActive, true)
       ))
+      .orderBy(desc(partnerApiKeys.createdAt));
+  }
+
+  async getAllPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {
+    return await db.select().from(partnerApiKeys)
+      .where(eq(partnerApiKeys.partnerId, partnerId))
       .orderBy(desc(partnerApiKeys.createdAt));
   }
 

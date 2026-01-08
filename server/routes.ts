@@ -7215,8 +7215,8 @@ Format your response as JSON with this structure:
         return res.status(404).json({ hasPartnerAccount: false, apiKeys: [] });
       }
       
-      // Get API keys for this partner (don't expose full key or hash)
-      const apiKeys = await storage.getPartnerApiKeysByPartner(matchingPartner.id);
+      // Get ALL API keys for this partner including deactivated ones (don't expose full key or hash)
+      const apiKeys = await storage.getAllPartnerApiKeysByPartner(matchingPartner.id);
       
       const maskedKeys = apiKeys.map(key => ({
         id: key.id,
