@@ -191,7 +191,7 @@ export default function CostEstimatorDialog({
   const regionLabel = pricingTierLabel === "tier1" 
     ? null 
     : pricingTierLabel === "tier2" 
-      ? "30% regional discount applied" 
+      ? "25% regional discount applied" 
       : "50% emerging market discount applied";
 
   return (

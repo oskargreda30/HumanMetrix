@@ -567,12 +567,14 @@ export const BASE_FEE = 1500; // £15.00 in pence
 // ============================================
 
 // Volume tiers based on monthly volume commitment (prices in USD cents)
+// B2B Volume Tiers - prices are Tier 1 (base) rates in USD cents
+// Tier 2 countries get 25% discount (0.75x), Tier 3 countries get 50% discount (0.5x)
 export const B2B_VOLUME_TIERS = {
-  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 2000, trialQuota: 5 },      // $20/test
-  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 1000, trialQuota: 10 },       // $10/test
-  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 500, trialQuota: 20 }, // $5/test
-  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 250, trialQuota: 50 }, // $2.50/test
-  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 100, trialQuota: 50 },              // $1.00/test
+  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 4000, trialQuota: 5 },      // $40/test (Tier 1), $30 (Tier 2), $20 (Tier 3)
+  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 2000, trialQuota: 10 },       // $20/test (Tier 1), $15 (Tier 2), $10 (Tier 3)
+  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 1000, trialQuota: 20 }, // $10/test (Tier 1), $7.50 (Tier 2), $5 (Tier 3)
+  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 500, trialQuota: 50 }, // $5/test (Tier 1), $3.75 (Tier 2), $2.50 (Tier 3)
+  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 200, trialQuota: 50 },              // $2/test (Tier 1), $1.50 (Tier 2), $1.00 (Tier 3)
 } as const;
 
 // Unbundled report pricing discounts

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import ContactFormDialog from "@/components/ContactFormDialog";
-import CostEstimatorDialog from "@/components/CostEstimatorDialog";
 import { 
   Users, 
   TrendingUp, 
@@ -20,8 +19,7 @@ import {
   Send,
   BadgeCheck,
   ChevronRight,
-  ArrowRight,
-  Calculator
+  ArrowRight
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
@@ -120,7 +118,6 @@ const useCases = [
 export default function ForEmployers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
-  const [estimatorOpen, setEstimatorOpen] = useState(false);
 
   const openDialog = (intent: 'demo' | 'sales') => {
     setDialogIntent(intent);
@@ -154,11 +151,6 @@ export default function ForEmployers() {
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
         intent={dialogIntent}
-      />
-      <CostEstimatorDialog
-        open={estimatorOpen}
-        onOpenChange={setEstimatorOpen}
-        onRequestDemo={() => openDialog('demo')}
       />
       <main className="flex-grow relative z-10">
         {/* Hero Section */}
@@ -289,18 +281,9 @@ export default function ForEmployers() {
             </div>
 
             {/* CTA */}
-            <div className="text-center mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="text-center mt-10">
               <Button 
                 size="lg" 
-                onClick={() => setEstimatorOpen(true)}
-                data-testid="button-cost-estimator"
-              >
-                <Calculator className="mr-2 h-4 w-4" />
-                Get a Cost Estimate
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
                 onClick={() => openDialog('demo')}
                 data-testid="button-how-it-works-cta"
               >
