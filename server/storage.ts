@@ -261,6 +261,7 @@ export interface IStorage {
   // User role/organization operations
   updateUserRole(userId: string, role: UserRole): Promise<void>;
   updateUserOrganization(userId: string, organizationId: string | null): Promise<void>;
+  updateUserPassword(userId: string, passwordHash: string): Promise<void>;
   getUsersByOrganization(organizationId: string): Promise<User[]>;
   getCandidatesWithResultsByOrganization(organizationId: string | null): Promise<Array<{
     user: User;
@@ -1433,6 +1434,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({ organizationId, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
       .where(eq(users.id, userId));
   }
 

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -534,6 +534,19 @@ export default function PartnersTab() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to delete partner", variant: "destructive" });
+    },
+  });
+
+  const resendWelcomeEmailMutation = useMutation({
+    mutationFn: async (partnerId: string) => {
+      const res = await apiRequest("POST", `/api/admin/partners/${partnerId}/resend-welcome`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Email sent", description: `Welcome email with new credentials sent to ${data.email}` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to send welcome email", variant: "destructive" });
     },
   });
 
@@ -2123,6 +2136,17 @@ export default function PartnersTab() {
                       <div className="flex gap-1 items-center">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPartner(partner); }} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10" data-testid={`button-manage-keys-${partner.id}`}>
                           <Key className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => { e.stopPropagation(); resendWelcomeEmailMutation.mutate(partner.id); }} 
+                          disabled={resendWelcomeEmailMutation.isPending}
+                          className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10" 
+                          data-testid={`button-resend-email-${partner.id}`}
+                          title="Resend welcome email with new password"
+                        >
+                          {resendWelcomeEmailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                         </Button>
                         <Switch
                           checked={partner.isActive}

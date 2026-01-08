@@ -9491,6 +9491,56 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Resend partner welcome email with new password
+  app.post("/api/admin/partners/:id/resend-welcome", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Find the partner admin user by email
+      const partnerUser = await storage.getUserByEmail(partner.email);
+      if (!partnerUser) {
+        return res.status(404).json({ message: "Partner user account not found" });
+      }
+      
+      // Generate new temporary password
+      const temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Update user's password
+      await storage.updateUserPassword(partnerUser.id, passwordHash);
+      
+      // Send welcome email with new credentials
+      const result = await sendPartnerWelcomeEmail({
+        partnerName: partner.name,
+        companyName: partner.companyName || partner.name,
+        email: partner.email,
+        temporaryPassword,
+        billingType: (partner.billingType as 'payg' | 'subscription' | 'enterprise') || 'payg',
+        freeTestsAllocated: partner.freeTestsAllocated || 0,
+      });
+      
+      if (result.success) {
+        console.log(`Resent welcome email to partner ${partner.email}`);
+        res.json({ message: "Welcome email sent successfully", email: partner.email });
+      } else {
+        res.status(500).json({ message: "Failed to send welcome email" });
+      }
+    } catch (error: any) {
+      console.error("Error resending partner welcome email:", error);
+      res.status(500).json({ message: "Failed to resend welcome email" });
+    }
+  });
+
   // Super Admin: Update partner
   app.put("/api/admin/partners/:id", isAuthenticated, async (req: any, res) => {
     try {
