@@ -1300,7 +1300,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
   };
   
   const mailOptions = {
-    from: `"HumanMetrix" <hello@humanmetrix.co.uk>`,
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: details.email,
     subject: `Welcome to HumanMetrix Partner Programme - Your Account Details`,
     html: `
