@@ -286,8 +286,8 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(4, 'Candidate Rankings Table', 
       'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
     
-    yPos = addGuideItem(5, 'Detailed Candidate Pages', 
-      'In-depth analysis for each candidate including strengths, development areas, risk flags (if any), and detailed skill-by-skill scores against role requirements.', yPos);
+    yPos = addGuideItem(5, 'Critical Skills Dashboard', 
+      'Table showing performance on must-have skills for this role. Each critical skill displays candidate scores with color coding and pass/fail indicators.', yPos);
     
     yPos = addGuideItem(6, 'Skill Score Interpretation', 
       'For each skill: Green = meets/exceeds requirement, Yellow = close to requirement (within 80%), Red = significant gap. "C" badge indicates critical skills.', yPos);
@@ -3265,29 +3265,33 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   
   let yPos = 30;
   
-  // ========== PAGE 1: COVER PAGE ==========
+  // ========== PAGE 1: HOW TO READ THIS REPORT (FIRST) ==========
+  addReportGuidePage(pdf, pageWidth, pageHeight, 'multi-candidate');
+  
+  // ========== PAGE 2: SUMMARY DASHBOARD ==========
+  pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   // Title Section with blue background
-  yPos = 40;
+  yPos = 35;
   pdf.setFillColor(59, 130, 246);
-  pdf.rect(0, yPos, pageWidth, 40, 'F');
+  pdf.rect(0, yPos, pageWidth, 28, 'F');
   
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(22);
+  pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('MULTI-CANDIDATE ROLE FIT COMPARISON', pageWidth / 2, yPos + 15, { align: 'center' });
+  pdf.text('MULTI-CANDIDATE ROLE FIT COMPARISON', pageWidth / 2, yPos + 10, { align: 'center' });
   
-  pdf.setFontSize(12);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`Target Role: ${data.roleSnapshot.roleName}`, pageWidth / 2, yPos + 28, { align: 'center' });
+  pdf.text(`Target Role: ${data.roleSnapshot.roleName}`, pageWidth / 2, yPos + 18, { align: 'center' });
   
-  pdf.setFontSize(9);
-  pdf.text(`Generated: ${new Date().toLocaleDateString()} | ${data.candidateEntries.length} Candidates Analyzed`, pageWidth / 2, yPos + 36, { align: 'center' });
+  pdf.setFontSize(8);
+  pdf.text(`Generated: ${new Date().toLocaleDateString()} | ${data.candidateEntries.length} Candidates`, pageWidth / 2, yPos + 24, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
-  yPos = 90;
+  yPos = 70;
   
   // Summary Cards
   const cardWidth = (pageWidth - 50) / 4;
@@ -3435,11 +3439,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
   }
   
-  // ========== PAGE 2: HOW TO READ OUR REPORTS ==========
-  pdf.addPage();
-  addReportGuidePage(pdf, pageWidth, pageHeight, 'multi-candidate');
-  
-  // ========== PAGE 3+: CANDIDATE RANKINGS ==========
+  // ========== CANDIDATE RANKINGS PAGE ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
@@ -3537,314 +3537,194 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += rowHeight;
   });
   
-  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES PAGE ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 35;
+  // ========== CRITICAL SKILLS DASHBOARD TABLE ==========
+  // Extract critical skills from role snapshot
+  const roleSkills = data.roleSnapshot.requiredSkillScores;
+  const skillCriticality = roleSkills?.skillCriticality || {};
   
-  // RECOMMENDED NEXT STEPS Section
-  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
-  yPos += 5;
+  // Build critical skill list with required scores
+  const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' }> = [];
   
-  // Next steps cards
-  const nextSteps = [
-    { 
-      title: '1. Review Top Candidates',
-      description: 'Focus on candidates in the "Strong Fit" tier (80%+) first. Review their detailed skill breakdowns to understand specific strengths and any development areas.',
-      color: [34, 197, 94] // green
-    },
-    { 
-      title: '2. Prioritize Critical Skills',
-      description: 'Pay close attention to skills marked with "C" (Critical). Gaps in these areas may require structured development plans or should be considered dealbreakers.',
-      color: [239, 68, 68] // red
-    },
-    { 
-      title: '3. Consider Development Potential',
-      description: 'Candidates in the "Moderate Fit" tier (60-79%) may have strong potential with targeted development. Review specific gaps and assess trainability.',
-      color: [234, 179, 8] // yellow
-    },
-    { 
-      title: '4. Use Risk Flags',
-      description: 'Any candidates with risk flags should be discussed with stakeholders. These may indicate data gaps or areas requiring further investigation during interviews.',
-      color: [59, 130, 246] // blue
-    },
-    { 
-      title: '5. Schedule Interviews',
-      description: 'Use the skill breakdowns to prepare targeted interview questions. Focus on validating strengths and exploring development areas identified in this report.',
-      color: [107, 114, 128] // gray
-    }
-  ];
-  
-  nextSteps.forEach((step, i) => {
-    if (yPos > pageHeight - 40) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
-    
-    // Step card
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(step.color[0], step.color[1], step.color[2]);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 20, 2, 2, 'FD');
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(step.color[0], step.color[1], step.color[2]);
-    pdf.text(step.title, 25, yPos + 6);
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(75, 85, 99);
-    const descLines = pdf.splitTextToSize(step.description, pageWidth - 50);
-    descLines.slice(0, 2).forEach((line: string, idx: number) => {
-      pdf.text(line, 25, yPos + 12 + (idx * 4));
+  if (roleSkills?.fitSkills) {
+    Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
+      if (skillCriticality[skillName] === 'critical') {
+        criticalSkillsWithRequirements.push({ skillName, requiredScore: requiredScore as number, category: 'fit' });
+      }
     });
-    
-    yPos += 24;
-  });
-  
-  yPos += 8;
-  
-  // Check if we need a new page for Additional Services section (needs ~85mm space)
-  if (yPos > pageHeight - 85) {
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 35;
+  }
+  if (roleSkills?.aiReadinessSkills) {
+    Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+      if (skillCriticality[skillName] === 'critical') {
+        criticalSkillsWithRequirements.push({ skillName, requiredScore: requiredScore as number, category: 'ai_readiness' });
+      }
+    });
   }
   
-  // ADDITIONAL SERVICES ON REQUEST Section
-  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
-  yPos += 5;
-  
-  // Services info box
-  pdf.setFillColor(239, 246, 255);
-  pdf.setDrawColor(147, 197, 253);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 55, 2, 2, 'FD');
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(30, 64, 175);
-  
-  const services = [
-    { icon: '\u2022', text: 'Structured Interview Guides - Tailored questions based on each candidate\'s skill profile' },
-    { icon: '\u2022', text: '90-Day Onboarding Plans - Role-specific development roadmaps for successful transitions' },
-    { icon: '\u2022', text: 'Team Composition Analysis - Optimize team dynamics with complementary skill profiles' },
-    { icon: '\u2022', text: 'Custom Role Benchmarking - Compare candidates against industry-specific requirements' },
-    { icon: '\u2022', text: 'Executive Summary Reports - Condensed insights for senior leadership presentations' },
-    { icon: '\u2022', text: 'Ongoing Development Tracking - Monitor progress on identified skill gaps over time' }
-  ];
-  
-  services.forEach((service, i) => {
-    pdf.text(`${service.icon} ${service.text}`, 25, yPos + 8 + (i * 7));
-  });
-  
-  yPos += 58;
-  
-  // Contact info
-  pdf.setFillColor(59, 130, 246);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'F');
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('To request any of these services, contact us at enterprise@humanmetrix.co.uk', pageWidth / 2, yPos + 9, { align: 'center' });
-  
-  // ========== DETAILED CANDIDATE PAGES ==========
-  data.candidateEntries.forEach((candidate, idx) => {
+  if (criticalSkillsWithRequirements.length > 0) {
+    // Check page space - need new page for critical skills table
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
     yPos = 35;
     
-    // Candidate header
-    pdf.setFillColor(candidate.fitTier === 'strong' ? 236 : candidate.fitTier === 'moderate' ? 254 : 254,
-                     candidate.fitTier === 'strong' ? 253 : candidate.fitTier === 'moderate' ? 243 : 226,
-                     candidate.fitTier === 'strong' ? 245 : candidate.fitTier === 'moderate' ? 199 : 226);
-    pdf.rect(0, yPos - 5, pageWidth, 30, 'F');
-    
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`#${candidate.rank} - ${candidate.userName}`, 20, yPos + 5);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(candidate.email, 20, yPos + 12);
-    
-    // Fit score badge
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-    const fitColor = candidate.fitTier === 'strong' ? [34, 197, 94] : 
-                     candidate.fitTier === 'moderate' ? [234, 179, 8] : [239, 68, 68];
-    pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-    pdf.text(`${candidate.overallFit}%`, pageWidth - 45, yPos + 8);
-    
-    pdf.setFontSize(10);
-    const tierLabel = candidate.fitTier === 'strong' ? 'Strong Fit' : 
-                      candidate.fitTier === 'moderate' ? 'Moderate Fit' : 'Development Needed';
-    pdf.text(tierLabel, pageWidth - 45, yPos + 16);
-    
-    yPos += 30;
-    
-    // Strengths and Gaps side by side
-    const halfWidth = (pageWidth - 45) / 2;
-    
-    // Strengths box
-    pdf.setFillColor(236, 253, 245);
-    pdf.setDrawColor(134, 239, 172);
-    pdf.roundedRect(20, yPos, halfWidth, 35, 2, 2, 'FD');
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
-    pdf.text('Strengths', 25, yPos + 8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(22, 101, 52);
-    candidate.strengths.slice(0, 4).forEach((s, i) => {
-      const truncated = s.length > 35 ? s.slice(0, 33) + '...' : s;
-      pdf.text(`\u2022 ${truncated}`, 25, yPos + 15 + (i * 5));
-    });
-    
-    // Gaps box
-    pdf.setFillColor(254, 252, 232);
-    pdf.setDrawColor(253, 224, 71);
-    pdf.roundedRect(25 + halfWidth, yPos, halfWidth, 35, 2, 2, 'FD');
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(161, 98, 7);
-    pdf.text('Development Areas', 30 + halfWidth, yPos + 8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(133, 77, 14);
-    candidate.gaps.slice(0, 4).forEach((g, i) => {
-      const truncated = g.length > 35 ? g.slice(0, 33) + '...' : g;
-      pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 15 + (i * 5));
-    });
-    
-    yPos += 42;
-    
-    // Risk flags
-    if (candidate.riskFlags.length > 0) {
-      pdf.setFillColor(254, 226, 226);
-      pdf.setDrawColor(252, 165, 165);
-      pdf.roundedRect(20, yPos, pageWidth - 40, 15, 2, 2, 'FD');
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(220, 38, 38);
-      pdf.text('Risk Flags:', 25, yPos + 6);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(candidate.riskFlags.join(' | '), 60, yPos + 6);
-      yPos += 20;
-    }
-    
-    // Skill scores table
-    yPos = addSectionHeader(pdf, 'DETAILED SKILL SCORES', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'CRITICAL SKILLS DASHBOARD', yPos, pageWidth);
     yPos += 3;
     
-    // Group skills by category
-    const fitSkills = candidate.skillScores.filter(s => s.category === 'fit');
-    const aiSkills = candidate.skillScores.filter(s => s.category === 'ai_readiness');
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Must-have skills for this role. Candidates must meet thresholds (60+) on these skills.', 20, yPos);
+    yPos += 8;
     
-    const renderSkillGroup = (skills: typeof candidate.skillScores, title: string) => {
-      if (skills.length === 0) return;
+    // Sort candidates by rank
+    const sortedCandidates = [...data.candidateEntries].sort((a, b) => {
+      const aHasData = a.hasSufficientData !== false && a.overallFit != null;
+      const bHasData = b.hasSufficientData !== false && b.overallFit != null;
+      if (!aHasData && !bHasData) return 0;
+      if (!aHasData) return 1;
+      if (!bHasData) return -1;
+      if (a.rank === null && b.rank === null) return 0;
+      if (a.rank === null) return 1;
+      if (b.rank === null) return -1;
+      return a.rank - b.rank;
+    });
+    
+    // Calculate column widths dynamically
+    const candidateCount = Math.min(sortedCandidates.length, 5); // Max 5 candidates in table
+    const skillColWidth = 50;
+    const reqColWidth = 18;
+    const candidateColWidth = (pageWidth - 40 - skillColWidth - reqColWidth) / candidateCount;
+    
+    // Table header
+    pdf.setFillColor(254, 226, 226);
+    pdf.rect(20, yPos, pageWidth - 40, 12, 'F');
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(127, 29, 29);
+    pdf.text('Critical Skill', 22, yPos + 8);
+    pdf.text('Req', 20 + skillColWidth + 2, yPos + 8);
+    
+    sortedCandidates.slice(0, candidateCount).forEach((candidateForHeader, idx) => {
+      const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
+      const name = candidateForHeader.userName.split(' ')[0];
+      const truncName = name.length > 10 ? name.slice(0, 9) + '.' : name;
       
-      if (yPos > pageHeight - 50) {
+      // Highlight top candidate
+      if (idx === 0 && candidateForHeader.overallFit != null) {
+        pdf.setFillColor(220, 252, 231);
+        pdf.rect(colX, yPos, candidateColWidth, 12, 'F');
+      }
+      
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(truncName, colX + 2, yPos + 8);
+    });
+    
+    yPos += 14;
+    
+    // Table rows for each critical skill
+    criticalSkillsWithRequirements.forEach((criticalSkill, skillIdx) => {
+      if (yPos > pageHeight - 25) {
         pdf.addPage();
         addBackgroundPattern(pdf, pageWidth, pageHeight);
         addHeader(pdf, pageWidth);
         yPos = 35;
       }
       
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(59, 130, 246);
-      pdf.text(title, 20, yPos);
-      yPos += 6;
+      // Alternating row background
+      if (skillIdx % 2 === 0) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(20, yPos - 3, pageWidth - 40, 12, 'F');
+      }
       
-      skills.forEach((skill, i) => {
-        if (yPos > pageHeight - 20) {
-          pdf.addPage();
-          addBackgroundPattern(pdf, pageWidth, pageHeight);
-          addHeader(pdf, pageWidth);
-          yPos = 35;
+      // Skill name
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(17, 24, 39);
+      const skillNameTrunc = criticalSkill.skillName.length > 25 ? criticalSkill.skillName.slice(0, 23) + '...' : criticalSkill.skillName;
+      pdf.text(skillNameTrunc, 22, yPos + 5);
+      
+      // Required score
+      pdf.setTextColor(220, 38, 38);
+      pdf.text(`${criticalSkill.requiredScore}+`, 20 + skillColWidth + 2, yPos + 5);
+      
+      // Each candidate's score
+      sortedCandidates.slice(0, candidateCount).forEach((candidateForRow, idx) => {
+        const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
+        const skill = candidateForRow.skillScores.find(s => s.skillName === criticalSkill.skillName);
+        const hasData = skill?.dataAvailable !== false && skill?.score != null;
+        const score = skill?.score || 0;
+        const meetsRequired = hasData && score >= criticalSkill.requiredScore;
+        const meetsThreshold = hasData && score >= 60;
+        
+        // Highlight top candidate column
+        if (idx === 0 && candidateForRow.overallFit != null) {
+          pdf.setFillColor(236, 253, 245);
+          pdf.rect(colX, yPos - 3, candidateColWidth, 12, 'F');
         }
-        
-        // Skill name
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(17, 24, 39);
-        const skillLabel = skill.skillName.length > 30 ? skill.skillName.slice(0, 28) + '...' : skill.skillName;
-        pdf.text(skillLabel, 25, yPos);
-        
-        // Criticality badge
-        if (skill.criticality === 'critical') {
-          pdf.setFillColor(239, 68, 68);
-          pdf.circle(95, yPos - 1, 2, 'F');
-          pdf.setFontSize(6);
-          pdf.setTextColor(255, 255, 255);
-          pdf.text('C', 93.8, yPos);
-        }
-        
-        // Score bar
-        const barX = 100;
-        const barWidth = 60;
-        const barHeight = 4;
-        
-        // Check if skill has data
-        const hasData = skill.dataAvailable !== false && skill.score !== null;
         
         if (!hasData) {
-          // Show N/A for skills without data
-          pdf.setFillColor(229, 231, 235);
-          pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
-          
-          pdf.setFontSize(8);
           pdf.setTextColor(156, 163, 175);
           pdf.setFont('helvetica', 'italic');
-          pdf.text('N/A - Not Assessed', barX + 5, yPos);
+          pdf.text('N/A', colX + 2, yPos + 5);
           pdf.setFont('helvetica', 'normal');
         } else {
-          // Score is guaranteed non-null here due to hasData check
-          const actualScore = skill.score as number;
-          
-          // Background bar
-          pdf.setFillColor(229, 231, 235);
-          pdf.roundedRect(barX, yPos - 3, barWidth, barHeight, 1, 1, 'F');
-          
-          // Score fill
-          const scoreColor = actualScore >= skill.requiredScore ? [34, 197, 94] : 
-                             actualScore >= skill.requiredScore * 0.8 ? [234, 179, 8] : [239, 68, 68];
-          pdf.setFillColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-          const fillWidth = Math.min((actualScore / 100) * barWidth, barWidth);
-          pdf.roundedRect(barX, yPos - 3, fillWidth, barHeight, 1, 1, 'F');
-          
-          // Required marker
-          const reqX = barX + (skill.requiredScore / 100) * barWidth;
-          pdf.setDrawColor(17, 24, 39);
-          pdf.setLineWidth(0.5);
-          pdf.line(reqX, yPos - 4, reqX, yPos + 2);
-          
-          // Score text
-          pdf.setFontSize(8);
+          // Score with color coding
+          const scoreColor = meetsRequired ? [34, 197, 94] : meetsThreshold ? [234, 179, 8] : [239, 68, 68];
+          pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-          pdf.text(`${actualScore}`, barX + barWidth + 3, yPos);
-          pdf.setTextColor(107, 114, 128);
-          pdf.text(`/ ${skill.requiredScore}`, barX + barWidth + 12, yPos);
+          pdf.text(`${score}`, colX + 2, yPos + 5);
+          
+          // Status indicator
+          const indicator = meetsRequired ? '\u2713' : meetsThreshold ? '~' : '\u2717';
+          pdf.text(indicator, colX + candidateColWidth - 12, yPos + 5);
+          pdf.setFont('helvetica', 'normal');
         }
-        
-        yPos += 7;
       });
       
-      yPos += 5;
-    };
+      yPos += 12;
+    });
     
-    renderSkillGroup(fitSkills, 'FIT Skills (Behavioral)');
-    renderSkillGroup(aiSkills, 'AI Readiness Skills (Technical)');
-  });
+    // Footer row: Critical Skills Met
+    pdf.setFillColor(229, 231, 235);
+    pdf.rect(20, yPos - 3, pageWidth - 40, 12, 'F');
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('Critical Skills Met', 22, yPos + 5);
+    pdf.text('—', 20 + skillColWidth + 2, yPos + 5);
+    
+    sortedCandidates.slice(0, candidateCount).forEach((candidateForFooter, idx) => {
+      const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
+      
+      const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
+        const skill = candidateForFooter.skillScores.find(s => s.skillName === cs.skillName);
+        return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
+      }).length;
+      
+      const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
+        const skill = candidateForFooter.skillScores.find(s => s.skillName === cs.skillName);
+        return skill?.dataAvailable !== false && skill?.score != null;
+      }).length;
+      
+      if (assessedCritical === 0) {
+        pdf.setTextColor(156, 163, 175);
+        pdf.text('No data', colX + 2, yPos + 5);
+      } else {
+        const allMet = criticalSkillsMet === criticalSkillsWithRequirements.length;
+        pdf.setTextColor(allMet ? 34 : 239, allMet ? 197 : 68, allMet ? 94 : 68);
+        pdf.text(`${criticalSkillsMet}/${assessedCritical}`, colX + 2, yPos + 5);
+      }
+    });
+    
+    yPos += 15;
+    
+    // Legend
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
+  }
   
   // ========== SKILLS LEGEND PAGE ==========
   // Track the page number where Skills Legend starts
