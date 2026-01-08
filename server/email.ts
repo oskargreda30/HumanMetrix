@@ -205,7 +205,7 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
               </div>
               
               <div class="warning">
-                <strong>⚠️ Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email.
+                <strong>Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email.
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -230,7 +230,7 @@ We received a request to reset your password for your HumanMetrix account.
 Click the link below to reset your password:
 ${resetUrl}
 
-⚠️ This link will expire in 1 hour.
+This link will expire in 1 hour.
 
 If you didn't request a password reset, please ignore this email.
 
@@ -632,7 +632,7 @@ export async function sendPartnerQuotaWarning70(
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `⚠️ Test Quota Alert: 70% Used - ${companyName}`,
+    subject: `Test Quota Alert: 70% Used - ${companyName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -651,7 +651,7 @@ export async function sendPartnerQuotaWarning70(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">⚠️ Quota Alert</h1>
+              <h1 style="margin: 0;">Quota Alert</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">HumanMetrix Partner Notification</p>
             </div>
             <div class="content">
@@ -743,7 +743,7 @@ export async function sendPartnerQuotaWarning90(
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `🚨 URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
+    subject: `URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -763,7 +763,7 @@ export async function sendPartnerQuotaWarning90(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">🚨 URGENT: Quota Critical</h1>
+              <h1 style="margin: 0;">URGENT: Quota Critical</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">Immediate Action Required</p>
             </div>
             <div class="content">
@@ -771,7 +771,7 @@ export async function sendPartnerQuotaWarning90(
               
               <div class="urgent">
                 <p style="margin: 0; font-size: 18px; font-weight: bold; color: #dc2626;">
-                  ⚠️ Your test quota is almost exhausted!
+                  Your test quota is almost exhausted!
                 </p>
               </div>
               
@@ -789,7 +789,7 @@ export async function sendPartnerQuotaWarning90(
               <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more tests.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">🛒 Top Up Now</a>
+                <a href="${topUpUrl}" class="button">Top Up Now</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -804,11 +804,11 @@ export async function sendPartnerQuotaWarning90(
       </html>
     `,
     text: `
-🚨 URGENT: Quota Critical - HumanMetrix
+URGENT: Quota Critical - HumanMetrix
 
 Hello ${companyName},
 
-⚠️ YOUR TEST QUOTA IS ALMOST EXHAUSTED!
+YOUR TEST QUOTA IS ALMOST EXHAUSTED!
 
 CRITICAL USAGE LEVEL:
 ${usagePercentage}% used
@@ -890,7 +890,7 @@ export async function sendPartnerAccessSuspendedEmail(
               <p>Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">✅ Restore Access - Purchase Tests</a>
+                <a href="${topUpUrl}" class="button">Restore Access - Purchase Tests</a>
               </div>
               
               <p>Once you purchase additional tests, your API access will be <strong>automatically restored</strong> and your embedded assessments will resume working immediately.</p>
