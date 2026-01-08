@@ -184,7 +184,7 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
 }
 
 // Helper to add "How to Read Our Reports" guide page
-function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, reportType: 'rolefit' | 'comparison' | 'individual'): void {
+function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, reportType: 'rolefit' | 'comparison' | 'individual' | 'multi-candidate'): void {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
@@ -272,6 +272,25 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     
     yPos = addGuideItem(6, 'Trait Profile Summary', 
       'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis or Candidate Comparison tool to determine which traits matter for specific positions.', yPos);
+  } else if (reportType === 'multi-candidate') {
+    // Multi-Candidate Role Fit Report Guide - matches MultiCandidateRoleFitTab.tsx
+    yPos = addGuideItem(1, 'Summary Cards', 
+      'Quick overview showing the top performer, average fit score across all candidates, total candidate count, and distribution by fit tier (Strong 80%+, Moderate 60-79%, Development Needed below 60%).', yPos);
+    
+    yPos = addGuideItem(2, 'Cohort Insights', 
+      'Common strengths shared by multiple candidates and common development areas where the cohort may need improvement. Key differentiators highlight what sets candidates apart.', yPos);
+    
+    yPos = addGuideItem(3, 'Overall Fit Comparison Chart', 
+      'Visual bar chart ranking all candidates by their role fit percentage. Use this to quickly identify top performers and compare relative standings.', yPos);
+    
+    yPos = addGuideItem(4, 'Candidate Rankings Table', 
+      'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
+    
+    yPos = addGuideItem(5, 'Detailed Candidate Pages', 
+      'In-depth analysis for each candidate including strengths, development areas, risk flags (if any), and detailed skill-by-skill scores against role requirements.', yPos);
+    
+    yPos = addGuideItem(6, 'Skill Score Interpretation', 
+      'For each skill: Green = meets/exceeds requirement, Yellow = close to requirement (within 80%), Red = significant gap. "C" badge indicates critical skills.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly
     yPos = addGuideItem(1, 'Candidate Overview', 
@@ -3416,7 +3435,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
   }
   
-  // ========== PAGE 2+: CANDIDATE RANKINGS ==========
+  // ========== PAGE 2: HOW TO READ OUR REPORTS ==========
+  pdf.addPage();
+  addReportGuidePage(pdf, pageWidth, pageHeight, 'multi-candidate');
+  
+  // ========== PAGE 3+: CANDIDATE RANKINGS ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
@@ -3513,6 +3536,121 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     
     yPos += rowHeight;
   });
+  
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES PAGE ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 35;
+  
+  // RECOMMENDED NEXT STEPS Section
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += 5;
+  
+  // Next steps cards
+  const nextSteps = [
+    { 
+      title: '1. Review Top Candidates',
+      description: 'Focus on candidates in the "Strong Fit" tier (80%+) first. Review their detailed skill breakdowns to understand specific strengths and any development areas.',
+      color: [34, 197, 94] // green
+    },
+    { 
+      title: '2. Prioritize Critical Skills',
+      description: 'Pay close attention to skills marked with "C" (Critical). Gaps in these areas may require structured development plans or should be considered dealbreakers.',
+      color: [239, 68, 68] // red
+    },
+    { 
+      title: '3. Consider Development Potential',
+      description: 'Candidates in the "Moderate Fit" tier (60-79%) may have strong potential with targeted development. Review specific gaps and assess trainability.',
+      color: [234, 179, 8] // yellow
+    },
+    { 
+      title: '4. Use Risk Flags',
+      description: 'Any candidates with risk flags should be discussed with stakeholders. These may indicate data gaps or areas requiring further investigation during interviews.',
+      color: [59, 130, 246] // blue
+    },
+    { 
+      title: '5. Schedule Interviews',
+      description: 'Use the skill breakdowns to prepare targeted interview questions. Focus on validating strengths and exploring development areas identified in this report.',
+      color: [107, 114, 128] // gray
+    }
+  ];
+  
+  nextSteps.forEach((step, i) => {
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    // Step card
+    pdf.setFillColor(249, 250, 251);
+    pdf.setDrawColor(step.color[0], step.color[1], step.color[2]);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 20, 2, 2, 'FD');
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(step.color[0], step.color[1], step.color[2]);
+    pdf.text(step.title, 25, yPos + 6);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(75, 85, 99);
+    const descLines = pdf.splitTextToSize(step.description, pageWidth - 50);
+    descLines.slice(0, 2).forEach((line: string, idx: number) => {
+      pdf.text(line, 25, yPos + 12 + (idx * 4));
+    });
+    
+    yPos += 24;
+  });
+  
+  yPos += 8;
+  
+  // Check if we need a new page for Additional Services section (needs ~85mm space)
+  if (yPos > pageHeight - 85) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  }
+  
+  // ADDITIONAL SERVICES ON REQUEST Section
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 5;
+  
+  // Services info box
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(147, 197, 253);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 55, 2, 2, 'FD');
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(30, 64, 175);
+  
+  const services = [
+    { icon: '\u2022', text: 'Structured Interview Guides - Tailored questions based on each candidate\'s skill profile' },
+    { icon: '\u2022', text: '90-Day Onboarding Plans - Role-specific development roadmaps for successful transitions' },
+    { icon: '\u2022', text: 'Team Composition Analysis - Optimize team dynamics with complementary skill profiles' },
+    { icon: '\u2022', text: 'Custom Role Benchmarking - Compare candidates against industry-specific requirements' },
+    { icon: '\u2022', text: 'Executive Summary Reports - Condensed insights for senior leadership presentations' },
+    { icon: '\u2022', text: 'Ongoing Development Tracking - Monitor progress on identified skill gaps over time' }
+  ];
+  
+  services.forEach((service, i) => {
+    pdf.text(`${service.icon} ${service.text}`, 25, yPos + 8 + (i * 7));
+  });
+  
+  yPos += 58;
+  
+  // Contact info
+  pdf.setFillColor(59, 130, 246);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'F');
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('To request any of these services, contact us at enterprise@humanmetrix.co.uk', pageWidth / 2, yPos + 9, { align: 'center' });
   
   // ========== DETAILED CANDIDATE PAGES ==========
   data.candidateEntries.forEach((candidate, idx) => {
@@ -3708,18 +3846,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     renderSkillGroup(aiSkills, 'AI Readiness Skills (Technical)');
   });
   
-  // Add footers to all pages
+  // ========== SKILLS LEGEND PAGE ==========
+  // Track the page number where Skills Legend starts
+  const legendStartPage = pdf.getNumberOfPages() + 1;
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
+  
+  // Add footers to all pages using the proper footer function
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
-    pdf.setFontSize(8);
-    pdf.setTextColor(150, 150, 150);
-    pdf.text(
-      `Page ${i} of ${totalPages} - HumanMetrix Multi-Candidate Comparison`,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
+    // Show Skills Legend note only on pages before the legend starts
+    const isLegendPage = i >= legendStartPage;
+    addFooter(pdf, i, totalPages, pageWidth, pageHeight, !isLegendPage);
   }
   
   // Save
