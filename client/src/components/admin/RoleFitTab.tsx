@@ -1150,10 +1150,10 @@ export default function RoleFitTab() {
           Multiple Candidates
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="single" className="mt-6">
+      <TabsContent value="single" className="mt-6 data-[state=inactive]:hidden" forceMount>
         <SingleCandidateRoleFit />
       </TabsContent>
-      <TabsContent value="multi" className="mt-6">
+      <TabsContent value="multi" className="mt-6 data-[state=inactive]:hidden" forceMount>
         <MultiCandidateRoleFitTab />
       </TabsContent>
     </Tabs>

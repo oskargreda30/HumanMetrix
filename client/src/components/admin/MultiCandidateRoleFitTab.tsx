@@ -29,7 +29,6 @@ import {
 import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
-import { Info } from "lucide-react";
 
 type CandidateEntry = {
   userId: string;
@@ -440,41 +439,57 @@ export default function MultiCandidateRoleFitTab() {
 
       {comparison && (
         <>
-          {/* How to Read This Report Section - Always Visible */}
-          <Card className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <CardTitle className="text-base text-blue-800 dark:text-blue-300">How to Read This Report</CardTitle>
+          {/* How to Read This Report Section - Matching Individual Tab Style */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
+              </p>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid gap-4 md:grid-cols-2 text-sm">
-                <div className="space-y-3">
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Step 1 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Role Alignment Tiers</h4>
-                    <p className="text-muted-foreground text-xs mb-2">These indicate how well a candidate's trait profile matches what the role requires - NOT trait quality:</p>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li><Badge className="bg-green-500 text-white mr-2">75%+</Badge> High alignment with role requirements</li>
-                      <li><Badge className="bg-amber-500 text-white mr-2">50-74%</Badge> Moderate alignment with role requirements</li>
-                      <li><Badge className="bg-red-500 text-white mr-2">&lt;50%</Badge> Lower alignment - may need development for this role</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Skill Criticality</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li><Badge variant="default" className="mr-2">C</Badge> Critical - Must-have for the role</li>
-                      <li><Badge variant="outline" className="mr-2">I</Badge> Important - Significant impact</li>
-                      <li><Badge variant="outline" className="mr-2">N</Badge> Nice-to-have - Beneficial but not essential</li>
-                    </ul>
+                    <p className="font-medium text-sm">Role Alignment Tiers</p>
+                    <p className="text-xs text-muted-foreground">
+                      <Badge className="bg-green-500 text-white mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
+                      <Badge className="bg-amber-500 text-white mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
+                      <Badge className="bg-red-500 text-white mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-3">
+                {/* Step 2 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                   <div>
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Understanding Trait Scores</h4>
-                    <p className="text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong> assessments. Higher scores indicate stronger presence of that trait - whether that's beneficial depends entirely on what the role requires. A high score is not inherently "good" or "bad".</p>
+                    <p className="font-medium text-sm">Skill Criticality</p>
+                    <p className="text-xs text-muted-foreground">
+                      <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600 mr-1">C</Badge> Critical (must-have), 
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 mx-1">I</Badge> Important, 
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 mx-1">N</Badge> Nice-to-have
+                    </p>
                   </div>
+                </div>
+                {/* Step 3 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                   <div>
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Gap Analysis</h4>
-                    <p className="text-muted-foreground">Gaps show the difference between candidate score and role requirement. This helps identify where trait profiles differ from role needs.</p>
+                    <p className="font-medium text-sm">Understanding Trait Scores</p>
+                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong>. Higher scores indicate stronger trait presence - whether beneficial depends on role requirements.</p>
+                  </div>
+                </div>
+                {/* Step 4 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Gap Analysis</p>
+                    <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify where development may be needed.</p>
                   </div>
                 </div>
               </div>
