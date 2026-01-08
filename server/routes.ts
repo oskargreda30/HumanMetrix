@@ -8747,6 +8747,452 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Get candidates from partner's sessions (for analysis tab)
+  app.get("/api/partner/me/candidates", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get all completed sessions for this partner
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = sessions.filter(s => s.status === 'completed');
+      
+      // Group sessions by external email to get unique candidates
+      const candidateMap = new Map<string, {
+        id: string; // Use session ID as pseudo-user ID
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        externalUserId: string | null;
+        sessions: typeof completedSessions;
+      }>();
+      
+      for (const session of completedSessions) {
+        const email = session.externalEmail || session.externalUserId || session.id;
+        
+        if (!candidateMap.has(email)) {
+          // Extract name from email if not available
+          const emailName = session.externalEmail?.split('@')[0] || '';
+          candidateMap.set(email, {
+            id: email, // Use email as unique identifier
+            email: session.externalEmail || 'Unknown',
+            firstName: emailName || null,
+            lastName: null,
+            externalUserId: session.externalUserId,
+            sessions: [],
+          });
+        }
+        
+        candidateMap.get(email)!.sessions.push(session);
+      }
+      
+      // Build candidate list with results
+      const candidates = await Promise.all(
+        Array.from(candidateMap.values()).map(async (candidate) => {
+          const results = await Promise.all(
+            candidate.sessions.map(async (session) => {
+              const result = await storage.getAssessmentResultBySessionId(session.id);
+              return {
+                id: session.id,
+                assessmentType: session.assessmentType,
+                totalScore: result?.overallScore || 0,
+                scores: result?.scores || {},
+                completedAt: session.completedAt?.toISOString() || '',
+                status: session.status,
+              };
+            })
+          );
+          
+          return {
+            user: {
+              id: candidate.id,
+              email: candidate.email,
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              externalUserId: candidate.externalUserId,
+            },
+            results,
+          };
+        })
+      );
+      
+      res.json(candidates);
+    } catch (error) {
+      console.error("Error fetching partner candidates:", error);
+      res.status(500).json({ message: "Failed to fetch candidates" });
+    }
+  });
+
+  // Partner: Compare candidates (for analysis tab)
+  app.get("/api/partner/me/compare", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const candidateIds = Array.isArray(req.query.candidateIds)
+        ? req.query.candidateIds as string[]
+        : [req.query.candidateIds as string].filter(Boolean);
+
+      if (!candidateIds || candidateIds.length < 1) {
+        return res.status(400).json({ message: "At least 1 candidate ID required" });
+      }
+
+      // Get all sessions for this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = allSessions.filter(s => s.status === 'completed');
+      
+      // Filter to only the selected candidates (by email/ID)
+      const candidatesResults = await Promise.all(
+        candidateIds.map(async (candidateId) => {
+          const sessions = completedSessions.filter(
+            s => (s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId)
+          );
+          
+          const results = await Promise.all(
+            sessions.map(async (session) => {
+              const result = await storage.getAssessmentResultBySessionId(session.id);
+              return {
+                assessmentType: session.assessmentType,
+                scores: result?.scores || {},
+                totalScore: result?.overallScore || 0,
+                completedAt: session.completedAt,
+                status: session.status,
+              };
+            })
+          );
+          
+          return results;
+        })
+      );
+
+      // Normalize assessment type for comparison
+      const normalizeAssessmentType = (type: string) => 
+        type.toLowerCase().replace(/[\s-]+/g, '_');
+      
+      // Skill name normalization map
+      const normalizeSkillName = (skill: string): string => {
+        const skillMap: Record<string, string> = {
+          'AI Literacy': 'AI Literacy & Prompt Engineering',
+          'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering',
+          'Technical Fluency': 'Technical Fundamentals',
+          'Domain Fluency': 'Data Fluency',
+          'Critical Thinking': 'Critical Thinking & Problem-Solving',
+          'Adaptive Learning': 'Adaptability & Continuous Learning',
+          'Collaboration': 'Collaboration & Communication',
+          'Cross-functional Collaboration': 'Collaboration & Communication',
+          'Responsible AI': 'Responsible AI & Ethical Awareness',
+          'Creative Innovation': 'Creativity & Innovation',
+        };
+        return skillMap[skill] || skill;
+      };
+
+      const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
+      
+      // Build skills map for radar chart
+      const skillsMap = new Map<string, (number | null)[]>();
+      
+      candidatesResults.forEach((results, candidateIndex) => {
+        const skillBasedResults = results.filter((r) => {
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        skillBasedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              const canonicalSkill = normalizeSkillName(skill);
+              if (!skillsMap.has(canonicalSkill)) {
+                skillsMap.set(canonicalSkill, new Array(candidateIds.length).fill(null));
+              }
+              const scores = skillsMap.get(canonicalSkill)!;
+              scores[candidateIndex] = score as number;
+            });
+          }
+        });
+      });
+
+      // Build radar data
+      const radarData: any[] = [];
+      skillsMap.forEach((scores, skill) => {
+        const dataPoint: any = { skill };
+        scores.forEach((score, index) => {
+          dataPoint[`candidate${index}`] = score ?? 0;
+        });
+        radarData.push(dataPoint);
+      });
+
+      // Build skill comparison table
+      const skillComparison: any[] = [];
+      skillsMap.forEach((scores, skillName) => {
+        skillComparison.push({ skillName, scores });
+      });
+
+      // Calculate average scores
+      const averageScores = candidatesResults.map((results) => {
+        const skillBasedResults = results.filter((r) => {
+          if (r.status !== 'completed' || !r.scores) return false;
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        const allScores: number[] = [];
+        skillBasedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.values(result.scores).forEach((score) => {
+              if (typeof score === 'number') allScores.push(score);
+            });
+          }
+        });
+        
+        return allScores.length > 0 
+          ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+          : 0;
+      });
+
+      // Extract assessment-specific data
+      const fitAssessments = candidatesResults.map((results) => {
+        const fitResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'fit');
+        return fitResult ? { scores: fitResult.scores, completedAt: fitResult.completedAt } : null;
+      });
+
+      const aiReadinessAssessments = candidatesResults.map((results) => {
+        const aiResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'ai_readiness');
+        return aiResult ? { scores: aiResult.scores, completedAt: aiResult.completedAt } : null;
+      });
+
+      const promptArchitectureAssessments = candidatesResults.map((results) => {
+        const paResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'prompt_architecture');
+        return paResult ? { 
+          totalScore: paResult.totalScore, 
+          levels: [],
+          percentile: 0,
+          completedAt: paResult.completedAt 
+        } : null;
+      });
+
+      const aiqAssessments = candidatesResults.map((results) => {
+        const aiqResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'aiq');
+        return aiqResult ? { 
+          totalScore: aiqResult.totalScore, 
+          scores: aiqResult.scores, 
+          completedAt: aiqResult.completedAt 
+        } : null;
+      });
+
+      res.json({
+        radarData,
+        skillComparison,
+        averageScores,
+        hasSkillData: radarData.length > 0,
+        fitAssessments,
+        aiReadinessAssessments,
+        promptArchitectureAssessments,
+        aiqAssessments,
+      });
+    } catch (error) {
+      console.error("Error comparing partner candidates:", error);
+      res.status(500).json({ message: "Failed to compare candidates" });
+    }
+  });
+
+  // Partner: Get available roles (for analysis tab)
+  app.get("/api/partner/me/roles", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Partners can access all job roles
+      const roles = await storage.getAllJobRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching partner roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Partner: Get role alignment for a candidate (for analysis tab)
+  app.get("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.query;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSessions = allSessions.filter(
+        s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
+      );
+      
+      if (candidateSessions.length === 0) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Get role
+      const role = await storage.getJobRole(jobRoleId as string);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Collect all assessment results for this candidate
+      const completedSessions = candidateSessions.filter(s => s.status === 'completed');
+      const results = await Promise.all(
+        completedSessions.map(session => storage.getAssessmentResultBySessionId(session.id))
+      );
+      const validResults = results.filter(r => r !== null && r !== undefined);
+
+      // Calculate fit scores
+      let fitScores: Record<string, number> | null = null;
+      let aiReadinessScores: Record<string, number> | null = null;
+      let promptArchitectureScore: number | null = null;
+      let aiqScore: number | null = null;
+
+      for (const session of completedSessions) {
+        const result = await storage.getAssessmentResultBySessionId(session.id);
+        if (!result) continue;
+        
+        if (session.assessmentType === 'fit') {
+          fitScores = result.scores as Record<string, number>;
+        } else if (session.assessmentType === 'ai_readiness') {
+          aiReadinessScores = result.scores as Record<string, number>;
+        } else if (session.assessmentType === 'prompt_architecture') {
+          promptArchitectureScore = result.overallScore;
+        } else if (session.assessmentType === 'aiq') {
+          aiqScore = result.overallScore;
+        }
+      }
+
+      // Calculate alignment
+      const fitSkillAlignments = role.fitRequiredScores && fitScores
+        ? Object.entries(role.fitRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+            const candidateScore = fitScores![skillName] ?? null;
+            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            return {
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
+              criticality: (role.fitSkillCriticality as any)?.[skillName] || 'important',
+              dataAvailable: candidateScore !== null,
+            };
+          })
+        : null;
+
+      const aiReadinessSkillAlignments = role.aiReadinessRequiredScores && aiReadinessScores
+        ? Object.entries(role.aiReadinessRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+            const candidateScore = aiReadinessScores![skillName] ?? null;
+            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            return {
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
+              criticality: (role.aiReadinessSkillCriticality as any)?.[skillName] || 'important',
+              dataAvailable: candidateScore !== null,
+            };
+          })
+        : null;
+
+      // Calculate overall fit score
+      const allAlignments = [
+        ...(fitSkillAlignments || []),
+        ...(aiReadinessSkillAlignments || []),
+      ];
+      
+      const scoredAlignments = allAlignments.filter(a => a.candidateScore !== null);
+      const overallFit = scoredAlignments.length > 0
+        ? Math.round(scoredAlignments.reduce((sum, a) => sum + (a.candidateScore || 0), 0) / scoredAlignments.length)
+        : null;
+
+      // Determine strengths and gaps
+      const strengths = scoredAlignments
+        .filter(a => (a.gap || 0) >= 10)
+        .map(a => a.skillName)
+        .slice(0, 3);
+      
+      const gaps = scoredAlignments
+        .filter(a => (a.gap || 0) < -10)
+        .map(a => a.skillName)
+        .slice(0, 3);
+
+      res.json({
+        overallFit,
+        fitSkillAlignments,
+        aiReadinessSkillAlignments,
+        strengths,
+        gaps,
+        cohortBenchmarks: null, // Partners don't see cross-platform benchmarks
+        roleFlexibility: [],
+        dataCoverage: {
+          percentage: Math.round((scoredAlignments.length / allAlignments.length) * 100) || 0,
+          assessedSkillCount: scoredAlignments.length,
+          totalRequiredSkills: allAlignments.length,
+          missingAssessments: [
+            ...(fitScores ? [] : ['FIT Assessment']),
+            ...(aiReadinessScores ? [] : ['AI Readiness Assessment']),
+            ...(promptArchitectureScore !== null ? [] : ['Prompt Architecture']),
+            ...(aiqScore !== null ? [] : ['AIQ Assessment']),
+          ],
+          hasSufficientData: scoredAlignments.length >= 3,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching partner role alignment:", error);
+      res.status(500).json({ message: "Failed to fetch role alignment" });
+    }
+  });
+
+  // Partner: Trigger role alignment analysis (POST)
+  app.post("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.body;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSessions = allSessions.filter(
+        s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
+      );
+      
+      if (candidateSessions.length === 0) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // For now, redirect to the GET endpoint logic (no AI generation for partners)
+      // This allows the frontend to use the same mutation pattern
+      const url = new URL(req.protocol + '://' + req.get('host') + '/api/partner/me/role-alignment');
+      url.searchParams.set('candidateId', candidateId);
+      url.searchParams.set('jobRoleId', jobRoleId);
+      
+      return res.redirect(307, url.pathname + url.search);
+    } catch (error) {
+      console.error("Error triggering partner role alignment:", error);
+      res.status(500).json({ message: "Failed to analyze role alignment" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {

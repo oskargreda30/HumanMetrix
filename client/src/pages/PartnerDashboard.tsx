@@ -30,6 +30,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
+import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -1430,6 +1431,9 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analytics
+              </TabsTrigger>
+              <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analysis
               </TabsTrigger>
               {/* Account & Operations */}
               <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
@@ -3663,6 +3667,11 @@ export default function PartnerDashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Analysis Tab */}
+            <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
+              <PartnerAnalysisTab />
             </TabsContent>
 
             {/* Notifications Tab */}
