@@ -10211,7 +10211,8 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      const keys = await storage.getApiKeysByPartner(req.params.id);
+      // Get ALL keys including deactivated ones for super admin testing
+      const keys = await storage.getAllPartnerApiKeysByPartner(req.params.id);
       
       // Don't expose the full hash, just metadata
       const safeKeys = keys.map(k => ({
