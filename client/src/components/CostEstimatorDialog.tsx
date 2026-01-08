@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import {
+  CURRENCIES,
+  COUNTRY_PRICING_TIER,
+  getPPPMultiplier,
+  getCurrencyForCountry,
+  convertUSDCentsToGBPPence,
+  roundPriceUp,
+  type CurrencyConfig,
+} from "@shared/currencies";
+import { B2B_VOLUME_TIERS } from "@shared/schema";
 
 interface CostEstimatorDialogProps {
   open: boolean;
@@ -30,33 +41,136 @@ interface CostEstimatorDialogProps {
   onRequestDemo?: () => void;
 }
 
-const REGIONS = [
-  { id: "tier1", name: "North America, Western Europe, ANZ", multiplier: 1.0, description: "US, UK, EU, Australia, etc." },
-  { id: "tier2", name: "Eastern Europe, Latin America, Middle East", multiplier: 0.7, description: "Brazil, Poland, Turkey, etc." },
-  { id: "tier3", name: "Southeast Asia, South Asia, Africa", multiplier: 0.5, description: "India, Philippines, Nigeria, etc." },
+const POPULAR_COUNTRIES = [
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "AU", name: "Australia" },
+  { code: "SG", name: "Singapore" },
+  { code: "PH", name: "Philippines" },
+  { code: "IN", name: "India" },
+  { code: "DE", name: "Germany" },
+  { code: "AE", name: "United Arab Emirates" },
+];
+
+const ALL_COUNTRIES = [
+  { code: "AR", name: "Argentina" },
+  { code: "AU", name: "Australia" },
+  { code: "AT", name: "Austria" },
+  { code: "BH", name: "Bahrain" },
+  { code: "BD", name: "Bangladesh" },
+  { code: "BE", name: "Belgium" },
+  { code: "BR", name: "Brazil" },
+  { code: "BG", name: "Bulgaria" },
+  { code: "CA", name: "Canada" },
+  { code: "CL", name: "Chile" },
+  { code: "CN", name: "China" },
+  { code: "CO", name: "Colombia" },
+  { code: "HR", name: "Croatia" },
+  { code: "CY", name: "Cyprus" },
+  { code: "CZ", name: "Czech Republic" },
+  { code: "DK", name: "Denmark" },
+  { code: "EC", name: "Ecuador" },
+  { code: "EG", name: "Egypt" },
+  { code: "EE", name: "Estonia" },
+  { code: "FI", name: "Finland" },
+  { code: "FR", name: "France" },
+  { code: "DE", name: "Germany" },
+  { code: "GH", name: "Ghana" },
+  { code: "GR", name: "Greece" },
+  { code: "HK", name: "Hong Kong" },
+  { code: "HU", name: "Hungary" },
+  { code: "IN", name: "India" },
+  { code: "ID", name: "Indonesia" },
+  { code: "IE", name: "Ireland" },
+  { code: "IL", name: "Israel" },
+  { code: "IT", name: "Italy" },
+  { code: "JP", name: "Japan" },
+  { code: "KE", name: "Kenya" },
+  { code: "KR", name: "South Korea" },
+  { code: "KW", name: "Kuwait" },
+  { code: "LV", name: "Latvia" },
+  { code: "LT", name: "Lithuania" },
+  { code: "LU", name: "Luxembourg" },
+  { code: "MY", name: "Malaysia" },
+  { code: "MT", name: "Malta" },
+  { code: "MX", name: "Mexico" },
+  { code: "MA", name: "Morocco" },
+  { code: "NP", name: "Nepal" },
+  { code: "NL", name: "Netherlands" },
+  { code: "NZ", name: "New Zealand" },
+  { code: "NG", name: "Nigeria" },
+  { code: "NO", name: "Norway" },
+  { code: "OM", name: "Oman" },
+  { code: "PK", name: "Pakistan" },
+  { code: "PE", name: "Peru" },
+  { code: "PH", name: "Philippines" },
+  { code: "PL", name: "Poland" },
+  { code: "PT", name: "Portugal" },
+  { code: "QA", name: "Qatar" },
+  { code: "RO", name: "Romania" },
+  { code: "RU", name: "Russia" },
+  { code: "SA", name: "Saudi Arabia" },
+  { code: "SG", name: "Singapore" },
+  { code: "SK", name: "Slovakia" },
+  { code: "SI", name: "Slovenia" },
+  { code: "ZA", name: "South Africa" },
+  { code: "ES", name: "Spain" },
+  { code: "LK", name: "Sri Lanka" },
+  { code: "SE", name: "Sweden" },
+  { code: "CH", name: "Switzerland" },
+  { code: "TW", name: "Taiwan" },
+  { code: "TZ", name: "Tanzania" },
+  { code: "TH", name: "Thailand" },
+  { code: "TR", name: "Turkey" },
+  { code: "UG", name: "Uganda" },
+  { code: "UA", name: "Ukraine" },
+  { code: "AE", name: "United Arab Emirates" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "US", name: "United States" },
+  { code: "VN", name: "Vietnam" },
 ];
 
 const COMPANY_SIZES = [
-  { id: "boutique", name: "Small (1-100 hires/year)", volumeRange: "1-100", basePrice: 20, description: "Startups & small businesses" },
-  { id: "growth", name: "Medium (101-500 hires/year)", volumeRange: "101-500", basePrice: 10, description: "Growing companies" },
-  { id: "small_enterprise", name: "Large (501-2,500 hires/year)", volumeRange: "501-2,500", basePrice: 5, description: "Established enterprises" },
-  { id: "enterprise", name: "Enterprise (2,501-9,999 hires/year)", volumeRange: "2,501-9,999", basePrice: 2.5, description: "Large corporations" },
-  { id: "pro", name: "Enterprise+ (10,000+ hires/year)", volumeRange: "10,000+", basePrice: 1, description: "Global organizations" },
+  { id: "BOUTIQUE", name: "Small (1-100 hires/year)", description: "Startups & small businesses" },
+  { id: "GROWTH", name: "Medium (101-500 hires/year)", description: "Growing companies" },
+  { id: "SMALL_ENTERPRISE", name: "Large (501-2,500 hires/year)", description: "Established enterprises" },
+  { id: "ENTERPRISE", name: "Enterprise (2,501-9,999 hires/year)", description: "Large corporations" },
+  { id: "PRO", name: "Enterprise+ (10,000+ hires/year)", description: "Global organizations" },
 ];
 
-function formatCurrency(value: number): string {
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+function formatLocalCurrency(amount: number, currency: CurrencyConfig): string {
+  const roundedAmount = roundPriceUp(amount);
+  const formattedNumber = roundedAmount.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).replace(/,/g, currency.thousandsSeparator);
+  
+  if (currency.symbolPosition === "before") {
+    return `${currency.symbol}${formattedNumber}`;
   }
-  return `$${value.toFixed(0)}`;
+  return `${formattedNumber}${currency.symbol}`;
 }
 
-function getPriceRange(baseCost: number): { low: string; high: string } {
-  const lowMultiplier = 0.85;
-  const highMultiplier = 1.15;
-  const low = Math.floor(baseCost * lowMultiplier);
-  const high = Math.ceil(baseCost * highMultiplier);
-  return { low: formatCurrency(low), high: formatCurrency(high) };
+function calculateLocalPrice(
+  priceUSDCents: number,
+  countryCode: string,
+  currency: CurrencyConfig
+): number {
+  const priceGBPPence = convertUSDCentsToGBPPence(priceUSDCents);
+  const pppMultiplier = getPPPMultiplier(countryCode);
+  const adjustedPriceGBPPence = priceGBPPence * pppMultiplier;
+  const priceInGBP = adjustedPriceGBPPence / 100;
+  const priceInLocal = priceInGBP * currency.exchangeRate;
+  return priceInLocal;
+}
+
+function getEstimateRange(baseAmount: number, currency: CurrencyConfig): { low: string; high: string } {
+  const lowAmount = roundPriceUp(baseAmount * 0.85);
+  const highAmount = roundPriceUp(baseAmount * 1.15);
+  return {
+    low: formatLocalCurrency(lowAmount, currency),
+    high: formatLocalCurrency(highAmount, currency),
+  };
 }
 
 export default function CostEstimatorDialog({
@@ -64,22 +178,44 @@ export default function CostEstimatorDialog({
   onOpenChange,
   onRequestDemo,
 }: CostEstimatorDialogProps) {
-  const [region, setRegion] = useState("tier1");
-  const [companySize, setCompanySize] = useState("growth");
+  const [countryCode, setCountryCode] = useState("US");
+  const [companySize, setCompanySize] = useState("GROWTH");
   const [assessmentCount, setAssessmentCount] = useState([50]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedRegion = REGIONS.find((r) => r.id === region) || REGIONS[0];
-  const selectedCompany = COMPANY_SIZES.find((c) => c.id === companySize) || COMPANY_SIZES[1];
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery) return ALL_COUNTRIES;
+    const query = searchQuery.toLowerCase();
+    return ALL_COUNTRIES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.code.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
-  const basePerTest = selectedCompany.basePrice;
-  const adjustedPerTest = basePerTest * selectedRegion.multiplier;
-  const totalCost = adjustedPerTest * assessmentCount[0];
+  const selectedCountry = ALL_COUNTRIES.find((c) => c.code === countryCode) || ALL_COUNTRIES[0];
+  const currency = getCurrencyForCountry(countryCode);
+  const pppMultiplier = getPPPMultiplier(countryCode);
+  const tier = B2B_VOLUME_TIERS[companySize as keyof typeof B2B_VOLUME_TIERS];
 
-  const perTestRange = getPriceRange(adjustedPerTest);
-  const totalRange = getPriceRange(totalCost);
+  const pricePerTestLocal = calculateLocalPrice(tier.pricePerTest, countryCode, currency);
+  const totalLocal = pricePerTestLocal * assessmentCount[0];
 
-  const annualSavingsVsRetail = (20 - adjustedPerTest) * assessmentCount[0];
-  const savingsPercent = Math.round(((20 - adjustedPerTest) / 20) * 100);
+  const perTestRange = getEstimateRange(pricePerTestLocal, currency);
+  const totalRange = getEstimateRange(totalLocal, currency);
+
+  const retailPriceLocal = calculateLocalPrice(B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest, countryCode, currency);
+  
+  const savingsPercent = retailPriceLocal > pricePerTestLocal 
+    ? Math.round(((retailPriceLocal - pricePerTestLocal) / retailPriceLocal) * 100)
+    : 0;
+
+  const pricingTierLabel = COUNTRY_PRICING_TIER[countryCode] || "tier1";
+  const regionLabel = pricingTierLabel === "tier1" 
+    ? "Standard pricing" 
+    : pricingTierLabel === "tier2" 
+      ? "30% regional discount applied" 
+      : "50% emerging market discount applied";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,31 +234,65 @@ export default function CostEstimatorDialog({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Your Region</Label>
+              <Label className="text-sm font-medium">Your Country</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>Pricing is adjusted based on local purchasing power to ensure fair access globally.</p>
+                  <p>Pricing is adjusted based on local purchasing power and displayed in your local currency.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
-            <Select value={region} onValueChange={setRegion}>
-              <SelectTrigger data-testid="select-region">
-                <SelectValue placeholder="Select your region" />
-              </SelectTrigger>
-              <SelectContent>
-                {REGIONS.map((r) => (
-                  <SelectItem key={r.id} value={r.id} data-testid={`region-option-${r.id}`}>
-                    <div className="flex flex-col">
-                      <span>{r.name}</span>
-                      <span className="text-xs text-muted-foreground">{r.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            
+            <div className="flex flex-wrap gap-2 mb-2">
+              {POPULAR_COUNTRIES.map((c) => (
+                <Button
+                  key={c.code}
+                  variant={countryCode === c.code ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCountryCode(c.code)}
+                  data-testid={`country-quick-${c.code}`}
+                >
+                  {c.name}
+                </Button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <Input
+                placeholder="Search for your country..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="mb-2"
+                data-testid="input-country-search"
+              />
+              {searchQuery && filteredCountries.length > 0 && (
+                <div className="absolute z-10 w-full bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {filteredCountries.slice(0, 10).map((c) => (
+                    <button
+                      key={c.code}
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                      onClick={() => {
+                        setCountryCode(c.code);
+                        setSearchQuery("");
+                      }}
+                      data-testid={`country-search-${c.code}`}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
+              <span>Selected: <strong>{selectedCountry.name}</strong></span>
+              <span className="text-primary">({currency.code})</span>
+              {pppMultiplier < 1 && (
+                <span className="text-green-600 dark:text-green-400 ml-2">{regionLabel}</span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
