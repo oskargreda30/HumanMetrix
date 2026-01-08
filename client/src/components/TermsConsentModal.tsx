@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Shield, FileText, CheckCircle2 } from "lucide-react";
+import { Shield, FileText, CheckCircle2, LayoutDashboard } from "lucide-react";
 
 interface TermsConsentModalProps {
   open: boolean;
@@ -54,7 +54,7 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-[520px] [&>button]:hidden"
+        className="sm:max-w-[750px] [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -153,15 +153,27 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
           </div>
         </div>
 
-        <Button
-          onClick={handleAccept}
-          disabled={!termsAccepted || acceptTermsMutation.isPending}
-          className="w-full gap-2"
-          data-testid="button-start-assessment"
-        >
-          <FileText className="h-4 w-4" />
-          {acceptTermsMutation.isPending ? "Saving..." : "Start My Assessment Journey"}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleAccept}
+            disabled={!termsAccepted || acceptTermsMutation.isPending}
+            className="flex-1 gap-2"
+            data-testid="button-start-assessment"
+          >
+            <FileText className="h-4 w-4" />
+            {acceptTermsMutation.isPending ? "Saving..." : "Start My Assessment Journey"}
+          </Button>
+          <Button
+            onClick={handleAccept}
+            disabled={!termsAccepted || acceptTermsMutation.isPending}
+            variant="outline"
+            className="flex-1 gap-2"
+            data-testid="button-continue-dashboard"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            {acceptTermsMutation.isPending ? "Saving..." : "Continue to Dashboard"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
