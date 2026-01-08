@@ -2001,7 +2001,10 @@ export default function PartnersTab() {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
                       <SelectItem value="none" className="text-slate-400">None</SelectItem>
-                      {organizations?.map((org) => (
+                      {/* Deduplicate organizations by ID to handle any duplicate entries */}
+                      {organizations?.filter((org, index, arr) => 
+                        arr.findIndex(o => o.id === org.id) === index
+                      ).map((org) => (
                         <SelectItem key={org.id} value={org.id} className="text-white">
                           {org.name}
                         </SelectItem>

@@ -40,7 +40,7 @@ export default function WidgetTestTab() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
   const [assessmentType, setAssessmentType] = useState<string>("fit");
-  const [testEmail, setTestEmail] = useState<string>("test@example.com");
+  const [testEmail, setTestEmail] = useState<string>("");
   const [externalUserId, setExternalUserId] = useState<string>("");
   const [metadataJson, setMetadataJson] = useState<string>('{\n  "jobRole": "Software Engineer",\n  "department": "Engineering"\n}');
   const [metadataError, setMetadataError] = useState<string>("");
@@ -239,7 +239,9 @@ export default function WidgetTestTab() {
                   placeholder="candidate@example.com"
                   data-testid="input-widget-test-email"
                 />
-                <p className="text-xs text-slate-500">Candidate email for notifications (optional)</p>
+                <p className="text-xs text-slate-500">
+                  {testEmail ? "Candidate will receive results at this email" : "Leave empty to prompt test-taker for their email (recommended for live testing)"}
+                </p>
               </div>
 
               <div className="space-y-2">

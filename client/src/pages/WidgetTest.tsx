@@ -45,7 +45,7 @@ export default function WidgetTest() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
   const [assessmentType, setAssessmentType] = useState<string>("fit");
-  const [testEmail, setTestEmail] = useState<string>("test@example.com");
+  const [testEmail, setTestEmail] = useState<string>("");
   const [currentSession, setCurrentSession] = useState<TestSession | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [widgetTheme, setWidgetTheme] = useState<string>("light");
