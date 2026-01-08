@@ -605,13 +605,22 @@ export default function EmbedAssessment() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Assessment Complete</h2>
             <p className={`${textSecondary} mb-4`}>Thank you for completing the assessment.</p>
-            {completedScores && (
-              <div className={`${bgCardAlt} rounded-lg p-4`}>
-                <p className="text-lg font-semibold" style={{ color: accentColor }}>
-                  Score: {completedScores.totalScore}%
-                </p>
+            
+            <div className={`${bgCardAlt} rounded-lg p-4 text-left`}>
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: accentColor }} />
+                <div>
+                  <p className={`font-medium ${textPrimary} mb-2`}>Check Your Email</p>
+                  <p className={`text-sm ${textSecondary} mb-3`}>
+                    We've sent you an email with a link to view your detailed results.
+                  </p>
+                  <div className={`text-xs ${textMuted} space-y-1`}>
+                    <p>• <strong>View results now:</strong> Follow the payment link in the email</p>
+                    <p>• <strong>Free access:</strong> Results unlock automatically after 30 days</p>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
