@@ -9285,11 +9285,16 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
       
-      // Check if user with this email already exists
+      // Check if user with this email already exists - reject to prevent silent failures
       const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "A user with this email already exists. Please use a different email address, or contact the user to update their account." 
+        });
+      }
       
       let finalOrganizationId = organizationId;
-      let partnerUser = existingUser;
+      let partnerUser: any = null;
       let temporaryPassword: string | null = null;
       
       // If organizationId provided, verify it exists
@@ -9303,10 +9308,6 @@ Format your response as JSON with this structure:
         if (existingOrgPartner) {
           return res.status(400).json({ message: "This organisation is already linked to another partner account" });
         }
-      } else if (existingUser?.organizationId) {
-        // Use existing user's organization
-        finalOrganizationId = existingUser.organizationId;
-        console.log(`Using existing user's organisation ${existingUser.organizationId} for partner`);
       } else {
         // Create a new organisation for this partner
         const orgName = companyName || name;
@@ -9327,38 +9328,28 @@ Format your response as JSON with this structure:
       const validBillingTypes = ['payg', 'subscription', 'enterprise'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'payg';
       
-      if (existingUser) {
-        // Update existing user to be partner_admin and link to partner organization
-        await storage.updateUserRole(existingUser.id, 'partner_admin');
-        if (finalOrganizationId) {
-          await storage.updateUserOrganization(existingUser.id, finalOrganizationId);
-        }
-        partnerUser = { ...existingUser, role: 'partner_admin', organizationId: finalOrganizationId };
-        console.log(`Updated existing user ${existingUser.id} to partner_admin role for partner organisation`);
-      } else {
-        // Generate temporary password for the partner admin user
-        temporaryPassword = generateTemporaryPassword();
-        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-        
-        // Split the name into first and last name
-        const nameParts = name.trim().split(' ');
-        const firstName = nameParts[0] || name;
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-        
-        // Create partner_admin user for the partner's organisation
-        partnerUser = await storage.createUser({
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          role: 'partner_admin',
-          organizationId: finalOrganizationId,
-          profileImageUrl: null,
-        });
-        
-        createdUserId = partnerUser.id; // Track for cleanup
-        console.log(`Created admin user ${partnerUser.id} for partner organisation`);
-      }
+      // Generate temporary password for the partner admin user
+      temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Split the name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || name;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+      
+      // Create partner_admin user for the partner's organisation
+      partnerUser = await storage.createUser({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'partner_admin',
+        organizationId: finalOrganizationId,
+        profileImageUrl: null,
+      });
+      
+      createdUserId = partnerUser.id; // Track for cleanup
+      console.log(`Created admin user ${partnerUser.id} for partner organisation`);
       
       // Calculate 7-day expiry for free tests if allocated
       const freeTestsExpiryDate = freeTestsAllocated && freeTestsAllocated > 0 
@@ -9436,22 +9427,17 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Send welcome email with login credentials (only if new user created with temp password)
+      // Send welcome email with login credentials
       try {
-        if (temporaryPassword) {
-          await sendPartnerWelcomeEmail({
-            partnerName: name,
-            companyName: companyName || name,
-            email,
-            temporaryPassword,
-            billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
-            freeTestsAllocated: freeTestsAllocated || 0,
-          });
-          console.log(`Sent welcome email to partner ${email}`);
-        } else {
-          // For existing users, send a simpler notification email
-          console.log(`Partner account created for existing user ${email} - no welcome email sent (they already have login credentials)`);
-        }
+        await sendPartnerWelcomeEmail({
+          partnerName: name,
+          companyName: companyName || name,
+          email,
+          temporaryPassword: temporaryPassword!,
+          billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
+          freeTestsAllocated: freeTestsAllocated || 0,
+        });
+        console.log(`Sent welcome email to partner ${email}`);
       } catch (emailError) {
         console.error("Error sending partner welcome email:", emailError);
         // Don't fail partner creation, just log the error
