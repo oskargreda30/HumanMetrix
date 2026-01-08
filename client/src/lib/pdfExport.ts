@@ -3255,6 +3255,11 @@ interface MultiCandidateComparisonData {
     commonStrengths: string[];
     commonGaps: string[];
     keyDifferentiators: string[];
+    // Advanced Analytics (optional)
+    skillDominance?: Array<{ candidateName: string; winsCount: number; totalSkills: number }>;
+    consistencyScores?: Array<{ candidateName: string; consistencyScore: number; interpretation: string }>;
+    criticalGapRatios?: Array<{ candidateName: string; criticalGaps: number; totalCritical: number; riskLevel: string }>;
+    largestDifferential?: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number };
   };
   barChartImage?: string | null;
 }
@@ -3294,169 +3299,183 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setTextColor(0, 0, 0);
   yPos = 70;
   
-  // Summary Cards (3 cards: Top Performer, Candidates, Distribution) - Compact
-  const cardWidth = (pageWidth - 45) / 3;
-  const cardHeight = 22;
+  // ========== UNIFORM TYPOGRAPHY CONSTANTS ==========
+  const LABEL_SIZE = 8;
+  const VALUE_SIZE = 12;
+  const BODY_SIZE = 8;
+  const CARD_PADDING = 6;
+  const BLOCK_SPACING = 12;
+  const ITEM_SPACING = 4;
+  
+  // Summary Cards (3 cards: Top Performer, Candidates, Distribution) - Uniform styling
+  const cardWidth = (pageWidth - 50) / 3;
+  const cardHeight = 28;
   const cardGap = 5;
   
   // Card 1: Top Performer
   pdf.setFillColor(236, 253, 245);
   pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.3);
   pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  pdf.setFontSize(6);
+  pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('TOP PERFORMER', 22, yPos + 5);
-  pdf.setFontSize(9);
+  pdf.text('TOP PERFORMER', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setFontSize(VALUE_SIZE);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  const topName = data.summaryInsights.topPerformer.userName.length > 12 
-    ? data.summaryInsights.topPerformer.userName.slice(0, 10) + '...' 
-    : data.summaryInsights.topPerformer.userName;
-  pdf.text(`${topName} - ${data.summaryInsights.topPerformer.overallFit}%`, 22, yPos + 14);
+  // Null-safety for topPerformer
+  const topPerformerName = String(data.summaryInsights.topPerformer?.userName || 'N/A');
+  const topPerformerFitVal = data.summaryInsights.topPerformer?.overallFit ?? 0;
+  const topName = topPerformerName.length > 14 
+    ? topPerformerName.slice(0, 12) + '...' 
+    : topPerformerName;
+  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 12);
+  pdf.setFontSize(VALUE_SIZE + 2);
+  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 20);
   
   // Card 2: Total Candidates
   const card2X = 20 + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  pdf.setFontSize(6);
+  pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('CANDIDATES', card2X + 2, yPos + 5);
-  pdf.setFontSize(14);
+  pdf.text('CANDIDATES', card2X + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setFontSize(VALUE_SIZE + 4);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(`${data.candidateEntries.length}`, card2X + 2, yPos + 16);
+  pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + CARD_PADDING + 18);
   
   // Card 3: Distribution
   const card3X = card2X + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-  pdf.setFontSize(6);
+  pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('DISTRIBUTION', card3X + 2, yPos + 5);
-  pdf.setFontSize(7);
+  pdf.text('DISTRIBUTION', card3X + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setFontSize(BODY_SIZE);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(34, 197, 94);
-  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + 2, yPos + 12);
+  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 10);
   pdf.setTextColor(234, 179, 8);
-  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + 2, yPos + 17);
+  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 16);
   pdf.setTextColor(239, 68, 68);
-  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + 2, yPos + 22);
+  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 22);
   
   pdf.setTextColor(0, 0, 0);
-  yPos += cardHeight + 10;
+  yPos += cardHeight + BLOCK_SPACING;
   
-  // Common Insights Section - Expanded with AI Suggestions
+  // ========== COHORT INSIGHTS - Uniform styling ==========
   yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
-  yPos += 5;
+  yPos += CARD_PADDING;
   
-  const halfWidth = (pageWidth - 45) / 2;
-  const insightBoxHeight = 40;
+  const halfWidth = (pageWidth - 50) / 2;
+  const insightBoxHeight = 38;
   
   // Common Strengths
   pdf.setFillColor(236, 253, 245);
   pdf.setDrawColor(134, 239, 172);
+  pdf.setLineWidth(0.3);
   pdf.roundedRect(20, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
-  pdf.setFontSize(9);
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  pdf.text('Common Strengths', 25, yPos + 8);
+  pdf.text('Common Strengths', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
+  pdf.setFontSize(BODY_SIZE);
   pdf.setTextColor(22, 101, 52);
   if (data.summaryInsights.commonStrengths.length > 0) {
     data.summaryInsights.commonStrengths.slice(0, 4).forEach((s, i) => {
-      const truncated = s.length > 38 ? s.slice(0, 36) + '...' : s;
-      pdf.text(`\u2022 ${truncated}`, 25, yPos + 15 + (i * 6));
+      const truncated = s.length > 35 ? s.slice(0, 33) + '...' : s;
+      pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
-    pdf.text('No common strengths identified', 25, yPos + 18);
+    pdf.text('No common strengths identified', 20 + CARD_PADDING, yPos + CARD_PADDING + 12);
   }
   
   // Common Gaps
   pdf.setFillColor(254, 252, 232);
   pdf.setDrawColor(253, 224, 71);
   pdf.roundedRect(25 + halfWidth, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
-  pdf.setFontSize(9);
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(161, 98, 7);
-  pdf.text('Common Development Areas', 30 + halfWidth, yPos + 8);
+  pdf.text('Common Development Areas', 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
+  pdf.setFontSize(BODY_SIZE);
   pdf.setTextColor(133, 77, 14);
   if (data.summaryInsights.commonGaps.length > 0) {
     data.summaryInsights.commonGaps.slice(0, 4).forEach((g, i) => {
-      const truncated = g.length > 38 ? g.slice(0, 36) + '...' : g;
-      pdf.text(`\u2022 ${truncated}`, 30 + halfWidth, yPos + 15 + (i * 6));
+      const truncated = g.length > 35 ? g.slice(0, 33) + '...' : g;
+      pdf.text(`\u2022 ${truncated}`, 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
-    pdf.text('No common gaps identified', 30 + halfWidth, yPos + 18);
+    pdf.text('No common gaps identified', 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 12);
   }
   
-  yPos += insightBoxHeight + 8;
+  yPos += insightBoxHeight + BLOCK_SPACING;
   
   // Key Differentiators
   if (data.summaryInsights.keyDifferentiators.length > 0) {
     pdf.setFillColor(239, 246, 255);
     pdf.setDrawColor(147, 197, 253);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'FD');
-    pdf.setFontSize(9);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 26, 2, 2, 'FD');
+    pdf.setFontSize(BODY_SIZE + 1);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
-    pdf.text('Key Differentiators', 25, yPos + 8);
+    pdf.text('Key Differentiators', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
+    pdf.setFontSize(BODY_SIZE);
     pdf.setTextColor(30, 64, 175);
-    data.summaryInsights.keyDifferentiators.slice(0, 4).forEach((d, i) => {
-      const truncated = d.length > 85 ? d.slice(0, 83) + '...' : d;
-      pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 4));
+    data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
+      const truncated = d.length > 90 ? d.slice(0, 88) + '...' : d;
+      pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 5));
     });
-    yPos += 35;
+    yPos += 26 + BLOCK_SPACING;
   }
   
   // AI Hiring Suggestions Box
   pdf.setFillColor(250, 245, 255);
   pdf.setDrawColor(196, 181, 253);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 35, 2, 2, 'FD');
-  pdf.setFontSize(9);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 30, 2, 2, 'FD');
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(124, 58, 237);
-  pdf.text('AI Hiring Suggestions', 25, yPos + 8);
+  pdf.text('AI Hiring Suggestions', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
+  pdf.setFontSize(BODY_SIZE);
   pdf.setTextColor(91, 33, 182);
   
-  // Generate contextual AI suggestions based on data
-  const strongCount = data.summaryInsights.fitDistribution.strong;
-  const totalCount = data.candidateEntries.length;
-  const topPerformerFit = data.summaryInsights.topPerformer.overallFit;
+  // Generate contextual AI suggestions based on data (with null-safety)
+  const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
+  const topPerformerFit = data.summaryInsights.topPerformer?.overallFit ?? 0;
   
-  const aiSuggestions = [];
+  const aiSuggestions: string[] = [];
   if (strongCount >= 2) {
-    aiSuggestions.push(`${strongCount} candidates show strong fit (80%+). Consider prioritizing interviews for top performers.`);
+    aiSuggestions.push(`${strongCount} candidates show strong fit (80%+). Prioritize interviews for top performers.`);
   } else if (strongCount === 1) {
-    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding your candidate pool or adjusting role requirements.`);
+    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding candidate pool.`);
   } else {
-    aiSuggestions.push(`No candidates meet the 80% strong fit threshold. Review role requirements or source additional candidates.`);
+    aiSuggestions.push(`No candidates meet 80% threshold. Review role requirements or source more.`);
   }
   
   if (topPerformerFit >= 85) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}%) is an excellent match. Fast-track to final interview stage.`);
+    aiSuggestions.push(`Top performer (${topPerformerFit}%) is excellent match. Fast-track to final stage.`);
   } else if (topPerformerFit >= 70) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}%) shows good potential with targeted development opportunities.`);
+    aiSuggestions.push(`Top performer (${topPerformerFit}%) shows good potential with targeted development.`);
   }
   
   if (data.summaryInsights.commonGaps.length > 0) {
-    aiSuggestions.push(`Common gap identified: Consider structured training programs for "${data.summaryInsights.commonGaps[0]}".`);
+    aiSuggestions.push(`Common gap: Consider training for "${data.summaryInsights.commonGaps[0]}".`);
   }
   
-  aiSuggestions.slice(0, 4).forEach((suggestion, i) => {
+  aiSuggestions.slice(0, 3).forEach((suggestion, i) => {
     const truncated = suggestion.length > 95 ? suggestion.slice(0, 93) + '...' : suggestion;
-    pdf.text(`\u2022 ${truncated}`, 25, yPos + 14 + (i * 5));
+    pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
   });
   
   // ========== OVERALL FIT COMPARISON - NEW PAGE ==========
@@ -3482,6 +3501,138 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos += chartHeight + 15;
     } catch (e) {
       console.error('Error adding bar chart image:', e);
+    }
+  }
+  
+  // ========== ADVANCED ANALYTICS SECTION ==========
+  yPos = addSectionHeader(pdf, 'ADVANCED ANALYTICS', yPos, pageWidth);
+  yPos += 8;
+  
+  const analyticsBoxWidth = (pageWidth - 50) / 2;
+  const analyticsBoxHeight = 50;
+  
+  // Skill Dominance (left box)
+  if (data.summaryInsights.skillDominance && data.summaryInsights.skillDominance.length > 0) {
+    pdf.setFillColor(255, 251, 235);
+    pdf.setDrawColor(251, 191, 36);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(20, yPos, analyticsBoxWidth, analyticsBoxHeight, 2, 2, 'FD');
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(180, 83, 9);
+    pdf.text('Skill Dominance Count', 26, yPos + 10);
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(113, 63, 18);
+    pdf.text('How many skills each candidate leads in', 26, yPos + 16);
+    
+    pdf.setFontSize(8);
+    data.summaryInsights.skillDominance.slice(0, 4).forEach((sd: any, i: number) => {
+      if (!sd || !sd.candidateName) return;
+      const candidateName = String(sd.candidateName || 'Unknown');
+      const truncName = candidateName.length > 18 ? candidateName.slice(0, 16) + '...' : candidateName;
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${truncName}`, 26, yPos + 24 + (i * 6));
+      pdf.setTextColor(180, 83, 9);
+      pdf.text(`${sd.winsCount ?? 0}/${sd.totalSkills ?? 0} skills`, 26 + analyticsBoxWidth - 35, yPos + 24 + (i * 6));
+    });
+  }
+  
+  // Consistency Scores (right box)
+  if (data.summaryInsights.consistencyScores && data.summaryInsights.consistencyScores.length > 0) {
+    pdf.setFillColor(239, 246, 255);
+    pdf.setDrawColor(59, 130, 246);
+    pdf.roundedRect(25 + analyticsBoxWidth, yPos, analyticsBoxWidth, analyticsBoxHeight, 2, 2, 'FD');
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(30, 64, 175);
+    pdf.text('Consistency Score', 31 + analyticsBoxWidth, yPos + 10);
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Score uniformity across assessments', 31 + analyticsBoxWidth, yPos + 16);
+    
+    pdf.setFontSize(8);
+    data.summaryInsights.consistencyScores.slice(0, 4).forEach((cs: any, i: number) => {
+      if (!cs || !cs.candidateName) return;
+      const candidateName = String(cs.candidateName || 'Unknown');
+      const truncName = candidateName.length > 15 ? candidateName.slice(0, 13) + '...' : candidateName;
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${truncName}`, 31 + analyticsBoxWidth, yPos + 24 + (i * 6));
+      const interpretation = String(cs.interpretation || 'N/A');
+      const interpColor = interpretation === 'Excellent' ? [34, 197, 94] : 
+                          interpretation === 'Good' ? [59, 130, 246] : [234, 179, 8];
+      pdf.setTextColor(interpColor[0], interpColor[1], interpColor[2]);
+      pdf.text(`${cs.consistencyScore ?? 0}% ${interpretation}`, 31 + (2 * analyticsBoxWidth) - 35, yPos + 24 + (i * 6));
+    });
+  }
+  
+  yPos += analyticsBoxHeight + 10;
+  
+  // Critical Gap Ratio (full width box)
+  if (data.summaryInsights.criticalGapRatios && data.summaryInsights.criticalGapRatios.length > 0) {
+    const gapBoxHeight = 35;
+    pdf.setFillColor(254, 242, 242);
+    pdf.setDrawColor(239, 68, 68);
+    pdf.roundedRect(20, yPos, pageWidth - 40, gapBoxHeight, 2, 2, 'FD');
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(153, 27, 27);
+    pdf.text('Critical Gap Analysis', 26, yPos + 10);
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(185, 28, 28);
+    pdf.text('How many critical skills each candidate is below threshold on', 26, yPos + 16);
+    
+    const gapColWidth = (pageWidth - 50) / Math.min(4, data.summaryInsights.criticalGapRatios.length);
+    data.summaryInsights.criticalGapRatios.slice(0, 4).forEach((cgr: any, i: number) => {
+      if (!cgr || !cgr.candidateName) return;
+      const colX = 26 + (i * gapColWidth);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const candidateName = String(cgr.candidateName || 'Unknown');
+      const truncName = candidateName.length > 12 ? candidateName.slice(0, 10) + '...' : candidateName;
+      pdf.text(truncName, colX, yPos + 24);
+      pdf.setFont('helvetica', 'normal');
+      const riskLevel = String(cgr.riskLevel || 'Unknown');
+      const riskColor = riskLevel === 'No Risk' ? [34, 197, 94] :
+                        riskLevel === 'Low Risk' ? [59, 130, 246] :
+                        riskLevel === 'Moderate Risk' ? [234, 179, 8] : [239, 68, 68];
+      pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2]);
+      pdf.text(`${cgr.criticalGaps ?? 0}/${cgr.totalCritical ?? 0} gaps - ${riskLevel}`, colX, yPos + 30);
+    });
+    
+    yPos += gapBoxHeight + 10;
+  }
+  
+  // Largest Differential (if available)
+  if (data.summaryInsights.largestDifferential) {
+    const diff = data.summaryInsights.largestDifferential;
+    // Guard against missing properties
+    if (diff.skillName && diff.topCandidate && diff.bottomCandidate) {
+      const diffBoxHeight = 22;
+      pdf.setFillColor(240, 253, 244);
+      pdf.setDrawColor(34, 197, 94);
+      pdf.roundedRect(20, yPos, pageWidth - 40, diffBoxHeight, 2, 2, 'FD');
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 101, 52);
+      pdf.text('Largest Skill Differential', 26, yPos + 8);
+      
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(21, 128, 61);
+      const topScore = diff.topScore ?? 0;
+      const bottomScore = diff.bottomScore ?? 0;
+      const diffText = `${diff.skillName}: ${diff.topCandidate} (${topScore}) leads ${diff.bottomCandidate} (${bottomScore}) by ${topScore - bottomScore} points`;
+      pdf.text(diffText, 26, yPos + 16);
+      
+      yPos += diffBoxHeight + 10;
     }
   }
   
@@ -3772,73 +3923,115 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
   }
   
-  // ========== HIRING DECISION MATRIX ==========
-  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+  // ========== HIRING DECISION MATRIX - CANDIDATE CARDS ==========
+  yPos = ensurePageSpace(pdf, yPos, 100, pageHeight, pageWidth);
   yPos += 10;
   yPos = addSectionHeader(pdf, 'HIRING DECISION MATRIX', yPos, pageWidth);
   yPos += 5;
   
   pdf.setFontSize(8);
   pdf.setTextColor(107, 114, 128);
-  pdf.text('Quick-reference decision guide based on fit tier and assessment completeness', 20, yPos);
+  pdf.text('Individual candidate assessment summary with hiring recommendation', 20, yPos);
   yPos += 10;
   
-  // Decision matrix boxes - 3 columns
-  const decisionBoxWidth = (pageWidth - 50) / 3;
-  const decisionBoxHeight = 50;
+  // Render candidate-specific decision cards (up to 4 per row, max 8 total)
+  const candidateCardWidth = (pageWidth - 50) / Math.min(4, data.candidateEntries.length);
+  const candidateCardHeight = 55;
+  const maxCandidatesPerRow = 4;
   
-  // Strong Fit Box (Green)
-  pdf.setFillColor(236, 253, 245);
-  pdf.setDrawColor(34, 197, 94);
-  pdf.setLineWidth(0.5);
-  pdf.roundedRect(20, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
-  pdf.text('STRONG FIT (80%+)', 25, yPos + 10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7);
-  pdf.setTextColor(22, 101, 52);
-  pdf.text('\u2022 Ready to proceed to interview', 25, yPos + 20);
-  pdf.text('\u2022 Fast-track top performers', 25, yPos + 27);
-  pdf.text('\u2022 Verify cultural alignment', 25, yPos + 34);
-  pdf.text('\u2022 Discuss growth opportunities', 25, yPos + 41);
+  // Sort candidates by fit percentage descending (null-safe)
+  const sortedForMatrix = [...data.candidateEntries].sort((a, b) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
   
-  // Moderate Fit Box (Yellow)
-  const modBoxX = 25 + decisionBoxWidth;
-  pdf.setFillColor(254, 252, 232);
-  pdf.setDrawColor(234, 179, 8);
-  pdf.roundedRect(modBoxX, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(161, 98, 7);
-  pdf.text('MODERATE FIT (60-79%)', modBoxX + 5, yPos + 10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7);
-  pdf.setTextColor(133, 77, 14);
-  pdf.text('\u2022 Consider with development plan', modBoxX + 5, yPos + 20);
-  pdf.text('\u2022 Assess training feasibility', modBoxX + 5, yPos + 27);
-  pdf.text('\u2022 Review gap severity', modBoxX + 5, yPos + 34);
-  pdf.text('\u2022 Compare to pool alternatives', modBoxX + 5, yPos + 41);
+  sortedForMatrix.slice(0, 8).forEach((candidate, idx) => {
+    // Calculate position (new row after 4 candidates)
+    const row = Math.floor(idx / maxCandidatesPerRow);
+    const col = idx % maxCandidatesPerRow;
+    
+    // Check page break for second row
+    if (row === 1 && col === 0) {
+      yPos += candidateCardHeight + 10;
+    }
+    
+    const cardX = 20 + (col * (candidateCardWidth + 3));
+    const cardY = yPos;
+    
+    // Card background based on tier
+    const tierColors: Record<string, { fill: number[]; border: number[]; text: number[]; label: number[] }> = {
+      'strong': { fill: [236, 253, 245], border: [34, 197, 94], text: [22, 101, 52], label: [34, 197, 94] },
+      'moderate': { fill: [254, 252, 232], border: [234, 179, 8], text: [133, 77, 14], label: [161, 98, 7] },
+      'development-needed': { fill: [254, 242, 242], border: [239, 68, 68], text: [153, 27, 27], label: [239, 68, 68] },
+      'insufficient-data': { fill: [249, 250, 251], border: [156, 163, 175], text: [107, 114, 128], label: [107, 114, 128] }
+    };
+    const colors = tierColors[candidate.fitTier] || tierColors['development-needed'];
+    
+    pdf.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
+    pdf.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(cardX, cardY, candidateCardWidth - 3, candidateCardHeight, 2, 2, 'FD');
+    
+    // Candidate name (with null-safety)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    const userName = String(candidate.userName || 'Unknown');
+    const truncName = userName.length > 14 ? userName.slice(0, 12) + '...' : userName;
+    pdf.text(truncName, cardX + 4, cardY + 10);
+    
+    // Fit percentage (large, with null-safety)
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(colors.label[0], colors.label[1], colors.label[2]);
+    const fitPercent = candidate.overallFit ?? 0;
+    pdf.text(`${fitPercent}%`, cardX + 4, cardY + 24);
+    
+    // Tier label (with null-safety)
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    const fitTier = candidate.fitTier || 'insufficient-data';
+    const tierLabel = fitTier === 'strong' ? 'STRONG FIT' : 
+                      fitTier === 'moderate' ? 'MODERATE' : 
+                      fitTier === 'insufficient-data' ? 'INSUFFICIENT DATA' : 'DEV NEEDED';
+    pdf.text(tierLabel, cardX + 4, cardY + 32);
+    
+    // Key info
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+    
+    // Show top strength or main risk (with null-safety guards and fallbacks)
+    const strengthsArr = candidate.strengths || [];
+    const risksArr = candidate.riskFlags || [];
+    const gapsArr = candidate.gaps || [];
+    
+    // Strength line (or fallback)
+    if (strengthsArr.length > 0 && strengthsArr[0]) {
+      const strengthText = String(strengthsArr[0]);
+      const strength = strengthText.replace('Strong ', '').slice(0, 20);
+      pdf.text(`\u2713 ${strength}...`, cardX + 4, cardY + 40);
+    } else {
+      pdf.setTextColor(156, 163, 175);
+      pdf.text('No key strengths identified', cardX + 4, cardY + 40);
+      pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+    }
+    
+    // Risk/Gap line (or fallback)
+    if (risksArr.length > 0 && risksArr[0]) {
+      const riskText = String(risksArr[0]);
+      const risk = riskText.slice(0, 22);
+      pdf.text(`\u26A0 ${risk}...`, cardX + 4, cardY + 47);
+    } else if (gapsArr.length > 0 && gapsArr[0]) {
+      const gapText = String(gapsArr[0]);
+      const gap = gapText.slice(0, 22);
+      pdf.text(`Gap: ${gap}...`, cardX + 4, cardY + 47);
+    } else {
+      pdf.setTextColor(156, 163, 175);
+      pdf.text('No critical risks identified', cardX + 4, cardY + 47);
+    }
+  });
   
-  // Development Needed Box (Red)
-  const devBoxX = 30 + (2 * decisionBoxWidth);
-  pdf.setFillColor(254, 242, 242);
-  pdf.setDrawColor(239, 68, 68);
-  pdf.roundedRect(devBoxX, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(239, 68, 68);
-  pdf.text('DEV NEEDED (<60%)', devBoxX + 5, yPos + 10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7);
-  pdf.setTextColor(153, 27, 27);
-  pdf.text('\u2022 Significant gaps identified', devBoxX + 5, yPos + 20);
-  pdf.text('\u2022 Long-term investment required', devBoxX + 5, yPos + 27);
-  pdf.text('\u2022 Re-evaluate role fit', devBoxX + 5, yPos + 34);
-  pdf.text('\u2022 Consider alternative roles', devBoxX + 5, yPos + 41);
-  
-  yPos += decisionBoxHeight + 10;
+  // Adjust yPos after all cards
+  const totalRows = Math.ceil(Math.min(8, data.candidateEntries.length) / maxCandidatesPerRow);
+  yPos += (candidateCardHeight * totalRows) + 15;
   
   // ========== SKILLS LEGEND PAGE ==========
   // Track the page number where Skills Legend starts
