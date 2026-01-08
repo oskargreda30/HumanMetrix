@@ -558,6 +558,13 @@ export function registerPartnerRoutes(app: Express) {
         
         const partner = await storage.getPartnerAccount(session.partnerId);
         
+        // Check if the API key used to create this session is still active
+        let apiKeyActive = true;
+        if (session.apiKeyId) {
+          const apiKey = await storage.getPartnerApiKey(session.apiKeyId);
+          apiKeyActive = apiKey?.isActive ?? true;
+        }
+        
         const response: any = {
           sessionId: session.id,
           assessmentType: session.assessmentType,
@@ -568,6 +575,7 @@ export function registerPartnerRoutes(app: Express) {
           expiresAt: session.expiresAt,
           questionLocale: session.questionLocale || 'default',
           isTestSession: session.isTestSession || false, // Indicate if this is a test API key session
+          apiKeyActive, // False if the API key was deactivated (e.g., quota exhausted)
           // Include saved progress for resume functionality
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,

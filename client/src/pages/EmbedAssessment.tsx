@@ -275,6 +275,16 @@ export default function EmbedAssessment() {
       const data = await res.json();
       setSession(data);
       
+      // Check if API key is deactivated (partner's quota exhausted)
+      if (data.apiKeyActive === false) {
+        setPartnerContactInfo({
+          name: data.partnerName,
+          email: undefined,
+        });
+        setStatus("unavailable");
+        return;
+      }
+      
       // Initialize pause state from server - update ref synchronously first
       const initialCanPause = data.canPauseAgain ?? true;
       canPauseAgainRef.current = initialCanPause;

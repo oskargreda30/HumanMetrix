@@ -11075,15 +11075,6 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "API key not found or doesn't belong to this partner" });
       }
       
-      // Check if the API key is deactivated (live keys are deactivated when quota is exhausted)
-      if (!apiKey.isActive) {
-        return res.status(403).json({ 
-          message: "API key is deactivated. Purchase more credits to reactivate.",
-          code: "API_KEY_DEACTIVATED",
-          keyEnvironment: apiKey.environment,
-        });
-      }
-      
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       
