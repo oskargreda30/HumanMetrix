@@ -54,11 +54,11 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-[750px] [&>button]:hidden"
+        className="sm:max-w-[750px] max-h-[90vh] flex flex-col [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="space-y-3">
+        <DialogHeader className="space-y-3 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <Shield className="h-5 w-5 text-primary" />
@@ -72,7 +72,7 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
           <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -153,7 +153,7 @@ export function TermsConsentModal({ open, onAccept }: TermsConsentModalProps) {
           </div>
         </div>
 
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t flex-shrink-0">
           <Button
             onClick={handleAccept}
             disabled={!termsAccepted || acceptTermsMutation.isPending}
