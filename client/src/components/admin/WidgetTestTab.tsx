@@ -25,6 +25,7 @@ interface ApiKey {
   permissions: string[];
   isActive: boolean;
   lastUsedAt: string | null;
+  environment: 'test' | 'live';
 }
 
 interface TestSession {
@@ -188,9 +189,25 @@ export default function WidgetTestTab() {
                       {keysLoading ? (
                         <SelectItem value="loading" disabled>Loading...</SelectItem>
                       ) : apiKeys?.length ? (
-                        apiKeys.filter(k => k.isActive).map((key) => (
+                        apiKeys.map((key) => (
                           <SelectItem key={key.id} value={key.id.toString()}>
-                            {key.keyPrefix}*** ({key.permissions.join(", ")})
+                            <span className="flex items-center gap-2">
+                              <span className={!key.isActive ? "text-slate-400" : ""}>
+                                {key.keyPrefix}*** 
+                              </span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                key.environment === 'live' 
+                                  ? 'bg-orange-500/20 text-orange-300' 
+                                  : 'bg-blue-500/20 text-blue-300'
+                              }`}>
+                                {key.environment}
+                              </span>
+                              {!key.isActive && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">
+                                  deactivated
+                                </span>
+                              )}
+                            </span>
                           </SelectItem>
                         ))
                       ) : (
