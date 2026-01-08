@@ -3346,7 +3346,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         candidates = [];
       }
       
-      res.json(candidates);
+      // Batch fetch partner data for enrichment (avoid N+1 queries)
+      const allPartners = await storage.getAllPartnerAccounts();
+      const partnerMap = new Map(allPartners.map(p => [p.id, p]));
+      
+      // Collect all candidate emails for batch lookup
+      const candidateEmails = candidates.map((c: any) => c.user.email).filter(Boolean);
+      
+      // Batch fetch all partner invitations for these emails
+      const allPartnerInvitations = await storage.getPartnerCandidateInvitationsByEmails(candidateEmails);
+      
+      // Group partner invitations by email (case-insensitive)
+      const partnerInvitationsByEmail = new Map<string, any[]>();
+      allPartnerInvitations.forEach((inv: any) => {
+        if (inv.email) {
+          const emailLower = inv.email.toLowerCase();
+          if (!partnerInvitationsByEmail.has(emailLower)) {
+            partnerInvitationsByEmail.set(emailLower, []);
+          }
+          partnerInvitationsByEmail.get(emailLower)!.push(inv);
+        }
+      });
+      
+      // Enrich candidates with partner info
+      const enrichedCandidates = candidates.map((candidate: any) => {
+        const userEmailLower = candidate.user.email?.toLowerCase();
+        const partnerInvitations = partnerInvitationsByEmail.get(userEmailLower) || [];
+        
+        // Get the earliest partner invitation (the original invite)
+        const sortedInvitations = partnerInvitations
+          .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        const firstPartnerInvitation = sortedInvitations[0];
+        let partnerInfo = null;
+        let dateInvited = null;
+        
+        if (firstPartnerInvitation) {
+          const partner = partnerMap.get(firstPartnerInvitation.partnerId);
+          if (partner) {
+            partnerInfo = {
+              id: partner.id,
+              name: partner.name,
+              companyName: partner.companyName,
+            };
+            dateInvited = firstPartnerInvitation.createdAt;
+          }
+        }
+        
+        // If no partner invitation, check regular invitations for date invited
+        if (!dateInvited && candidate.invitations.length > 0) {
+          const sortedRegularInvitations = [...candidate.invitations]
+            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          dateInvited = sortedRegularInvitations[0]?.createdAt;
+        }
+        
+        return {
+          ...candidate,
+          partnerInfo,
+          dateInvited,
+        };
+      });
+      
+      res.json(enrichedCandidates);
     } catch (error) {
       console.error("Error fetching candidates:", error);
       res.status(500).json({ message: "Failed to fetch candidates" });

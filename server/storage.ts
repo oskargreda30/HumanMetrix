@@ -486,6 +486,7 @@ export interface IStorage {
   getPartnerCandidateInvitations(partnerId: string, filters?: { status?: string; importId?: string; limit?: number; offset?: number }): Promise<PartnerCandidateInvitation[]>;
   getPartnerCandidateInvitationsByExternalId(partnerId: string, externalUserId: string): Promise<PartnerCandidateInvitation[]>;
   getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]>;
+  getPartnerCandidateInvitationsByEmails(emails: string[]): Promise<PartnerCandidateInvitation[]>;
   updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
   countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
 
@@ -3235,6 +3236,15 @@ export class DatabaseStorage implements IStorage {
   async getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]> {
     return await db.select().from(partnerCandidateInvitations)
       .where(eq(partnerCandidateInvitations.email, email))
+      .orderBy(desc(partnerCandidateInvitations.createdAt));
+  }
+
+  async getPartnerCandidateInvitationsByEmails(emails: string[]): Promise<PartnerCandidateInvitation[]> {
+    if (emails.length === 0) return [];
+    // Use case-insensitive comparison for emails
+    const lowercaseEmails = emails.map(e => e.toLowerCase());
+    return await db.select().from(partnerCandidateInvitations)
+      .where(inArray(sql`LOWER(${partnerCandidateInvitations.email})`, lowercaseEmails))
       .orderBy(desc(partnerCandidateInvitations.createdAt));
   }
 

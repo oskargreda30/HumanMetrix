@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, MapPin } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, MapPin, Building2, Calendar } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -253,19 +253,19 @@ export default function CandidatesTab() {
                           : 'No Name'}
                       </CardTitle>
                       {candidate.user.resultsRetentionConsent === true ? (
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 shrink-0" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 shrink-0" data-testid={`badge-consent-opted-in-${candidate.user.id}`} title="Candidate has consented to share their results with employers">
                           <UserCheck className="h-3 w-3 mr-1" />
-                          Shared
+                          Results Shared
                         </Badge>
                       ) : candidate.user.resultsRetentionConsent === false ? (
-                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30 shrink-0" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30 shrink-0" data-testid={`badge-consent-opted-out-${candidate.user.id}`} title="Candidate has opted to keep their results private">
                           <UserX className="h-3 w-3 mr-1" />
-                          Private
+                          Results Private
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30 shrink-0" data-testid={`badge-consent-pending-${candidate.user.id}`}>
+                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30 shrink-0" data-testid={`badge-consent-pending-${candidate.user.id}`} title="Candidate has not yet specified their sharing preference">
                           <HelpCircle className="h-3 w-3 mr-1" />
-                          Pending
+                          Consent Pending
                         </Badge>
                       )}
                     </div>
@@ -584,7 +584,21 @@ export default function CandidatesTab() {
                 </div>
               </CardHeader>
               <CardContent className="py-2 px-4">
-                <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-6 text-sm flex-wrap">
+                  {candidate.partnerInfo && (
+                    <div className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Partner:</span>
+                      <span className="font-medium">{candidate.partnerInfo.companyName || candidate.partnerInfo.name}</span>
+                    </div>
+                  )}
+                  {candidate.dateInvited && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Invited:</span>
+                      <span className="font-medium">{new Date(candidate.dateInvited).toLocaleDateString()}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-muted-foreground" />
                     <span className="text-muted-foreground">{candidate.user.country || 'Unknown'}</span>
