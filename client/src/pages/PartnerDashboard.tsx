@@ -3727,6 +3727,25 @@ export default function PartnerDashboard() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {formatDate(notif.createdAt)}
                                 </p>
+                                {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical')) && (
+                                  <Button 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      setActiveTab('billing');
+                                      setTimeout(() => {
+                                        const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
+                                        if (purchaseSection) {
+                                          purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                      }, 100);
+                                    }}
+                                    data-testid={`button-buy-credits-${notif.id}`}
+                                  >
+                                    <CreditCard className="h-4 w-4 mr-1.5" />
+                                    Buy More Credits
+                                  </Button>
+                                )}
                               </div>
                             </div>
                             {!notif.isRead && (
