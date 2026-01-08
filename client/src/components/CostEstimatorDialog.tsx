@@ -119,11 +119,11 @@ const COUNTRIES = [
 ];
 
 const COMPANY_SIZES = [
-  { id: "BOUTIQUE", name: "Small (1-100 hires/year)", description: "Startups & small businesses" },
-  { id: "GROWTH", name: "Medium (101-500 hires/year)", description: "Growing companies" },
-  { id: "SMALL_ENTERPRISE", name: "Large (501-2,500 hires/year)", description: "Established enterprises" },
-  { id: "ENTERPRISE", name: "Enterprise (2,501-9,999 hires/year)", description: "Large corporations" },
-  { id: "PRO", name: "Enterprise+ (10,000+ hires/year)", description: "Global organizations" },
+  { id: "BOUTIQUE", name: "Boutique (1-100 tests/month)", description: "Startups & small businesses" },
+  { id: "GROWTH", name: "Growth (101-500 tests/month)", description: "Growing companies" },
+  { id: "SMALL_ENTERPRISE", name: "Small Enterprise (501-2,500 tests/month)", description: "Established enterprises" },
+  { id: "ENTERPRISE", name: "Enterprise (2,501-9,999 tests/month)", description: "Large corporations" },
+  { id: "PRO", name: "Pro (10,000+ tests/month)", description: "High-volume organizations" },
 ];
 
 function formatLocalCurrency(amount: number, currency: CurrencyConfig): string {
