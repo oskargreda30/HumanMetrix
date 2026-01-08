@@ -520,6 +520,9 @@ export default function PartnersTab() {
 
   // Delete partner state and mutation
   const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
+  
+  // Track which partner is having their email resent
+  const [resendingEmailPartnerId, setResendingEmailPartnerId] = useState<string | null>(null);
 
   const deletePartnerMutation = useMutation({
     mutationFn: async (partnerId: string) => {
@@ -539,13 +542,16 @@ export default function PartnersTab() {
 
   const resendWelcomeEmailMutation = useMutation({
     mutationFn: async (partnerId: string) => {
+      setResendingEmailPartnerId(partnerId);
       const res = await apiRequest("POST", `/api/admin/partners/${partnerId}/resend-welcome`);
       return res.json();
     },
     onSuccess: (data) => {
+      setResendingEmailPartnerId(null);
       toast({ title: "Email sent", description: `Welcome email with new credentials sent to ${data.email}` });
     },
     onError: (error: any) => {
+      setResendingEmailPartnerId(null);
       toast({ title: "Error", description: error.message || "Failed to send welcome email", variant: "destructive" });
     },
   });
@@ -2148,12 +2154,12 @@ export default function PartnersTab() {
                           variant="ghost" 
                           size="sm" 
                           onClick={(e) => { e.stopPropagation(); resendWelcomeEmailMutation.mutate(partner.id); }} 
-                          disabled={resendWelcomeEmailMutation.isPending}
+                          disabled={resendingEmailPartnerId === partner.id}
                           className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10" 
                           data-testid={`button-resend-email-${partner.id}`}
                           title="Resend welcome email with new password"
                         >
-                          {resendWelcomeEmailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                          {resendingEmailPartnerId === partner.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                         </Button>
                         <Switch
                           checked={partner.isActive}
