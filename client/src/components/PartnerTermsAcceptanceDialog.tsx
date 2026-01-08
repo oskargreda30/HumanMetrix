@@ -36,7 +36,7 @@ export default function PartnerTermsAcceptanceDialog({
     setIsSubmitting(true);
     try {
       await apiRequest("POST", "/api/partner/me/accept-terms");
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       toast({
         title: "Terms accepted",
         description: "Welcome to HumanMetrix Partner Dashboard!",
