@@ -2629,7 +2629,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       yPos += 2;
       
       // Check if assessment was completed (dataAvailable flag or null score indicates not completed)
-      const isNotCompleted = skill.dataAvailable === false || skill.candidateScore == null;
+      const skillWithData = skill as { dataAvailable?: boolean; candidateScore: number | null; requiredScore: number; skillName: string };
+      const isNotCompleted = skillWithData.dataAvailable === false || skillWithData.candidateScore == null;
       
       applyBodyText(pdf);
       pdf.setTextColor(55, 65, 81);
@@ -3770,6 +3771,74 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setTextColor(107, 114, 128);
     pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
   }
+  
+  // ========== HIRING DECISION MATRIX ==========
+  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+  yPos += 10;
+  yPos = addSectionHeader(pdf, 'HIRING DECISION MATRIX', yPos, pageWidth);
+  yPos += 5;
+  
+  pdf.setFontSize(8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Quick-reference decision guide based on fit tier and assessment completeness', 20, yPos);
+  yPos += 10;
+  
+  // Decision matrix boxes - 3 columns
+  const decisionBoxWidth = (pageWidth - 50) / 3;
+  const decisionBoxHeight = 50;
+  
+  // Strong Fit Box (Green)
+  pdf.setFillColor(236, 253, 245);
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.5);
+  pdf.roundedRect(20, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('STRONG FIT (80%+)', 25, yPos + 10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(22, 101, 52);
+  pdf.text('\u2022 Ready to proceed to interview', 25, yPos + 20);
+  pdf.text('\u2022 Fast-track top performers', 25, yPos + 27);
+  pdf.text('\u2022 Verify cultural alignment', 25, yPos + 34);
+  pdf.text('\u2022 Discuss growth opportunities', 25, yPos + 41);
+  
+  // Moderate Fit Box (Yellow)
+  const modBoxX = 25 + decisionBoxWidth;
+  pdf.setFillColor(254, 252, 232);
+  pdf.setDrawColor(234, 179, 8);
+  pdf.roundedRect(modBoxX, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(161, 98, 7);
+  pdf.text('MODERATE FIT (60-79%)', modBoxX + 5, yPos + 10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(133, 77, 14);
+  pdf.text('\u2022 Consider with development plan', modBoxX + 5, yPos + 20);
+  pdf.text('\u2022 Assess training feasibility', modBoxX + 5, yPos + 27);
+  pdf.text('\u2022 Review gap severity', modBoxX + 5, yPos + 34);
+  pdf.text('\u2022 Compare to pool alternatives', modBoxX + 5, yPos + 41);
+  
+  // Development Needed Box (Red)
+  const devBoxX = 30 + (2 * decisionBoxWidth);
+  pdf.setFillColor(254, 242, 242);
+  pdf.setDrawColor(239, 68, 68);
+  pdf.roundedRect(devBoxX, yPos, decisionBoxWidth, decisionBoxHeight, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(239, 68, 68);
+  pdf.text('DEV NEEDED (<60%)', devBoxX + 5, yPos + 10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(153, 27, 27);
+  pdf.text('\u2022 Significant gaps identified', devBoxX + 5, yPos + 20);
+  pdf.text('\u2022 Long-term investment required', devBoxX + 5, yPos + 27);
+  pdf.text('\u2022 Re-evaluate role fit', devBoxX + 5, yPos + 34);
+  pdf.text('\u2022 Consider alternative roles', devBoxX + 5, yPos + 41);
+  
+  yPos += decisionBoxHeight + 10;
   
   // ========== SKILLS LEGEND PAGE ==========
   // Track the page number where Skills Legend starts
