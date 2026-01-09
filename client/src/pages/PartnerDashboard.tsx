@@ -30,6 +30,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
+import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
+import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -69,7 +71,15 @@ interface OverageHistoryItem {
   createdAt: string;
 }
 
-function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
+function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId: string; currency?: string }) {
+  const currencySymbols: Record<string, string> = {
+    gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
+    inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
+    lkr: 'Rs', mmk: 'K', khr: '៛', npr: '₨', try: '₺', egp: 'E£', ngn: '₦', kes: 'KSh',
+    zar: 'R', brl: 'R$', mxn: 'MX$', ars: 'AR$',
+  };
+  const currSymbol = currencySymbols[currency.toLowerCase()] || '£';
+  const formatAmount = (pence: number) => `${currSymbol}${(pence / 100).toFixed(2)}`;
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -207,7 +217,7 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
                     {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Overage rate: £{((cardStatus.overageRatePerTest || 500) / 100).toFixed(2)} per test
+                    Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
                   </p>
                 </div>
               </div>
@@ -251,7 +261,7 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
                         <tr key={item.id}>
                           <td className="px-3 py-2">{item.billingMonth}</td>
                           <td className="px-3 py-2 text-right">{item.overageTests}</td>
-                          <td className="px-3 py-2 text-right">£{(item.overageAmount / 100).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right">{formatAmount(item.overageAmount)}</td>
                           <td className="px-3 py-2 text-right">
                             <Badge 
                               variant="outline" 
@@ -349,10 +359,10 @@ function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
   );
 }
 
-function PrepaidCardManagement({ partnerId }: { partnerId: string }) {
+function PrepaidCardManagement({ partnerId, currency }: { partnerId: string; currency?: string }) {
   return (
     <Elements stripe={stripePromise}>
-      <PrepaidCardManagementInner partnerId={partnerId} />
+      <PrepaidCardManagementInner partnerId={partnerId} currency={currency} />
     </Elements>
   );
 }
@@ -375,6 +385,9 @@ interface PartnerAccount {
     freeTestsExpiresAt: string | null;
     currency: string;
     prepaidCreditsExpiresAt: string | null;
+    tourCompleted: boolean;
+    termsAccepted: boolean;
+    termsAcceptedAt: string | null;
   };
 }
 
@@ -456,6 +469,7 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
+  isActive: boolean;
 }
 
 interface ApiKeysData {
@@ -579,6 +593,10 @@ export default function PartnerDashboard() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
   
+  // Terms acceptance state
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
+  
   // Organization state
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [showAddOrgDialog, setShowAddOrgDialog] = useState(false);
@@ -616,6 +634,8 @@ export default function PartnerDashboard() {
   const [showCreateKeyDialog, setShowCreateKeyDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEnvironment, setNewKeyEnvironment] = useState<"test" | "live">("test");
+  const [creatingKeyType, setCreatingKeyType] = useState<'test' | 'live' | null>(null);
+  const [newKeyData, setNewKeyData] = useState<{ fullKey: string; environment: string } | null>(null);
   
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
@@ -640,6 +660,25 @@ export default function PartnerDashboard() {
 
   const { data: billing, isLoading: billingLoading } = useQuery<BillingData>({
     queryKey: ["/api/partner/me/billing"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  // Credit package pricing with currency conversion
+  interface PricingData {
+    currency: string;
+    packages: Array<{
+      size: number;
+      name: string;
+      price: number;
+      pricePerTest: number;
+    }>;
+    exchangeRate: number;
+    lastUpdated: string;
+    isZeroDecimal: boolean;
+  }
+
+  const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
+    queryKey: ["/api/partner/me/pricing"],
     enabled: !!account?.hasPartnerAccount,
   });
 
@@ -751,13 +790,34 @@ export default function PartnerDashboard() {
     }
   };
 
-  // Check if user needs to see tutorial on first login
+  // Tour completion mutation - saves to database for cross-device persistence
+  const tourCompleteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/partner/me/tour-completed");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+    },
+  });
+
+  // Check if user needs to accept terms (must accept before accessing dashboard)
   useEffect(() => {
-    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked) {
+    if (account?.hasPartnerAccount && account?.partner?.id && !termsChecked) {
+      setTermsChecked(true);
+      if (!account.partner.termsAccepted) {
+        setShowTermsDialog(true);
+      }
+    }
+  }, [account, termsChecked]);
+
+  // Check if user needs to see tutorial on first login (uses database-backed tourCompleted flag)
+  // Only show after terms are accepted
+  useEffect(() => {
+    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked && account.partner.termsAccepted) {
       setTutorialChecked(true);
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      const hasCompletedTutorial = localStorage.getItem(tutorialKey);
-      if (!hasCompletedTutorial) {
+      // Check database-backed tourCompleted flag instead of localStorage
+      if (!account.partner.tourCompleted) {
         // Small delay to let the dashboard load first
         setTimeout(() => setShowTutorial(true), 500);
       }
@@ -766,10 +826,8 @@ export default function PartnerDashboard() {
 
   // Tour handlers
   const handleTourComplete = () => {
-    if (account?.partner?.id) {
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      localStorage.setItem(tutorialKey, 'true');
-    }
+    // Save to database for cross-device persistence
+    tourCompleteMutation.mutate();
     setShowTutorial(false);
     setActiveTab('home');
     toast({
@@ -779,10 +837,8 @@ export default function PartnerDashboard() {
   };
 
   const handleTourClose = () => {
-    if (account?.partner?.id) {
-      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
-      localStorage.setItem(tutorialKey, 'true');
-    }
+    // Save to database for cross-device persistence
+    tourCompleteMutation.mutate();
     setShowTutorial(false);
   };
 
@@ -1008,15 +1064,14 @@ export default function PartnerDashboard() {
       const response = await apiRequest("POST", "/api/partner/me/api-keys", data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       
       // Ensure the API key data is present in response
       if (data?.apiKey?.fullKey) {
-        setNewApiKey(data.apiKey.fullKey);
+        setNewKeyData({ fullKey: data.apiKey.fullKey, environment: variables.environment });
         setShowCreateKeyDialog(false);
-        setShowNewKeyDialog(true);
         setNewKeyName("");
         setNewKeyEnvironment("test");
         toast({
@@ -1031,6 +1086,7 @@ export default function PartnerDashboard() {
           variant: "destructive",
         });
       }
+      setCreatingKeyType(null);
     },
     onError: (error: Error) => {
       toast({
@@ -1038,6 +1094,7 @@ export default function PartnerDashboard() {
         description: error.message,
         variant: "destructive",
       });
+      setCreatingKeyType(null);
     },
   });
 
@@ -1069,6 +1126,20 @@ export default function PartnerDashboard() {
   const handleCreateKey = () => {
     if (!newKeyName) return;
     createKeyMutation.mutate({ name: newKeyName, environment: newKeyEnvironment });
+  };
+
+  const handleCreateTestKey = () => {
+    setCreatingKeyType('test');
+    createKeyMutation.mutate({ name: `Test Key - ${new Date().toLocaleDateString()}`, environment: 'test' });
+  };
+
+  const handleCreateLiveKey = () => {
+    setCreatingKeyType('live');
+    createKeyMutation.mutate({ name: `Live Key - ${new Date().toLocaleDateString()}`, environment: 'live' });
+  };
+
+  const handleClearNewKey = () => {
+    setNewKeyData(null);
   };
 
   const handleRevokeKey = (keyId: string) => {
@@ -1170,7 +1241,9 @@ export default function PartnerDashboard() {
 
   const partnerCurrency = account?.partner?.currency || 'GBP';
   
-  const formatCurrency = (amount: number, currency?: string) => {
+  // Format currency using API-provided isZeroDecimal flag
+  // Uses the same roundPriceUp approach as home page pricing
+  const formatCurrency = (amount: number, currency?: string, isZeroDecimalOverride?: boolean) => {
     const curr = currency || partnerCurrency;
     const currencySymbols: Record<string, string> = {
       // Tier 1 - Developed Markets
@@ -1216,8 +1289,25 @@ export default function PartnerDashboard() {
       pen: 'S/',
       ars: 'AR$',
     };
+    
+    // Use API-provided flag if available, otherwise fallback to local check
+    const isZeroDecimal = isZeroDecimalOverride ?? pricing?.isZeroDecimal ?? false;
+    
     const symbol = currencySymbols[curr.toLowerCase()] || '£';
-    return `${symbol}${(amount / 100).toFixed(2)}`;
+    
+    if (isZeroDecimal) {
+      // Zero-decimal currencies: amount is already in whole units
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+    // Regular currencies: amount is in cents, divide by 100
+    // Display without decimals since roundPriceUp already gives clean numbers
+    const displayAmount = amount / 100;
+    // Show decimals only if the amount has fractional cents after division
+    const hasDecimals = displayAmount % 1 !== 0;
+    return `${symbol}${displayAmount.toLocaleString(undefined, { 
+      minimumFractionDigits: hasDecimals ? 2 : 0, 
+      maximumFractionDigits: 2 
+    })}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -1351,29 +1441,35 @@ export default function PartnerDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
-              {/* Overview */}
               <TabsTrigger value="home" data-testid="tab-home" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
-              {/* Core Business */}
               <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
-              <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Invitations
+              <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analysis
               </TabsTrigger>
               <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Organizations
               </TabsTrigger>
-              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Analytics
+              <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Invitations
               </TabsTrigger>
-              {/* Account & Operations */}
+              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Team
+              </TabsTrigger>
               <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Usage
               </TabsTrigger>
               <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Billing
+              </TabsTrigger>
+              <TabsTrigger value="developer" data-testid="tab-developer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Developer
+              </TabsTrigger>
+              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analytics
               </TabsTrigger>
               <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
                 Notifications
@@ -1382,14 +1478,6 @@ export default function PartnerDashboard() {
                     {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
                   </span>
                 )}
-              </TabsTrigger>
-              {/* Developer Hub */}
-              <TabsTrigger value="developer" data-testid="tab-developer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Developer
-              </TabsTrigger>
-              {/* Administration */}
-              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Team
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Settings
@@ -1621,9 +1709,9 @@ export default function PartnerDashboard() {
                       <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
                       <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
                         <CreditCard className="h-4 w-4 text-primary" />
-                        {account?.partner?.billingType === 'prepaid' && 'Prepaid Credits'}
-                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                        {account?.partner?.billingType === 'invoice' && 'Enterprise Invoice'}
+                        {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
+                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                       </div>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/30 border">
@@ -1672,7 +1760,7 @@ export default function PartnerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                      {partner.testsPurchased.toLocaleString()}
+                      {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground">Total credits</p>
                   </CardContent>
@@ -1733,6 +1821,7 @@ export default function PartnerDashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
+                    {partner.freeTestsAllocated > 0 && ` (includes ${partner.freeTestsAllocated} free)`}
                   </p>
                 </CardContent>
               </Card>
@@ -1920,7 +2009,15 @@ export default function PartnerDashboard() {
 
             {/* Invitations Tab */}
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
-              <BulkInvitationsTab partnerId={partner?.id || ''} billingType={partner?.billingType || 'prepaid'} />
+              {partner?.id && partner?.billingType ? (
+                <BulkInvitationsTab partnerId={partner.id} billingType={partner.billingType} />
+              ) : (
+                <Card>
+                  <CardContent className="py-8 flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Organizations Tab */}
@@ -2434,27 +2531,27 @@ export default function PartnerDashboard() {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
-                          {account?.partner?.billingType === 'prepaid' && 'Prepaid Billing'}
-                          {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill Billing'}
-                          {account?.partner?.billingType === 'invoice' && 'Invoice Billing'}
+                          {account?.partner?.billingType === 'payg' && 'Pay As You Go (PAYG)'}
+                          {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
+                          {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
                         </CardTitle>
                         <CardDescription>
-                          {account?.partner?.billingType === 'prepaid' && 'Purchase test credits upfront and use them as needed'}
-                          {account?.partner?.billingType === 'auto_bill' && 'Card on file - automatically billed based on monthly usage'}
-                          {account?.partner?.billingType === 'invoice' && 'Enterprise invoicing with flexible payment terms'}
+                          {account?.partner?.billingType === 'payg' && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
+                          {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
+                          {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
-                        {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
-                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                        {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                        {account?.partner?.billingType === 'payg' && 'PAYG'}
+                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                       </Badge>
                     </CardHeader>
                   </Card>
 
                   {/* Card on File for Prepaid Partners */}
-                  {account?.partner?.billingType === 'prepaid' && (
-                    <PrepaidCardManagement partnerId={account.partner.id} />
+                  {account?.partner?.billingType === 'payg' && (
+                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} />
                   )}
 
                   {/* Pending Billing Change Request Alert */}
@@ -2471,9 +2568,9 @@ export default function PartnerDashboard() {
                               <p className="text-sm text-orange-900/80 dark:text-orange-100/80">
                                 Your request to change to{' '}
                                 <span className="font-medium">
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'invoice' && 'Invoice'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'payg' && 'Pay As You Go'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'subscription' && 'Subscription'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'enterprise' && 'Enterprise'}
                                 </span>{' '}
                                 billing is being reviewed.
                               </p>
@@ -2512,153 +2609,153 @@ export default function PartnerDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-4 md:grid-cols-3">
-                        {/* Prepaid Option */}
+                        {/* PAYG Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'prepaid' 
+                            account?.partner?.billingType === 'payg' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-prepaid"
+                          data-testid="billing-option-payg"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <Package className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Prepaid</span>
+                              <span className="font-semibold">Pay As You Go</span>
                             </div>
-                            {account?.partner?.billingType === 'prepaid' && (
+                            {account?.partner?.billingType === 'payg' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Purchase test credits upfront. Use them whenever you need without monthly commitments.
+                            No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pay as you go
+                              No recurring charges
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Volume discounts
+                              Bulk discounts available
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Credits valid for 12 months
+                              Control your spend
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'prepaid' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'payg' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('prepaid');
+                                setSelectedBillingType('payg');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-prepaid"
+                              data-testid="button-request-payg"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Auto-Bill Option */}
+                        {/* Subscription Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'auto_bill' 
+                            account?.partner?.billingType === 'subscription' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-auto-bill"
+                          data-testid="billing-option-subscription"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Auto-Bill</span>
+                              <span className="font-semibold">Subscription</span>
                             </div>
-                            {account?.partner?.billingType === 'auto_bill' && (
+                            {account?.partner?.billingType === 'subscription' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Card on file billed monthly based on actual usage. Simple and predictable.
+                            Card on file. Min monthly charge + auto-bill for additional usage at base rates.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              No upfront payment
+                              Predictable monthly base
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pay only for what you use
+                              Pay as you grow
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Automatic monthly billing
+                              Automatic billing
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'auto_bill' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'subscription' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('auto_bill');
+                                setSelectedBillingType('subscription');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-auto-bill"
+                              data-testid="button-request-subscription"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Invoice Option */}
+                        {/* Enterprise Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'invoice' 
+                            account?.partner?.billingType === 'enterprise' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-invoice"
+                          data-testid="billing-option-enterprise"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Invoice</span>
+                              <span className="font-semibold">Enterprise</span>
                             </div>
-                            {account?.partner?.billingType === 'invoice' && (
+                            {account?.partner?.billingType === 'enterprise' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Enterprise invoicing with flexible NET terms. Best for large organizations.
+                            For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              NET 30/60 payment terms
+                              Bulk credit blocks
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Dedicated support
+                              Pro-forma invoicing
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
                               Custom contracts
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'invoice' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'enterprise' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('invoice');
+                                setSelectedBillingType('enterprise');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-invoice"
+                              data-testid="button-request-enterprise"
                             >
                               Request Change
                             </Button>
@@ -2693,8 +2790,8 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* Prepaid Billing Stats */}
-                  {account?.partner?.billingType === 'prepaid' && (
+                  {/* PAYG Billing Stats */}
+                  {account?.partner?.billingType === 'payg' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2718,7 +2815,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold" data-testid="text-total-purchased">
-                            {partner?.testsPurchased || 0} tests
+                            {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} tests
                           </div>
                           <p className="text-xs text-muted-foreground">
                             All time credits
@@ -2744,7 +2841,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Auto-Bill Billing Stats */}
-                  {account?.partner?.billingType === 'auto_bill' && (
+                  {account?.partner?.billingType === 'subscription' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2794,7 +2891,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Invoice Billing Stats */}
-                  {account?.partner?.billingType === 'invoice' && (
+                  {account?.partner?.billingType === 'enterprise' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2843,9 +2940,9 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* Buy More Tests - Only for prepaid and auto_bill billing types */}
-                  {(account?.partner?.billingType === 'prepaid' || account?.partner?.billingType === 'auto_bill') && (
-                    <Card>
+                  {/* Buy More Tests - Only for PAYG and Subscription billing types */}
+                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription') && (
+                    <Card data-testid="section-purchase-credits">
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
@@ -2856,40 +2953,46 @@ export default function PartnerDashboard() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid gap-4 md:grid-cols-3">
-                          {[
-                            { size: 10, name: 'Starter', price: 50 },
-                            { size: 25, name: 'Growth', price: 112.50 },
-                            { size: 50, name: 'Professional', price: 200 },
-                            { size: 100, name: 'Business', price: 350 },
-                            { size: 250, name: 'Enterprise', price: 750 },
-                            { size: 500, name: 'Enterprise+', price: 1250 },
-                          ].map((pkg) => (
-                            <div 
-                              key={pkg.size} 
-                              className="border rounded-lg p-4 hover:border-primary transition-colors"
-                            >
-                              <div className="font-semibold text-lg">{pkg.name}</div>
-                              <div className="text-2xl font-bold text-primary">
-                                {pkg.size} tests
-                              </div>
-                              <div className="text-sm text-muted-foreground mb-3">
-                                £{pkg.price.toFixed(2)} (£{(pkg.price / pkg.size).toFixed(2)}/test)
-                              </div>
-                              <Button 
-                                className="w-full" 
-                                onClick={() => handlePurchase(pkg.size)}
-                                disabled={purchasingPackageSize !== null}
-                                data-testid={`button-buy-${pkg.size}`}
+                        {pricingLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
+                        ) : !pricing?.packages ? (
+                          <div className="py-8 text-center text-muted-foreground">
+                            <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="font-medium">Unable to load pricing</p>
+                            <p className="text-sm mt-1">Please refresh the page or contact support if this persists.</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-3">
+                            {/* Volume-based pricing tiers converted to partner's currency */}
+                            {pricing.packages.map((pkg) => (
+                              <div 
+                                key={pkg.size} 
+                                className="border rounded-lg p-4 hover:border-primary transition-colors"
                               >
-                                {purchasingPackageSize === pkg.size ? (
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                ) : null}
-                                Purchase
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
+                                <div className="font-semibold text-lg">{pkg.name}</div>
+                                <div className="text-2xl font-bold text-primary">
+                                  {pkg.size.toLocaleString()} tests
+                                </div>
+                                <div className="text-sm text-muted-foreground mb-3">
+                                  {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
+                                </div>
+                                <Button 
+                                  className="w-full" 
+                                  onClick={() => handlePurchase(pkg.size)}
+                                  disabled={purchasingPackageSize !== null}
+                                  data-testid={`button-buy-${pkg.size}`}
+                                >
+                                  {purchasingPackageSize === pkg.size ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
+                                  Purchase
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )}
@@ -2898,7 +3001,7 @@ export default function PartnerDashboard() {
                     <CardHeader>
                       <CardTitle className="text-lg">Billing History</CardTitle>
                       <CardDescription>
-                        {account?.partner?.billingType === 'invoice' 
+                        {account?.partner?.billingType === 'enterprise' 
                           ? 'Invoices and payment history' 
                           : 'Receipts and invoices'}
                       </CardDescription>
@@ -3045,13 +3148,13 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {settings?.settings?.billingType === 'prepaid' && (
+                  {settings?.settings?.billingType === 'payg' && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Auto Top-Up
-                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for prepaid accounts." />
+                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for PAYG accounts." />
                         </CardTitle>
                         <CardDescription>
                           Automatically purchase more tests when your balance runs low
@@ -3390,11 +3493,24 @@ export default function PartnerDashboard() {
               <DeveloperSubTabs 
                 apiKeys={apiKeys}
                 apiKeysLoading={apiKeysLoading}
-                onCreateKey={() => setShowCreateKeyDialog(true)}
+                onCreateTestKey={handleCreateTestKey}
+                onCreateLiveKey={handleCreateLiveKey}
                 onRotateKey={handleRotateKey}
                 onRevokeKey={handleRevokeKey}
                 rotatingKeyId={rotatingKeyId}
                 revokingKeyId={revokingKeyId}
+                creatingKeyType={creatingKeyType}
+                newKeyData={newKeyData}
+                onClearNewKey={handleClearNewKey}
+                onReactivateKey={() => {
+                  setActiveTab('billing');
+                  setTimeout(() => {
+                    const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
+                    if (purchaseSection) {
+                      purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                }}
               />
             </TabsContent>
 
@@ -3583,6 +3699,11 @@ export default function PartnerDashboard() {
               </Card>
             </TabsContent>
 
+            {/* Analysis Tab */}
+            <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
+              <PartnerAnalysisTab />
+            </TabsContent>
+
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6" data-testid="panel-notifications">
               <Card>
@@ -3624,6 +3745,25 @@ export default function PartnerDashboard() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {formatDate(notif.createdAt)}
                                 </p>
+                                {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical')) && (
+                                  <Button 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      setActiveTab('billing');
+                                      setTimeout(() => {
+                                        const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
+                                        if (purchaseSection) {
+                                          purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                      }, 100);
+                                    }}
+                                    data-testid={`button-buy-credits-${notif.id}`}
+                                  >
+                                    <CreditCard className="h-4 w-4 mr-1.5" />
+                                    Buy More Credits
+                                  </Button>
+                                )}
                               </div>
                             </div>
                             {!notif.isRead && (
@@ -3994,18 +4134,18 @@ export default function PartnerDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Current billing type</p>
                   <p className="font-medium">
-                    {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
-                    {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
-                    {account?.partner?.billingType === 'invoice' && 'Invoice'}
+                    {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
+                    {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                    {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Requested billing type</p>
                   <p className="font-medium text-primary">
-                    {selectedBillingType === 'prepaid' && 'Prepaid'}
-                    {selectedBillingType === 'auto_bill' && 'Auto-Bill'}
-                    {selectedBillingType === 'invoice' && 'Invoice'}
+                    {selectedBillingType === 'payg' && 'Pay As You Go'}
+                    {selectedBillingType === 'subscription' && 'Subscription'}
+                    {selectedBillingType === 'enterprise' && 'Enterprise'}
                   </p>
                 </div>
               </div>
@@ -4026,7 +4166,7 @@ export default function PartnerDashboard() {
             </div>
 
             {/* Card Details Section - Only shown when requesting Auto-Bill */}
-            {selectedBillingType === 'auto_bill' && (
+            {selectedBillingType === 'subscription' && (
               <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
@@ -4077,7 +4217,7 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange || (selectedBillingType === 'auto_bill' && !cardComplete)}
+              disabled={isSubmittingBillingChange || (selectedBillingType === 'subscription' && !cardComplete)}
               data-testid="button-submit-billing-change"
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -4086,6 +4226,18 @@ export default function PartnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Terms Acceptance Dialog - blocks dashboard access until accepted */}
+      <PartnerTermsAcceptanceDialog
+        open={showTermsDialog}
+        onAccepted={() => {
+          setShowTermsDialog(false);
+          // After accepting terms, check if tutorial should be shown
+          if (account?.partner && !account.partner.tourCompleted) {
+            setTimeout(() => setShowTutorial(true), 500);
+          }
+        }}
+      />
 
       {/* Interactive Spotlight Tour */}
       <PartnerTour

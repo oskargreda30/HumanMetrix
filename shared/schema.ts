@@ -133,8 +133,7 @@ export const assessmentResults = pgTable("assessment_results", {
   totalScore: integer("total_score"),
   percentile: integer("percentile"),
   evaluations: jsonb("evaluations").$type<any[]>(),
-  status: text("status").notNull().default("in_progress"), // in_progress, completed, failed, abandoned
-  lastHeartbeat: timestamp("last_heartbeat"), // For detecting abandoned sessions
+  status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 }, (table) => [
@@ -251,10 +250,14 @@ export type InsertAiqRationale = z.infer<typeof insertAiqRationaleSchema>;
 export type AiqRationale = typeof aiqRationales.$inferSelect;
 
 // Job Roles - predefined and custom roles for candidate matching
+// Job role domains for semantic filtering in Role Flexibility Analysis
+export type JobRoleDomain = 'technology' | 'creative' | 'business' | 'healthcare' | 'education' | 'finance' | 'operations' | 'sales' | 'other';
+
 export const jobRoles = pgTable("job_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
+  domain: text("domain").$type<JobRoleDomain>(), // Semantic domain for role flexibility matching
   competencies: jsonb("competencies").notNull().$type<{
     skillName: string;
     importance: number; // 1-5 scale
@@ -550,6 +553,40 @@ export const ASSESSMENT_PRICES = {
 
 export const BASE_FEE = 1500; // £15.00 in pence
 
+// ============================================
+// B2B Volume-Based Pricing ($1.00 = 1 Credit, 6-month expiration)
+// ============================================
+
+// Volume tiers based on monthly volume commitment (prices in USD cents)
+export const B2B_VOLUME_TIERS = {
+  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 2000, trialQuota: 5 },      // $20/test
+  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 1000, trialQuota: 10 },       // $10/test
+  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 500, trialQuota: 20 }, // $5/test
+  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 250, trialQuota: 50 }, // $2.50/test
+  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 100, trialQuota: 50 },              // $1.00/test
+} as const;
+
+// Unbundled report pricing discounts
+export const REPORT_DISCOUNTS = {
+  COMPARISON: 0.30, // 30% discount from base rate for Comparison Reports
+  ROLE_FIT: 0.20,   // 20% discount from base rate for Role Fit Reports
+} as const;
+
+// Credit expiration policy
+export const CREDIT_EXPIRATION_MONTHS = 6;
+
+// Helper to get trial quota based on tier name
+export function getTrialQuotaForTier(tierName: string): number {
+  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
+  return tier?.trialQuota || B2B_VOLUME_TIERS.BOUTIQUE.trialQuota;
+}
+
+// Helper to get price per test based on tier name
+export function getPriceForTier(tierName: string): number {
+  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
+  return tier?.pricePerTest || B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest;
+}
+
 export function normalizeAssessmentId(id: string): keyof typeof ASSESSMENT_PRICES {
   const mapping: Record<string, keyof typeof ASSESSMENT_PRICES> = {
     "fit": "fit",
@@ -591,16 +628,16 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
-  // Billing configuration - 3 payment options:
-  // 'prepaid': Purchase test packages upfront, top up when needed
-  // 'auto_bill': Card on file, automatically billed at month-end based on usage
-  // 'invoice': Enterprise invoicing, we send invoices based on usage
-  billingType: varchar("billing_type").notNull().default("prepaid"), // 'prepaid', 'auto_bill', or 'invoice'
+  // Billing configuration - 3 payment tiers:
+  // 'payg': Pay As You Go - No card on file. Bulk discounts via upfront purchase. API/dashboard suspended at zero credits.
+  // 'subscription': Subscription + Auto-Bill (Ideal) - Card on file. No bulk discount. Min monthly charge + auto-bill for usage at base rates.
+  // 'enterprise': Enterprise Prepayment - For high-volume BPOs. Immediate pro-forma invoicing for bulk credit blocks. No credit extended.
+  billingType: varchar("billing_type").notNull().default("payg"), // 'payg', 'subscription', or 'enterprise'
   freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
   freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
   prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
-  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (12 months from purchase)
+  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (6 months from purchase per pricing policy)
   // Auto-bill fields
   stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
   cardOnFile: boolean("card_on_file").notNull().default(false), // Whether prepaid partner has saved card for overage billing
@@ -1280,8 +1317,8 @@ export const billingChangeRequests = pgTable("billing_change_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
-  currentBillingType: varchar("current_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
-  requestedBillingType: varchar("requested_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
+  currentBillingType: varchar("current_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
+  requestedBillingType: varchar("requested_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
   reason: text("reason"), // Optional reason for the change request
   status: varchar("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
   reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),
