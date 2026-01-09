@@ -377,8 +377,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setTextColor(55, 65, 81);
   
   // Use two-column layout with fixed widths for consistent alignment
-  const labelColumnWidth = 65; // Width for skill names
-  const descColumnX = 90; // Description starts here consistently
+  // Longest skill name is "Responsible AI & Ethical Awareness:" - need space for all
+  const descColumnX = 100; // Description starts here consistently (accommodates longest skill names)
   const descWidth = pageWidth - descColumnX - 15; // Available width for descriptions
   
   // Helper to render a skill row with proper wrapping
