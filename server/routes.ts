@@ -900,6 +900,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // HMXDEMO - Demo access code for potential customers (bypasses payment completely)
+      if (normalizedCode === "HMXDEMO") {
+        return res.json({
+          valid: true,
+          code: normalizedCode,
+          percentOff: 100,
+          description: "Demo access - Free results",
+        });
+      }
+      
       if (normalizedCode === "20OFFPRICE") {
         return res.json({
           valid: true,
@@ -1060,6 +1070,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ 
           success: true, 
           message: "Results unlocked successfully",
+          free: true 
+        });
+      }
+      
+      // HMXDEMO - Demo access for potential customers (bypasses payment completely)
+      if (normalizedCode === "HMXDEMO") {
+        // Grant free demo access without any payment processing
+        await storage.updatePurchase(unpaidPurchase.id.toString(), {
+          resultsAccessPaid: true,
+        });
+        
+        console.log(`[Demo Access] User ${userId} unlocked results with HMXDEMO code for purchase ${unpaidPurchase.id}`);
+        
+        return res.json({ 
+          success: true, 
+          message: "Demo access granted - Results unlocked successfully",
           free: true 
         });
       }
