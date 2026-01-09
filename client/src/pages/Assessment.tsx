@@ -641,14 +641,16 @@ export default function Assessment() {
 
               {/* Navigation */}
               <div className="flex flex-wrap gap-3 justify-between">
-                <Button
-                  variant="outline"
-                  onClick={handlePrevious}
-                  disabled={currentQuestion === 0}
-                  data-testid="button-previous"
-                >
-                  Previous
-                </Button>
+                {!submitMutation.isPending && (
+                  <Button
+                    variant="outline"
+                    onClick={handlePrevious}
+                    disabled={currentQuestion === 0}
+                    data-testid="button-previous"
+                  >
+                    Previous
+                  </Button>
+                )}
                 
                 {currentQuestion === questions.length - 1 ? (
                   submitMutation.isPending ? (
