@@ -3441,67 +3441,67 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
   yPos += CARD_PADDING;
   
-  const halfWidth = (pageWidth - 50) / 2;
-  
-  // Common Strengths - Blue paragraph style (no box)
-  pdf.setFontSize(BODY_SIZE + 2);
+  // Common Strengths - Single column layout
+  pdf.setFontSize(BODY_SIZE + 3);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 64, 175);
   pdf.text('Common Strengths', 20, yPos);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(BODY_SIZE);
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setTextColor(59, 130, 246);
   if (data.summaryInsights.commonStrengths.length > 0) {
     data.summaryInsights.commonStrengths.slice(0, 4).forEach((s, i) => {
-      const truncated = s.length > 40 ? s.slice(0, 38) + '...' : s;
-      pdf.text(`\u2022 ${truncated}`, 20, yPos + 6 + (i * 5));
+      pdf.text(`\u2022 ${s}`, 20, yPos + 7 + (i * 6));
     });
+    yPos += 7 + (Math.min(data.summaryInsights.commonStrengths.length, 4) * 6) + 8;
   } else {
     pdf.text('No common strengths identified', 20, yPos + 8);
+    yPos += 16;
   }
   
-  // Common Development Areas - Blue paragraph style (no box)
-  pdf.setFontSize(BODY_SIZE + 2);
+  // Common Development Areas - Single column layout
+  pdf.setFontSize(BODY_SIZE + 3);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 64, 175);
-  pdf.text('Common Development Areas', 25 + halfWidth, yPos);
+  pdf.text('Common Development Areas', 20, yPos);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(BODY_SIZE);
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setTextColor(96, 165, 250);
   if (data.summaryInsights.commonGaps.length > 0) {
     data.summaryInsights.commonGaps.slice(0, 4).forEach((g, i) => {
-      const truncated = g.length > 40 ? g.slice(0, 38) + '...' : g;
-      pdf.text(`\u2022 ${truncated}`, 25 + halfWidth, yPos + 6 + (i * 5));
+      pdf.text(`\u2022 ${g}`, 20, yPos + 7 + (i * 6));
     });
+    yPos += 7 + (Math.min(data.summaryInsights.commonGaps.length, 4) * 6) + 8;
   } else {
-    pdf.text('No common gaps identified', 25 + halfWidth, yPos + 8);
+    pdf.text('No common gaps identified', 20, yPos + 8);
+    yPos += 16;
   }
   
-  yPos += 28 + BLOCK_SPACING;
+  yPos += BLOCK_SPACING;
   
   // Key Differentiators - Blue paragraph style (no box)
   if (data.summaryInsights.keyDifferentiators.length > 0) {
-    pdf.setFontSize(BODY_SIZE + 2);
+    pdf.setFontSize(BODY_SIZE + 3);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(30, 64, 175);
     pdf.text('Key Differentiators', 20, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(BODY_SIZE);
+    pdf.setFontSize(BODY_SIZE + 1);
     pdf.setTextColor(37, 99, 235);
     data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
       const truncated = d.length > 100 ? d.slice(0, 98) + '...' : d;
-      pdf.text(`\u2022 ${truncated}`, 20, yPos + 6 + (i * 5));
+      pdf.text(`\u2022 ${truncated}`, 20, yPos + 7 + (i * 6));
     });
-    yPos += 22 + BLOCK_SPACING;
+    yPos += 7 + (Math.min(data.summaryInsights.keyDifferentiators.length, 3) * 6) + 8 + BLOCK_SPACING;
   }
   
   // Hiring Recommendations - Blue paragraph style with expanded content (no "AI" prefix)
-  pdf.setFontSize(BODY_SIZE + 2);
+  pdf.setFontSize(BODY_SIZE + 3);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 64, 175);
   pdf.text('Hiring Recommendations', 20, yPos);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(BODY_SIZE);
+  pdf.setFontSize(BODY_SIZE + 1);
   pdf.setTextColor(59, 130, 246);
   
   // Generate expanded contextual suggestions based on data
