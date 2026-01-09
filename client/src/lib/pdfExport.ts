@@ -253,16 +253,39 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setTextColor(55, 65, 81);
   
   // AI Readiness needs wider label column for longer skill names
+  // Use smaller font for labels to prevent overlap with descriptions
   let aiDescWidth = pageWidth - aiDescColumnX - 15;
+  const aiLabelMaxWidth = aiDescColumnX - 27; // Max width for label before description column
   AI_READINESS_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
-    descLines.forEach((line: string, i: number) => {
-      pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
-    });
-    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    pdf.setFontSize(7.5); // Slightly smaller for longer AI Readiness labels
+    // Wrap label if too long to prevent overlap with description
+    const labelText = `${skill.displayName}:`;
+    const labelWidth = pdf.getTextWidth(labelText);
+    if (labelWidth > aiLabelMaxWidth) {
+      // Split long labels across lines
+      const labelLines = pdf.splitTextToSize(labelText, aiLabelMaxWidth);
+      labelLines.forEach((line: string, i: number) => {
+        pdf.text(line, 25, yPos + (i * lineHeight));
+      });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
+      const labelHeight = labelLines.length * lineHeight;
+      descLines.forEach((line: string, i: number) => {
+        pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
+      });
+      yPos += Math.max(labelHeight + 1.5, descLines.length * lineHeight + 1.5);
+    } else {
+      pdf.text(labelText, 25, yPos);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
+      descLines.forEach((line: string, i: number) => {
+        pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
+      });
+      yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    }
   });
   yPos += 4;
   
