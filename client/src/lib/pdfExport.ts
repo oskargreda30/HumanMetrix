@@ -4022,12 +4022,6 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     });
     
     yPos += 15;
-    
-    // Legend
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
   }
   
   // ========== RECOMMENDED NEXT STEPS SECTION ==========
