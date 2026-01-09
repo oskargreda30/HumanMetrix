@@ -4024,82 +4024,135 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += 15;
   }
   
-  // ========== RECOMMENDED NEXT STEPS SECTION ==========
-  yPos = ensurePageSpace(pdf, yPos, 70, pageHeight, pageWidth);
-  yPos += 15;
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
+  // Start new page for these sections together
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
+  
+  // Recommended Next Steps section
   yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
-  yPos += 8;
+  yPos += 5;
   
   // Get top candidate name for recommendations
   const topCandidateName = data.summaryInsights.topPerformer?.userName || 'the top candidate';
   
+  // Next steps bullet content
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
   const nextSteps = [
-    `Conduct final-round interviews with ${topCandidateName} focusing on team dynamics and cultural alignment`,
-    'Perform reference checks emphasizing leadership and collaboration competencies',
-    'Prepare competitive offer package based on candidate expectations',
-    'Design 90-day onboarding plan targeting identified development areas'
+    `Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report`,
+    `Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics`,
+    'Check professional references with emphasis on areas of strength',
+    'Consider for final candidate pool'
   ];
   
-  nextSteps.forEach((step, idx) => {
-    // Numbered circle
-    pdf.setFillColor(239, 246, 255);
-    pdf.circle(26, yPos + 1, 4, 'F');
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(`${idx + 1}`, 24, yPos + 2);
-    
-    // Step text
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    const truncStep = step.length > 95 ? step.slice(0, 93) + '...' : step;
-    pdf.text(truncStep, 34, yPos + 2);
-    yPos += 10;
+  nextSteps.forEach(step => {
+    yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('\u2022', 27, yPos);
+    pdf.setTextColor(55, 65, 81);
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    stepLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 5));
+    });
+    yPos += (stepLines.length * 5) + 3;
   });
   
-  // ========== ADDITIONAL SERVICES ON REQUEST ==========
-  yPos += 5;
+  yPos += 15;
   
-  // Blue banner
-  pdf.setFillColor(59, 130, 246);
-  pdf.rect(20, yPos, pageWidth - 40, 24, 'F');
-  
-  // Title with sparkle icon placeholder
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('Additional Services on Request', 26, yPos + 10);
+  // Additional Services section on same page
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 2;
   
   pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('Contact our team to unlock these premium insights for your hiring decisions', 26, yPos + 18);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 8;
   
-  yPos += 30;
-  
-  // Service items in two columns
-  const services = [
-    { title: 'Interview Question Bank', desc: 'Role-specific questions tailored to candidate gaps' },
-    { title: 'Onboarding Playbook', desc: 'Customized 90-day development plan' },
-    { title: 'Culture Fit Analysis', desc: 'Team compatibility assessment' },
-    { title: 'Compensation Benchmarking', desc: 'Market-rate salary recommendations' }
+  const additionalServices = [
+    {
+      name: 'Suggested Interview Questions',
+      description: 'Customized interview questions based on assessment results and identified skill gaps'
+    },
+    {
+      name: 'Team Composition Fit',
+      description: 'Analysis of how the candidate would integrate with your existing team dynamics and structure'
+    },
+    {
+      name: 'Time to Productivity Estimate',
+      description: 'Projected timeline for the candidate to reach full productivity in the role'
+    },
+    {
+      name: 'Hiring Risk Analysis',
+      description: 'Comprehensive risk assessment including potential challenges and mitigation strategies'
+    },
+    {
+      name: 'Development Investment Cost',
+      description: 'Estimated training and development investment required to bridge identified skill gaps'
+    }
   ];
   
-  const serviceColWidth = (pageWidth - 50) / 2;
-  services.forEach((service, idx) => {
-    const colX = 20 + (idx % 2) * (serviceColWidth + 10);
-    const rowY = yPos + Math.floor(idx / 2) * 14;
+  additionalServices.forEach((service, index) => {
+    yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
     
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(30, 64, 175);
-    pdf.text(service.title, colX, rowY);
-    
+    // Service number badge
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(20, yPos - 2, 5, 5, 1, 1, 'F');
     pdf.setFontSize(7);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${index + 1}`, 22.5, yPos + 1.5, { align: 'center' });
+    
+    // Service name
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(service.name, 28, yPos + 1);
+    
+    // Service description
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(service.desc, colX, rowY + 5);
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 28, yPos + 5 + (idx * 3));
+    });
+    
+    yPos += 5 + (descLines.length * 3) + 3;
   });
+  
+  yPos += 5;
+  
+  // Contact info box
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');
+  
+  pdf.setFontSize(10);
+  pdf.setTextColor(30, 58, 138);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 5);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 9);
+  
+  yPos += 18;
+  
+  // Disclaimer
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setTextColor(107, 114, 128);
+  const disclaimer = 'This recommendation is generated based on assessment data and role requirements analysis. It should be used as one input among multiple evaluation criteria including interviews, work samples, and reference checks for comprehensive hiring decisions.';
+  const disclaimerLines = pdf.splitTextToSize(disclaimer, pageWidth - 50);
+  disclaimerLines.forEach((line: string) => {
+    yPos = ensurePageSpace(pdf, yPos, 4, pageHeight, pageWidth);
+    pdf.text(line, 25, yPos);
+    yPos += 3.5;
+  });
+  
+  pdf.setTextColor(0, 0, 0);
   
   // ========== SKILLS LEGEND PAGE ==========
   // Track the page number where Skills Legend starts
