@@ -211,33 +211,50 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  // Define column positions for two-column layout
-  // FIT skills have shorter names, so use narrower label column
-  const fitLabelWidth = 55; // Width for FIT skill labels
-  const fitDescColumnX = 80; // Description start for FIT
-  // AI Readiness has longer names, so use wider label column
-  const aiLabelWidth = 80; // Width for AI Readiness labels
-  const aiDescColumnX = 105; // Description start for AI Readiness
-  // Prompt Architecture has moderate names
-  const paLabelWidth = 55;
-  const paDescColumnX = 80;
-  // AIQ bands have longer text
-  const aiqLabelWidth = 65;
-  const aiqDescColumnX = 90;
+  // CONSISTENT column layout for ALL sections
+  // Labels start at x=25, descriptions start at x=80 for all sections
+  const labelStartX = 25;
+  const descStartX = 80; // Same for all sections
+  const labelMaxWidth = descStartX - labelStartX - 3; // Max label width before description
+  const descWidth = pageWidth - descStartX - 15;
+  const lineHeight = 3.5;
   
-  const lineHeight = 3.5; // Consistent line height for wrapped text
+  // Helper function to render a skill/dimension row with consistent columns
+  const renderLegendRow = (labelText: string, description: string) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    
+    // Check if label needs wrapping
+    const fullLabel = `${labelText}:`;
+    const labelWidth = pdf.getTextWidth(fullLabel);
+    
+    if (labelWidth > labelMaxWidth) {
+      // Wrap long labels
+      const labelLines = pdf.splitTextToSize(fullLabel, labelMaxWidth);
+      labelLines.forEach((line: string, i: number) => {
+        pdf.text(line, labelStartX, yPos + (i * lineHeight));
+      });
+      pdf.setFont('helvetica', 'normal');
+      const descLines = pdf.splitTextToSize(description || '', descWidth);
+      descLines.forEach((line: string, i: number) => {
+        pdf.text(line, descStartX, yPos + (i * lineHeight));
+      });
+      const maxLines = Math.max(labelLines.length, descLines.length);
+      yPos += Math.max(5, maxLines * lineHeight + 1.5);
+    } else {
+      pdf.text(fullLabel, labelStartX, yPos);
+      pdf.setFont('helvetica', 'normal');
+      const descLines = pdf.splitTextToSize(description || '', descWidth);
+      descLines.forEach((line: string, i: number) => {
+        pdf.text(line, descStartX, yPos + (i * lineHeight));
+      });
+      yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    }
+  };
   
   // FIT Assessment section
-  let fitDescWidth = pageWidth - fitDescColumnX - 15;
   FIT_SKILLS.forEach((skill) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(skill.description || '', fitDescWidth);
-    descLines.forEach((line: string, i: number) => {
-      pdf.text(line, fitDescColumnX, yPos + (i * lineHeight));
-    });
-    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    renderLegendRow(skill.displayName, skill.description || '');
   });
   yPos += 4;
   
@@ -252,40 +269,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  // AI Readiness needs wider label column for longer skill names
-  // Use smaller font for labels to prevent overlap with descriptions
-  let aiDescWidth = pageWidth - aiDescColumnX - 15;
-  const aiLabelMaxWidth = aiDescColumnX - 27; // Max width for label before description column
   AI_READINESS_SKILLS.forEach((skill) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(7.5); // Slightly smaller for longer AI Readiness labels
-    // Wrap label if too long to prevent overlap with description
-    const labelText = `${skill.displayName}:`;
-    const labelWidth = pdf.getTextWidth(labelText);
-    if (labelWidth > aiLabelMaxWidth) {
-      // Split long labels across lines
-      const labelLines = pdf.splitTextToSize(labelText, aiLabelMaxWidth);
-      labelLines.forEach((line: string, i: number) => {
-        pdf.text(line, 25, yPos + (i * lineHeight));
-      });
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
-      const labelHeight = labelLines.length * lineHeight;
-      descLines.forEach((line: string, i: number) => {
-        pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
-      });
-      yPos += Math.max(labelHeight + 1.5, descLines.length * lineHeight + 1.5);
-    } else {
-      pdf.text(labelText, 25, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
-      descLines.forEach((line: string, i: number) => {
-        pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
-      });
-      yPos += Math.max(5, descLines.length * lineHeight + 1.5);
-    }
+    renderLegendRow(skill.displayName, skill.description || '');
   });
   yPos += 4;
   
@@ -300,16 +285,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  let paDescWidth = pageWidth - paDescColumnX - 15;
   PROMPT_ARCHITECTURE_DIMENSIONS.forEach((dim) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${dim.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(dim.description || '', paDescWidth);
-    descLines.forEach((line: string, i: number) => {
-      pdf.text(line, paDescColumnX, yPos + (i * lineHeight));
-    });
-    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    renderLegendRow(dim.displayName, dim.description || '');
   });
   yPos += 4;
   
@@ -332,16 +309,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  let aiqDescWidth = pageWidth - aiqDescColumnX - 15;
   AIQ_BANDS.forEach((band) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${band.range} (${band.title}):`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(band.description || '', aiqDescWidth);
-    descLines.forEach((line: string, i: number) => {
-      pdf.text(line, aiqDescColumnX, yPos + (i * lineHeight));
-    });
-    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
+    renderLegendRow(`${band.range} (${band.title})`, band.description || '');
   });
   
   pdf.setTextColor(0, 0, 0);
