@@ -3366,10 +3366,10 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setFontSize(VALUE_SIZE - 1);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 64, 175);
-  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 13);
+  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 9);
   pdf.setFontSize(VALUE_SIZE + 4);
   pdf.setTextColor(37, 99, 235);
-  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 24);
+  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 19);
   
   // Card 2: Candidates Assessed - Blue shades
   const card2X = 20 + cardWidth + cardGap;
