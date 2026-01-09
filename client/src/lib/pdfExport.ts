@@ -3538,32 +3538,25 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     hiringSuggestions.push(`Training Priority: Most candidates share a development need in "${topGap}". Plan for onboarding programs or mentorship in this area to accelerate new hire effectiveness.`);
   }
   
-  // Render suggestions with word wrapping
+  // Render suggestions with proper word wrapping using splitTextToSize
   let suggestionY = yPos + 6;
+  const maxLineWidth = pageWidth - 45;
+  
   hiringSuggestions.slice(0, 3).forEach((suggestion) => {
-    // Split long suggestions into multiple lines
-    const maxLineWidth = pageWidth - 45;
-    const words = suggestion.split(' ');
-    let currentLine = '';
+    // Use jsPDF's built-in text wrapping
+    const lines = pdf.splitTextToSize(suggestion, maxLineWidth);
     
-    words.forEach((word) => {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const testWidth = pdf.getTextWidth(testLine);
-      if (testWidth > maxLineWidth && currentLine) {
-        pdf.text(`\u2022 ${currentLine}`, 20, suggestionY);
-        suggestionY += 4;
-        currentLine = word;
-        // Remove bullet for continuation lines
-        pdf.text(`  ${word}`, 20, suggestionY);
-        currentLine = '';
+    lines.forEach((line: string, lineIdx: number) => {
+      if (lineIdx === 0) {
+        // First line gets the bullet
+        pdf.text(`\u2022 ${line}`, 20, suggestionY);
       } else {
-        currentLine = testLine;
+        // Continuation lines are indented without bullet
+        pdf.text(`   ${line}`, 20, suggestionY);
       }
+      suggestionY += 4;
     });
-    if (currentLine) {
-      pdf.text(`\u2022 ${currentLine}`, 20, suggestionY);
-      suggestionY += 6;
-    }
+    suggestionY += 2; // Extra spacing between suggestions
   });
   yPos = suggestionY;
   
