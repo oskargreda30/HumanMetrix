@@ -749,33 +749,42 @@ export default function PartnersTab() {
                       <TableRow className="border-white/20">
                         <TableHead className="text-white/70">Event</TableHead>
                         <TableHead className="text-white/70">Assessment</TableHead>
-                        <TableHead className="text-white/70">Billable</TableHead>
+                        <TableHead className="text-white/70">Type</TableHead>
                         <TableHead className="text-white/70">Amount</TableHead>
                         <TableHead className="text-white/70">Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {partnerUsage.recentEvents.slice(0, 20).map((event) => (
-                        <TableRow key={event.id} className="border-white/10">
-                          <TableCell className="text-white">
-                            <Badge variant="outline" className="border-white/30 text-white/80">
-                              {event.eventType.replace(/_/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-white/80">{event.assessmentType || "-"}</TableCell>
-                          <TableCell>
-                            {event.billable ? (
-                              <Badge className="bg-green-500/20 text-green-300">Yes</Badge>
-                            ) : (
-                              <Badge className="bg-white/10 text-white/50">No</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-white/80">
-                            {event.billedAmount ? formatCurrency(event.billedAmount, detailPartner.currency) : "-"}
-                          </TableCell>
-                          <TableCell className="text-white/60 text-sm">{formatDate(event.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {partnerUsage.recentEvents.slice(0, 20).map((event) => {
+                        const testType = event.isTestMode 
+                          ? 'test' 
+                          : event.billable 
+                            ? 'billed' 
+                            : 'free';
+                        return (
+                          <TableRow key={event.id} className="border-white/10">
+                            <TableCell className="text-white">
+                              <Badge variant="outline" className="border-white/30 text-white/80">
+                                {event.eventType.replace(/_/g, " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white/80">{event.assessmentType || "-"}</TableCell>
+                            <TableCell>
+                              {testType === 'test' ? (
+                                <Badge className="bg-purple-500/20 text-purple-300">Test Session</Badge>
+                              ) : testType === 'free' ? (
+                                <Badge className="bg-blue-500/20 text-blue-300">Free Test</Badge>
+                              ) : (
+                                <Badge className="bg-green-500/20 text-green-300">Billed</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80">
+                              {event.billedAmount ? formatCurrency(event.billedAmount, detailPartner.currency) : "-"}
+                            </TableCell>
+                            <TableCell className="text-white/60 text-sm">{formatDate(event.createdAt)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 ) : (
