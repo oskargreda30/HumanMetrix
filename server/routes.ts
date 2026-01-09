@@ -580,7 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       console.log(`[Payment Success] Stripe session status: ${session.payment_status}, email: ${session.customer_email}`);
       
-      if (!session || session.payment_status !== "paid") {
+      // Accept both "paid" (normal payment) and "no_payment_required" (100% discount code)
+      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
         return res.status(400).json({ message: "Payment not completed" });
       }
 
@@ -637,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to logged-in user
+        // Send receipt email to the email entered at Stripe checkout (not necessarily the signup email)
         const user = await storage.getUser(userId);
         if (user) {
           const assessmentDisplayNames = assessmentList.map((id: string) => {
@@ -649,19 +650,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${user.firstName} ${user.lastName}` 
             : user.firstName || user.email;
           
-          console.log(`[Payment Success] Sending receipt email to logged-in user: ${user.email}`);
+          // Use Stripe checkout email if available, otherwise fall back to user's account email
+          const receiptEmail = session.customer_email || user.email;
+          
+          console.log(`[Payment Success] Sending receipt email to checkout email: ${receiptEmail} (user account: ${user.email})`);
           try {
             await sendPaymentReceiptEmail(
-              user.email,
+              receiptEmail,
               userName,
               assessmentDisplayNames,
               session.amount_total || 0,
               session.id,
               session.currency || 'gbp'
             );
-            console.log(`[Payment Success] Receipt email sent successfully to: ${user.email}`);
+            console.log(`[Payment Success] Receipt email sent successfully to: ${receiptEmail}`);
           } catch (emailError) {
-            console.error(`[Payment Success] Failed to send receipt email to ${user.email}:`, emailError);
+            console.error(`[Payment Success] Failed to send receipt email to ${receiptEmail}:`, emailError);
           }
         }
         
@@ -725,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to existing user
+        // Send receipt email to the email entered at Stripe checkout
         const assessmentDisplayNames = assessmentList.map((id: string) => {
           const normalized = normalizeAssessmentId(id);
           return assessmentNames[normalized] || normalized;
@@ -735,19 +739,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.firstName || `${firstName} ${lastName}`;
         
-        console.log(`[Payment Success] Sending receipt email to existing user: ${existingUser.email}`);
+        // Use Stripe checkout email if available, otherwise fall back to user's account email
+        const receiptEmail = session.customer_email || existingUser.email;
+        
+        console.log(`[Payment Success] Sending receipt email to checkout email: ${receiptEmail} (user account: ${existingUser.email})`);
         try {
           await sendPaymentReceiptEmail(
-            existingUser.email,
+            receiptEmail,
             existingUserName,
             assessmentDisplayNames,
             session.amount_total || 0,
             session.id,
             session.currency || 'gbp'
           );
-          console.log(`[Payment Success] Receipt email sent successfully to: ${existingUser.email}`);
+          console.log(`[Payment Success] Receipt email sent successfully to: ${receiptEmail}`);
         } catch (emailError) {
-          console.error(`[Payment Success] Failed to send receipt email to ${existingUser.email}:`, emailError);
+          console.error(`[Payment Success] Failed to send receipt email to ${receiptEmail}:`, emailError);
         }
         
         return res.json({
@@ -1242,6 +1249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
       // Send payment receipt email (including for FREE orders where amount_total is 0)
+      // Always send to the email entered at Stripe checkout
       try {
         const user = await storage.getUser(userId);
         const purchaseItems = await storage.getPurchaseItems(purchaseId);
@@ -1250,15 +1258,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user) {
           const amount = session.amount_total ?? 0; // Handle 0 for FREE orders
           const currency = session.currency || 'gbp';
+          // Use Stripe checkout email if available, otherwise fall back to user's account email
+          const receiptEmail = session.customer_email || user.email;
+          
           await sendPaymentReceiptEmail(
-            user.email,
+            receiptEmail,
             user.firstName || 'Customer',
             assessmentTypes,
             amount,
             sessionId,
             currency
           );
-          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${currency.toUpperCase()} ${(amount / 100).toFixed(2)})`);
+          console.log(`[Payment Callback] ✓ Receipt email sent to checkout email: ${receiptEmail} (user account: ${user.email}, amount: ${currency.toUpperCase()} ${(amount / 100).toFixed(2)})`);
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
