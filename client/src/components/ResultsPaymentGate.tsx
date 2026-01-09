@@ -87,12 +87,16 @@ export function ResultsPaymentGate() {
         const { init } = await import('@airwallex/components-sdk');
         const env = window.location.hostname.includes('humanmetrix.co.uk') ? 'prod' : 'demo';
         
-        const { payments } = await init({
+        const result = await init({
           env,
           enabledElements: ['payments'],
         });
         
-        payments.redirectToCheckout({
+        if (!result.payments) {
+          throw new Error('Failed to initialize payment processor');
+        }
+        
+        result.payments.redirectToCheckout({
           intent_id: data.intentId,
           client_secret: data.clientSecret,
           currency: data.currency,
@@ -240,7 +244,7 @@ export function ResultsPaymentGate() {
           </Button>
 
           <p className="text-sm text-center text-muted-foreground">
-            Secure payment processed via Stripe
+            Secure payment processing
           </p>
         </div>
       </Card>
