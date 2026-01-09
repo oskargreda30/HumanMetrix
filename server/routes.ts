@@ -2490,28 +2490,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const userId = req.user.id;
       
-      const result = await storage.getResultById(id);
+      console.log(`[Status Poll] Checking status for assessment ${id}, user ${userId}`);
       
-      if (!result) {
+      // Query directly from database to ensure fresh data
+      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
+      
+      if (!result || result.length === 0) {
+        console.log(`[Status Poll] Assessment ${id} not found`);
         return res.status(404).json({ message: "Assessment not found" });
       }
       
-      if (result.userId !== userId) {
+      const assessment = result[0];
+      
+      if (assessment.userId !== userId) {
+        console.log(`[Status Poll] Access denied for assessment ${id}, owner ${assessment.userId} vs requester ${userId}`);
         return res.status(403).json({ message: "Access denied" });
       }
       
+      console.log(`[Status Poll] Assessment ${id} status: ${assessment.status}`);
+      
       // Return current status and results if available
-      if (result.status === 'completed') {
+      if (assessment.status === 'completed') {
         return res.json({
           status: 'completed',
           success: true,
-          scores: result.scores,
-          totalScore: result.totalScore,
-          evaluations: result.evaluations
+          scores: assessment.scores,
+          totalScore: assessment.totalScore,
+          evaluations: assessment.evaluations
         });
       }
       
-      if (result.status === 'evaluation_failed') {
+      if (assessment.status === 'evaluation_failed') {
         return res.json({
           status: 'failed',
           message: "Evaluation failed. Please try submitting again."
@@ -2520,12 +2529,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Still evaluating
       return res.json({
-        status: result.status || 'evaluating',
+        status: assessment.status || 'evaluating',
         message: "Your answers are being evaluated. This may take 2-3 minutes."
       });
-    } catch (error) {
-      console.error("Error checking assessment status:", error);
-      res.status(500).json({ message: "Failed to check status" });
+    } catch (error: any) {
+      console.error("Error checking assessment status:", error.message, error.stack);
+      res.status(500).json({ message: "Failed to check status", error: error.message });
     }
   });
 

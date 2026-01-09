@@ -116,30 +116,51 @@ export default function Assessment() {
   const pollForCompletion = async (assessmentId: string): Promise<any> => {
     const maxPolls = 60; // 60 polls × 3 seconds = 3 minutes max
     const pollInterval = 3000; // 3 seconds
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
     
     for (let i = 0; i < maxPolls; i++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
-      const statusResponse = await fetch(`/api/assessments/${assessmentId}/status`, {
-        credentials: 'include',
-      });
-      
-      if (!statusResponse.ok) {
-        throw new Error('Failed to check status');
+      try {
+        const statusResponse = await fetch(`/api/assessments/${assessmentId}/status`, {
+          credentials: 'include',
+        });
+        
+        if (!statusResponse.ok) {
+          consecutiveErrors++;
+          console.warn(`[Assessment] Poll ${i + 1}/${maxPolls}: HTTP error ${statusResponse.status} (${consecutiveErrors}/${maxConsecutiveErrors})`);
+          if (consecutiveErrors >= maxConsecutiveErrors) {
+            throw new Error('Failed to check status after multiple attempts');
+          }
+          continue; // Retry on transient errors
+        }
+        
+        consecutiveErrors = 0; // Reset on successful request
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status === 'completed') {
+          console.log('[Assessment] Evaluation completed successfully');
+          return statusData;
+        }
+        
+        if (statusData.status === 'failed') {
+          throw new Error(statusData.message || 'Evaluation failed');
+        }
+        
+        // Still evaluating - continue polling
+        console.log(`[Assessment] Poll ${i + 1}/${maxPolls}: status=${statusData.status}`);
+      } catch (error: any) {
+        if (error.message?.includes('Evaluation failed') || error.message?.includes('after multiple attempts')) {
+          throw error;
+        }
+        consecutiveErrors++;
+        console.warn(`[Assessment] Poll ${i + 1}/${maxPolls}: fetch error (${consecutiveErrors}/${maxConsecutiveErrors}):`, error.message);
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          throw new Error('Failed to check status after multiple attempts');
+        }
+        // Continue polling on transient network errors
       }
-      
-      const statusData = await statusResponse.json();
-      
-      if (statusData.status === 'completed') {
-        return statusData;
-      }
-      
-      if (statusData.status === 'failed') {
-        throw new Error(statusData.message || 'Evaluation failed');
-      }
-      
-      // Still evaluating - continue polling
-      console.log(`[Assessment] Poll ${i + 1}/${maxPolls}: still evaluating...`);
     }
     
     throw new Error('Evaluation timed out. Please refresh the page.');
