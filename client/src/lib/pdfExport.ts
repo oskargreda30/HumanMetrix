@@ -3343,64 +3343,96 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const BLOCK_SPACING = 12;
   const ITEM_SPACING = 4;
   
-  // Summary Cards (3 cards: Top Performer, Candidates, Distribution) - Uniform styling
+  // Summary Cards (3 cards: Top Performer, Candidates Assessed, Distribution) - Uniform styling
   const cardWidth = (pageWidth - 50) / 3;
-  const cardHeight = 28;
+  const cardHeight = 32;
   const cardGap = 5;
   
-  // Card 1: Top Performer
-  pdf.setFillColor(236, 253, 245);
-  pdf.setDrawColor(34, 197, 94);
+  // Card 1: Top Performer - All blue shades
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
   pdf.setLineWidth(0.3);
   pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(107, 114, 128);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('TOP PERFORMER', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
-  pdf.setFontSize(VALUE_SIZE);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
   // Null-safety for topPerformer
   const topPerformerName = String(data.summaryInsights.topPerformer?.userName || 'N/A');
   const topPerformerFitVal = data.summaryInsights.topPerformer?.overallFit ?? 0;
-  const topName = topPerformerName.length > 14 
-    ? topPerformerName.slice(0, 12) + '...' 
+  const topName = topPerformerName.length > 20 
+    ? topPerformerName.slice(0, 18) + '...' 
     : topPerformerName;
-  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 12);
-  pdf.setFontSize(VALUE_SIZE + 2);
-  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 20);
+  pdf.setFontSize(VALUE_SIZE - 1);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 13);
+  pdf.setFontSize(VALUE_SIZE + 4);
+  pdf.setTextColor(37, 99, 235);
+  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 24);
   
-  // Card 2: Total Candidates
+  // Card 2: Candidates Assessed - Blue shades
   const card2X = 20 + cardWidth + cardGap;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('CANDIDATES', card2X + CARD_PADDING, yPos + CARD_PADDING + 2);
-  pdf.setFontSize(VALUE_SIZE + 4);
+  pdf.setTextColor(59, 130, 246);
+  pdf.text('CANDIDATES ASSESSED', card2X + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setFontSize(VALUE_SIZE + 6);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + CARD_PADDING + 18);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + CARD_PADDING + 20);
   
-  // Card 3: Distribution
+  // Card 3: Distribution - Blue shades with colored indicators
   const card3X = card2X + cardWidth + cardGap;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('DISTRIBUTION', card3X + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setTextColor(59, 130, 246);
+  pdf.text('FIT DISTRIBUTION', card3X + CARD_PADDING, yPos + CARD_PADDING + 2);
+  
+  // Distribution with colored circles and better layout
+  const distY = yPos + CARD_PADDING + 12;
+  const distSpacing = (cardWidth - CARD_PADDING * 2) / 3;
+  
+  // Strong (green circle)
+  pdf.setFillColor(34, 197, 94);
+  pdf.circle(card3X + CARD_PADDING + 3, distY, 2, 'F');
   pdf.setFontSize(BODY_SIZE);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
-  pdf.text(`Strong: ${data.summaryInsights.fitDistribution.strong}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 10);
+  pdf.text(`${data.summaryInsights.fitDistribution.strong}`, card3X + CARD_PADDING + 8, distY + 1);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6);
+  pdf.text('Strong', card3X + CARD_PADDING + 1, distY + 8);
+  
+  // Moderate (amber circle)
+  const modX = card3X + CARD_PADDING + distSpacing;
+  pdf.setFillColor(234, 179, 8);
+  pdf.circle(modX + 3, distY, 2, 'F');
+  pdf.setFontSize(BODY_SIZE);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(234, 179, 8);
-  pdf.text(`Moderate: ${data.summaryInsights.fitDistribution.moderate}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 16);
+  pdf.text(`${data.summaryInsights.fitDistribution.moderate}`, modX + 8, distY + 1);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6);
+  pdf.text('Moderate', modX, distY + 8);
+  
+  // Dev Needed (red circle)
+  const devX = card3X + CARD_PADDING + distSpacing * 2;
+  pdf.setFillColor(239, 68, 68);
+  pdf.circle(devX + 3, distY, 2, 'F');
+  pdf.setFontSize(BODY_SIZE);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(239, 68, 68);
-  pdf.text(`Dev Needed: ${data.summaryInsights.fitDistribution.developmentNeeded}`, card3X + CARD_PADDING, yPos + CARD_PADDING + 22);
+  pdf.text(`${data.summaryInsights.fitDistribution.developmentNeeded}`, devX + 8, distY + 1);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6);
+  pdf.text('Develop', devX + 1, distY + 8);
   
   pdf.setTextColor(0, 0, 0);
   yPos += cardHeight + BLOCK_SPACING;
