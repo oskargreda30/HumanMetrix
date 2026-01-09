@@ -196,10 +196,10 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   });
   yPos += 4;
   
-  // Prompt Architecture Dimensions
+  // Prompt Architecture Dimensions (cyan/teal color to match dashboard)
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(234, 179, 8);
+  pdf.setTextColor(6, 182, 212); // Cyan-500 to match dashboard
   pdf.text('Prompt Architecture - Evaluation Dimensions', 20, yPos);
   yPos += 6;
   
@@ -211,7 +211,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${dim.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(dim.description, 65, yPos);
+    pdf.text(dim.description, 75, yPos); // Consistent column position
     yPos += 5;
   });
   yPos += 4;
