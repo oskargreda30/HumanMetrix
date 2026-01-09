@@ -295,8 +295,49 @@ export default function RoleFitTab() {
         </Card>
       )}
 
-      {alignment && !isLoadingAlignment && (
+      {alignment && !isLoadingAlignment && selectedCandidateData && selectedRoleData && (
         <div className="space-y-6">
+          {/* Candidate Details Header */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Candidate Details
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Assessment profile for the selected candidate
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="font-medium">
+                    {selectedCandidateData.user.firstName || selectedCandidateData.user.lastName
+                      ? `${selectedCandidateData.user.firstName || ''} ${selectedCandidateData.user.lastName || ''}`.trim()
+                      : 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedCandidateData.user.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Target Role</p>
+                  <p className="font-medium">{selectedRoleData.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Analysis Date</p>
+                  <p className="font-medium">
+                    {new Date().toLocaleDateString('en-GB', { 
+                      day: 'numeric', month: 'long', year: 'numeric' 
+                    })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Overall Fit Score */}
           <Card>
             <CardHeader>
@@ -474,7 +515,7 @@ export default function RoleFitTab() {
                     Critical Skills Analysis
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Summary of skills marked as critical for the {selectedRole?.name || 'selected'} role
+                    Summary of skills marked as critical for the {selectedRoleData?.name || 'selected'} role
                   </p>
                 </CardHeader>
                 <CardContent>

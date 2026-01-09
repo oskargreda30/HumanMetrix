@@ -466,7 +466,13 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Assessment Completion Status - IMPROVED TABLE
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
-  yPos += 3;
+  yPos += 2;
+  
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Overview of assessment progress for each candidate across all four evaluation dimensions', 20, yPos);
+  pdf.setTextColor(0, 0, 0);
+  yPos += 6;
   
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentData = [
@@ -909,6 +915,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     yPos = addSectionHeader(pdf, 'AIQ (ARTIFICIAL INTELLIGENCE QUOTIENT)', yPos, pageWidth);
     yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Measures ethical awareness and responsible AI decision-making capabilities', 20, yPos);
+    pdf.setTextColor(0, 0, 0);
+    yPos += 6;
     
     applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
