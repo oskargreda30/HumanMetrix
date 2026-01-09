@@ -20,7 +20,7 @@ export default function AssessmentCardExample() {
         title="AI Readiness Assessment"
         description="Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage."
         questionCount={21}
-        duration="30 min"
+        duration="20 min"
         price="£5"
         icon={Sparkles}
         status="completed"
@@ -31,7 +31,7 @@ export default function AssessmentCardExample() {
         title="Prompt Architecture"
         description="Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by an AI model."
         questionCount={7}
-        duration="25 min"
+        duration="14 min"
         price="£5"
         icon={Code2}
         status="available"

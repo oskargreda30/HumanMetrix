@@ -376,15 +376,23 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  // Use consistent column position for all sections - descriptions start at same x position
-  const descColumnX = 85; // Fixed description column for all sections
+  // Use two-column layout with fixed widths for consistent alignment
+  const labelColumnWidth = 65; // Width for skill names
+  const descColumnX = 90; // Description starts here consistently
+  const descWidth = pageWidth - descColumnX - 15; // Available width for descriptions
+  
+  // Helper to render a skill row with proper wrapping
+  const renderSkillRow = (label: string, description: string) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(label, 25, yPos);
+    pdf.setFont('helvetica', 'normal');
+    const descLines = pdf.splitTextToSize(description || '', descWidth);
+    pdf.text(descLines[0], descColumnX, yPos);
+    yPos += 5;
+  };
   
   FIT_SKILLS.forEach((skill) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(skill.description || '', descColumnX, yPos);
-    yPos += 5;
+    renderSkillRow(`${skill.displayName}:`, skill.description || '');
   });
   yPos += 4;
   
@@ -400,13 +408,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setTextColor(55, 65, 81);
   
   AI_READINESS_SKILLS.forEach((skill) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    const descWidth = pageWidth - descColumnX - 15;
-    const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
-    pdf.text(descLines[0], descColumnX, yPos);
-    yPos += 5;
+    renderSkillRow(`${skill.displayName}:`, skill.description || '');
   });
   yPos += 4;
   
@@ -422,11 +424,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setTextColor(55, 65, 81);
   
   PROMPT_ARCHITECTURE_DIMENSIONS.forEach((dim) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${dim.displayName}:`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(dim.description, descColumnX, yPos);
-    yPos += 5;
+    renderSkillRow(`${dim.displayName}:`, dim.description);
   });
   yPos += 4;
   
@@ -450,11 +448,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setTextColor(55, 65, 81);
   
   AIQ_BANDS.forEach((band) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${band.range} (${band.title}):`, 25, yPos);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(band.description, descColumnX, yPos);
-    yPos += 5;
+    renderSkillRow(`${band.range} (${band.title}):`, band.description);
   });
   
   pdf.setTextColor(0, 0, 0);

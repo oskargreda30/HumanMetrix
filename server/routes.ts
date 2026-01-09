@@ -952,8 +952,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (unpaidPurchase.resultsAccessPaid) {
-          return res.status(400).json({ 
-            message: "Results for this purchase have already been paid for" 
+          // Idempotent: return success if already unlocked (user may have refreshed page)
+          return res.json({ 
+            success: true, 
+            message: "Results already unlocked",
+            free: true 
           });
         }
       } else {

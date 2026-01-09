@@ -129,6 +129,8 @@ export default function Assessment() {
       }
       return await response.json();
     },
+    retry: 2, // Retry up to 2 times on transient network errors
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff: 1s, 2s, 4s (max 5s)
     onSuccess: async () => {
       setIsSubmitting(false); // Reset submitting state
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
