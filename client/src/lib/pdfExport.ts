@@ -4030,6 +4030,83 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
   }
   
+  // ========== RECOMMENDED NEXT STEPS SECTION ==========
+  yPos = ensurePageSpace(pdf, yPos, 70, pageHeight, pageWidth);
+  yPos += 15;
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += 8;
+  
+  // Get top candidate name for recommendations
+  const topCandidateName = data.summaryInsights.topPerformer?.userName || 'the top candidate';
+  
+  const nextSteps = [
+    `Conduct final-round interviews with ${topCandidateName} focusing on team dynamics and cultural alignment`,
+    'Perform reference checks emphasizing leadership and collaboration competencies',
+    'Prepare competitive offer package based on candidate expectations',
+    'Design 90-day onboarding plan targeting identified development areas'
+  ];
+  
+  nextSteps.forEach((step, idx) => {
+    // Numbered circle
+    pdf.setFillColor(239, 246, 255);
+    pdf.circle(26, yPos + 1, 4, 'F');
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text(`${idx + 1}`, 24, yPos + 2);
+    
+    // Step text
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    const truncStep = step.length > 95 ? step.slice(0, 93) + '...' : step;
+    pdf.text(truncStep, 34, yPos + 2);
+    yPos += 10;
+  });
+  
+  // ========== ADDITIONAL SERVICES ON REQUEST ==========
+  yPos += 5;
+  
+  // Blue banner
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(20, yPos, pageWidth - 40, 24, 'F');
+  
+  // Title with sparkle icon placeholder
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('Additional Services on Request', 26, yPos + 10);
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Contact our team to unlock these premium insights for your hiring decisions', 26, yPos + 18);
+  
+  yPos += 30;
+  
+  // Service items in two columns
+  const services = [
+    { title: 'Interview Question Bank', desc: 'Role-specific questions tailored to candidate gaps' },
+    { title: 'Onboarding Playbook', desc: 'Customized 90-day development plan' },
+    { title: 'Culture Fit Analysis', desc: 'Team compatibility assessment' },
+    { title: 'Compensation Benchmarking', desc: 'Market-rate salary recommendations' }
+  ];
+  
+  const serviceColWidth = (pageWidth - 50) / 2;
+  services.forEach((service, idx) => {
+    const colX = 20 + (idx % 2) * (serviceColWidth + 10);
+    const rowY = yPos + Math.floor(idx / 2) * 14;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(30, 64, 175);
+    pdf.text(service.title, colX, rowY);
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(service.desc, colX, rowY + 5);
+  });
+  
   // ========== SKILLS LEGEND PAGE ==========
   // Track the page number where Skills Legend starts
   const legendStartPage = pdf.getNumberOfPages() + 1;
