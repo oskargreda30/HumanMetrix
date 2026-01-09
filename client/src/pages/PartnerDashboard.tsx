@@ -3065,9 +3065,8 @@ export default function PartnerDashboard() {
                                 key={pkg.size} 
                                 className="border rounded-lg p-4 hover:border-primary transition-colors"
                               >
-                                <div className="font-semibold text-lg">{pkg.name}</div>
                                 <div className="text-2xl font-bold text-primary">
-                                  {pkg.size.toLocaleString()} tests
+                                  {pkg.size.toLocaleString()} Tests
                                 </div>
                                 <div className="text-sm text-muted-foreground mb-3">
                                   {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
