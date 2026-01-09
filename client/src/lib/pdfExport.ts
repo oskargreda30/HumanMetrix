@@ -3594,112 +3594,109 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   
   // Skill Dominance - Left column with visual ranking bars
   if (data.summaryInsights.skillDominance && data.summaryInsights.skillDominance.length > 0) {
-    pdf.setFontSize(BODY_SIZE + 2);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(30, 64, 175);
     pdf.text('Skill Leadership', 20, yPos);
-    pdf.setFontSize(7);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(96, 165, 250);
-    pdf.text('Skills where each candidate outperforms others', 20, yPos + 5);
+    pdf.text('Skills where each candidate outperforms others', 20, yPos + 6);
     
-    let domY = yPos + 12;
+    let domY = yPos + 14;
     const maxWins = Math.max(...data.summaryInsights.skillDominance.map((sd: any) => sd.winsCount || 0), 1);
     
     data.summaryInsights.skillDominance.slice(0, 4).forEach((sd: any, i: number) => {
       if (!sd || !sd.candidateName) return;
       const candidateName = String(sd.candidateName || 'Unknown');
-      const truncName = candidateName.length > 22 ? candidateName.slice(0, 20) + '...' : candidateName;
       
-      // Candidate name (bigger)
-      pdf.setFontSize(9);
+      // Candidate name (full, no truncation)
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(truncName, 20, domY);
+      pdf.text(candidateName, 20, domY);
       
       // Small bar showing dominance
       const barWidth = ((sd.winsCount || 0) / maxWins) * 40;
       pdf.setFillColor(59, 130, 246);
-      pdf.roundedRect(20, domY + 2, barWidth, 3, 1, 1, 'F');
+      pdf.roundedRect(20, domY + 3, barWidth, 4, 1, 1, 'F');
       
       // Value
-      pdf.setFontSize(8);
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(37, 99, 235);
-      pdf.text(`${sd.winsCount ?? 0} of ${sd.totalSkills ?? 0}`, 65, domY + 4);
+      pdf.text(`${sd.winsCount ?? 0} of ${sd.totalSkills ?? 0}`, 65, domY + 6);
       
-      domY += 12;
+      domY += 14;
     });
   }
   
   // Consistency Scores - Right column with visual indicators
   if (data.summaryInsights.consistencyScores && data.summaryInsights.consistencyScores.length > 0) {
     const rightX = 25 + analyticsColWidth;
-    pdf.setFontSize(BODY_SIZE + 2);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(30, 64, 175);
     pdf.text('Performance Consistency', rightX, yPos);
-    pdf.setFontSize(7);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(96, 165, 250);
-    pdf.text('Score uniformity across all assessments', rightX, yPos + 5);
+    pdf.text('Score uniformity across all assessments', rightX, yPos + 6);
     
-    let consY = yPos + 12;
+    let consY = yPos + 14;
     data.summaryInsights.consistencyScores.slice(0, 4).forEach((cs: any, i: number) => {
       if (!cs || !cs.candidateName) return;
       const candidateName = String(cs.candidateName || 'Unknown');
-      const truncName = candidateName.length > 18 ? candidateName.slice(0, 16) + '...' : candidateName;
       
-      // Candidate name
-      pdf.setFontSize(9);
+      // Candidate name (full, no truncation)
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(truncName, rightX, consY);
+      pdf.text(candidateName, rightX, consY);
       
       // Consistency indicator circle
       const interpretation = String(cs.interpretation || 'N/A');
       const interpColor = interpretation === 'Excellent' ? [34, 197, 94] : 
                           interpretation === 'Good' ? [59, 130, 246] : [234, 179, 8];
       pdf.setFillColor(interpColor[0], interpColor[1], interpColor[2]);
-      pdf.circle(rightX + analyticsColWidth - 25, consY - 1, 2, 'F');
+      pdf.circle(rightX + analyticsColWidth - 25, consY - 1, 3, 'F');
       
       // Score and interpretation
-      pdf.setFontSize(8);
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(interpColor[0], interpColor[1], interpColor[2]);
       pdf.text(`${cs.consistencyScore ?? 0}%`, rightX + analyticsColWidth - 20, consY);
       
-      consY += 12;
+      consY += 14;
     });
   }
   
-  yPos += 58;
+  yPos += 68;
   
   // Critical Gap Ratio - Full width with risk indicators
   if (data.summaryInsights.criticalGapRatios && data.summaryInsights.criticalGapRatios.length > 0) {
-    pdf.setFontSize(BODY_SIZE + 2);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(30, 64, 175);
     pdf.text('Critical Skills Risk Assessment', 20, yPos);
-    pdf.setFontSize(7);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(96, 165, 250);
-    pdf.text('Gaps in critical role requirements that may impact performance', 20, yPos + 5);
+    pdf.text('Gaps in critical role requirements that may impact performance', 20, yPos + 6);
     
     const gapColWidth = (pageWidth - 50) / Math.min(4, data.summaryInsights.criticalGapRatios.length);
-    let gapY = yPos + 14;
+    let gapY = yPos + 16;
     
     data.summaryInsights.criticalGapRatios.slice(0, 4).forEach((cgr: any, i: number) => {
       if (!cgr || !cgr.candidateName) return;
       const colX = 20 + (i * gapColWidth);
       const candidateName = String(cgr.candidateName || 'Unknown');
-      const truncName = candidateName.length > 14 ? candidateName.slice(0, 12) + '...' : candidateName;
       
-      // Name
-      pdf.setFontSize(9);
+      // Name (full, no truncation)
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(truncName, colX, gapY);
+      pdf.text(candidateName, colX, gapY);
       
       // Risk level with colored indicator
       const riskLevel = String(cgr.riskLevel || 'Unknown');
@@ -3708,38 +3705,41 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
                         riskLevel === 'Moderate Risk' ? [234, 179, 8] : [239, 68, 68];
       
       pdf.setFillColor(riskColor[0], riskColor[1], riskColor[2]);
-      pdf.circle(colX + 2, gapY + 6, 2, 'F');
+      pdf.circle(colX + 2, gapY + 7, 3, 'F');
       
-      pdf.setFontSize(7);
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2]);
-      pdf.text(`${cgr.criticalGaps ?? 0}/${cgr.totalCritical ?? 0} gaps`, colX + 6, gapY + 7);
-      pdf.setFontSize(6);
-      pdf.text(riskLevel, colX + 6, gapY + 12);
+      pdf.text(`${cgr.criticalGaps ?? 0}/${cgr.totalCritical ?? 0} gaps`, colX + 8, gapY + 8);
+      pdf.setFontSize(8);
+      pdf.text(riskLevel, colX + 8, gapY + 14);
     });
     
-    yPos = gapY + 20;
+    yPos = gapY + 24;
   }
   
   // Largest Differential - Highlighted insight
   if (data.summaryInsights.largestDifferential) {
     const diff = data.summaryInsights.largestDifferential;
     if (diff.skillName && diff.topCandidate && diff.bottomCandidate) {
-      yPos += 5;
-      pdf.setFontSize(BODY_SIZE + 2);
+      yPos += 8;
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(30, 64, 175);
       pdf.text('Notable Skill Differential', 20, yPos);
       
-      pdf.setFontSize(BODY_SIZE);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(37, 99, 235);
       const topScore = diff.topScore ?? 0;
       const bottomScore = diff.bottomScore ?? 0;
       const diffText = `In ${diff.skillName}, ${diff.topCandidate} leads with ${topScore} points compared to ${diff.bottomCandidate}'s ${bottomScore} - a ${topScore - bottomScore} point differential.`;
-      pdf.text(diffText, 20, yPos + 6);
+      const diffLines = pdf.splitTextToSize(diffText, pageWidth - 45);
+      diffLines.forEach((line: string, idx: number) => {
+        pdf.text(line, 20, yPos + 7 + (idx * 5));
+      });
       
-      yPos += 18;
+      yPos += 7 + (diffLines.length * 5) + 10;
     }
   }
   
