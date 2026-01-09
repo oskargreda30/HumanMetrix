@@ -137,6 +137,7 @@ export function PartnerIntegrationsTab() {
 
   // ATS state
   const [showAtsDialog, setShowAtsDialog] = useState(false);
+  const [showAtsApiKey, setShowAtsApiKey] = useState(false);
   const [atsForm, setAtsForm] = useState({
     provider: "",
     name: "",
@@ -915,14 +916,25 @@ export function PartnerIntegrationsTab() {
             )}
             <div className="space-y-2">
               <Label htmlFor="ats-apikey">API Key</Label>
-              <Input
-                id="ats-apikey"
-                type="password"
-                value={atsForm.apiKey}
-                onChange={(e) => setAtsForm({ ...atsForm, apiKey: e.target.value })}
-                placeholder="Enter API key"
-                data-testid="input-ats-apikey"
-              />
+              <div className="relative">
+                <Input
+                  id="ats-apikey"
+                  type={showAtsApiKey ? "text" : "password"}
+                  value={atsForm.apiKey}
+                  onChange={(e) => setAtsForm({ ...atsForm, apiKey: e.target.value })}
+                  placeholder="Enter API key"
+                  data-testid="input-ats-apikey"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAtsApiKey(!showAtsApiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  data-testid="button-toggle-ats-apikey"
+                >
+                  {showAtsApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Sync Mode</Label>
