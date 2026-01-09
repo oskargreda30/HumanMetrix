@@ -185,9 +185,9 @@ export function ResultsPaymentGate() {
             );
           })}
           
-          {/* Platform fee */}
-          <div className="flex justify-between items-center text-sm" data-testid="price-platform-fee">
-            <span>Platform Fee</span>
+          {/* Computation fee */}
+          <div className="flex justify-between items-center text-sm" data-testid="price-computation-fee">
+            <span>Computation Fee</span>
             <span>{formatLocalCurrency(platformFeeLocal)}</span>
           </div>
           
