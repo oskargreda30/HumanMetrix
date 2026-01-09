@@ -384,6 +384,56 @@ export const insertCachedRoleAlignmentSchema = createInsertSchema(cachedRoleAlig
 export type InsertCachedRoleAlignment = z.infer<typeof insertCachedRoleAlignmentSchema>;
 export type CachedRoleAlignment = typeof cachedRoleAlignments.$inferSelect;
 
+// Multi-Candidate Comparisons - store multi-candidate role fit comparisons
+export const multiCandidateComparisons = pgTable("multi_candidate_comparisons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobRoleId: varchar("job_role_id").notNull().references(() => jobRoles.id, { onDelete: "cascade" }),
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  candidateEntries: jsonb("candidate_entries").notNull().$type<{
+    userId: string;
+    userName: string;
+    email: string;
+    overallFit: number;
+    rank: number;
+    fitTier: 'strong' | 'moderate' | 'development-needed';
+    skillScores: {
+      skillName: string;
+      score: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+      criticality?: 'critical' | 'important' | 'nice-to-have';
+      category: 'fit' | 'ai_readiness';
+    }[];
+    strengths: string[];
+    gaps: string[];
+    riskFlags?: string[];
+  }[]>(),
+  roleSnapshot: jsonb("role_snapshot").notNull().$type<{
+    roleId: string;
+    roleName: string;
+    requiredSkillScores: Record<string, { score: number; criticality: 'critical' | 'important' | 'nice-to-have' }>;
+  }>(),
+  summaryInsights: jsonb("summary_insights").$type<{
+    topPerformer: { userId: string; userName: string; overallFit: number };
+    averageFit: number;
+    fitDistribution: { strong: number; moderate: number; developmentNeeded: number };
+    commonStrengths: string[];
+    commonGaps: string[];
+    keyDifferentiators: string[];
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertMultiCandidateComparisonSchema = createInsertSchema(multiCandidateComparisons).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMultiCandidateComparison = z.infer<typeof insertMultiCandidateComparisonSchema>;
+export type MultiCandidateComparison = typeof multiCandidateComparisons.$inferSelect;
+
 // Report Exports - track generated PDF reports and share links
 export const reportExports = pgTable("report_exports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
