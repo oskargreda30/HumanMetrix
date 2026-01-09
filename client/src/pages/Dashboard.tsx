@@ -274,9 +274,10 @@ export default function Dashboard() {
     );
   }
   
-  // Filter purchases with completed results
+  // Filter purchases with consumed slots (completed OR abandoned)
+  // This includes series where tests were abandoned - they should appear in "Your Results"
   const purchasesWithCompletedResults = (purchasesWithResults || []).filter(
-    (purchase: any) => purchase.completedCount > 0
+    (purchase: any) => purchase.completedCount > 0 || purchase.abandonedCount > 0
   );
 
   return (
@@ -511,7 +512,13 @@ export default function Dashboard() {
               <h2 className="text-2xl font-semibold mb-4 text-white">Your Results</h2>
               <div className="space-y-6">
                 {purchasesWithCompletedResults.map((purchase: any, index: number) => {
-                  const progressPercentage = Math.round((purchase.completedCount / purchase.totalCount) * 100);
+                  // For progress: show consumed (completed + abandoned) / total
+                  const consumedCount = (purchase.completedCount || 0) + (purchase.abandonedCount || 0);
+                  const progressPercentage = Math.round((consumedCount / purchase.totalCount) * 100);
+                  const isAllConsumed = consumedCount >= purchase.totalCount;
+                  // Series is "complete" if all slots consumed AND at least one valid result
+                  const hasValidResults = purchase.completedCount > 0;
+                  
                   return (
                     <Card key={purchase.id} className="p-6 hover-elevate transition-all">
                       <div className="flex flex-col md:flex-row items-start gap-6">
@@ -520,7 +527,7 @@ export default function Dashboard() {
                           <div 
                             className="relative w-20 h-20" 
                             role="img" 
-                            aria-label={`${purchase.completedCount} of ${purchase.totalCount} assessments completed, ${progressPercentage}% complete${purchase.allItemsCompleted ? ', all assessments finished' : ''}`}
+                            aria-label={`${consumedCount} of ${purchase.totalCount} assessments used, ${progressPercentage}% complete${isAllConsumed ? ', all assessments finished' : ''}`}
                           >
                             <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
                               <circle
@@ -541,7 +548,7 @@ export default function Dashboard() {
                                 fill="none"
                                 strokeDasharray={`${2 * Math.PI * 36}`}
                                 strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
-                                className={purchase.allItemsCompleted ? "text-green-500" : "text-blue-500"}
+                                className={purchase.hasOnlyAbandonedResults ? "text-orange-500" : (isAllConsumed && hasValidResults ? "text-green-500" : "text-blue-500")}
                                 strokeLinecap="round"
                               />
                             </svg>
@@ -554,7 +561,9 @@ export default function Dashboard() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2 mb-2">
-                            {purchase.allItemsCompleted ? (
+                            {purchase.hasOnlyAbandonedResults ? (
+                              <Clock className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                            ) : isAllConsumed && hasValidResults ? (
                               <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                             ) : (
                               <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -564,7 +573,11 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-semibold">
                                   Testing Series #{purchasesWithCompletedResults.length - index}
                                 </h3>
-                                {purchase.allItemsCompleted && (
+                                {purchase.hasOnlyAbandonedResults ? (
+                                  <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">
+                                    Incomplete
+                                  </Badge>
+                                ) : isAllConsumed && hasValidResults && (
                                   <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
                                     All Complete
                                   </Badge>
@@ -575,6 +588,9 @@ export default function Dashboard() {
 
                           <p className="text-sm text-muted-foreground mb-3">
                             <span className="font-medium">{purchase.completedCount} of {purchase.totalCount}</span> assessments completed
+                            {purchase.abandonedCount > 0 && (
+                              <span className="text-orange-600 dark:text-orange-400 ml-1">({purchase.abandonedCount} incomplete)</span>
+                            )}
                             {purchase.completedAt && (
                               <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
                             )}
@@ -618,7 +634,19 @@ export default function Dashboard() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-col gap-2 md:w-48">
-                          {purchase.allItemsCompleted && purchase.resultsAccessPaid && (
+                          {/* Series with only abandoned tests - no results to unlock */}
+                          {purchase.hasOnlyAbandonedResults && (
+                            <div className="text-center py-2">
+                              <p className="text-sm text-muted-foreground font-medium" data-testid={`text-incomplete-${purchase.id}`}>
+                                Test Incomplete
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                No results available
+                              </p>
+                            </div>
+                          )}
+                          {/* All consumed with valid results AND paid - can view */}
+                          {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && purchase.resultsAccessPaid && (
                             <>
                               <Link href={`/my-results?purchaseId=${purchase.id}`}>
                                 <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
@@ -633,7 +661,8 @@ export default function Dashboard() {
                               </div>
                             </>
                           )}
-                          {purchase.allItemsCompleted && !purchase.resultsAccessPaid && (
+                          {/* All consumed with valid results BUT not paid - can unlock */}
+                          {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && !purchase.resultsAccessPaid && (
                             <>
                               <Link href={`/my-results?purchaseId=${purchase.id}`}>
                                 <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
