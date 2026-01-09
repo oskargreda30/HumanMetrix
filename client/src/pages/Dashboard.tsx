@@ -397,7 +397,7 @@ export default function Dashboard() {
                                 name: formatAssessmentName(assessment.assessmentType)
                               });
                             }}
-                            className="absolute top-2 right-2 p-1 rounded text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                            className="absolute top-2 right-2 p-1 rounded text-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
                             data-testid={`button-remove-${assessment.assessmentType}`}
                             aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
                           >
