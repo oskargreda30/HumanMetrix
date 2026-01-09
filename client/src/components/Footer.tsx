@@ -36,7 +36,6 @@ export default function Footer() {
       { label: "How It Works", href: "/#how-it-works", isAnchor: true },
       { label: "Terms & Conditions", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },
-      { label: "EULA", href: "/eula" },
     ],
     assessments: [
       { label: "FIT Assessment", href: "/assessments#fit" },

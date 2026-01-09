@@ -29,7 +29,7 @@ const assessments = [
     id: "ai_readiness",
     name: "AI Readiness Assessment",
     description: "21 questions • 9 AI skills",
-    duration: "20 min",
+    duration: "30 min",
   },
   {
     id: "prompt_architecture",

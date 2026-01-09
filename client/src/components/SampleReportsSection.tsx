@@ -1,6 +1,5 @@
-import { FileText, Users, Target, Download, UsersRound, Clock } from "lucide-react";
+import { FileText, Users, Target, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const reports = [
   {
@@ -10,16 +9,14 @@ const reports = [
     link: "/sample-reports/individual-sample.pdf",
     downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
     testId: "individual",
-    comingSoon: false,
   },
   {
     icon: Users,
-    title: "Candidate Comparison Report",
+    title: "Comparison Report (best for employers)",
     description: "Side-by-side comparison of multiple candidates across all assessments with visual charts and performance indicators",
     link: "/sample-reports/comparison-sample.pdf",
     downloadName: "Candidate_Comparison_Example_Report_HumanMetrix.pdf",
     testId: "comparison",
-    comingSoon: false,
   },
   {
     icon: Target,
@@ -28,16 +25,6 @@ const reports = [
     link: "/sample-reports/rolefit-sample.pdf",
     downloadName: "Role_Fit_Example_Report_HumanMetrix.pdf",
     testId: "rolefit",
-    comingSoon: false,
-  },
-  {
-    icon: UsersRound,
-    title: "Multiple Candidate Role Fit Report",
-    description: "Compare multiple candidates against a specific role with cohort benchmarking and ranked recommendations",
-    link: "",
-    downloadName: "",
-    testId: "multi-rolefit",
-    comingSoon: true,
   },
 ];
 
@@ -142,36 +129,29 @@ export default function SampleReportsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
           {reports.map((report, index) => (
             <div 
               key={index} 
-              className={`rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center space-y-3 md:space-y-4 ${report.comingSoon ? 'opacity-80' : 'hover-elevate'}`}
+              className="rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-3 md:space-y-4 hover-elevate"
               data-testid={`card-report-${report.testId}`}
             >
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
                 <report.icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
               </div>
-              <h3 className="text-sm md:text-lg font-semibold text-white text-center flex-grow flex items-center" data-testid={`text-report-${report.testId}-title`}>
+              <h3 className="text-sm md:text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
                 {report.title}
               </h3>
-              {report.comingSoon ? (
-                <Badge variant="secondary" className="bg-amber-500/20 text-amber-300 border-amber-500/30">
-                  <Clock className="mr-1.5 h-3 w-3" />
-                  Coming Soon
-                </Badge>
-              ) : (
-                <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
-                  <Button 
-                    size="sm"
-                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
-                    data-testid={`button-download-${report.testId}`}
-                  >
-                    <Download className="mr-1.5 h-3 w-3" />
-                    Download Sample
-                  </Button>
-                </a>
-              )}
+              <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
+                <Button 
+                  size="sm"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
+                  data-testid={`button-download-${report.testId}`}
+                >
+                  <Download className="mr-1.5 h-3 w-3" />
+                  Download Sample
+                </Button>
+              </a>
             </div>
           ))}
         </div>

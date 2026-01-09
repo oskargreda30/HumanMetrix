@@ -79,8 +79,10 @@ export default function ResetPassword() {
           <div className="w-full max-w-md px-4">
             <Card className="p-6 bg-[#1a2744]/50 border-cyan-400/20 text-center">
               <p className="text-white mb-4">Invalid reset link</p>
-              <Link href="/forgot-password" className="text-cyan-400 hover:text-cyan-300" data-testid="link-request-new">
-                Request a new reset link
+              <Link href="/forgot-password">
+                <a className="text-cyan-400 hover:text-cyan-300" data-testid="link-request-new">
+                  Request a new reset link
+                </a>
               </Link>
             </Card>
           </div>
@@ -148,9 +150,11 @@ export default function ResetPassword() {
                 </Button>
                 
                 <div className="text-center">
-                  <Link href="/login" className="text-sm text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-2" data-testid="link-back-to-login">
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Login
+                  <Link href="/login">
+                    <a className="text-sm text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-2" data-testid="link-back-to-login">
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Login
+                    </a>
                   </Link>
                 </div>
               </form>

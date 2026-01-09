@@ -29,7 +29,7 @@ const assessments = [
     title: "AI Readiness Assessment",
     description: "Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage.",
     questionCount: 21,
-    duration: "20 min",
+    duration: "30 min",
     icon: Sparkles,
     status: "available" as const,
     price: "£5",

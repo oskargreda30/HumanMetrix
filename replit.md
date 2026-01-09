@@ -36,34 +36,14 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Marketing Email Opt-in**: Subscribe page for job seeker emails.
 - **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts and daily runs.
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.
-- **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing, a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
-  - **Test API Key Behavior**: Test API keys are for developer integration testing only. Sessions created with test keys: no emails sent (congratulatory or results), no AI computation (dummy scores returned), no billing charges, and results are blocked. This saves API costs and ensures a clean testing experience.
-- **B2B Test-Taker Results Monetization**: Test-takers can view results immediately for 75% of location-based B2C pricing or wait 30 days for free access. Email workflow: collect email at test start → congratulatory email after completion with payment link → results email with PDF attachment after payment or after 30-day free unlock.
-  - **Server-Side PDF Generation**: Production-quality PDFs generated with jsPDF for all 4 assessment types (FIT, AI Readiness, Prompt Architecture, AIQ) with skill bar charts, performance levels, and professional branding.
-  - **Free Unlock Scheduler**: Hourly background job checks for sessions due for free unlock (30 days after completion) and sends results emails with PDF attachments.
-  - **Persistent Delivery Tracking**: Database columns (`resultsDeliveryAttemptCount`, `lastResultsDeliveryAttemptAt`, `resultsDeliveryStatus`) ensure retry history survives server restarts. Max 3 attempts with 24-hour backoff. Sessions marked as 'failed' after max retries for manual intervention.
-  - **Bulk Results Pricing**: Candidates can purchase multiple assessment results together with volume discounts: 10% off for 2 results, 15% off for 3 results, 20% off for all 4 results. Endpoints: `/api/b2b-results/bulk-pricing`, `/api/b2b-results/bulk-checkout`, `/api/b2b-results/bulk-verify-payment`.
-  - **Volume-Based Pricing Model** ($1.00 = 1 Credit, 6-month expiration policy):
-    | Tier | Monthly Volume | Price Per Test | Comparisons (Base-30%) | Role Fit (Base-20%) | Trial Quota |
-    |------|---------------|----------------|------------------------|---------------------|-------------|
-    | Boutique | 1-100 | $20.00 | $14.00 | $16.00 | 5 tests |
-    | Growth | 101-500 | $10.00 | $7.00 | $8.00 | 10 tests |
-    | Small Enterprise | 501-2,500 | $5.00 | $3.50 | $4.00 | 20 tests |
-    | Enterprise | 2,501-9,999 | $2.50 | $1.75 | $2.00 | 50 tests |
-    | Pro | 10,000+ | $1.00 | $0.70 | $0.80 | 50 tests |
-  - **Billing Tiers**:
-    - **PAYG (Pay As You Go)**: No card on file required. Partners purchase bulk credits upfront with volume discounts. API/dashboard suspended at zero credits.
-    - **Subscription**: Card on file required. Minimum monthly charge plus auto-bill for additional usage at base rates. Continuous API access.
-    - **Enterprise**: For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended until payment received.
-  - **Unbundled Report Pricing**: Comparison Reports at 30% discount from base rate, Role Fit Reports at 20% discount from base rate.
+- **B2B Partner Integration**: Enterprise solution for embedding assessments, including partner accounts, 3-tier billing (Prepaid, Auto-Bill, Invoice), a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK.
+  - **Card-on-File Overage Billing**: Prepaid partners can save a payment card for automatic overage billing. When prepaid credits are exhausted, partners with a saved card can continue using tests with overages tracked separately. API access remains active instead of being suspended. Overages are billed automatically on the 1st of each month via the `/api/internal/process-overage-billing` endpoint (called by cron job with CRON_SECRET authentication). Partners can manage their saved card and view overage history from the Partner Dashboard billing section.
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
-  - **Candidate Analysis Tab**: Partners can view individual candidate reports, compare 2-3 candidates side-by-side with radar charts, and analyze role fit alignment. Uses partner-scoped API endpoints (`/api/partner/me/candidates`, `/api/partner/me/compare`, `/api/partner/me/role-alignment`).
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.
   - **In-App Notifications**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), and mark-all-read functionality.
   - **Team Member Management**: Email invitations with 7-day expiry, role-based access (viewer/member/admin), and member removal.
-  - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for PAYG partners, branded email invitations, and downloadable error reports.
-  - **Multi-Assessment Invitation Flow**: Candidates can complete multiple assessments in sequence from a single invitation. The `/api/invite/:token` endpoint returns `completedAssessments` and `remainingTypes` for progress tracking. Invitations remain valid until all invited assessments are completed. StartAssessment page displays completed vs remaining assessments with visual progress indicators.
+  - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for Prepaid partners, branded email invitations, and downloadable error reports.
 - **Partner Integration Features**: 
   - **Webhook Notifications**: Event-based webhooks for assessment.started, assessment.completed, session.created, session.expired, results.ready with HMAC-SHA256 signature verification, exponential backoff retry logic, and delivery logging.
   - **ATS Integrations**: Connect with Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, or custom APIs with configurable sync modes (push/pull/bidirectional).

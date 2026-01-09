@@ -60,10 +60,6 @@ export const users = pgTable("users", {
   resetTokenExpiry: timestamp("reset_token_expiry"),
   resultsRetentionConsent: boolean("results_retention_consent"),
   resultsRetentionConsentDate: timestamp("results_retention_consent_date"),
-  termsAccepted: boolean("terms_accepted").default(false),
-  termsAcceptedAt: timestamp("terms_accepted_at"),
-  dataShareConsent: boolean("data_share_consent").default(false),
-  dataShareConsentAt: timestamp("data_share_consent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -140,11 +136,6 @@ export const assessmentResults = pgTable("assessment_results", {
   status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-  // Pause/resume tracking - allows one 30-min grace period if window is closed
-  pausedAt: timestamp("paused_at"), // When timer was paused (null if running)
-  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Milliseconds left when paused
-  resumeCount: integer("resume_count").notNull().default(0), // Times resumed (max 1 allowed)
-  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // 30 mins after pause
 }, (table) => [
   index("idx_results_user").on(table.userId),
   index("idx_results_type").on(table.assessmentType),
@@ -259,14 +250,10 @@ export type InsertAiqRationale = z.infer<typeof insertAiqRationaleSchema>;
 export type AiqRationale = typeof aiqRationales.$inferSelect;
 
 // Job Roles - predefined and custom roles for candidate matching
-// Job role domains for semantic filtering in Role Flexibility Analysis
-export type JobRoleDomain = 'technology' | 'creative' | 'business' | 'healthcare' | 'education' | 'finance' | 'operations' | 'sales' | 'other';
-
 export const jobRoles = pgTable("job_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
-  domain: text("domain").$type<JobRoleDomain>(), // Semantic domain for role flexibility matching
   competencies: jsonb("competencies").notNull().$type<{
     skillName: string;
     importance: number; // 1-5 scale
@@ -396,56 +383,6 @@ export const insertCachedRoleAlignmentSchema = createInsertSchema(cachedRoleAlig
 export type InsertCachedRoleAlignment = z.infer<typeof insertCachedRoleAlignmentSchema>;
 export type CachedRoleAlignment = typeof cachedRoleAlignments.$inferSelect;
 
-// Multi-Candidate Role Fit Comparison - compare multiple candidates against a single role
-export const multiCandidateComparisons = pgTable("multi_candidate_comparisons", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  jobRoleId: varchar("job_role_id").notNull().references(() => jobRoles.id, { onDelete: "cascade" }),
-  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
-  candidateEntries: jsonb("candidate_entries").notNull().$type<{
-    userId: string;
-    userName: string;
-    email: string;
-    overallFit: number;
-    rank: number;
-    fitTier: 'strong' | 'moderate' | 'development-needed';
-    skillScores: {
-      skillName: string;
-      score: number;
-      requiredScore: number;
-      gap: number;
-      alignment: string;
-      criticality?: 'critical' | 'important' | 'nice-to-have';
-      category: 'fit' | 'ai_readiness';
-    }[];
-    strengths: string[];
-    gaps: string[];
-    riskFlags?: string[];
-  }[]>(),
-  roleSnapshot: jsonb("role_snapshot").notNull().$type<{
-    roleId: string;
-    roleName: string;
-    requiredSkillScores: Record<string, { score: number; criticality: 'critical' | 'important' | 'nice-to-have' }>;
-  }>(),
-  summaryInsights: jsonb("summary_insights").$type<{
-    topPerformer: { userId: string; userName: string; overallFit: number };
-    averageFit: number;
-    fitDistribution: { strong: number; moderate: number; developmentNeeded: number };
-    commonStrengths: string[];
-    commonGaps: string[];
-    keyDifferentiators: string[];
-  }>(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-});
-
-export const insertMultiCandidateComparisonSchema = createInsertSchema(multiCandidateComparisons).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertMultiCandidateComparison = z.infer<typeof insertMultiCandidateComparisonSchema>;
-export type MultiCandidateComparison = typeof multiCandidateComparisons.$inferSelect;
-
 // Report Exports - track generated PDF reports and share links
 export const reportExports = pgTable("report_exports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -562,42 +499,6 @@ export const ASSESSMENT_PRICES = {
 
 export const BASE_FEE = 1500; // £15.00 in pence
 
-// ============================================
-// B2B Volume-Based Pricing ($1.00 = 1 Credit, 6-month expiration)
-// ============================================
-
-// Volume tiers based on monthly volume commitment (prices in USD cents)
-// B2B Volume Tiers - prices are Tier 1 (base) rates in USD cents
-// Tier 2 countries get 25% discount (0.75x), Tier 3 countries get 50% discount (0.5x)
-export const B2B_VOLUME_TIERS = {
-  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 4000, trialQuota: 5 },      // $40/test (Tier 1), $30 (Tier 2), $20 (Tier 3)
-  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 2000, trialQuota: 10 },       // $20/test (Tier 1), $15 (Tier 2), $10 (Tier 3)
-  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 1000, trialQuota: 20 }, // $10/test (Tier 1), $7.50 (Tier 2), $5 (Tier 3)
-  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 500, trialQuota: 50 }, // $5/test (Tier 1), $3.75 (Tier 2), $2.50 (Tier 3)
-  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 200, trialQuota: 50 },              // $2/test (Tier 1), $1.50 (Tier 2), $1.00 (Tier 3)
-} as const;
-
-// Unbundled report pricing discounts
-export const REPORT_DISCOUNTS = {
-  COMPARISON: 0.30, // 30% discount from base rate for Comparison Reports
-  ROLE_FIT: 0.20,   // 20% discount from base rate for Role Fit Reports
-} as const;
-
-// Credit expiration policy
-export const CREDIT_EXPIRATION_MONTHS = 6;
-
-// Helper to get trial quota based on tier name
-export function getTrialQuotaForTier(tierName: string): number {
-  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
-  return tier?.trialQuota || B2B_VOLUME_TIERS.BOUTIQUE.trialQuota;
-}
-
-// Helper to get price per test based on tier name
-export function getPriceForTier(tierName: string): number {
-  const tier = Object.values(B2B_VOLUME_TIERS).find(t => t.name.toLowerCase() === tierName.toLowerCase());
-  return tier?.pricePerTest || B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest;
-}
-
 export function normalizeAssessmentId(id: string): keyof typeof ASSESSMENT_PRICES {
   const mapping: Record<string, keyof typeof ASSESSMENT_PRICES> = {
     "fit": "fit",
@@ -639,16 +540,16 @@ export const partnerAccounts = pgTable("partner_accounts", {
   monthlyQuota: integer("monthly_quota").default(1000),
   pricePerAssessment: integer("price_per_assessment").default(500), // £5.00 in pence
   isActive: boolean("is_active").notNull().default(true),
-  // Billing configuration - 3 payment tiers:
-  // 'payg': Pay As You Go - No card on file. Bulk discounts via upfront purchase. API/dashboard suspended at zero credits.
-  // 'subscription': Subscription + Auto-Bill (Ideal) - Card on file. No bulk discount. Min monthly charge + auto-bill for usage at base rates.
-  // 'enterprise': Enterprise Prepayment - For high-volume BPOs. Immediate pro-forma invoicing for bulk credit blocks. No credit extended.
-  billingType: varchar("billing_type").notNull().default("payg"), // 'payg', 'subscription', or 'enterprise'
+  // Billing configuration - 3 payment options:
+  // 'prepaid': Purchase test packages upfront, top up when needed
+  // 'auto_bill': Card on file, automatically billed at month-end based on usage
+  // 'invoice': Enterprise invoicing, we send invoices based on usage
+  billingType: varchar("billing_type").notNull().default("prepaid"), // 'prepaid', 'auto_bill', or 'invoice'
   freeTestsAllocated: integer("free_tests_allocated").notNull().default(0), // Complimentary tests given on signup
   freeTestsExpiresAt: timestamp("free_tests_expires_at"), // Expiry date for free tests (7 days from allocation)
   // Prepaid billing fields
   prepaidBalance: integer("prepaid_balance").notNull().default(0), // Current test credit balance
-  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (6 months from purchase per pricing policy)
+  prepaidCreditsExpiresAt: timestamp("prepaid_credits_expires_at"), // Expiry date for prepaid credits (12 months from purchase)
   // Auto-bill fields
   stripePaymentMethodId: varchar("stripe_payment_method_id"), // Card on file for auto-billing
   cardOnFile: boolean("card_on_file").notNull().default(false), // Whether prepaid partner has saved card for overage billing
@@ -685,11 +586,6 @@ export const partnerAccounts = pgTable("partner_accounts", {
   brandingWelcomeTitle: varchar("branding_welcome_title"), // Custom welcome title for candidates
   brandingWelcomeMessage: text("branding_welcome_message"), // Custom welcome message
   brandingCompanyDisplayName: varchar("branding_company_display_name"), // Display name shown to candidates (can differ from companyName)
-  // Dashboard tour tracking
-  tourCompleted: boolean("tour_completed").notNull().default(false), // Whether the partner has completed the dashboard tour (persists across devices)
-  // Terms acceptance tracking
-  termsAccepted: boolean("terms_accepted").notNull().default(false), // Whether partner has accepted EULA and Privacy Policy
-  termsAcceptedAt: timestamp("terms_accepted_at"), // When terms were accepted
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -797,7 +693,6 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   partnerOrganisationId: varchar("partner_organisation_id").references(() => partnerOrganisations.id, { onDelete: "set null" }), // Which client organisation this session belongs to
   apiKeyId: varchar("api_key_id").references(() => partnerApiKeys.id, { onDelete: "set null" }), // Nullable for invite-based sessions
-  isTestSession: boolean("is_test_session").notNull().default(false), // True if created with a test API key - no billing, results blocked
   externalUserId: varchar("external_user_id"), // Partner's user ID
   externalEmail: varchar("external_email"),
   assessmentType: varchar("assessment_type").notNull(),
@@ -816,30 +711,10 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // B2B test-taker results monetization fields
-  testerCountryCode: varchar("tester_country_code"), // Test-taker's country for location-based pricing
-  resultsPaymentStatus: varchar("results_payment_status").default("unpaid"), // unpaid, paid, free (after 30 days)
-  resultsUnlockAt: timestamp("results_unlock_at"), // 30 days after completion for free access
-  resultsPaymentAmount: integer("results_payment_amount"), // Amount paid in smallest currency unit
-  resultsPaymentCurrency: varchar("results_payment_currency"), // Currency used for payment
-  resultsStripeSessionId: varchar("results_stripe_session_id"), // Stripe checkout session ID
-  resultsPaidAt: timestamp("results_paid_at"), // When payment was made
-  congratsEmailSentAt: timestamp("congrats_email_sent_at"), // When congratulatory email was sent
-  resultsEmailSentAt: timestamp("results_email_sent_at"), // When results email with PDF was sent
-  // Delivery attempt tracking for retry resilience
-  resultsDeliveryAttemptCount: integer("results_delivery_attempt_count").default(0), // Number of delivery attempts
-  lastResultsDeliveryAttemptAt: timestamp("last_results_delivery_attempt_at"), // When last attempt was made
-  resultsDeliveryStatus: varchar("results_delivery_status").default("pending"), // pending, sent, failed (max retries reached)
-  // Pause/resume tracking - allows one 30-min grace period if window is closed
-  pausedAt: timestamp("paused_at"), // When timer was paused (null if running)
-  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Milliseconds left when paused
-  resumeCount: integer("resume_count").notNull().default(0), // Times resumed (max 1 allowed)
-  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // 30 mins after pause
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
   index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
-  index("idx_assessment_sessions_payment").on(table.resultsPaymentStatus),
 ]);
 
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({
@@ -861,7 +736,6 @@ export const usageEvents = pgTable("usage_events", {
   sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "set null" }),
   eventType: varchar("event_type").notNull(), // session_created, session_started, session_completed, results_fetched
   assessmentType: varchar("assessment_type"),
-  isTestMode: boolean("is_test_mode").notNull().default(false), // True if this event was from a test API key
   billable: boolean("billable").notNull().default(false),
   billedAmount: integer("billed_amount"), // Amount in pence
   stripeUsageRecordId: varchar("stripe_usage_record_id"),
@@ -1355,8 +1229,8 @@ export const billingChangeRequests = pgTable("billing_change_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
   requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
-  currentBillingType: varchar("current_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
-  requestedBillingType: varchar("requested_billing_type").notNull(), // 'payg', 'subscription', 'enterprise'
+  currentBillingType: varchar("current_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
+  requestedBillingType: varchar("requested_billing_type").notNull(), // 'prepaid', 'auto_bill', 'invoice'
   reason: text("reason"), // Optional reason for the change request
   status: varchar("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
   reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),

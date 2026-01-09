@@ -19,8 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -31,8 +30,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
-import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
-import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -72,15 +69,7 @@ interface OverageHistoryItem {
   createdAt: string;
 }
 
-function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId: string; currency?: string }) {
-  const currencySymbols: Record<string, string> = {
-    gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
-    inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
-    lkr: 'Rs', mmk: 'K', khr: '៛', npr: '₨', try: '₺', egp: 'E£', ngn: '₦', kes: 'KSh',
-    zar: 'R', brl: 'R$', mxn: 'MX$', ars: 'AR$',
-  };
-  const currSymbol = currencySymbols[currency.toLowerCase()] || '£';
-  const formatAmount = (pence: number) => `${currSymbol}${(pence / 100).toFixed(2)}`;
+function PrepaidCardManagementInner({ partnerId }: { partnerId: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -218,7 +207,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
                     {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
+                    Overage rate: £{((cardStatus.overageRatePerTest || 500) / 100).toFixed(2)} per test
                   </p>
                 </div>
               </div>
@@ -262,7 +251,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
                         <tr key={item.id}>
                           <td className="px-3 py-2">{item.billingMonth}</td>
                           <td className="px-3 py-2 text-right">{item.overageTests}</td>
-                          <td className="px-3 py-2 text-right">{formatAmount(item.overageAmount)}</td>
+                          <td className="px-3 py-2 text-right">£{(item.overageAmount / 100).toFixed(2)}</td>
                           <td className="px-3 py-2 text-right">
                             <Badge 
                               variant="outline" 
@@ -360,10 +349,10 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
   );
 }
 
-function PrepaidCardManagement({ partnerId, currency }: { partnerId: string; currency?: string }) {
+function PrepaidCardManagement({ partnerId }: { partnerId: string }) {
   return (
     <Elements stripe={stripePromise}>
-      <PrepaidCardManagementInner partnerId={partnerId} currency={currency} />
+      <PrepaidCardManagementInner partnerId={partnerId} />
     </Elements>
   );
 }
@@ -386,9 +375,6 @@ interface PartnerAccount {
     freeTestsExpiresAt: string | null;
     currency: string;
     prepaidCreditsExpiresAt: string | null;
-    tourCompleted: boolean;
-    termsAccepted: boolean;
-    termsAcceptedAt: string | null;
   };
 }
 
@@ -470,7 +456,6 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
-  isActive: boolean;
 }
 
 interface ApiKeysData {
@@ -546,7 +531,6 @@ interface PartnerAnalytics {
   testsOverTime: Array<{ date: string; count: number }>;
   byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
   byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
-  scoreDistribution?: Array<{ type: string; buckets: Array<{ range: string; count: number }> }>;
 }
 
 interface PartnerNotification {
@@ -595,10 +579,6 @@ export default function PartnerDashboard() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
   
-  // Terms acceptance state
-  const [showTermsDialog, setShowTermsDialog] = useState(false);
-  const [termsChecked, setTermsChecked] = useState(false);
-  
   // Organization state
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [showAddOrgDialog, setShowAddOrgDialog] = useState(false);
@@ -623,11 +603,6 @@ export default function PartnerDashboard() {
   const [brandingCompanyDisplayName, setBrandingCompanyDisplayName] = useState("");
   const [brandingLogoUrl, setBrandingLogoUrl] = useState("");
   
-  // Password change state
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
@@ -641,8 +616,6 @@ export default function PartnerDashboard() {
   const [showCreateKeyDialog, setShowCreateKeyDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEnvironment, setNewKeyEnvironment] = useState<"test" | "live">("test");
-  const [creatingKeyType, setCreatingKeyType] = useState<'test' | 'live' | null>(null);
-  const [newKeyData, setNewKeyData] = useState<{ fullKey: string; environment: string } | null>(null);
   
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
@@ -667,25 +640,6 @@ export default function PartnerDashboard() {
 
   const { data: billing, isLoading: billingLoading } = useQuery<BillingData>({
     queryKey: ["/api/partner/me/billing"],
-    enabled: !!account?.hasPartnerAccount,
-  });
-
-  // Credit package pricing with currency conversion
-  interface PricingData {
-    currency: string;
-    packages: Array<{
-      size: number;
-      name: string;
-      price: number;
-      pricePerTest: number;
-    }>;
-    exchangeRate: number;
-    lastUpdated: string;
-    isZeroDecimal: boolean;
-  }
-
-  const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
-    queryKey: ["/api/partner/me/pricing"],
     enabled: !!account?.hasPartnerAccount,
   });
 
@@ -797,34 +751,13 @@ export default function PartnerDashboard() {
     }
   };
 
-  // Tour completion mutation - saves to database for cross-device persistence
-  const tourCompleteMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/partner/me/tour-completed");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
-    },
-  });
-
-  // Check if user needs to accept terms (must accept before accessing dashboard)
+  // Check if user needs to see tutorial on first login
   useEffect(() => {
-    if (account?.hasPartnerAccount && account?.partner?.id && !termsChecked) {
-      setTermsChecked(true);
-      if (!account.partner.termsAccepted) {
-        setShowTermsDialog(true);
-      }
-    }
-  }, [account, termsChecked]);
-
-  // Check if user needs to see tutorial on first login (uses database-backed tourCompleted flag)
-  // Only show after terms are accepted
-  useEffect(() => {
-    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked && account.partner.termsAccepted) {
+    if (account?.hasPartnerAccount && account?.partner?.id && !tutorialChecked) {
       setTutorialChecked(true);
-      // Check database-backed tourCompleted flag instead of localStorage
-      if (!account.partner.tourCompleted) {
+      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
+      const hasCompletedTutorial = localStorage.getItem(tutorialKey);
+      if (!hasCompletedTutorial) {
         // Small delay to let the dashboard load first
         setTimeout(() => setShowTutorial(true), 500);
       }
@@ -833,8 +766,10 @@ export default function PartnerDashboard() {
 
   // Tour handlers
   const handleTourComplete = () => {
-    // Save to database for cross-device persistence
-    tourCompleteMutation.mutate();
+    if (account?.partner?.id) {
+      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
+      localStorage.setItem(tutorialKey, 'true');
+    }
     setShowTutorial(false);
     setActiveTab('home');
     toast({
@@ -844,8 +779,10 @@ export default function PartnerDashboard() {
   };
 
   const handleTourClose = () => {
-    // Save to database for cross-device persistence
-    tourCompleteMutation.mutate();
+    if (account?.partner?.id) {
+      const tutorialKey = `humanmetrix_tutorial_completed_${account.partner.id}`;
+      localStorage.setItem(tutorialKey, 'true');
+    }
     setShowTutorial(false);
   };
 
@@ -889,50 +826,6 @@ export default function PartnerDashboard() {
       });
     },
   });
-
-  // Change password mutation
-  const changePasswordMutation = useMutation({
-    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      const response = await apiRequest("POST", "/api/change-password", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      toast({
-        title: "Password changed",
-        description: "Your password has been updated successfully.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to change password",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleChangePassword = () => {
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "New password and confirm password must match.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (newPassword.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters.",
-        variant: "destructive",
-      });
-      return;
-    }
-    changePasswordMutation.mutate({ currentPassword, newPassword });
-  };
 
   // Purchase test package mutation
   const purchaseMutation = useMutation({
@@ -1115,14 +1008,15 @@ export default function PartnerDashboard() {
       const response = await apiRequest("POST", "/api/partner/me/api-keys", data);
       return response.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       
       // Ensure the API key data is present in response
       if (data?.apiKey?.fullKey) {
-        setNewKeyData({ fullKey: data.apiKey.fullKey, environment: variables.environment });
+        setNewApiKey(data.apiKey.fullKey);
         setShowCreateKeyDialog(false);
+        setShowNewKeyDialog(true);
         setNewKeyName("");
         setNewKeyEnvironment("test");
         toast({
@@ -1137,7 +1031,6 @@ export default function PartnerDashboard() {
           variant: "destructive",
         });
       }
-      setCreatingKeyType(null);
     },
     onError: (error: Error) => {
       toast({
@@ -1145,7 +1038,6 @@ export default function PartnerDashboard() {
         description: error.message,
         variant: "destructive",
       });
-      setCreatingKeyType(null);
     },
   });
 
@@ -1177,20 +1069,6 @@ export default function PartnerDashboard() {
   const handleCreateKey = () => {
     if (!newKeyName) return;
     createKeyMutation.mutate({ name: newKeyName, environment: newKeyEnvironment });
-  };
-
-  const handleCreateTestKey = () => {
-    setCreatingKeyType('test');
-    createKeyMutation.mutate({ name: `Test Key - ${new Date().toLocaleDateString()}`, environment: 'test' });
-  };
-
-  const handleCreateLiveKey = () => {
-    setCreatingKeyType('live');
-    createKeyMutation.mutate({ name: `Live Key - ${new Date().toLocaleDateString()}`, environment: 'live' });
-  };
-
-  const handleClearNewKey = () => {
-    setNewKeyData(null);
   };
 
   const handleRevokeKey = (keyId: string) => {
@@ -1292,9 +1170,7 @@ export default function PartnerDashboard() {
 
   const partnerCurrency = account?.partner?.currency || 'GBP';
   
-  // Format currency using API-provided isZeroDecimal flag
-  // Uses the same roundPriceUp approach as home page pricing
-  const formatCurrency = (amount: number, currency?: string, isZeroDecimalOverride?: boolean) => {
+  const formatCurrency = (amount: number, currency?: string) => {
     const curr = currency || partnerCurrency;
     const currencySymbols: Record<string, string> = {
       // Tier 1 - Developed Markets
@@ -1340,25 +1216,8 @@ export default function PartnerDashboard() {
       pen: 'S/',
       ars: 'AR$',
     };
-    
-    // Use API-provided flag if available, otherwise fallback to local check
-    const isZeroDecimal = isZeroDecimalOverride ?? pricing?.isZeroDecimal ?? false;
-    
     const symbol = currencySymbols[curr.toLowerCase()] || '£';
-    
-    if (isZeroDecimal) {
-      // Zero-decimal currencies: amount is already in whole units
-      return `${symbol}${amount.toLocaleString()}`;
-    }
-    // Regular currencies: amount is in cents, divide by 100
-    // Display without decimals since roundPriceUp already gives clean numbers
-    const displayAmount = amount / 100;
-    // Show decimals only if the amount has fractional cents after division
-    const hasDecimals = displayAmount % 1 !== 0;
-    return `${symbol}${displayAmount.toLocaleString(undefined, { 
-      minimumFractionDigits: hasDecimals ? 2 : 0, 
-      maximumFractionDigits: 2 
-    })}`;
+    return `${symbol}${(amount / 100).toFixed(2)}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -1492,114 +1351,52 @@ export default function PartnerDashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
+              {/* Overview */}
               <TabsTrigger value="home" data-testid="tab-home" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
+              {/* Core Business */}
               <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
-              <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Analysis
-              </TabsTrigger>
-              {/* Organizations tab hidden for now - feature preserved in code */}
-              {false && (
-                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Organizations
-                </TabsTrigger>
-              )}
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
+              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Organizations
+              </TabsTrigger>
+              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Analytics
+              </TabsTrigger>
+              {/* Account & Operations */}
+              <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Usage
+              </TabsTrigger>
+              <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Billing
+              </TabsTrigger>
+              <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
+                Notifications
+                {(notifications?.unreadCount ?? 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
+              {/* Developer Hub */}
+              <TabsTrigger value="developer" data-testid="tab-developer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Developer
+              </TabsTrigger>
+              {/* Administration */}
               <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Team
               </TabsTrigger>
-              
-              {/* Settings Dropdown - contains Usage, Billing, Developer, Analytics, Notifications, Settings, Activity Log */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      ['usage', 'billing', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                    data-testid="dropdown-settings"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                    {(notifications?.unreadCount ?? 0) > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center ml-1">
-                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
-                      </span>
-                    )}
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('usage')}
-                    className={activeTab === 'usage' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-usage"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Usage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('billing')}
-                    className={activeTab === 'billing' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-billing"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Billing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('developer')}
-                    className={activeTab === 'developer' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-developer"
-                  >
-                    <Key className="h-4 w-4 mr-2" />
-                    Developer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('analytics')}
-                    className={activeTab === 'analytics' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-analytics"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('notifications')}
-                    className={activeTab === 'notifications' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-notifications"
-                  >
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notifications
-                    {(notifications?.unreadCount ?? 0) > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => { setActiveTab('settings'); initSettings(); }}
-                    className={activeTab === 'settings' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-settings"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Account Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('activity')}
-                    className={activeTab === 'activity' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-activity"
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Activity Log
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Settings
+              </TabsTrigger>
+              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Activity Log
+              </TabsTrigger>
             </TabsList>
 
             {/* Home Tab */}
@@ -1608,12 +1405,12 @@ export default function PartnerDashboard() {
               {(() => {
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
+                const hasOrganization = (organizations?.organizations?.length ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
                 const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
                 
-                // Organization step hidden for now
-                const completedSteps = [hasApiKey, hasAssessment, hasTeamMember].filter(Boolean).length;
-                const totalSteps = 3;
+                const completedSteps = [hasApiKey, hasAssessment, hasOrganization, hasTeamMember].filter(Boolean).length;
+                const totalSteps = 4;
                 const allComplete = completedSteps === totalSteps;
                 
                 // Hide if all steps are complete
@@ -1692,7 +1489,33 @@ export default function PartnerDashboard() {
                           {!hasAssessment && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
                         </button>
 
-                        {/* Step 3: Invite Team Member */}
+                        {/* Step 3: Create Organization */}
+                        <button
+                          onClick={() => setActiveTab('organizations')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            hasOrganization ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
+                          }`}
+                          data-testid="setup-step-organization"
+                        >
+                          <div className={`p-1.5 rounded-full ${hasOrganization ? 'bg-green-500/20' : 'bg-muted'}`}>
+                            {hasOrganization ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-sm ${hasOrganization ? 'text-green-700 dark:text-green-400' : ''}`}>
+                              Create an organization
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {hasOrganization ? `${organizations?.organizations?.length} organization(s) created` : 'Group assessments by client or department'}
+                            </div>
+                          </div>
+                          {!hasOrganization && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        </button>
+
+                        {/* Step 4: Invite Team Member */}
                         <button
                           onClick={() => setActiveTab('team')}
                           className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
@@ -1798,9 +1621,9 @@ export default function PartnerDashboard() {
                       <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
                       <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
                         <CreditCard className="h-4 w-4 text-primary" />
-                        {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
-                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
-                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
+                        {account?.partner?.billingType === 'prepaid' && 'Prepaid Credits'}
+                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                        {account?.partner?.billingType === 'invoice' && 'Enterprise Invoice'}
                       </div>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/30 border">
@@ -1849,7 +1672,7 @@ export default function PartnerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                      {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
+                      {partner.testsPurchased.toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground">Total credits</p>
                   </CardContent>
@@ -1910,7 +1733,6 @@ export default function PartnerDashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
-                    {partner.freeTestsAllocated > 0 && ` (includes ${partner.freeTestsAllocated} free)`}
                   </p>
                 </CardContent>
               </Card>
@@ -2011,15 +1833,10 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="relative opacity-75" data-testid="card-quick-organizations">
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                      Coming Soon
-                    </Badge>
-                  </div>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("organizations"); window.scrollTo(0, 0); }} data-testid="card-quick-organizations">
                   <CardContent className="pt-6 text-center">
-                    <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <h3 className="font-semibold text-muted-foreground">Organizations</h3>
+                    <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Organizations</h3>
                     <p className="text-sm text-muted-foreground">Manage clients</p>
                   </CardContent>
                 </Card>
@@ -2103,15 +1920,7 @@ export default function PartnerDashboard() {
 
             {/* Invitations Tab */}
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
-              {partner?.id && partner?.billingType ? (
-                <BulkInvitationsTab partnerId={partner.id} billingType={partner.billingType} />
-              ) : (
-                <Card>
-                  <CardContent className="py-8 flex justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </CardContent>
-                </Card>
-              )}
+              <BulkInvitationsTab partnerId={partner?.id || ''} billingType={partner?.billingType || 'prepaid'} />
             </TabsContent>
 
             {/* Organizations Tab */}
@@ -2625,27 +2434,27 @@ export default function PartnerDashboard() {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
-                          {account?.partner?.billingType === 'payg' && 'Pay As You Go (PAYG)'}
-                          {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
-                          {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
+                          {account?.partner?.billingType === 'prepaid' && 'Prepaid Billing'}
+                          {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill Billing'}
+                          {account?.partner?.billingType === 'invoice' && 'Invoice Billing'}
                         </CardTitle>
                         <CardDescription>
-                          {account?.partner?.billingType === 'payg' && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
-                          {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
-                          {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
+                          {account?.partner?.billingType === 'prepaid' && 'Purchase test credits upfront and use them as needed'}
+                          {account?.partner?.billingType === 'auto_bill' && 'Card on file - automatically billed based on monthly usage'}
+                          {account?.partner?.billingType === 'invoice' && 'Enterprise invoicing with flexible payment terms'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
-                        {account?.partner?.billingType === 'payg' && 'PAYG'}
-                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
-                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
+                        {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
+                        {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                        {account?.partner?.billingType === 'invoice' && 'Invoice'}
                       </Badge>
                     </CardHeader>
                   </Card>
 
                   {/* Card on File for Prepaid Partners */}
-                  {account?.partner?.billingType === 'payg' && (
-                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} />
+                  {account?.partner?.billingType === 'prepaid' && (
+                    <PrepaidCardManagement partnerId={account.partner.id} />
                   )}
 
                   {/* Pending Billing Change Request Alert */}
@@ -2662,9 +2471,9 @@ export default function PartnerDashboard() {
                               <p className="text-sm text-orange-900/80 dark:text-orange-100/80">
                                 Your request to change to{' '}
                                 <span className="font-medium">
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'payg' && 'Pay As You Go'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'subscription' && 'Subscription'}
-                                  {billingChangeData.pendingRequest.requestedBillingType === 'enterprise' && 'Enterprise'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'prepaid' && 'Prepaid'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'auto_bill' && 'Auto-Bill'}
+                                  {billingChangeData.pendingRequest.requestedBillingType === 'invoice' && 'Invoice'}
                                 </span>{' '}
                                 billing is being reviewed.
                               </p>
@@ -2703,153 +2512,153 @@ export default function PartnerDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-4 md:grid-cols-3">
-                        {/* PAYG Option */}
+                        {/* Prepaid Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'payg' 
+                            account?.partner?.billingType === 'prepaid' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-payg"
+                          data-testid="billing-option-prepaid"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <Package className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Pay As You Go</span>
+                              <span className="font-semibold">Prepaid</span>
                             </div>
-                            {account?.partner?.billingType === 'payg' && (
+                            {account?.partner?.billingType === 'prepaid' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
+                            Purchase test credits upfront. Use them whenever you need without monthly commitments.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              No recurring charges
+                              Pay as you go
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Bulk discounts available
+                              Volume discounts
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Control your spend
+                              Credits valid for 12 months
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'payg' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'prepaid' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('payg');
+                                setSelectedBillingType('prepaid');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-payg"
+                              data-testid="button-request-prepaid"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Subscription Option */}
+                        {/* Auto-Bill Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'subscription' 
+                            account?.partner?.billingType === 'auto_bill' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-subscription"
+                          data-testid="billing-option-auto-bill"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Subscription</span>
+                              <span className="font-semibold">Auto-Bill</span>
                             </div>
-                            {account?.partner?.billingType === 'subscription' && (
+                            {account?.partner?.billingType === 'auto_bill' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Card on file. Min monthly charge + auto-bill for additional usage at base rates.
+                            Card on file billed monthly based on actual usage. Simple and predictable.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Predictable monthly base
+                              No upfront payment
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pay as you grow
+                              Pay only for what you use
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Automatic billing
+                              Automatic monthly billing
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'subscription' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'auto_bill' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('subscription');
+                                setSelectedBillingType('auto_bill');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-subscription"
+                              data-testid="button-request-auto-bill"
                             >
                               Request Change
                             </Button>
                           )}
                         </div>
 
-                        {/* Enterprise Option */}
+                        {/* Invoice Option */}
                         <div 
                           className={`border rounded-lg p-4 transition-colors ${
-                            account?.partner?.billingType === 'enterprise' 
+                            account?.partner?.billingType === 'invoice' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
                           }`}
-                          data-testid="billing-option-enterprise"
+                          data-testid="billing-option-invoice"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Enterprise</span>
+                              <span className="font-semibold">Invoice</span>
                             </div>
-                            {account?.partner?.billingType === 'enterprise' && (
+                            {account?.partner?.billingType === 'invoice' && (
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4">
-                            For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
+                            Enterprise invoicing with flexible NET terms. Best for large organizations.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Bulk credit blocks
+                              NET 30/60 payment terms
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
-                              Pro-forma invoicing
+                              Dedicated support
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle className="h-3 w-3 text-green-500" />
                               Custom contracts
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'enterprise' && !billingChangeData?.pendingRequest && (
+                          {account?.partner?.billingType !== 'invoice' && !billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                setSelectedBillingType('enterprise');
+                                setSelectedBillingType('invoice');
                                 setShowBillingChangeDialog(true);
                               }}
-                              data-testid="button-request-enterprise"
+                              data-testid="button-request-invoice"
                             >
                               Request Change
                             </Button>
@@ -2884,8 +2693,8 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* PAYG Billing Stats */}
-                  {account?.partner?.billingType === 'payg' && (
+                  {/* Prepaid Billing Stats */}
+                  {account?.partner?.billingType === 'prepaid' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2909,7 +2718,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold" data-testid="text-total-purchased">
-                            {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} tests
+                            {partner?.testsPurchased || 0} tests
                           </div>
                           <p className="text-xs text-muted-foreground">
                             All time credits
@@ -2935,7 +2744,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Auto-Bill Billing Stats */}
-                  {account?.partner?.billingType === 'subscription' && (
+                  {account?.partner?.billingType === 'auto_bill' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -2985,7 +2794,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Invoice Billing Stats */}
-                  {account?.partner?.billingType === 'enterprise' && (
+                  {account?.partner?.billingType === 'invoice' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -3034,9 +2843,9 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* Buy More Tests - Only for PAYG and Subscription billing types */}
-                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription') && (
-                    <Card data-testid="section-purchase-credits">
+                  {/* Buy More Tests - Only for prepaid and auto_bill billing types */}
+                  {(account?.partner?.billingType === 'prepaid' || account?.partner?.billingType === 'auto_bill') && (
+                    <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
@@ -3047,45 +2856,40 @@ export default function PartnerDashboard() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {pricingLoading ? (
-                          <div className="flex justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                          </div>
-                        ) : !pricing?.packages ? (
-                          <div className="py-8 text-center text-muted-foreground">
-                            <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p className="font-medium">Unable to load pricing</p>
-                            <p className="text-sm mt-1">Please refresh the page or contact support if this persists.</p>
-                          </div>
-                        ) : (
-                          <div className="grid gap-4 md:grid-cols-3">
-                            {/* Volume-based pricing tiers converted to partner's currency */}
-                            {pricing.packages.map((pkg) => (
-                              <div 
-                                key={pkg.size} 
-                                className="border rounded-lg p-4 hover:border-primary transition-colors"
-                              >
-                                <div className="text-2xl font-bold text-primary">
-                                  {pkg.size.toLocaleString()} Tests
-                                </div>
-                                <div className="text-sm text-muted-foreground mb-3">
-                                  {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
-                                </div>
-                                <Button 
-                                  className="w-full" 
-                                  onClick={() => handlePurchase(pkg.size)}
-                                  disabled={purchasingPackageSize !== null}
-                                  data-testid={`button-buy-${pkg.size}`}
-                                >
-                                  {purchasingPackageSize === pkg.size ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  ) : null}
-                                  Purchase
-                                </Button>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          {[
+                            { size: 10, name: 'Starter', price: 50 },
+                            { size: 25, name: 'Growth', price: 112.50 },
+                            { size: 50, name: 'Professional', price: 200 },
+                            { size: 100, name: 'Business', price: 350 },
+                            { size: 250, name: 'Enterprise', price: 750 },
+                            { size: 500, name: 'Enterprise+', price: 1250 },
+                          ].map((pkg) => (
+                            <div 
+                              key={pkg.size} 
+                              className="border rounded-lg p-4 hover:border-primary transition-colors"
+                            >
+                              <div className="font-semibold text-lg">{pkg.name}</div>
+                              <div className="text-2xl font-bold text-primary">
+                                {pkg.size} tests
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              <div className="text-sm text-muted-foreground mb-3">
+                                £{pkg.price.toFixed(2)} (£{(pkg.price / pkg.size).toFixed(2)}/test)
+                              </div>
+                              <Button 
+                                className="w-full" 
+                                onClick={() => handlePurchase(pkg.size)}
+                                disabled={purchasingPackageSize !== null}
+                                data-testid={`button-buy-${pkg.size}`}
+                              >
+                                {purchasingPackageSize === pkg.size ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : null}
+                                Purchase
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
@@ -3094,7 +2898,7 @@ export default function PartnerDashboard() {
                     <CardHeader>
                       <CardTitle className="text-lg">Billing History</CardTitle>
                       <CardDescription>
-                        {account?.partner?.billingType === 'enterprise' 
+                        {account?.partner?.billingType === 'invoice' 
                           ? 'Invoices and payment history' 
                           : 'Receipts and invoices'}
                       </CardDescription>
@@ -3241,13 +3045,13 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {settings?.settings?.billingType === 'payg' && (
+                  {settings?.settings?.billingType === 'prepaid' && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Auto Top-Up
-                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for PAYG accounts." />
+                          <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for prepaid accounts." />
                         </CardTitle>
                         <CardDescription>
                           Automatically purchase more tests when your balance runs low
@@ -3565,64 +3369,6 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* Change Password Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Lock className="h-5 w-5" />
-                        Change Password
-                      </CardTitle>
-                      <CardDescription>
-                        Update your account password
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <Input
-                          id="current-password"
-                          type="password"
-                          placeholder="Enter current password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          data-testid="input-current-password"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          placeholder="Enter new password (min 8 characters)"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          data-testid="input-new-password"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          placeholder="Confirm new password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          data-testid="input-confirm-password"
-                        />
-                      </div>
-                      <Button
-                        onClick={handleChangePassword}
-                        disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
-                        data-testid="button-change-password"
-                      >
-                        {changePasswordMutation.isPending && (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        )}
-                        Change Password
-                      </Button>
-                    </CardContent>
-                  </Card>
-
                   <div className="flex justify-end">
                     <Button
                       onClick={handleSaveSettings}
@@ -3644,24 +3390,11 @@ export default function PartnerDashboard() {
               <DeveloperSubTabs 
                 apiKeys={apiKeys}
                 apiKeysLoading={apiKeysLoading}
-                onCreateTestKey={handleCreateTestKey}
-                onCreateLiveKey={handleCreateLiveKey}
+                onCreateKey={() => setShowCreateKeyDialog(true)}
                 onRotateKey={handleRotateKey}
                 onRevokeKey={handleRevokeKey}
                 rotatingKeyId={rotatingKeyId}
                 revokingKeyId={revokingKeyId}
-                creatingKeyType={creatingKeyType}
-                newKeyData={newKeyData}
-                onClearNewKey={handleClearNewKey}
-                onReactivateKey={() => {
-                  setActiveTab('billing');
-                  setTimeout(() => {
-                    const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
-                    if (purchaseSection) {
-                      purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }, 100);
-                }}
               />
             </TabsContent>
 
@@ -3809,7 +3542,7 @@ export default function PartnerDashboard() {
                             {analytics.scoreDistribution.map((dist, i) => (
                               <div key={i} className="space-y-3">
                                 <h4 className="font-medium text-sm">
-                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </h4>
                                 <div className="h-40">
                                   <ResponsiveContainer width="100%" height="100%">
@@ -3848,11 +3581,6 @@ export default function PartnerDashboard() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            {/* Analysis Tab */}
-            <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
-              <PartnerAnalysisTab />
             </TabsContent>
 
             {/* Notifications Tab */}
@@ -3896,25 +3624,6 @@ export default function PartnerDashboard() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {formatDate(notif.createdAt)}
                                 </p>
-                                {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical')) && (
-                                  <Button 
-                                    size="sm" 
-                                    className="mt-2"
-                                    onClick={() => {
-                                      setActiveTab('billing');
-                                      setTimeout(() => {
-                                        const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
-                                        if (purchaseSection) {
-                                          purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                        }
-                                      }, 100);
-                                    }}
-                                    data-testid={`button-buy-credits-${notif.id}`}
-                                  >
-                                    <CreditCard className="h-4 w-4 mr-1.5" />
-                                    Buy More Credits
-                                  </Button>
-                                )}
                               </div>
                             </div>
                             {!notif.isRead && (
@@ -4285,18 +3994,18 @@ export default function PartnerDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Current billing type</p>
                   <p className="font-medium">
-                    {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
-                    {account?.partner?.billingType === 'subscription' && 'Subscription'}
-                    {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
+                    {account?.partner?.billingType === 'prepaid' && 'Prepaid'}
+                    {account?.partner?.billingType === 'auto_bill' && 'Auto-Bill'}
+                    {account?.partner?.billingType === 'invoice' && 'Invoice'}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Requested billing type</p>
                   <p className="font-medium text-primary">
-                    {selectedBillingType === 'payg' && 'Pay As You Go'}
-                    {selectedBillingType === 'subscription' && 'Subscription'}
-                    {selectedBillingType === 'enterprise' && 'Enterprise'}
+                    {selectedBillingType === 'prepaid' && 'Prepaid'}
+                    {selectedBillingType === 'auto_bill' && 'Auto-Bill'}
+                    {selectedBillingType === 'invoice' && 'Invoice'}
                   </p>
                 </div>
               </div>
@@ -4317,7 +4026,7 @@ export default function PartnerDashboard() {
             </div>
 
             {/* Card Details Section - Only shown when requesting Auto-Bill */}
-            {selectedBillingType === 'subscription' && (
+            {selectedBillingType === 'auto_bill' && (
               <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
@@ -4368,7 +4077,7 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange || (selectedBillingType === 'subscription' && !cardComplete)}
+              disabled={isSubmittingBillingChange || (selectedBillingType === 'auto_bill' && !cardComplete)}
               data-testid="button-submit-billing-change"
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -4377,18 +4086,6 @@ export default function PartnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Terms Acceptance Dialog - blocks dashboard access until accepted */}
-      <PartnerTermsAcceptanceDialog
-        open={showTermsDialog}
-        onAccepted={() => {
-          setShowTermsDialog(false);
-          // After accepting terms, check if tutorial should be shown
-          if (account?.partner && !account.partner.tourCompleted) {
-            setTimeout(() => setShowTutorial(true), 500);
-          }
-        }}
-      />
 
       {/* Interactive Spotlight Tour */}
       <PartnerTour

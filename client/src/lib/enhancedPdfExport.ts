@@ -135,80 +135,6 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
   pdf.setTextColor(0, 0, 0);
 }
 
-// Helper to add "How to Read Our Reports" guide page for B2C candidates
-function addCandidateReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  
-  let yPos = 38;
-  
-  // Title with blue background
-  pdf.setFillColor(59, 130, 246);
-  pdf.rect(0, yPos, pageWidth, 28, 'F');
-  
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(18);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('HOW TO READ YOUR REPORT', pageWidth / 2, yPos + 12, { align: 'center' });
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('Understanding your assessment results', pageWidth / 2, yPos + 21, { align: 'center' });
-  
-  pdf.setTextColor(0, 0, 0);
-  yPos = 75;
-  
-  // Helper for numbered items
-  const addGuideItem = (num: number, title: string, description: string, y: number): number => {
-    // Numbered circle
-    pdf.setFillColor(59, 130, 246);
-    pdf.circle(25, y, 4, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(String(num), 25, y + 1, { align: 'center' });
-    
-    // Title
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(title, 34, y + 1);
-    
-    // Description
-    pdf.setTextColor(75, 85, 99);
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    const lines = pdf.splitTextToSize(description, pageWidth - 55);
-    lines.forEach((line: string, idx: number) => {
-      pdf.text(line, 34, y + 7 + (idx * 5));
-    });
-    
-    return y + 10 + (lines.length * 5) + 6;
-  };
-  
-  // B2C Candidate Report Guide
-  yPos = addGuideItem(1, 'Your Overall Performance', 
-    'The summary shows your average score across all completed assessments. Higher scores indicate stronger capabilities in each area assessed.', yPos);
-  
-  yPos = addGuideItem(2, 'FIT Assessment (Behavioral)', 
-    'Measures 6 behavioral traits including High Agency, Resilience, and Growth Mindset. These predict how you adapt, collaborate, and handle challenges in the workplace.', yPos);
-  
-  yPos = addGuideItem(3, 'AI Readiness (Technical)', 
-    'Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude for working with AI tools and making AI-assisted decisions.', yPos);
-  
-  yPos = addGuideItem(4, 'Prompt Architecture', 
-    'Evaluates your AI prompt engineering skills across 7 progressive difficulty levels. Each level tests clarity, structure, and creativity in prompt design.', yPos);
-  
-  yPos = addGuideItem(5, 'AIQ (Ethics)', 
-    'Algorithmic Integrity Quotient - measures your understanding of AI ethics, bias, fairness, and responsible AI practices. Shows your ethical decision-making capability.', yPos);
-  
-  yPos = addGuideItem(6, 'Skills Visualization', 
-    'Radar charts display your individual skill scores visually. The charts help identify your strengths and areas for development at a glance.', yPos);
-  
-  yPos = addGuideItem(7, 'Skills Legend', 
-    'The final page provides detailed descriptions of each assessed competency. Use this as a reference guide to understand what each skill measures.', yPos);
-}
-
 // Helper to add Skills Legend page at the end of the PDF
 function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
   pdf.addPage();
@@ -556,11 +482,7 @@ export async function exportEnhancedCandidatePDF(
   const promptArchResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
   const aiqResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'aiq' && r.status === 'completed');
 
-  // ========== PAGE 1: HOW TO READ YOUR REPORT GUIDE ==========
-  addCandidateReportGuidePage(pdf, pageWidth, pageHeight);
-  
-  // ========== PAGE 2: COVER PAGE ==========
-  pdf.addPage();
+  // ========== PAGE 1: COVER PAGE ==========
   let yPos = 30;
   
   addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -813,6 +735,140 @@ export async function exportEnhancedCandidatePDF(
     pdf.text(`${aiqScore}/100`, pageWidth - 25, yPos, { align: 'right' });
     yPos += 8;
   }
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // ========== PAGE 2: UNDERSTANDING THE ASSESSMENTS ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  yPos = addSectionHeader(pdf, 'UNDERSTANDING THE ASSESSMENTS', yPos, pageWidth);
+  yPos += 5;
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(75, 85, 99);
+  const introText = pdf.splitTextToSize(
+    'This report evaluates the candidate across four critical dimensions of AI-era workplace performance. Each assessment measures specific competencies that predict success in modern, AI-augmented work environments.',
+    pageWidth - 40
+  );
+  introText.forEach((line: string, index: number) => {
+    pdf.text(line, 20, yPos + (index * 4));
+  });
+  yPos += introText.length * 4 + 5;
+  
+  // Helper function to add assessment explanation box
+  const addAssessmentBox = (
+    title: string,
+    titleColor: [number, number, number],
+    bgColor: [number, number, number],
+    borderColor: [number, number, number],
+    whatItMeasures: string,
+    workplaceImpact: string,
+    currentY: number
+  ): number => {
+    // Calculate required height first with smaller text
+    pdf.setFontSize(8);
+    const measuresText = pdf.splitTextToSize(whatItMeasures, pageWidth - 50);
+    const impactText = pdf.splitTextToSize(workplaceImpact, pageWidth - 50);
+    const boxHeight = 11 + 5 + (measuresText.length * 3.5) + 2 + 5 + (impactText.length * 3.5) + 4;
+    
+    // Check if we need a new page
+    if (currentY + boxHeight > pageHeight - 30) {
+      pdf.addPage();
+      addHeader(pdf, pageWidth);
+      currentY = 35;
+    }
+    
+    const startY = currentY;
+    
+    // Draw box
+    pdf.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+    pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    pdf.roundedRect(20, startY, pageWidth - 40, boxHeight, 2, 2, 'FD');
+    
+    // Render content
+    let textY = startY + 6;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+    pdf.text(title, 25, textY);
+    textY += 5;
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('What It Measures:', 25, textY);
+    textY += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    measuresText.forEach((line: string) => {
+      pdf.text(line, 25, textY);
+      textY += 3.5;
+    });
+    textY += 2;
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('Workplace Impact:', 25, textY);
+    textY += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    impactText.forEach((line: string) => {
+      pdf.text(line, 25, textY);
+      textY += 3.5;
+    });
+    
+    return currentY + boxHeight + 4;
+  };
+  
+  // FIT Assessment Explanation
+  yPos = addAssessmentBox(
+    'FIT ASSESSMENT (15 Questions)',
+    [59, 130, 246],
+    [239, 246, 255],
+    [59, 130, 246],
+    'Six core behavioral skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.',
+    'Predicts adaptability, initiative, collaboration quality, and resilience under pressure. High scorers drive innovation, navigate ambiguity effectively, and build strong team dynamics.',
+    yPos
+  );
+  
+  // AI Readiness Assessment Explanation
+  yPos = addAssessmentBox(
+    'AI READINESS ASSESSMENT (21 Questions)',
+    [147, 51, 234],
+    [243, 232, 255],
+    [147, 51, 234],
+    'Nine AI-specific competencies including AI Literacy, Prompting Effectiveness, Technical Fluency, Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.',
+    'Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions, and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.',
+    yPos
+  );
+  
+  // Prompt Architecture Assessment Explanation
+  yPos = addAssessmentBox(
+    'PROMPT ARCHITECTURE ASSESSMENT (7 Levels)',
+    [245, 158, 11],
+    [254, 243, 199],
+    [245, 158, 11],
+    'Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.',
+    'Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.',
+    yPos
+  );
+  
+  // AIQ Assessment Explanation - Graded Scoring
+  yPos = addAssessmentBox(
+    'ALGORITHMIC INTEGRITY QUOTIENT (AIQ) (8 Questions)',
+    [59, 130, 246],
+    [239, 246, 255],
+    [59, 130, 246],
+    'AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%). Recognizes strategic ethical reasoning.',
+    'Graded scoring captures nuanced ethical judgment that senior strategists demonstrate. Identifies candidates who balance ethical imperatives with operational realities, making them valuable for AI governance and deployment oversight roles.',
+    yPos
+  );
   
   pdf.setTextColor(0, 0, 0);
   
@@ -1147,7 +1203,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures ethical reasoning and decision-making in AI-related scenarios through a single integrated score', 20, yPos);
+    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
     yPos += 8;
     
     // Get band interpretation for display

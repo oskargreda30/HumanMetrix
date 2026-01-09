@@ -257,34 +257,25 @@ export async function recordBillableUsage(
 ): Promise<void> {
   const pricePerAssessment = partner.pricePerAssessment ?? 500;
   
-  // Check if this test is consuming from free allocation or paid credits
-  // Free tests: freeTestsAllocated covers the first N consumed tests
-  // Billable only when testsConsumed > freeTestsAllocated before this consumption
-  const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
-  const freeTestsUsed = Math.min(quotaBalance.testsConsumed, quotaBalance.freeTestsAllocated);
-  const wasFreeTest = freeTestsUsed < quotaBalance.freeTestsAllocated || 
-                      quotaBalance.testsConsumed <= quotaBalance.freeTestsAllocated;
-  
-  // Create usage event - only billable if this was NOT a free test
+  // Create billable usage event
   const usageEvent = await storage.createUsageEvent({
     partnerId: partner.id,
     apiKeyId: session.apiKeyId,
     sessionId: session.id,
     eventType: "session_completed",
     assessmentType: session.assessmentType,
-    billable: !wasFreeTest,
-    billedAmount: wasFreeTest ? 0 : pricePerAssessment,
+    billable: true,
+    billedAmount: pricePerAssessment,
     metadata: {
       externalUserId: session.externalUserId || "",
       completedAt: new Date().toISOString(),
-      wasFreeTest: wasFreeTest,
     } as Record<string, any>,
   });
 
-  // If partner has Stripe billing set up and this is billable, report to Stripe
-  if (!wasFreeTest && partner.stripeSubscriptionId && partner.stripeCustomerId) {
+  // If partner has Stripe billing set up, report to Stripe
+  if (partner.stripeSubscriptionId && partner.stripeCustomerId) {
     await reportUsageToStripe(partner, usageEvent, 1);
   }
 
-  console.log(`[Partner Billing] Recorded ${wasFreeTest ? 'free' : 'billable'} usage for session ${session.id}${wasFreeTest ? '' : `, amount: ${pricePerAssessment} pence`}`);
+  console.log(`[Partner Billing] Recorded billable usage for session ${session.id}, amount: ${pricePerAssessment} pence`);
 }

@@ -205,7 +205,7 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
               </div>
               
               <div class="warning">
-                <strong>Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email.
+                <strong>⚠️ Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email.
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -230,7 +230,7 @@ We received a request to reset your password for your HumanMetrix account.
 Click the link below to reset your password:
 ${resetUrl}
 
-This link will expire in 1 hour.
+⚠️ This link will expire in 1 hour.
 
 If you didn't request a password reset, please ignore this email.
 
@@ -625,14 +625,12 @@ export async function sendPartnerQuotaWarning70(
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `Test Quota Alert: 70% Used - ${companyName}`,
+    subject: `⚠️ Test Quota Alert: 70% Used - ${companyName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -651,7 +649,7 @@ export async function sendPartnerQuotaWarning70(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">Quota Alert</h1>
+              <h1 style="margin: 0;">⚠️ Quota Alert</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">HumanMetrix Partner Notification</p>
             </div>
             <div class="content">
@@ -736,14 +734,12 @@ export async function sendPartnerQuotaWarning90(
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
+    subject: `🚨 URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -763,7 +759,7 @@ export async function sendPartnerQuotaWarning90(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">URGENT: Quota Critical</h1>
+              <h1 style="margin: 0;">🚨 URGENT: Quota Critical</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">Immediate Action Required</p>
             </div>
             <div class="content">
@@ -771,7 +767,7 @@ export async function sendPartnerQuotaWarning90(
               
               <div class="urgent">
                 <p style="margin: 0; font-size: 18px; font-weight: bold; color: #dc2626;">
-                  Your test quota is almost exhausted!
+                  ⚠️ Your test quota is almost exhausted!
                 </p>
               </div>
               
@@ -789,7 +785,7 @@ export async function sendPartnerQuotaWarning90(
               <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more tests.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">Top Up Now</a>
+                <a href="${topUpUrl}" class="button">🛒 Top Up Now</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -804,11 +800,11 @@ export async function sendPartnerQuotaWarning90(
       </html>
     `,
     text: `
-URGENT: Quota Critical - HumanMetrix
+🚨 URGENT: Quota Critical - HumanMetrix
 
 Hello ${companyName},
 
-YOUR TEST QUOTA IS ALMOST EXHAUSTED!
+⚠️ YOUR TEST QUOTA IS ALMOST EXHAUSTED!
 
 CRITICAL USAGE LEVEL:
 ${usagePercentage}% used
@@ -847,14 +843,12 @@ export async function sendPartnerAccessSuspendedEmail(
   }
   
   const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const topUpUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: partnerEmail,
-    subject: `API Access Suspended - Quota Exhausted`,
+    subject: `🔴 API Access Suspended - Quota Exhausted`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -862,7 +856,7 @@ export async function sendPartnerAccessSuspendedEmail(
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
             .button { display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
             .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
@@ -872,8 +866,8 @@ export async function sendPartnerAccessSuspendedEmail(
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; color: #ffffff;">Access Suspended</h1>
-              <p style="margin: 10px 0 0 0; color: #e0e7ff;">Your Test Quota Has Been Exhausted</p>
+              <h1 style="margin: 0;">🔴 Access Suspended</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Your Test Quota Has Been Exhausted</p>
             </div>
             <div class="content">
               <h2>Hello ${companyName},</h2>
@@ -890,7 +884,7 @@ export async function sendPartnerAccessSuspendedEmail(
               <p>Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">Restore Access - Purchase Tests</a>
+                <a href="${topUpUrl}" class="button">✅ Restore Access - Purchase Tests</a>
               </div>
               
               <p>Once you purchase additional tests, your API access will be <strong>automatically restored</strong> and your embedded assessments will resume working immediately.</p>
@@ -1300,7 +1294,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
   };
   
   const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    from: `"HumanMetrix" <hello@humanmetrix.co.uk>`,
     to: details.email,
     subject: `Welcome to HumanMetrix Partner Programme - Your Account Details`,
     html: `
@@ -1691,426 +1685,6 @@ Powered by HumanMetrix - AI Assessment Platform
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error(`❌ Failed to send partner bulk invitation email to ${details.candidateEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// B2B Test-Taker Congratulatory Email - sent after assessment completion
-interface B2BCongratulatoryEmailDetails {
-  email: string;
-  candidateName?: string;
-  assessmentType: string;
-  partnerCompanyName: string;
-  paymentUrl: string;
-  paymentAmount: string; // Formatted discounted price string (e.g., "£15.00")
-  originalPaymentAmount?: string; // Formatted original price string (e.g., "£20.00")
-  freeUnlockDate: Date; // 30 days after completion
-}
-
-export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B congratulatory email not sent to ${details.email} - email not configured`);
-    return { success: false };
-  }
-  
-  const assessmentName = formatAssessmentName(details.assessmentType);
-  // Use email as the display name instead of externalUserId
-  const displayName = details.email;
-  const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-  });
-  
-  // Build price display with original price crossed out if available
-  const priceDisplay = details.originalPaymentAmount 
-    ? `<span style="text-decoration: line-through; color: #6b7280; font-size: 18px;">${details.originalPaymentAmount}</span> <span class="price">${details.paymentAmount}</span> <span style="color: #059669; font-size: 14px; font-weight: 600;">25% off</span>`
-    : `<span class="price">${details.paymentAmount}</span>`;
-  const textPriceDisplay = details.originalPaymentAmount
-    ? `${details.originalPaymentAmount} → ${details.paymentAmount} (25% off)`
-    : details.paymentAmount;
-  
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
-    to: details.email,
-    subject: `Congratulations! You've completed your ${assessmentName}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
-            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
-            .options-box { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .option { padding: 15px; margin: 10px 0; border-radius: 6px; }
-            .option-immediate { background: #e0f2fe; border-left: 4px solid #0891b2; }
-            .option-free { background: #f0fdf4; border-left: 4px solid #10b981; }
-            .price { font-size: 24px; font-weight: bold; color: #0891b2; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
-              </div>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
-            </div>
-            <div class="content">
-              <div style="text-align: center;">
-                <span class="success-badge">Assessment Complete</span>
-              </div>
-              
-              <h2 style="text-align: center;">Congratulations, ${displayName}!</h2>
-              
-              <p style="text-align: center;">You've successfully completed the <strong>${assessmentName}</strong> as part of your assessment with <strong>${details.partnerCompanyName}</strong>.</p>
-              
-              <div class="options-box">
-                <h3 style="margin-top: 0;">Access Your Results</h3>
-                
-                <div class="option option-immediate">
-                  <strong>Immediate Access</strong>
-                  <p style="margin: 5px 0;">Get your detailed results right now for just ${priceDisplay}</p>
-                  <p style="margin: 5px 0; font-size: 14px; color: #0369a1;">Receive a comprehensive PDF report with insights and recommendations.</p>
-                </div>
-                
-                <div style="text-align: center;">
-                  <a href="${details.paymentUrl}" class="button">Unlock Results Now</a>
-                </div>
-                
-                <div class="option option-free" style="margin-top: 20px;">
-                  <strong>Free Access</strong>
-                  <p style="margin: 5px 0;">Your results will be available for free on <strong>${freeDate}</strong></p>
-                  <p style="margin: 5px 0; font-size: 14px; color: #059669;">We'll send you an email when your results are ready.</p>
-                </div>
-              </div>
-              
-              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
-                Thank you for completing your assessment. Your insights are valuable!
-              </p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `
-Congratulations, ${displayName}!
-
-You've successfully completed the ${assessmentName} as part of your assessment with ${details.partnerCompanyName}.
-
-ACCESS YOUR RESULTS
-==================
-
-IMMEDIATE ACCESS
-Get your detailed results right now for just ${textPriceDisplay}
-Receive a comprehensive PDF report with insights and recommendations.
-
-Click here to unlock your results: ${details.paymentUrl}
-
-FREE ACCESS
-Your results will be available for free on ${freeDate}.
-We'll send you an email when your results are ready.
-
----
-Thank you for completing your assessment!
-© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
-    `.trim(),
-  };
-
-  try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B congratulatory email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    console.error(`❌ Failed to send B2B congratulatory email to ${details.email}:`, error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// B2B Test-Taker Results Email - sent after payment with PDF attachment
-interface B2BResultsEmailDetails {
-  email: string;
-  candidateName?: string;
-  assessmentType: string;
-  partnerCompanyName: string;
-  pdfBuffer: Buffer; // PDF file as buffer
-  pdfFilename: string; // e.g., "FIT_Assessment_Results.pdf"
-}
-
-export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B results email not sent to ${details.email} - email not configured`);
-    return { success: false };
-  }
-  
-  const assessmentName = formatAssessmentName(details.assessmentType);
-  const candidateName = details.candidateName || 'there';
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'https://humanmetrix.co.uk';
-  
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
-    to: details.email,
-    subject: `Your ${assessmentName} Results Are Ready`,
-    attachments: [
-      {
-        filename: details.pdfFilename,
-        content: details.pdfBuffer,
-        contentType: 'application/pdf',
-      },
-    ],
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
-            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
-            .attachment-box { background: #f0f9ff; border: 2px dashed #0891b2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-            .pdf-icon { font-size: 48px; margin-bottom: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">HumanMetrix</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
-            </div>
-            <div class="content">
-              <div style="text-align: center;">
-                <span class="success-badge">Results Ready</span>
-              </div>
-              
-              <h2 style="text-align: center;">Hello ${candidateName},</h2>
-              
-              <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now available.</p>
-              
-              <div class="attachment-box">
-                <div class="pdf-icon">📄</div>
-                <p style="margin: 0; font-weight: 600; color: #0891b2;">${details.pdfFilename}</p>
-                <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">Your detailed assessment report is attached to this email.</p>
-              </div>
-              
-              <h3>What's in your report?</h3>
-              <ul>
-                <li>Your overall assessment score and percentile ranking</li>
-                <li>Detailed breakdown of your performance across key areas</li>
-                <li>Personalized insights and recommendations</li>
-                <li>Industry benchmarking data</li>
-              </ul>
-              
-              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
-                Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
-              </p>
-            </div>
-            <div class="footer">
-              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
-              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `
-Hello ${candidateName},
-
-Thank you for your payment! Your ${assessmentName} results are now available.
-
-ATTACHED: ${details.pdfFilename}
-
-Your detailed assessment report is attached to this email.
-
-WHAT'S IN YOUR REPORT?
-- Your overall assessment score and percentile ranking
-- Detailed breakdown of your performance across key areas
-- Personalized insights and recommendations
-- Industry benchmarking data
-
-Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
-
----
-Questions about your results? Contact us at ${baseUrl}/contact
-© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
-    `.trim(),
-  };
-
-  try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B results email with PDF sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    console.error(`❌ Failed to send B2B results email to ${details.email}:`, error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// B2B Bulk Pricing Email - sent after all invited assessments are complete
-interface B2BBulkPricingEmailDetails {
-  email: string;
-  partnerCompanyName: string;
-  completedAssessments: Array<{
-    type: string;
-    sessionId: string;
-  }>;
-  bulkPaymentUrl: string;
-  bulkPrice: string;
-  originalPrice: string;
-  savings: string;
-  discountPercent: number;
-  freeUnlockDate: Date;
-}
-
-export async function sendB2BBulkPricingEmail(details: B2BBulkPricingEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B bulk pricing email not sent to ${details.email} - email not configured`);
-    return { success: false };
-  }
-  
-  const displayName = details.email;
-  const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-  });
-  
-  const assessmentNames = details.completedAssessments.map(a => formatAssessmentName(a.type)).join(', ');
-  const assessmentCount = details.completedAssessments.length;
-  
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
-    to: details.email,
-    subject: `All ${assessmentCount} Assessments Complete - Unlock Your Bundle Results`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
-            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
-            .bundle-box { background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); padding: 25px; border-radius: 12px; margin: 20px 0; border: 2px solid #0891b2; }
-            .savings-badge { background: #059669; color: white; padding: 6px 12px; border-radius: 15px; font-size: 14px; font-weight: 600; }
-            .price { font-size: 28px; font-weight: bold; color: #0891b2; }
-            .original-price { text-decoration: line-through; color: #6b7280; font-size: 18px; }
-            .assessment-list { background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0; }
-            .assessment-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-            .assessment-item:last-child { border-bottom: none; }
-            .checkmark { color: #10b981; margin-right: 8px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
-              </div>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
-            </div>
-            <div class="content">
-              <div style="text-align: center;">
-                <span class="success-badge">All Assessments Complete</span>
-              </div>
-              
-              <h2 style="text-align: center;">Congratulations, ${displayName}!</h2>
-              
-              <p style="text-align: center;">You've completed all ${assessmentCount} assessments for <strong>${details.partnerCompanyName}</strong>. Unlock all your results together and save!</p>
-              
-              <div class="assessment-list">
-                <strong>Completed Assessments:</strong>
-                ${details.completedAssessments.map(a => `
-                  <div class="assessment-item">
-                    <span class="checkmark">✓</span> ${formatAssessmentName(a.type)}
-                  </div>
-                `).join('')}
-              </div>
-              
-              <div class="bundle-box">
-                <div style="text-align: center;">
-                  <span class="savings-badge">BUNDLE DISCOUNT - ${details.discountPercent}% OFF</span>
-                  <h3 style="margin: 15px 0 5px 0;">Unlock All ${assessmentCount} Results</h3>
-                  <p style="margin: 0;">
-                    <span class="original-price">${details.originalPrice}</span>
-                    <span class="price">${details.bulkPrice}</span>
-                  </p>
-                  <p style="color: #059669; font-weight: 600; margin: 5px 0;">You save ${details.savings}</p>
-                  <a href="${details.bulkPaymentUrl}" class="button">Unlock All Results Now</a>
-                </div>
-              </div>
-              
-              <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-top: 20px;">
-                <strong>Free Access</strong>
-                <p style="margin: 5px 0;">All your results will be available for free on <strong>${freeDate}</strong></p>
-                <p style="margin: 5px 0; font-size: 14px; color: #059669;">We'll send you an email when your results are ready.</p>
-              </div>
-              
-              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
-                You can also purchase individual results using the links in your previous emails.
-              </p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `
-Congratulations, ${displayName}!
-
-You've completed all ${assessmentCount} assessments for ${details.partnerCompanyName}!
-
-COMPLETED ASSESSMENTS:
-${details.completedAssessments.map(a => `✓ ${formatAssessmentName(a.type)}`).join('\n')}
-
-BUNDLE DISCOUNT - ${details.discountPercent}% OFF
-================================
-Unlock all ${assessmentCount} results for just ${details.bulkPrice} (was ${details.originalPrice})
-You save ${details.savings}!
-
-Click here to unlock all results: ${details.bulkPaymentUrl}
-
-FREE ACCESS
-Your results will be available for free on ${freeDate}.
-We'll send you an email when your results are ready.
-
-You can also purchase individual results using the links in your previous emails.
-
----
-© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
-    `.trim(),
-  };
-
-  try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B bulk pricing email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    console.error(`❌ Failed to send B2B bulk pricing email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }

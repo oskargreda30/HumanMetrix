@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Mail } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -35,7 +34,6 @@ interface SessionData {
   savedAnswers?: Record<string, any> | null;
   lastAnsweredIndex?: number | null;
   lastActivityAt?: string | null;
-  isTestSession?: boolean; // True if created with a test API key
 }
 
 type Question = {
@@ -92,25 +90,13 @@ export default function EmbedAssessment() {
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired" | "unavailable">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [partnerContactInfo, setPartnerContactInfo] = useState<{ name?: string; email?: string } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedScores, setCompletedScores] = useState<any>(null);
-  
-  // B2B Test-Taker Email Collection
-  const [testerEmail, setTesterEmail] = useState<string>("");
-  const [emailError, setEmailError] = useState<string>("");
-  const [detectedCountry, setDetectedCountry] = useState<string>("GB");
-  
-  // Pause/resume state tracking
-  const [isPaused, setIsPaused] = useState(false);
-  const [canPauseAgain, setCanPauseAgain] = useState(true);
-  // Use a ref for canPauseAgain that updates synchronously for event handlers
-  const canPauseAgainRef = useRef(true);
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -122,25 +108,6 @@ export default function EmbedAssessment() {
   const borderColor = isLight ? "border-gray-300" : "border-slate-600";
   const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
 
-  // Detect user's country for pricing
-  useEffect(() => {
-    const detectCountry = async () => {
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.country_code) {
-            setDetectedCountry(data.country_code);
-          }
-        }
-      } catch (e) {
-        // Fallback to GB if detection fails
-        console.log('Country detection failed, using default');
-      }
-    };
-    detectCountry();
-  }, []);
-
   useEffect(() => {
     if (!sessionId) {
       setStatus("error");
@@ -150,112 +117,6 @@ export default function EmbedAssessment() {
 
     fetchSession();
   }, [sessionId]);
-  
-  // Keep ref in sync with state for event handlers
-  useEffect(() => {
-    canPauseAgainRef.current = canPauseAgain;
-  }, [canPauseAgain]);
-  
-  // Window close detection for pause functionality (B2B - uses beforeunload/pagehide)
-  // Only triggers on actual window close, not tab switches
-  useEffect(() => {
-    if (!sessionId || status !== "started" || isSubmitting) return;
-    
-    const handleWindowClose = () => {
-      // Use ref for synchronous check - state updates are async and would be stale
-      if (!canPauseAgainRef.current) return;
-      
-      // Immediately mark as used to prevent double-pause race conditions
-      canPauseAgainRef.current = false;
-      
-      // Use sendBeacon for reliable delivery on page unload
-      const payload = JSON.stringify({ timeRemainingMs: 0 }); // B2B tracks time server-side
-      navigator.sendBeacon(`/api/embed/session/${sessionId}/pause`, new Blob([payload], { type: 'application/json' }));
-    };
-    
-    // pagehide is more reliable than beforeunload for mobile browsers
-    window.addEventListener("pagehide", handleWindowClose);
-    window.addEventListener("beforeunload", handleWindowClose);
-    
-    return () => {
-      window.removeEventListener("pagehide", handleWindowClose);
-      window.removeEventListener("beforeunload", handleWindowClose);
-    };
-  }, [sessionId, status, isSubmitting]);
-  
-  // On page load/focus, check if session was paused and needs to be resumed
-  useEffect(() => {
-    if (!sessionId || status !== "started" || isSubmitting) return;
-    
-    const checkAndResumeSession = async () => {
-      try {
-        // Re-fetch session state to check if it was paused
-        const res = await fetch(`/api/embed/session/${sessionId}`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          if (data.error?.includes("expired") || data.message?.includes("expired")) {
-            setStatus("expired");
-            setErrorMessage("The 30-minute grace period has expired.");
-          }
-          return;
-        }
-        
-        const data = await res.json();
-        
-        // IMMEDIATELY sync local state with server state
-        setIsPaused(data.isPaused || false);
-        
-        if (data.isPaused) {
-          // Session is paused - IMMEDIATELY disable pausing to prevent race condition
-          // Update ref synchronously so beforeunload handler sees the change immediately
-          canPauseAgainRef.current = false;
-          setCanPauseAgain(false);
-          
-          // Attempt to resume
-          const resumeResponse = await fetch(`/api/embed/session/${sessionId}/resume`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
-          
-          if (resumeResponse.ok) {
-            const resumeData = await resumeResponse.json().catch(() => ({}));
-            // Update state from server response - trust only server
-            setIsPaused(false);
-            // After resume, server returns canPauseAgain: false (single-resume rule)
-            // Update ref synchronously so beforeunload sees it immediately
-            const resumeCanPause = resumeData.canPauseAgain === true;
-            canPauseAgainRef.current = resumeCanPause;
-            setCanPauseAgain(resumeCanPause);
-          } else {
-            const errorData = await resumeResponse.json().catch(() => ({}));
-            if (errorData.message?.includes("expired") || errorData.error?.includes("expired")) {
-              setStatus("expired");
-              setErrorMessage("The 30-minute grace period has expired.");
-            }
-          }
-        } else {
-          // Not paused - trust server for canPauseAgain
-          // Update ref synchronously FIRST so beforeunload sees it immediately
-          const serverCanPause = data.canPauseAgain === true;
-          canPauseAgainRef.current = serverCanPause;
-          setCanPauseAgain(serverCanPause);
-        }
-      } catch (err) {
-        console.error("Failed to check session state:", err);
-      }
-    };
-    
-    // Check when window regains focus
-    const handleFocus = () => {
-      checkAndResumeSession();
-    };
-    
-    window.addEventListener("focus", handleFocus);
-    
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [sessionId, status, isSubmitting]);
 
   const fetchSession = async () => {
     try {
@@ -274,22 +135,6 @@ export default function EmbedAssessment() {
 
       const data = await res.json();
       setSession(data);
-      
-      // Check if API key is deactivated (partner's quota exhausted)
-      if (data.apiKeyActive === false) {
-        setPartnerContactInfo({
-          name: data.partnerName,
-          email: undefined,
-        });
-        setStatus("unavailable");
-        return;
-      }
-      
-      // Initialize pause state from server - update ref synchronously first
-      const initialCanPause = data.canPauseAgain ?? true;
-      canPauseAgainRef.current = initialCanPause;
-      setIsPaused(data.isPaused || false);
-      setCanPauseAgain(initialCanPause);
       
       // Load questions
       const loadedQuestions = getQuestions(data.assessmentType, data.questionLocale || 'default');
@@ -328,29 +173,10 @@ export default function EmbedAssessment() {
   };
 
   const startAssessment = async () => {
-    // Validate email if session doesn't have one
-    if (!session?.externalEmail && !testerEmail) {
-      setEmailError("Please enter your email address");
-      return;
-    }
-    
-    // Basic email validation
-    const emailToUse = session?.externalEmail || testerEmail;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!session?.externalEmail && !emailRegex.test(testerEmail)) {
-      setEmailError("Please enter a valid email address");
-      return;
-    }
-    setEmailError("");
-    
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: emailToUse,
-          countryCode: detectedCountry
-        }),
       });
 
       if (!res.ok) {
@@ -455,18 +281,6 @@ export default function EmbedAssessment() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        
-        // Check for billing/quota related errors - show friendly "unavailable" message
-        if (res.status === 402 || data.error === "Quota Consumption Failed" || data.code === "QUOTA_EXHAUSTED") {
-          setPartnerContactInfo({ 
-            name: session?.partnerName,
-            email: undefined // We don't expose partner emails to candidates
-          });
-          setStatus("unavailable");
-          setIsSubmitting(false);
-          return;
-        }
-        
         setStatus("error");
         setErrorMessage(getHumanReadableError(data, "Failed to submit answers"));
         setIsSubmitting(false);
@@ -512,18 +326,8 @@ export default function EmbedAssessment() {
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-loading">
         <div className="text-center">
-          <div className="relative mb-6">
-            <img 
-              src="/assets/humanmetrix-logo.png" 
-              alt="HumanMetrix" 
-              className="h-16 w-16 mx-auto animate-pulse"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-20 w-20 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-            </div>
-          </div>
-          <p className={`${textSecondary} font-medium`}>Loading assessment...</p>
-          <p className={`${textMuted} text-sm mt-1`}>Powered by HumanMetrix</p>
+          <Loader2 className="h-12 w-12 animate-spin text-cyan-500 mx-auto mb-4" />
+          <p className={textSecondary}>Loading assessment...</p>
         </div>
       </div>
     );
@@ -557,45 +361,6 @@ export default function EmbedAssessment() {
     );
   }
 
-  if (status === "unavailable") {
-    const displayName = partnerContactInfo?.name || 'The assessment provider';
-    
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-unavailable">
-        <Card className={`max-w-md ${bgCard} border-slate-500/30`}>
-          <CardContent className="pt-6 text-center">
-            <div className="h-12 w-12 rounded-full bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-6 w-6 text-slate-400" />
-            </div>
-            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Temporarily Unavailable</h2>
-            <p className={`${textSecondary} mb-4`}>
-              This assessment is temporarily unavailable. Your responses have been saved.
-            </p>
-            <div className={`${bgCardAlt} rounded-lg p-4 text-left`}>
-              <p className={`text-sm ${textMuted} mb-2`}>
-                Please contact {displayName} for assistance or to request a new assessment link.
-              </p>
-              <p className={`text-xs ${textMuted}`}>
-                If you're the employer, please check your partner dashboard for account status.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
-              <span className={`text-xs ${textMuted}`}>Powered by</span>
-              <div className="flex items-center gap-1.5">
-                <img 
-                  src="/assets/humanmetrix-logo.png" 
-                  alt="HumanMetrix" 
-                  className="h-5 w-5 object-contain"
-                />
-                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (status === "completed") {
     const branding = session?.branding;
     const accentColor = branding?.accentColor || '#06b6d4';
@@ -615,22 +380,13 @@ export default function EmbedAssessment() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Assessment Complete</h2>
             <p className={`${textSecondary} mb-4`}>Thank you for completing the assessment.</p>
-            
-            <div className={`${bgCardAlt} rounded-lg p-4 text-left`}>
-              <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: accentColor }} />
-                <div>
-                  <p className={`font-medium ${textPrimary} mb-2`}>Check Your Email</p>
-                  <p className={`text-sm ${textSecondary} mb-3`}>
-                    We've sent you an email with a link to view your detailed results.
-                  </p>
-                  <div className={`text-xs ${textMuted} space-y-1`}>
-                    <p>• <strong>View results now:</strong> Follow the payment link in the email</p>
-                    <p>• <strong>Free access:</strong> Results unlock automatically after 30 days</p>
-                  </div>
-                </div>
+            {completedScores && (
+              <div className={`${bgCardAlt} rounded-lg p-4`}>
+                <p className="text-lg font-semibold" style={{ color: accentColor }}>
+                  Score: {completedScores.totalScore}%
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
@@ -659,18 +415,6 @@ export default function EmbedAssessment() {
     
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
-        {/* Test Mode Banner */}
-        {session?.isTestSession && (
-          <div 
-            className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 text-center py-1.5 px-4 font-semibold text-sm shadow-md"
-            data-testid="banner-test-mode-ready"
-          >
-            <span className="inline-flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              TEST MODE - Results from test API key sessions cannot be accessed.
-            </span>
-          </div>
-        )}
         <Card className={`max-w-lg ${bgCard}`}>
           <CardHeader className="text-center">
             {branding?.logoUrl ? (
@@ -711,37 +455,6 @@ export default function EmbedAssessment() {
                 <li>Take your time - there is no time limit</li>
               </ul>
             </div>
-            
-            {/* Email collection for B2B test-takers (when email not provided by partner) */}
-            {!session?.externalEmail && (
-              <div className="space-y-2">
-                <Label htmlFor="tester-email" className={textSecondary}>
-                  Email Address <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${textMuted}`} />
-                  <Input
-                    id="tester-email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={testerEmail}
-                    onChange={(e) => {
-                      setTesterEmail(e.target.value);
-                      setEmailError("");
-                    }}
-                    className={`pl-10 ${inputBg} ${emailError ? 'border-red-500' : ''}`}
-                    data-testid="input-tester-email"
-                  />
-                </div>
-                {emailError && (
-                  <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
-                )}
-                <p className={`text-xs ${textMuted}`}>
-                  We'll send your results to this email once complete.
-                </p>
-              </div>
-            )}
-            
             <Button
               onClick={startAssessment}
               className="w-full"
@@ -774,19 +487,7 @@ export default function EmbedAssessment() {
 
   return (
     <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-assessment">
-      {/* Test Mode Banner */}
-      {session?.isTestSession && (
-        <div 
-          className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 text-center py-1.5 px-4 font-semibold text-sm shadow-md"
-          data-testid="banner-test-mode"
-        >
-          <span className="inline-flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            TEST MODE - This session was created with a test API key. Results cannot be accessed.
-          </span>
-        </div>
-      )}
-      <div className={`max-w-2xl mx-auto ${session?.isTestSession ? 'pt-8' : ''}`}>
+      <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge 

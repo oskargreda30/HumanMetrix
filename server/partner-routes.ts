@@ -2,12 +2,9 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BResultsEmail, sendB2BBulkPricingEmail } from "./email";
-import { generateB2BResultsPDF } from "./generateB2BPDF";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2B_VOLUME_TIERS } from "@shared/schema";
-import { getQuestionLocale, getPPPAdjustedPriceInPence, getStripeCurrencyCode, COUNTRY_CURRENCY_MAP, ZERO_DECIMAL_CURRENCIES, roundPriceUp, convertAndRoundToLocalCurrency } from "@shared/currencies";
-import { getExchangeRates } from "./exchange-rates";
-import { ASSESSMENT_PRICES, BASE_FEE } from "@shared/schema";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
+import { getQuestionLocale } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
@@ -17,7 +14,6 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
-import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } from "./airwallex";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,17 +22,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover" as any,
 });
 
-// Use Airwallex as the primary payment processor if configured, otherwise fall back to Stripe
-const useAirwallex = () => isAirwallexConfigured();
-
-// Volume-based pricing tiers using shared constants from schema
-// Prices in USD cents - Tier assignment based on monthly volume commitment ($1.00 = 1 Credit, 6-month expiration)
+// Package tiers for auto top-up pricing
 const PACKAGE_TIERS = [
-  { id: 'boutique', size: 50, pricePerTest: B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest, name: B2B_VOLUME_TIERS.BOUTIQUE.name, tierVolume: B2B_VOLUME_TIERS.BOUTIQUE.volumeRange },
-  { id: 'growth', size: 250, pricePerTest: B2B_VOLUME_TIERS.GROWTH.pricePerTest, name: B2B_VOLUME_TIERS.GROWTH.name, tierVolume: B2B_VOLUME_TIERS.GROWTH.volumeRange },
-  { id: 'small_enterprise', size: 1000, pricePerTest: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.volumeRange },
-  { id: 'enterprise', size: 5000, pricePerTest: B2B_VOLUME_TIERS.ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.ENTERPRISE.volumeRange },
-  { id: 'pro', size: 10000, pricePerTest: B2B_VOLUME_TIERS.PRO.pricePerTest, name: B2B_VOLUME_TIERS.PRO.name, tierVolume: B2B_VOLUME_TIERS.PRO.volumeRange },
+  { id: 'starter', size: 10, pricePerTest: 500, name: "Starter" },
+  { id: 'growth', size: 25, pricePerTest: 450, name: "Growth" },
+  { id: 'professional', size: 50, pricePerTest: 400, name: "Professional" },
+  { id: 'business', size: 100, pricePerTest: 350, name: "Business" },
+  { id: 'enterprise', size: 250, pricePerTest: 300, name: "Enterprise" },
+  { id: 'enterprise_plus', size: 500, pricePerTest: 250, name: "Enterprise+" },
 ];
 
 // Process automatic top-up for a partner when their quota falls below threshold
@@ -174,52 +167,31 @@ export function registerPartnerRoutes(app: Express) {
       try {
         const partner = req.partner!;
         const apiKey = req.apiKey!;
-        const isTestKey = apiKey.environment === 'test';
         
-        // Generate purchase portal link
-        const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-        const purchaseUrl = domain 
-          ? `https://${domain}/developers?tab=billing&action=purchase` 
-          : 'http://localhost:5000/developers?tab=billing&action=purchase';
-        
-        // Only check quota for live API keys - test keys bypass quota checks
-        if (!isTestKey) {
-          // Check if partner has remaining quota before creating a session
-          // Partners MUST have purchased test credits to use the API
-          const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
-          
-          if (quotaBalance.testsPurchased <= 0) {
-            return res.status(402).json({
-              error: "No Credits Purchased",
-              code: "NO_CREDITS",
-              message: "You must purchase test credits before creating assessment sessions.",
-              action: {
-                label: "Purchase Credits",
-                url: purchaseUrl,
-              },
-              quotaStatus: {
-                testsPurchased: quotaBalance.testsPurchased,
-                testsConsumed: quotaBalance.testsConsumed,
-                remaining: quotaBalance.remaining,
-              },
-            });
-          }
-          if (quotaBalance.remaining <= 0) {
-            return res.status(402).json({
-              error: "Quota Exhausted",
-              code: "QUOTA_EXHAUSTED",
-              message: "Your test quota has been exhausted. Purchase additional credits to continue.",
-              action: {
-                label: "Purchase More Credits",
-                url: purchaseUrl,
-              },
-              quotaStatus: {
-                testsPurchased: quotaBalance.testsPurchased,
-                testsConsumed: quotaBalance.testsConsumed,
-                remaining: quotaBalance.remaining,
-              },
-            });
-          }
+        // Check if partner has remaining quota before creating a session
+        // Partners MUST have purchased test credits to use the API
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        if (quotaBalance.testsPurchased <= 0) {
+          return res.status(402).json({
+            error: "No Credits Purchased",
+            message: "You must purchase test credits before creating assessment sessions. Please visit the partner portal to purchase a test package.",
+            quotaStatus: {
+              testsPurchased: quotaBalance.testsPurchased,
+              testsConsumed: quotaBalance.testsConsumed,
+              remaining: quotaBalance.remaining,
+            },
+          });
+        }
+        if (quotaBalance.remaining <= 0) {
+          return res.status(402).json({
+            error: "Quota Exhausted",
+            message: "Your test quota has been exhausted. Please purchase additional test credits to continue.",
+            quotaStatus: {
+              testsPurchased: quotaBalance.testsPurchased,
+              testsConsumed: quotaBalance.testsConsumed,
+              remaining: quotaBalance.remaining,
+            },
+          });
         }
         
         const parseResult = createSessionSchema.safeParse(req.body);
@@ -243,7 +215,6 @@ export function registerPartnerRoutes(app: Express) {
           partnerId: partner.id,
           partnerOrganisationId: apiKey.partnerOrganisationId || null, // Track which client organisation this belongs to
           apiKeyId: apiKey.id,
-          isTestSession: isTestKey, // Mark as test session if created with a test API key
           assessmentType: normalizedType,
           externalUserId: data.externalUserId,
           externalEmail: data.externalEmail,
@@ -262,8 +233,7 @@ export function registerPartnerRoutes(app: Express) {
           normalizedType,
           false,
           undefined, // billedAmount
-          apiKey.partnerOrganisationId, // Track usage per organisation
-          isTestKey // Track as test mode usage
+          apiKey.partnerOrganisationId // Track usage per organisation
         );
         
         const widgetUrl = `${getBaseUrl(req)}/embed/assessment?session=${session.id}`;
@@ -275,7 +245,6 @@ export function registerPartnerRoutes(app: Express) {
           expiresAt: session.expiresAt,
           widgetUrl,
           metadata: session.metadata,
-          testMode: isTestKey, // Indicate to the client this is a test session
         });
       } catch (error) {
         console.error("Error creating session:", error);
@@ -325,23 +294,12 @@ export function registerPartnerRoutes(app: Express) {
     async (req: PartnerRequest, res) => {
       try {
         const partner = req.partner!;
-        const apiKey = req.apiKey!;
         const { sessionId } = req.params;
         
         const session = await storage.getAssessmentSession(sessionId);
         
         if (!session || session.partnerId !== partner.id) {
           return res.status(404).json({ error: "Session not found" });
-        }
-        
-        // Block access to results for test sessions
-        if (session.isTestSession) {
-          return res.status(403).json({
-            error: "Test Session Results Blocked",
-            code: "TEST_SESSION_RESULTS_BLOCKED",
-            message: "Results from test API key sessions cannot be accessed. Test sessions are for integration testing only. Use a live API key to create production sessions with accessible results.",
-            testMode: true,
-          });
         }
         
         if (session.status !== "completed") {
@@ -351,18 +309,14 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        const isTestKey = apiKey.environment === 'test';
-        
         await trackUsage(
           partner.id,
-          apiKey.id,
+          req.apiKey!.id,
           sessionId,
           "results_fetched",
           session.assessmentType,
-          !isTestKey, // Only billable for live API keys
-          isTestKey ? undefined : (partner.pricePerAssessment ?? undefined),
-          apiKey.partnerOrganisationId,
-          isTestKey
+          true,
+          partner.pricePerAssessment ?? undefined
         );
         
         res.json({
@@ -543,31 +497,12 @@ export function registerPartnerRoutes(app: Express) {
           return res.status(404).json({ error: "Session not found" });
         }
         
-        const now = new Date();
-        
-        // Check for session expiry
-        if (new Date(session.expiresAt) < now && session.status !== "completed") {
+        if (new Date(session.expiresAt) < new Date() && session.status !== "completed") {
           await storage.updateAssessmentSession(sessionId, { status: "expired" });
           return res.status(400).json({ error: "Session has expired" });
         }
         
-        // Check if paused session's grace period has expired
-        if (session.pausedAt && session.pauseGraceExpiresAt && new Date(session.pauseGraceExpiresAt) < now) {
-          await storage.updateAssessmentSession(sessionId, { status: "expired" } as any);
-          return res.status(400).json({ 
-            error: "Session expired",
-            message: "The 30-minute grace period has expired. The session has been marked as expired."
-          });
-        }
-        
         const partner = await storage.getPartnerAccount(session.partnerId);
-        
-        // Check if the API key used to create this session is still active
-        let apiKeyActive = true;
-        if (session.apiKeyId) {
-          const apiKey = await storage.getPartnerApiKey(session.apiKeyId);
-          apiKeyActive = apiKey?.isActive ?? true;
-        }
         
         const response: any = {
           sessionId: session.id,
@@ -578,19 +513,10 @@ export function registerPartnerRoutes(app: Express) {
           partnerName: partner?.companyName || partner?.name,
           expiresAt: session.expiresAt,
           questionLocale: session.questionLocale || 'default',
-          isTestSession: session.isTestSession || false, // Indicate if this is a test API key session
-          apiKeyActive, // False if the API key was deactivated (e.g., quota exhausted)
           // Include saved progress for resume functionality
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,
           lastActivityAt: session.lastActivityAt || null,
-          // Pause state for timer synchronization
-          isPaused: !!session.pausedAt,
-          pausedAt: session.pausedAt || null,
-          pausedTimeRemainingMs: session.pausedTimeRemainingMs ?? null,
-          pauseGraceExpiresAt: session.pauseGraceExpiresAt || null,
-          resumeCount: session.resumeCount || 0,
-          canPauseAgain: (session.resumeCount || 0) < 1, // Can only pause once
         };
         
         if (partner?.brandingEnabled) {
@@ -613,28 +539,11 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
-  // Validation schema for session start
-  const sessionStartSchema = z.object({
-    email: z.string().email("Invalid email format").optional(),
-    countryCode: z.string().length(2, "Country code must be 2 characters").regex(/^[A-Za-z]{2}$/, "Invalid country code format").transform(c => c.toUpperCase()).optional(),
-  }).optional();
-
   app.post(
     "/api/embed/session/:sessionId/start",
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
-        
-        // Validate input
-        const parseResult = sessionStartSchema.safeParse(req.body);
-        if (!parseResult.success) {
-          return res.status(400).json({ 
-            error: "Invalid input", 
-            details: parseResult.error.errors.map(e => e.message).join(', ') 
-          });
-        }
-        
-        const { email, countryCode } = parseResult.data || {};
         
         const session = await storage.getAssessmentSession(sessionId);
         
@@ -664,23 +573,10 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        // Build update object with email and country if provided
-        const updateData: any = {
+        await storage.updateAssessmentSession(sessionId, {
           status: "started",
           startedAt: new Date(),
-        };
-        
-        // Save email if provided and session doesn't already have one
-        if (email && !session.externalEmail) {
-          updateData.externalEmail = email;
-        }
-        
-        // Save country code for pricing calculation
-        if (countryCode) {
-          updateData.testerCountryCode = countryCode;
-        }
-        
-        await storage.updateAssessmentSession(sessionId, updateData);
+        } as any);
         
         await trackUsage(
           session.partnerId,
@@ -754,138 +650,6 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
-  // Pause session endpoint - called when window is closed/hidden
-  // Allows one 30-minute grace period to return and resume
-  app.post(
-    "/api/embed/session/:sessionId/pause",
-    async (req: Request, res: Response) => {
-      try {
-        const { sessionId } = req.params;
-        const { timeRemainingMs } = req.body;
-        
-        if (typeof timeRemainingMs !== 'number' || timeRemainingMs < 0) {
-          return res.status(400).json({ error: "Invalid timeRemainingMs" });
-        }
-        
-        const session = await storage.getAssessmentSession(sessionId);
-        
-        if (!session) {
-          return res.status(404).json({ error: "Session not found" });
-        }
-        
-        // Only allow pausing started sessions that aren't already completed/expired
-        if (session.status !== "started") {
-          return res.status(400).json({
-            error: "Cannot pause session",
-            message: `Session status is "${session.status}". Only started sessions can be paused.`,
-          });
-        }
-        
-        // Check if already used their one grace period (resumeCount >= 1)
-        if ((session.resumeCount || 0) >= 1) {
-          // Already used grace period - expire the session immediately
-          await storage.updateAssessmentSession(sessionId, { 
-            status: "expired",
-            pausedAt: new Date(),
-          } as any);
-          return res.status(400).json({ 
-            error: "Session expired",
-            message: "You have already used your one-time resume. The session has expired.",
-          });
-        }
-        
-        // Check if already paused
-        if (session.pausedAt) {
-          return res.status(400).json({
-            error: "Session already paused",
-            message: "Session is already paused. Use the resume endpoint to continue.",
-          });
-        }
-        
-        // Set 30-minute grace period
-        const now = new Date();
-        const graceExpiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
-        
-        await storage.updateAssessmentSession(sessionId, {
-          pausedAt: now,
-          pausedTimeRemainingMs: Math.floor(timeRemainingMs),
-          pauseGraceExpiresAt: graceExpiresAt,
-        } as any);
-        
-        console.log(`[Session Pause] Session ${sessionId} paused with ${Math.floor(timeRemainingMs / 1000)}s remaining. Grace expires at ${graceExpiresAt.toISOString()}`);
-        
-        res.json({
-          success: true,
-          pausedAt: now.toISOString(),
-          graceExpiresAt: graceExpiresAt.toISOString(),
-          timeRemainingMs: Math.floor(timeRemainingMs),
-        });
-      } catch (error) {
-        console.error("Error pausing session:", error);
-        res.status(500).json({ error: "Failed to pause session" });
-      }
-    }
-  );
-
-  // Resume session endpoint - called when returning to a paused session
-  app.post(
-    "/api/embed/session/:sessionId/resume",
-    async (req: Request, res: Response) => {
-      try {
-        const { sessionId } = req.params;
-        
-        const session = await storage.getAssessmentSession(sessionId);
-        
-        if (!session) {
-          return res.status(404).json({ error: "Session not found" });
-        }
-        
-        // Check if session is paused
-        if (!session.pausedAt) {
-          return res.status(400).json({
-            error: "Session not paused",
-            message: "Session is not currently paused.",
-          });
-        }
-        
-        // Check if grace period has expired
-        const now = new Date();
-        if (session.pauseGraceExpiresAt && new Date(session.pauseGraceExpiresAt) < now) {
-          // Grace period expired - expire the session
-          await storage.updateAssessmentSession(sessionId, { 
-            status: "expired",
-          } as any);
-          return res.status(400).json({
-            error: "Grace period expired",
-            message: "The 30-minute grace period has expired. The session has been marked as expired.",
-          });
-        }
-        
-        // Resume the session - increment resume count and clear pause state
-        const newResumeCount = (session.resumeCount || 0) + 1;
-        
-        await storage.updateAssessmentSession(sessionId, {
-          pausedAt: null,
-          resumeCount: newResumeCount,
-          lastActivityAt: now,
-        } as any);
-        
-        console.log(`[Session Resume] Session ${sessionId} resumed. Resume count: ${newResumeCount}. Time remaining: ${session.pausedTimeRemainingMs}ms`);
-        
-        res.json({
-          success: true,
-          resumedAt: now.toISOString(),
-          timeRemainingMs: session.pausedTimeRemainingMs || 0,
-          resumeCount: newResumeCount,
-          canPauseAgain: false, // Only one grace period allowed
-        });
-      } catch (error) {
-        console.error("Error resuming session:", error);
-        res.status(500).json({ error: "Failed to resume session" });
-      }
-    }
-  );
-
   app.post(
     "/api/embed/session/:sessionId/submit",
     async (req: Request, res: Response) => {
@@ -944,15 +708,9 @@ export function registerPartnerRoutes(app: Express) {
         const savedAnswers = session.answers || {};
         const answers = { ...savedAnswers, ...submittedAnswers };
         
-        // Check if this is a test session (created with test API key)
-        const isTestSession = session.isTestSession === true;
-        
-        // For test sessions, use dummy scores without AI computation
-        // This saves API costs and is appropriate since test sessions are for developer integration only
         const { scores, totalScore, percentile, evaluations } = await calculateScores(
           session.assessmentType,
-          answers,
-          isTestSession // Skip AI computation for test sessions
+          answers
         );
         
         await storage.updateAssessmentSession(sessionId, {
@@ -965,90 +723,71 @@ export function registerPartnerRoutes(app: Express) {
           completedAt: new Date(),
         } as any);
         
-        // Determine if this test should be billable based on free allocation
-        // A test is billable only if it's NOT consuming from the free allocation
-        let isBillable = false;
-        let billedAmount: number | undefined = undefined;
-        
-        if (!isTestSession) {
-          // Check quota balance BEFORE consumption to determine if this is a free test
-          const quotaBalance = await storage.getPartnerQuotaBalance(session.partnerId);
-          // If testsConsumed is still less than freeTestsAllocated, this is a free test
-          const isFreeTest = quotaBalance.testsConsumed < quotaBalance.freeTestsAllocated;
-          isBillable = !isFreeTest;
-          billedAmount = isBillable ? (partner?.pricePerAssessment || 500) : 0;
-        }
-        
         await trackUsage(
           session.partnerId,
           session.apiKeyId,
           sessionId,
           "session_completed",
           session.assessmentType,
-          isBillable,
-          billedAmount,
-          null, // partnerOrganisationId
-          isTestSession // Mark as test mode
+          true,
+          partner?.pricePerAssessment || 500
         );
         
-        // Skip credit consumption and quota warnings for test sessions
-        if (!isTestSession) {
-          // Consume a test credit from the partner's prepaid quota
-          const quotaResult = await consumeTestCredit(
-            session.partnerId,
-            sessionId,
-            session.assessmentType
-          );
+        // Consume a test credit from the partner's prepaid quota
+        const quotaResult = await consumeTestCredit(
+          session.partnerId,
+          sessionId,
+          session.assessmentType
+        );
+        
+        // Handle quota consumption failure - block result delivery if quota couldn't be deducted
+        if (!quotaResult.success) {
+          console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
+          // Return error but assessment data is saved - admin can add credits for retry
+          return res.status(402).json({
+            error: "Quota Consumption Failed",
+            message: "Unable to deduct test credit. Please ensure you have available quota.",
+            sessionId: session.id,
+            status: "billing_pending",
+          });
+        }
+        
+        // Send quota warning emails if thresholds are crossed
+        if (partner) {
+          const balance = await storage.getPartnerQuotaBalance(session.partnerId);
+          const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
           
-          // Handle quota consumption failure - block result delivery if quota couldn't be deducted
-          if (!quotaResult.success) {
-            console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
-            // Return error but assessment data is saved - admin can add credits for retry
-            return res.status(402).json({
-              error: "Quota Consumption Failed",
-              message: "Unable to deduct test credit. Please ensure you have available quota.",
-              sessionId: session.id,
-              status: "billing_pending",
-            });
+          if (quotaResult.shouldNotifyFirst) {
+            await sendPartnerQuotaWarning70(
+              alertEmail,
+              partner.companyName || partner.name,
+              balance.testsConsumed,
+              balance.testsPurchased,
+              balance.remaining
+            );
+          }
+          if (quotaResult.shouldNotifyUrgent) {
+            await sendPartnerQuotaWarning90(
+              alertEmail,
+              partner.companyName || partner.name,
+              balance.testsConsumed,
+              balance.testsPurchased,
+              balance.remaining
+            );
+          }
+          if (quotaResult.suspended) {
+            await sendPartnerAccessSuspendedEmail(
+              alertEmail,
+              partner.companyName || partner.name
+            );
           }
           
-          // Send quota warning emails if thresholds are crossed
-          if (partner) {
-            const balance = await storage.getPartnerQuotaBalance(session.partnerId);
-            const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
-            
-            if (quotaResult.shouldNotifyFirst) {
-              await sendPartnerQuotaWarning70(
-                alertEmail,
-                partner.companyName || partner.name,
-                balance.testsConsumed,
-                balance.testsPurchased,
-                balance.remaining
-              );
-            }
-            if (quotaResult.shouldNotifyUrgent) {
-              await sendPartnerQuotaWarning90(
-                alertEmail,
-                partner.companyName || partner.name,
-                balance.testsConsumed,
-                balance.testsPurchased,
-                balance.remaining
-              );
-            }
-            if (quotaResult.suspended) {
-              await sendPartnerAccessSuspendedEmail(
-                alertEmail,
-                partner.companyName || partner.name
-              );
-            }
-            
-            // Handle auto top-up if triggered
-            if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
-              try {
-                await processAutoTopUp(partner);
-              } catch (err) {
-                console.error('Auto top-up failed:', err);
-              }
+          // Handle auto top-up if triggered
+          if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
+            try {
+              await processAutoTopUp(partner);
+            } catch (err) {
+              console.error('Auto top-up failed:', err);
             }
           }
         }
@@ -1065,7 +804,7 @@ export function registerPartnerRoutes(app: Express) {
             externalUserId: session.externalUserId,
             totalScore,
             percentile,
-          } as Record<string, any>,
+          },
         });
         
         if (session.webhookUrl) {
@@ -1076,196 +815,6 @@ export function registerPartnerRoutes(app: Express) {
             totalScore,
             completedAt: new Date().toISOString(),
           }).catch((err) => console.error("Webhook failed:", err));
-        }
-        
-        // B2B Test-Taker Results Monetization: Set results unlock date (30 days) and send congratulatory email
-        // Skip email workflow for test sessions - these are for developer integration only
-        let resultsUnlockAt: Date | undefined;
-        if (!isTestSession) {
-          const completedAt = new Date();
-          resultsUnlockAt = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
-          
-          // Update session with results unlock date
-          await storage.updateAssessmentSession(sessionId, {
-            resultsUnlockAt,
-            resultsPaymentStatus: 'unpaid',
-          } as any);
-        }
-        
-        // If test-taker has an email, send congratulatory email with payment option
-        // Skip for test sessions - no emails should be sent for test API key sessions
-        if (session.externalEmail && partner && !isTestSession && resultsUnlockAt) {
-          try {
-            // Calculate 75% of B2C price for test-taker's location
-            const countryCode = session.testerCountryCode || 'GB';
-            const assessmentType = normalizeAssessmentId(session.assessmentType);
-            const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
-            const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
-            
-            // 75% discount for B2B test-takers
-            const discountedPence = Math.round(pppAdjustedPence * 0.75);
-            
-            // Get currency for the country
-            const currencyCode = getStripeCurrencyCode(countryCode);
-            const exchangeRates = await getExchangeRates();
-            
-            // Convert to local currency with rounding
-            let displayPrice: string;
-            let originalDisplayPrice: string;
-            let stripeAmount: number;
-            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-            
-            if (currencyCode.toUpperCase() === 'GBP') {
-              // Already in pence
-              stripeAmount = discountedPence;
-              displayPrice = `£${(discountedPence / 100).toFixed(2)}`;
-              originalDisplayPrice = `£${(pppAdjustedPence / 100).toFixed(2)}`;
-            } else {
-              // Convert from GBP to local currency
-              const gbpRate = exchangeRates.rates['GBP'] || 1;
-              const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-              const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
-              const originalLocalAmount = (pppAdjustedPence / 100) * (targetRate / gbpRate);
-              const roundedAmount = roundPriceUp(localAmount);
-              const roundedOriginalAmount = roundPriceUp(originalLocalAmount);
-              
-              if (isZeroDecimal) {
-                stripeAmount = Math.round(roundedAmount);
-                displayPrice = `${currencyCode.toUpperCase()} ${stripeAmount.toLocaleString()}`;
-                originalDisplayPrice = `${currencyCode.toUpperCase()} ${Math.round(roundedOriginalAmount).toLocaleString()}`;
-              } else {
-                stripeAmount = Math.round(roundedAmount * 100);
-                displayPrice = `${currencyCode.toUpperCase()} ${roundedAmount.toFixed(2)}`;
-                originalDisplayPrice = `${currencyCode.toUpperCase()} ${roundedOriginalAmount.toFixed(2)}`;
-              }
-            }
-            
-            // Store pricing info in session for checkout
-            await storage.updateAssessmentSession(sessionId, {
-              resultsPaymentAmount: stripeAmount,
-              resultsPaymentCurrency: currencyCode,
-            } as any);
-            
-            // Generate payment URL
-            const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-              ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-              : 'https://humanmetrix.co.uk';
-            const paymentUrl = `${baseUrl}/b2b-results-payment/${sessionId}`;
-            
-            // Send congratulatory email for this individual test
-            await sendB2BCongratulatoryEmail({
-              email: session.externalEmail,
-              assessmentType: session.assessmentType,
-              partnerCompanyName: partner.companyName || partner.name,
-              paymentUrl,
-              paymentAmount: displayPrice,
-              originalPaymentAmount: originalDisplayPrice,
-              freeUnlockDate: resultsUnlockAt,
-            });
-            
-            // Mark email as sent
-            await storage.updateAssessmentSession(sessionId, {
-              congratsEmailSentAt: new Date(),
-            } as any);
-            
-            console.log(`[B2B Results] Congratulatory email sent to ${session.externalEmail} for session ${sessionId}`);
-            
-            // Check if all invited assessments are complete - if so, send bulk pricing email
-            const partnerInvitationId = (session as any).partnerInvitationId;
-            if (partnerInvitationId) {
-              try {
-                const invitation = await storage.getPartnerCandidateInvitation(partnerInvitationId);
-                if (invitation && invitation.assessmentTypes && invitation.assessmentTypes.length > 1) {
-                  // Get all completed sessions for this candidate under this invitation
-                  const candidateSessions = await storage.getSessionsByPartnerAndExternalUser(
-                    session.partnerId,
-                    invitation.externalUserId
-                  );
-                  
-                  // Check which invited assessment types are completed (include paid - they still count as completed)
-                  const allCompletedSessions = candidateSessions.filter(s => s.status === 'completed');
-                  const completedTypes = allCompletedSessions.map(s => normalizeAssessmentId(s.assessmentType));
-                  
-                  const invitedTypes = invitation.assessmentTypes.map(t => normalizeAssessmentId(t));
-                  const allComplete = invitedTypes.every(type => completedTypes.includes(type));
-                  
-                  // Only get unpaid sessions for the bulk pricing offer
-                  const unpaidSessions = candidateSessions.filter(s => 
-                    s.status === 'completed' && 
-                    s.resultsPaymentStatus !== 'paid' &&
-                    invitedTypes.includes(normalizeAssessmentId(s.assessmentType))
-                  );
-                  
-                  // Send bulk email only if all tests are complete AND there are 2+ unpaid results
-                  if (allComplete && unpaidSessions.length >= 2) {
-                    
-                    // Calculate bulk pricing
-                    const BULK_DISCOUNT_TIERS: Record<number, number> = { 2: 0.10, 3: 0.15, 4: 0.20 };
-                    let totalOriginalPence = 0;
-                    let totalDiscountedPence = 0;
-                    const completedAssessments: Array<{ type: string; sessionId: string }> = [];
-                    
-                    for (const s of unpaidSessions) {
-                      const aType = normalizeAssessmentId(s.assessmentType);
-                      const basePence = ASSESSMENT_PRICES[aType] || 500;
-                      const pppPence = getPPPAdjustedPriceInPence(basePence, countryCode);
-                      const discPence = Math.round(pppPence * 0.75);
-                      totalOriginalPence += pppPence;
-                      totalDiscountedPence += discPence;
-                      completedAssessments.push({ type: s.assessmentType, sessionId: s.id });
-                    }
-                    
-                    const bulkRate = BULK_DISCOUNT_TIERS[unpaidSessions.length] || 0;
-                    const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkRate);
-                    const finalTotal = totalDiscountedPence - bulkDiscountAmount;
-                    
-                    // Format prices
-                    let bulkDisplayPrice: string;
-                    let originalDisplayPriceTotal: string;
-                    let savingsDisplay: string;
-                    
-                    if (currencyCode.toUpperCase() === 'GBP') {
-                      bulkDisplayPrice = `£${(finalTotal / 100).toFixed(2)}`;
-                      originalDisplayPriceTotal = `£${(totalOriginalPence / 100).toFixed(2)}`;
-                      savingsDisplay = `£${((totalOriginalPence - finalTotal) / 100).toFixed(2)}`;
-                    } else {
-                      const gbpRate = exchangeRates.rates['GBP'] || 1;
-                      const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-                      const localFinal = (finalTotal / 100) * (targetRate / gbpRate);
-                      const localOriginal = (totalOriginalPence / 100) * (targetRate / gbpRate);
-                      bulkDisplayPrice = `${currencyCode.toUpperCase()} ${roundPriceUp(localFinal).toFixed(2)}`;
-                      originalDisplayPriceTotal = `${currencyCode.toUpperCase()} ${roundPriceUp(localOriginal).toFixed(2)}`;
-                      savingsDisplay = `${currencyCode.toUpperCase()} ${roundPriceUp(localOriginal - localFinal).toFixed(2)}`;
-                    }
-                    
-                    // Generate bulk payment URL
-                    const sessionIdsStr = unpaidSessions.map(s => s.id).join(',');
-                    const bulkPaymentUrl = `${baseUrl}/b2b-results-bulk-payment?sessions=${sessionIdsStr}`;
-                    
-                    await sendB2BBulkPricingEmail({
-                      email: session.externalEmail,
-                      partnerCompanyName: partner.companyName || partner.name,
-                      completedAssessments,
-                      bulkPaymentUrl,
-                      bulkPrice: bulkDisplayPrice,
-                      originalPrice: originalDisplayPriceTotal,
-                      savings: savingsDisplay,
-                      discountPercent: Math.round(bulkRate * 100),
-                      freeUnlockDate: resultsUnlockAt,
-                    });
-                    
-                    console.log(`[B2B Results] Bulk pricing email sent to ${session.externalEmail} - ${completedAssessments.length} assessments complete`);
-                  }
-                }
-              } catch (bulkEmailError) {
-                console.error(`[B2B Results] Failed to send bulk pricing email:`, bulkEmailError);
-                // Don't fail the request if bulk email fails
-              }
-            }
-          } catch (emailError) {
-            console.error(`[B2B Results] Failed to send congratulatory email for session ${sessionId}:`, emailError);
-            // Don't fail the request if email fails
-          }
         }
         
         res.json({
@@ -1281,798 +830,6 @@ export function registerPartnerRoutes(app: Express) {
       }
     }
   );
-
-  // ========================================
-  // B2B TEST-TAKER RESULTS PAYMENT
-  // ========================================
-  
-  // Get B2B test-taker results pricing for a session
-  app.get("/api/b2b-results/:sessionId/pricing", async (req: Request, res: Response) => {
-    try {
-      const { sessionId } = req.params;
-      const session = await storage.getAssessmentSession(sessionId);
-      
-      if (!session) {
-        return res.status(404).json({ error: "Session not found" });
-      }
-      
-      if (session.status !== 'completed') {
-        return res.status(400).json({ error: "Assessment not completed" });
-      }
-      
-      // Check if already paid or free period passed
-      if (session.resultsPaymentStatus === 'paid') {
-        return res.json({
-          unlocked: true,
-          method: 'paid',
-          paidAt: session.resultsPaidAt,
-        });
-      }
-      
-      if (session.resultsUnlockAt && new Date(session.resultsUnlockAt) <= new Date()) {
-        // Mark as free unlock
-        await storage.updateAssessmentSession(sessionId, {
-          resultsPaymentStatus: 'free',
-        } as any);
-        
-        return res.json({
-          unlocked: true,
-          method: 'free',
-          freeUnlockAt: session.resultsUnlockAt,
-        });
-      }
-      
-      // Results not yet unlocked - return pricing
-      const countryCode = session.testerCountryCode || 'GB';
-      const assessmentType = normalizeAssessmentId(session.assessmentType);
-      const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
-      const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
-      const discountedPence = Math.round(pppAdjustedPence * 0.75); // 75% of B2C price
-      
-      const currencyCode = getStripeCurrencyCode(countryCode);
-      const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-      
-      let displayPrice: string;
-      let originalDisplayPrice: string;
-      let stripeAmount: number;
-      
-      if (currencyCode.toUpperCase() === 'GBP') {
-        stripeAmount = discountedPence;
-        displayPrice = `${(discountedPence / 100).toFixed(2)}`;
-        originalDisplayPrice = `${(pppAdjustedPence / 100).toFixed(2)}`;
-      } else {
-        const gbpRate = exchangeRates.rates['GBP'] || 1;
-        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-        const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
-        const originalLocalAmount = (pppAdjustedPence / 100) * (targetRate / gbpRate);
-        const roundedAmount = roundPriceUp(localAmount);
-        const roundedOriginalAmount = roundPriceUp(originalLocalAmount);
-        
-        if (isZeroDecimal) {
-          stripeAmount = Math.round(roundedAmount);
-          displayPrice = `${roundedAmount.toLocaleString()}`;
-          originalDisplayPrice = `${roundedOriginalAmount.toLocaleString()}`;
-        } else {
-          stripeAmount = Math.round(roundedAmount * 100);
-          displayPrice = roundedAmount.toFixed(2);
-          originalDisplayPrice = roundedOriginalAmount.toFixed(2);
-        }
-      }
-      
-      const partner = await storage.getPartnerAccount(session.partnerId);
-      
-      res.json({
-        unlocked: false,
-        sessionId: session.id,
-        assessmentType: session.assessmentType,
-        partnerCompanyName: partner?.companyName || partner?.name || 'Partner',
-        pricing: {
-          amount: stripeAmount,
-          currency: currencyCode,
-          displayPrice,
-          originalDisplayPrice,
-          isZeroDecimal,
-        },
-        freeUnlockAt: session.resultsUnlockAt,
-        daysUntilFree: session.resultsUnlockAt 
-          ? Math.ceil((new Date(session.resultsUnlockAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-          : 30,
-      });
-    } catch (error) {
-      console.error("Error fetching B2B results pricing:", error);
-      res.status(500).json({ error: "Failed to fetch pricing" });
-    }
-  });
-  
-  // Create Stripe checkout session for B2B results payment
-  app.post("/api/b2b-results/:sessionId/checkout", async (req: Request, res: Response) => {
-    try {
-      const { sessionId } = req.params;
-      const session = await storage.getAssessmentSession(sessionId);
-      
-      if (!session) {
-        return res.status(404).json({ error: "Session not found" });
-      }
-      
-      if (session.status !== 'completed') {
-        return res.status(400).json({ error: "Assessment not completed" });
-      }
-      
-      if (session.resultsPaymentStatus === 'paid') {
-        return res.status(400).json({ error: "Results already unlocked" });
-      }
-      
-      // Check if free period has passed
-      if (session.resultsUnlockAt && new Date(session.resultsUnlockAt) <= new Date()) {
-        return res.status(400).json({ error: "Results are now free to access" });
-      }
-      
-      // Calculate pricing
-      const countryCode = session.testerCountryCode || 'GB';
-      const assessmentType = normalizeAssessmentId(session.assessmentType);
-      const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
-      const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
-      const discountedPence = Math.round(pppAdjustedPence * 0.75);
-      
-      const currencyCode = getStripeCurrencyCode(countryCode);
-      const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-      
-      let stripeAmount: number;
-      
-      if (currencyCode.toUpperCase() === 'GBP') {
-        stripeAmount = discountedPence;
-      } else {
-        const gbpRate = exchangeRates.rates['GBP'] || 1;
-        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-        const localAmount = (discountedPence / 100) * (targetRate / gbpRate);
-        const roundedAmount = roundPriceUp(localAmount);
-        
-        if (isZeroDecimal) {
-          stripeAmount = Math.round(roundedAmount);
-        } else {
-          stripeAmount = Math.round(roundedAmount * 100);
-        }
-      }
-      
-      const partner = await storage.getPartnerAccount(session.partnerId);
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : 'https://humanmetrix.co.uk';
-      
-      const assessmentNames: Record<string, string> = {
-        'fit': 'FIT Assessment',
-        'ai_readiness': 'AI Readiness Assessment',
-        'prompt_architecture': 'Prompt Architecture Assessment',
-        'aiq': 'AIQ Assessment',
-      };
-      
-      // Use Airwallex if configured, otherwise fall back to Stripe
-      if (useAirwallex()) {
-        // Create Airwallex payment intent
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `b2b_results_${sessionId}_${Date.now()}`;
-        
-        const paymentIntent = await createPaymentIntent({
-          amount: airwallexAmount,
-          currency: currencyCode.toUpperCase(),
-          merchantOrderId,
-          returnUrl: `${baseUrl}/b2b-results-success/${sessionId}`,
-          customerEmail: session.externalEmail || undefined,
-          description: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
-          metadata: {
-            type: 'b2b_results_unlock',
-            sessionId: session.id,
-            assessmentType: session.assessmentType,
-            partnerId: session.partnerId,
-          },
-        });
-        
-        // Store Airwallex payment intent ID
-        await storage.updateAssessmentSession(sessionId, {
-          resultsAirwallexIntentId: paymentIntent.id,
-        } as any);
-        
-        res.json({
-          provider: 'airwallex',
-          intentId: paymentIntent.id,
-          clientSecret: paymentIntent.clientSecret,
-          currency: currencyCode.toUpperCase(),
-          countryCode: countryCode,
-          amount: airwallexAmount,
-        });
-      } else {
-        // Fall back to Stripe checkout session
-        const checkoutSession = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [{
-            price_data: {
-              currency: currencyCode.toLowerCase(),
-              product_data: {
-                name: `${assessmentNames[assessmentType] || 'Assessment'} Results`,
-                description: `Unlock your detailed assessment results and personalized insights`,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          }],
-          mode: 'payment',
-          success_url: `${baseUrl}/b2b-results-success/${sessionId}?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/b2b-results-payment/${sessionId}`,
-          customer_email: session.externalEmail || undefined,
-          metadata: {
-            type: 'b2b_results_unlock',
-            sessionId: session.id,
-            assessmentType: session.assessmentType,
-            partnerId: session.partnerId,
-          },
-        });
-        
-        // Store Stripe session ID
-        await storage.updateAssessmentSession(sessionId, {
-          resultsStripeSessionId: checkoutSession.id,
-        } as any);
-        
-        res.json({
-          provider: 'stripe',
-          checkoutUrl: checkoutSession.url,
-          stripeSessionId: checkoutSession.id,
-        });
-      }
-    } catch (error) {
-      console.error("Error creating B2B results checkout:", error);
-      res.status(500).json({ error: "Failed to create checkout session" });
-    }
-  });
-  
-  // Verify B2B results payment and unlock results
-  app.post("/api/b2b-results/:sessionId/verify-payment", async (req: Request, res: Response) => {
-    try {
-      const { sessionId } = req.params;
-      const { stripeSessionId, airwallexIntentId, provider } = req.body;
-      
-      const session = await storage.getAssessmentSession(sessionId);
-      
-      if (!session) {
-        return res.status(404).json({ error: "Session not found" });
-      }
-      
-      let paymentAmount: number | null = null;
-      let paymentCurrency: string | null = null;
-      
-      if (provider === 'airwallex' && airwallexIntentId) {
-        // Verify Airwallex payment intent
-        const { getPaymentIntent } = await import("./airwallex");
-        const paymentIntent = await getPaymentIntent(airwallexIntentId);
-        
-        if (paymentIntent.status !== 'SUCCEEDED') {
-          return res.status(400).json({ error: "Payment not completed" });
-        }
-        
-        if (paymentIntent.metadata?.sessionId !== sessionId) {
-          return res.status(400).json({ error: "Payment session mismatch" });
-        }
-        
-        paymentAmount = Math.round(paymentIntent.amount * 100); // Convert to pence
-        paymentCurrency = paymentIntent.currency?.toLowerCase();
-      } else if (stripeSessionId) {
-        // Verify the Stripe session (fallback)
-        const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
-        
-        if (stripeSession.payment_status !== 'paid') {
-          return res.status(400).json({ error: "Payment not completed" });
-        }
-        
-        if (stripeSession.metadata?.sessionId !== sessionId) {
-          return res.status(400).json({ error: "Payment session mismatch" });
-        }
-        
-        paymentAmount = stripeSession.amount_total;
-        paymentCurrency = stripeSession.currency;
-      } else {
-        return res.status(400).json({ error: "No payment session provided" });
-      }
-      
-      // Mark as paid
-      await storage.updateAssessmentSession(sessionId, {
-        resultsPaymentStatus: 'paid',
-        resultsPaidAt: new Date(),
-        resultsPaymentAmount: paymentAmount,
-        resultsPaymentCurrency: paymentCurrency,
-      } as any);
-      
-      // Send results email with PDF if email is available
-      if (session.externalEmail) {
-        try {
-          const partner = await storage.getPartnerAccount(session.partnerId);
-          const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
-          
-          // Generate proper PDF with real assessment results
-          const pdfBuffer = generateB2BResultsPDF({
-            candidateName: session.externalUserId || undefined,
-            candidateEmail: session.externalEmail,
-            assessmentType: session.assessmentType,
-            scores: session.scores || {},
-            totalScore: session.totalScore || undefined,
-            percentile: session.percentile || undefined,
-            evaluations: session.evaluations || undefined,
-            completedAt: session.completedAt || new Date(),
-            partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-          });
-          const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
-          
-          await sendB2BResultsEmail({
-            email: session.externalEmail,
-            candidateName: session.externalUserId || undefined,
-            assessmentType: session.assessmentType,
-            partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-            pdfBuffer,
-            pdfFilename,
-          });
-          
-          // Mark results email as sent
-          await storage.updateAssessmentSession(sessionId, {
-            resultsEmailSentAt: new Date(),
-          } as any);
-          
-          console.log(`[B2B Results] Results email sent to ${session.externalEmail} after payment for session ${sessionId}`);
-        } catch (emailError) {
-          console.error(`[B2B Results] Failed to send results email for session ${sessionId}:`, emailError);
-          // Don't fail the request if email fails
-        }
-      }
-      
-      res.json({
-        success: true,
-        unlocked: true,
-        paidAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Error verifying B2B results payment:", error);
-      res.status(500).json({ error: "Failed to verify payment" });
-    }
-  });
-
-  // ========================================
-  // BULK RESULTS PRICING & CHECKOUT
-  // ========================================
-  
-  // Bulk pricing discount tiers
-  const BULK_DISCOUNT_TIERS = {
-    2: 0.10, // 10% off for 2 results
-    3: 0.15, // 15% off for 3 results
-    4: 0.20, // 20% off for all 4 results
-  };
-  
-  // Get bulk pricing for multiple session results
-  // Security: All sessions must belong to the same partner and external user
-  app.post("/api/b2b-results/bulk-pricing", async (req: Request, res: Response) => {
-    try {
-      const { sessionIds } = req.body;
-      
-      if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-        return res.status(400).json({ error: "Session IDs required" });
-      }
-      
-      if (sessionIds.length > 4) {
-        return res.status(400).json({ error: "Maximum 4 sessions allowed" });
-      }
-      
-      // Fetch all sessions and validate
-      const sessions = await Promise.all(
-        sessionIds.map(id => storage.getAssessmentSession(id))
-      );
-      
-      // Filter for valid sessions
-      const validSessions = sessions.filter(s => 
-        s && 
-        s.status === 'completed' && 
-        s.resultsPaymentStatus !== 'paid' &&
-        (!s.resultsUnlockAt || new Date(s.resultsUnlockAt) > new Date())
-      );
-      
-      if (validSessions.length === 0) {
-        return res.status(400).json({ error: "No valid unpaid sessions found" });
-      }
-      
-      // SECURITY: Verify all sessions belong to the same partner and external user
-      const firstSession = validSessions[0]!;
-      const partnerId = firstSession.partnerId;
-      const externalUserId = firstSession.externalUserId;
-      const externalEmail = firstSession.externalEmail;
-      
-      const allSameOwner = validSessions.every(s => 
-        s!.partnerId === partnerId && 
-        (s!.externalUserId === externalUserId || s!.externalEmail === externalEmail)
-      );
-      
-      if (!allSameOwner) {
-        console.warn(`[Bulk Pricing] Security: Attempted bulk pricing across different users/partners`);
-        return res.status(403).json({ error: "All sessions must belong to the same candidate" });
-      }
-      
-      // Use first session for country code
-      const countryCode = validSessions[0]!.testerCountryCode || 'GB';
-      const currencyCode = getStripeCurrencyCode(countryCode);
-      const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-      
-      // Calculate individual and total prices
-      let totalOriginalPence = 0;
-      let totalDiscountedPence = 0;
-      const items: Array<{
-        sessionId: string;
-        assessmentType: string;
-        originalPrice: number;
-        discountedPrice: number;
-      }> = [];
-      
-      for (const session of validSessions) {
-        const assessmentType = normalizeAssessmentId(session!.assessmentType);
-        const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
-        const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
-        const standardDiscountedPence = Math.round(pppAdjustedPence * 0.75); // 75% of B2C price
-        
-        totalOriginalPence += pppAdjustedPence;
-        totalDiscountedPence += standardDiscountedPence;
-        
-        items.push({
-          sessionId: session!.id,
-          assessmentType: session!.assessmentType,
-          originalPrice: pppAdjustedPence,
-          discountedPrice: standardDiscountedPence,
-        });
-      }
-      
-      // Apply bulk discount based on number of items
-      const bulkDiscountRate = BULK_DISCOUNT_TIERS[validSessions.length as keyof typeof BULK_DISCOUNT_TIERS] || 0;
-      const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkDiscountRate);
-      const finalTotalPence = totalDiscountedPence - bulkDiscountAmount;
-      
-      // Convert to local currency
-      let displayTotal: string;
-      let displayOriginal: string;
-      let displaySavings: string;
-      let stripeAmount: number;
-      
-      if (currencyCode.toUpperCase() === 'GBP') {
-        stripeAmount = finalTotalPence;
-        displayTotal = `£${(finalTotalPence / 100).toFixed(2)}`;
-        displayOriginal = `£${(totalOriginalPence / 100).toFixed(2)}`;
-        displaySavings = `£${((totalOriginalPence - finalTotalPence) / 100).toFixed(2)}`;
-      } else {
-        const gbpRate = exchangeRates.rates['GBP'] || 1;
-        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-        const localTotal = (finalTotalPence / 100) * (targetRate / gbpRate);
-        const localOriginal = (totalOriginalPence / 100) * (targetRate / gbpRate);
-        const roundedTotal = roundPriceUp(localTotal);
-        const roundedOriginal = roundPriceUp(localOriginal);
-        
-        const currencySymbol = currencyCode.toUpperCase();
-        
-        if (isZeroDecimal) {
-          stripeAmount = Math.round(roundedTotal);
-          displayTotal = `${currencySymbol} ${roundedTotal.toLocaleString()}`;
-          displayOriginal = `${currencySymbol} ${roundedOriginal.toLocaleString()}`;
-          displaySavings = `${currencySymbol} ${(roundedOriginal - roundedTotal).toLocaleString()}`;
-        } else {
-          stripeAmount = Math.round(roundedTotal * 100);
-          displayTotal = `${currencySymbol} ${roundedTotal.toFixed(2)}`;
-          displayOriginal = `${currencySymbol} ${roundedOriginal.toFixed(2)}`;
-          displaySavings = `${currencySymbol} ${(roundedOriginal - roundedTotal).toFixed(2)}`;
-        }
-      }
-      
-      const partner = validSessions[0] ? await storage.getPartnerAccount(validSessions[0].partnerId) : null;
-      
-      res.json({
-        items,
-        pricing: {
-          itemCount: validSessions.length,
-          bulkDiscountPercent: bulkDiscountRate * 100,
-          currency: currencyCode,
-          amount: stripeAmount,
-          displayTotal,
-          displayOriginal,
-          displaySavings,
-          isZeroDecimal,
-        },
-        partnerCompanyName: partner?.companyName || partner?.name || 'Partner',
-      });
-    } catch (error) {
-      console.error("Error calculating bulk pricing:", error);
-      res.status(500).json({ error: "Failed to calculate bulk pricing" });
-    }
-  });
-  
-  // Create bulk checkout session for multiple results
-  // Security: All sessions must belong to the same partner and external user
-  app.post("/api/b2b-results/bulk-checkout", async (req: Request, res: Response) => {
-    try {
-      const { sessionIds } = req.body;
-      
-      if (!Array.isArray(sessionIds) || sessionIds.length === 0 || sessionIds.length > 4) {
-        return res.status(400).json({ error: "Invalid session IDs (1-4 required)" });
-      }
-      
-      // Fetch and validate all sessions
-      const sessions = await Promise.all(
-        sessionIds.map(id => storage.getAssessmentSession(id))
-      );
-      
-      const validSessions = sessions.filter(s => 
-        s && 
-        s.status === 'completed' && 
-        s.resultsPaymentStatus !== 'paid' &&
-        (!s.resultsUnlockAt || new Date(s.resultsUnlockAt) > new Date())
-      );
-      
-      if (validSessions.length === 0) {
-        return res.status(400).json({ error: "No valid unpaid sessions found" });
-      }
-      
-      // SECURITY: Verify all sessions belong to the same partner and external user
-      const firstSession = validSessions[0]!;
-      const partnerId = firstSession.partnerId;
-      const externalUserId = firstSession.externalUserId;
-      const externalEmail = firstSession.externalEmail;
-      
-      const allSameOwner = validSessions.every(s => 
-        s!.partnerId === partnerId && 
-        (s!.externalUserId === externalUserId || s!.externalEmail === externalEmail)
-      );
-      
-      if (!allSameOwner) {
-        console.warn(`[Bulk Checkout] Security: Attempted bulk checkout across different users/partners`);
-        return res.status(403).json({ error: "All sessions must belong to the same candidate" });
-      }
-      
-      // Calculate total price with bulk discount
-      const countryCode = validSessions[0]!.testerCountryCode || 'GB';
-      const currencyCode = getStripeCurrencyCode(countryCode);
-      const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
-      
-      let totalDiscountedPence = 0;
-      
-      for (const session of validSessions) {
-        const assessmentType = normalizeAssessmentId(session!.assessmentType);
-        const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
-        const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
-        const standardDiscountedPence = Math.round(pppAdjustedPence * 0.75);
-        totalDiscountedPence += standardDiscountedPence;
-      }
-      
-      const bulkDiscountRate = BULK_DISCOUNT_TIERS[validSessions.length as keyof typeof BULK_DISCOUNT_TIERS] || 0;
-      const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkDiscountRate);
-      const finalTotalPence = totalDiscountedPence - bulkDiscountAmount;
-      
-      let stripeAmount: number;
-      
-      if (currencyCode.toUpperCase() === 'GBP') {
-        stripeAmount = finalTotalPence;
-      } else {
-        const gbpRate = exchangeRates.rates['GBP'] || 1;
-        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
-        const localAmount = (finalTotalPence / 100) * (targetRate / gbpRate);
-        const roundedAmount = roundPriceUp(localAmount);
-        
-        if (isZeroDecimal) {
-          stripeAmount = Math.round(roundedAmount);
-        } else {
-          stripeAmount = Math.round(roundedAmount * 100);
-        }
-      }
-      
-      const partner = validSessions[0] ? await storage.getPartnerAccount(validSessions[0].partnerId) : null;
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : 'https://humanmetrix.co.uk';
-      
-      const sessionIdsStr = validSessions.map(s => s!.id).join(',');
-      const assessmentNames = validSessions.map(s => {
-        const type = normalizeAssessmentId(s!.assessmentType);
-        const names: Record<string, string> = {
-          'fit': 'FIT',
-          'ai_readiness': 'AI Readiness',
-          'prompt_architecture': 'Prompt Architecture',
-          'aiq': 'AIQ',
-        };
-        return names[type] || type;
-      });
-      
-      // Use Airwallex if configured, otherwise fall back to Stripe
-      if (useAirwallex()) {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `b2b_bulk_results_${Date.now()}`;
-        
-        const paymentIntent = await createPaymentIntent({
-          amount: airwallexAmount,
-          currency: currencyCode.toUpperCase(),
-          merchantOrderId,
-          returnUrl: `${baseUrl}/b2b-results-bulk-success?sessions=${sessionIdsStr}`,
-          customerEmail: validSessions[0]!.externalEmail || undefined,
-          description: `Assessment Results Bundle (${validSessions.length} tests)`,
-          metadata: {
-            type: 'b2b_bulk_results_unlock',
-            sessionIds: sessionIdsStr,
-            partnerId: validSessions[0]!.partnerId,
-          },
-        });
-        
-        res.json({
-          provider: 'airwallex',
-          intentId: paymentIntent.id,
-          clientSecret: paymentIntent.clientSecret,
-          currency: currencyCode.toUpperCase(),
-          countryCode: countryCode,
-          amount: airwallexAmount,
-          sessionIds: validSessions.map(s => s!.id),
-        });
-      } else {
-        const checkoutSession = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [{
-            price_data: {
-              currency: currencyCode.toLowerCase(),
-              product_data: {
-                name: `Assessment Results Bundle`,
-                description: `Unlock ${validSessions.length} assessment results: ${assessmentNames.join(', ')}${bulkDiscountRate > 0 ? ` (${bulkDiscountRate * 100}% bulk discount applied)` : ''}`,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          }],
-          mode: 'payment',
-          success_url: `${baseUrl}/b2b-results-bulk-success?sessions=${sessionIdsStr}&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/b2b-results-payment/${validSessions[0]!.id}`,
-          customer_email: validSessions[0]!.externalEmail || undefined,
-          metadata: {
-            type: 'b2b_bulk_results_unlock',
-            sessionIds: sessionIdsStr,
-            partnerId: validSessions[0]!.partnerId,
-          },
-        });
-        
-        res.json({
-          provider: 'stripe',
-          checkoutUrl: checkoutSession.url,
-          stripeSessionId: checkoutSession.id,
-          sessionIds: validSessions.map(s => s!.id),
-        });
-      }
-    } catch (error) {
-      console.error("Error creating bulk checkout:", error);
-      res.status(500).json({ error: "Failed to create bulk checkout" });
-    }
-  });
-  
-  // Verify bulk payment and unlock all results
-  // Security: Validates payment metadata matches requested sessions
-  app.post("/api/b2b-results/bulk-verify-payment", async (req: Request, res: Response) => {
-    try {
-      const { sessionIds, stripeSessionId, airwallexIntentId, provider } = req.body;
-      
-      if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-        return res.status(400).json({ error: "Session IDs required" });
-      }
-      
-      let paymentAmount: number | null = null;
-      let paymentCurrency: string | null = null;
-      let paymentSessionIds: string | null = null;
-      
-      if (provider === 'airwallex' && airwallexIntentId) {
-        const { getPaymentIntent } = await import("./airwallex");
-        const paymentIntent = await getPaymentIntent(airwallexIntentId);
-        
-        if (paymentIntent.status !== 'SUCCEEDED') {
-          return res.status(400).json({ error: "Payment not completed" });
-        }
-        
-        paymentAmount = Math.round(paymentIntent.amount * 100);
-        paymentCurrency = paymentIntent.currency?.toLowerCase();
-        paymentSessionIds = paymentIntent.metadata?.sessionIds;
-      } else if (stripeSessionId) {
-        const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
-        
-        if (stripeSession.payment_status !== 'paid') {
-          return res.status(400).json({ error: "Payment not completed" });
-        }
-        
-        paymentAmount = stripeSession.amount_total;
-        paymentCurrency = stripeSession.currency;
-        paymentSessionIds = stripeSession.metadata?.sessionIds ?? null;
-      } else {
-        return res.status(400).json({ error: "No payment session provided" });
-      }
-      
-      // SECURITY: Verify payment metadata matches requested session IDs
-      const requestedIds = [...sessionIds].sort().join(',');
-      const paidIds = paymentSessionIds ? paymentSessionIds.split(',').sort().join(',') : null;
-      
-      if (!paidIds || requestedIds !== paidIds) {
-        console.warn(`[Bulk Verify] Security: Payment session mismatch. Requested: ${requestedIds}, Paid: ${paidIds}`);
-        return res.status(403).json({ error: "Payment session mismatch" });
-      }
-      
-      // Split payment amount across sessions
-      const amountPerSession = paymentAmount ? Math.round(paymentAmount / sessionIds.length) : null;
-      
-      // Unlock all sessions
-      const results: Array<{ sessionId: string; success: boolean; error?: string }> = [];
-      
-      for (const sessionId of sessionIds) {
-        try {
-          const session = await storage.getAssessmentSession(sessionId);
-          if (!session) {
-            results.push({ sessionId, success: false, error: "Session not found" });
-            continue;
-          }
-          
-          // Mark as paid
-          await storage.updateAssessmentSession(sessionId, {
-            resultsPaymentStatus: 'paid',
-            resultsPaidAt: new Date(),
-            resultsPaymentAmount: amountPerSession,
-            resultsPaymentCurrency: paymentCurrency,
-          } as any);
-          
-          // Send results email with PDF
-          if (session.externalEmail) {
-            try {
-              const partner = await storage.getPartnerAccount(session.partnerId);
-              const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
-              
-              const pdfBuffer = generateB2BResultsPDF({
-                candidateName: session.externalUserId || undefined,
-                candidateEmail: session.externalEmail,
-                assessmentType: session.assessmentType,
-                scores: session.scores || {},
-                totalScore: session.totalScore || undefined,
-                percentile: session.percentile || undefined,
-                evaluations: session.evaluations || undefined,
-                completedAt: session.completedAt || new Date(),
-                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-              });
-              const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
-              
-              await sendB2BResultsEmail({
-                email: session.externalEmail,
-                candidateName: session.externalUserId || undefined,
-                assessmentType: session.assessmentType,
-                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-                pdfBuffer,
-                pdfFilename,
-              });
-              
-              await storage.updateAssessmentSession(sessionId, {
-                resultsEmailSentAt: new Date(),
-              } as any);
-              
-              console.log(`[B2B Bulk Results] Results email sent to ${session.externalEmail} for session ${sessionId}`);
-            } catch (emailError) {
-              console.error(`[B2B Bulk Results] Failed to send results email for session ${sessionId}:`, emailError);
-            }
-          }
-          
-          results.push({ sessionId, success: true });
-        } catch (error) {
-          console.error(`Error unlocking session ${sessionId}:`, error);
-          results.push({ sessionId, success: false, error: "Failed to unlock" });
-        }
-      }
-      
-      res.json({
-        success: results.every(r => r.success),
-        results,
-        paidAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Error verifying bulk payment:", error);
-      res.status(500).json({ error: "Failed to verify payment" });
-    }
-  });
 
   // Serve embed test page
   app.get("/embed-test.html", (req, res) => {
@@ -2091,44 +848,8 @@ export function registerPartnerRoutes(app: Express) {
   // BULK CANDIDATE INVITATIONS
   // ========================================
 
-  // Get partner's prepaid balance for token preview (session-based auth for dashboard)
-  app.get("/api/partner/me/quota", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      // Get partner account from user session
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user?.organizationId) {
-        return res.status(403).json({ error: "No partner organization linked" });
-      }
-      
-      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      if (!partner) {
-        return res.status(403).json({ error: "Partner account not found" });
-      }
-      
-      const balance = await storage.getPartnerQuotaBalance(partner.id);
-      
-      res.json({
-        billingType: partner.billingType || 'prepaid',
-        testsPurchased: balance.testsPurchased,
-        testsConsumed: balance.testsConsumed,
-        testsRemaining: balance.remaining,
-        freeTestsRemaining: partner.freeTestsAllocated || 0,
-        prepaidBalance: partner.prepaidBalance || 0,
-        prepaidCreditsExpiresAt: partner.prepaidCreditsExpiresAt,
-      });
-    } catch (error) {
-      console.error("Error fetching quota:", error);
-      res.status(500).json({ error: "Failed to fetch quota" });
-    }
-  });
-  
-  // Get partner's prepaid balance via API key (for external API access)
-  app.get("/api/partner/quota", partnerAuth(), async (req: PartnerRequest, res: Response) => {
+  // Get partner's prepaid balance for token preview
+  app.get("/api/partner/me/quota", partnerAuth, async (req: PartnerRequest, res: Response) => {
     try {
       const partner = req.partner!;
       const balance = await storage.getPartnerQuotaBalance(partner.id);
@@ -2609,37 +1330,14 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(410).json({ error: "This invitation has expired" });
       }
       
+      if (invitation.status === 'completed') {
+        return res.status(410).json({ error: "This invitation has already been completed" });
+      }
+      
       // Check if expired based on date
       if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
         await storage.updatePartnerCandidateInvitation(invitation.id, { status: 'expired' });
         return res.status(410).json({ error: "This invitation has expired" });
-      }
-      
-      // Get completed sessions for this candidate to track progress
-      const sessions = await storage.getSessionsByPartnerAndExternalUser(
-        invitation.partnerId,
-        invitation.externalUserId
-      );
-      
-      // Find completed assessment types
-      const completedAssessments = sessions
-        .filter(s => s.status === 'completed')
-        .map(s => ({
-          type: s.assessmentType,
-          sessionId: s.id,
-          completedAt: s.completedAt,
-          resultsPaymentStatus: s.resultsPaymentStatus || 'unpaid',
-        }));
-      
-      const completedTypes = completedAssessments.map(a => a.type);
-      const remainingTypes = invitation.assessmentTypes.filter(t => !completedTypes.includes(t));
-      
-      // If all assessments are completed, mark invitation as completed
-      if (remainingTypes.length === 0 && invitation.status !== 'completed') {
-        await storage.updatePartnerCandidateInvitation(invitation.id, { 
-          status: 'completed',
-          completedAt: new Date(),
-        });
       }
       
       // Get partner branding
@@ -2650,9 +1348,7 @@ export function registerPartnerRoutes(app: Express) {
         externalUserId: invitation.externalUserId,
         name: invitation.name,
         assessmentTypes: invitation.assessmentTypes,
-        completedAssessments,
-        remainingTypes,
-        status: remainingTypes.length === 0 ? 'completed' : invitation.status,
+        status: invitation.status,
         expiresAt: invitation.expiresAt,
         partnerName: partnerAccount?.companyName || 'HumanMetrix Partner',
         branding: partnerAccount?.brandingEnabled ? {
@@ -2687,8 +1383,8 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Invalid or expired invitation" });
       }
       
-      if (invitation.status === 'expired') {
-        return res.status(410).json({ error: "This invitation has expired" });
+      if (invitation.status === 'expired' || invitation.status === 'completed') {
+        return res.status(410).json({ error: "This invitation is no longer valid" });
       }
       
       // Check if expired based on date
@@ -2701,19 +1397,6 @@ export function registerPartnerRoutes(app: Express) {
       const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
       if (!invitation.assessmentTypes.includes(normalizedType)) {
         return res.status(400).json({ error: "Assessment type not included in this invitation" });
-      }
-      
-      // Check if this specific assessment has already been completed
-      const sessions = await storage.getSessionsByPartnerAndExternalUser(
-        invitation.partnerId,
-        invitation.externalUserId
-      );
-      const completedTypes = sessions
-        .filter(s => s.status === 'completed')
-        .map(s => s.assessmentType);
-      
-      if (completedTypes.includes(normalizedType)) {
-        return res.status(400).json({ error: "This assessment has already been completed" });
       }
       
       // Create assessment session
@@ -2985,18 +1668,18 @@ export function registerPartnerRoutes(app: Express) {
           
           // Create payment intent for the overage amount
           const paymentIntent = await stripe.paymentIntents.create({
-            amount: charge.totalAmount,
+            amount: charge.overageAmount,
             currency: 'gbp',
             customer: partner.stripeCustomerId,
             payment_method: partner.stripePaymentMethodId,
             off_session: true,
             confirm: true,
-            description: `Overage billing for ${charge.billingMonth}: ${charge.testsOverLimit} tests`,
+            description: `Overage billing for ${charge.billingMonth}: ${charge.overageTests} tests`,
             metadata: {
               partnerId: partner.id,
               overageLedgerId: charge.id,
               billingMonth: charge.billingMonth,
-              testsOverLimit: charge.testsOverLimit.toString(),
+              overageTests: charge.overageTests.toString(),
             },
           });
           
@@ -3005,12 +1688,13 @@ export function registerPartnerRoutes(app: Express) {
             await storage.updateOverageLedgerEntry(charge.id, {
               chargeStatus: 'paid',
               stripePaymentIntentId: paymentIntent.id,
+              chargedAt: new Date(),
             });
             
             // Track billed amount for this partner
             billedByPartner.set(
               partner.id, 
-              (billedByPartner.get(partner.id) || 0) + charge.totalAmount
+              (billedByPartner.get(partner.id) || 0) + charge.overageAmount
             );
             
             // Create success notification
@@ -3018,8 +1702,8 @@ export function registerPartnerRoutes(app: Express) {
               partnerId: partner.id,
               type: 'billing_success',
               title: 'Overage Billing Processed',
-              message: `Your overage charges for ${charge.billingMonth} (£${(charge.totalAmount / 100).toFixed(2)} for ${charge.testsOverLimit} tests) have been successfully billed.`,
-              metadata: { billingMonth: charge.billingMonth, amount: charge.totalAmount, tests: charge.testsOverLimit } as Record<string, any>,
+              message: `Your overage charges for ${charge.billingMonth} (£${(charge.overageAmount / 100).toFixed(2)} for ${charge.overageTests} tests) have been successfully billed.`,
+              metadata: { billingMonth: charge.billingMonth, amount: charge.overageAmount, tests: charge.overageTests },
             });
             
             results.succeeded++;
@@ -3039,13 +1723,13 @@ export function registerPartnerRoutes(app: Express) {
             type: 'billing_failed',
             title: 'Overage Billing Failed',
             message: `Your overage billing for ${charge.billingMonth} failed. Please update your payment method.`,
-            metadata: { billingMonth: charge.billingMonth, error: paymentError.message } as Record<string, any>,
+            metadata: { billingMonth: charge.billingMonth, error: paymentError.message },
           });
         }
       }
       
       // Update pendingOverageAmount for each partner based on what was successfully billed
-      for (const [partnerId, billedAmount] of Array.from(billedByPartner.entries())) {
+      for (const [partnerId, billedAmount] of billedByPartner.entries()) {
         const partner = await storage.getPartnerAccount(partnerId);
         if (partner) {
           const newPendingAmount = Math.max(0, (partner.pendingOverageAmount || 0) - billedAmount);
@@ -3103,26 +1787,13 @@ function getBaseUrl(req: Request): string {
 
 async function calculateScores(
   assessmentType: string,
-  answers: Record<string, any>,
-  isTestSession: boolean = false
+  answers: Record<string, any>
 ): Promise<{
   scores: Record<string, number>;
   totalScore: number;
   percentile: number;
   evaluations?: any[];
 }> {
-  // For test sessions, return dummy scores without any AI computation
-  // Test API keys are for developer integration testing only
-  if (isTestSession) {
-    console.log(`[Test Session] Skipping AI scoring, returning dummy scores`);
-    return {
-      scores: { overall: 75, test_mode: 100 },
-      totalScore: 75,
-      percentile: 60,
-      evaluations: [{ note: 'Test session - dummy scores for integration testing' }],
-    };
-  }
-  
   const questionCount = Object.keys(answers).length || 1;
   const answeredQuestions = Object.values(answers).filter((a) => a !== null && a !== undefined);
   

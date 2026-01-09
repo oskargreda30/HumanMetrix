@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +16,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MultiCandidateRoleFitTab from "./MultiCandidateRoleFitTab";
 
-function SingleCandidateRoleFit() {
+export default function RoleFitTab() {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const { toast } = useToast();
@@ -33,24 +31,22 @@ function SingleCandidateRoleFit() {
   });
 
   type RoleAlignment = {
-    overallFit: number | null;
+    overallFit: number;
     fitSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number | null;
+      candidateScore: number;
       requiredScore: number;
-      gap: number | null;
+      gap: number;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
-      dataAvailable?: boolean;
     }> | null;
     aiReadinessSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number | null;
+      candidateScore: number;
       requiredScore: number;
-      gap: number | null;
+      gap: number;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
-      dataAvailable?: boolean;
     }> | null;
     strengths: string[];
     gaps: string[];
@@ -79,13 +75,6 @@ function SingleCandidateRoleFit() {
     }> | null;
     finalRecommendation?: string;
     nextSteps?: string[];
-    dataCoverage?: {
-      percentage: number;
-      assessedSkillCount: number;
-      totalRequiredSkills: number;
-      missingAssessments: string[];
-      hasSufficientData: boolean;
-    };
   };
 
   const getPercentileBadge = (percentile: number) => {
@@ -308,161 +297,36 @@ function SingleCandidateRoleFit() {
 
       {alignment && !isLoadingAlignment && (
         <div className="space-y-6">
-          {/* Executive Summary - Guide for Hiring Managers */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                A step-by-step guide to understanding this candidate's fit for the {selectedRoleData?.name} role
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Step 1 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <p className="font-medium text-sm">Overall Role Fit Score</p>
-                    <p className="text-xs text-muted-foreground">The weighted average of all skill scores against role requirements. <span className="font-medium">80%+ = Strong fit</span>, 60-79% = Good potential, Below 60% = Development needed.</p>
-                  </div>
-                </div>
-                {/* Step 2 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm">Skill Alignments (FIT & AI Readiness)</p>
-                    <p className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600">C</Badge> marked skills - these are <span className="font-medium">critical</span> for success.</p>
-                  </div>
-                </div>
-                {/* Step 3 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm">Critical Skills Analysis</p>
-                    <p className="text-xs text-muted-foreground">Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.</p>
-                  </div>
-                </div>
-                {/* Step 4 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm">Cohort Benchmarking</p>
-                    <p className="text-xs text-muted-foreground">See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.</p>
-                  </div>
-                </div>
-                {/* Step 5 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-medium text-sm">Role Flexibility Analysis</p>
-                    <p className="text-xs text-muted-foreground">Alternative roles where this candidate might excel if the primary role isn't ideal. Useful for internal mobility.</p>
-                  </div>
-                </div>
-                {/* Step 6 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
-                    <p className="font-medium text-sm">Hiring Recommendation</p>
-                    <p className="text-xs text-muted-foreground">Summary with specific hiring guidance, interview focus areas, and onboarding considerations.</p>
-                  </div>
-                </div>
-                {/* What each assessment measures */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">?</div>
-                  <div>
-                    <p className="font-medium text-sm">What We Measure</p>
-                    <p className="text-xs text-muted-foreground"><span className="font-medium">FIT:</span> Behavioral traits & mindset. <span className="font-medium">AI Readiness:</span> Technical AI skills. <span className="font-medium">PA:</span> Prompt writing ability. <span className="font-medium">AIQ:</span> AI ethics & judgment.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Overall Fit Score */}
-          {(() => {
-            // Always show score if we have any data, even if incomplete
-            const hasPartialData = alignment.dataCoverage && 
-              alignment.dataCoverage.percentage > 0 && 
-              alignment.dataCoverage.percentage < 100;
-            const hasNoData = !alignment.dataCoverage || 
-              alignment.overallFit == null || 
-              (typeof alignment.overallFit !== 'number') ||
-              alignment.dataCoverage.percentage === 0;
-            const fitScore = hasNoData ? 0 : alignment.overallFit;
-            
-            return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Overall Role Fit</span>
-                {hasNoData ? (
-                  <Badge variant="outline" className="text-lg px-3 py-1 bg-amber-50 border-amber-300 text-amber-700">
-                    No Data
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant={
-                      fitScore >= 80
-                        ? 'default'
-                        : fitScore >= 60
-                        ? 'secondary'
-                        : 'outline'
-                    }
-                    className="text-lg px-3 py-1"
-                  >
-                    {fitScore}%
-                  </Badge>
-                )}
+                <Badge
+                  variant={
+                    alignment.overallFit >= 80
+                      ? 'default'
+                      : alignment.overallFit >= 60
+                      ? 'secondary'
+                      : 'outline'
+                  }
+                  className="text-lg px-3 py-1"
+                >
+                  {alignment.overallFit}%
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {hasNoData ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-medium">No assessment data available</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    This candidate has not completed any assessments yet. Please have them complete the required assessments for a role fit analysis.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <Progress value={fitScore} className="h-3" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {fitScore >= 80
-                      ? 'Excellent match for this role'
-                      : fitScore >= 60
-                      ? 'Good potential for this role'
-                      : 'May need additional training for this role'}
-                  </p>
-                  {hasPartialData && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-amber-700 mb-1">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="font-medium text-sm">Incomplete Picture</span>
-                      </div>
-                      <p className="text-sm text-amber-700">
-                        Based on {alignment.dataCoverage!.percentage}% of required assessments ({alignment.dataCoverage!.assessedSkillCount}/{alignment.dataCoverage!.totalRequiredSkills} skills). 
-                        Complete all assessments for a full capability picture.
-                      </p>
-                      {alignment.dataCoverage?.missingAssessments && alignment.dataCoverage.missingAssessments.length > 0 && (
-                        <p className="text-sm text-amber-600 mt-1">
-                          <span className="font-medium">Missing: </span>
-                          {alignment.dataCoverage.missingAssessments.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+              <Progress value={alignment.overallFit} className="h-3" />
+              <p className="text-sm text-muted-foreground mt-2">
+                {alignment.overallFit >= 80
+                  ? 'Excellent match for this role'
+                  : alignment.overallFit >= 60
+                  ? 'Good potential for this role'
+                  : 'May need additional training for this role'}
+              </p>
             </CardContent>
           </Card>
-            );
-          })()}
 
           {/* FIT Skill Alignments */}
           {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
@@ -479,14 +343,12 @@ function SingleCandidateRoleFit() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.fitSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality)}
-                          {skill.dataAvailable === false ? (
-                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
-                          ) : skill.gap > 0 ? (
+                          {skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
                             <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
@@ -494,44 +356,33 @@ function SingleCandidateRoleFit() {
                         </div>
                         <Badge
                           variant={
-                            skill.alignment === 'not_assessed'
-                              ? 'outline'
-                              : skill.alignment === 'excellent'
+                            skill.alignment === 'excellent'
                               ? 'default'
                               : skill.alignment === 'good'
                               ? 'secondary'
                               : 'outline'
                           }
-                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
                         >
-                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
+                          {skill.alignment}
                         </Badge>
                       </div>
-                      {skill.dataAvailable === false ? (
-                        <div className="text-sm text-muted-foreground italic">
-                          Assessment not completed - Required score: {skill.requiredScore}%
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Candidate Score</p>
+                          <p className="font-semibold">{skill.candidateScore}%</p>
                         </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <p className="text-muted-foreground">Candidate Score</p>
-                              <p className="font-semibold">{skill.candidateScore}%</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Required Score</p>
-                              <p className="font-semibold">{skill.requiredScore}%</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Gap</p>
-                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                              </p>
-                            </div>
-                          </div>
-                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
-                        </>
-                      )}
+                        <div>
+                          <p className="text-muted-foreground">Required Score</p>
+                          <p className="font-semibold">{skill.requiredScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gap</p>
+                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                          </p>
+                        </div>
+                      </div>
+                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
                   ))}
                   <CriticalityLegend />
@@ -555,14 +406,12 @@ function SingleCandidateRoleFit() {
               <CardContent>
                 <div className="space-y-4">
                   {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
-                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm">{skill.skillName}</span>
                           {getCriticalityBadge(skill.criticality)}
-                          {skill.dataAvailable === false ? (
-                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
-                          ) : skill.gap > 0 ? (
+                          {skill.gap > 0 ? (
                             <TrendingDown className="h-4 w-4 text-destructive ml-1" />
                           ) : (
                             <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
@@ -570,44 +419,33 @@ function SingleCandidateRoleFit() {
                         </div>
                         <Badge
                           variant={
-                            skill.alignment === 'not_assessed'
-                              ? 'outline'
-                              : skill.alignment === 'excellent'
+                            skill.alignment === 'excellent'
                               ? 'default'
                               : skill.alignment === 'good'
                               ? 'secondary'
                               : 'outline'
                           }
-                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
                         >
-                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
+                          {skill.alignment}
                         </Badge>
                       </div>
-                      {skill.dataAvailable === false ? (
-                        <div className="text-sm text-muted-foreground italic">
-                          Assessment not completed - Required score: {skill.requiredScore}%
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Candidate Score</p>
+                          <p className="font-semibold">{skill.candidateScore}%</p>
                         </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <p className="text-muted-foreground">Candidate Score</p>
-                              <p className="font-semibold">{skill.candidateScore}%</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Required Score</p>
-                              <p className="font-semibold">{skill.requiredScore}%</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Gap</p>
-                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
-                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
-                              </p>
-                            </div>
-                          </div>
-                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
-                        </>
-                      )}
+                        <div>
+                          <p className="text-muted-foreground">Required Score</p>
+                          <p className="font-semibold">{skill.requiredScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gap</p>
+                          <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                            {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                          </p>
+                        </div>
+                      </div>
+                      <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
                     </div>
                   ))}
                   <CriticalityLegend />
@@ -622,14 +460,9 @@ function SingleCandidateRoleFit() {
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            // Get ALL critical skills (including those with no data)
             const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
-            // Separate into assessed vs no data (check both dataAvailable flag AND null candidateScore)
-            const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;
-            const assessedCritical = criticalSkills.filter(hasData);
-            const noDataCritical = criticalSkills.filter((s: any) => !hasData(s));
-            const criticalMet = assessedCritical.filter((s: any) => s.candidateScore >= s.requiredScore);
-            const criticalGaps = assessedCritical.filter((s: any) => s.candidateScore < s.requiredScore);
+            const criticalMet = criticalSkills.filter((s: any) => s.candidateScore >= s.requiredScore);
+            const criticalGaps = criticalSkills.filter((s: any) => s.candidateScore < s.requiredScore);
             
             if (criticalSkills.length === 0) return null;
             
@@ -641,7 +474,7 @@ function SingleCandidateRoleFit() {
                     Critical Skills Analysis
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Summary of skills marked as critical for the {selectedRoleData?.name || 'selected'} role
+                    Summary of skills marked as critical for the {selectedRole?.name || 'selected'} role
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -652,45 +485,17 @@ function SingleCandidateRoleFit() {
                           {criticalMet.length} of {criticalSkills.length} Critical Skills Met
                         </p>
                         <Badge 
-                          variant={criticalGaps.length === 0 && noDataCritical.length === 0 ? 'default' : criticalGaps.length > 1 ? 'destructive' : 'secondary'}
+                          variant={criticalGaps.length === 0 ? 'default' : criticalGaps.length <= 1 ? 'secondary' : 'destructive'}
                           className="text-sm"
                         >
-                          {criticalGaps.length === 0 && noDataCritical.length === 0 ? 'All Met' : 
-                           noDataCritical.length > 0 && criticalGaps.length === 0 ? `${noDataCritical.length} Pending` :
-                           `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
+                          {criticalGaps.length === 0 ? 'All Met' : `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
                         </Badge>
                       </div>
                       <Progress 
                         value={(criticalMet.length / criticalSkills.length) * 100} 
                         className="h-3"
                       />
-                      {noDataCritical.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {noDataCritical.length} critical skill{noDataCritical.length > 1 ? 's' : ''} awaiting assessment data
-                        </p>
-                      )}
                     </div>
-                    
-                    {noDataCritical.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-amber-600 flex items-center gap-1">
-                          <AlertCircle className="h-4 w-4" />
-                          No Data Received
-                        </p>
-                        <div className="grid gap-2">
-                          {noDataCritical.map((skill: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-amber-600">No data</span>
-                                <span className="text-muted-foreground">/</span>
-                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     
                     {criticalGaps.length > 0 && (
                       <div className="space-y-2">
@@ -1134,28 +939,5 @@ function SingleCandidateRoleFit() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function RoleFitTab() {
-  return (
-    <Tabs defaultValue="single" className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="single" className="flex items-center gap-2" data-testid="tab-single-candidate">
-          <User className="h-4 w-4" />
-          Single Candidate
-        </TabsTrigger>
-        <TabsTrigger value="multi" className="flex items-center gap-2" data-testid="tab-multi-candidate">
-          <Users className="h-4 w-4" />
-          Multiple Candidates
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="single" className="mt-6 data-[state=inactive]:hidden" forceMount>
-        <SingleCandidateRoleFit />
-      </TabsContent>
-      <TabsContent value="multi" className="mt-6 data-[state=inactive]:hidden" forceMount>
-        <MultiCandidateRoleFitTab />
-      </TabsContent>
-    </Tabs>
   );
 }

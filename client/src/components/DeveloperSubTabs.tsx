@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Key, Webhook, TestTube, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Zap, Copy, Eye, EyeOff, CreditCard } from "lucide-react";
+import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info } from "lucide-react";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -39,7 +38,6 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
-  isActive: boolean;
 }
 
 interface ApiKeysData {
@@ -50,16 +48,11 @@ interface ApiKeysData {
 interface DeveloperSubTabsProps {
   apiKeys: ApiKeysData | undefined;
   apiKeysLoading: boolean;
-  onCreateTestKey: () => void;
-  onCreateLiveKey: () => void;
+  onCreateKey: () => void;
   onRotateKey: (id: string) => void;
   onRevokeKey: (id: string) => void;
   rotatingKeyId: string | null;
   revokingKeyId: string | null;
-  creatingKeyType: 'test' | 'live' | null;
-  newKeyData: { fullKey: string; environment: string } | null;
-  onClearNewKey: () => void;
-  onReactivateKey?: () => void;
 }
 
 function formatDate(dateString: string): string {
@@ -73,23 +66,13 @@ function formatDate(dateString: string): string {
 export function DeveloperSubTabs({
   apiKeys,
   apiKeysLoading,
-  onCreateTestKey,
-  onCreateLiveKey,
+  onCreateKey,
   onRotateKey,
   onRevokeKey,
   rotatingKeyId,
   revokingKeyId,
-  creatingKeyType,
-  newKeyData,
-  onClearNewKey,
-  onReactivateKey,
 }: DeveloperSubTabsProps) {
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
-  const [showFullKey, setShowFullKey] = useState(false);
-  
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-  };
 
   return (
     <div className="space-y-4">
@@ -121,220 +104,104 @@ export function DeveloperSubTabs({
 
         <TabsContent value="api-keys" className="space-y-6" data-testid="subpanel-api-keys">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 flex-wrap">
+            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0">
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle>API Keys</CardTitle>
-                  <InfoTooltip content="API keys authenticate your applications with HumanMetrix. Test keys are for developer integration only: no emails sent, no AI computation (dummy scores returned), no charges, and results are blocked. Use live keys for production with full functionality including AI scoring, emails, and billing." />
+                  <InfoTooltip content="API keys authenticate your applications with HumanMetrix. Use 'test' keys for development (no charges) and 'live' keys for production. Rotate keys periodically for security." />
                 </div>
                 <CardDescription>Manage your API keys for accessing the HumanMetrix API</CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={onCreateTestKey}
-                  disabled={creatingKeyType !== null}
-                  data-testid="button-create-test-key"
-                >
-                  {creatingKeyType === 'test' ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Zap className="h-4 w-4 mr-2 text-yellow-500" />
-                  )}
-                  Create Test Key
-                </Button>
-                <Button 
-                  onClick={onCreateLiveKey}
-                  disabled={creatingKeyType !== null}
-                  className="bg-cyan-600 hover:bg-cyan-700"
-                  data-testid="button-create-live-key"
-                >
-                  {creatingKeyType === 'live' ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Zap className="h-4 w-4 mr-2 text-green-400" />
-                  )}
-                  Create Live Key
-                </Button>
-              </div>
+              <Button 
+                onClick={onCreateKey}
+                className="bg-cyan-600 hover:bg-cyan-700"
+                data-testid="button-create-api-key"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Key
+              </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* New Key Display - Amber Warning Card */}
-              {newKeyData?.fullKey && (
-                <Card className="bg-amber-500/10 border-amber-500/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-2 mb-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-600 dark:text-amber-400">Save this API key now!</p>
-                        <p className="text-sm text-amber-600/80 dark:text-amber-400/80">It will not be displayed again.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 bg-muted p-3 rounded font-mono text-sm">
-                      <code className="flex-1 break-all" data-testid="text-new-api-key">
-                        {showFullKey ? newKeyData.fullKey : "•".repeat(40) + newKeyData.fullKey.slice(-4)}
-                      </code>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowFullKey(!showFullKey)}
-                        data-testid="button-toggle-key-visibility"
-                      >
-                        {showFullKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => copyToClipboard(newKeyData.fullKey)}
-                        data-testid="button-copy-key"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex justify-end mt-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => { onClearNewKey(); setShowFullKey(false); }}
-                        data-testid="button-dismiss-new-key"
-                      >
-                        I've saved my key
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
+            <CardContent>
               {apiKeysLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               ) : apiKeys?.apiKeys && apiKeys.apiKeys.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Key</TableHead>
-                        <TableHead>Environment</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Used</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {apiKeys.apiKeys.map((key) => (
-                        <TableRow key={key.id} data-testid={`api-key-row-${key.id}`} className={!key.isActive ? 'opacity-70 bg-muted/30' : ''}>
-                          <TableCell className="font-medium">{key.name}</TableCell>
-                          <TableCell className="font-mono text-sm text-muted-foreground">
-                            {key.keyPrefix}...{key.keyHint}
-                          </TableCell>
-                          <TableCell>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge 
-                                  variant={key.environment === 'live' ? 'default' : 'secondary'}
-                                  className={key.environment === 'live' 
-                                    ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30 cursor-help' 
-                                    : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 cursor-help'}
-                                >
-                                  {key.environment}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                {key.environment === 'live' 
-                                  ? 'Live keys enable full functionality: AI scoring, emails, billing, and results access.'
-                                  : 'Test keys are for integration testing only: no emails, no AI computation, no billing, results blocked.'}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TableCell>
-                          <TableCell>
-                            {key.isActive ? (
-                              <Badge variant="secondary" className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30">
-                                Active
-                              </Badge>
-                            ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="destructive" className="cursor-help">
-                                    Deactivated
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  This key was deactivated due to quota exhaustion. Purchase more credits to reactivate.
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {key.lastUsedAt ? formatDate(key.lastUsedAt) : "Never"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {!key.isActive && onReactivateKey ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={onReactivateKey}
-                                  className="text-primary border-primary/50 hover:bg-primary/10"
-                                  data-testid={`button-reactivate-key-${key.id}`}
-                                >
-                                  <CreditCard className="h-4 w-4 mr-1.5" />
-                                  Reactivate
-                                </Button>
-                              ) : (
-                                <>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => onRotateKey(key.id)}
-                                        disabled={rotatingKeyId === key.id || !key.isActive}
-                                        data-testid={`button-rotate-key-${key.id}`}
-                                      >
-                                        {rotatingKeyId === key.id ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <RefreshCw className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Rotate key</TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => onRevokeKey(key.id)}
-                                        disabled={revokingKeyId === key.id}
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        data-testid={`button-revoke-key-${key.id}`}
-                                      >
-                                        {revokingKeyId === key.id ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Revoke key</TooltipContent>
-                                  </Tooltip>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="space-y-4">
+                  {apiKeys.apiKeys.map((key) => (
+                    <div 
+                      key={key.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg bg-muted/30"
+                      data-testid={`api-key-row-${key.id}`}
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{key.name}</span>
+                          <Badge 
+                            variant={key.environment === 'live' ? 'default' : 'secondary'}
+                            className={key.environment === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}
+                          >
+                            {key.environment}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+                          <Key className="h-3 w-3" />
+                          <span>{key.displayKey}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Created: {formatDate(key.createdAt)}</span>
+                          {key.lastUsedAt && (
+                            <span>Last used: {formatDate(key.lastUsedAt)}</span>
+                          )}
+                          <span>Rate limit: {key.rateLimit}/min</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRotateKey(key.id)}
+                          disabled={rotatingKeyId === key.id}
+                          data-testid={`button-rotate-key-${key.id}`}
+                        >
+                          {rotatingKeyId === key.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          <span className="ml-1.5">Rotate</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => onRevokeKey(key.id)}
+                          disabled={revokingKeyId === key.id}
+                          data-testid={`button-revoke-key-${key.id}`}
+                        >
+                          {revokingKeyId === key.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          <span className="ml-1.5">Revoke</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Key className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p className="font-medium">No API keys yet</p>
-                  <p className="text-sm mt-1">Create a test key for development or a live key for production.</p>
+                  <p className="text-sm mt-1">API keys let you integrate HumanMetrix into your applications.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={onCreateKey}
+                  >
+                    Create Your First API Key
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -424,7 +291,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/30">FIT</Badge>
-                      <Badge variant="outline" className="text-xs">15 questions</Badge>
+                      <Badge variant="outline" className="text-xs">40 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">Behavioural FIT Assessment</CardTitle>
                   </CardHeader>
@@ -447,7 +314,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~8 minutes to complete</span>
+                      <span>~15 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -456,7 +323,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-green-500/10 text-green-600 border-green-500/30">AI Readiness</Badge>
-                      <Badge variant="outline" className="text-xs">21 questions</Badge>
+                      <Badge variant="outline" className="text-xs">30 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">AI Readiness Assessment</CardTitle>
                   </CardHeader>
@@ -479,7 +346,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~10 minutes to complete</span>
+                      <span>~12 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -509,7 +376,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~21 minutes to complete (~3 min per level)</span>
+                      <span>~25 minutes to complete (2 min per level)</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -518,7 +385,7 @@ export function DeveloperSubTabs({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">AIQ</Badge>
-                      <Badge variant="outline" className="text-xs">9 questions</Badge>
+                      <Badge variant="outline" className="text-xs">15 questions</Badge>
                     </div>
                     <CardTitle className="text-lg mt-2">Algorithmic Integrity Quotient</CardTitle>
                   </CardHeader>
@@ -541,7 +408,7 @@ export function DeveloperSubTabs({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>~5 minutes to complete</span>
+                      <span>~10 minutes to complete</span>
                     </div>
                   </CardContent>
                 </Card>

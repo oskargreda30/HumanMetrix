@@ -437,8 +437,8 @@ export default function MyResults() {
                     <div className="text-3xl font-bold text-primary mb-1">{avgScore}/100</div>
                     <div className="text-xs text-muted-foreground">Average Score</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-lg min-w-0">
-                    <div className="text-sm font-bold text-primary mb-1 leading-tight break-words px-1">{topSkill.name}</div>
+                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-lg font-bold text-primary mb-1 truncate px-1">{topSkill.name}</div>
                     <div className="text-xs text-muted-foreground">Top Skill ({topSkill.score})</div>
                   </div>
                 </div>
@@ -738,7 +738,7 @@ export default function MyResults() {
                 <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-green-500/5 rounded-lg border border-green-500/20">
                   <div>
                     <div className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">What It Measures</div>
-                    <p className="text-sm text-muted-foreground">AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%).</p>
+                    <p className="text-sm text-muted-foreground">AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%).</p>
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">Workplace Impact</div>

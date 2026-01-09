@@ -9,37 +9,37 @@ export interface SkillDefinition {
   color: string;
 }
 
-// Acronym mappings for PDF radar charts (matching table labels)
+// Acronym mappings for PDF radar charts
 export const SKILL_ACRONYMS: Record<string, string> = {
   // FIT Skills
   'High Agency': 'HA',
   'Intellectual Curiosity': 'IC',
-  'Resilience': 'RES',
+  'Resilience': 'R',
   'Empathy & Ethics': 'E&E',
   'Growth Mindset': 'GM',
   'Interpersonal Agility': 'IA',
   
   // AI Readiness Skills (Canonical keys)
-  'AI Literacy & Prompt Engineering': 'AI-PE',
+  'AI Literacy & Prompt Engineering': 'AL&PE',
   'Technical Fundamentals': 'TF',
   'Data Fluency': 'DF',
-  'Critical Thinking & Problem-Solving': 'CT-PS',
+  'Critical Thinking & Problem-Solving': 'CT&PS',
   'Adaptability & Continuous Learning': 'ACL',
-  'Collaboration & Communication': 'C&C',
-  'Responsible AI & Ethical Awareness': 'RA-EA',
+  'Collaboration & Communication': 'CC',
+  'Responsible AI & Ethical Awareness': 'RAI',
   'Creativity & Innovation': 'CI',
   'Domain Expertise': 'DE',
   
   // Legacy AI Readiness keys (for backward compatibility with old data)
-  'AI Literacy': 'AI-PE',
-  'AI Literacy/Prompting': 'AI-PE', // Very old legacy key
+  'AI Literacy': 'AL&PE',
+  'AI Literacy/Prompting': 'AL&PE', // Very old legacy key
   'Technical Fluency': 'TF',
   'Domain Fluency': 'DF',
-  'Critical Thinking': 'CT-PS',
+  'Critical Thinking': 'CT&PS',
   'Adaptive Learning': 'ACL',
-  'Collaboration': 'C&C',
-  'Cross-functional Collaboration': 'C&C', // Very old legacy key
-  'Responsible AI': 'RA-EA',
+  'Collaboration': 'CC',
+  'Cross-functional Collaboration': 'CC', // Very old legacy key
+  'Responsible AI': 'RAI',
   'Creative Innovation': 'CI',
   // Note: 'Domain Expertise' is already correct in both old and new formats
 };

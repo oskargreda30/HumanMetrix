@@ -19,24 +19,16 @@ export default function PaymentCallback() {
       try {
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get("session_id");
-        const intentId = params.get("intent_id");
-        const provider = params.get("provider");
-        const purchaseIdFromUrl = params.get("purchaseId");
 
-        if (!sessionId && !intentId) {
-          throw new Error("No payment session found");
+        if (!sessionId) {
+          throw new Error("No session ID found");
         }
 
         const res = await fetch("/api/process-results-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ 
-            sessionId, 
-            intentId,
-            provider: provider || (intentId ? 'airwallex' : 'stripe'),
-            purchaseId: purchaseIdFromUrl 
-          }),
+          body: JSON.stringify({ sessionId }),
         });
 
         const data = await res.json();

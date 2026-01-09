@@ -34,7 +34,7 @@ const assessments: Assessment[] = [
     id: "ai_readiness",
     name: "AI Readiness Assessment",
     description: "Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration",
-    duration: "20 min",
+    duration: "30 min",
     questions: 21,
     skills: 9
   },

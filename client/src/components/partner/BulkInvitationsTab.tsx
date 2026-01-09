@@ -407,9 +407,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   // Valid candidates are those with email (required field)
   const validCandidates = candidates.filter(c => c.email.trim());
   const tokensRequired = validCandidates.length * selectedAssessments.length;
-  // PAYG and Enterprise use credit balance, Subscription uses card on file
-  const usesCredits = billingType === 'payg' || billingType === 'enterprise';
-  const hasInsufficientTokens = usesCredits && quota && tokensRequired > quota.testsRemaining;
+  const isPrepaid = billingType === 'prepaid';
+  const hasInsufficientTokens = isPrepaid && quota && tokensRequired > quota.testsRemaining;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -645,7 +644,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
             </Label>
           </div>
 
-          {usesCredits && (
+          {isPrepaid && (
             <Card className={`${hasInsufficientTokens ? 'border-red-500 bg-red-500/5' : 'border-primary/20 bg-primary/5'}`}>
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">

@@ -35,8 +35,6 @@ export async function validateApiKey(apiKey: string): Promise<{
   partner?: PartnerAccount;
   keyRecord?: PartnerApiKey;
   error?: string;
-  code?: string;
-  action?: { label: string; url: string };
 }> {
   if (!apiKey) {
     return { valid: false, error: "API key is required" };
@@ -72,22 +70,10 @@ export async function validateApiKey(apiKey: string): Promise<{
   }
   
   // Check if partner is suspended due to quota exhaustion
-  // Test keys are allowed through even when suspended - they're for developer testing only
-  const isTestKey = keyRecord.environment === 'test';
-  if (partner.apiAccessSuspendedAt && !isTestKey) {
-    const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-    const purchaseUrl = domain 
-      ? `https://${domain}/developers?tab=billing&action=purchase` 
-      : 'http://localhost:5000/developers?tab=billing&action=purchase';
-    
+  if (partner.apiAccessSuspendedAt) {
     return { 
       valid: false, 
-      error: "API access suspended: Test quota exhausted.",
-      code: "ACCESS_SUSPENDED",
-      action: {
-        label: "Purchase Credits",
-        url: purchaseUrl,
-      },
+      error: "API access suspended: Test quota exhausted. Please purchase more tests to continue." 
     };
   }
   
@@ -131,20 +117,10 @@ export function partnerAuth(requiredPermissions: string[] = []) {
       const result = await validateApiKey(apiKey);
       
       if (!result.valid) {
-        // Use 403 for suspended accounts (not 401)
-        const statusCode = result.code === "ACCESS_SUSPENDED" ? 403 : 401;
-        const response: Record<string, any> = {
-          error: result.code === "ACCESS_SUSPENDED" ? "Forbidden" : "Unauthorized",
-          code: result.code,
+        return res.status(401).json({
+          error: "Unauthorized",
           message: result.error,
-        };
-        
-        // Include action if provided (for suspended accounts)
-        if (result.action) {
-          response.action = result.action;
-        }
-        
-        return res.status(statusCode).json(response);
+        });
       }
       
       const rateLimit = result.keyRecord!.rateLimit || 100;
@@ -191,8 +167,7 @@ export async function trackUsage(
   assessmentType?: string,
   billable: boolean = false,
   billedAmount?: number,
-  partnerOrganisationId?: string | null,
-  isTestMode: boolean = false
+  partnerOrganisationId?: string | null
 ) {
   try {
     await storage.createUsageEvent({
@@ -202,9 +177,8 @@ export async function trackUsage(
       sessionId,
       eventType,
       assessmentType,
-      isTestMode,
-      billable: isTestMode ? false : billable, // Test mode events are never billable
-      billedAmount: isTestMode ? undefined : billedAmount,
+      billable,
+      billedAmount,
     });
   } catch (error) {
     console.error("Failed to track usage event:", error);

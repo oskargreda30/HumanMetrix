@@ -44,9 +44,6 @@ import {
   type InsertCandidateNote,
   type CachedRoleAlignment,
   type InsertCachedRoleAlignment,
-  multiCandidateComparisons,
-  type MultiCandidateComparison,
-  type InsertMultiCandidateComparison,
   type ReportExport,
   type InsertReportExport,
   type UserReference,
@@ -119,7 +116,7 @@ import {
   type InsertSystemSetting,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -132,7 +129,6 @@ export interface IStorage {
   setResetToken(userId: string, token: string, expiry: Date): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
   updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void>;
-  acceptTerms(userId: string, termsAccepted: boolean, dataShareConsent: boolean): Promise<void>;
   
   // Purchase operations
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
@@ -161,7 +157,6 @@ export interface IStorage {
   getResultByPartnerInvitationAndType(partnerInvitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
   updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void>;
-  updateAssessmentResult(id: string, updates: Partial<AssessmentResult>): Promise<void>;
   
   // Invitation operations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
@@ -218,12 +213,6 @@ export interface IStorage {
   getRoleAlignmentsByCandidate(userId: string): Promise<CachedRoleAlignment[]>;
   invalidateRoleAlignmentCache(userId: string, jobRoleId: string): Promise<void>;
   
-  // Multi-candidate comparison operations
-  createMultiCandidateComparison(comparison: InsertMultiCandidateComparison): Promise<MultiCandidateComparison>;
-  getMultiCandidateComparison(id: string): Promise<MultiCandidateComparison | undefined>;
-  getMultiCandidateComparisonsByRole(jobRoleId: string): Promise<MultiCandidateComparison[]>;
-  getMultiCandidateComparisonsByCreator(createdBy: string): Promise<MultiCandidateComparison[]>;
-  
   // Report export operations
   createReportExport(report: InsertReportExport): Promise<ReportExport>;
   getReportExport(id: string): Promise<ReportExport | undefined>;
@@ -261,7 +250,6 @@ export interface IStorage {
   // User role/organization operations
   updateUserRole(userId: string, role: UserRole): Promise<void>;
   updateUserOrganization(userId: string, organizationId: string | null): Promise<void>;
-  updateUserPassword(userId: string, passwordHash: string): Promise<void>;
   getUsersByOrganization(organizationId: string): Promise<User[]>;
   getCandidatesWithResultsByOrganization(organizationId: string | null): Promise<Array<{
     user: User;
@@ -294,7 +282,6 @@ export interface IStorage {
   getPartnerApiKey(id: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeyByPrefix(prefix: string): Promise<PartnerApiKey | undefined>;
   getPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
-  getAllPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]>;
   updatePartnerApiKey(id: string, updates: Partial<{ keyHash: string; keyHint: string; name: string; permissions: string[]; rateLimit: number }>): Promise<void>;
   updatePartnerApiKeyLastUsed(id: string): Promise<void>;
   revokePartnerApiKey(id: string): Promise<void>;
@@ -303,9 +290,7 @@ export interface IStorage {
   createAssessmentSession(session: InsertAssessmentSession): Promise<AssessmentSession>;
   getAssessmentSession(id: string): Promise<AssessmentSession | undefined>;
   getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
-  getSessionsByPartnerAndExternalUser(partnerId: string, externalUserId: string): Promise<AssessmentSession[]>;
   updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
-  getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]>;
   
   // Usage event operations
   createUsageEvent(event: InsertUsageEvent): Promise<UsageEvent>;
@@ -313,7 +298,6 @@ export interface IStorage {
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
   getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
-  getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]>;
   
   // Partner quota operations
   createPartnerTestPackage(pkg: InsertPartnerTestPackage): Promise<PartnerTestPackage>;
@@ -323,7 +307,7 @@ export interface IStorage {
   updatePartnerTestPackage(id: string, updates: Partial<InsertPartnerTestPackage>): Promise<void>;
   createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
   getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
-  getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }>;
+  getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }>;
   consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
   creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
   updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
@@ -488,7 +472,6 @@ export interface IStorage {
   getPartnerCandidateInvitations(partnerId: string, filters?: { status?: string; importId?: string; limit?: number; offset?: number }): Promise<PartnerCandidateInvitation[]>;
   getPartnerCandidateInvitationsByExternalId(partnerId: string, externalUserId: string): Promise<PartnerCandidateInvitation[]>;
   getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]>;
-  getPartnerCandidateInvitationsByEmails(emails: string[]): Promise<PartnerCandidateInvitation[]>;
   updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
   countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
 
@@ -796,13 +779,6 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(assessmentResults)
       .set({ scores, totalScore, percentile })
-      .where(eq(assessmentResults.id, id));
-  }
-
-  async updateAssessmentResult(id: string, updates: Partial<AssessmentResult>): Promise<void> {
-    await db
-      .update(assessmentResults)
-      .set(updates as any)
       .where(eq(assessmentResults.id, id));
   }
 
@@ -1115,39 +1091,6 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  // Multi-candidate comparison operations
-  async createMultiCandidateComparison(comparison: InsertMultiCandidateComparison): Promise<MultiCandidateComparison> {
-    const [created] = await db
-      .insert(multiCandidateComparisons)
-      .values(comparison)
-      .returning();
-    return created;
-  }
-
-  async getMultiCandidateComparison(id: string): Promise<MultiCandidateComparison | undefined> {
-    const [comparison] = await db
-      .select()
-      .from(multiCandidateComparisons)
-      .where(eq(multiCandidateComparisons.id, id));
-    return comparison;
-  }
-
-  async getMultiCandidateComparisonsByRole(jobRoleId: string): Promise<MultiCandidateComparison[]> {
-    return await db
-      .select()
-      .from(multiCandidateComparisons)
-      .where(eq(multiCandidateComparisons.jobRoleId, jobRoleId))
-      .orderBy(desc(multiCandidateComparisons.createdAt));
-  }
-
-  async getMultiCandidateComparisonsByCreator(createdBy: string): Promise<MultiCandidateComparison[]> {
-    return await db
-      .select()
-      .from(multiCandidateComparisons)
-      .where(eq(multiCandidateComparisons.createdBy, createdBy))
-      .orderBy(desc(multiCandidateComparisons.createdAt));
-  }
-
   // Report export operations
   async createReportExport(report: InsertReportExport): Promise<ReportExport> {
     const [created] = await db
@@ -1440,13 +1383,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
-    await db
-      .update(users)
-      .set({ passwordHash, updatedAt: new Date() })
-      .where(eq(users.id, userId));
-  }
-
   async updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void> {
     await db
       .update(users)
@@ -1454,20 +1390,6 @@ export class DatabaseStorage implements IStorage {
         resultsRetentionConsent: consent, 
         resultsRetentionConsentDate: new Date(),
         updatedAt: new Date() 
-      })
-      .where(eq(users.id, userId));
-  }
-
-  async acceptTerms(userId: string, termsAccepted: boolean, dataShareConsent: boolean): Promise<void> {
-    const now = new Date();
-    await db
-      .update(users)
-      .set({ 
-        termsAccepted: termsAccepted,
-        termsAcceptedAt: termsAccepted ? now : null,
-        dataShareConsent: dataShareConsent,
-        dataShareConsentAt: dataShareConsent ? now : null,
-        updatedAt: now 
       })
       .where(eq(users.id, userId));
   }
@@ -1657,12 +1579,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(partnerApiKeys.createdAt));
   }
 
-  async getAllPartnerApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {
-    return await db.select().from(partnerApiKeys)
-      .where(eq(partnerApiKeys.partnerId, partnerId))
-      .orderBy(desc(partnerApiKeys.createdAt));
-  }
-
   async updatePartnerApiKeyLastUsed(id: string): Promise<void> {
     await db.update(partnerApiKeys)
       .set({ lastUsedAt: new Date() })
@@ -1699,51 +1615,10 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getSessionsByPartnerAndExternalUser(partnerId: string, externalUserId: string): Promise<AssessmentSession[]> {
-    return await db.select().from(assessmentSessions)
-      .where(
-        and(
-          eq(assessmentSessions.partnerId, partnerId),
-          eq(assessmentSessions.externalUserId, externalUserId)
-        )
-      )
-      .orderBy(desc(assessmentSessions.createdAt));
-  }
-
   async updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void> {
     await db.update(assessmentSessions)
       .set(updates)
       .where(eq(assessmentSessions.id, id));
-  }
-
-  async getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]> {
-    const now = new Date();
-    // Get completed sessions that need results email:
-    // 1. Unpaid sessions that have reached their 30-day free unlock date
-    // 2. Paid sessions that haven't received their results email yet (failed delivery)
-    // Exclude:
-    // - Sessions that have permanently failed (max retries reached)
-    // - Test sessions (created with test API key - no emails should be sent)
-    return await db.select().from(assessmentSessions)
-      .where(
-        and(
-          eq(assessmentSessions.status, 'completed'),
-          isNull(assessmentSessions.resultsEmailSentAt),
-          // Exclude test sessions - they don't receive emails
-          sql`COALESCE(${assessmentSessions.isTestSession}, false) = false`,
-          // Exclude permanently failed sessions - delivery status must not be 'failed'
-          sql`COALESCE(${assessmentSessions.resultsDeliveryStatus}, 'pending') != 'failed'`,
-          or(
-            // Case 1: Free unlock - session has reached unlock date
-            and(
-              isNotNull(assessmentSessions.resultsUnlockAt),
-              sql`${assessmentSessions.resultsUnlockAt} <= ${now}`
-            ),
-            // Case 2: Paid but email failed - paid session without email sent
-            eq(assessmentSessions.resultsPaymentStatus, 'paid')
-          )
-        )
-      );
   }
 
   // Usage event operations
@@ -1816,30 +1691,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(usageEvents.createdAt));
   }
 
-  async getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]> {
-    const result = await db
-      .select({
-        partnerId: usageEvents.partnerId,
-        partnerName: partnerAccounts.name,
-        companyName: partnerAccounts.companyName,
-        testSessions: sql<number>`count(case when ${usageEvents.eventType} = 'session_created' then 1 end)::int`,
-        testCompletions: sql<number>`count(case when ${usageEvents.eventType} = 'session_completed' then 1 end)::int`,
-        lastTestUsage: sql<Date | null>`max(${usageEvents.createdAt})`,
-      })
-      .from(usageEvents)
-      .innerJoin(partnerAccounts, eq(usageEvents.partnerId, partnerAccounts.id))
-      .where(
-        and(
-          eq(usageEvents.isTestMode, true),
-          sql`${usageEvents.createdAt} >= ${startDate}`,
-          sql`${usageEvents.createdAt} <= ${endDate}`
-        )
-      )
-      .groupBy(usageEvents.partnerId, partnerAccounts.name, partnerAccounts.companyName);
-    
-    return result;
-  }
-
   // Partner quota operations
   async createPartnerTestPackage(pkg: InsertPartnerTestPackage): Promise<PartnerTestPackage> {
     const [result] = await db.insert(partnerTestPackages).values(pkg).returning();
@@ -1879,26 +1730,20 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }> {
+  async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number }> {
     const [partner] = await db.select({
       testsPurchased: partnerAccounts.testsPurchased,
       testsConsumed: partnerAccounts.testsConsumed,
-      freeTestsAllocated: partnerAccounts.freeTestsAllocated,
     }).from(partnerAccounts).where(eq(partnerAccounts.id, partnerId));
     
     if (!partner) {
-      return { testsPurchased: 0, testsConsumed: 0, remaining: 0, freeTestsAllocated: 0 };
+      return { testsPurchased: 0, testsConsumed: 0, remaining: 0 };
     }
     
-    // Total available = purchased credits + free tests allocated
-    // Remaining = total available - consumed
-    const totalAvailable = partner.testsPurchased + (partner.freeTestsAllocated || 0);
-    
     return {
-      testsPurchased: totalAvailable, // Return total available (purchased + free) for backward compatibility
+      testsPurchased: partner.testsPurchased,
       testsConsumed: partner.testsConsumed,
-      remaining: totalAvailable - partner.testsConsumed,
-      freeTestsAllocated: partner.freeTestsAllocated || 0,
+      remaining: partner.testsPurchased - partner.testsConsumed,
     };
   }
 
@@ -2006,25 +1851,13 @@ export class DatabaseStorage implements IStorage {
       
       await this.suspendPartnerApiAccess(partnerId);
       
-      // Generate purchase URL for notification
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const purchaseUrl = domain 
-        ? `https://${domain}/developers?tab=billing&action=purchase` 
-        : 'http://localhost:5000/developers?tab=billing&action=purchase';
-      
       // Create quota exceeded notification
       await this.createPartnerNotification({
         partnerId,
         type: 'quota_exceeded',
         title: 'Quota Exceeded',
         message: 'Your assessment credits have been exhausted. Purchase more credits to continue using the API.',
-        metadata: { 
-          remaining: 0, 
-          purchased: balance.testsPurchased, 
-          consumed: newConsumed,
-          actionUrl: purchaseUrl,
-          actionLabel: 'Purchase Credits Now',
-        },
+        metadata: { remaining: 0, purchased: balance.testsPurchased, consumed: newConsumed },
       });
       
       return { success: true, remaining: 0, suspended: true };
@@ -2053,12 +1886,6 @@ export class DatabaseStorage implements IStorage {
     const threshold = partner.quotaAlertThreshold || 80;
     const urgentThreshold = Math.min(threshold + 15, 95);
     
-    // Generate purchase URL for notifications
-    const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-    const purchaseUrl = domain 
-      ? `https://${domain}/developers?tab=billing&action=purchase` 
-      : 'http://localhost:5000/developers?tab=billing&action=purchase';
-    
     // Check if usage just crossed the partner's configured threshold (warning)
     // Note: We only create in-app notifications here, timestamps are updated by partner-auth.ts
     // to ensure email notifications are also sent
@@ -2071,13 +1898,7 @@ export class DatabaseStorage implements IStorage {
           type: 'quota_warning',
           title: 'Quota Warning',
           message: `You have used ${usagePercentage}% of your assessment credits. ${remaining} credits remaining.`,
-          metadata: { 
-            usagePercentage, 
-            remaining, 
-            threshold,
-            actionUrl: purchaseUrl,
-            actionLabel: 'Purchase Credits',
-          },
+          metadata: { usagePercentage, remaining, threshold },
         });
       }
     }
@@ -2092,12 +1913,7 @@ export class DatabaseStorage implements IStorage {
           type: 'quota_critical',
           title: 'Critical: Quota Almost Exhausted',
           message: `You have used ${usagePercentage}% of your assessment credits. Only ${remaining} credits remaining. Purchase more to avoid service interruption.`,
-          metadata: { 
-            usagePercentage, 
-            remaining,
-            actionUrl: purchaseUrl,
-            actionLabel: 'Top Up Now',
-          },
+          metadata: { usagePercentage, remaining },
         });
       }
     }
@@ -2112,19 +1928,17 @@ export class DatabaseStorage implements IStorage {
     const newPurchased = balance.testsPurchased + amount;
     const newRemaining = newPurchased - balance.testsConsumed;
     
-    // Calculate expiry per pricing policy: extend from existing expiry (if future) or from now
-    // Uses CREDIT_EXPIRATION_MONTHS from schema (6 months per pricing document)
-    const { CREDIT_EXPIRATION_MONTHS } = await import("@shared/schema");
+    // Calculate 12-month expiry: extend from existing expiry (if future) or from now
     const now = new Date();
     const existingExpiry = partner?.prepaidCreditsExpiresAt ? new Date(partner.prepaidCreditsExpiresAt) : null;
     const baseDate = (existingExpiry && existingExpiry > now) ? existingExpiry : now;
     const prepaidExpiry = new Date(baseDate);
-    prepaidExpiry.setMonth(prepaidExpiry.getMonth() + CREDIT_EXPIRATION_MONTHS);
+    prepaidExpiry.setMonth(prepaidExpiry.getMonth() + 12);
     
     // Update partner account
     await db.update(partnerAccounts).set({
       testsPurchased: newPurchased,
-      // Set prepaid credits expiry to 6 months from base date per pricing policy
+      // Set prepaid credits expiry to 12 months from base date
       prepaidCreditsExpiresAt: prepaidExpiry,
       // Clear suspension if they had remaining credits = 0 before
       apiAccessSuspendedAt: null,
@@ -2164,15 +1978,10 @@ export class DatabaseStorage implements IStorage {
       updatedAt: new Date(),
     }).where(eq(partnerAccounts.id, partnerId));
     
-    // Only deactivate LIVE API keys - test keys should remain active for developer testing
+    // Deactivate all API keys
     await db.update(partnerApiKeys).set({
       isActive: false,
-    }).where(
-      and(
-        eq(partnerApiKeys.partnerId, partnerId),
-        eq(partnerApiKeys.environment, 'live')
-      )
-    );
+    }).where(eq(partnerApiKeys.partnerId, partnerId));
   }
 
   async reactivatePartnerApiAccess(partnerId: string): Promise<void> {
@@ -3266,15 +3075,6 @@ export class DatabaseStorage implements IStorage {
   async getPartnerCandidateInvitationsByEmail(email: string): Promise<PartnerCandidateInvitation[]> {
     return await db.select().from(partnerCandidateInvitations)
       .where(eq(partnerCandidateInvitations.email, email))
-      .orderBy(desc(partnerCandidateInvitations.createdAt));
-  }
-
-  async getPartnerCandidateInvitationsByEmails(emails: string[]): Promise<PartnerCandidateInvitation[]> {
-    if (emails.length === 0) return [];
-    // Use case-insensitive comparison for emails
-    const lowercaseEmails = emails.map(e => e.toLowerCase());
-    return await db.select().from(partnerCandidateInvitations)
-      .where(inArray(sql`LOWER(${partnerCandidateInvitations.email})`, lowercaseEmails))
       .orderBy(desc(partnerCandidateInvitations.createdAt));
   }
 

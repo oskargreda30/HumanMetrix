@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TermsConsentModal } from "@/components/TermsConsentModal";
 import {
   Dialog,
   DialogContent,
@@ -113,10 +112,6 @@ export default function Dashboard() {
       return <Redirect to="/admin/dashboard" />;
     }
   }
-  
-  // Terms consent modal - show for candidates who haven't accepted terms
-  const showTermsModal = user?.role === 'candidate' && user?.termsAccepted !== true;
-  const [hasAcceptedInSession, setHasAcceptedInSession] = useState(false);
   
   // Change password state
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -255,14 +250,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Terms consent modal for first-time candidates */}
-      <TermsConsentModal
-        open={showTermsModal && !hasAcceptedInSession}
-        onAccept={() => {
-          setHasAcceptedInSession(true);
-        }}
-      />
-      
       {/* Background image with dark overlay */}
       <div className="fixed inset-0 z-0">
         <div 
@@ -365,28 +352,15 @@ export default function Dashboard() {
                   const metadata = getAssessmentMetadata(assessment.assessmentType);
                   const AssessmentIcon = metadata.icon;
                   const isInProgress = assessment.status === 'in_progress';
-                  const isPendingEvaluation = assessment.status === 'pending_evaluation';
-                  // Can only remove if: canRemove flag is true AND not in progress/processing
-                  const canRemove = assessment.canRemove && !isInProgress && !isPendingEvaluation;
-                  
-                  // Determine badge style and text
-                  let badgeClass = 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20';
-                  let badgeText = 'Ready';
-                  if (isPendingEvaluation) {
-                    badgeClass = 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20';
-                    badgeText = 'Processing Results...';
-                  } else if (isInProgress) {
-                    badgeClass = 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20';
-                    badgeText = 'In Progress';
-                  }
-                  
+                  // Can only remove if: canRemove flag is true AND not in progress
+                  const canRemove = assessment.canRemove && !isInProgress;
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
                       className="hover-elevate active-elevate-2 transition-all border-2 relative group"
                     >
                       <div className="p-4">
-                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress/processing */}
+                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress */}
                         {canRemove && (
                           <button
                             onClick={(e) => {
@@ -397,7 +371,7 @@ export default function Dashboard() {
                                 name: formatAssessmentName(assessment.assessmentType)
                               });
                             }}
-                            className="absolute top-2 right-2 p-1 rounded text-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            className="absolute top-2 right-2 p-1 rounded text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
                             data-testid={`button-remove-${assessment.assessmentType}`}
                             aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
                           >
@@ -412,10 +386,13 @@ export default function Dashboard() {
                             <div className="flex items-start gap-2 mb-1 flex-wrap">
                               <Badge 
                                 variant="secondary" 
-                                className={`flex-shrink-0 text-xs ${badgeClass}`}
+                                className={`flex-shrink-0 text-xs ${
+                                  isInProgress 
+                                    ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
+                                    : 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
+                                }`}
                               >
-                                {isPendingEvaluation && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                                {badgeText}
+                                {isInProgress ? 'In Progress' : 'Ready'}
                               </Badge>
                               <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
                             </div>

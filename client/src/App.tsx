@@ -31,7 +31,6 @@ import PaymentCallback from "@/pages/PaymentCallback";
 import PaymentCancelCallback from "@/pages/PaymentCancelCallback";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
-import EULA from "@/pages/EULA";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
 import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
@@ -43,8 +42,6 @@ import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
 import Team from "@/pages/Team";
-import B2BResultsPayment from "@/pages/B2BResultsPayment";
-import B2BResultsSuccess from "@/pages/B2BResultsSuccess";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -96,7 +93,6 @@ function Router() {
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
-      <Route path="/eula" component={EULA} />
       <Route path="/team" component={Team} />
       <Route path="/news" component={Subscribe} />
       <Route path="/developers" component={Developers} />
@@ -128,8 +124,6 @@ function Router() {
       </Route>
       <Route path="/admin/widget-test" component={WidgetTest} />
       <Route path="/partner-package-success" component={PartnerPackageSuccess} />
-      <Route path="/b2b-results-payment/:sessionId" component={B2BResultsPayment} />
-      <Route path="/b2b-results-success/:sessionId" component={B2BResultsSuccess} />
       <Route path="/partner">
         {() => (
           <ProtectedRoute>

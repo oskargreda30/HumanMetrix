@@ -13,13 +13,7 @@ import {
   BarChart3, 
   FileCheck, 
   Mail, 
-  Clock,
-  Headset,
-  ClipboardCheck,
-  Send,
-  BadgeCheck,
-  ChevronRight,
-  ArrowRight
+  Clock 
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
@@ -54,45 +48,6 @@ const features = [
     icon: Zap,
     title: "Instant Results",
     description: "Candidates receive results immediately upon completion. No waiting for manual grading or processing delays.",
-  },
-];
-
-const journeySteps = [
-  {
-    step: 1,
-    icon: Headset,
-    title: "Discovery Call",
-    description: "Schedule a personalized demo to understand your hiring challenges and assessment needs.",
-  },
-  {
-    step: 2,
-    icon: ClipboardCheck,
-    title: "Guided Onboarding",
-    description: "We set up your partner account, configure role requirements, and provide integration support.",
-  },
-  {
-    step: 3,
-    icon: Send,
-    title: "Invite Candidates",
-    description: "Send branded assessment invitations via CSV upload, manual entry, or API integration.",
-  },
-  {
-    step: 4,
-    icon: Users,
-    title: "Assessments Complete",
-    description: "Candidates complete FIT, AI Readiness, Prompt Architecture, and AIQ assessments.",
-  },
-  {
-    step: 5,
-    icon: BarChart3,
-    title: "Review Analytics",
-    description: "Access multi-candidate comparison, role fit analysis, and cohort benchmarking.",
-  },
-  {
-    step: 6,
-    icon: BadgeCheck,
-    title: "Make Decisions",
-    description: "Download comprehensive PDF reports and leverage AI recommendations to hire the best.",
   },
 ];
 
@@ -177,119 +132,19 @@ export default function ForEmployers() {
                 Request Demo
               </Button>
               <Link href="/assessments">
-                <Button size="lg" variant="outline" data-testid="button-view-assessments">
-                  View Assessments
-                </Button>
+                <a>
+                  <Button size="lg" variant="outline" data-testid="button-view-assessments">
+                    View Assessments
+                  </Button>
+                </a>
               </Link>
               <Link href="/#sample-reports">
-                <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
-                  View Sample Reports
-                </Button>
+                <a>
+                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                    View Sample Reports
+                  </Button>
+                </a>
               </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="py-12 md:py-24 bg-muted/30">
-          <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-8 md:mb-16">
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
-                How HumanMetrix Works
-              </h2>
-              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
-                From first contact to confident hiring decisions in six simple steps
-              </p>
-            </div>
-
-            {/* Desktop: Horizontal Journey with Arrows */}
-            <div className="hidden lg:block">
-              <div className="flex items-start justify-between gap-2">
-                {journeySteps.map((step, index) => (
-                  <div key={step.step} className="flex items-start flex-1" data-testid={`journey-step-desktop-${step.step}`}>
-                    {/* Step Card */}
-                    <div className="flex flex-col items-center text-center flex-1">
-                      {/* Step Number Badge */}
-                      <div className="relative mb-4">
-                        <div className="h-16 w-16 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
-                          <step.icon className="h-7 w-7 text-primary" />
-                        </div>
-                        <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                          {step.step}
-                        </div>
-                      </div>
-                      {/* Step Content */}
-                      <h3 className="text-sm font-semibold mb-2">{step.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed px-1">
-                        {step.description}
-                      </p>
-                    </div>
-                    {/* Arrow Connector (not after last step) */}
-                    {index < journeySteps.length - 1 && (
-                      <div className="flex items-center justify-center pt-6 px-1">
-                        <ArrowRight className="h-6 w-6 text-primary/50" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tablet: 2x3 Grid */}
-            <div className="hidden md:grid lg:hidden grid-cols-3 gap-6">
-              {journeySteps.map((step) => (
-                <Card key={step.step} className="p-4 text-center relative overflow-visible" data-testid={`journey-step-${step.step}`}>
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                    {step.step}
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 mt-2">
-                    <step.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold mb-2">{step.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {step.description}
-                  </p>
-                </Card>
-              ))}
-            </div>
-
-            {/* Mobile: Vertical Timeline */}
-            <div className="md:hidden space-y-4">
-              {journeySteps.map((step, index) => (
-                <div key={step.step} className="flex gap-4" data-testid={`journey-step-mobile-${step.step}`}>
-                  {/* Timeline Line and Dot */}
-                  <div className="flex flex-col items-center">
-                    <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center flex-shrink-0">
-                      {step.step}
-                    </div>
-                    {index < journeySteps.length - 1 && (
-                      <div className="w-0.5 h-full bg-primary/20 mt-2 min-h-[40px]" />
-                    )}
-                  </div>
-                  {/* Step Content */}
-                  <Card className="flex-1 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <step.icon className="h-4 w-4 text-primary" />
-                      <h3 className="text-sm font-semibold">{step.title}</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {step.description}
-                    </p>
-                  </Card>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <div className="text-center mt-10">
-              <Button 
-                size="lg" 
-                onClick={() => openDialog('demo')}
-                data-testid="button-how-it-works-cta"
-              >
-                Request a Demo
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           </div>
         </section>
@@ -364,7 +219,7 @@ export default function ForEmployers() {
                 <div className="grid md:grid-cols-3 gap-8 mb-8">
                   <div className="text-center">
                     <Clock className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-primary mb-2">14-20 min</div>
+                    <div className="text-2xl font-bold text-primary mb-2">20-30 min</div>
                     <div className="text-sm text-muted-foreground">Per assessment</div>
                   </div>
                   <div className="text-center">
