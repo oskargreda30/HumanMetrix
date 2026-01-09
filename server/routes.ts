@@ -17,6 +17,7 @@ import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
+import pLimit from "p-limit";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11217,47 +11218,69 @@ async function calculatePromptArchitectureScores(
     "7": "Design a comprehensive content moderation system covering multiple domains.",
   };
 
-  const evaluationsWithData: Array<{
+  // Step 1: Evaluate all prompts with GPT in PARALLEL (with concurrency limit to respect rate limits)
+  // Using p-limit to run max 3 concurrent API calls - reduces ~2min to ~45-60s
+  const limit = pLimit(3);
+  const startTime = Date.now();
+  
+  // Prepare all evaluation tasks
+  const evaluationTasks = Object.entries(answers).map(([levelKey, userPrompt]) => {
+    const levelMatch = levelKey.match(/level-?(\d+)/);
+    const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
+    const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
+    
+    return limit(async () => {
+      console.log(`[Prompt Arch] Starting evaluation for level ${levelNum}`);
+      const evalStartTime = Date.now();
+      
+      try {
+        const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+        const elapsed = Date.now() - evalStartTime;
+        console.log(`[Prompt Arch] Level ${levelNum} completed in ${elapsed}ms`);
+        
+        return {
+          level: levelNum,
+          userPrompt,
+          evaluation,
+        };
+      } catch (error: any) {
+        console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
+        throw error;
+      }
+    });
+  });
+  
+  // Execute all evaluations in parallel (with concurrency limit)
+  let evaluationsWithData: Array<{
     level: number;
     userPrompt: string;
     evaluation: any;
-  }> = [];
+  }>;
   
+  try {
+    evaluationsWithData = await Promise.all(evaluationTasks);
+  } catch (error: any) {
+    console.error(`[Prompt Arch ERROR] Parallel evaluation failed:`, error.message);
+    throw error;
+  }
+  
+  const totalElapsed = Date.now() - startTime;
+  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated in ${totalElapsed}ms (parallel)`);
+  
+  // Calculate totals from parallel results
   let clarityTotal = 0;
   let structureTotal = 0;
   let contextTotal = 0;
   let creativityTotal = 0;
   let iterativeTotal = 0;
-
-  // Step 1: Evaluate all prompts with GPT (external API calls - cannot be rolled back)
-  for (const [levelKey, userPrompt] of Object.entries(answers)) {
-    // Extract numeric level from key (e.g., "level-1" -> 1)
-    const levelMatch = levelKey.match(/level-?(\d+)/);
-    const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
-    
-    const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
-    
-    try {
-      const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
-      
-      evaluationsWithData.push({
-        level: levelNum,
-        userPrompt,
-        evaluation,
-      });
-
-      clarityTotal += evaluation.clarity;
-      structureTotal += evaluation.structure;
-      contextTotal += evaluation.contextRelevance;
-      creativityTotal += evaluation.creativity;
-      iterativeTotal += evaluation.iterativeImprovement;
-    } catch (error: any) {
-      console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
-      throw error; // Rethrow to stop processing
-    }
-  }
   
-  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully`);
+  for (const { evaluation } of evaluationsWithData) {
+    clarityTotal += evaluation.clarity;
+    structureTotal += evaluation.structure;
+    contextTotal += evaluation.contextRelevance;
+    creativityTotal += evaluation.creativity;
+    iterativeTotal += evaluation.iterativeImprovement;
+  }
 
   // Calculate average scores across all levels
   const numLevels = Object.keys(answers).length;
