@@ -2,7 +2,7 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BResultsEmail } from "./email";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BResultsEmail, sendB2BBulkPricingEmail } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2B_VOLUME_TIERS } from "@shared/schema";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getStripeCurrencyCode, COUNTRY_CURRENCY_MAP, ZERO_DECIMAL_CURRENCIES, roundPriceUp, convertAndRoundToLocalCurrency } from "@shared/currencies";
@@ -1152,7 +1152,7 @@ export function registerPartnerRoutes(app: Express) {
               : 'https://humanmetrix.co.uk';
             const paymentUrl = `${baseUrl}/b2b-results-payment/${sessionId}`;
             
-            // Send congratulatory email
+            // Send congratulatory email for this individual test
             await sendB2BCongratulatoryEmail({
               email: session.externalEmail,
               assessmentType: session.assessmentType,
@@ -1169,6 +1169,99 @@ export function registerPartnerRoutes(app: Express) {
             } as any);
             
             console.log(`[B2B Results] Congratulatory email sent to ${session.externalEmail} for session ${sessionId}`);
+            
+            // Check if all invited assessments are complete - if so, send bulk pricing email
+            const partnerInvitationId = (session as any).partnerInvitationId;
+            if (partnerInvitationId) {
+              try {
+                const invitation = await storage.getPartnerCandidateInvitation(partnerInvitationId);
+                if (invitation && invitation.assessmentTypes && invitation.assessmentTypes.length > 1) {
+                  // Get all completed sessions for this candidate under this invitation
+                  const candidateSessions = await storage.getSessionsByPartnerAndExternalUser(
+                    session.partnerId,
+                    invitation.externalUserId
+                  );
+                  
+                  // Check which invited assessment types are completed (include paid - they still count as completed)
+                  const allCompletedSessions = candidateSessions.filter(s => s.status === 'completed');
+                  const completedTypes = allCompletedSessions.map(s => normalizeAssessmentId(s.assessmentType));
+                  
+                  const invitedTypes = invitation.assessmentTypes.map(t => normalizeAssessmentId(t));
+                  const allComplete = invitedTypes.every(type => completedTypes.includes(type));
+                  
+                  // Only get unpaid sessions for the bulk pricing offer
+                  const unpaidSessions = candidateSessions.filter(s => 
+                    s.status === 'completed' && 
+                    s.resultsPaymentStatus !== 'paid' &&
+                    invitedTypes.includes(normalizeAssessmentId(s.assessmentType))
+                  );
+                  
+                  // Send bulk email only if all tests are complete AND there are 2+ unpaid results
+                  if (allComplete && unpaidSessions.length >= 2) {
+                    
+                    // Calculate bulk pricing
+                    const BULK_DISCOUNT_TIERS: Record<number, number> = { 2: 0.10, 3: 0.15, 4: 0.20 };
+                    let totalOriginalPence = 0;
+                    let totalDiscountedPence = 0;
+                    const completedAssessments: Array<{ type: string; sessionId: string }> = [];
+                    
+                    for (const s of unpaidSessions) {
+                      const aType = normalizeAssessmentId(s.assessmentType);
+                      const basePence = ASSESSMENT_PRICES[aType] || 500;
+                      const pppPence = getPPPAdjustedPriceInPence(basePence, countryCode);
+                      const discPence = Math.round(pppPence * 0.75);
+                      totalOriginalPence += pppPence;
+                      totalDiscountedPence += discPence;
+                      completedAssessments.push({ type: s.assessmentType, sessionId: s.id });
+                    }
+                    
+                    const bulkRate = BULK_DISCOUNT_TIERS[unpaidSessions.length] || 0;
+                    const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkRate);
+                    const finalTotal = totalDiscountedPence - bulkDiscountAmount;
+                    
+                    // Format prices
+                    let bulkDisplayPrice: string;
+                    let originalDisplayPriceTotal: string;
+                    let savingsDisplay: string;
+                    
+                    if (currencyCode.toUpperCase() === 'GBP') {
+                      bulkDisplayPrice = `£${(finalTotal / 100).toFixed(2)}`;
+                      originalDisplayPriceTotal = `£${(totalOriginalPence / 100).toFixed(2)}`;
+                      savingsDisplay = `£${((totalOriginalPence - finalTotal) / 100).toFixed(2)}`;
+                    } else {
+                      const gbpRate = exchangeRates.rates['GBP'] || 1;
+                      const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+                      const localFinal = (finalTotal / 100) * (targetRate / gbpRate);
+                      const localOriginal = (totalOriginalPence / 100) * (targetRate / gbpRate);
+                      bulkDisplayPrice = `${currencyCode.toUpperCase()} ${roundPriceUp(localFinal).toFixed(2)}`;
+                      originalDisplayPriceTotal = `${currencyCode.toUpperCase()} ${roundPriceUp(localOriginal).toFixed(2)}`;
+                      savingsDisplay = `${currencyCode.toUpperCase()} ${roundPriceUp(localOriginal - localFinal).toFixed(2)}`;
+                    }
+                    
+                    // Generate bulk payment URL
+                    const sessionIdsStr = unpaidSessions.map(s => s.id).join(',');
+                    const bulkPaymentUrl = `${baseUrl}/b2b-results-bulk-payment?sessions=${sessionIdsStr}`;
+                    
+                    await sendB2BBulkPricingEmail({
+                      email: session.externalEmail,
+                      partnerCompanyName: partner.companyName || partner.name,
+                      completedAssessments,
+                      bulkPaymentUrl,
+                      bulkPrice: bulkDisplayPrice,
+                      originalPrice: originalDisplayPriceTotal,
+                      savings: savingsDisplay,
+                      discountPercent: Math.round(bulkRate * 100),
+                      freeUnlockDate: resultsUnlockAt,
+                    });
+                    
+                    console.log(`[B2B Results] Bulk pricing email sent to ${session.externalEmail} - ${completedAssessments.length} assessments complete`);
+                  }
+                }
+              } catch (bulkEmailError) {
+                console.error(`[B2B Results] Failed to send bulk pricing email:`, bulkEmailError);
+                // Don't fail the request if bulk email fails
+              }
+            }
           } catch (emailError) {
             console.error(`[B2B Results] Failed to send congratulatory email for session ${sessionId}:`, emailError);
             // Don't fail the request if email fails
@@ -1889,7 +1982,7 @@ export function registerPartnerRoutes(app: Express) {
         
         paymentAmount = stripeSession.amount_total;
         paymentCurrency = stripeSession.currency;
-        paymentSessionIds = stripeSession.metadata?.sessionIds;
+        paymentSessionIds = stripeSession.metadata?.sessionIds ?? null;
       } else {
         return res.status(400).json({ error: "No payment session provided" });
       }
