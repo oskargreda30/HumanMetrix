@@ -1127,40 +1127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
         : `${req.protocol}://${req.hostname}`;
       
-      // Use Airwallex if configured, otherwise fall back to Stripe
-      if (isAirwallexConfigured()) {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
-        
-        const paymentIntent = await createPaymentIntent({
-          amount: airwallexAmount,
-          currency: currencyCode.toUpperCase(),
-          merchantOrderId,
-          returnUrl: `${baseUrl}/payment-callback`,
-          customerEmail: user.email,
-          description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
-          metadata: {
-            userId: userId.toString(),
-            purchaseId: unpaidPurchase.id.toString(),
-            isResultsPayment: 'true',
-            countryCode: currencyCountry,
-            pricingTier,
-            localCurrency: currencyCode,
-            isVPN: isVPN ? 'true' : 'false',
-          },
-        });
-        
-        res.json({ 
-          success: true,
-          provider: 'airwallex',
-          intentId: paymentIntent.id,
-          clientSecret: paymentIntent.clientSecret,
-          currency: currencyCode.toUpperCase(),
-          amount: airwallexAmount,
-          free: false 
-        });
-      } else {
-        // Fall back to Stripe checkout session
+      // Helper function to create Stripe checkout session
+      const createStripeCheckout = async () => {
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [
@@ -1191,12 +1159,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         });
         
-        res.json({ 
+        return res.json({ 
           success: true,
           provider: 'stripe',
           sessionUrl: session.url,
           free: false 
         });
+      };
+      
+      // Try Airwallex first if configured, with automatic fallback to Stripe
+      if (isAirwallexConfigured()) {
+        try {
+          const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+          const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
+          
+          const paymentIntent = await createPaymentIntent({
+            amount: airwallexAmount,
+            currency: currencyCode.toUpperCase(),
+            merchantOrderId,
+            returnUrl: `${baseUrl}/payment-callback`,
+            customerEmail: user.email,
+            description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+            metadata: {
+              userId: userId.toString(),
+              purchaseId: unpaidPurchase.id.toString(),
+              isResultsPayment: 'true',
+              countryCode: currencyCountry,
+              pricingTier,
+              localCurrency: currencyCode,
+              isVPN: isVPN ? 'true' : 'false',
+            },
+          });
+          
+          return res.json({ 
+            success: true,
+            provider: 'airwallex',
+            intentId: paymentIntent.id,
+            clientSecret: paymentIntent.clientSecret,
+            currency: currencyCode.toUpperCase(),
+            amount: airwallexAmount,
+            free: false 
+          });
+        } catch (airwallexError: any) {
+          console.warn(`[Airwallex] Failed to create payment intent, falling back to Stripe: ${airwallexError.message}`);
+          return createStripeCheckout();
+        }
+      } else {
+        return createStripeCheckout();
       }
     } catch (error: any) {
       console.error("Error unlocking results:", error);
