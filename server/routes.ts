@@ -103,7 +103,7 @@ async function initializeStripeCoupons() {
       try {
         const existingPromoCodes = await stripe.promotionCodes.list({ limit: 100 });
         codeExists = existingPromoCodes.data.some(
-          pc => pc.code === couponData.code && pc.coupon && 
+          (pc: any) => pc.code === couponData.code && pc.coupon && 
           (typeof pc.coupon === 'string' ? pc.coupon === couponData.id : pc.coupon.id === couponData.id)
         );
       } catch (e) {
@@ -3603,7 +3603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Super admins see all candidates, org admins only see their organization's candidates
-      let candidates;
+      let candidates: any[] = [];
       if (isSuperAdmin) {
         // Super admin: see all candidates
         candidates = await storage.getCandidatesWithResultsByOrganization(null);
@@ -3924,7 +3924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skillBasedResults.forEach((result) => {
           if (result.scores && typeof result.scores === 'object') {
             const skillValues = Object.values(result.scores);
-            totalSum += skillValues.reduce((sum, val) => sum + (val as number), 0);
+            totalSum += skillValues.reduce((sum: number, val) => sum + (val as number), 0);
             skillCount += skillValues.length;
           }
         });
@@ -5084,7 +5084,7 @@ Format your response as JSON with this structure:
           ...Object.keys(altAiSkills)
         ]);
         
-        for (const skillName of allSkillNames) {
+        for (const skillName of Array.from(allSkillNames)) {
           // Get required scores from both roles (0 if skill not required)
           const targetScore = targetFitSkills[skillName] ?? targetAiSkills[skillName] ?? 0;
           const altScore = altFitSkills[skillName] ?? altAiSkills[skillName] ?? 0;
@@ -12599,7 +12599,7 @@ Format your response as JSON with this structure:
         expand: ['data.coupon'],
       });
       
-      res.json(promoCodes.data.map(pc => ({
+      res.json(promoCodes.data.map((pc: any) => ({
         id: pc.id,
         code: pc.code,
         active: pc.active,
@@ -13196,7 +13196,7 @@ Format your response as JSON with this structure:
             // Store result with 0% drift (since we're calibrating)
             await storage.createGoldenSetResult({
               promptId: prompt.id,
-              actualScores: averagedScores,
+              actualScores: { ...averagedScores, feedback: 'Calibrated scores' },
               driftPercentage: 0,
               passed: true,
             });
@@ -13700,7 +13700,7 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
       // Store result in database (with averaged scores)
       await storage.createGoldenSetResult({
         promptId: prompt.id,
-        actualScores: averagedEvaluation,
+        actualScores: { ...averagedEvaluation, feedback: 'Automated evaluation' },
         driftPercentage,
         passed
       });

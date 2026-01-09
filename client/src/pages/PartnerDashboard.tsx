@@ -545,6 +545,7 @@ interface PartnerAnalytics {
   testsOverTime: Array<{ date: string; count: number }>;
   byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
   byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+  scoreDistribution?: Array<{ type: string; buckets: Array<{ range: string; count: number }> }>;
 }
 
 interface PartnerNotification {
@@ -3658,7 +3659,7 @@ export default function PartnerDashboard() {
                             {analytics.scoreDistribution.map((dist, i) => (
                               <div key={i} className="space-y-3">
                                 <h4 className="font-medium text-sm">
-                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                 </h4>
                                 <div className="h-40">
                                   <ResponsiveContainer width="100%" height="100%">

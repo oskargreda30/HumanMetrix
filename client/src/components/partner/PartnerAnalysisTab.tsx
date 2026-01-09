@@ -289,7 +289,7 @@ export default function PartnerAnalysisTab() {
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
-                    <SkillsLegend skills={FIT_SKILLS} />
+                    <SkillsLegend compact />
                   </CardContent>
                 </Card>
               )}
@@ -320,7 +320,7 @@ export default function PartnerAnalysisTab() {
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
-                    <SkillsLegend skills={AI_READINESS_SKILLS} />
+                    <SkillsLegend compact />
                   </CardContent>
                 </Card>
               )}

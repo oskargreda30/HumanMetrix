@@ -1051,7 +1051,7 @@ export function registerPartnerRoutes(app: Express) {
             externalUserId: session.externalUserId,
             totalScore,
             percentile,
-          },
+          } as Record<string, any>,
         });
         
         if (session.webhookUrl) {
@@ -1099,7 +1099,7 @@ export function registerPartnerRoutes(app: Express) {
             let displayPrice: string;
             let originalDisplayPrice: string;
             let stripeAmount: number;
-            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
             
             if (currencyCode.toUpperCase() === 'GBP') {
               // Already in pence
@@ -1224,7 +1224,7 @@ export function registerPartnerRoutes(app: Express) {
       
       const currencyCode = getStripeCurrencyCode(countryCode);
       const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
       
       let displayPrice: string;
       let originalDisplayPrice: string;
@@ -1310,7 +1310,7 @@ export function registerPartnerRoutes(app: Express) {
       
       const currencyCode = getStripeCurrencyCode(countryCode);
       const exchangeRates = await getExchangeRates();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase());
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
       
       let stripeAmount: number;
       
@@ -2400,18 +2400,18 @@ export function registerPartnerRoutes(app: Express) {
           
           // Create payment intent for the overage amount
           const paymentIntent = await stripe.paymentIntents.create({
-            amount: charge.overageAmount,
+            amount: charge.totalAmount,
             currency: 'gbp',
             customer: partner.stripeCustomerId,
             payment_method: partner.stripePaymentMethodId,
             off_session: true,
             confirm: true,
-            description: `Overage billing for ${charge.billingMonth}: ${charge.overageTests} tests`,
+            description: `Overage billing for ${charge.billingMonth}: ${charge.testsOverLimit} tests`,
             metadata: {
               partnerId: partner.id,
               overageLedgerId: charge.id,
               billingMonth: charge.billingMonth,
-              overageTests: charge.overageTests.toString(),
+              testsOverLimit: charge.testsOverLimit.toString(),
             },
           });
           
@@ -2420,13 +2420,12 @@ export function registerPartnerRoutes(app: Express) {
             await storage.updateOverageLedgerEntry(charge.id, {
               chargeStatus: 'paid',
               stripePaymentIntentId: paymentIntent.id,
-              chargedAt: new Date(),
             });
             
             // Track billed amount for this partner
             billedByPartner.set(
               partner.id, 
-              (billedByPartner.get(partner.id) || 0) + charge.overageAmount
+              (billedByPartner.get(partner.id) || 0) + charge.totalAmount
             );
             
             // Create success notification
@@ -2434,8 +2433,8 @@ export function registerPartnerRoutes(app: Express) {
               partnerId: partner.id,
               type: 'billing_success',
               title: 'Overage Billing Processed',
-              message: `Your overage charges for ${charge.billingMonth} (£${(charge.overageAmount / 100).toFixed(2)} for ${charge.overageTests} tests) have been successfully billed.`,
-              metadata: { billingMonth: charge.billingMonth, amount: charge.overageAmount, tests: charge.overageTests },
+              message: `Your overage charges for ${charge.billingMonth} (£${(charge.totalAmount / 100).toFixed(2)} for ${charge.testsOverLimit} tests) have been successfully billed.`,
+              metadata: { billingMonth: charge.billingMonth, amount: charge.totalAmount, tests: charge.testsOverLimit } as Record<string, any>,
             });
             
             results.succeeded++;
@@ -2455,13 +2454,13 @@ export function registerPartnerRoutes(app: Express) {
             type: 'billing_failed',
             title: 'Overage Billing Failed',
             message: `Your overage billing for ${charge.billingMonth} failed. Please update your payment method.`,
-            metadata: { billingMonth: charge.billingMonth, error: paymentError.message },
+            metadata: { billingMonth: charge.billingMonth, error: paymentError.message } as Record<string, any>,
           });
         }
       }
       
       // Update pendingOverageAmount for each partner based on what was successfully billed
-      for (const [partnerId, billedAmount] of billedByPartner.entries()) {
+      for (const [partnerId, billedAmount] of Array.from(billedByPartner.entries())) {
         const partner = await storage.getPartnerAccount(partnerId);
         if (partner) {
           const newPendingAmount = Math.max(0, (partner.pendingOverageAmount || 0) - billedAmount);
