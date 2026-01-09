@@ -12,6 +12,7 @@ import OverviewTab from "@/components/admin/OverviewTab";
 import CandidatesTab from "@/components/admin/CandidatesTab";
 import CompareTab from "@/components/admin/CompareTab";
 import RoleFitTab from "@/components/admin/RoleFitTab";
+import IndividualReportTab from "@/components/admin/IndividualReportTab";
 import GoldenSetTab from "@/components/admin/GoldenSetTab";
 import OrganizationsTab from "@/components/admin/OrganizationsTab";
 import PlatformStatsTab from "@/components/admin/PlatformStatsTab";
@@ -30,7 +31,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [analyticsSubTab, setAnalyticsSubTab] = useState("platform");
   const [partnersSubTab, setPartnersSubTab] = useState("accounts"); // Default to accounts for super admins
-  const [analysisSubTab, setAnalysisSubTab] = useState("compare");
+  const [analysisSubTab, setAnalysisSubTab] = useState("individual");
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
     queryKey: ["/api/admin/my-organization"],
@@ -195,21 +196,27 @@ export default function AdminDashboard() {
               <CandidatesTab />
             </TabsContent>
 
-            {/* Analysis tab - consolidates Compare + Role Fit */}
+            {/* Analysis tab - consolidates Individual Report + Compare + Role Fit */}
             <TabsContent value="analysis" className="space-y-4">
               <Tabs value={analysisSubTab} onValueChange={setAnalysisSubTab}>
                 <TabsList className="bg-white/5 border border-white/10">
+                  <TabsTrigger value="individual" data-testid="subtab-individual" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Individual Report
+                  </TabsTrigger>
                   <TabsTrigger value="compare" data-testid="subtab-compare" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
-                    Compare
+                    Compare Candidates
                   </TabsTrigger>
                   <TabsTrigger value="role-fit" data-testid="subtab-role-fit" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                     Role Fit
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="compare" className="mt-4">
+                <TabsContent value="individual" className="mt-4 data-[state=inactive]:hidden" forceMount>
+                  <IndividualReportTab />
+                </TabsContent>
+                <TabsContent value="compare" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <CompareTab />
                 </TabsContent>
-                <TabsContent value="role-fit" className="mt-4">
+                <TabsContent value="role-fit" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <RoleFitTab />
                 </TabsContent>
               </Tabs>
