@@ -965,14 +965,28 @@ export function registerPartnerRoutes(app: Express) {
           completedAt: new Date(),
         } as any);
         
+        // Determine if this test should be billable based on free allocation
+        // A test is billable only if it's NOT consuming from the free allocation
+        let isBillable = false;
+        let billedAmount: number | undefined = undefined;
+        
+        if (!isTestSession) {
+          // Check quota balance BEFORE consumption to determine if this is a free test
+          const quotaBalance = await storage.getPartnerQuotaBalance(session.partnerId);
+          // If testsConsumed is still less than freeTestsAllocated, this is a free test
+          const isFreeTest = quotaBalance.testsConsumed < quotaBalance.freeTestsAllocated;
+          isBillable = !isFreeTest;
+          billedAmount = isBillable ? (partner?.pricePerAssessment || 500) : 0;
+        }
+        
         await trackUsage(
           session.partnerId,
           session.apiKeyId,
           sessionId,
           "session_completed",
           session.assessmentType,
-          !isTestSession, // Only billable for non-test sessions
-          isTestSession ? undefined : (partner?.pricePerAssessment || 500),
+          isBillable,
+          billedAmount,
           null, // partnerOrganisationId
           isTestSession // Mark as test mode
         );
