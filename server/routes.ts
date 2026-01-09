@@ -11287,7 +11287,7 @@ Format your response as JSON with this structure:
       }
       
       // Calculate invoice amounts
-      const pricePerTest = partner.pricePerAssessment; // In pence
+      const pricePerTest = partner.pricePerAssessment || 0; // In pence
       const actualTestsUsed = testsUsed !== undefined ? testsUsed : 0;
       const subtotal = actualTestsUsed * pricePerTest;
       const vatAmount = Math.round(subtotal * (vatRate / 100));
@@ -11308,7 +11308,7 @@ Format your response as JSON with this structure:
         periodStart: new Date(periodStart),
         periodEnd: new Date(periodEnd),
         testsUsed: actualTestsUsed,
-        pricePerTest,
+        pricePerTest: pricePerTest || 0,
         subtotal,
         vatRate,
         vatAmount,
@@ -11330,7 +11330,7 @@ Format your response as JSON with this structure:
         periodStart: new Date(periodStart),
         periodEnd: new Date(periodEnd),
         testsUsed: actualTestsUsed,
-        pricePerTest,
+        pricePerTest: pricePerTest || 0,
         subtotal,
         vatRate,
         vatAmount,
