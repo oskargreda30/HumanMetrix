@@ -7,7 +7,7 @@ import {
   sendPaymentReceiptEmailAsync,
   sendContactFormEmailAsync
 } from './emailWorker';
-import { handleScoringJob, submitPromptScoringAsync } from './scoringWorker';
+import { handleScoringJob, submitPromptScoringAsync, submitPromptArchitectureEvaluationAsync } from './scoringWorker';
 
 export function initializeJobQueues(): void {
   console.log('🔧 Initializing job queues...');
@@ -41,5 +41,6 @@ export {
   sendWelcomeEmailAsync,
   sendPaymentReceiptEmailAsync,
   sendContactFormEmailAsync,
-  submitPromptScoringAsync
+  submitPromptScoringAsync,
+  submitPromptArchitectureEvaluationAsync
 };

@@ -2959,7 +2959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this assessment" });
       }
 
-      // Prevent duplicate submission - if already completed, return success
+      // Prevent duplicate submission - if already completed or pending evaluation, return success
       if (result.status === 'completed') {
         console.log(`Assessment ${id} already completed - ignoring duplicate submission`);
         return res.json({ 
@@ -2968,6 +2968,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalScore: result.totalScore,
           evaluations: result.evaluations,
           message: "Assessment already submitted"
+        });
+      }
+      
+      if (result.status === 'pending_evaluation') {
+        console.log(`Assessment ${id} already pending evaluation - ignoring duplicate submission`);
+        return res.json({ 
+          success: true, 
+          pending: true,
+          message: "Assessment already submitted and being evaluated"
         });
       }
 
@@ -2997,50 +3006,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
-        // For Prompt Architecture, use OpenAI GPT evaluation
-        // This includes transactional storage of evaluations AND status update
+        // For Prompt Architecture, use OPTIMISTIC background processing
+        // Save answers immediately and queue AI evaluation
         try {
-          console.log(`[Assessment Submit] Starting Prompt Architecture evaluation for assessment ${id}`);
-          const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
-          scores = promptEvalResult.scores;
-          totalScore = promptEvalResult.totalScore;
-          evaluations = promptEvalResult.evaluations;
+          console.log(`[Assessment Submit] Starting optimistic submission for Prompt Architecture ${id}`);
           
-          console.log(`[Assessment Submit] Prompt Architecture evaluation completed successfully`);
+          // Import the background queue function
+          const { submitPromptArchitectureEvaluationAsync } = await import('./queues');
           
-          // The function already updated the assessment result in a transaction
-          // Just return the results
-          return res.json({ success: true, scores, totalScore, evaluations });
+          // Save answers with pending_evaluation status
+          await db.update(assessmentResults)
+            .set({
+              answers,
+              status: 'pending_evaluation',
+            })
+            .where(eq(assessmentResults.id, id));
+          
+          // Queue background evaluation job
+          const jobId = await submitPromptArchitectureEvaluationAsync(id, answers);
+          console.log(`[Assessment Submit] Prompt Architecture ${id} queued for background evaluation (job: ${jobId})`);
+          
+          // Return immediately with optimistic response
+          return res.json({ 
+            success: true, 
+            pending: true,
+            message: "Your assessment has been submitted! Results are being processed and will be available shortly.",
+            jobId
+          });
         } catch (error: any) {
           console.error(`[Assessment Submit ERROR] Prompt Architecture failed for assessment ${id}:`, {
             error: error.message,
             stack: error.stack
           });
           
-          // Handle OpenAI API errors gracefully
-          if (error.message?.includes('quota') || error.message?.includes('429')) {
-            return res.status(402).json({ 
-              message: "OpenAI API quota exceeded. Please add credits to your OpenAI account to use Prompt Architecture assessment.",
-              error: "quota_exceeded"
-            });
-          }
-          if (error.message?.includes('invalid') && error.message?.includes('key')) {
-            return res.status(500).json({ 
-              message: "OpenAI API configuration error. Please contact support.",
-              error: "api_config_error"
-            });
-          }
-          if (error.message?.includes('timeout')) {
-            return res.status(504).json({ 
-              message: "OpenAI API request timed out. Please try again.",
-              error: "timeout"
-            });
-          }
-          
-          // Return detailed error message to help debug
           return res.status(500).json({ 
-            message: error.message || "Failed to evaluate prompts with AI. Please try again.",
-            error: "evaluation_failed"
+            message: error.message || "Failed to submit assessment. Please try again.",
+            error: "submission_failed"
           });
         }
       }

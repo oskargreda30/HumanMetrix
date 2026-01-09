@@ -365,15 +365,28 @@ export default function Dashboard() {
                   const metadata = getAssessmentMetadata(assessment.assessmentType);
                   const AssessmentIcon = metadata.icon;
                   const isInProgress = assessment.status === 'in_progress';
-                  // Can only remove if: canRemove flag is true AND not in progress
-                  const canRemove = assessment.canRemove && !isInProgress;
+                  const isPendingEvaluation = assessment.status === 'pending_evaluation';
+                  // Can only remove if: canRemove flag is true AND not in progress/processing
+                  const canRemove = assessment.canRemove && !isInProgress && !isPendingEvaluation;
+                  
+                  // Determine badge style and text
+                  let badgeClass = 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20';
+                  let badgeText = 'Ready';
+                  if (isPendingEvaluation) {
+                    badgeClass = 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20';
+                    badgeText = 'Processing Results...';
+                  } else if (isInProgress) {
+                    badgeClass = 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20';
+                    badgeText = 'In Progress';
+                  }
+                  
                   return (
                     <Card 
                       key={assessment.purchaseItemId} 
                       className="hover-elevate active-elevate-2 transition-all border-2 relative group"
                     >
                       <div className="p-4">
-                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress */}
+                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress/processing */}
                         {canRemove && (
                           <button
                             onClick={(e) => {
@@ -399,13 +412,10 @@ export default function Dashboard() {
                             <div className="flex items-start gap-2 mb-1 flex-wrap">
                               <Badge 
                                 variant="secondary" 
-                                className={`flex-shrink-0 text-xs ${
-                                  isInProgress 
-                                    ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
-                                    : 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
-                                }`}
+                                className={`flex-shrink-0 text-xs ${badgeClass}`}
                               >
-                                {isInProgress ? 'In Progress' : 'Ready'}
+                                {isPendingEvaluation && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                                {badgeText}
                               </Badge>
                               <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
                             </div>

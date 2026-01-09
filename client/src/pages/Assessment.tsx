@@ -121,8 +121,8 @@ export default function Assessment() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Use 3-minute timeout for assessment submission (Prompt Architecture can take 2-3 minutes)
-      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 180000 });
+      // Use 30-second timeout - Prompt Architecture now processes in background
+      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 30000 });
       if (!response.ok) {
         const errorData = await response.json();
         throw errorData;
@@ -131,7 +131,7 @@ export default function Assessment() {
     },
     retry: 2, // Retry up to 2 times on transient network errors
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff: 1s, 2s, 4s (max 5s)
-    onSuccess: async () => {
+    onSuccess: async (data: any) => {
       setIsSubmitting(false); // Reset submitting state
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
@@ -140,11 +140,20 @@ export default function Assessment() {
       await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
       
-      toast({
-        title: "Success",
-        description: "Assessment submitted successfully!",
-        duration: 3000,
-      });
+      // Handle optimistic response for Prompt Architecture (pending evaluation)
+      if (data.pending) {
+        toast({
+          title: "Assessment Submitted!",
+          description: "Your results are being evaluated and will be available shortly.",
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Assessment submitted successfully!",
+          duration: 3000,
+        });
+      }
       
       // Always redirect to dashboard after submission with refresh flag
       setLocation("/dashboard?refresh=" + Date.now());
@@ -738,8 +747,7 @@ export default function Assessment() {
                     {submitMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" />
-                        <span className="hidden sm:inline">Your answers are being evaluated, this may take 2-3 minutes...</span>
-                        <span className="sm:hidden">Evaluating (2-3 min)...</span>
+                        <span>Submitting...</span>
                       </>
                     ) : (
                       <>
