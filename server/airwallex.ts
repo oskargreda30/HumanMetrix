@@ -74,27 +74,27 @@ export async function createPaymentIntent(params: CreatePaymentIntentParams): Pr
     paymentIntentParams.metadata = params.metadata;
   }
 
-  const paymentIntent = await client.paymentAcceptance.paymentIntents.create(paymentIntentParams);
+  const paymentIntent = await client.paymentAcceptance.paymentIntents.createPaymentIntent(paymentIntentParams);
 
   return {
-    id: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
-    status: paymentIntent.status,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
+    id: paymentIntent.id!,
+    clientSecret: paymentIntent.client_secret!,
+    status: paymentIntent.status!,
+    amount: paymentIntent.amount!,
+    currency: paymentIntent.currency!,
   };
 }
 
 export async function getPaymentIntent(paymentIntentId: string): Promise<any> {
   const client = getAirwallexClient();
-  return client.paymentAcceptance.paymentIntents.retrieve(paymentIntentId);
+  return client.paymentAcceptance.paymentIntents.retrievePaymentIntent(paymentIntentId);
 }
 
 export async function confirmPaymentIntent(paymentIntentId: string, returnUrl: string): Promise<any> {
   const client = getAirwallexClient();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   
-  return client.paymentAcceptance.paymentIntents.confirm(paymentIntentId, {
+  return client.paymentAcceptance.paymentIntents.confirmPaymentIntent(paymentIntentId, {
     request_id: requestId,
     return_url: returnUrl,
   });
