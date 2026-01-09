@@ -589,9 +589,12 @@ export default function Assessment() {
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
+  // Determine if assessment is actively in progress (started but not completed)
+  const isAssessmentInProgress = resultId && !submitMutation.isSuccess && !showInstructions;
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation />
+      <Navigation assessmentMode={isAssessmentInProgress} />
       
       {/* Instructions Dialog */}
       <Dialog open={showInstructions && !resultId} onOpenChange={(open) => {
@@ -807,7 +810,8 @@ export default function Assessment() {
           )}
         </div>
       </main>
-      <Footer />
+      {/* Footer hidden during active assessment */}
+      {!isAssessmentInProgress && <Footer />}
       
       {/* Leave Confirmation Dialog */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>

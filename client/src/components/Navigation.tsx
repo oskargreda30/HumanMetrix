@@ -10,7 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
-export default function Navigation() {
+interface NavigationProps {
+  assessmentMode?: boolean; // When true, hides Dashboard/Logout buttons and navigation
+}
+
+export default function Navigation({ assessmentMode = false }: NavigationProps) {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -130,73 +134,77 @@ export default function Navigation() {
             </nav>
           )}
 
-          {/* CTA Button */}
-          <div className="hidden md:flex items-center gap-2">
-            {!isLoading && (
-              isAuthenticated ? (
-                <>
-                  <Link href="/dashboard">
+          {/* CTA Button - Hidden in assessment mode */}
+          {!assessmentMode && (
+            <div className="hidden md:flex items-center gap-2">
+              {!isLoading && (
+                isAuthenticated ? (
+                  <>
+                    <Link href="/dashboard">
+                      <Button 
+                        variant="ghost" 
+                        className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                        data-testid="button-dashboard"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
                     <Button 
                       variant="ghost" 
                       className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
-                      data-testid="button-dashboard"
+                      onClick={() => logoutMutation.mutate()}
+                      disabled={logoutMutation.isPending}
+                      data-testid="button-logout"
                     >
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
                     </Button>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
-                    onClick={() => logoutMutation.mutate()}
-                    disabled={logoutMutation.isPending}
-                    data-testid="button-logout"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button 
-                      variant="ghost" 
-                      className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
-                      data-testid="button-login"
-                    >
-                      Login
-                    </Button>
-                  </Link>
-                  <Link href="/assessments">
-                    <Button 
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
-                      data-testid="button-get-started"
-                    >
-                      Get Started
-                    </Button>
-                  </Link>
-                </>
-              )
-            )}
-          </div>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <Button 
+                        variant="ghost" 
+                        className="text-blue-100/70 hover:text-cyan-300 hover:bg-cyan-500/10"
+                        data-testid="button-login"
+                      >
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/assessments">
+                      <Button 
+                        className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                        data-testid="button-get-started"
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )
+              )}
+            </div>
+          )}
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-cyan-300 hover:text-white hover:bg-cyan-500/20"
-              data-testid="button-mobile-menu"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div>
+          {/* Mobile Menu Button - Hidden in assessment mode */}
+          {!assessmentMode && (
+            <div className="md:hidden flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="text-cyan-300 hover:text-white hover:bg-cyan-500/20"
+                data-testid="button-mobile-menu"
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
+      {/* Mobile Menu - Hidden in assessment mode */}
+      {mobileMenuOpen && !assessmentMode && (
         <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]">
           <nav className="flex flex-col gap-4 p-4">
             {/* Show nav links for all users except candidates */}
