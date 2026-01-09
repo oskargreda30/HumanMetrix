@@ -1010,7 +1010,11 @@ export default function PartnersTab() {
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="text-white/60 text-sm mb-1">Monthly Quota</div>
-                      <div className="text-xl font-bold text-white">{detailPartner.monthlyQuota || "Unlimited"}</div>
+                      <div className="text-xl font-bold text-white">
+                        {detailPartner.billingType === 'payg' || detailPartner.billingType === 'enterprise' 
+                          ? `${detailPartner.prepaidBalance || 0} credits`
+                          : detailPartner.monthlyQuota || "Unlimited"}
+                      </div>
                     </div>
                   </div>
                   
@@ -1097,7 +1101,7 @@ export default function PartnersTab() {
                   </div>
 
                   <div className="bg-white/5 rounded-lg p-4">
-                    <div className="text-white/60 text-sm mb-2">Stripe Integration</div>
+                    <div className="text-white/60 text-sm mb-2">Payment Integration</div>
                     {detailPartner.stripeCustomerId ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
