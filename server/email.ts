@@ -494,12 +494,14 @@ export async function sendPaymentReceiptEmail(
   sessionId: string,
   currency: string = 'gbp'
 ) {
+  console.log(`[Email] sendPaymentReceiptEmail called for: ${email}, assessments: ${assessments.join(', ')}, amount: ${totalAmount}, currency: ${currency}`);
   const emailTransporter = getTransporter();
   
   if (!emailTransporter) {
-    console.warn(`Payment receipt email not sent for ${email} - email not configured`);
+    console.warn(`[Email] Payment receipt email NOT sent for ${email} - email transporter not configured`);
     return;
   }
+  console.log(`[Email] Email transporter is ready, preparing receipt for: ${email}`);
 
   // Format assessment names for display
   const formattedAssessments = assessments.map(formatAssessmentName);

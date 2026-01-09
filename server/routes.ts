@@ -568,13 +568,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/process-payment-success", async (req, res) => {
     try {
       const { sessionId } = req.body;
+      console.log(`[Payment Success] Processing session: ${sessionId}`);
       
       if (!sessionId) {
+        console.log(`[Payment Success] ERROR: No session ID provided`);
         return res.status(400).json({ message: "Session ID required" });
       }
 
       // Retrieve the checkout session from Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId);
+      console.log(`[Payment Success] Stripe session status: ${session.payment_status}, email: ${session.customer_email}`);
       
       if (!session || session.payment_status !== "paid") {
         return res.status(400).json({ message: "Payment not completed" });
@@ -645,14 +648,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${user.firstName} ${user.lastName}` 
             : user.firstName || user.email;
           
-          await sendPaymentReceiptEmail(
-            user.email,
-            userName,
-            assessmentDisplayNames,
-            session.amount_total || 0,
-            session.id,
-            session.currency || 'gbp'
-          );
+          console.log(`[Payment Success] Sending receipt email to logged-in user: ${user.email}`);
+          try {
+            await sendPaymentReceiptEmail(
+              user.email,
+              userName,
+              assessmentDisplayNames,
+              session.amount_total || 0,
+              session.id,
+              session.currency || 'gbp'
+            );
+            console.log(`[Payment Success] Receipt email sent successfully to: ${user.email}`);
+          } catch (emailError) {
+            console.error(`[Payment Success] Failed to send receipt email to ${user.email}:`, emailError);
+          }
         }
         
         return res.json({
@@ -725,14 +734,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.firstName || `${firstName} ${lastName}`;
         
-        await sendPaymentReceiptEmail(
-          existingUser.email,
-          existingUserName,
-          assessmentDisplayNames,
-          session.amount_total || 0,
-          session.id,
-          session.currency || 'gbp'
-        );
+        console.log(`[Payment Success] Sending receipt email to existing user: ${existingUser.email}`);
+        try {
+          await sendPaymentReceiptEmail(
+            existingUser.email,
+            existingUserName,
+            assessmentDisplayNames,
+            session.amount_total || 0,
+            session.id,
+            session.currency || 'gbp'
+          );
+          console.log(`[Payment Success] Receipt email sent successfully to: ${existingUser.email}`);
+        } catch (emailError) {
+          console.error(`[Payment Success] Failed to send receipt email to ${existingUser.email}:`, emailError);
+        }
         
         return res.json({
           success: true,
@@ -809,6 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send payment receipt email
+      console.log(`[Payment Success] NEW USER - Sending receipt email to: ${customerEmail}`);
       try {
         const assessmentDisplayNames = assessmentList.map((id: string) => {
           const normalized = normalizeAssessmentId(id);
@@ -823,9 +839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           session.id,
           session.currency || 'gbp'
         );
-        console.log(`✓ Payment receipt sent successfully to ${customerEmail}`);
+        console.log(`[Payment Success] Receipt email sent successfully to NEW user: ${customerEmail}`);
       } catch (emailError: any) {
-        console.error(`✗ Failed to send payment receipt to ${customerEmail}:`, emailError);
+        console.error(`[Payment Success] Failed to send receipt email to NEW user ${customerEmail}:`, emailError);
       }
       
       // Send welcome email with credentials

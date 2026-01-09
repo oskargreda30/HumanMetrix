@@ -211,18 +211,31 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
-  // Use consistent column position for all sections - descriptions start at same x position
-  const descColumnX = 85; // Fixed description column for all sections
-  const descWidth = pageWidth - descColumnX - 15; // Width available for descriptions
+  // Define column positions for two-column layout
+  // FIT skills have shorter names, so use narrower label column
+  const fitLabelWidth = 55; // Width for FIT skill labels
+  const fitDescColumnX = 80; // Description start for FIT
+  // AI Readiness has longer names, so use wider label column
+  const aiLabelWidth = 80; // Width for AI Readiness labels
+  const aiDescColumnX = 105; // Description start for AI Readiness
+  // Prompt Architecture has moderate names
+  const paLabelWidth = 55;
+  const paDescColumnX = 80;
+  // AIQ bands have longer text
+  const aiqLabelWidth = 65;
+  const aiqDescColumnX = 90;
+  
   const lineHeight = 3.5; // Consistent line height for wrapped text
   
+  // FIT Assessment section
+  let fitDescWidth = pageWidth - fitDescColumnX - 15;
   FIT_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${skill.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
+    const descLines = pdf.splitTextToSize(skill.description || '', fitDescWidth);
     descLines.forEach((line: string, i: number) => {
-      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+      pdf.text(line, fitDescColumnX, yPos + (i * lineHeight));
     });
     yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
@@ -239,13 +252,15 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
+  // AI Readiness needs wider label column for longer skill names
+  let aiDescWidth = pageWidth - aiDescColumnX - 15;
   AI_READINESS_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${skill.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
+    const descLines = pdf.splitTextToSize(skill.description || '', aiDescWidth);
     descLines.forEach((line: string, i: number) => {
-      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+      pdf.text(line, aiDescColumnX, yPos + (i * lineHeight));
     });
     yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
@@ -262,13 +277,14 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
+  let paDescWidth = pageWidth - paDescColumnX - 15;
   PROMPT_ARCHITECTURE_DIMENSIONS.forEach((dim) => {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${dim.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(dim.description || '', descWidth);
+    const descLines = pdf.splitTextToSize(dim.description || '', paDescWidth);
     descLines.forEach((line: string, i: number) => {
-      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+      pdf.text(line, paDescColumnX, yPos + (i * lineHeight));
     });
     yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
@@ -293,13 +309,14 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   
+  let aiqDescWidth = pageWidth - aiqDescColumnX - 15;
   AIQ_BANDS.forEach((band) => {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${band.range} (${band.title}):`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descLines = pdf.splitTextToSize(band.description || '', descWidth);
+    const descLines = pdf.splitTextToSize(band.description || '', aiqDescWidth);
     descLines.forEach((line: string, i: number) => {
-      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+      pdf.text(line, aiqDescColumnX, yPos + (i * lineHeight));
     });
     yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
