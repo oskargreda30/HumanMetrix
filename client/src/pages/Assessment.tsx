@@ -774,21 +774,28 @@ export default function Assessment() {
                 
                 {currentQuestion === questions.length - 1 ? (
                   submitMutation.isPending ? (
-                    <div className="flex-1 space-y-3" data-testid="evaluation-progress-container">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          <span className="font-medium">
-                            {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
-                          </span>
+                    isPromptArchitecture ? (
+                      <div className="flex-1 space-y-3" data-testid="evaluation-progress-container">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            <span className="font-medium">
+                              {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
+                            </span>
+                          </div>
+                          <span className="text-muted-foreground">{evaluationProgress}%</span>
                         </div>
-                        <span className="text-muted-foreground">{evaluationProgress}%</span>
+                        <Progress value={evaluationProgress} className="h-2" data-testid="evaluation-progress-bar" />
+                        <p className="text-xs text-muted-foreground text-center">
+                          AI is analyzing your responses. This typically takes 1-2 minutes.
+                        </p>
                       </div>
-                      <Progress value={evaluationProgress} className="h-2" data-testid="evaluation-progress-bar" />
-                      <p className="text-xs text-muted-foreground text-center">
-                        AI is analyzing your responses. This typically takes 1-2 minutes.
-                      </p>
-                    </div>
+                    ) : (
+                      <Button disabled className="flex-1 sm:flex-none" data-testid="button-submitting">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </Button>
+                    )
                   ) : (
                     <Button
                       onClick={handleSubmit}
