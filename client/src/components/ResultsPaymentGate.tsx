@@ -386,7 +386,7 @@ export function ResultsPaymentGate() {
           
           {/* Platform fee */}
           <div className="flex justify-between items-center text-sm" data-testid="price-platform-fee">
-            <span>Platform Fee</span>
+            <span>Computation Price</span>
             <span>{formatLocalCurrency(platformFeeLocal)}</span>
           </div>
           
