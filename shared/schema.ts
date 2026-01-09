@@ -133,7 +133,8 @@ export const assessmentResults = pgTable("assessment_results", {
   totalScore: integer("total_score"),
   percentile: integer("percentile"),
   evaluations: jsonb("evaluations").$type<any[]>(),
-  status: text("status").notNull().default("in_progress"),
+  status: text("status").notNull().default("in_progress"), // in_progress, completed, failed, abandoned
+  lastHeartbeat: timestamp("last_heartbeat"), // For detecting abandoned sessions
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 }, (table) => [

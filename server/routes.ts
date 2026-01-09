@@ -2555,6 +2555,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Abandon an in-progress assessment
+  app.post("/api/assessments/:id/abandon", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      console.log(`[Abandon] User ${userId} abandoning assessment ${id}`);
+      
+      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
+      
+      if (!result || result.length === 0) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      const assessment = result[0];
+      
+      if (assessment.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Only abandon if in_progress or evaluating
+      if (assessment.status !== 'in_progress' && assessment.status !== 'evaluating') {
+        console.log(`[Abandon] Assessment ${id} cannot be abandoned, status: ${assessment.status}`);
+        return res.status(400).json({ message: "Assessment cannot be abandoned in current state" });
+      }
+      
+      // Mark as abandoned
+      await db.update(assessmentResults)
+        .set({ 
+          status: 'abandoned',
+          completedAt: new Date()
+        })
+        .where(eq(assessmentResults.id, id));
+      
+      console.log(`[Abandon] Assessment ${id} marked as abandoned`);
+      
+      res.json({ success: true, message: "Assessment marked as incomplete" });
+    } catch (error: any) {
+      console.error("Error abandoning assessment:", error.message);
+      res.status(500).json({ message: "Failed to abandon assessment" });
+    }
+  });
+
+  // Heartbeat endpoint - keeps assessment session alive
+  app.post("/api/assessments/:id/heartbeat", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
+      
+      if (!result || result.length === 0) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      const assessment = result[0];
+      
+      if (assessment.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Only update heartbeat for active assessments
+      if (assessment.status !== 'in_progress' && assessment.status !== 'evaluating') {
+        return res.json({ success: false, status: assessment.status });
+      }
+      
+      // Update last heartbeat
+      await db.update(assessmentResults)
+        .set({ lastHeartbeat: new Date() })
+        .where(eq(assessmentResults.id, id));
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error updating heartbeat:", error.message);
+      res.status(500).json({ message: "Failed to update heartbeat" });
+    }
+  });
+
+  // Check and mark stale assessments as abandoned (called periodically or on dashboard load)
+  app.post("/api/assessments/check-stale", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      
+      // Find user's in_progress assessments with stale heartbeat
+      const staleAssessments = await db.select()
+        .from(assessmentResults)
+        .where(
+          and(
+            eq(assessmentResults.userId, userId),
+            eq(assessmentResults.status, 'in_progress'),
+            sql`${assessmentResults.lastHeartbeat} IS NOT NULL`,
+            sql`${assessmentResults.lastHeartbeat} < ${twoMinutesAgo}`
+          )
+        );
+      
+      // Mark them as abandoned
+      for (const assessment of staleAssessments) {
+        console.log(`[Check Stale] Marking assessment ${assessment.id} as abandoned (last heartbeat: ${assessment.lastHeartbeat})`);
+        await db.update(assessmentResults)
+          .set({ 
+            status: 'abandoned',
+            completedAt: new Date()
+          })
+          .where(eq(assessmentResults.id, assessment.id));
+      }
+      
+      res.json({ 
+        success: true, 
+        abandonedCount: staleAssessments.length 
+      });
+    } catch (error: any) {
+      console.error("Error checking stale assessments:", error.message);
+      res.status(500).json({ message: "Failed to check stale assessments" });
+    }
+  });
+
   // Get user's results
   app.get("/api/results", isAuthenticated, async (req: any, res) => {
     try {
