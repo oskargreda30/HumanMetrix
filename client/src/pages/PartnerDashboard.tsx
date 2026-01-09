@@ -2011,10 +2011,15 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("organizations"); window.scrollTo(0, 0); }} data-testid="card-quick-organizations">
+                <Card className="relative opacity-75" data-testid="card-quick-organizations">
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                      Coming Soon
+                    </Badge>
+                  </div>
                   <CardContent className="pt-6 text-center">
-                    <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">Organizations</h3>
+                    <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <h3 className="font-semibold text-muted-foreground">Organizations</h3>
                     <p className="text-sm text-muted-foreground">Manage clients</p>
                   </CardContent>
                 </Card>
