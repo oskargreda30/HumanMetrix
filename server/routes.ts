@@ -1898,7 +1898,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
-            if (!existing || existing.status !== 'completed') {
+            // Don't show if completed or abandoned (both mean the slot is consumed)
+            if (!existing || (existing.status !== 'completed' && existing.status !== 'abandoned')) {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
               const purchaseItemKey = `purchase::${item.id}`;
               if (!addedAssessmentTypes.has(purchaseItemKey)) {
@@ -2589,6 +2590,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(assessmentResults.id, id));
       
+      // Also mark the associated purchase_item as completed (consumed) so it doesn't show as available
+      if (assessment.purchaseItemId) {
+        await db.update(purchaseItems)
+          .set({ status: 'completed' })
+          .where(eq(purchaseItems.id, assessment.purchaseItemId));
+        console.log(`[Abandon] Purchase item ${assessment.purchaseItemId} marked as completed (consumed)`);
+      }
+      
       console.log(`[Abandon] Assessment ${id} marked as abandoned`);
       
       res.json({ success: true, message: "Assessment marked as incomplete" });
@@ -2660,6 +2669,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             completedAt: new Date()
           })
           .where(eq(assessmentResults.id, assessment.id));
+        
+        // Also mark the associated purchase_item as completed (consumed)
+        if (assessment.purchaseItemId) {
+          await db.update(purchaseItems)
+            .set({ status: 'completed' })
+            .where(eq(purchaseItems.id, assessment.purchaseItemId));
+          console.log(`[Check Stale] Purchase item ${assessment.purchaseItemId} marked as completed (consumed)`);
+        }
       }
       
       res.json({ 
