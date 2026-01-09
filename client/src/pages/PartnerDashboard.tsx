@@ -1451,9 +1451,12 @@ export default function PartnerDashboard() {
               <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
               </TabsTrigger>
-              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Organizations
-              </TabsTrigger>
+              {/* Organizations tab hidden for now - feature preserved in code */}
+              {false && (
+                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Organizations
+                </TabsTrigger>
+              )}
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
@@ -1494,12 +1497,12 @@ export default function PartnerDashboard() {
               {(() => {
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
-                const hasOrganization = (organizations?.organizations?.length ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
                 const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
                 
-                const completedSteps = [hasApiKey, hasAssessment, hasOrganization, hasTeamMember].filter(Boolean).length;
-                const totalSteps = 4;
+                // Organization step hidden for now
+                const completedSteps = [hasApiKey, hasAssessment, hasTeamMember].filter(Boolean).length;
+                const totalSteps = 3;
                 const allComplete = completedSteps === totalSteps;
                 
                 // Hide if all steps are complete
@@ -1578,33 +1581,7 @@ export default function PartnerDashboard() {
                           {!hasAssessment && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
                         </button>
 
-                        {/* Step 3: Create Organization */}
-                        <button
-                          onClick={() => setActiveTab('organizations')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
-                            hasOrganization ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
-                          }`}
-                          data-testid="setup-step-organization"
-                        >
-                          <div className={`p-1.5 rounded-full ${hasOrganization ? 'bg-green-500/20' : 'bg-muted'}`}>
-                            {hasOrganization ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className={`font-medium text-sm ${hasOrganization ? 'text-green-700 dark:text-green-400' : ''}`}>
-                              Create an organization
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {hasOrganization ? `${organizations?.organizations?.length} organization(s) created` : 'Group assessments by client or department'}
-                            </div>
-                          </div>
-                          {!hasOrganization && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                        </button>
-
-                        {/* Step 4: Invite Team Member */}
+                        {/* Step 3: Invite Team Member */}
                         <button
                           onClick={() => setActiveTab('team')}
                           className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
