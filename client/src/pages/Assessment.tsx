@@ -57,6 +57,7 @@ export default function Assessment() {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSubmittedRef = useRef<boolean>(false); // Synchronous flag to prevent abandon after submit
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -301,8 +302,18 @@ export default function Assessment() {
   }, [isAuthenticated]);
 
   // Heartbeat effect - sends ping every 30 seconds to keep session alive
+  // Clears when assessment completes, submits, or component unmounts
   useEffect(() => {
-    if (!resultId || isSubmitting || submitMutation.isSuccess) return;
+    // Clear heartbeat when submission starts or completes
+    if (isSubmitting || submitMutation.isSuccess) {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+      return;
+    }
+    
+    if (!resultId) return;
 
     // Send initial heartbeat
     apiRequest("POST", `/api/assessments/${resultId}/heartbeat`).catch(() => {});
@@ -321,13 +332,22 @@ export default function Assessment() {
   }, [resultId, isSubmitting, submitMutation.isSuccess]);
 
   // Navigation guard - show dialog when trying to leave via back button
+  // Clears when assessment completes to allow normal navigation
   useEffect(() => {
-    if (!resultId || submitMutation.isSuccess || isSubmitting) return;
+    // Don't set up guard if already submitting or completed
+    if (!resultId || submitMutation.isSuccess || isSubmitting) {
+      // If previously set up, cleanup happens via return function
+      return;
+    }
 
     // Push a fake history entry so we can intercept the back button
     window.history.pushState({ assessmentInProgress: true }, '');
 
     const handlePopState = (e: PopStateEvent) => {
+      // Double-check state before showing dialog (in case of race condition)
+      if (submitMutation.isSuccess || isSubmitting) {
+        return; // Allow navigation if already completed
+      }
       // User pressed back button - show confirmation dialog
       e.preventDefault();
       // Push state again to prevent navigation
@@ -396,19 +416,24 @@ export default function Assessment() {
               variant: "destructive",
             });
             
+            // Set synchronous flag before calling mutate to prevent race condition
+            hasSubmittedRef.current = true;
             // Submit even if incomplete
             submitMutation.mutate();
           } else {
-            // No answers provided - mark as abandoned
-            toast({
-              title: "Time Expired",
-              description: "Your assessment has been marked as incomplete.",
-              variant: "destructive",
-            });
-            // Call abandon API
-            apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
-              setLocation("/dashboard?refresh=" + Date.now());
-            });
+            // No answers provided - mark as abandoned (only if not already submitted)
+            // Use synchronous ref to avoid race condition with async mutation state
+            if (!hasSubmittedRef.current) {
+              toast({
+                title: "Time Expired",
+                description: "Your assessment has been marked as incomplete.",
+                variant: "destructive",
+              });
+              // Call abandon API
+              apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
+                setLocation("/dashboard?refresh=" + Date.now());
+              });
+            }
           }
           return 0;
         }
@@ -552,6 +577,8 @@ export default function Assessment() {
     
     // Stop the timer IMMEDIATELY when user clicks submit
     setIsSubmitting(true);
+    // Set synchronous flag to prevent any race conditions with abandon
+    hasSubmittedRef.current = true;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;

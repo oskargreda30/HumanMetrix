@@ -218,6 +218,34 @@ export default function Dashboard() {
     }
   }, [refetchAssessments, refetchPurchases]);
 
+  // Check for stale/abandoned assessments on dashboard load
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkStaleAssessments = async () => {
+      try {
+        const response = await apiRequest("POST", "/api/assessments/check-stale");
+        if (!response.ok) return; // Handle non-200 responses gracefully
+        
+        const result = await response.json();
+        // Guard against malformed response and component unmount
+        if (isMounted && result && typeof result.markedAbandoned === 'number' && result.markedAbandoned > 0) {
+          // Refetch data if any assessments were marked abandoned
+          refetchAssessments();
+          refetchPurchases();
+        }
+      } catch {
+        // Silently handle - non-critical operation
+      }
+    };
+    
+    checkStaleAssessments();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [refetchAssessments, refetchPurchases]);
+
   const availableAssessments = availableData?.assessments || [];
   const requiredAssessmentTypes = availableData?.requiredAssessmentTypes || [];
 
@@ -516,7 +544,7 @@ export default function Dashboard() {
                             )}
                           </p>
 
-                          {/* Completed Assessments with Icons */}
+                          {/* Completed and Abandoned Assessments with Icons */}
                           <div className="flex flex-wrap gap-2 mb-4">
                             {(purchase.results || [])
                               .filter((r: any) => r.status === 'completed')
@@ -527,6 +555,25 @@ export default function Dashboard() {
                                   <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
                                     <ResultIcon className="h-3 w-3" />
                                     {formatAssessmentName(result.assessmentType)}
+                                  </Badge>
+                                );
+                              })}
+                            {/* Show abandoned assessments with Incomplete badge */}
+                            {(purchase.results || [])
+                              .filter((r: any) => r.status === 'abandoned')
+                              .map((result: any) => {
+                                const metadata = getAssessmentMetadata(result.assessmentType);
+                                const ResultIcon = metadata.icon;
+                                return (
+                                  <Badge 
+                                    key={result.id} 
+                                    variant="outline" 
+                                    className="gap-1.5 py-1 border-orange-500/50 text-orange-600 dark:text-orange-400"
+                                    data-testid={`badge-incomplete-${result.assessmentType}`}
+                                  >
+                                    <ResultIcon className="h-3 w-3" />
+                                    {formatAssessmentName(result.assessmentType)}
+                                    <span className="text-[10px] uppercase tracking-wide">(Incomplete)</span>
                                   </Badge>
                                 );
                               })}
