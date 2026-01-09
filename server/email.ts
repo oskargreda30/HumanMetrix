@@ -1961,3 +1961,156 @@ Questions about your results? Contact us at ${baseUrl}/contact
     return { success: false, error: error.message };
   }
 }
+
+// B2B Bulk Pricing Email - sent after all invited assessments are complete
+interface B2BBulkPricingEmailDetails {
+  email: string;
+  partnerCompanyName: string;
+  completedAssessments: Array<{
+    type: string;
+    sessionId: string;
+  }>;
+  bulkPaymentUrl: string;
+  bulkPrice: string;
+  originalPrice: string;
+  savings: string;
+  discountPercent: number;
+  freeUnlockDate: Date;
+}
+
+export async function sendB2BBulkPricingEmail(details: B2BBulkPricingEmailDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`B2B bulk pricing email not sent to ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  const displayName = details.email;
+  const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+  
+  const assessmentNames = details.completedAssessments.map(a => formatAssessmentName(a.type)).join(', ');
+  const assessmentCount = details.completedAssessments.length;
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `All ${assessmentCount} Assessments Complete - Unlock Your Bundle Results`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .bundle-box { background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); padding: 25px; border-radius: 12px; margin: 20px 0; border: 2px solid #0891b2; }
+            .savings-badge { background: #059669; color: white; padding: 6px 12px; border-radius: 15px; font-size: 14px; font-weight: 600; }
+            .price { font-size: 28px; font-weight: bold; color: #0891b2; }
+            .original-price { text-decoration: line-through; color: #6b7280; font-size: 18px; }
+            .assessment-list { background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0; }
+            .assessment-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .assessment-item:last-child { border-bottom: none; }
+            .checkmark { color: #10b981; margin-right: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">All Assessments Complete</span>
+              </div>
+              
+              <h2 style="text-align: center;">Congratulations, ${displayName}!</h2>
+              
+              <p style="text-align: center;">You've completed all ${assessmentCount} assessments for <strong>${details.partnerCompanyName}</strong>. Unlock all your results together and save!</p>
+              
+              <div class="assessment-list">
+                <strong>Completed Assessments:</strong>
+                ${details.completedAssessments.map(a => `
+                  <div class="assessment-item">
+                    <span class="checkmark">✓</span> ${formatAssessmentName(a.type)}
+                  </div>
+                `).join('')}
+              </div>
+              
+              <div class="bundle-box">
+                <div style="text-align: center;">
+                  <span class="savings-badge">BUNDLE DISCOUNT - ${details.discountPercent}% OFF</span>
+                  <h3 style="margin: 15px 0 5px 0;">Unlock All ${assessmentCount} Results</h3>
+                  <p style="margin: 0;">
+                    <span class="original-price">${details.originalPrice}</span>
+                    <span class="price">${details.bulkPrice}</span>
+                  </p>
+                  <p style="color: #059669; font-weight: 600; margin: 5px 0;">You save ${details.savings}</p>
+                  <a href="${details.bulkPaymentUrl}" class="button">Unlock All Results Now</a>
+                </div>
+              </div>
+              
+              <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-top: 20px;">
+                <strong>Free Access</strong>
+                <p style="margin: 5px 0;">All your results will be available for free on <strong>${freeDate}</strong></p>
+                <p style="margin: 5px 0; font-size: 14px; color: #059669;">We'll send you an email when your results are ready.</p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                You can also purchase individual results using the links in your previous emails.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Congratulations, ${displayName}!
+
+You've completed all ${assessmentCount} assessments for ${details.partnerCompanyName}!
+
+COMPLETED ASSESSMENTS:
+${details.completedAssessments.map(a => `✓ ${formatAssessmentName(a.type)}`).join('\n')}
+
+BUNDLE DISCOUNT - ${details.discountPercent}% OFF
+================================
+Unlock all ${assessmentCount} results for just ${details.bulkPrice} (was ${details.originalPrice})
+You save ${details.savings}!
+
+Click here to unlock all results: ${details.bulkPaymentUrl}
+
+FREE ACCESS
+Your results will be available for free on ${freeDate}.
+We'll send you an email when your results are ready.
+
+You can also purchase individual results using the links in your previous emails.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ B2B bulk pricing email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send B2B bulk pricing email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
