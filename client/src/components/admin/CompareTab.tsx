@@ -668,17 +668,8 @@ export default function CompareTab() {
       });
     }
     
-    // Add Prompt Architecture total score as a single skill
-    const promptData = comparison.promptArchitectureAssessments?.[candidateIndex];
-    if (promptData) {
-      skills['Prompt Architecture'] = promptData.totalScore;
-    }
-    
-    // Add AIQ total score as a single skill
-    const aiqData = comparison.aiqAssessments?.[candidateIndex];
-    if (aiqData) {
-      skills['AIQ (Ethics & Fairness)'] = aiqData.totalScore;
-    }
+    // Note: Prompt Architecture and AIQ are NOT included as skills
+    // They are total scores without individual skill breakdowns
     
     return skills;
   };
@@ -824,17 +815,14 @@ export default function CompareTab() {
     const totalRequiredSkills = requiredSkillEntries.length;
     const coverage = totalRequiredSkills > 0 ? matchCount / totalRequiredSkills : 0;
     
-    // Calculate weighted average match
-    const weightedAvgMatch = weightSum > 0 ? weightedTotal / weightSum : 0;
+    // Calculate weighted average match (matches backend formula)
+    let adjustedScore = weightSum > 0 ? weightedTotal / weightSum : 0;
     
-    // Apply coverage penalty
-    let adjustedScore = weightedAvgMatch * coverage;
-    
-    // Apply critical gap penalty: reduce score by 10% for each critical skill where candidate is below requirement
-    // This ensures critical deficits significantly impact the overall score
+    // Apply critical gap penalty: 10% per gap, capped at 50% (matches backend formula)
+    // IMPORTANT: Only apply if we actually assessed critical skills
     if (criticalGaps > 0 && totalCriticalSkills > 0) {
-      const criticalPenalty = criticalGaps * 0.10; // 10% penalty per critical gap
-      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.5)); // Cap penalty at 50%
+      const criticalPenalty = criticalGaps * 0.10;
+      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.50));
     }
     
     return { 
@@ -903,19 +891,50 @@ export default function CompareTab() {
       employerRecommendation += ` ${otherStrongCandidates.map(c => c.name).join(' and ')} ${otherStrongCandidates.length > 1 ? 'also show' : 'also shows'} strong potential as ${otherStrongCandidates.length > 1 ? 'alternatives' : 'an alternative'}.`;
     }
     
-    const nextSteps = topCandidate.score >= 70 
-      ? [
-          `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
-          'Perform reference checks emphasizing leadership and collaboration competencies',
-          'Prepare competitive offer package based on candidate expectations',
-          'Design 90-day onboarding plan targeting identified development areas'
-        ]
-      : [
-          'Schedule in-depth technical interviews with top candidates to validate assessment findings',
-          'Assess development potential and learning agility through case-based scenarios',
-          'Consider rotational or project-based trial periods to evaluate practical performance',
-          'Explore alternative role placements that may better match current skill profiles'
-        ];
+    // Check for candidates with missing assessments
+    const candidatesWithMissingAssessments: Array<{ name: string; missing: string[] }> = [];
+    selectedCandidateData?.forEach((candidate: any, index: number) => {
+      const missing: string[] = [];
+      if (!comparison?.fitAssessments?.[index]) missing.push('FIT');
+      if (!comparison?.aiReadinessAssessments?.[index]) missing.push('AI Readiness');
+      if (!comparison?.promptArchitectureAssessments?.[index]) missing.push('Prompt Architecture');
+      if (!comparison?.aiqAssessments?.[index]) missing.push('AIQ');
+      if (missing.length > 0) {
+        candidatesWithMissingAssessments.push({ name: getCandidateName(candidate), missing });
+      }
+    });
+    
+    const nextSteps: string[] = [];
+    
+    // Add missing assessment recommendations first (priority)
+    if (candidatesWithMissingAssessments.length > 0) {
+      candidatesWithMissingAssessments.forEach(({ name, missing }) => {
+        if (missing.length === 1) {
+          nextSteps.push(`Have ${name} complete the ${missing[0]} assessment for a complete skills picture`);
+        } else if (missing.length <= 3) {
+          nextSteps.push(`Have ${name} complete ${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]} assessments`);
+        } else {
+          nextSteps.push(`Have ${name} complete all outstanding assessments (${missing.length} remaining)`);
+        }
+      });
+    }
+    
+    // Add hiring-focused steps
+    if (topCandidate.score >= 70) {
+      nextSteps.push(
+        `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
+        'Perform reference checks emphasizing leadership and collaboration competencies',
+        'Prepare competitive offer package based on candidate expectations',
+        'Design 90-day onboarding plan targeting identified development areas'
+      );
+    } else {
+      nextSteps.push(
+        'Schedule in-depth technical interviews with top candidates to validate assessment findings',
+        'Assess development potential and learning agility through case-based scenarios',
+        'Consider rotational or project-based trial periods to evaluate practical performance',
+        'Explore alternative role placements that may better match current skill profiles'
+      );
+    }
     
     return { employerRecommendation, nextSteps };
   };
@@ -1119,6 +1138,78 @@ export default function CompareTab() {
                   </div>
                 )}
 
+              {/* Executive Summary - Guide for Hiring Managers */}
+              {!isCapturingPDF && (
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                    How to Use This Comparison
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    A guide to comparing {selectedCandidates.length} candidates side-by-side
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Step 1 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                      <div>
+                        <p className="font-medium text-sm">Candidate Overview</p>
+                        <p className="text-xs text-muted-foreground">Quick view of each candidate's assessment completion. All 4 assessments should be completed for a complete picture.</p>
+                      </div>
+                    </div>
+                    {/* Step 2 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                      <div>
+                        <p className="font-medium text-sm">Composite Score</p>
+                        <p className="text-xs text-muted-foreground">Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).</p>
+                      </div>
+                    </div>
+                    {/* Step 3 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                      <div>
+                        <p className="font-medium text-sm">Skill-by-Skill Breakdown</p>
+                        <p className="text-xs text-muted-foreground">Radar charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
+                      </div>
+                    </div>
+                    {/* Step 4 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                      <div>
+                        <p className="font-medium text-sm">Role Fit Analysis (Separate Tool)</p>
+                        <p className="text-xs text-muted-foreground">For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.</p>
+                      </div>
+                    </div>
+                    {/* Step 5 */}
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                      <div>
+                        <p className="font-medium text-sm">Read the Recommendations</p>
+                        <p className="text-xs text-muted-foreground">Review strengths, development areas, and AI-generated insights for each candidate to inform your final decision.</p>
+                      </div>
+                    </div>
+                    {/* What assessments mean */}
+                    <div className="flex gap-3 md:col-span-2">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">?</div>
+                      <div>
+                        <p className="font-medium text-sm">What Each Assessment Measures</p>
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium">FIT:</span> Behavioral traits like resilience, curiosity, ethics (predictors of cultural fit). 
+                          <span className="font-medium ml-2">AI Readiness:</span> Technical AI skills including prompt engineering and data fluency. 
+                          <span className="font-medium ml-2">Prompt Architecture:</span> Real-world prompt writing ability across difficulty levels. 
+                          <span className="font-medium ml-2">AIQ:</span> AI ethics, judgment, and responsible AI awareness.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              )}
+
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
                 <CardHeader>
@@ -1174,6 +1265,30 @@ export default function CompareTab() {
                               <span className={aiqCompleted ? 'text-foreground' : 'text-muted-foreground'}>AIQ</span>
                             </div>
                           </div>
+                          
+                          {/* Recommended Next Steps for incomplete assessments */}
+                          {totalCompleted < 4 && (
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Recommended Next Steps
+                              </p>
+                              <div className="space-y-1">
+                                {!fitCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete FIT Assessment for behavioral insights</p>
+                                )}
+                                {!aiReadinessCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete AI Readiness for technical skills evaluation</p>
+                                )}
+                                {!promptCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete Prompt Architecture for real-world AI skills</p>
+                                )}
+                                {!aiqCompleted && (
+                                  <p className="text-xs text-muted-foreground">• Complete AIQ for ethics & judgment assessment</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1308,8 +1423,8 @@ export default function CompareTab() {
                 </Card>
               )}
 
-              {/* 2. Role Suitability Scoring */}
-              {comparison.hasSkillData && (
+              {/* 2. Role Suitability Scoring - TEMPORARILY DISABLED */}
+              {false && comparison.hasSkillData && (
                 <Card data-testid="card-role-suitability" data-report-section="role-suitability">
                   <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1663,10 +1778,10 @@ export default function CompareTab() {
                                 <td className="p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      AIQ (Ethics & Fairness)
+                                      Algorithmic Integrity (AIQ)
                                       <Badge variant="outline" className="ml-2 text-xs">AIQ</Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent>Algorithmic Integrity Quotient - AI ethics, bias, and responsibility assessment</TooltipContent>
+                                    <TooltipContent>Single integrated score measuring ethical reasoning in AI-related scenarios</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
@@ -1695,94 +1810,7 @@ export default function CompareTab() {
                 </Card>
               )}
 
-              {/* 4. Skill Gap Analysis */}
-              {comparison.hasSkillData && (
-                <Card data-testid="card-skill-gap">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Skill Gap Analysis
-                    </CardTitle>
-                    <CardDescription>
-                      How each candidate deviates from the group average - positive means above average
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
-                        const skills = getAllCandidateSkills(index);
-                        const gaps = Object.keys(skills).map(skillName => ({
-                          name: skillName,
-                          gap: getSkillGap(index, skillName),
-                          score: skills[skillName],
-                        })).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
-                        
-                        const biggestStrength = gaps.find(g => g.gap > 0);
-                        const biggestWeakness = gaps.find(g => g.gap < 0);
-                        
-                        return (
-                          <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-base" style={{ color: CHART_COLORS[index] }}>
-                                {getCandidateName(candidate)}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                {biggestStrength && (
-                                  <div className="flex items-start gap-2 p-2 rounded bg-green-50 dark:bg-green-900/20">
-                                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-                                    <div>
-                                      <p className="text-sm font-medium text-green-800 dark:text-green-200">Standout Skill</p>
-                                      <p className="text-xs text-green-700 dark:text-green-300">{biggestStrength.name}</p>
-                                      <p className="text-xs text-green-600 dark:text-green-400">+{biggestStrength.gap} above average</p>
-                                    </div>
-                                  </div>
-                                )}
-                                {biggestWeakness && (
-                                  <div className="flex items-start gap-2 p-2 rounded bg-red-50 dark:bg-red-900/20">
-                                    <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                                    <div>
-                                      <p className="text-sm font-medium text-red-800 dark:text-red-200">Development Area</p>
-                                      <p className="text-xs text-red-700 dark:text-red-300">{biggestWeakness.name}</p>
-                                      <p className="text-xs text-red-600 dark:text-red-400">{biggestWeakness.gap} below average</p>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                {/* Top 5 gaps visualization */}
-                                <div className="mt-4 space-y-2">
-                                  {gaps.slice(0, 5).map((g) => (
-                                    <div key={g.name} className="flex items-center gap-2 text-xs">
-                                      <span className="truncate flex-1 text-muted-foreground">{g.name}</span>
-                                      <div className="flex items-center gap-1 w-24">
-                                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                          <div
-                                            className={`h-full ${g.gap >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                                            style={{ 
-                                              width: `${Math.min(Math.abs(g.gap) * 2, 100)}%`,
-                                              marginLeft: g.gap >= 0 ? '50%' : `${50 - Math.min(Math.abs(g.gap) * 2, 50)}%`,
-                                            }}
-                                          />
-                                        </div>
-                                        <span className={`w-10 text-right font-medium ${g.gap >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                          {g.gap >= 0 ? '+' : ''}{g.gap}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 5. Strengths & Weaknesses Summary */}
+              {/* 4. Strengths & Weaknesses Summary */}
               {comparison.hasSkillData && (
                 <Card data-testid="card-strengths-weaknesses" data-report-section="strengths-weaknesses">
                   <CardHeader>
@@ -1894,7 +1922,7 @@ export default function CompareTab() {
                                 return dataPoint;
                               });
                             })()}>
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
@@ -1908,7 +1936,7 @@ export default function CompareTab() {
                                     fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? renderInsideLabel : false}
+                                    label={false}
                                     isAnimationActive={!isCapturingPDF}
                                   />
                                 );
@@ -1954,7 +1982,7 @@ export default function CompareTab() {
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
-                                      <PolarGrid />
+                                      <PolarGrid strokeDasharray="3 3" />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
@@ -2011,7 +2039,7 @@ export default function CompareTab() {
                                 return dataPoint;
                               });
                             })()}>
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
@@ -2025,7 +2053,7 @@ export default function CompareTab() {
                                     fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     fillOpacity={0.3}
                                     strokeWidth={2}
-                                    label={index === 0 ? renderInsideLabel : false}
+                                    label={false}
                                     isAnimationActive={!isCapturingPDF}
                                   />
                                 );
@@ -2071,7 +2099,7 @@ export default function CompareTab() {
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart data={radarData}>
-                                      <PolarGrid />
+                                      <PolarGrid strokeDasharray="3 3" />
                                       <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                                       <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                                       <Radar
@@ -2324,7 +2352,7 @@ export default function CompareTab() {
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))} cx="50%" cy="50%" outerRadius="70%">
-                              <PolarGrid />
+                              <PolarGrid strokeDasharray="3 3" />
                               <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
@@ -2484,13 +2512,11 @@ export default function CompareTab() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Award className="h-5 w-5 text-primary" />
-                          HIRING RECOMMENDATION
+                          Hiring Recommendation
                         </CardTitle>
-                        {!selectedRole && (
-                          <p className="text-xs text-muted-foreground">
-                            Based on overall assessment scores. Select a role above for role-specific analysis.
-                          </p>
-                        )}
+                        <CardDescription>
+                          Based on comprehensive assessment data across all four evaluation types
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-employer-recommendation">
@@ -2640,7 +2666,7 @@ export default function CompareTab() {
           <CardContent className="text-center py-12">
             <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-muted-foreground">
-              Select at least one more candidate to view comparison
+              Select at least one more candidate to compare
             </p>
           </CardContent>
         </Card>
@@ -2669,7 +2695,7 @@ export default function CompareTab() {
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
-                    <PolarGrid />
+                    <PolarGrid strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
@@ -2705,7 +2731,7 @@ export default function CompareTab() {
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="45%">
-                    <PolarGrid />
+                    <PolarGrid strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                     <Radar
@@ -2733,7 +2759,7 @@ export default function CompareTab() {
                   outerRadius="68%"
                   margin={{ top: 10, right: 70, bottom: 40, left: 90 }}
                 >
-                  <PolarGrid />
+                  <PolarGrid strokeDasharray="3 3" />
                   <PolarAngleAxis dataKey="skill" tick={{ fontSize: 13 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                   {selectedCandidateData?.map((candidate: any, index: number) => (

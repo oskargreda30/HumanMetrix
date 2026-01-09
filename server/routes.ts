@@ -3,12 +3,12 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
-import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
+import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail } from "./email";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -17,39 +17,11 @@ import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
-import pLimit from "p-limit";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 45000, // 45 seconds per request
 });
-
-// Track if OpenAI has been warmed up
-let openaiWarmedUp = false;
-
-// Warmup OpenAI connection to avoid cold start issues on first real request
-async function warmupOpenAI(): Promise<void> {
-  if (openaiWarmedUp) return;
-  
-  try {
-    console.log('[OpenAI] Warming up connection...');
-    const startTime = Date.now();
-    
-    // Make a minimal API call to establish the connection
-    await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Use cheaper model for warmup
-      messages: [{ role: "user", content: "ping" }],
-      max_tokens: 1,
-    });
-    
-    openaiWarmedUp = true;
-    const elapsed = Date.now() - startTime;
-    console.log(`[OpenAI] Connection warmed up successfully in ${elapsed}ms`);
-  } catch (error: any) {
-    // Don't fail server startup if warmup fails - just log warning
-    console.warn('[OpenAI] Warmup failed (will retry on first request):', error.message);
-  }
-}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
@@ -269,11 +241,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Stripe discount codes (runs in background)
   initializeStripeCoupons().catch(err => {
     console.error('[Stripe] Failed to initialize coupons:', err.message);
-  });
-  
-  // Warmup OpenAI connection in background (for faster first Prompt Architecture submission)
-  warmupOpenAI().catch(err => {
-    console.error('[OpenAI] Warmup error:', err.message);
   });
 
   // Version check endpoint
@@ -569,19 +536,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/process-payment-success", async (req, res) => {
     try {
       const { sessionId } = req.body;
-      console.log(`[Payment Success] Processing session: ${sessionId}`);
       
       if (!sessionId) {
-        console.log(`[Payment Success] ERROR: No session ID provided`);
         return res.status(400).json({ message: "Session ID required" });
       }
 
       // Retrieve the checkout session from Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId);
-      console.log(`[Payment Success] Stripe session status: ${session.payment_status}, email: ${session.customer_email}`);
       
-      // Accept both "paid" (normal payment) and "no_payment_required" (100% discount code)
-      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
+      if (!session || session.payment_status !== "paid") {
         return res.status(400).json({ message: "Payment not completed" });
       }
 
@@ -638,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to the email entered at Stripe checkout (not necessarily the signup email)
+        // Send receipt email to logged-in user
         const user = await storage.getUser(userId);
         if (user) {
           const assessmentDisplayNames = assessmentList.map((id: string) => {
@@ -650,23 +613,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${user.firstName} ${user.lastName}` 
             : user.firstName || user.email;
           
-          // Use Stripe checkout email if available, otherwise fall back to user's account email
-          const receiptEmail = session.customer_email || user.email;
-          
-          console.log(`[Payment Success] Sending receipt email to checkout email: ${receiptEmail} (user account: ${user.email})`);
-          try {
-            await sendPaymentReceiptEmail(
-              receiptEmail,
-              userName,
-              assessmentDisplayNames,
-              session.amount_total || 0,
-              session.id,
-              session.currency || 'gbp'
-            );
-            console.log(`[Payment Success] Receipt email sent successfully to: ${receiptEmail}`);
-          } catch (emailError) {
-            console.error(`[Payment Success] Failed to send receipt email to ${receiptEmail}:`, emailError);
-          }
+          await sendPaymentReceiptEmail(
+            user.email,
+            userName,
+            assessmentDisplayNames,
+            session.amount_total || 0,
+            session.id,
+            session.currency || 'gbp'
+          );
         }
         
         return res.json({
@@ -729,7 +683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to the email entered at Stripe checkout
+        // Send receipt email to existing user
         const assessmentDisplayNames = assessmentList.map((id: string) => {
           const normalized = normalizeAssessmentId(id);
           return assessmentNames[normalized] || normalized;
@@ -739,23 +693,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.firstName || `${firstName} ${lastName}`;
         
-        // Use Stripe checkout email if available, otherwise fall back to user's account email
-        const receiptEmail = session.customer_email || existingUser.email;
-        
-        console.log(`[Payment Success] Sending receipt email to checkout email: ${receiptEmail} (user account: ${existingUser.email})`);
-        try {
-          await sendPaymentReceiptEmail(
-            receiptEmail,
-            existingUserName,
-            assessmentDisplayNames,
-            session.amount_total || 0,
-            session.id,
-            session.currency || 'gbp'
-          );
-          console.log(`[Payment Success] Receipt email sent successfully to: ${receiptEmail}`);
-        } catch (emailError) {
-          console.error(`[Payment Success] Failed to send receipt email to ${receiptEmail}:`, emailError);
-        }
+        await sendPaymentReceiptEmail(
+          existingUser.email,
+          existingUserName,
+          assessmentDisplayNames,
+          session.amount_total || 0,
+          session.id,
+          session.currency || 'gbp'
+        );
         
         return res.json({
           success: true,
@@ -832,7 +777,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send payment receipt email
-      console.log(`[Payment Success] NEW USER - Sending receipt email to: ${customerEmail}`);
       try {
         const assessmentDisplayNames = assessmentList.map((id: string) => {
           const normalized = normalizeAssessmentId(id);
@@ -847,9 +791,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           session.id,
           session.currency || 'gbp'
         );
-        console.log(`[Payment Success] Receipt email sent successfully to NEW user: ${customerEmail}`);
+        console.log(`✓ Payment receipt sent successfully to ${customerEmail}`);
       } catch (emailError: any) {
-        console.error(`[Payment Success] Failed to send receipt email to NEW user ${customerEmail}:`, emailError);
+        console.error(`✗ Failed to send payment receipt to ${customerEmail}:`, emailError);
       }
       
       // Send welcome email with credentials
@@ -1136,41 +1080,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
       console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
       
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: stripeCurrency,
-              product_data: {
-                name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        allow_promotion_codes: true,
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/payment-cancel-callback`,
-        metadata: {
-          userId: userId.toString(),
-          purchaseId: unpaidPurchase.id.toString(),
-          isResultsPayment: 'true',
-          countryCode: currencyCountry,
-          pricingTier,
-          localCurrency: currencyCode,
-          isVPN: isVPN ? 'true' : 'false',
-        },
-      });
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `${req.protocol}://${req.hostname}`;
       
-      res.json({ 
-        success: true, 
-        sessionUrl: session.url,
-        free: false 
-      });
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (isAirwallexConfigured()) {
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: currencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/payment-callback`,
+          customerEmail: user.email,
+          description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+          metadata: {
+            userId: userId.toString(),
+            purchaseId: unpaidPurchase.id.toString(),
+            isResultsPayment: 'true',
+            countryCode: currencyCountry,
+            pricingTier,
+            localCurrency: currencyCode,
+            isVPN: isVPN ? 'true' : 'false',
+          },
+        });
+        
+        res.json({ 
+          success: true,
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: currencyCode.toUpperCase(),
+          amount: airwallexAmount,
+          free: false 
+        });
+      } else {
+        // Fall back to Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: stripeCurrency,
+                product_data: {
+                  name: 'Assessment Results Access',
+                  description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+                },
+                unit_amount: stripeAmount,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/payment-cancel-callback`,
+          metadata: {
+            userId: userId.toString(),
+            purchaseId: unpaidPurchase.id.toString(),
+            isResultsPayment: 'true',
+            countryCode: currencyCountry,
+            pricingTier,
+            localCurrency: currencyCode,
+            isVPN: isVPN ? 'true' : 'false',
+          },
+        });
+        
+        res.json({ 
+          success: true,
+          provider: 'stripe',
+          sessionUrl: session.url,
+          free: false 
+        });
+      }
     } catch (error: any) {
       console.error("Error unlocking results:", error);
       res.status(500).json({ 
@@ -1179,38 +1163,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process results payment success (non-authenticated callback for Stripe redirects)
-  // This endpoint doesn't require authentication because session cookies can be lost during Stripe redirects
-  // Security is ensured by validating the Stripe session instead
+  // Process results payment success (non-authenticated callback for Stripe/Airwallex redirects)
+  // This endpoint doesn't require authentication because session cookies can be lost during payment redirects
+  // Security is ensured by validating the payment session instead
   app.post("/api/process-results-payment", async (req: any, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, intentId, provider } = req.body;
       
-      console.log(`[Payment Callback] Processing session: ${sessionId}`);
+      console.log(`[Payment Callback] Processing payment - provider: ${provider || 'stripe'}, sessionId: ${sessionId}, intentId: ${intentId}`);
       
-      if (!sessionId) {
-        console.error("[Payment Callback] No session ID provided");
+      let metadata: any = null;
+      let paymentAmount: number = 0;
+      let paymentCurrency: string = 'gbp';
+      
+      if (provider === 'airwallex' && intentId) {
+        // Verify Airwallex payment intent
+        const paymentIntent = await getPaymentIntent(intentId);
+        
+        console.log(`[Payment Callback] Airwallex intent retrieved - Status: ${paymentIntent.status}`);
+        
+        if (paymentIntent.status !== 'SUCCEEDED') {
+          console.error(`[Payment Callback] Airwallex payment not succeeded: ${paymentIntent.status}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "Payment not completed" 
+          });
+        }
+        
+        metadata = paymentIntent.metadata;
+        paymentAmount = Math.round((paymentIntent.amount || 0) * 100);
+        paymentCurrency = (paymentIntent.currency || 'gbp').toLowerCase();
+      } else if (sessionId) {
+        // Verify Stripe session
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        console.log(`[Payment Callback] Stripe session retrieved - Status: ${session.payment_status}, Mode: ${session.mode}`);
+        
+        // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
+        if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
+          console.error(`[Payment Callback] Invalid payment status: ${session?.payment_status}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "Payment not completed" 
+          });
+        }
+        
+        metadata = session.metadata;
+        paymentAmount = session.amount_total ?? 0;
+        paymentCurrency = session.currency || 'gbp';
+      } else {
+        console.error("[Payment Callback] No session ID or intent ID provided");
         return res.status(400).json({ 
           success: false,
-          message: "Session ID required" 
+          message: "Payment session required" 
         });
       }
       
-      // Retrieve and validate Stripe session
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      console.log(`[Payment Callback] Stripe session retrieved - Status: ${session.payment_status}, Mode: ${session.mode}`);
-      
-      // Accept both "paid" and "no_payment_required" (for free checkouts with 100% discount)
-      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
-        console.error(`[Payment Callback] Invalid payment status: ${session?.payment_status}`);
-        return res.status(400).json({ 
-          success: false,
-          message: "Payment not completed" 
-        });
-      }
-      
-      const metadata = session.metadata;
       if (!metadata || metadata.isResultsPayment !== 'true') {
         console.error(`[Payment Callback] Invalid session metadata - isResultsPayment: ${metadata?.isResultsPayment}`);
         return res.status(400).json({ 
@@ -1249,27 +1257,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
       // Send payment receipt email (including for FREE orders where amount_total is 0)
-      // Always send to the email entered at Stripe checkout
       try {
         const user = await storage.getUser(userId);
         const purchaseItems = await storage.getPurchaseItems(purchaseId);
         const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
         
         if (user) {
-          const amount = session.amount_total ?? 0; // Handle 0 for FREE orders
-          const currency = session.currency || 'gbp';
-          // Use Stripe checkout email if available, otherwise fall back to user's account email
-          const receiptEmail = session.customer_email || user.email;
-          
+          const transactionId = intentId || sessionId;
           await sendPaymentReceiptEmail(
-            receiptEmail,
+            user.email,
             user.firstName || 'Customer',
             assessmentTypes,
-            amount,
-            sessionId,
-            currency
+            paymentAmount,
+            transactionId,
+            paymentCurrency
           );
-          console.log(`[Payment Callback] ✓ Receipt email sent to checkout email: ${receiptEmail} (user account: ${user.email}, amount: ${currency.toUpperCase()} ${(amount / 100).toFixed(2)})`);
+          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${paymentCurrency.toUpperCase()} ${(paymentAmount / 100).toFixed(2)})`);
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
@@ -1333,6 +1336,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airwallex webhook handler for payment confirmations
+  app.post("/api/webhooks/airwallex", async (req: any, res) => {
+    try {
+      const signature = req.headers['x-signature'] as string;
+      const timestamp = req.headers['x-timestamp'] as string;
+      const rawBody = req.rawBody?.toString() || JSON.stringify(req.body);
+      
+      // Verify webhook signature if secret is configured
+      const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET;
+      if (webhookSecret) {
+        // When secret is configured, require valid signature
+        if (!signature || !timestamp) {
+          console.error('[Airwallex Webhook] Missing signature or timestamp headers');
+          return res.status(401).json({ error: 'Missing signature headers' });
+        }
+        
+        const isValid = verifyAirwallexWebhookSignature(rawBody, signature, timestamp, webhookSecret);
+        if (!isValid) {
+          console.error('[Airwallex Webhook] Invalid signature');
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+      } else {
+        console.warn('[Airwallex Webhook] No webhook secret configured - signature verification skipped');
+      }
+      
+      const event: AirwallexWebhookEvent = req.body;
+      console.log(`[Airwallex Webhook] Received event: ${event.name}, id: ${event.id}`);
+      
+      // Handle payment intent events
+      if (event.name === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        const metadata = paymentIntent.metadata;
+        
+        if (!metadata) {
+          console.log('[Airwallex Webhook] No metadata in payment intent');
+          return res.json({ received: true });
+        }
+        
+        // Handle B2C results payment
+        if (metadata.isResultsPayment === 'true' && metadata.purchaseId) {
+          const purchaseId = metadata.purchaseId;
+          const userId = metadata.userId;
+          
+          // Check if already processed
+          const purchase = await storage.getPurchase(purchaseId);
+          if (purchase?.resultsAccessPaid) {
+            console.log(`[Airwallex Webhook] Purchase ${purchaseId} already unlocked, skipping`);
+            return res.json({ received: true, alreadyProcessed: true });
+          }
+          
+          // Update purchase to grant results access
+          await storage.updatePurchase(purchaseId, {
+            resultsAccessPaid: true,
+          });
+          
+          console.log(`[Airwallex Webhook] ✓ Unlocked results for purchase ${purchaseId}`);
+          
+          // Send receipt email
+          if (userId) {
+            try {
+              const user = await storage.getUser(userId);
+              const purchaseItems = await storage.getPurchaseItems(purchaseId);
+              const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
+              
+              if (user) {
+                const amount = Math.round((paymentIntent.amount || 0) * 100);
+                const currency = (paymentIntent.currency || 'gbp').toLowerCase();
+                await sendPaymentReceiptEmail(
+                  user.email,
+                  user.firstName || 'Customer',
+                  assessmentTypes,
+                  amount,
+                  paymentIntent.id,
+                  currency
+                );
+                console.log(`[Airwallex Webhook] ✓ Receipt email sent to ${user.email}`);
+              }
+            } catch (emailError) {
+              console.error(`[Airwallex Webhook] Failed to send receipt email:`, emailError);
+            }
+          }
+        }
+        
+        // Handle B2B results payment
+        if (metadata.type === 'b2b_results_unlock' && metadata.sessionId) {
+          const sessionId = metadata.sessionId;
+          
+          // Check if already processed
+          const session = await storage.getAssessmentSession(sessionId);
+          if (!session) {
+            console.log(`[Airwallex Webhook] Session ${sessionId} not found`);
+            return res.json({ received: true });
+          }
+          
+          if (session.resultsPaymentStatus === 'paid') {
+            console.log(`[Airwallex Webhook] Session ${sessionId} already paid, skipping`);
+            return res.json({ received: true, alreadyProcessed: true });
+          }
+          
+          // Mark as paid
+          await storage.updateAssessmentSession(sessionId, {
+            resultsPaymentStatus: 'paid',
+            resultsPaidAt: new Date(),
+            resultsPaymentAmount: Math.round((paymentIntent.amount || 0) * 100),
+            resultsPaymentCurrency: (paymentIntent.currency || 'gbp').toLowerCase(),
+          } as any);
+          
+          console.log(`[Airwallex Webhook] ✓ B2B session ${sessionId} marked as paid`);
+          
+          // Send results email if email is available
+          if (session.externalEmail) {
+            try {
+              const partner = await storage.getPartnerAccount(session.partnerId);
+              const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+              
+              const pdfBuffer = generateB2BResultsPDF({
+                candidateName: session.externalUserId || undefined,
+                candidateEmail: session.externalEmail,
+                assessmentType: session.assessmentType,
+                scores: session.scores || {},
+                totalScore: session.totalScore || undefined,
+                percentile: session.percentile || undefined,
+                evaluations: session.evaluations || undefined,
+                completedAt: session.completedAt || new Date(),
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+              });
+              
+              await sendB2BResultsEmail({
+                email: session.externalEmail,
+                candidateName: session.externalUserId || undefined,
+                assessmentType: session.assessmentType,
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+                pdfBuffer,
+                pdfFilename: `${assessmentName.replace(/\s/g, '_')}_Results.pdf`,
+              });
+              
+              await storage.updateAssessmentSession(sessionId, {
+                resultsEmailSentAt: new Date(),
+              } as any);
+              
+              console.log(`[Airwallex Webhook] ✓ Results email sent to ${session.externalEmail}`);
+            } catch (emailError) {
+              console.error(`[Airwallex Webhook] Failed to send B2B results email:`, emailError);
+            }
+          }
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[Airwallex Webhook ERROR]', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -1354,6 +1512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         organizationId: user.organizationId,
         isInvitationOnly: !hasCompletedPurchase,
         resultsRetentionConsent: user.resultsRetentionConsent,
+        termsAccepted: user.termsAccepted,
+        dataShareConsent: user.dataShareConsent,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -1377,6 +1537,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating results retention consent:", error);
       res.status(500).json({ message: "Failed to update consent" });
+    }
+  });
+
+  // Accept terms and conditions
+  app.post('/api/user/accept-terms', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { termsAccepted, dataShareConsent } = req.body;
+      
+      if (typeof termsAccepted !== 'boolean') {
+        return res.status(400).json({ message: "termsAccepted must be a boolean value" });
+      }
+      
+      if (!termsAccepted) {
+        return res.status(400).json({ message: "Terms must be accepted to continue" });
+      }
+      
+      await storage.acceptTerms(userId, termsAccepted, dataShareConsent === true);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      res.status(500).json({ message: "Failed to save preferences" });
     }
   });
 
@@ -1456,27 +1639,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create checkout session with local currency
-      const session = await stripe.checkout.sessions.create({
-        customer_email: customerEmail,
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/assessments`,
-        metadata: {
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `${req.protocol}://${req.hostname}`;
+      
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (isAirwallexConfigured()) {
+        // Calculate total amount for Airwallex (single payment intent)
+        let totalAmount = baseFeeInLocalCurrency;
+        for (const assessmentId of assessmentIds) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
+        }
+        
+        const airwallexAmount = formatAmountForAirwallex(totalAmount);
+        const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: localCurrencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/purchase/success`,
           customerEmail,
-          customerName,
-          firstName,
-          lastName,
-          assessmentIds: JSON.stringify(assessmentIds),
-          isGuestCheckout: "true",
+          description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
+          metadata: {
+            customerEmail,
+            customerName,
+            firstName,
+            lastName,
+            assessmentIds: JSON.stringify(assessmentIds),
+            isGuestCheckout: "true",
+            countryCode: userCountry,
+            pricingTier,
+            localCurrency: localCurrencyCode,
+          },
+        });
+        
+        res.json({ 
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: localCurrencyCode.toUpperCase(),
           countryCode: userCountry,
-          pricingTier,
-          localCurrency: localCurrencyCode,
-        },
-      });
+          amount: airwallexAmount,
+          returnUrl: `${baseUrl}/purchase/success`,
+        });
+      } else {
+        // Fall back to Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          customer_email: customerEmail,
+          line_items: lineItems,
+          mode: "payment",
+          success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/assessments`,
+          metadata: {
+            customerEmail,
+            customerName,
+            firstName,
+            lastName,
+            assessmentIds: JSON.stringify(assessmentIds),
+            isGuestCheckout: "true",
+            countryCode: userCountry,
+            pricingTier,
+            localCurrency: localCurrencyCode,
+          },
+        });
 
-      res.json({ url: session.url });
+        res.json({ provider: 'stripe', url: session.url });
+      }
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });
@@ -1840,16 +2070,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         const completedResults = resultsForPurchase.filter(r => r.status === 'completed');
-        const abandonedResults = resultsForPurchase.filter(r => r.status === 'abandoned');
-        
-        // A slot is "consumed" if it has either completed or abandoned result
-        const consumedCount = completedResults.length + abandonedResults.length;
-        
-        // All items consumed means series moves to "Your Results"
-        const allItemsConsumed = consumedCount >= items.length;
-        
-        // Series only has abandoned tests (no completed results that can be unlocked)
-        const hasOnlyAbandonedResults = abandonedResults.length > 0 && completedResults.length === 0;
         
         // Find the latest completion date for this purchase
         const completedAt = completedResults.length > 0
@@ -1863,14 +2083,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...purchase,
           purchaseItems: items,
           results: resultsForPurchase,  // All results, including multiple attempts
-          completedResults: completedResults, // Only completed (non-abandoned) results for display
-          abandonedResults: abandonedResults, // Abandoned results for tracking
           completedCount: completedResults.length,
-          abandonedCount: abandonedResults.length,
           totalCount: items.length,
-          allItemsCompleted: completedResults.length >= items.length, // Original meaning: all have completed results
-          allItemsConsumed, // All slots used up (completed + abandoned)
-          hasOnlyAbandonedResults, // Series has no valid results to unlock
+          allItemsCompleted: completedResults.length >= items.length,
           completedAt: completedAt ? completedAt.toISOString() : null
         };
       });
@@ -1924,8 +2139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
-            // Don't show if completed or abandoned (both mean the slot is consumed)
-            if (!existing || (existing.status !== 'completed' && existing.status !== 'abandoned')) {
+            if (!existing || existing.status !== 'completed') {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
               const purchaseItemKey = `purchase::${item.id}`;
               if (!addedAssessmentTypes.has(purchaseItemKey)) {
@@ -2093,20 +2307,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
-          // Calculate remaining time based on assessment type
-          const timeLimit = getAssessmentTimeLimit(assessmentType);
-          const startTime = new Date(existing.startedAt).getTime();
+          // Check if paused and handle accordingly
           const now = Date.now();
-          const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, timeLimit - elapsed);
+          const nowDate = new Date();
           
-          // If time has expired, give full time again
-          if (remaining <= 0 && existing.status === 'in_progress') {
-            console.log(`[START ASSESSMENT] Partner invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-            return res.json({ ...existing, timeRemaining: timeLimit });
+          // Check if paused session's grace period has expired
+          if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+            await storage.updateAssessmentResult(existing.id, { status: "expired" });
+            return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
           }
           
-          return res.json({ ...existing, timeRemaining: remaining });
+          // Calculate remaining time based on assessment type
+          // If paused, use the saved time remaining
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
+          let remaining: number;
+          
+          if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+            // Session is paused - return saved time remaining (in seconds)
+            remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+          } else {
+            const startTime = new Date(existing.startedAt).getTime();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            remaining = Math.max(0, timeLimit - elapsed);
+          }
+          
+          // If time has expired, give full time again
+          if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+            console.log(`[START ASSESSMENT] Partner invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ 
+              ...existing, 
+              timeRemaining: timeLimit,
+              isPaused: false,
+              pausedAt: null,
+              pausedTimeRemainingMs: null,
+              pauseGraceExpiresAt: null,
+              resumeCount: existing.resumeCount || 0,
+              canPauseAgain: (existing.resumeCount || 0) < 1,
+            });
+          }
+          
+          return res.json({ 
+            ...existing, 
+            timeRemaining: remaining,
+            isPaused: !!existing.pausedAt,
+            pausedAt: existing.pausedAt || null,
+            pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+            pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
         }
 
         // Update partner invitation status to started if needed
@@ -2135,11 +2384,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const timeLimit = getAssessmentTimeLimit(assessmentType);
         const startTime = new Date(result.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
+        const nowMs = Date.now();
+        const elapsed = Math.floor((nowMs - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
 
-        return res.json({ ...result, timeRemaining: remaining });
+        return res.json({ 
+          ...result, 
+          timeRemaining: remaining,
+          isPaused: false,
+          pausedAt: null,
+          pausedTimeRemainingMs: null,
+          pauseGraceExpiresAt: null,
+          resumeCount: 0,
+          canPauseAgain: true,
+        });
       }
 
       // Check if this is an invitation-based assessment (synthetic ID format: invitation::{invitationId}::{assessmentType})
@@ -2181,22 +2439,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
-          // Calculate remaining time based on assessment type
-          const timeLimit = getAssessmentTimeLimit(assessmentType);
-          const startTime = new Date(existing.startedAt).getTime();
-          const now = Date.now();
-          const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, timeLimit - elapsed);
-          
-          // If time has expired, give full time again (not just grace period)
-          // This allows users to properly complete assessments that timed out
-          if (remaining <= 0 && existing.status === 'in_progress') {
-            // Give full time limit back to allow proper completion
-            console.log(`[START ASSESSMENT] Invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-            return res.json({ ...existing, timeRemaining: timeLimit });
+          // Check if paused session's grace period has expired
+          const nowDate = new Date();
+          if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+            await storage.updateAssessmentResult(existing.id, { status: "expired" });
+            return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
           }
           
-          return res.json({ ...existing, timeRemaining: remaining });
+          // Calculate remaining time based on assessment type
+          const timeLimit = getAssessmentTimeLimit(assessmentType);
+          const now = Date.now();
+          let remaining: number;
+          
+          if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+            remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+          } else {
+            const startTime = new Date(existing.startedAt).getTime();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            remaining = Math.max(0, timeLimit - elapsed);
+          }
+          
+          // If time has expired, give full time again (not just grace period)
+          if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+            console.log(`[START ASSESSMENT] Invitation assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+            return res.json({ 
+              ...existing, 
+              timeRemaining: timeLimit,
+              isPaused: false,
+              pausedAt: null,
+              pausedTimeRemainingMs: null,
+              pauseGraceExpiresAt: null,
+              resumeCount: existing.resumeCount || 0,
+              canPauseAgain: (existing.resumeCount || 0) < 1,
+            });
+          }
+          
+          return res.json({ 
+            ...existing, 
+            timeRemaining: remaining,
+            isPaused: !!existing.pausedAt,
+            pausedAt: existing.pausedAt || null,
+            pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+            pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
         }
 
         // Create new assessment result for invitation
@@ -2216,11 +2503,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const timeLimit = getAssessmentTimeLimit(assessmentType);
         const startTime = new Date(result.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
+        const nowMs = Date.now();
+        const elapsed = Math.floor((nowMs - startTime) / 1000);
         const remaining = Math.max(0, timeLimit - elapsed);
 
-        return res.json({ ...result, timeRemaining: remaining });
+        return res.json({ 
+          ...result, 
+          timeRemaining: remaining,
+          isPaused: false,
+          pausedAt: null,
+          pausedTimeRemainingMs: null,
+          pauseGraceExpiresAt: null,
+          resumeCount: 0,
+          canPauseAgain: true,
+        });
       }
 
       // Handle purchase-based assessment (existing logic)
@@ -2275,24 +2571,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Assessment already completed" });
         }
         
-        // Calculate remaining time based on assessment type
-        const timeLimit = getAssessmentTimeLimit(item.assessmentType);
-        const startTime = new Date(existing.startedAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        const remaining = Math.max(0, timeLimit - elapsed);
-        
-        console.log(`[START ASSESSMENT] Time calculation: timeLimit=${timeLimit}s, elapsed=${elapsed}s, remaining=${remaining}s`);
-        
-        // If time has expired, give full time again (not just grace period)
-        // This allows users to properly complete assessments that timed out
-        if (remaining <= 0 && existing.status === 'in_progress') {
-          // Give full time limit back to allow proper completion
-          console.log(`[START ASSESSMENT] Assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
-          return res.json({ ...existing, timeRemaining: timeLimit });
+        // Check if paused session's grace period has expired
+        const nowDate = new Date();
+        if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
+          await storage.updateAssessmentResult(existing.id, { status: "expired" });
+          return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
         }
         
-        return res.json({ ...existing, timeRemaining: remaining });
+        // Calculate remaining time based on assessment type
+        const timeLimit = getAssessmentTimeLimit(item.assessmentType);
+        const now = Date.now();
+        let remaining: number;
+        
+        if (existing.pausedAt && existing.pausedTimeRemainingMs !== null) {
+          remaining = Math.floor((existing.pausedTimeRemainingMs || 0) / 1000);
+        } else {
+          const startTime = new Date(existing.startedAt).getTime();
+          const elapsed = Math.floor((now - startTime) / 1000);
+          remaining = Math.max(0, timeLimit - elapsed);
+        }
+        
+        console.log(`[START ASSESSMENT] Time calculation: timeLimit=${timeLimit}s, remaining=${remaining}s, isPaused=${!!existing.pausedAt}`);
+        
+        // If time has expired, give full time again (not just grace period)
+        if (remaining <= 0 && existing.status === 'in_progress' && !existing.pausedAt) {
+          console.log(`[START ASSESSMENT] Assessment ${existing.id} time expired - granting full ${timeLimit}s to complete`);
+          return res.json({ 
+            ...existing, 
+            timeRemaining: timeLimit,
+            isPaused: false,
+            pausedAt: null,
+            pausedTimeRemainingMs: null,
+            pauseGraceExpiresAt: null,
+            resumeCount: existing.resumeCount || 0,
+            canPauseAgain: (existing.resumeCount || 0) < 1,
+          });
+        }
+        
+        return res.json({ 
+          ...existing, 
+          timeRemaining: remaining,
+          isPaused: !!existing.pausedAt,
+          pausedAt: existing.pausedAt || null,
+          pausedTimeRemainingMs: existing.pausedTimeRemainingMs ?? null,
+          pauseGraceExpiresAt: existing.pauseGraceExpiresAt || null,
+          resumeCount: existing.resumeCount || 0,
+          canPauseAgain: (existing.resumeCount || 0) < 1,
+        });
       }
 
       // Create new assessment result
@@ -2313,14 +2638,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate initial remaining time based on assessment type
       const timeLimit = getAssessmentTimeLimit(item.assessmentType);
       const startTime = new Date(result.startedAt).getTime();
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
+      const nowMs = Date.now();
+      const elapsed = Math.floor((nowMs - startTime) / 1000);
       const remaining = Math.max(0, timeLimit - elapsed);
 
-      res.json({ ...result, timeRemaining: remaining });
+      res.json({ 
+        ...result, 
+        timeRemaining: remaining,
+        isPaused: false,
+        pausedAt: null,
+        pausedTimeRemainingMs: null,
+        pauseGraceExpiresAt: null,
+        resumeCount: 0,
+        canPauseAgain: true,
+      });
     } catch (error) {
       console.error("Error starting assessment:", error);
       res.status(500).json({ message: "Failed to start assessment" });
+    }
+  });
+
+  // Pause assessment endpoint - called when window is closed/hidden
+  // Allows one 30-minute grace period to return and resume
+  app.post("/api/assessments/:id/pause", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { timeRemainingMs } = req.body;
+      const userId = req.user.id;
+      
+      if (typeof timeRemainingMs !== 'number' || timeRemainingMs < 0) {
+        return res.status(400).json({ message: "Invalid timeRemainingMs" });
+      }
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Only allow pausing in-progress assessments
+      if (result.status !== "in_progress") {
+        return res.status(400).json({
+          message: `Cannot pause assessment. Status is "${result.status}". Only in-progress assessments can be paused.`,
+        });
+      }
+      
+      // Check if already used their one grace period (resumeCount >= 1)
+      if ((result.resumeCount || 0) >= 1) {
+        // Already used grace period - expire the assessment immediately
+        await storage.updateAssessmentResult(id, { 
+          status: "expired",
+          pausedAt: new Date(),
+        });
+        return res.status(400).json({ 
+          message: "You have already used your one-time resume. The assessment has expired.",
+        });
+      }
+      
+      // Check if already paused
+      if (result.pausedAt) {
+        return res.status(400).json({
+          message: "Assessment is already paused. Use the resume endpoint to continue.",
+        });
+      }
+      
+      // Set 30-minute grace period
+      const now = new Date();
+      const graceExpiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+      
+      await storage.updateAssessmentResult(id, {
+        pausedAt: now,
+        pausedTimeRemainingMs: Math.floor(timeRemainingMs),
+        pauseGraceExpiresAt: graceExpiresAt,
+      });
+      
+      console.log(`[Assessment Pause] Assessment ${id} paused with ${Math.floor(timeRemainingMs / 1000)}s remaining. Grace expires at ${graceExpiresAt.toISOString()}`);
+      
+      res.json({
+        success: true,
+        pausedAt: now.toISOString(),
+        graceExpiresAt: graceExpiresAt.toISOString(),
+        timeRemainingMs: Math.floor(timeRemainingMs),
+      });
+    } catch (error) {
+      console.error("Error pausing assessment:", error);
+      res.status(500).json({ message: "Failed to pause assessment" });
+    }
+  });
+
+  // Resume assessment endpoint - called when returning to a paused assessment
+  app.post("/api/assessments/:id/resume", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if assessment is paused
+      if (!result.pausedAt) {
+        return res.status(400).json({
+          message: "Assessment is not currently paused.",
+        });
+      }
+      
+      // Check if grace period has expired
+      const now = new Date();
+      if (result.pauseGraceExpiresAt && new Date(result.pauseGraceExpiresAt) < now) {
+        // Grace period expired - expire the assessment
+        await storage.updateAssessmentResult(id, { 
+          status: "expired",
+        });
+        return res.status(400).json({
+          message: "The 30-minute grace period has expired. The assessment has been marked as expired.",
+        });
+      }
+      
+      // Resume the assessment - increment resume count and clear pause state
+      const newResumeCount = (result.resumeCount || 0) + 1;
+      
+      await storage.updateAssessmentResult(id, {
+        pausedAt: null,
+        resumeCount: newResumeCount,
+      });
+      
+      console.log(`[Assessment Resume] Assessment ${id} resumed. Resume count: ${newResumeCount}. Time remaining: ${result.pausedTimeRemainingMs}ms`);
+      
+      res.json({
+        success: true,
+        resumedAt: now.toISOString(),
+        timeRemainingMs: result.pausedTimeRemainingMs || 0,
+        resumeCount: newResumeCount,
+        canPauseAgain: false, // Only one grace period allowed
+      });
+    } catch (error) {
+      console.error("Error resuming assessment:", error);
+      res.status(500).json({ message: "Failed to resume assessment" });
+    }
+  });
+
+  // Get assessment status (for pause/resume state checking)
+  app.get("/api/assessments/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if paused session's grace period has expired
+      const now = new Date();
+      if (result.pausedAt && result.pauseGraceExpiresAt && new Date(result.pauseGraceExpiresAt) < now) {
+        await storage.updateAssessmentResult(id, { status: "expired" });
+        return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
+      }
+      
+      res.json({
+        id: result.id,
+        status: result.status,
+        isPaused: !!result.pausedAt,
+        pausedAt: result.pausedAt || null,
+        pausedTimeRemainingMs: result.pausedTimeRemainingMs ?? null,
+        pauseGraceExpiresAt: result.pauseGraceExpiresAt || null,
+        resumeCount: result.resumeCount || 0,
+        canPauseAgain: (result.resumeCount || 0) < 1,
+      });
+    } catch (error) {
+      console.error("Error getting assessment status:", error);
+      res.status(500).json({ message: "Failed to get assessment status" });
     }
   });
 
@@ -2413,65 +2916,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
-        // For Prompt Architecture, use async evaluation to avoid gateway timeouts
-        // Save answers immediately and start background evaluation
-        console.log(`[Assessment Submit] Starting async Prompt Architecture evaluation for assessment ${id}`);
-        
+        // For Prompt Architecture, use OpenAI GPT evaluation
+        // This includes transactional storage of evaluations AND status update
         try {
-          // Check if evaluation is already in progress or complete
-          if (result.status === 'evaluating') {
-            // Check if evaluation completed in background
-            const currentResult = await storage.getResultById(id);
-            if (currentResult?.status === 'completed') {
-              console.log(`[Assessment Submit] Background evaluation completed for ${id}`);
-              return res.json({ 
-                success: true, 
-                scores: currentResult.scores, 
-                totalScore: currentResult.totalScore,
-                evaluations: currentResult.evaluations
-              });
-            }
-            // Still evaluating - tell client to poll
-            return res.status(202).json({ 
-              success: true,
-              status: 'evaluating',
-              message: "Your answers are being evaluated. This may take 2-3 minutes.",
-              assessmentId: id
-            });
-          }
+          console.log(`[Assessment Submit] Starting Prompt Architecture evaluation for assessment ${id}`);
+          const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
+          scores = promptEvalResult.scores;
+          totalScore = promptEvalResult.totalScore;
+          evaluations = promptEvalResult.evaluations;
           
-          // Mark as evaluating and save answers FIRST (fast response)
-          await db.update(assessmentResults)
-            .set({
-              answers,
-              status: 'evaluating',
-            })
-            .where(eq(assessmentResults.id, id));
+          console.log(`[Assessment Submit] Prompt Architecture evaluation completed successfully`);
           
-          // Start background evaluation (don't await - let it run async)
-          processPromptArchitectureAsync(id, answers).catch((error: any) => {
-            console.error(`[Prompt Arch Background] Evaluation failed for ${id}:`, error.message);
-            // Mark as failed so user can retry
-            db.update(assessmentResults)
-              .set({ status: 'evaluation_failed' })
-              .where(eq(assessmentResults.id, id))
-              .catch(console.error);
-          });
-          
-          // Return immediately - client will poll for results
-          return res.status(202).json({ 
-            success: true,
-            status: 'evaluating',
-            message: "Your answers are being evaluated. This may take 2-3 minutes.",
-            assessmentId: id
-          });
+          // The function already updated the assessment result in a transaction
+          // Just return the results
+          return res.json({ success: true, scores, totalScore, evaluations });
         } catch (error: any) {
           console.error(`[Assessment Submit ERROR] Prompt Architecture failed for assessment ${id}:`, {
             error: error.message,
             stack: error.stack
           });
+          
+          // Handle OpenAI API errors gracefully
+          if (error.message?.includes('quota') || error.message?.includes('429')) {
+            return res.status(402).json({ 
+              message: "OpenAI API quota exceeded. Please add credits to your OpenAI account to use Prompt Architecture assessment.",
+              error: "quota_exceeded"
+            });
+          }
+          if (error.message?.includes('invalid') && error.message?.includes('key')) {
+            return res.status(500).json({ 
+              message: "OpenAI API configuration error. Please contact support.",
+              error: "api_config_error"
+            });
+          }
+          if (error.message?.includes('timeout')) {
+            return res.status(504).json({ 
+              message: "OpenAI API request timed out. Please try again.",
+              error: "timeout"
+            });
+          }
+          
+          // Return detailed error message to help debug
           return res.status(500).json({ 
-            message: error.message || "Failed to start evaluation. Please try again.",
+            message: error.message || "Failed to evaluate prompts with AI. Please try again.",
             error: "evaluation_failed"
           });
         }
@@ -2525,193 +3012,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: userMessage, error: "submission_failed" });
-    }
-  });
-
-  // Poll for assessment evaluation status (for async Prompt Architecture)
-  app.get("/api/assessments/:id/status", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.id;
-      
-      console.log(`[Status Poll] Checking status for assessment ${id}, user ${userId}`);
-      
-      // Query directly from database to ensure fresh data
-      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
-      
-      if (!result || result.length === 0) {
-        console.log(`[Status Poll] Assessment ${id} not found`);
-        return res.status(404).json({ message: "Assessment not found" });
-      }
-      
-      const assessment = result[0];
-      
-      if (assessment.userId !== userId) {
-        console.log(`[Status Poll] Access denied for assessment ${id}, owner ${assessment.userId} vs requester ${userId}`);
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      console.log(`[Status Poll] Assessment ${id} status: ${assessment.status}`);
-      
-      // Return current status and results if available
-      if (assessment.status === 'completed') {
-        return res.json({
-          status: 'completed',
-          success: true,
-          scores: assessment.scores,
-          totalScore: assessment.totalScore,
-          evaluations: assessment.evaluations
-        });
-      }
-      
-      if (assessment.status === 'evaluation_failed') {
-        return res.json({
-          status: 'failed',
-          message: "Evaluation failed. Please try submitting again."
-        });
-      }
-      
-      // Still evaluating
-      return res.json({
-        status: assessment.status || 'evaluating',
-        message: "Your answers are being evaluated. This may take 2-3 minutes."
-      });
-    } catch (error: any) {
-      console.error("Error checking assessment status:", error.message, error.stack);
-      res.status(500).json({ message: "Failed to check status", error: error.message });
-    }
-  });
-
-  // Abandon an in-progress assessment
-  app.post("/api/assessments/:id/abandon", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.id;
-      
-      console.log(`[Abandon] User ${userId} abandoning assessment ${id}`);
-      
-      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
-      
-      if (!result || result.length === 0) {
-        return res.status(404).json({ message: "Assessment not found" });
-      }
-      
-      const assessment = result[0];
-      
-      if (assessment.userId !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      // Only abandon if in_progress or evaluating
-      if (assessment.status !== 'in_progress' && assessment.status !== 'evaluating') {
-        console.log(`[Abandon] Assessment ${id} cannot be abandoned, status: ${assessment.status}`);
-        return res.status(400).json({ message: "Assessment cannot be abandoned in current state" });
-      }
-      
-      // Mark as abandoned
-      await db.update(assessmentResults)
-        .set({ 
-          status: 'abandoned',
-          completedAt: new Date()
-        })
-        .where(eq(assessmentResults.id, id));
-      
-      // Also mark the associated purchase_item as completed (consumed) so it doesn't show as available
-      if (assessment.purchaseItemId) {
-        await db.update(purchaseItems)
-          .set({ status: 'completed' })
-          .where(eq(purchaseItems.id, assessment.purchaseItemId));
-        console.log(`[Abandon] Purchase item ${assessment.purchaseItemId} marked as completed (consumed)`);
-      }
-      
-      console.log(`[Abandon] Assessment ${id} marked as abandoned`);
-      
-      res.json({ success: true, message: "Assessment marked as incomplete" });
-    } catch (error: any) {
-      console.error("Error abandoning assessment:", error.message);
-      res.status(500).json({ message: "Failed to abandon assessment" });
-    }
-  });
-
-  // Heartbeat endpoint - keeps assessment session alive
-  app.post("/api/assessments/:id/heartbeat", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.id;
-      
-      const result = await db.select().from(assessmentResults).where(eq(assessmentResults.id, id)).limit(1);
-      
-      if (!result || result.length === 0) {
-        return res.status(404).json({ message: "Assessment not found" });
-      }
-      
-      const assessment = result[0];
-      
-      if (assessment.userId !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      // Only update heartbeat for active assessments
-      if (assessment.status !== 'in_progress' && assessment.status !== 'evaluating') {
-        return res.json({ success: false, status: assessment.status });
-      }
-      
-      // Update last heartbeat
-      await db.update(assessmentResults)
-        .set({ lastHeartbeat: new Date() })
-        .where(eq(assessmentResults.id, id));
-      
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Error updating heartbeat:", error.message);
-      res.status(500).json({ message: "Failed to update heartbeat" });
-    }
-  });
-
-  // Check and mark stale assessments as abandoned (called periodically or on dashboard load)
-  app.post("/api/assessments/check-stale", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-      
-      // Find user's in_progress assessments with stale heartbeat
-      const staleAssessments = await db.select()
-        .from(assessmentResults)
-        .where(
-          and(
-            eq(assessmentResults.userId, userId),
-            eq(assessmentResults.status, 'in_progress'),
-            sql`${assessmentResults.lastHeartbeat} IS NOT NULL`,
-            sql`${assessmentResults.lastHeartbeat} < ${twoMinutesAgo}`
-          )
-        );
-      
-      // Mark them as abandoned
-      for (const assessment of staleAssessments) {
-        console.log(`[Check Stale] Marking assessment ${assessment.id} as abandoned (last heartbeat: ${assessment.lastHeartbeat})`);
-        await db.update(assessmentResults)
-          .set({ 
-            status: 'abandoned',
-            completedAt: new Date()
-          })
-          .where(eq(assessmentResults.id, assessment.id));
-        
-        // Also mark the associated purchase_item as completed (consumed)
-        if (assessment.purchaseItemId) {
-          await db.update(purchaseItems)
-            .set({ status: 'completed' })
-            .where(eq(purchaseItems.id, assessment.purchaseItemId));
-          console.log(`[Check Stale] Purchase item ${assessment.purchaseItemId} marked as completed (consumed)`);
-        }
-      }
-      
-      res.json({ 
-        success: true, 
-        abandonedCount: staleAssessments.length 
-      });
-    } catch (error: any) {
-      console.error("Error checking stale assessments:", error.message);
-      res.status(500).json({ message: "Failed to check stale assessments" });
     }
   });
 
@@ -3310,7 +3610,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         candidates = [];
       }
       
-      res.json(candidates);
+      // Batch fetch partner data for enrichment (avoid N+1 queries)
+      const allPartners = await storage.getAllPartnerAccounts();
+      const partnerMap = new Map(allPartners.map(p => [p.id, p]));
+      
+      // Collect all candidate emails for batch lookup
+      const candidateEmails = candidates.map((c: any) => c.user.email).filter(Boolean);
+      
+      // Batch fetch all partner invitations for these emails
+      const allPartnerInvitations = await storage.getPartnerCandidateInvitationsByEmails(candidateEmails);
+      
+      // Group partner invitations by email (case-insensitive)
+      const partnerInvitationsByEmail = new Map<string, any[]>();
+      allPartnerInvitations.forEach((inv: any) => {
+        if (inv.email) {
+          const emailLower = inv.email.toLowerCase();
+          if (!partnerInvitationsByEmail.has(emailLower)) {
+            partnerInvitationsByEmail.set(emailLower, []);
+          }
+          partnerInvitationsByEmail.get(emailLower)!.push(inv);
+        }
+      });
+      
+      // Enrich candidates with partner info
+      const enrichedCandidates = candidates.map((candidate: any) => {
+        const userEmailLower = candidate.user.email?.toLowerCase();
+        const partnerInvitations = partnerInvitationsByEmail.get(userEmailLower) || [];
+        
+        // Get the earliest partner invitation (the original invite)
+        const sortedInvitations = partnerInvitations
+          .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        const firstPartnerInvitation = sortedInvitations[0];
+        let partnerInfo = null;
+        let dateInvited = null;
+        
+        if (firstPartnerInvitation) {
+          const partner = partnerMap.get(firstPartnerInvitation.partnerId);
+          if (partner) {
+            partnerInfo = {
+              id: partner.id,
+              name: partner.name,
+              companyName: partner.companyName,
+            };
+            dateInvited = firstPartnerInvitation.createdAt;
+          }
+        }
+        
+        // If no partner invitation, check regular invitations for date invited
+        if (!dateInvited && candidate.invitations.length > 0) {
+          const sortedRegularInvitations = [...candidate.invitations]
+            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          dateInvited = sortedRegularInvitations[0]?.createdAt;
+        }
+        
+        return {
+          ...candidate,
+          partnerInfo,
+          dateInvited,
+        };
+      });
+      
+      res.json(enrichedCandidates);
     } catch (error) {
       console.error("Error fetching candidates:", error);
       res.status(500).json({ message: "Failed to fetch candidates" });
@@ -3461,8 +3822,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? req.query.userIds as string[]
         : [req.query.userIds as string];
 
-      if (!userIds || userIds.length < 2) {
-        return res.status(400).json({ message: "At least 2 user IDs required" });
+      if (!userIds || userIds.length < 1) {
+        return res.status(400).json({ message: "At least 1 user ID required" });
       }
 
       // Get results for all selected candidates and recalculate scores
@@ -3800,15 +4161,15 @@ FIT ASSESSMENT SKILLS (Behavioral):
 6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. AI Literacy - Understanding AI capabilities, limitations, and terminology
-2. Collaboration - Working effectively with AI systems and human teams
-3. Domain Fluency - Applying AI knowledge within specific professional contexts
-4. Responsible AI - Understanding ethical implications and biases in AI applications
+1. AI Literacy & Prompt Engineering - Understanding AI capabilities, limitations, and effective prompting
+2. Collaboration & Communication - Working effectively with AI systems and human teams
+3. Data Fluency - Applying data knowledge within specific professional contexts
+4. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
 5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
-6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
-7. Critical Thinking - Evaluating AI outputs and making informed decisions
-8. Technical Fluency - Comfort with technical tools and systems
-9. Creative Innovation - Using AI to generate novel solutions and approaches
+6. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
+8. Technical Fundamentals - Comfort with technical tools and systems
+9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
 - Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
@@ -3830,8 +4191,8 @@ Format your response as JSON with this exact structure and skill names:
     "Intellectual Curiosity": number
   },
   "aiReadinessSkills": {
-    "AI Literacy": number,
-    "Collaboration": number,
+    "AI Literacy & Prompt Engineering": number,
+    "Collaboration & Communication": number,
     "Data Fluency": number,
     "Responsible AI & Ethical Awareness": number,
     "Domain Expertise": number,
@@ -3847,8 +4208,8 @@ Format your response as JSON with this exact structure and skill names:
     "Empathy & Ethics": "critical" | "standard",
     "Interpersonal Agility": "critical" | "standard",
     "Intellectual Curiosity": "critical" | "standard",
-    "AI Literacy": "critical" | "standard",
-    "Collaboration": "critical" | "standard",
+    "AI Literacy & Prompt Engineering": "critical" | "standard",
+    "Collaboration & Communication": "critical" | "standard",
     "Data Fluency": "critical" | "standard",
     "Responsible AI & Ethical Awareness": "critical" | "standard",
     "Domain Expertise": "critical" | "standard",
@@ -3959,15 +4320,15 @@ FIT ASSESSMENT SKILLS (Behavioral):
 6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. AI Literacy - Understanding AI capabilities, limitations, and terminology
-2. Collaboration - Working effectively with AI systems and human teams
-3. Domain Fluency - Applying AI knowledge within specific professional contexts
-4. Responsible AI - Understanding ethical implications and biases in AI applications
+1. AI Literacy & Prompt Engineering - Understanding AI capabilities, limitations, and effective prompting
+2. Collaboration & Communication - Working effectively with AI systems and human teams
+3. Data Fluency - Applying data knowledge within specific professional contexts
+4. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
 5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
-6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
-7. Critical Thinking - Evaluating AI outputs and making informed decisions
-8. Technical Fluency - Comfort with technical tools and systems
-9. Creative Innovation - Using AI to generate novel solutions and approaches
+6. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
+8. Technical Fundamentals - Comfort with technical tools and systems
+9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100). Consider:
 - Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
@@ -3981,7 +4342,7 @@ CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. D
 Format your response as JSON:
 {
   "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
-  "aiReadinessSkills": { "AI Literacy": number, "Collaboration": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
+  "aiReadinessSkills": { "AI Literacy & Prompt Engineering": number, "Collaboration & Communication": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
   "skillCriticality": { ... each skill as "critical" or "standard" ... }
 }`;
 
@@ -4033,6 +4394,83 @@ Format your response as JSON:
     } catch (error: any) {
       console.error("Error starting batch generation:", error);
       res.status(500).json({ message: "Failed to start batch generation: " + error.message });
+    }
+  });
+
+  // Admin: Generate AI profile insights for individual candidate
+  app.post("/api/admin/profile-insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, assessmentData } = req.body;
+      
+      if (!userId || !assessmentData) {
+        return res.status(400).json({ message: "User ID and assessment data are required" });
+      }
+
+      // Get candidate info
+      const candidate = await storage.getUser(userId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const candidateName = assessmentData.candidateName || 
+        `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
+        candidate.email?.split('@')[0] || 'Unknown';
+
+      // Build prompt for OpenAI
+      const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
+
+CANDIDATE: ${candidateName}
+
+ASSESSMENT DATA:
+${assessmentData.fit ? `FIT (Behavioral Traits) - Average: ${assessmentData.fit.average}%
+Individual Scores: ${JSON.stringify(assessmentData.fit.scores, null, 2)}` : 'FIT Assessment: Not completed'}
+
+${assessmentData.aiReadiness ? `AI Readiness (Technical) - Average: ${assessmentData.aiReadiness.average}%
+Individual Scores: ${JSON.stringify(assessmentData.aiReadiness.scores, null, 2)}` : 'AI Readiness Assessment: Not completed'}
+
+${assessmentData.promptArchitecture ? `Prompt Architecture: ${assessmentData.promptArchitecture.totalScore}%` : 'Prompt Architecture: Not completed'}
+
+${assessmentData.aiq ? `AIQ (AI Ethics): ${assessmentData.aiq.totalScore}%` : 'AIQ Assessment: Not completed'}
+
+HIGHEST SCORING TRAITS: ${assessmentData.strengths?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+LOWEST SCORING TRAITS: ${assessmentData.lowestScoring?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements. Do NOT label traits as strengths or weaknesses - just describe what the scores indicate about the candidate's profile.
+
+Write 2-3 paragraphs (max 200 words total) covering:
+1. Overall profile characteristics and distinctive traits
+2. Types of roles/environments where this profile typically thrives
+3. Key considerations for role matching (without making value judgments about high/low scores)
+
+Keep the tone professional and objective. Focus on describing the candidate's profile, not evaluating it.`;
+
+      const openai = new (await import('openai')).default();
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+
+      const insights = completion.choices[0]?.message?.content || "Unable to generate insights.";
+
+      res.json({ insights });
+    } catch (error) {
+      console.error("Error generating profile insights:", error);
+      res.status(500).json({ message: "Failed to generate profile insights" });
     }
   });
 
@@ -4143,27 +4581,83 @@ Format your response as JSON:
       // Process FIT skills
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
-      if (fitSkills.size > 0 && role.requiredSkillScores.fitSkills) {
+      // Helper to normalize skill names for matching (strip punctuation, spaces, lowercase)
+      const normalizeSkillName = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+      
+      // Helper to find criticality with flexible name matching
+      const findCriticality = (skillName: string): string => {
+        // Direct match first
+        if (skillCriticality[skillName]) return skillCriticality[skillName];
+        
+        // Normalized matching
+        const normalizedInput = normalizeSkillName(skillName);
+        for (const [key, value] of Object.entries(skillCriticality)) {
+          const normalizedKey = normalizeSkillName(key);
+          // Exact normalized match
+          if (normalizedKey === normalizedInput) return value as string;
+          // Partial normalized match (either contains the other)
+          if (normalizedKey.includes(normalizedInput) || normalizedInput.includes(normalizedKey)) {
+            return value as string;
+          }
+        }
+        return 'important';
+      };
+      
+      // Track data coverage - we do NOT penalize for missing assessments
+      let totalRequiredSkills = 0;
+      let assessedSkillCount = 0;
+      const missingAssessments: string[] = [];
+      
+      // Track which assessment types are missing
+      const hasFitData = fitSkills.size > 0;
+      const hasAiReadinessData = aiReadinessSkills.size > 0;
+      
+      // Process FIT skills - include ALL required skills, mark availability
+      if (role.requiredSkillScores.fitSkills) {
         Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
-          // Apply defensive nudge to ensure no multiples of 5
+          totalRequiredSkills++;
           const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-          const candidateScore = fitSkills.get(skillName) || 0;
-          const gap = requiredScore - candidateScore;
-          let alignment: string;
-          if (gap <= -10) alignment = 'excellent';
-          else if (gap <= 0) alignment = 'good';
-          else if (gap <= 15) alignment = 'fair';
-          else alignment = 'poor';
+          const candidateScoreRaw = fitSkills.get(skillName);
+          const dataAvailable = candidateScoreRaw !== undefined;
           
-          fitSkillAlignments.push({
-            skillName,
-            candidateScore,
-            requiredScore,
-            gap,
-            alignment,
-            criticality: skillCriticality[skillName] || 'important'
-          });
+          if (dataAvailable) {
+            assessedSkillCount++;
+            const candidateScore = candidateScoreRaw;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            fitSkillAlignments.push({
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName),
+              dataAvailable: true
+            });
+          } else {
+            // Skill not assessed - mark as unavailable, do NOT use 0
+            fitSkillAlignments.push({
+              skillName,
+              candidateScore: null,
+              requiredScore,
+              gap: null,
+              alignment: 'not_assessed',
+              criticality: findCriticality(skillName),
+              dataAvailable: false
+            });
+          }
         });
+        
+        if (!hasFitData && Object.keys(role.requiredSkillScores.fitSkills).length > 0) {
+          missingAssessments.push('FIT Assessment');
+        }
       }
       
       // Process AI Readiness skills
@@ -4184,32 +4678,63 @@ Format your response as JSON:
         'Domain Expertise': 'Domain Expertise',
       };
       
-      if (aiReadinessSkills.size > 0 && role.requiredSkillScores.aiReadinessSkills) {
+      // Process AI Readiness skills - include ALL required skills, mark availability
+      if (role.requiredSkillScores.aiReadinessSkills) {
         Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
-          // Apply defensive nudge to ensure no multiples of 5
+          totalRequiredSkills++;
           const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-          // Look up using full name from mapping, fallback to original name
           const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
-          const candidateScore = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName) || 0;
-          const gap = requiredScore - candidateScore;
-          let alignment: string;
-          if (gap <= -10) alignment = 'excellent';
-          else if (gap <= 0) alignment = 'good';
-          else if (gap <= 15) alignment = 'fair';
-          else alignment = 'poor';
+          const candidateScoreRaw = aiReadinessSkills.get(fullSkillName) ?? aiReadinessSkills.get(skillName);
+          const dataAvailable = candidateScoreRaw !== undefined;
           
-          aiReadinessSkillAlignments.push({
-            skillName: fullSkillName, // Use full skill name for proper cohort benchmark matching
-            candidateScore,
-            requiredScore,
-            gap,
-            alignment,
-            criticality: skillCriticality[skillName] || skillCriticality[fullSkillName] || 'important'
-          });
+          if (dataAvailable) {
+            assessedSkillCount++;
+            const candidateScore = candidateScoreRaw;
+            const gap = requiredScore - candidateScore;
+            let alignment: string;
+            if (gap <= -10) alignment = 'excellent';
+            else if (gap <= 0) alignment = 'good';
+            else if (gap <= 15) alignment = 'fair';
+            else alignment = 'poor';
+            
+            aiReadinessSkillAlignments.push({
+              skillName: fullSkillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment,
+              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              dataAvailable: true
+            });
+          } else {
+            // Skill not assessed - mark as unavailable, do NOT use 0
+            aiReadinessSkillAlignments.push({
+              skillName: fullSkillName,
+              candidateScore: null,
+              requiredScore,
+              gap: null,
+              alignment: 'not_assessed',
+              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              dataAvailable: false
+            });
+          }
         });
+        
+        if (!hasAiReadinessData && Object.keys(role.requiredSkillScores.aiReadinessSkills).length > 0) {
+          missingAssessments.push('AI Readiness Assessment');
+        }
       }
 
-      // Calculate overall fit score with criticality weighting and critical gap penalties
+      // Calculate data coverage percentage (use floor to be conservative - don't round up)
+      const dataCoverage = totalRequiredSkills > 0 
+        ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
+        : 0;
+      
+      // Determine if candidate has sufficient data for meaningful analysis
+      // Minimum 40% coverage required AND must have at least one assessed skill
+      const hasSufficientData = totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoverage >= 40;
+
+      // Calculate overall fit score ONLY from assessed skills (don't penalize missing data)
       // Critical skills are weighted 2x, Important 1.5x, Nice-to-have 1x
       // Additional penalty applied for each critical skill where candidate falls short
       const allAlignments = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
@@ -4224,24 +4749,29 @@ Format your response as JSON:
       let weightSum = 0;
       let criticalGaps = 0;
       let totalCriticalSkills = 0;
+      let assessedCriticalSkills = 0;
       
       allAlignments.forEach(skill => {
-        const weight = getSkillWeight(skill.criticality || 'important');
         const isCritical = skill.criticality === 'critical';
-        
         if (isCritical) totalCriticalSkills++;
         
-        // Calculate match percentage (capped at 100%)
-        const matchPercent = skill.candidateScore >= skill.requiredScore
-          ? 100
-          : (skill.candidateScore / skill.requiredScore) * 100;
-        
-        weightedTotal += matchPercent * weight;
-        weightSum += weight;
-        
-        // Track critical gaps
-        if (isCritical && skill.candidateScore < skill.requiredScore) {
-          criticalGaps++;
+        // Only include skills WITH data in the weighted calculation
+        if (skill.dataAvailable) {
+          const weight = getSkillWeight(skill.criticality || 'important');
+          if (isCritical) assessedCriticalSkills++;
+          
+          // Calculate match percentage (capped at 100%)
+          const matchPercent = skill.candidateScore >= skill.requiredScore
+            ? 100
+            : (skill.candidateScore / skill.requiredScore) * 100;
+          
+          weightedTotal += matchPercent * weight;
+          weightSum += weight;
+          
+          // Track critical gaps (only for assessed skills)
+          if (isCritical && skill.candidateScore < skill.requiredScore) {
+            criticalGaps++;
+          }
         }
       });
       
@@ -4249,12 +4779,14 @@ Format your response as JSON:
       let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
       
       // Apply critical gap penalty: 10% reduction per critical gap (capped at 50%)
-      if (criticalGaps > 0 && totalCriticalSkills > 0) {
+      // IMPORTANT: Only apply if we actually ASSESSED critical skills - don't penalize for missing data
+      if (criticalGaps > 0 && assessedCriticalSkills > 0) {
         const criticalPenalty = criticalGaps * 0.10;
         overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
       }
       
-      overallFit = Math.round(overallFit);
+      // Round and ensure no multiples of 5 (consistent scoring policy)
+      overallFit = ensureNoMultipleOf5(Math.round(overallFit));
 
       // Use OpenAI to generate strengths, gaps, and recommendations
       const OpenAI = await import('openai');
@@ -4262,18 +4794,23 @@ Format your response as JSON:
         apiKey: process.env.OPENAI_API_KEY,
       });
 
+      // Filter to only assessed skills for the prompt
+      const assessedFitSkills = fitSkillAlignments.filter(s => s.dataAvailable);
+      const assessedAiReadinessSkills = aiReadinessSkillAlignments.filter(s => s.dataAvailable);
+      
       const prompt = `You are an expert HR consultant analyzing candidate-role fit.
 
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-OVERALL FIT SCORE: ${overallFit}/100
+OVERALL FIT SCORE: ${overallFit}/100 (based on ${dataCoverage}% of required skills assessed)
+${missingAssessments.length > 0 ? `NOTE: Candidate is missing the following assessments: ${missingAssessments.join(', ')}\n` : ''}
 
-FIT ASSESSMENT SKILLS (Behavioral):
-${fitSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
+FIT ASSESSMENT SKILLS (Behavioral)${assessedFitSkills.length === 0 ? ' - NOT ASSESSED' : ''}:
+${assessedFitSkills.length > 0 ? assessedFitSkills.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n') : 'No FIT assessment data available'}
 
-AI READINESS SKILLS (Technical):
-${aiReadinessSkillAlignments.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n')}
+AI READINESS SKILLS (Technical)${assessedAiReadinessSkills.length === 0 ? ' - NOT ASSESSED' : ''}:
+${assessedAiReadinessSkills.length > 0 ? assessedAiReadinessSkills.map(s => `- ${s.skillName}: scored ${s.candidateScore} (required: ${s.requiredScore}) - ${s.alignment}`).join('\n') : 'No AI Readiness assessment data available'}
 
 Based on this analysis, provide:
 1. Top 3-5 strengths specific to this role. ONLY include skills where the candidate EXCEEDS the requirement (candidate score > required score). Write as qualitative descriptions WITHOUT including any numbers or scores.
@@ -4313,12 +4850,19 @@ Format your response as JSON with this structure:
       };
       
       // Calculate percentile properly: what percentage of candidates scored lower?
+      // Calculate percentile using rank-based method for semantic correctness
+      // A score of 98/100 in position 4 out of 24 should show as ~87th percentile
       const calculatePercentile = (score: number, allScores: number[]): number => {
         if (allScores.length <= 1) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        // Use (n-1) denominator for proper percentile with small samples
-        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+        // Sort descending (highest first) to get ranking
+        const sortedScores = [...allScores].sort((a, b) => b - a);
+        // Find the candidate's rank (1-indexed, where 1 = highest score)
+        // For ties, use the best rank (first occurrence)
+        let rank = sortedScores.findIndex(s => s <= score) + 1;
+        if (rank === 0) rank = sortedScores.length; // Lower than all
+        // Calculate percentile: what % of candidates scored LOWER
+        const belowCount = sortedScores.length - rank;
+        return Math.round((belowCount / Math.max(sortedScores.length - 1, 1)) * 100);
       };
       
       // Group results by assessment type
@@ -4511,6 +5055,13 @@ Format your response as JSON with this structure:
         // Skip current role and roles without required scores
         if (altRole.id === jobRoleId || !altRole.requiredSkillScores) continue;
         
+        // ---- SEMANTIC DOMAIN FILTER ----
+        // Only compare roles within the same domain (e.g., technology with technology)
+        // This prevents nonsensical matches like Video Producer for Network Engineer
+        const targetDomain = role.domain || 'other';
+        const altDomain = altRole.domain || 'other';
+        if (targetDomain !== altDomain) continue;
+        
         const altFitSkills = (altRole.requiredSkillScores.fitSkills || {}) as Record<string, number>;
         const altAiSkills = (altRole.requiredSkillScores.aiReadinessSkills || {}) as Record<string, number>;
         const altCriticality = (altRole.requiredSkillScores.skillCriticality || {}) as Record<string, string>;
@@ -4538,16 +5089,17 @@ Format your response as JSON with this structure:
           const altCrit = getCriticalityWeight(altCriticality[skillName]);
           const weight = Math.max(targetCrit, altCrit);
           
-          // Calculate similarity: penalize differences more heavily for critical skills
-          // Difference of 0 = 100% similar, difference of 100 = 0% similar
+          // Calculate similarity: use squared difference for sharper differentiation
+          // Small differences (5-10 pts) should still reduce similarity meaningfully
           const scoreDiff = Math.abs(targetScore - altScore);
-          const skillSimilarity = Math.max(0, 100 - scoreDiff);
+          // Use exponential decay: e.g., 10 point diff = ~60% similarity, 20 point diff = ~35%
+          const skillSimilarity = Math.max(0, 100 * Math.exp(-scoreDiff / 25));
           
           // Apply penalty if skill is in one role but not the other (0 vs non-zero)
           let effectiveSimilarity = skillSimilarity;
           if ((targetScore === 0 && altScore > 0) || (targetScore > 0 && altScore === 0)) {
-            // One role requires this skill, the other doesn't - apply 50% penalty
-            effectiveSimilarity = skillSimilarity * 0.5;
+            // One role requires this skill, the other doesn't - apply 70% penalty (was 50%)
+            effectiveSimilarity = skillSimilarity * 0.3;
           }
           
           roleSimilarityScore += effectiveSimilarity * weight;
@@ -4558,8 +5110,9 @@ Format your response as JSON with this structure:
           ? Math.round((roleSimilarityScore / totalRoleSimilarityWeight) * 100)
           : 0;
         
-        // Skip roles that are too dissimilar (less than 40% similar)
-        if (roleSimilarity < 40) continue;
+        // Skip roles that are too dissimilar (less than 60% similar)
+        // This filters out unrelated roles like Video Producer for Network Engineer
+        if (roleSimilarity < 60) continue;
         
         // ---- STEP 2: Calculate CANDIDATE FIT to alternative role ----
         const altAlignments: Array<{ candidateScore: number; requiredScore: number; weight: number }> = [];
@@ -4640,13 +5193,13 @@ Format your response as JSON with this structure:
           // ---- STEP 3: Combine role similarity and candidate fit ----
           // Final score = (roleSimilarity * 0.4) + (candidateFit * 0.6) * coverageAdjustment
           // This gives more weight to actual candidate fit but role similarity filters out irrelevant matches
-          const coverageAdjustment = coveragePercent / 100;
+          const coverageAdjustment = Math.pow(coveragePercent / 100, 1.5); // Steeper coverage penalty
           const combinedScore = Math.round(
             ((roleSimilarity * 0.4) + (rawFitScore * 0.6)) * coverageAdjustment
           );
           
-          // Apply penalty for missing critical skills
-          const criticalPenalty = missingCriticalSkills.length * 10;
+          // Apply penalty for missing critical skills (8% per missing critical skill)
+          const criticalPenalty = missingCriticalSkills.length * 8;
           const finalScore = Math.max(0, combinedScore - criticalPenalty);
           
           roleFlexibility.push({
@@ -4736,19 +5289,27 @@ Format your response as JSON with this structure:
       }
 
       // Generate Recommended Next Steps based on overallFit score
-      const nextSteps = overallFit >= 70 
-        ? [
-            'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-            'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-            'Check professional references with emphasis on areas of strength',
-            'Consider for final candidate pool'
-          ]
-        : [
-            'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-            'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-            'Explore development potential through scenario-based questions',
-            'Consider alternative roles that better match current skill profile'
-          ];
+      // Start with assessment completion recommendation if there are missing assessments
+      const assessmentCompletionStep = missingAssessments.length > 0
+        ? [`Have candidate complete ${missingAssessments.join(' and ')} assessment${missingAssessments.length > 1 ? 's' : ''} for a complete capability picture`]
+        : [];
+        
+      const nextSteps = [
+        ...assessmentCompletionStep,
+        ...(overallFit >= 70 
+          ? [
+              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+              'Check professional references with emphasis on areas of strength',
+              'Consider for final candidate pool'
+            ]
+          : [
+              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+              'Explore development potential through scenario-based questions',
+              'Consider alternative roles that better match current skill profile'
+            ])
+      ];
 
       const analysis = {
         overallFit,
@@ -4763,7 +5324,15 @@ Format your response as JSON with this structure:
         interviewQuestions: insights.interviewQuestions || null,
         roleFlexibility: topAlternativeRoles, // Always save array (empty if no matches) to distinguish from old null values
         finalRecommendation,
-        nextSteps
+        nextSteps,
+        // Coverage information - indicates completeness of assessment data
+        dataCoverage: {
+          percentage: dataCoverage,
+          assessedSkillCount,
+          totalRequiredSkills,
+          missingAssessments,
+          hasSufficientData
+        }
       };
 
       // Invalidate any existing cached alignment before creating new one
@@ -4851,11 +5420,17 @@ Format your response as JSON with this structure:
       };
       
       // Calculate percentile properly: what percentage of candidates scored lower?
+      // Calculate percentile using rank-based method for semantic correctness
       const calculatePercentile = (score: number, allScores: number[]): number => {
         if (allScores.length <= 1) return 50;
-        const sortedScores = [...allScores].sort((a, b) => a - b);
-        const belowCount = sortedScores.filter(s => s < score).length;
-        return Math.round((belowCount / (sortedScores.length - 1)) * 100);
+        // Sort descending (highest first) to get ranking
+        const sortedScores = [...allScores].sort((a, b) => b - a);
+        // Find the candidate's rank (1-indexed, where 1 = highest score)
+        let rank = sortedScores.findIndex(s => s <= score) + 1;
+        if (rank === 0) rank = sortedScores.length;
+        // Calculate percentile: what % of candidates scored LOWER
+        const belowCount = sortedScores.length - rank;
+        return Math.round((belowCount / Math.max(sortedScores.length - 1, 1)) * 100);
       };
       
       // Group results by assessment type
@@ -5046,20 +5621,53 @@ Format your response as JSON with this structure:
       }
       
       if (!nextSteps) {
-        nextSteps = overallFit >= 70 
-          ? [
-              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-              'Check professional references with emphasis on areas of strength',
-              'Consider for final candidate pool'
-            ]
-          : [
-              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-              'Explore development potential through scenario-based questions',
-              'Consider alternative roles that better match current skill profile'
-            ];
+        // Get missing assessments from cached data if available
+        const cachedMissingAssessments = (alignment as any).dataCoverage?.missingAssessments || [];
+        const assessmentCompletionStep = cachedMissingAssessments.length > 0
+          ? [`Have candidate complete ${cachedMissingAssessments.join(' and ')} assessment${cachedMissingAssessments.length > 1 ? 's' : ''} for a complete capability picture`]
+          : [];
+          
+        nextSteps = [
+          ...assessmentCompletionStep,
+          ...(overallFit >= 70 
+            ? [
+                'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
+                'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
+                'Check professional references with emphasis on areas of strength',
+                'Consider for final candidate pool'
+              ]
+            : [
+                'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
+                'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
+                'Explore development potential through scenario-based questions',
+                'Consider alternative roles that better match current skill profile'
+              ])
+        ];
       }
+
+      // Compute dataCoverage from skill alignments since it's not stored in DB
+      // This tells the frontend whether there's sufficient data for analysis
+      const allSkills = [...fitSkillAlignments, ...aiReadinessSkillAlignments];
+      const totalRequiredSkills = allSkills.length;
+      const assessedSkillCount = allSkills.filter((s: any) => s.dataAvailable !== false && s.candidateScore !== null).length;
+      const dataCoveragePercentage = totalRequiredSkills > 0 
+        ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
+        : 0;
+      
+      // Determine missing assessments
+      const missingAssessments: string[] = [];
+      const hasFitData = fitSkillAlignments.some((s: any) => s.dataAvailable !== false && s.candidateScore !== null);
+      const hasAiData = aiReadinessSkillAlignments.some((s: any) => s.dataAvailable !== false && s.candidateScore !== null);
+      if (!hasFitData && fitSkillAlignments.length > 0) missingAssessments.push('FIT Assessment');
+      if (!hasAiData && aiReadinessSkillAlignments.length > 0) missingAssessments.push('AI Readiness Assessment');
+      
+      const dataCoverage = {
+        percentage: dataCoveragePercentage,
+        assessedSkillCount,
+        totalRequiredSkills,
+        missingAssessments,
+        hasSufficientData: totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoveragePercentage >= 40
+      };
 
       // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)
       // Use nudged skill alignments to ensure no multiples of 5 in required scores
@@ -5071,10 +5679,735 @@ Format your response as JSON with this structure:
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         finalRecommendation,
         nextSteps,
+        dataCoverage,
       });
     } catch (error) {
       console.error("Error fetching role alignment:", error);
       res.status(500).json({ message: "Failed to fetch role alignment" });
+    }
+  });
+
+  // Admin: Multi-candidate role fit comparison - compare multiple candidates against one role
+  app.post("/api/admin/multi-candidate-comparison", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { jobRoleId, candidateIds } = req.body;
+      
+      if (!jobRoleId || !candidateIds || !Array.isArray(candidateIds) || candidateIds.length < 2) {
+        return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
+      }
+      
+      if (candidateIds.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
+      }
+
+      // Get job role
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      if (!role.requiredSkillScores) {
+        return res.status(400).json({ 
+          message: "Role does not have required skill scores. Please generate them first.",
+          requiresGeneration: true
+        });
+      }
+
+      // Helper functions
+      const ensureNoMultipleOf5 = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          const nudge = score % 10 === 0 ? 2 : 1;
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+
+      const normalizeSkillName = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+
+      const skillCriticality = role.requiredSkillScores.skillCriticality || {};
+      
+      const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
+        if (skillCriticality[skillName]) return skillCriticality[skillName] as any;
+        const normalizedInput = normalizeSkillName(skillName);
+        for (const [key, value] of Object.entries(skillCriticality)) {
+          const normalizedKey = normalizeSkillName(key);
+          if (normalizedKey === normalizedInput || normalizedKey.includes(normalizedInput) || normalizedInput.includes(normalizedKey)) {
+            return value as any;
+          }
+        }
+        return 'important';
+      };
+
+      const getSkillWeight = (criticality: string): number => {
+        if (criticality === 'critical') return 2.0;
+        if (criticality === 'important') return 1.5;
+        return 1.0;
+      };
+
+      // AI Readiness skill mapping
+      const aiReadinessSkillMapping: Record<string, string> = {
+        'AI Literacy': 'AI Literacy & Prompt Engineering',
+        'Collaboration': 'Collaboration & Communication',
+        'Domain Fluency': 'Data Fluency',
+        'Responsible AI': 'Responsible AI & Ethical Awareness',
+        'Data Fluency': 'Data Fluency',
+        'Technical Fundamentals': 'Technical Fundamentals',
+        'Technical Fluency': 'Technical Fundamentals',
+        'Critical Thinking': 'Critical Thinking & Problem-Solving',
+        'Adaptability': 'Adaptability & Continuous Learning',
+        'Adaptive Learning': 'Adaptability & Continuous Learning',
+        'Creativity': 'Creativity & Innovation',
+        'Creative Innovation': 'Creativity & Innovation',
+        'Domain Expertise': 'Domain Expertise',
+      };
+
+      // Process each candidate
+      const candidateEntries: any[] = [];
+      
+      for (const candidateId of candidateIds) {
+        const user = await storage.getUser(candidateId);
+        if (!user) continue;
+
+        const resultsRaw = await storage.getResultsByUser(candidateId);
+        const results = resultsRaw.map(recalculateScores);
+        const completedResults = results.filter((r) => r.status === 'completed');
+        
+        // Don't skip candidates with no results - include them as insufficient data
+        // This allows them to be shown in the comparison with proper messaging
+
+        // Aggregate skills
+        const fitSkills = new Map<string, number>();
+        const aiReadinessSkills = new Map<string, number>();
+        
+        completedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              if (result.assessmentType === 'fit') {
+                fitSkills.set(skill, score as number);
+              } else if (result.assessmentType === 'ai_readiness') {
+                aiReadinessSkills.set(skill, score as number);
+              }
+            });
+          }
+        });
+
+        // Build skill alignments with coverage tracking
+        // IMPORTANT: We do NOT penalize candidates for missing assessments
+        // Skills without data are marked as 'not_assessed' and excluded from scoring
+        const skillScores: any[] = [];
+        let totalRequiredSkills = 0;
+        let assessedSkillCount = 0;
+        
+        // Process FIT skills - include ALL required skills, mark availability
+        if (role.requiredSkillScores.fitSkills) {
+          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const candidateScoreRaw = fitSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
+            
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: true
+              });
+            } else {
+              // Skill not assessed - mark as unavailable, do NOT use 0
+              skillScores.push({
+                skillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: false
+              });
+            }
+          });
+        }
+        
+        // Process AI Readiness skills - include ALL required skills, mark availability
+        if (role.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScoreRaw = aiReadinessSkills.get(fullSkillName) ?? aiReadinessSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
+            
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName: fullSkillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: true
+              });
+            } else {
+              // Skill not assessed - mark as unavailable, do NOT use 0
+              skillScores.push({
+                skillName: fullSkillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: false
+              });
+            }
+          });
+        }
+
+        // Calculate data coverage percentage (use floor to be conservative - don't round up)
+        const dataCoverage = totalRequiredSkills > 0 
+          ? Math.floor((assessedSkillCount / totalRequiredSkills) * 100) 
+          : 0;
+        
+        // Determine if candidate has sufficient data for comparison
+        // Minimum 40% coverage required AND must have at least one assessed skill
+        // If role has no required skills, comparison is not meaningful
+        const hasSufficientData = totalRequiredSkills > 0 && assessedSkillCount > 0 && dataCoverage >= 40;
+
+        // Calculate overall fit score ONLY from assessed skills (don't penalize missing data)
+        let weightedTotal = 0;
+        let weightSum = 0;
+        let criticalGaps = 0;
+        let totalCriticalSkills = 0;
+        let assessedCriticalSkills = 0;
+        const strengths: string[] = [];
+        const gaps: string[] = [];
+        const missingAssessments: string[] = [];
+        
+        // Track which assessment types are missing
+        const hasFitData = fitSkills.size > 0;
+        const hasAiReadinessData = aiReadinessSkills.size > 0;
+        if (!hasFitData && role.requiredSkillScores.fitSkills && Object.keys(role.requiredSkillScores.fitSkills).length > 0) {
+          missingAssessments.push('FIT Assessment');
+        }
+        if (!hasAiReadinessData && role.requiredSkillScores.aiReadinessSkills && Object.keys(role.requiredSkillScores.aiReadinessSkills).length > 0) {
+          missingAssessments.push('AI Readiness Assessment');
+        }
+        
+        skillScores.forEach(skill => {
+          const isCritical = skill.criticality === 'critical';
+          if (isCritical) totalCriticalSkills++;
+          
+          // Only include skills WITH data in the weighted calculation
+          if (skill.dataAvailable) {
+            const weight = getSkillWeight(skill.criticality || 'important');
+            if (isCritical) assessedCriticalSkills++;
+            
+            const matchPercent = skill.score >= skill.requiredScore
+              ? 100
+              : (skill.score / skill.requiredScore) * 100;
+            
+            weightedTotal += matchPercent * weight;
+            weightSum += weight;
+            
+            if (isCritical && skill.score < skill.requiredScore) {
+              criticalGaps++;
+            }
+
+            // Identify strengths and gaps (only for assessed skills)
+            if (skill.score > skill.requiredScore + 5) {
+              strengths.push(`Strong ${skill.skillName}`);
+            } else if (skill.gap > 15) {
+              gaps.push(`Gap in ${skill.skillName}`);
+            }
+          }
+        });
+        
+        let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
+        
+        // IMPORTANT: Only apply penalty if we actually ASSESSED critical skills - don't penalize for missing data
+        if (criticalGaps > 0 && assessedCriticalSkills > 0) {
+          const criticalPenalty = criticalGaps * 0.10;
+          overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
+        }
+        
+        // Round and ensure no multiples of 5 (consistent scoring policy)
+        overallFit = ensureNoMultipleOf5(Math.round(overallFit));
+
+        const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+
+        // Build risk flags including missing assessments
+        const riskFlags: string[] = [];
+        if (criticalGaps > 0) {
+          riskFlags.push(`${criticalGaps} critical skill gap(s)`);
+        }
+        if (missingAssessments.length > 0) {
+          riskFlags.push(`Missing: ${missingAssessments.join(', ')}`);
+        }
+        if (!hasSufficientData) {
+          riskFlags.push('Insufficient data for reliable comparison');
+        }
+
+        candidateEntries.push({
+          userId: candidateId,
+          userName,
+          email: user.email,
+          overallFit: hasSufficientData ? overallFit : null, // null if insufficient data
+          rank: 0, // Will be calculated after all candidates are processed
+          fitTier: !hasSufficientData ? 'insufficient-data' : (overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed'),
+          skillScores,
+          strengths: strengths.slice(0, 5),
+          gaps: gaps.slice(0, 5),
+          riskFlags,
+          // Coverage fields as object for frontend compatibility
+          dataCoverage: {
+            percentage: dataCoverage,
+            assessedSkillCount,
+            totalRequiredSkills,
+            missingAssessments,
+            hasSufficientData
+          },
+          hasSufficientData,
+          missingAssessments
+        });
+      }
+
+      // Separate candidates with sufficient data from those without
+      const comparableCandidates = candidateEntries.filter(e => e.hasSufficientData);
+      const insufficientDataCandidates = candidateEntries.filter(e => !e.hasSufficientData);
+
+      if (comparableCandidates.length < 2) {
+        // Check if we have at least 2 total candidates but not enough with sufficient data
+        if (candidateEntries.length >= 2) {
+          return res.status(400).json({ 
+            message: "Not enough candidates with sufficient assessment data for comparison. Candidates need at least 40% of required skills assessed.",
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage.percentage,
+              missingAssessments: c.missingAssessments
+            }))
+          });
+        }
+        return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
+      }
+
+      // Sort and assign ranks - only rank candidates with sufficient data
+      // Candidates without sufficient data get rank = null
+      // Sort by "hirability" which considers both overall fit AND critical skill gaps
+      // This aligns with the Hiring Decision Matrix logic
+      const getHiringBandScore = (candidate: any): number => {
+        const overallFit = candidate.overallFit || 0;
+        // Count critical skill gaps (skills below required threshold)
+        const criticalGaps = candidate.skillScores.filter((skill: any) => {
+          if (skill.criticality !== 'critical' || skill.dataAvailable === false || skill.score == null) return false;
+          const requiredScore = skill.requiredScore || 60;
+          return skill.score < requiredScore;
+        }).length;
+        
+        // Assign hiring band score (higher = better hire)
+        if (overallFit >= 80 && criticalGaps === 0) return 4; // STRONG HIRE
+        if (overallFit >= 70 && criticalGaps <= 1) return 3;  // HIRE
+        if (overallFit >= 60 && criticalGaps <= 2) return 2;  // MAYBE
+        return 1; // NO HIRE
+      };
+      
+      comparableCandidates.sort((a, b) => {
+        const bandDiff = getHiringBandScore(b) - getHiringBandScore(a);
+        if (bandDiff !== 0) return bandDiff;
+        // Tiebreaker: higher overall fit score
+        return (b.overallFit || 0) - (a.overallFit || 0);
+      });
+      comparableCandidates.forEach((entry, index) => {
+        entry.rank = index + 1;
+      });
+      
+      // Candidates with insufficient data are not ranked
+      insufficientDataCandidates.forEach((entry) => {
+        entry.rank = null;
+      });
+      
+      // Combine back for final results (ranked first, then unranked)
+      const allCandidateEntries = [...comparableCandidates, ...insufficientDataCandidates];
+
+      // Calculate summary insights ONLY from comparable candidates
+      const fitScores = comparableCandidates.map(e => e.overallFit as number);
+      const topPerformer = comparableCandidates[0];
+      const averageFit = fitScores.length > 0 ? Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length) : 0;
+      
+      const fitDistribution = {
+        strong: comparableCandidates.filter(e => e.fitTier === 'strong').length,
+        moderate: comparableCandidates.filter(e => e.fitTier === 'moderate').length,
+        developmentNeeded: comparableCandidates.filter(e => e.fitTier === 'development-needed').length,
+        insufficientData: insufficientDataCandidates.length
+      };
+
+      // Find common strengths and gaps across comparable candidates
+      const strengthCounts: Record<string, number> = {};
+      const gapCounts: Record<string, number> = {};
+      
+      comparableCandidates.forEach(entry => {
+        entry.strengths.forEach((s: string) => {
+          strengthCounts[s] = (strengthCounts[s] || 0) + 1;
+        });
+        entry.gaps.forEach((g: string) => {
+          gapCounts[g] = (gapCounts[g] || 0) + 1;
+        });
+      });
+
+      const commonStrengths = Object.entries(strengthCounts)
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
+        .map(([strength]) => strength)
+        .slice(0, 3);
+
+      const commonGaps = Object.entries(gapCounts)
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
+        .map(([gap]) => gap)
+        .slice(0, 3);
+
+      // Generate hiring recommendation with detailed reasoning (from comparable candidates only)
+      const topEntry = comparableCandidates[0];
+      const runnerUp = comparableCandidates.length > 1 ? comparableCandidates[1] : null;
+      
+      // Find skills where top candidate beats runner-up (and by how much)
+      // Only compare skills where BOTH candidates have data
+      const topAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      const runnerUpAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      
+      if (runnerUp) {
+        topEntry.skillScores.forEach((skill: any) => {
+          // Only compare if both candidates have data for this skill
+          if (!skill.dataAvailable) return;
+          const runnerUpSkill = runnerUp.skillScores.find((s: any) => s.skillName === skill.skillName);
+          if (runnerUpSkill && runnerUpSkill.dataAvailable) {
+            const diff = skill.score - runnerUpSkill.score;
+            if (diff > 5) {
+              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
+            } else if (diff < -5) {
+              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'important' });
+            }
+          }
+        });
+      }
+      
+      // Sort by criticality first (critical > important > nice-to-have), then by advantage
+      const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
+      topAdvantages.sort((a, b) => {
+        const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                         (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+        return critDiff !== 0 ? critDiff : b.advantage - a.advantage;
+      });
+      runnerUpAdvantages.sort((a, b) => {
+        const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                         (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+        return critDiff !== 0 ? critDiff : b.advantage - a.advantage;
+      });
+      
+      // Build hiring recommendation
+      const topCriticalAdvantages = topAdvantages.filter(a => a.criticality === 'critical');
+      const runnerUpCriticalAdvantages = runnerUpAdvantages.filter(a => a.criticality === 'critical');
+      
+      // Generate recommendation reasons
+      const recommendationReasons: string[] = [];
+      const fitGap = topEntry.overallFit - (runnerUp?.overallFit || 0);
+      if (fitGap > 0) {
+        recommendationReasons.push(`${fitGap} point${fitGap !== 1 ? 's' : ''} higher overall fit score than runner-up`);
+      }
+      if (topCriticalAdvantages.length > 0) {
+        recommendationReasons.push(`Stronger on ${topCriticalAdvantages.length} critical skill(s): ${topCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
+      }
+      if (topAdvantages.length > runnerUpAdvantages.length) {
+        recommendationReasons.push(`Outperforms on ${topAdvantages.length} skills vs ${runnerUpAdvantages.length} for runner-up`);
+      }
+      if ((topEntry.riskFlags || []).length === 0 && (runnerUp?.riskFlags || []).length > 0) {
+        recommendationReasons.push('No critical skill gaps (runner-up has gaps)');
+      }
+      // Add default reason if no specific advantages found
+      if (recommendationReasons.length === 0) {
+        recommendationReasons.push(`Highest overall fit score among compared candidates (${topEntry.overallFit}%)`);
+      }
+      
+      // Generate runner-up consideration
+      const runnerUpConsideration: string[] = [];
+      if (runnerUp) {
+        if (runnerUpCriticalAdvantages.length > 0) {
+          runnerUpConsideration.push(`Better on critical skill(s): ${runnerUpCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
+        }
+        if (runnerUpAdvantages.length > 0) {
+          runnerUpConsideration.push(`Outperforms top pick on ${runnerUpAdvantages.length} skill(s)`);
+        }
+        if ((runnerUp.riskFlags || []).length === 0) {
+          runnerUpConsideration.push('No critical skill gaps');
+        }
+        // Add default consideration if none found
+        if (runnerUpConsideration.length === 0) {
+          runnerUpConsideration.push(`Second highest fit score (${runnerUp.overallFit}%)`);
+          if (fitGap <= 5) {
+            runnerUpConsideration.push('Very close to top candidate - consider as strong alternative');
+          }
+        }
+      }
+      
+      // Head-to-head skill comparison (who wins each skill) - only for comparable candidates with available data
+      const skillComparison: { skillName: string; winner: string; winnerScore: number; loserScore: number; margin: number; criticality: string }[] = [];
+      const allSkillNames = new Set<string>();
+      comparableCandidates.forEach(e => e.skillScores.forEach((s: any) => {
+        if (s.dataAvailable) allSkillNames.add(s.skillName);
+      }));
+      
+      if (comparableCandidates.length >= 2) {
+        allSkillNames.forEach(skillName => {
+          // Only include candidates who have data for this skill
+          const scores = comparableCandidates
+            .map(e => {
+              const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+              if (!skill || !skill.dataAvailable) return null;
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+            })
+            .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
+            .sort((a, b) => b.score - a.score);
+          
+          if (scores.length >= 2 && scores[0].score !== scores[1].score) {
+            skillComparison.push({
+              skillName,
+              winner: scores[0].name,
+              winnerScore: scores[0].score,
+              loserScore: scores[1].score,
+              margin: scores[0].score - scores[1].score,
+              criticality: scores[0].criticality
+            });
+          }
+        });
+        
+        // Sort by criticality then margin
+        skillComparison.sort((a, b) => {
+          const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                           (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+          return critDiff !== 0 ? critDiff : b.margin - a.margin;
+        });
+      }
+
+      // NEW METRICS: Skill Dominance Count - how many skills each comparable candidate wins
+      const skillDominance: { candidateName: string; candidateId: string; winsCount: number; totalSkills: number; dominancePercent: number }[] = [];
+      comparableCandidates.forEach(entry => {
+        const wins = skillComparison.filter(sc => sc.winner === entry.userName).length;
+        skillDominance.push({
+          candidateName: entry.userName,
+          candidateId: entry.userId,
+          winsCount: wins,
+          totalSkills: allSkillNames.size,
+          dominancePercent: allSkillNames.size > 0 ? Math.round((wins / allSkillNames.size) * 100) : 0
+        });
+      });
+      skillDominance.sort((a, b) => b.winsCount - a.winsCount);
+
+      // NEW METRICS: Consistency Score - how evenly a candidate performs (only for assessed skills)
+      const consistencyScores: { candidateName: string; candidateId: string; consistencyScore: number; interpretation: string }[] = [];
+      comparableCandidates.forEach(entry => {
+        // Only consider skills with available data
+        const scores = entry.skillScores
+          .filter((s: any) => s.dataAvailable)
+          .map((s: any) => s.score);
+        if (scores.length > 0) {
+          const mean = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+          const variance = scores.reduce((sum: number, s: number) => sum + Math.pow(s - mean, 2), 0) / scores.length;
+          const stdDev = Math.sqrt(variance);
+          // Consistency score: 100 - stdDev (higher = more consistent, max stdDev ~50 for 0-100 range)
+          const consistencyScore = Math.max(0, Math.round(100 - stdDev * 2));
+          let interpretation = 'Moderate';
+          if (consistencyScore >= 85) interpretation = 'Very Consistent';
+          else if (consistencyScore >= 70) interpretation = 'Consistent';
+          else if (consistencyScore < 50) interpretation = 'Variable';
+          
+          consistencyScores.push({
+            candidateName: entry.userName,
+            candidateId: entry.userId,
+            consistencyScore,
+            interpretation
+          });
+        }
+      });
+      consistencyScores.sort((a, b) => b.consistencyScore - a.consistencyScore);
+
+      // NEW METRICS: Critical Gap Ratio - % of assessed critical skills below 60% threshold
+      const criticalGapRatios: { candidateName: string; candidateId: string; criticalGaps: number; totalCritical: number; gapRatio: number; riskLevel: string }[] = [];
+      comparableCandidates.forEach(entry => {
+        // Only consider assessed critical skills
+        const criticalSkills = entry.skillScores.filter((s: any) => s.criticality === 'critical' && s.dataAvailable);
+        const gapsCount = criticalSkills.filter((s: any) => s.score < 60).length;
+        const ratio = criticalSkills.length > 0 ? Math.round((gapsCount / criticalSkills.length) * 100) : 0;
+        let riskLevel = 'Low Risk';
+        if (ratio >= 50) riskLevel = 'High Risk';
+        else if (ratio >= 25) riskLevel = 'Moderate Risk';
+        else if (ratio > 0) riskLevel = 'Low Risk';
+        else riskLevel = 'No Risk';
+        
+        criticalGapRatios.push({
+          candidateName: entry.userName,
+          candidateId: entry.userId,
+          criticalGaps: gapsCount,
+          totalCritical: criticalSkills.length,
+          gapRatio: ratio,
+          riskLevel
+        });
+      });
+      criticalGapRatios.sort((a, b) => a.gapRatio - b.gapRatio); // Lower ratio = better
+
+      // NEW METRICS: Largest Skill Differential - the skill with biggest spread between candidates
+      let largestDifferential: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number; spread: number; criticality: string } | null = null;
+      if (comparableCandidates.length >= 2 && allSkillNames.size > 0) {
+        allSkillNames.forEach(skillName => {
+          // Only include candidates with data for this skill
+          const scores = comparableCandidates
+            .map(e => {
+              const skill = e.skillScores.find((s: any) => s.skillName === skillName);
+              if (!skill || !skill.dataAvailable) return null;
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+            })
+            .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
+            .sort((a, b) => b.score - a.score);
+          
+          // Guard against empty scores array
+          if (scores.length < 2) return;
+          
+          const spread = scores[0].score - scores[scores.length - 1].score;
+          if (!largestDifferential || spread > largestDifferential.spread) {
+            largestDifferential = {
+              skillName,
+              topCandidate: scores[0].name,
+              topScore: scores[0].score,
+              bottomCandidate: scores[scores.length - 1].name,
+              bottomScore: scores[scores.length - 1].score,
+              spread,
+              criticality: scores[0].criticality
+            };
+          }
+        });
+      }
+
+      const summaryInsights = {
+        topPerformer: { userId: topPerformer.userId, userName: topPerformer.userName, overallFit: topPerformer.overallFit },
+        averageFit,
+        fitDistribution,
+        commonStrengths,
+        commonGaps,
+        // New recommendation-focused fields
+        recommendation: {
+          recommendedCandidate: topEntry.userName,
+          recommendedUserId: topEntry.userId,
+          fitScore: topEntry.overallFit,
+          fitTier: topEntry.fitTier,
+          reasons: recommendationReasons.slice(0, 4),
+          criticalSkillAdvantages: topCriticalAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        },
+        runnerUp: runnerUp ? {
+          name: runnerUp.userName,
+          userId: runnerUp.userId,
+          fitScore: runnerUp.overallFit,
+          fitTier: runnerUp.fitTier,
+          consideration: runnerUpConsideration.slice(0, 3),
+          advantagesOverTop: runnerUpAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        } : null,
+        skillComparison: skillComparison.slice(0, 10),
+        keyDifferentiators: topAdvantages.slice(0, 5).map(a => 
+          `${topEntry.userName} leads in ${a.skill} by ${a.advantage} points${a.criticality === 'critical' ? ' (CRITICAL)' : ''}`
+        ),
+        // NEW: Advanced analytics metrics
+        skillDominance,
+        consistencyScores,
+        criticalGapRatios,
+        largestDifferential,
+      };
+
+      // Create and save comparison (use allCandidateEntries which includes coverage info)
+      const comparison = await storage.createMultiCandidateComparison({
+        jobRoleId,
+        createdBy: adminId,
+        candidateEntries: allCandidateEntries,
+        roleSnapshot: {
+          roleId: role.id,
+          roleName: role.name,
+          requiredSkillScores: role.requiredSkillScores
+        },
+        summaryInsights: {
+          ...summaryInsights,
+          // Add coverage summary
+          coverageSummary: {
+            comparableCandidatesCount: comparableCandidates.length,
+            insufficientDataCandidatesCount: insufficientDataCandidates.length,
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage,
+              missingAssessments: c.missingAssessments
+            }))
+          }
+        },
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      });
+
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error creating multi-candidate comparison:", error);
+      res.status(500).json({ message: "Failed to create comparison" });
+    }
+  });
+
+  // Admin: Get multi-candidate comparison
+  app.get("/api/admin/multi-candidate-comparison/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const comparison = await storage.getMultiCandidateComparison(req.params.id);
+      
+      if (!comparison) {
+        return res.status(404).json({ message: "Comparison not found" });
+      }
+
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error fetching multi-candidate comparison:", error);
+      res.status(500).json({ message: "Failed to fetch comparison" });
     }
   });
 
@@ -5240,6 +6573,7 @@ Format your response as JSON with this structure:
           isSuspended: !!partner.apiAccessSuspendedAt,
           currentMonthSessions,
           totalTestsCompleted,
+          freeTestsAllocated: partner.freeTestsAllocated || 0,
         };
       }));
       
@@ -5254,7 +6588,17 @@ Format your response as JSON with this structure:
         currentMonthSessions: partnerStats.reduce((sum, p) => sum + p.currentMonthSessions, 0),
       };
       
-      res.json({ totals, partners: partnerStats });
+      // Get test mode usage stats for all partners in the current month
+      const testModeStats = await storage.getTestModeUsageStats(startOfMonth, endOfMonth);
+      
+      // Calculate test mode totals
+      const testModeTotals = {
+        totalTestSessions: testModeStats.reduce((sum, p) => sum + p.testSessions, 0),
+        totalTestCompletions: testModeStats.reduce((sum, p) => sum + p.testCompletions, 0),
+        partnersUsingTestMode: testModeStats.length,
+      };
+      
+      res.json({ totals, partners: partnerStats, testMode: { totals: testModeTotals, byPartner: testModeStats } });
     } catch (error) {
       console.error("Error fetching platform usage stats:", error);
       res.status(500).json({ message: "Failed to fetch platform usage stats" });
@@ -5330,6 +6674,7 @@ Format your response as JSON with this structure:
           isSuspended: !!matchingPartner.apiAccessSuspendedAt,
           currentMonthSessions,
           totalTestsCompleted,
+          freeTestsAllocated: matchingPartner.freeTestsAllocated || 0,
         },
       });
     } catch (error) {
@@ -5397,11 +6742,89 @@ Format your response as JSON with this structure:
           // Currency and prepaid expiry
           currency: matchingPartner.currency || 'GBP',
           prepaidCreditsExpiresAt: matchingPartner.prepaidCreditsExpiresAt,
+          // Tour completion status (persists across devices)
+          tourCompleted: matchingPartner.tourCompleted ?? false,
+          // Terms acceptance status
+          termsAccepted: matchingPartner.termsAccepted ?? false,
+          termsAcceptedAt: matchingPartner.termsAcceptedAt,
         },
       });
     } catch (error) {
       console.error("Error fetching partner account:", error);
       res.status(500).json({ message: "Failed to fetch partner account" });
+    }
+  });
+
+  // Partner self-service: Update tour completion status
+  app.post("/api/partner/me/tour-completed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Update tour completion status
+      await storage.updatePartnerAccount(matchingPartner.id, { tourCompleted: true });
+      
+      res.json({ success: true, message: "Tour marked as completed" });
+    } catch (error) {
+      console.error("Error updating tour status:", error);
+      res.status(500).json({ message: "Failed to update tour status" });
+    }
+  });
+
+  // Partner self-service: Accept terms (EULA and Privacy Policy)
+  app.post("/api/partner/me/accept-terms", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Update terms acceptance status
+      await storage.updatePartnerAccount(matchingPartner.id, { 
+        termsAccepted: true,
+        termsAcceptedAt: new Date()
+      });
+      
+      res.json({ success: true, message: "Terms accepted successfully" });
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      res.status(500).json({ message: "Failed to accept terms" });
     }
   });
 
@@ -5568,6 +6991,121 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner self-service: Get credit package pricing converted to partner's currency
+  app.get("/api/partner/me/pricing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Find partner account
+      let matchingPartner = null;
+      
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get exchange rates
+      const rates = await getExchangeRates();
+      const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
+      
+      // Check if this is a zero-decimal currency (using shared constant)
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency as any);
+      
+      // Rates are GBP-based (how many units of currency per 1 GBP)
+      // Example: USD = 1.27 means 1 GBP = 1.27 USD
+      // Example: PHP = 71.5 means 1 GBP = 71.5 PHP
+      const targetRate = rates.rates[partnerCurrency];
+      const usdRate = rates.rates['USD'] ?? 1.27;            // USD per GBP
+      
+      // Check if we have a valid rate for this currency
+      if (targetRate === undefined) {
+        console.warn(`[Partner Pricing] No exchange rate found for ${partnerCurrency}, falling back to GBP`);
+        // Fall back to GBP pricing using the same roundPriceUp framework
+        // Base prices in USD: $20, $10, $5, $2.50, $1 per test
+        const usdToGbpRate = 1 / usdRate;
+        const gbpPackages = [
+          { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
+          { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
+          { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
+          { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
+          { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
+        ].map(pkg => ({
+          size: pkg.size,
+          name: pkg.name,
+          price: roundPriceUp(pkg.priceUsd * usdToGbpRate) * 100, // Convert to pence after rounding
+          pricePerTest: roundPriceUp(pkg.pricePerTestUsd * usdToGbpRate) * 100,
+        }));
+        return res.json({
+          currency: 'GBP',
+          packages: gbpPackages,
+          exchangeRate: usdToGbpRate,
+          lastUpdated: rates.date,
+          isZeroDecimal: false,
+        });
+      }
+      
+      // To convert USD to target currency:
+      // 1. Convert USD to GBP: usd_amount / usdRate = gbp_amount
+      // 2. Convert GBP to target: gbp_amount * targetRate = target_amount
+      // Combined: usd_amount * (targetRate / usdRate) = target_amount
+      const usdToTargetRate = targetRate / usdRate;
+      
+      // Base prices in USD (documentation prices: $20, $10, $5, $2.50, $1 per test)
+      const basePackages = [
+        { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
+        { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
+        { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
+        { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
+        { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
+      ];
+      
+      // Convert prices using roundPriceUp (same as home page pricing)
+      const convertedPackages = basePackages.map(pkg => {
+        // Convert USD to target currency (in main units, e.g. PHP not PHP cents)
+        const priceInTargetUnits = pkg.priceUsd * usdToTargetRate;
+        const pricePerTestInTargetUnits = pkg.pricePerTestUsd * usdToTargetRate;
+        
+        // Apply roundPriceUp for clean display prices
+        const roundedPrice = roundPriceUp(priceInTargetUnits);
+        const roundedPricePerTest = roundPriceUp(pricePerTestInTargetUnits);
+        
+        // For zero-decimal currencies, return the rounded amount directly
+        // For regular currencies, multiply by 100 to get cents/smallest units
+        return {
+          size: pkg.size,
+          name: pkg.name,
+          price: isZeroDecimal ? roundedPrice : roundedPrice * 100,
+          pricePerTest: isZeroDecimal ? roundedPricePerTest : roundedPricePerTest * 100,
+        };
+      });
+      
+      console.log(`[Partner Pricing] Currency: ${partnerCurrency}, USD rate: ${usdRate}, Target rate: ${targetRate}, Conversion: ${usdToTargetRate.toFixed(4)}, Zero-decimal: ${isZeroDecimal}`);
+      
+      res.json({
+        currency: partnerCurrency,
+        packages: convertedPackages,
+        exchangeRate: usdToTargetRate,
+        lastUpdated: rates.date,
+        isZeroDecimal,
+      });
+    } catch (error) {
+      console.error("Error fetching partner pricing:", error);
+      res.status(500).json({ message: "Failed to fetch pricing" });
+    }
+  });
+
   // Partner self-service: Get pending billing change request
   app.get("/api/partner/me/billing-change-request", isAuthenticated, async (req: any, res) => {
     try {
@@ -5633,7 +7171,7 @@ Format your response as JSON with this structure:
       
       const { requestedBillingType, reason } = req.body;
       
-      if (!requestedBillingType || !['prepaid', 'auto_bill', 'invoice'].includes(requestedBillingType)) {
+      if (!requestedBillingType || !['payg', 'subscription', 'enterprise'].includes(requestedBillingType)) {
         return res.status(400).json({ message: "Invalid billing type requested" });
       }
       
@@ -5909,8 +7447,8 @@ Format your response as JSON with this structure:
         updates.quotaAlertEmail = quotaAlertEmail;
       }
       
-      // Auto top-up only for prepaid partners
-      if (matchingPartner.billingType === 'prepaid') {
+      // Auto top-up only for PAYG partners
+      if (matchingPartner.billingType === 'payg') {
         if (typeof autoTopUpEnabled === 'boolean') {
           updates.autoTopUpEnabled = autoTopUpEnabled;
         }
@@ -6007,8 +7545,8 @@ Format your response as JSON with this structure:
         return res.status(404).json({ hasPartnerAccount: false, apiKeys: [] });
       }
       
-      // Get API keys for this partner (don't expose full key or hash)
-      const apiKeys = await storage.getPartnerApiKeysByPartner(matchingPartner.id);
+      // Get ALL API keys for this partner including deactivated ones (don't expose full key or hash)
+      const apiKeys = await storage.getAllPartnerApiKeysByPartner(matchingPartner.id);
       
       const maskedKeys = apiKeys.map(key => ({
         id: key.id,
@@ -6022,6 +7560,7 @@ Format your response as JSON with this structure:
         lastUsedAt: key.lastUsedAt,
         createdAt: key.createdAt,
         organisationId: key.partnerOrganisationId,
+        isActive: key.isActive,
       }));
       
       res.json({
@@ -6303,10 +7842,10 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found for your organisation" });
       }
       
-      // Only prepaid and auto_bill billing type partners can self-purchase
-      if (matchingPartner.billingType !== 'prepaid' && matchingPartner.billingType !== 'auto_bill') {
+      // Only PAYG and Subscription billing type partners can self-purchase
+      if (matchingPartner.billingType !== 'payg' && matchingPartner.billingType !== 'subscription') {
         return res.status(400).json({ 
-          message: "Self-service purchasing is only available for prepaid and pay-as-you-go billing accounts. Invoice clients should contact their account manager." 
+          message: "Self-service purchasing is only available for Pay As You Go and Subscription billing accounts. Enterprise clients should contact their account manager." 
         });
       }
       
@@ -7660,6 +9199,452 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Get candidates from partner's sessions (for analysis tab)
+  app.get("/api/partner/me/candidates", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get all completed sessions for this partner
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = sessions.filter(s => s.status === 'completed');
+      
+      // Group sessions by external email to get unique candidates
+      const candidateMap = new Map<string, {
+        id: string; // Use session ID as pseudo-user ID
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        externalUserId: string | null;
+        sessions: typeof completedSessions;
+      }>();
+      
+      for (const session of completedSessions) {
+        const email = session.externalEmail || session.externalUserId || session.id;
+        
+        if (!candidateMap.has(email)) {
+          // Extract name from email if not available
+          const emailName = session.externalEmail?.split('@')[0] || '';
+          candidateMap.set(email, {
+            id: email, // Use email as unique identifier
+            email: session.externalEmail || 'Unknown',
+            firstName: emailName || null,
+            lastName: null,
+            externalUserId: session.externalUserId,
+            sessions: [],
+          });
+        }
+        
+        candidateMap.get(email)!.sessions.push(session);
+      }
+      
+      // Build candidate list with results
+      const candidates = await Promise.all(
+        Array.from(candidateMap.values()).map(async (candidate) => {
+          const results = await Promise.all(
+            candidate.sessions.map(async (session) => {
+              const result = await storage.getAssessmentResultBySessionId(session.id);
+              return {
+                id: session.id,
+                assessmentType: session.assessmentType,
+                totalScore: result?.overallScore || 0,
+                scores: result?.scores || {},
+                completedAt: session.completedAt?.toISOString() || '',
+                status: session.status,
+              };
+            })
+          );
+          
+          return {
+            user: {
+              id: candidate.id,
+              email: candidate.email,
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              externalUserId: candidate.externalUserId,
+            },
+            results,
+          };
+        })
+      );
+      
+      res.json(candidates);
+    } catch (error) {
+      console.error("Error fetching partner candidates:", error);
+      res.status(500).json({ message: "Failed to fetch candidates" });
+    }
+  });
+
+  // Partner: Compare candidates (for analysis tab)
+  app.get("/api/partner/me/compare", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const candidateIds = Array.isArray(req.query.candidateIds)
+        ? req.query.candidateIds as string[]
+        : [req.query.candidateIds as string].filter(Boolean);
+
+      if (!candidateIds || candidateIds.length < 1) {
+        return res.status(400).json({ message: "At least 1 candidate ID required" });
+      }
+
+      // Get all sessions for this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = allSessions.filter(s => s.status === 'completed');
+      
+      // Filter to only the selected candidates (by email/ID)
+      const candidatesResults = await Promise.all(
+        candidateIds.map(async (candidateId) => {
+          const sessions = completedSessions.filter(
+            s => (s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId)
+          );
+          
+          const results = await Promise.all(
+            sessions.map(async (session) => {
+              const result = await storage.getAssessmentResultBySessionId(session.id);
+              return {
+                assessmentType: session.assessmentType,
+                scores: result?.scores || {},
+                totalScore: result?.overallScore || 0,
+                completedAt: session.completedAt,
+                status: session.status,
+              };
+            })
+          );
+          
+          return results;
+        })
+      );
+
+      // Normalize assessment type for comparison
+      const normalizeAssessmentType = (type: string) => 
+        type.toLowerCase().replace(/[\s-]+/g, '_');
+      
+      // Skill name normalization map
+      const normalizeSkillName = (skill: string): string => {
+        const skillMap: Record<string, string> = {
+          'AI Literacy': 'AI Literacy & Prompt Engineering',
+          'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering',
+          'Technical Fluency': 'Technical Fundamentals',
+          'Domain Fluency': 'Data Fluency',
+          'Critical Thinking': 'Critical Thinking & Problem-Solving',
+          'Adaptive Learning': 'Adaptability & Continuous Learning',
+          'Collaboration': 'Collaboration & Communication',
+          'Cross-functional Collaboration': 'Collaboration & Communication',
+          'Responsible AI': 'Responsible AI & Ethical Awareness',
+          'Creative Innovation': 'Creativity & Innovation',
+        };
+        return skillMap[skill] || skill;
+      };
+
+      const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
+      
+      // Build skills map for radar chart
+      const skillsMap = new Map<string, (number | null)[]>();
+      
+      candidatesResults.forEach((results, candidateIndex) => {
+        const skillBasedResults = results.filter((r) => {
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        skillBasedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              const canonicalSkill = normalizeSkillName(skill);
+              if (!skillsMap.has(canonicalSkill)) {
+                skillsMap.set(canonicalSkill, new Array(candidateIds.length).fill(null));
+              }
+              const scores = skillsMap.get(canonicalSkill)!;
+              scores[candidateIndex] = score as number;
+            });
+          }
+        });
+      });
+
+      // Build radar data
+      const radarData: any[] = [];
+      skillsMap.forEach((scores, skill) => {
+        const dataPoint: any = { skill };
+        scores.forEach((score, index) => {
+          dataPoint[`candidate${index}`] = score ?? 0;
+        });
+        radarData.push(dataPoint);
+      });
+
+      // Build skill comparison table
+      const skillComparison: any[] = [];
+      skillsMap.forEach((scores, skillName) => {
+        skillComparison.push({ skillName, scores });
+      });
+
+      // Calculate average scores
+      const averageScores = candidatesResults.map((results) => {
+        const skillBasedResults = results.filter((r) => {
+          if (r.status !== 'completed' || !r.scores) return false;
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return skillBasedAssessmentTypes.some(type => normalizeAssessmentType(type) === normalized);
+        });
+        
+        const allScores: number[] = [];
+        skillBasedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.values(result.scores).forEach((score) => {
+              if (typeof score === 'number') allScores.push(score);
+            });
+          }
+        });
+        
+        return allScores.length > 0 
+          ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+          : 0;
+      });
+
+      // Extract assessment-specific data
+      const fitAssessments = candidatesResults.map((results) => {
+        const fitResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'fit');
+        return fitResult ? { scores: fitResult.scores, completedAt: fitResult.completedAt } : null;
+      });
+
+      const aiReadinessAssessments = candidatesResults.map((results) => {
+        const aiResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'ai_readiness');
+        return aiResult ? { scores: aiResult.scores, completedAt: aiResult.completedAt } : null;
+      });
+
+      const promptArchitectureAssessments = candidatesResults.map((results) => {
+        const paResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'prompt_architecture');
+        return paResult ? { 
+          totalScore: paResult.totalScore, 
+          levels: [],
+          percentile: 0,
+          completedAt: paResult.completedAt 
+        } : null;
+      });
+
+      const aiqAssessments = candidatesResults.map((results) => {
+        const aiqResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'aiq');
+        return aiqResult ? { 
+          totalScore: aiqResult.totalScore, 
+          scores: aiqResult.scores, 
+          completedAt: aiqResult.completedAt 
+        } : null;
+      });
+
+      res.json({
+        radarData,
+        skillComparison,
+        averageScores,
+        hasSkillData: radarData.length > 0,
+        fitAssessments,
+        aiReadinessAssessments,
+        promptArchitectureAssessments,
+        aiqAssessments,
+      });
+    } catch (error) {
+      console.error("Error comparing partner candidates:", error);
+      res.status(500).json({ message: "Failed to compare candidates" });
+    }
+  });
+
+  // Partner: Get available roles (for analysis tab)
+  app.get("/api/partner/me/roles", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Partners can access all job roles
+      const roles = await storage.getAllJobRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching partner roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Partner: Get role alignment for a candidate (for analysis tab)
+  app.get("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.query;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSessions = allSessions.filter(
+        s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
+      );
+      
+      if (candidateSessions.length === 0) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Get role
+      const role = await storage.getJobRole(jobRoleId as string);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Collect all assessment results for this candidate
+      const completedSessions = candidateSessions.filter(s => s.status === 'completed');
+      const results = await Promise.all(
+        completedSessions.map(session => storage.getAssessmentResultBySessionId(session.id))
+      );
+      const validResults = results.filter(r => r !== null && r !== undefined);
+
+      // Calculate fit scores
+      let fitScores: Record<string, number> | null = null;
+      let aiReadinessScores: Record<string, number> | null = null;
+      let promptArchitectureScore: number | null = null;
+      let aiqScore: number | null = null;
+
+      for (const session of completedSessions) {
+        const result = await storage.getAssessmentResultBySessionId(session.id);
+        if (!result) continue;
+        
+        if (session.assessmentType === 'fit') {
+          fitScores = result.scores as Record<string, number>;
+        } else if (session.assessmentType === 'ai_readiness') {
+          aiReadinessScores = result.scores as Record<string, number>;
+        } else if (session.assessmentType === 'prompt_architecture') {
+          promptArchitectureScore = result.overallScore;
+        } else if (session.assessmentType === 'aiq') {
+          aiqScore = result.overallScore;
+        }
+      }
+
+      // Calculate alignment
+      const fitSkillAlignments = role.fitRequiredScores && fitScores
+        ? Object.entries(role.fitRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+            const candidateScore = fitScores![skillName] ?? null;
+            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            return {
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
+              criticality: (role.fitSkillCriticality as any)?.[skillName] || 'important',
+              dataAvailable: candidateScore !== null,
+            };
+          })
+        : null;
+
+      const aiReadinessSkillAlignments = role.aiReadinessRequiredScores && aiReadinessScores
+        ? Object.entries(role.aiReadinessRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+            const candidateScore = aiReadinessScores![skillName] ?? null;
+            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            return {
+              skillName,
+              candidateScore,
+              requiredScore,
+              gap,
+              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
+              criticality: (role.aiReadinessSkillCriticality as any)?.[skillName] || 'important',
+              dataAvailable: candidateScore !== null,
+            };
+          })
+        : null;
+
+      // Calculate overall fit score
+      const allAlignments = [
+        ...(fitSkillAlignments || []),
+        ...(aiReadinessSkillAlignments || []),
+      ];
+      
+      const scoredAlignments = allAlignments.filter(a => a.candidateScore !== null);
+      const overallFit = scoredAlignments.length > 0
+        ? Math.round(scoredAlignments.reduce((sum, a) => sum + (a.candidateScore || 0), 0) / scoredAlignments.length)
+        : null;
+
+      // Determine strengths and gaps
+      const strengths = scoredAlignments
+        .filter(a => (a.gap || 0) >= 10)
+        .map(a => a.skillName)
+        .slice(0, 3);
+      
+      const gaps = scoredAlignments
+        .filter(a => (a.gap || 0) < -10)
+        .map(a => a.skillName)
+        .slice(0, 3);
+
+      res.json({
+        overallFit,
+        fitSkillAlignments,
+        aiReadinessSkillAlignments,
+        strengths,
+        gaps,
+        cohortBenchmarks: null, // Partners don't see cross-platform benchmarks
+        roleFlexibility: [],
+        dataCoverage: {
+          percentage: Math.round((scoredAlignments.length / allAlignments.length) * 100) || 0,
+          assessedSkillCount: scoredAlignments.length,
+          totalRequiredSkills: allAlignments.length,
+          missingAssessments: [
+            ...(fitScores ? [] : ['FIT Assessment']),
+            ...(aiReadinessScores ? [] : ['AI Readiness Assessment']),
+            ...(promptArchitectureScore !== null ? [] : ['Prompt Architecture']),
+            ...(aiqScore !== null ? [] : ['AIQ Assessment']),
+          ],
+          hasSufficientData: scoredAlignments.length >= 3,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching partner role alignment:", error);
+      res.status(500).json({ message: "Failed to fetch role alignment" });
+    }
+  });
+
+  // Partner: Trigger role alignment analysis (POST)
+  app.post("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
+    try {
+      const partner = await getPartnerForUser(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.body;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSessions = allSessions.filter(
+        s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
+      );
+      
+      if (candidateSessions.length === 0) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // For now, redirect to the GET endpoint logic (no AI generation for partners)
+      // This allows the frontend to use the same mutation pattern
+      const url = new URL(req.protocol + '://' + req.get('host') + '/api/partner/me/role-alignment');
+      url.searchParams.set('candidateId', candidateId);
+      url.searchParams.set('jobRoleId', jobRoleId);
+      
+      return res.redirect(307, url.pathname + url.search);
+    } catch (error) {
+      console.error("Error triggering partner role alignment:", error);
+      res.status(500).json({ message: "Failed to analyze role alignment" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
@@ -8198,11 +10183,16 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
       
-      // Check if user with this email already exists
+      // Check if user with this email already exists - reject to prevent silent failures
       const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "A user with this email already exists. Please use a different email address, or contact the user to update their account." 
+        });
+      }
       
       let finalOrganizationId = organizationId;
-      let partnerUser = existingUser;
+      let partnerUser: any = null;
       let temporaryPassword: string | null = null;
       
       // If organizationId provided, verify it exists
@@ -8216,10 +10206,6 @@ Format your response as JSON with this structure:
         if (existingOrgPartner) {
           return res.status(400).json({ message: "This organisation is already linked to another partner account" });
         }
-      } else if (existingUser?.organizationId) {
-        // Use existing user's organization
-        finalOrganizationId = existingUser.organizationId;
-        console.log(`Using existing user's organisation ${existingUser.organizationId} for partner`);
       } else {
         // Create a new organisation for this partner
         const orgName = companyName || name;
@@ -8237,41 +10223,31 @@ Format your response as JSON with this structure:
       }
       
       // Validate billing type
-      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
-      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'prepaid';
+      const validBillingTypes = ['payg', 'subscription', 'enterprise'];
+      const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'payg';
       
-      if (existingUser) {
-        // Update existing user to be partner_admin and link to partner organization
-        await storage.updateUserRole(existingUser.id, 'partner_admin');
-        if (finalOrganizationId) {
-          await storage.updateUserOrganization(existingUser.id, finalOrganizationId);
-        }
-        partnerUser = { ...existingUser, role: 'partner_admin', organizationId: finalOrganizationId };
-        console.log(`Updated existing user ${existingUser.id} to partner_admin role for partner organisation`);
-      } else {
-        // Generate temporary password for the partner admin user
-        temporaryPassword = generateTemporaryPassword();
-        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-        
-        // Split the name into first and last name
-        const nameParts = name.trim().split(' ');
-        const firstName = nameParts[0] || name;
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-        
-        // Create partner_admin user for the partner's organisation
-        partnerUser = await storage.createUser({
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          role: 'partner_admin',
-          organizationId: finalOrganizationId,
-          profileImageUrl: null,
-        });
-        
-        createdUserId = partnerUser.id; // Track for cleanup
-        console.log(`Created admin user ${partnerUser.id} for partner organisation`);
-      }
+      // Generate temporary password for the partner admin user
+      temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Split the name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || name;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+      
+      // Create partner_admin user for the partner's organisation
+      partnerUser = await storage.createUser({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'partner_admin',
+        organizationId: finalOrganizationId,
+        profileImageUrl: null,
+      });
+      
+      createdUserId = partnerUser.id; // Track for cleanup
+      console.log(`Created admin user ${partnerUser.id} for partner organisation`);
       
       // Calculate 7-day expiry for free tests if allocated
       const freeTestsExpiryDate = freeTestsAllocated && freeTestsAllocated > 0 
@@ -8306,19 +10282,19 @@ Format your response as JSON with this structure:
         stripeCustomerId: stripeCustomerId || null,
         organizationId: finalOrganizationId,
         isActive: true,
-        // New billing type system: prepaid, auto_bill, or invoice
+        // New billing type system: payg, subscription, or enterprise
         billingType: selectedBillingType,
         freeTestsAllocated: freeTestsAllocated || 0,
         freeTestsExpiresAt: freeTestsExpiryDate,
-        // Prepaid fields
-        prepaidBalance: selectedBillingType === 'prepaid' ? (prepaidBalance || freeTestsAllocated || 0) : 0,
-        // Auto-bill fields
-        billingCycleAnchor: selectedBillingType === 'auto_bill' ? (billingCycleAnchor || 1) : null,
+        // PAYG and Enterprise use prepaid balance
+        prepaidBalance: (selectedBillingType === 'payg' || selectedBillingType === 'enterprise') ? (prepaidBalance || freeTestsAllocated || 0) : 0,
+        // Subscription uses billing cycle
+        billingCycleAnchor: selectedBillingType === 'subscription' ? (billingCycleAnchor || 1) : null,
         currentMonthUsage: 0,
-        // Invoice fields
-        paymentTermsDays: selectedBillingType === 'invoice' ? (paymentTermsDays || 30) : null,
-        invoiceNotes: selectedBillingType === 'invoice' ? invoiceNotes : null,
-        invoiceContact: selectedBillingType === 'invoice' ? invoiceContact : null,
+        // Enterprise uses invoice fields
+        paymentTermsDays: selectedBillingType === 'enterprise' ? (paymentTermsDays || 30) : null,
+        invoiceNotes: selectedBillingType === 'enterprise' ? invoiceNotes : null,
+        invoiceContact: selectedBillingType === 'enterprise' ? invoiceContact : null,
       });
       
       // Auto-credit free tests if allocated
@@ -8349,22 +10325,17 @@ Format your response as JSON with this structure:
         }
       }
       
-      // Send welcome email with login credentials (only if new user created with temp password)
+      // Send welcome email with login credentials
       try {
-        if (temporaryPassword) {
-          await sendPartnerWelcomeEmail({
-            partnerName: name,
-            companyName: companyName || name,
-            email,
-            temporaryPassword,
-            billingType: selectedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
-            freeTestsAllocated: freeTestsAllocated || 0,
-          });
-          console.log(`Sent welcome email to partner ${email}`);
-        } else {
-          // For existing users, send a simpler notification email
-          console.log(`Partner account created for existing user ${email} - no welcome email sent (they already have login credentials)`);
-        }
+        await sendPartnerWelcomeEmail({
+          partnerName: name,
+          companyName: companyName || name,
+          email,
+          temporaryPassword: temporaryPassword!,
+          billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
+          freeTestsAllocated: freeTestsAllocated || 0,
+        });
+        console.log(`Sent welcome email to partner ${email}`);
       } catch (emailError) {
         console.error("Error sending partner welcome email:", emailError);
         // Don't fail partner creation, just log the error
@@ -8404,6 +10375,56 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Resend partner welcome email with new password
+  app.post("/api/admin/partners/:id/resend-welcome", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Find the partner admin user by email
+      const partnerUser = await storage.getUserByEmail(partner.email);
+      if (!partnerUser) {
+        return res.status(404).json({ message: "Partner user account not found" });
+      }
+      
+      // Generate new temporary password
+      const temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+      
+      // Update user's password
+      await storage.updateUserPassword(partnerUser.id, passwordHash);
+      
+      // Send welcome email with new credentials
+      const result = await sendPartnerWelcomeEmail({
+        partnerName: partner.name,
+        companyName: partner.companyName || partner.name,
+        email: partner.email,
+        temporaryPassword,
+        billingType: (partner.billingType as 'payg' | 'subscription' | 'enterprise') || 'payg',
+        freeTestsAllocated: partner.freeTestsAllocated || 0,
+      });
+      
+      if (result.success) {
+        console.log(`Resent welcome email to partner ${partner.email}`);
+        res.json({ message: "Welcome email sent successfully", email: partner.email });
+      } else {
+        res.status(500).json({ message: "Failed to send welcome email" });
+      }
+    } catch (error: any) {
+      console.error("Error resending partner welcome email:", error);
+      res.status(500).json({ message: "Failed to resend welcome email" });
+    }
+  });
+
   // Super Admin: Update partner
   app.put("/api/admin/partners/:id", isAuthenticated, async (req: any, res) => {
     try {
@@ -8440,7 +10461,7 @@ Format your response as JSON with this structure:
       }
       
       // Validate billing type if provided
-      const validBillingTypes = ['prepaid', 'auto_bill', 'invoice'];
+      const validBillingTypes = ['payg', 'subscription', 'enterprise'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : partner.billingType;
       
       await storage.updatePartnerAccount(req.params.id, {
@@ -8489,6 +10510,12 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
+      // Find and delete the associated user account (partner_admin with same email)
+      const partnerUser = await storage.getUserByEmail(partner.email);
+      if (partnerUser && partnerUser.role === 'partner_admin') {
+        await storage.deleteUser(partnerUser.id);
+      }
+      
       // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
       await storage.deletePartnerAccount(req.params.id);
       
@@ -8514,7 +10541,8 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      const keys = await storage.getApiKeysByPartner(req.params.id);
+      // Get ALL keys including deactivated ones for super admin testing
+      const keys = await storage.getAllPartnerApiKeysByPartner(req.params.id);
       
       // Don't expose the full hash, just metadata
       const safeKeys = keys.map(k => ({
@@ -8871,14 +10899,14 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner package pricing tiers (minimum 10 tests)
+  // Volume-based pricing tiers using shared constants from schema
+  // Prices in USD cents - Tier assignment based on monthly volume commitment ($1.00 = 1 Credit, 6-month expiration)
   const PACKAGE_TIERS = [
-    { size: 10, pricePerTest: 500, name: "Starter" },      // £5 per test = £50 total
-    { size: 25, pricePerTest: 450, name: "Growth" },       // £4.50 per test = £112.50 total
-    { size: 50, pricePerTest: 400, name: "Professional" }, // £4 per test = £200 total
-    { size: 100, pricePerTest: 350, name: "Business" },    // £3.50 per test = £350 total
-    { size: 250, pricePerTest: 300, name: "Enterprise" },  // £3 per test = £750 total
-    { size: 500, pricePerTest: 250, name: "Enterprise+" }, // £2.50 per test = £1,250 total
+    { size: 50, pricePerTest: B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest, name: B2B_VOLUME_TIERS.BOUTIQUE.name, tierVolume: B2B_VOLUME_TIERS.BOUTIQUE.volumeRange, trialQuota: B2B_VOLUME_TIERS.BOUTIQUE.trialQuota },
+    { size: 250, pricePerTest: B2B_VOLUME_TIERS.GROWTH.pricePerTest, name: B2B_VOLUME_TIERS.GROWTH.name, tierVolume: B2B_VOLUME_TIERS.GROWTH.volumeRange, trialQuota: B2B_VOLUME_TIERS.GROWTH.trialQuota },
+    { size: 1000, pricePerTest: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.volumeRange, trialQuota: B2B_VOLUME_TIERS.SMALL_ENTERPRISE.trialQuota },
+    { size: 5000, pricePerTest: B2B_VOLUME_TIERS.ENTERPRISE.pricePerTest, name: B2B_VOLUME_TIERS.ENTERPRISE.name, tierVolume: B2B_VOLUME_TIERS.ENTERPRISE.volumeRange, trialQuota: B2B_VOLUME_TIERS.ENTERPRISE.trialQuota },
+    { size: 10000, pricePerTest: B2B_VOLUME_TIERS.PRO.pricePerTest, name: B2B_VOLUME_TIERS.PRO.name, tierVolume: B2B_VOLUME_TIERS.PRO.volumeRange, trialQuota: B2B_VOLUME_TIERS.PRO.trialQuota },
   ];
 
   // Get available package tiers
@@ -8886,8 +10914,9 @@ Format your response as JSON with this structure:
     const tiers = PACKAGE_TIERS.map(tier => ({
       ...tier,
       totalPrice: tier.size * tier.pricePerTest,
-      displayPrice: `£${(tier.size * tier.pricePerTest / 100).toFixed(2)}`,
-      displayPricePerTest: `£${(tier.pricePerTest / 100).toFixed(2)}`,
+      displayPrice: `$${(tier.size * tier.pricePerTest / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      displayPricePerTest: `$${(tier.pricePerTest / 100).toFixed(2)}`,
+      currency: 'usd',
     }));
     res.json(tiers);
   });
@@ -8912,9 +10941,9 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
       
-      // Find matching tier or use custom pricing
+      // Find matching tier or use custom pricing based on volume-based tiers
       const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
-      const pricePerTest = tier?.pricePerTest || 500; // Default to £5 per test for custom sizes
+      const pricePerTest = tier?.pricePerTest || 2000; // Default to $20/test (Boutique tier) for custom sizes
       const totalPrice = packageSize * pricePerTest;
       
       // Create package record (pending)
@@ -8923,7 +10952,7 @@ Format your response as JSON with this structure:
         packageSize,
         pricePerTest,
         totalPrice,
-        currency: 'gbp',
+        currency: 'usd',
         status: 'pending',
       });
       
@@ -8937,10 +10966,10 @@ Format your response as JSON with this structure:
         customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
         line_items: [{
           price_data: {
-            currency: 'gbp',
+            currency: 'usd',
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at £${(pricePerTest / 100).toFixed(2)} per test`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at $${(pricePerTest / 100).toFixed(2)} per test`,
             },
             unit_amount: totalPrice,
           },
@@ -9241,9 +11270,9 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      // Verify partner is invoice-billed
-      if (partner.billingType !== 'invoice') {
-        return res.status(400).json({ message: "Partner is not configured for invoice billing" });
+      // Verify partner is enterprise-billed (pro-forma invoicing)
+      if (partner.billingType !== 'enterprise') {
+        return res.status(400).json({ message: "Partner is not configured for enterprise billing" });
       }
       
       const { periodStart, periodEnd, testsUsed, vatRate = 20, notes } = req.body;
@@ -10880,7 +12909,7 @@ Format your response as JSON with this structure:
       // If approved, update the partner's billing type
       if (action === 'approve') {
         await storage.updatePartnerAccount(request.partnerId, {
-          billingType: request.requestedBillingType as 'prepaid' | 'auto_bill' | 'invoice',
+          billingType: request.requestedBillingType as 'payg' | 'subscription' | 'enterprise',
         });
       }
       
@@ -11244,12 +13273,6 @@ async function evaluatePromptWithGPT(userPrompt: string, level: number, taskDesc
   feedback: string;
   totalScore: number;
 }> {
-  // Ensure OpenAI connection is warmed up before making request
-  if (!openaiWarmedUp) {
-    console.log('[Prompt Eval] Triggering warmup before first evaluation...');
-    await warmupOpenAI();
-  }
-  
   const evaluationPrompt = `You are an expert evaluator of AI prompts. Evaluate the following user-written prompt based on these criteria:
 
 **Level ${level} Task**: ${taskDescription}
@@ -11339,24 +13362,6 @@ ${userPrompt}
   }
 }
 
-// Async background processor for Prompt Architecture evaluation
-// This runs after the HTTP response is sent to avoid gateway timeouts
-async function processPromptArchitectureAsync(
-  resultId: string, 
-  answers: Record<string, string>
-): Promise<void> {
-  console.log(`[Prompt Arch Background] Starting async evaluation for ${resultId}`);
-  
-  try {
-    const evalResult = await calculatePromptArchitectureScores(answers, resultId);
-    console.log(`[Prompt Arch Background] Evaluation complete for ${resultId} - Total: ${evalResult.totalScore}`);
-    // The calculatePromptArchitectureScores function already updates the database
-  } catch (error: any) {
-    console.error(`[Prompt Arch Background] Evaluation failed for ${resultId}:`, error.message);
-    throw error; // Re-throw so the caller can mark as failed
-  }
-}
-
 // Calculate Prompt Architecture scores by evaluating all prompts
 async function calculatePromptArchitectureScores(
   answers: Record<string, string>,
@@ -11378,69 +13383,47 @@ async function calculatePromptArchitectureScores(
     "7": "Design a comprehensive content moderation system covering multiple domains.",
   };
 
-  // Step 1: Evaluate all prompts with GPT in PARALLEL (with concurrency limit to respect rate limits)
-  // Using p-limit to run max 3 concurrent API calls - reduces ~2min to ~45-60s
-  const limit = pLimit(3);
-  const startTime = Date.now();
-  
-  // Prepare all evaluation tasks
-  const evaluationTasks = Object.entries(answers).map(([levelKey, userPrompt]) => {
-    const levelMatch = levelKey.match(/level-?(\d+)/);
-    const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
-    const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
-    
-    return limit(async () => {
-      console.log(`[Prompt Arch] Starting evaluation for level ${levelNum}`);
-      const evalStartTime = Date.now();
-      
-      try {
-        const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
-        const elapsed = Date.now() - evalStartTime;
-        console.log(`[Prompt Arch] Level ${levelNum} completed in ${elapsed}ms`);
-        
-        return {
-          level: levelNum,
-          userPrompt,
-          evaluation,
-        };
-      } catch (error: any) {
-        console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
-        throw error;
-      }
-    });
-  });
-  
-  // Execute all evaluations in parallel (with concurrency limit)
-  let evaluationsWithData: Array<{
+  const evaluationsWithData: Array<{
     level: number;
     userPrompt: string;
     evaluation: any;
-  }>;
+  }> = [];
   
-  try {
-    evaluationsWithData = await Promise.all(evaluationTasks);
-  } catch (error: any) {
-    console.error(`[Prompt Arch ERROR] Parallel evaluation failed:`, error.message);
-    throw error;
-  }
-  
-  const totalElapsed = Date.now() - startTime;
-  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated in ${totalElapsed}ms (parallel)`);
-  
-  // Calculate totals from parallel results
   let clarityTotal = 0;
   let structureTotal = 0;
   let contextTotal = 0;
   let creativityTotal = 0;
   let iterativeTotal = 0;
-  
-  for (const { evaluation } of evaluationsWithData) {
-    clarityTotal += evaluation.clarity;
-    structureTotal += evaluation.structure;
-    contextTotal += evaluation.contextRelevance;
-    creativityTotal += evaluation.creativity;
-    iterativeTotal += evaluation.iterativeImprovement;
+
+  // Step 1: Evaluate all prompts with GPT (external API calls - cannot be rolled back)
+  for (const [levelKey, userPrompt] of Object.entries(answers)) {
+    // Extract numeric level from key (e.g., "level-1" -> 1)
+    const levelMatch = levelKey.match(/level-?(\d+)/);
+    const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
+    
+    const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
+    
+    try {
+      const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+      
+      evaluationsWithData.push({
+        level: levelNum,
+        userPrompt,
+        evaluation,
+      });
+
+      clarityTotal += evaluation.clarity;
+      structureTotal += evaluation.structure;
+      contextTotal += evaluation.contextRelevance;
+      creativityTotal += evaluation.creativity;
+      iterativeTotal += evaluation.iterativeImprovement;
+    } catch (error: any) {
+      console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
+      throw error; // Rethrow to stop processing
+    }
   }
+  
+  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully`);
 
   // Calculate average scores across all levels
   const numLevels = Object.keys(answers).length;
@@ -11836,22 +13819,22 @@ async function runScheduledBillingCheck() {
   console.log(`[Billing Scheduler] Running billing check for day ${dayOfMonth} at ${today.toISOString()}`);
   
   try {
-    // Get all auto_bill partners whose billing cycle anchor matches today
+    // Get all subscription partners whose billing cycle anchor matches today
     const partners = await storage.getAllPartnerAccounts();
-    const autoBillPartners = partners.filter(
-      (p: PartnerAccount) => p.billingType === 'auto_bill' && 
+    const subscriptionPartners = partners.filter(
+      (p: PartnerAccount) => p.billingType === 'subscription' && 
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     
-    console.log(`[Billing Scheduler] Found ${autoBillPartners.length} auto-bill partners for day ${dayOfMonth}`);
+    console.log(`[Billing Scheduler] Found ${subscriptionPartners.length} subscription partners for day ${dayOfMonth}`);
     
-    for (const partner of autoBillPartners) {
+    for (const partner of subscriptionPartners) {
       await processAutoBillPartner(partner);
     }
     
-    // Archive monthly usage for all billable partners (auto_bill and invoice)
+    // Archive monthly usage for all billable partners (subscription and enterprise)
     const billablePartners = partners.filter(
-      (p: PartnerAccount) => (p.billingType === 'auto_bill' || p.billingType === 'invoice') &&
+      (p: PartnerAccount) => (p.billingType === 'subscription' || p.billingType === 'enterprise') &&
            (p.billingCycleAnchor || 1) === dayOfMonth
     );
     
@@ -11939,5 +13922,153 @@ async function archiveMonthlyUsage(partner: PartnerAccount) {
     await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
     
     console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+// ========================================
+// B2B FREE UNLOCK SCHEDULER
+// Sends results emails to test-takers who have waited 30 days
+// ========================================
+
+let freeUnlockSchedulerStarted = false;
+
+export function startFreeUnlockScheduler() {
+  if (freeUnlockSchedulerStarted) {
+    console.log('[Free Unlock Scheduler] Already started, skipping');
+    return;
+  }
+  
+  freeUnlockSchedulerStarted = true;
+  
+  // Run immediately, then every hour to check for sessions due for free unlock
+  console.log('[Free Unlock Scheduler] Starting scheduler, will check every hour');
+  
+  // Run first check after 1 minute to allow server startup
+  setTimeout(() => {
+    processB2BFreeUnlocks();
+    
+    // Then run every hour
+    setInterval(() => {
+      processB2BFreeUnlocks();
+    }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 1000); // 1 minute delay
+}
+
+async function processB2BFreeUnlocks() {
+  console.log(`[Free Unlock Scheduler] Checking for sessions due for free unlock at ${new Date().toISOString()}`);
+  
+  try {
+    const sessionsDue = await storage.getSessionsDueForFreeUnlock();
+    
+    if (sessionsDue.length === 0) {
+      console.log('[Free Unlock Scheduler] No sessions due for free unlock');
+      return;
+    }
+    
+    console.log(`[Free Unlock Scheduler] Found ${sessionsDue.length} sessions due for free unlock`);
+    
+    for (const session of sessionsDue) {
+      await sendFreeUnlockResultsEmail(session);
+    }
+    
+    console.log(`[Free Unlock Scheduler] Completed processing ${sessionsDue.length} free unlock emails`);
+  } catch (error: any) {
+    console.error('[Free Unlock Scheduler] Error:', error.message);
+  }
+}
+
+// Constants for delivery retry logic
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BACKOFF_HOURS = 24;
+
+async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
+  if (!session.externalEmail) {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} has no email, skipping`);
+    return;
+  }
+  
+  // Check for previous failures using persistent columns
+  const attemptCount = session.resultsDeliveryAttemptCount || 0;
+  const lastAttempt = session.lastResultsDeliveryAttemptAt;
+  const deliveryStatus = session.resultsDeliveryStatus || 'pending';
+  
+  // Skip if already marked as permanently failed
+  if (deliveryStatus === 'failed') {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} marked as failed, manual intervention needed`);
+    return;
+  }
+  
+  // Check backoff period if there were previous attempts
+  if (attemptCount > 0 && lastAttempt) {
+    const hoursSinceLastAttempt = (Date.now() - new Date(lastAttempt).getTime()) / (1000 * 60 * 60);
+    
+    if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+      // Mark as permanently failed after max attempts
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.log(`[Free Unlock Scheduler] Session ${session.id} exceeded max retries (${MAX_RETRY_ATTEMPTS}), marked as failed`);
+      return;
+    }
+    
+    if (hoursSinceLastAttempt < RETRY_BACKOFF_HOURS) {
+      console.log(`[Free Unlock Scheduler] Session ${session.id} in backoff period, ${Math.round(RETRY_BACKOFF_HOURS - hoursSinceLastAttempt)}h remaining`);
+      return;
+    }
+  }
+  
+  // Record the attempt before trying
+  await storage.updateAssessmentSession(session.id, {
+    resultsDeliveryAttemptCount: attemptCount + 1,
+    lastResultsDeliveryAttemptAt: new Date(),
+  } as any);
+  
+  try {
+    const partner = await storage.getPartnerAccount(session.partnerId);
+    const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+    const paymentStatus = session.resultsPaymentStatus || 'unpaid';
+    
+    // Generate proper PDF with real assessment results
+    const pdfBuffer = generateB2BResultsPDF({
+      candidateName: session.externalUserId || undefined,
+      candidateEmail: session.externalEmail,
+      assessmentType: session.assessmentType,
+      scores: session.scores || {},
+      totalScore: session.totalScore || undefined,
+      percentile: session.percentile || undefined,
+      evaluations: session.evaluations || undefined,
+      completedAt: session.completedAt || new Date(),
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+    });
+    const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
+    
+    await sendB2BResultsEmail({
+      email: session.externalEmail,
+      candidateName: session.externalUserId || undefined,
+      assessmentType: session.assessmentType,
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+      pdfBuffer,
+      pdfFilename,
+    });
+    
+    // Mark email as sent - update both email sent time and delivery status
+    await storage.updateAssessmentSession(session.id, {
+      resultsEmailSentAt: new Date(),
+      resultsDeliveryStatus: 'sent',
+    } as any);
+    
+    const deliveryType = paymentStatus === 'paid' ? 'paid results' : paymentStatus === 'free' ? 'free unlock' : '30-day free unlock';
+    console.log(`[Free Unlock Scheduler] Sent ${deliveryType} email to ${session.externalEmail} for session ${session.id}`);
+  } catch (error: any) {
+    // Check if this was the final attempt
+    const newAttemptCount = attemptCount + 1;
+    if (newAttemptCount >= MAX_RETRY_ATTEMPTS) {
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (final attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}), marked as failed:`, error.message);
+    } else {
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    }
   }
 }
