@@ -23,6 +23,33 @@ const openai = new OpenAI({
   timeout: 45000, // 45 seconds per request
 });
 
+// Track if OpenAI has been warmed up
+let openaiWarmedUp = false;
+
+// Warmup OpenAI connection to avoid cold start issues on first real request
+async function warmupOpenAI(): Promise<void> {
+  if (openaiWarmedUp) return;
+  
+  try {
+    console.log('[OpenAI] Warming up connection...');
+    const startTime = Date.now();
+    
+    // Make a minimal API call to establish the connection
+    await openai.chat.completions.create({
+      model: "gpt-4o-mini", // Use cheaper model for warmup
+      messages: [{ role: "user", content: "ping" }],
+      max_tokens: 1,
+    });
+    
+    openaiWarmedUp = true;
+    const elapsed = Date.now() - startTime;
+    console.log(`[OpenAI] Connection warmed up successfully in ${elapsed}ms`);
+  } catch (error: any) {
+    // Don't fail server startup if warmup fails - just log warning
+    console.warn('[OpenAI] Warmup failed (will retry on first request):', error.message);
+  }
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-09-30.clover",
 });
@@ -241,6 +268,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Stripe discount codes (runs in background)
   initializeStripeCoupons().catch(err => {
     console.error('[Stripe] Failed to initialize coupons:', err.message);
+  });
+  
+  // Warmup OpenAI connection in background (for faster first Prompt Architecture submission)
+  warmupOpenAI().catch(err => {
+    console.error('[OpenAI] Warmup error:', err.message);
   });
 
   // Version check endpoint
@@ -10965,6 +10997,12 @@ async function evaluatePromptWithGPT(userPrompt: string, level: number, taskDesc
   feedback: string;
   totalScore: number;
 }> {
+  // Ensure OpenAI connection is warmed up before making request
+  if (!openaiWarmedUp) {
+    console.log('[Prompt Eval] Triggering warmup before first evaluation...');
+    await warmupOpenAI();
+  }
+  
   const evaluationPrompt = `You are an expert evaluator of AI prompts. Evaluate the following user-written prompt based on these criteria:
 
 **Level ${level} Task**: ${taskDescription}
