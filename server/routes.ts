@@ -2043,6 +2043,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check pending evaluation status for a purchase (for waiting screen before payment)
+  app.get("/api/purchase-evaluation-status/:purchaseId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { purchaseId } = req.params;
+      
+      // Verify purchase belongs to user
+      const purchase = await storage.getPurchase(purchaseId);
+      if (!purchase || purchase.userId !== userId) {
+        return res.status(404).json({ message: "Purchase not found" });
+      }
+      
+      const items = await storage.getPurchaseItems(purchaseId);
+      const pendingItems: { assessmentType: string; status: string }[] = [];
+      let allComplete = true;
+      
+      for (const item of items) {
+        const result = await storage.getResultByPurchaseItem(item.id);
+        if (result) {
+          if (result.status === 'pending_evaluation') {
+            pendingItems.push({ 
+              assessmentType: item.assessmentType, 
+              status: 'pending_evaluation' 
+            });
+            allComplete = false;
+          } else if (result.status !== 'completed') {
+            // In progress or other non-complete status
+            allComplete = false;
+          }
+        } else {
+          // No result means not started
+          allComplete = false;
+        }
+      }
+      
+      res.json({
+        allComplete,
+        pendingEvaluations: pendingItems,
+        hasPendingEvaluations: pendingItems.length > 0
+      });
+    } catch (error) {
+      console.error("Error checking evaluation status:", error);
+      res.status(500).json({ message: "Failed to check evaluation status" });
+    }
+  });
+
   // Delete (remove) a purchase item - allows users to remove an assessment from their dashboard
   // Only allowed for self-purchased assessments, not for invited or employer-onboarded users
   app.delete("/api/purchase-items/:itemId", isAuthenticated, async (req: any, res) => {
