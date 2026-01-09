@@ -356,7 +356,7 @@ export default function IndividualReportTab() {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
                   <div>
                     <p className="font-medium text-sm">Prompt Architecture</p>
-                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 7 progressive difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">

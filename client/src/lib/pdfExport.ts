@@ -304,7 +304,7 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
       'Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.', yPos);
     
     yPos = addGuideItem(5, 'Prompt Architecture', 
-      'Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.', yPos);
+      'Evaluates AI prompt engineering skills across 7 progressive difficulty levels. Each level tests clarity, structure, and creativity in prompt design.', yPos);
     
     yPos = addGuideItem(6, 'Trait Profile Summary', 
       'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis or Candidate Comparison tool to determine which traits matter for specific positions.', yPos);
