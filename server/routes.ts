@@ -2369,49 +2369,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
-        // For Prompt Architecture, use OpenAI GPT evaluation
-        // This includes transactional storage of evaluations AND status update
+        // For Prompt Architecture, use async evaluation to avoid gateway timeouts
+        // Save answers immediately and start background evaluation
+        console.log(`[Assessment Submit] Starting async Prompt Architecture evaluation for assessment ${id}`);
+        
         try {
-          console.log(`[Assessment Submit] Starting Prompt Architecture evaluation for assessment ${id}`);
-          const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
-          scores = promptEvalResult.scores;
-          totalScore = promptEvalResult.totalScore;
-          evaluations = promptEvalResult.evaluations;
+          // Check if evaluation is already in progress or complete
+          if (result.status === 'evaluating') {
+            // Check if evaluation completed in background
+            const currentResult = await storage.getResultById(id);
+            if (currentResult?.status === 'completed') {
+              console.log(`[Assessment Submit] Background evaluation completed for ${id}`);
+              return res.json({ 
+                success: true, 
+                scores: currentResult.scores, 
+                totalScore: currentResult.totalScore,
+                evaluations: currentResult.evaluations
+              });
+            }
+            // Still evaluating - tell client to poll
+            return res.status(202).json({ 
+              success: true,
+              status: 'evaluating',
+              message: "Your answers are being evaluated. This may take 2-3 minutes.",
+              assessmentId: id
+            });
+          }
           
-          console.log(`[Assessment Submit] Prompt Architecture evaluation completed successfully`);
+          // Mark as evaluating and save answers FIRST (fast response)
+          await db.update(assessmentResults)
+            .set({
+              answers,
+              status: 'evaluating',
+            })
+            .where(eq(assessmentResults.id, id));
           
-          // The function already updated the assessment result in a transaction
-          // Just return the results
-          return res.json({ success: true, scores, totalScore, evaluations });
+          // Start background evaluation (don't await - let it run async)
+          processPromptArchitectureAsync(id, answers).catch((error: any) => {
+            console.error(`[Prompt Arch Background] Evaluation failed for ${id}:`, error.message);
+            // Mark as failed so user can retry
+            db.update(assessmentResults)
+              .set({ status: 'evaluation_failed' })
+              .where(eq(assessmentResults.id, id))
+              .catch(console.error);
+          });
+          
+          // Return immediately - client will poll for results
+          return res.status(202).json({ 
+            success: true,
+            status: 'evaluating',
+            message: "Your answers are being evaluated. This may take 2-3 minutes.",
+            assessmentId: id
+          });
         } catch (error: any) {
           console.error(`[Assessment Submit ERROR] Prompt Architecture failed for assessment ${id}:`, {
             error: error.message,
             stack: error.stack
           });
-          
-          // Handle OpenAI API errors gracefully
-          if (error.message?.includes('quota') || error.message?.includes('429')) {
-            return res.status(402).json({ 
-              message: "OpenAI API quota exceeded. Please add credits to your OpenAI account to use Prompt Architecture assessment.",
-              error: "quota_exceeded"
-            });
-          }
-          if (error.message?.includes('invalid') && error.message?.includes('key')) {
-            return res.status(500).json({ 
-              message: "OpenAI API configuration error. Please contact support.",
-              error: "api_config_error"
-            });
-          }
-          if (error.message?.includes('timeout')) {
-            return res.status(504).json({ 
-              message: "OpenAI API request timed out. Please try again.",
-              error: "timeout"
-            });
-          }
-          
-          // Return detailed error message to help debug
           return res.status(500).json({ 
-            message: error.message || "Failed to evaluate prompts with AI. Please try again.",
+            message: error.message || "Failed to start evaluation. Please try again.",
             error: "evaluation_failed"
           });
         }
@@ -2465,6 +2481,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: userMessage, error: "submission_failed" });
+    }
+  });
+
+  // Poll for assessment evaluation status (for async Prompt Architecture)
+  app.get("/api/assessments/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getResultById(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Return current status and results if available
+      if (result.status === 'completed') {
+        return res.json({
+          status: 'completed',
+          success: true,
+          scores: result.scores,
+          totalScore: result.totalScore,
+          evaluations: result.evaluations
+        });
+      }
+      
+      if (result.status === 'evaluation_failed') {
+        return res.json({
+          status: 'failed',
+          message: "Evaluation failed. Please try submitting again."
+        });
+      }
+      
+      // Still evaluating
+      return res.json({
+        status: result.status || 'evaluating',
+        message: "Your answers are being evaluated. This may take 2-3 minutes."
+      });
+    } catch (error) {
+      console.error("Error checking assessment status:", error);
+      res.status(500).json({ message: "Failed to check status" });
     }
   });
 
@@ -11089,6 +11150,24 @@ ${userPrompt}
     }
     
     throw new Error(`Failed to evaluate prompt: ${error.message || 'Unknown error'}`);
+  }
+}
+
+// Async background processor for Prompt Architecture evaluation
+// This runs after the HTTP response is sent to avoid gateway timeouts
+async function processPromptArchitectureAsync(
+  resultId: string, 
+  answers: Record<string, string>
+): Promise<void> {
+  console.log(`[Prompt Arch Background] Starting async evaluation for ${resultId}`);
+  
+  try {
+    const evalResult = await calculatePromptArchitectureScores(answers, resultId);
+    console.log(`[Prompt Arch Background] Evaluation complete for ${resultId} - Total: ${evalResult.totalScore}`);
+    // The calculatePromptArchitectureScores function already updates the database
+  } catch (error: any) {
+    console.error(`[Prompt Arch Background] Evaluation failed for ${resultId}:`, error.message);
+    throw error; // Re-throw so the caller can mark as failed
   }
 }
 

@@ -213,13 +213,18 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   // Use consistent column position for all sections - descriptions start at same x position
   const descColumnX = 85; // Fixed description column for all sections
+  const descWidth = pageWidth - descColumnX - 15; // Width available for descriptions
+  const lineHeight = 3.5; // Consistent line height for wrapped text
   
   FIT_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${skill.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(skill.description || '', descColumnX, yPos);
-    yPos += 5;
+    const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
+    descLines.forEach((line: string, i: number) => {
+      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+    });
+    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
   yPos += 4;
   
@@ -238,10 +243,11 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${skill.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descWidth = pageWidth - descColumnX - 15;
     const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
-    pdf.text(descLines[0], descColumnX, yPos);
-    yPos += 5;
+    descLines.forEach((line: string, i: number) => {
+      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+    });
+    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
   yPos += 4;
   
@@ -260,8 +266,11 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${dim.displayName}:`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(dim.description, descColumnX, yPos);
-    yPos += 5;
+    const descLines = pdf.splitTextToSize(dim.description || '', descWidth);
+    descLines.forEach((line: string, i: number) => {
+      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+    });
+    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
   yPos += 4;
   
@@ -288,8 +297,11 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${band.range} (${band.title}):`, 25, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(band.description, descColumnX, yPos);
-    yPos += 5;
+    const descLines = pdf.splitTextToSize(band.description || '', descWidth);
+    descLines.forEach((line: string, i: number) => {
+      pdf.text(line, descColumnX, yPos + (i * lineHeight));
+    });
+    yPos += Math.max(5, descLines.length * lineHeight + 1.5);
   });
   
   pdf.setTextColor(0, 0, 0);

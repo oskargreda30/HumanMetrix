@@ -112,15 +112,58 @@ export default function Assessment() {
     },
   });
 
+  // Helper to poll for evaluation completion
+  const pollForCompletion = async (assessmentId: string): Promise<any> => {
+    const maxPolls = 60; // 60 polls × 3 seconds = 3 minutes max
+    const pollInterval = 3000; // 3 seconds
+    
+    for (let i = 0; i < maxPolls; i++) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      
+      const statusResponse = await fetch(`/api/assessments/${assessmentId}/status`, {
+        credentials: 'include',
+      });
+      
+      if (!statusResponse.ok) {
+        throw new Error('Failed to check status');
+      }
+      
+      const statusData = await statusResponse.json();
+      
+      if (statusData.status === 'completed') {
+        return statusData;
+      }
+      
+      if (statusData.status === 'failed') {
+        throw new Error(statusData.message || 'Evaluation failed');
+      }
+      
+      // Still evaluating - continue polling
+      console.log(`[Assessment] Poll ${i + 1}/${maxPolls}: still evaluating...`);
+    }
+    
+    throw new Error('Evaluation timed out. Please refresh the page.');
+  };
+
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Use 3-minute timeout for assessment submission (Prompt Architecture can take 2-3 minutes)
-      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 180000 });
-      if (!response.ok) {
+      // Use shorter timeout - we'll get 202 response immediately for Prompt Architecture
+      const response = await apiRequest("POST", `/api/assessments/${resultId}/submit`, { answers }, { timeoutMs: 30000 });
+      
+      if (!response.ok && response.status !== 202) {
         const errorData = await response.json();
         throw errorData;
       }
-      return await response.json();
+      
+      const data = await response.json();
+      
+      // If status is 202 (evaluating), poll for completion
+      if (response.status === 202 || data.status === 'evaluating') {
+        console.log('[Assessment] Evaluation in progress, polling for completion...');
+        return await pollForCompletion(resultId!);
+      }
+      
+      return data;
     },
     onSuccess: async () => {
       setIsSubmitting(false); // Reset submitting state
