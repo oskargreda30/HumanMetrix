@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Lock, CheckCircle2, Loader2, ArrowLeft, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
@@ -11,6 +13,11 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    percentOff: number;
+  } | null>(null);
   const { countryCode, getAdjustedPriceInPence, getLocalPriceNumber, formatLocalCurrency, isVPN } = useCurrency();
   
   // Get purchaseId from URL params
@@ -66,12 +73,64 @@ export function ResultsPaymentGate() {
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
 
+  // Calculate discount amount
+  const discountAmount = appliedDiscount 
+    ? totalLocal * (appliedDiscount.percentOff / 100)
+    : 0;
+  const finalTotal = totalLocal - discountAmount;
+  const formattedFinalPrice = formatLocalCurrency(finalTotal);
+
+  // Validate discount code mutation
+  const validateDiscountMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await apiRequest("POST", "/api/validate-discount", {
+        discountCode: code,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Invalid discount code");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setAppliedDiscount({
+        code: data.code,
+        percentOff: data.percentOff,
+      });
+      setDiscountCode("");
+      toast({
+        title: "Discount applied",
+        description: `${data.percentOff}% discount has been applied`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Invalid code",
+        description: error.message || "The discount code is not valid",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApplyDiscount = () => {
+    if (discountCode.trim()) {
+      validateDiscountMutation.mutate(discountCode.trim());
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+  };
+
   const unlockMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/unlock-results", {
         purchaseId: currentPurchase?.id, // Pass the specific purchase ID
         countryCode, // Pass for PPP pricing
         isVPN, // Pass VPN status for consistent pricing with frontend display
+        discountCode: appliedDiscount?.code, // Pass applied discount code
       });
       
       if (!response.ok) {
@@ -213,11 +272,69 @@ export function ResultsPaymentGate() {
             <span>{formatLocalCurrency(platformFeeLocal)}</span>
           </div>
           
-          {/* Divider */}
+          {/* Subtotal */}
+          <div className="border-t pt-3 mt-3">
+            <div className="flex justify-between items-center text-sm" data-testid="price-subtotal">
+              <span>Subtotal</span>
+              <span>{formattedPrice}</span>
+            </div>
+          </div>
+
+          {/* Discount Code Input */}
+          {!appliedDiscount ? (
+            <div className="space-y-2" data-testid="discount-code-section">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Discount code"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                    className="pl-9"
+                    data-testid="input-discount-code"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleApplyDiscount}
+                  disabled={!discountCode.trim() || validateDiscountMutation.isPending}
+                  data-testid="button-apply-discount"
+                >
+                  {validateDiscountMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400" data-testid="discount-applied">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <span>{appliedDiscount.code} ({appliedDiscount.percentOff}% off)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>-{formatLocalCurrency(discountAmount)}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleRemoveDiscount}
+                  data-testid="button-remove-discount"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Final Total */}
           <div className="border-t pt-3 mt-3">
             <div className="flex justify-between items-center font-semibold" data-testid="price-total">
               <span>Total</span>
-              <span className="text-lg">{formattedPrice}</span>
+              <span className="text-lg">{formattedFinalPrice}</span>
             </div>
           </div>
         </div>
@@ -238,7 +355,7 @@ export function ResultsPaymentGate() {
             ) : (
               <>
                 <Lock className="mr-2 h-4 w-4" />
-                Unlock Results ({formattedPrice})
+                Unlock Results ({formattedFinalPrice})
               </>
             )}
           </Button>

@@ -879,6 +879,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Validate discount code before checkout
+  app.post("/api/validate-discount", isAuthenticated, async (req: any, res) => {
+    try {
+      const { discountCode } = req.body;
+      
+      if (!discountCode) {
+        return res.status(400).json({ message: "Discount code is required" });
+      }
+      
+      const normalizedCode = discountCode.trim().toUpperCase();
+      
+      // Check known discount codes
+      if (normalizedCode === "FREE") {
+        return res.json({
+          valid: true,
+          code: normalizedCode,
+          percentOff: 100,
+          description: "100% off - Free access",
+        });
+      }
+      
+      if (normalizedCode === "20OFFPRICE") {
+        return res.json({
+          valid: true,
+          code: normalizedCode,
+          percentOff: 20,
+          description: "20% off your order",
+        });
+      }
+      
+      // Invalid code
+      return res.status(400).json({ message: "Invalid discount code" });
+    } catch (error: any) {
+      console.error("Error validating discount code:", error);
+      res.status(500).json({ message: "Failed to validate discount code" });
+    }
+  });
+
   app.post("/api/unlock-results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
