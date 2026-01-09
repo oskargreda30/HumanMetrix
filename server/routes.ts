@@ -4166,15 +4166,15 @@ FIT ASSESSMENT SKILLS (Behavioral):
 6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. AI Literacy - Understanding AI capabilities, limitations, and terminology
-2. Collaboration - Working effectively with AI systems and human teams
-3. Domain Fluency - Applying AI knowledge within specific professional contexts
-4. Responsible AI - Understanding ethical implications and biases in AI applications
+1. AI Literacy & Prompt Engineering - Understanding AI capabilities, limitations, and effective prompting
+2. Collaboration & Communication - Working effectively with AI systems and human teams
+3. Data Fluency - Applying data knowledge within specific professional contexts
+4. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
 5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
-6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
-7. Critical Thinking - Evaluating AI outputs and making informed decisions
-8. Technical Fluency - Comfort with technical tools and systems
-9. Creative Innovation - Using AI to generate novel solutions and approaches
+6. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
+8. Technical Fundamentals - Comfort with technical tools and systems
+9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
 - Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
@@ -4196,8 +4196,8 @@ Format your response as JSON with this exact structure and skill names:
     "Intellectual Curiosity": number
   },
   "aiReadinessSkills": {
-    "AI Literacy": number,
-    "Collaboration": number,
+    "AI Literacy & Prompt Engineering": number,
+    "Collaboration & Communication": number,
     "Data Fluency": number,
     "Responsible AI & Ethical Awareness": number,
     "Domain Expertise": number,
@@ -4213,8 +4213,8 @@ Format your response as JSON with this exact structure and skill names:
     "Empathy & Ethics": "critical" | "standard",
     "Interpersonal Agility": "critical" | "standard",
     "Intellectual Curiosity": "critical" | "standard",
-    "AI Literacy": "critical" | "standard",
-    "Collaboration": "critical" | "standard",
+    "AI Literacy & Prompt Engineering": "critical" | "standard",
+    "Collaboration & Communication": "critical" | "standard",
     "Data Fluency": "critical" | "standard",
     "Responsible AI & Ethical Awareness": "critical" | "standard",
     "Domain Expertise": "critical" | "standard",
@@ -4325,15 +4325,15 @@ FIT ASSESSMENT SKILLS (Behavioral):
 6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. AI Literacy - Understanding AI capabilities, limitations, and terminology
-2. Collaboration - Working effectively with AI systems and human teams
-3. Domain Fluency - Applying AI knowledge within specific professional contexts
-4. Responsible AI - Understanding ethical implications and biases in AI applications
+1. AI Literacy & Prompt Engineering - Understanding AI capabilities, limitations, and effective prompting
+2. Collaboration & Communication - Working effectively with AI systems and human teams
+3. Data Fluency - Applying data knowledge within specific professional contexts
+4. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
 5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
-6. Adaptive Learning - Quickly learning new AI tools and adapting to evolving technologies
-7. Critical Thinking - Evaluating AI outputs and making informed decisions
-8. Technical Fluency - Comfort with technical tools and systems
-9. Creative Innovation - Using AI to generate novel solutions and approaches
+6. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
+7. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
+8. Technical Fundamentals - Comfort with technical tools and systems
+9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100). Consider:
 - Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
@@ -4347,7 +4347,7 @@ CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. D
 Format your response as JSON:
 {
   "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
-  "aiReadinessSkills": { "AI Literacy": number, "Collaboration": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
+  "aiReadinessSkills": { "AI Literacy & Prompt Engineering": number, "Collaboration & Communication": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
   "skillCriticality": { ... each skill as "critical" or "standard" ... }
 }`;
 

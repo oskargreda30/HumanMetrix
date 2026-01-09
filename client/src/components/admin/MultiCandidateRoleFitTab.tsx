@@ -30,6 +30,47 @@ import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 
+// Mapping from short/legacy skill names to canonical names used in candidate data
+const SKILL_NAME_MAPPING: Record<string, string> = {
+  'AI Literacy': 'AI Literacy & Prompt Engineering',
+  'Collaboration': 'Collaboration & Communication',
+  'Domain Fluency': 'Data Fluency',
+  'Responsible AI': 'Responsible AI & Ethical Awareness',
+  'Technical Fluency': 'Technical Fundamentals',
+  'Critical Thinking': 'Critical Thinking & Problem-Solving',
+  'Adaptive Learning': 'Adaptability & Continuous Learning',
+  'Creative Innovation': 'Creativity & Innovation',
+};
+
+// Normalize skill name to canonical form for matching
+const normalizeSkillName = (skillName: string): string => {
+  return SKILL_NAME_MAPPING[skillName] || skillName;
+};
+
+// Find skill in candidate's scores, trying both original and normalized names
+const findSkillInScores = (
+  skillScores: Array<{ skillName: string; score: number | null; dataAvailable?: boolean; [key: string]: any }>,
+  targetSkillName: string
+): typeof skillScores[0] | undefined => {
+  // Try exact match first
+  let skill = skillScores.find(s => s.skillName === targetSkillName);
+  if (skill) return skill;
+  
+  // Try normalized name
+  const normalizedTarget = normalizeSkillName(targetSkillName);
+  skill = skillScores.find(s => s.skillName === normalizedTarget);
+  if (skill) return skill;
+  
+  // Try reverse lookup (if candidate has short name but we're looking for full name)
+  const reverseMapping = Object.entries(SKILL_NAME_MAPPING).find(([_, full]) => full === targetSkillName);
+  if (reverseMapping) {
+    skill = skillScores.find(s => s.skillName === reverseMapping[0]);
+    if (skill) return skill;
+  }
+  
+  return undefined;
+};
+
 type CandidateEntry = {
   userId: string;
   userName: string;
@@ -708,7 +749,7 @@ export default function MultiCandidateRoleFitTab() {
                                   candidate.dataCoverage?.hasSufficientData === false || 
                                   candidate.fitTier === 'insufficient-data' || 
                                   candidate.overallFit == null;
-                                const skill = candidate.skillScores.find(s => s.skillName === criticalSkill.skillName);
+                                const skill = findSkillInScores(candidate.skillScores, criticalSkill.skillName);
                                 const hasData = skill?.dataAvailable !== false && skill?.score != null;
                                 const score = skill?.score || 0;
                                 const meetsThreshold = hasData && score >= 60;
@@ -750,12 +791,12 @@ export default function MultiCandidateRoleFitTab() {
                               candidate.fitTier === 'insufficient-data' || 
                               candidate.overallFit == null;
                             const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
-                              const skill = candidate.skillScores.find(s => s.skillName === cs.skillName);
+                              const skill = findSkillInScores(candidate.skillScores, cs.skillName);
                               return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
                             }).length;
                             const totalCritical = criticalSkillsWithRequirements.length;
                             const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
-                              const skill = candidate.skillScores.find(s => s.skillName === cs.skillName);
+                              const skill = findSkillInScores(candidate.skillScores, cs.skillName);
                               return skill?.dataAvailable !== false && skill?.score != null;
                             }).length;
                             const allMet = criticalSkillsMet === totalCritical && totalCritical > 0;
@@ -864,7 +905,7 @@ export default function MultiCandidateRoleFitTab() {
                     
                     // Calculate critical gaps using role snapshot requirements
                     const criticalGaps = Array.from(criticalSkillRequirements.entries()).filter(([skillName, requiredScore]) => {
-                      const skill = candidate.skillScores.find(s => s.skillName === skillName);
+                      const skill = findSkillInScores(candidate.skillScores, skillName);
                       return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) < requiredScore;
                     }).length;
                     

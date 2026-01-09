@@ -6,6 +6,42 @@ import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabe
 import { getAIQBandInterpretation } from '@/data/aiq-questions';
 import { PROMPT_ARCHITECTURE_DIMENSIONS, AIQ_BANDS } from '@/components/SkillsLegend';
 
+// Mapping from short/legacy skill names to canonical names used in candidate data
+const SKILL_NAME_MAPPING: Record<string, string> = {
+  'AI Literacy': 'AI Literacy & Prompt Engineering',
+  'Collaboration': 'Collaboration & Communication',
+  'Domain Fluency': 'Data Fluency',
+  'Responsible AI': 'Responsible AI & Ethical Awareness',
+  'Technical Fluency': 'Technical Fundamentals',
+  'Critical Thinking': 'Critical Thinking & Problem-Solving',
+  'Adaptive Learning': 'Adaptability & Continuous Learning',
+  'Creative Innovation': 'Creativity & Innovation',
+};
+
+// Find skill in candidate's scores, trying both original and normalized names
+const findSkillInScores = (
+  skillScores: Array<{ skillName: string; score: number | null; dataAvailable?: boolean; [key: string]: any }>,
+  targetSkillName: string
+): typeof skillScores[0] | undefined => {
+  // Try exact match first
+  let skill = skillScores.find(s => s.skillName === targetSkillName);
+  if (skill) return skill;
+  
+  // Try normalized name
+  const normalizedTarget = SKILL_NAME_MAPPING[targetSkillName] || targetSkillName;
+  skill = skillScores.find(s => s.skillName === normalizedTarget);
+  if (skill) return skill;
+  
+  // Try reverse lookup (if candidate has short name but we're looking for full name)
+  const reverseMapping = Object.entries(SKILL_NAME_MAPPING).find(([_, full]) => full === targetSkillName);
+  if (reverseMapping) {
+    skill = skillScores.find(s => s.skillName === reverseMapping[0]);
+    if (skill) return skill;
+  }
+  
+  return undefined;
+};
+
 interface CandidateData {
   user: {
     firstName?: string;
@@ -3847,7 +3883,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       // Each candidate's score
       sortedCandidates.slice(0, candidateCount).forEach((candidateForRow, idx) => {
         const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
-        const skill = candidateForRow.skillScores.find(s => s.skillName === criticalSkill.skillName);
+        const skill = findSkillInScores(candidateForRow.skillScores, criticalSkill.skillName);
         const hasData = skill?.dataAvailable !== false && skill?.score != null;
         const score = skill?.score || 0;
         const meetsRequired = hasData && score >= criticalSkill.requiredScore;
@@ -3895,12 +3931,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
       
       const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
-        const skill = candidateForFooter.skillScores.find(s => s.skillName === cs.skillName);
+        const skill = findSkillInScores(candidateForFooter.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
       }).length;
       
       const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
-        const skill = candidateForFooter.skillScores.find(s => s.skillName === cs.skillName);
+        const skill = findSkillInScores(candidateForFooter.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null;
       }).length;
       
