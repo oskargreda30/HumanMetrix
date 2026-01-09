@@ -1114,17 +1114,22 @@ export default function MultiCandidateRoleFitTab() {
               <CardTitle>Overall Fit Comparison</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-80" ref={chartRef} id="multi-candidate-bar-chart">
+              <div className="h-56" ref={chartRef} id="multi-candidate-bar-chart">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareBarChartData()} layout="vertical">
+                  <BarChart data={prepareBarChartData()} layout="vertical" barSize={16}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      width={140} 
+                      tick={{ fontSize: 13, fontWeight: 600 }} 
+                    />
                     <Tooltip 
                       formatter={(value: number) => [`${value}%`, 'Overall Fit']}
                       labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
                     />
-                    <Bar dataKey="Overall Fit" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="Overall Fit" radius={[0, 4, 4, 0]} barSize={14}>
                       {prepareBarChartData().map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
