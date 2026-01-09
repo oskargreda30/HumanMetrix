@@ -13464,20 +13464,8 @@ async function calculatePromptArchitectureScores(
     "7": "Design a comprehensive content moderation system covering multiple domains.",
   };
 
-  const evaluationsWithData: Array<{
-    level: number;
-    userPrompt: string;
-    evaluation: any;
-  }> = [];
-  
-  let clarityTotal = 0;
-  let structureTotal = 0;
-  let contextTotal = 0;
-  let creativityTotal = 0;
-  let iterativeTotal = 0;
-
-  // Step 1: Evaluate all prompts with GPT (external API calls - cannot be rolled back)
-  for (const [levelKey, userPrompt] of Object.entries(answers)) {
+  // Step 1: Evaluate all prompts with GPT in parallel (much faster than sequential)
+  const evaluationPromises = Object.entries(answers).map(async ([levelKey, userPrompt]) => {
     // Extract numeric level from key (e.g., "level-1" -> 1)
     const levelMatch = levelKey.match(/level-?(\d+)/);
     const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
@@ -13486,25 +13474,35 @@ async function calculatePromptArchitectureScores(
     
     try {
       const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
-      
-      evaluationsWithData.push({
-        level: levelNum,
-        userPrompt,
-        evaluation,
-      });
-
-      clarityTotal += evaluation.clarity;
-      structureTotal += evaluation.structure;
-      contextTotal += evaluation.contextRelevance;
-      creativityTotal += evaluation.creativity;
-      iterativeTotal += evaluation.iterativeImprovement;
+      return { level: levelNum, userPrompt, evaluation };
     } catch (error: any) {
       console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
-      throw error; // Rethrow to stop processing
+      throw error;
     }
-  }
+  });
   
-  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully`);
+  // Wait for all evaluations to complete in parallel
+  const evaluationsWithData = await Promise.all(evaluationPromises);
+  
+  // Sort by level for consistent ordering
+  evaluationsWithData.sort((a, b) => a.level - b.level);
+  
+  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully (parallel)`);
+  
+  // Calculate totals from all evaluations
+  let clarityTotal = 0;
+  let structureTotal = 0;
+  let contextTotal = 0;
+  let creativityTotal = 0;
+  let iterativeTotal = 0;
+  
+  for (const { evaluation } of evaluationsWithData) {
+    clarityTotal += evaluation.clarity;
+    structureTotal += evaluation.structure;
+    contextTotal += evaluation.contextRelevance;
+    creativityTotal += evaluation.creativity;
+    iterativeTotal += evaluation.iterativeImprovement;
+  }
 
   // Calculate average scores across all levels
   const numLevels = Object.keys(answers).length;
