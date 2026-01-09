@@ -95,20 +95,36 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
     <header className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0a1628]/80">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-1 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
-            <div className="h-10 w-10 flex items-center justify-center -mr-1 mt-2">
-              <img 
-                src={logoSymbol} 
-                alt="HumanMetrix Logo" 
-                className="h-full w-full object-cover scale-[1.8]"
-              />
+          {/* Logo - Non-clickable during assessment mode */}
+          {assessmentMode ? (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-md -ml-2" data-testid="logo-static">
+              <div className="h-10 w-10 flex items-center justify-center -mr-1 mt-2">
+                <img 
+                  src={logoSymbol} 
+                  alt="HumanMetrix Logo" 
+                  className="h-full w-full object-cover scale-[1.8]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-2xl text-white">Human</span>
+                <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-2xl text-white">Human</span>
-              <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
-            </div>
-          </Link>
+          ) : (
+            <Link href="/" className="flex items-center gap-1 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2 cursor-pointer" data-testid="link-home" onClick={() => handleLinkClick("/")}>
+              <div className="h-10 w-10 flex items-center justify-center -mr-1 mt-2">
+                <img 
+                  src={logoSymbol} 
+                  alt="HumanMetrix Logo" 
+                  className="h-full w-full object-cover scale-[1.8]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-2xl text-white">Human</span>
+                <span className="font-bold text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
+              </div>
+            </Link>
+          )}
 
           {/* Desktop Navigation - Show for all users except candidates */}
           {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin') && (
