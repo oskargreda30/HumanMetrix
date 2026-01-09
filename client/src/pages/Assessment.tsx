@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, Clock, AlertCircle, Info } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
@@ -42,6 +43,7 @@ export default function Assessment() {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
+  const [evaluationProgress, setEvaluationProgress] = useState(0); // Progress 0-100 for evaluation
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
@@ -119,8 +121,18 @@ export default function Assessment() {
     let consecutiveErrors = 0;
     const maxConsecutiveErrors = 3;
     
+    // Reset progress at start
+    setEvaluationProgress(5); // Start at 5% to show immediate feedback
+    
     for (let i = 0; i < maxPolls; i++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
+      
+      // Update progress - simulate gradual increase (max 95% until complete)
+      // Progress increases faster at the start, slower towards the end
+      const elapsedPolls = i + 1;
+      const expectedDuration = 40; // Expect ~40 polls (2 minutes) for typical evaluation
+      const progressPercent = Math.min(95, 5 + Math.floor((elapsedPolls / expectedDuration) * 90));
+      setEvaluationProgress(progressPercent);
       
       try {
         const statusResponse = await fetch(`/api/assessments/${assessmentId}/status`, {
@@ -141,6 +153,7 @@ export default function Assessment() {
         
         if (statusData.status === 'completed') {
           console.log('[Assessment] Evaluation completed successfully');
+          setEvaluationProgress(100); // Complete!
           return statusData;
         }
         
@@ -206,6 +219,7 @@ export default function Assessment() {
     },
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error
+      setEvaluationProgress(0); // Reset progress on error
       console.error("[Assessment] Submission error:", error);
       
       // Determine appropriate error message based on error type
@@ -637,25 +651,33 @@ export default function Assessment() {
                 </Button>
                 
                 {currentQuestion === questions.length - 1 ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={submitMutation.isPending}
-                    data-testid="button-submit-assessment"
-                    className="flex-1 sm:flex-none"
-                  >
-                    {submitMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" />
-                        <span className="hidden sm:inline">Your answers are being evaluated, this may take 2-3 minutes...</span>
-                        <span className="sm:hidden">Evaluating (2-3 min)...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Submit Assessment
-                      </>
-                    )}
-                  </Button>
+                  submitMutation.isPending ? (
+                    <div className="flex-1 space-y-3" data-testid="evaluation-progress-container">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="font-medium">
+                            {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground">{evaluationProgress}%</span>
+                      </div>
+                      <Progress value={evaluationProgress} className="h-2" data-testid="evaluation-progress-bar" />
+                      <p className="text-xs text-muted-foreground text-center">
+                        AI is analyzing your responses. This typically takes 1-2 minutes.
+                      </p>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={submitMutation.isPending}
+                      data-testid="button-submit-assessment"
+                      className="flex-1 sm:flex-none"
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Submit Assessment
+                    </Button>
+                  )
                 ) : (
                   <Button onClick={handleNext} data-testid="button-next">
                     Next
