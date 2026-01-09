@@ -1829,6 +1829,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         const completedResults = resultsForPurchase.filter(r => r.status === 'completed');
+        const abandonedResults = resultsForPurchase.filter(r => r.status === 'abandoned');
+        
+        // A slot is "consumed" if it has either completed or abandoned result
+        const consumedCount = completedResults.length + abandonedResults.length;
+        
+        // All items consumed means series moves to "Your Results"
+        const allItemsConsumed = consumedCount >= items.length;
+        
+        // Series only has abandoned tests (no completed results that can be unlocked)
+        const hasOnlyAbandonedResults = abandonedResults.length > 0 && completedResults.length === 0;
         
         // Find the latest completion date for this purchase
         const completedAt = completedResults.length > 0
@@ -1842,9 +1852,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...purchase,
           purchaseItems: items,
           results: resultsForPurchase,  // All results, including multiple attempts
+          completedResults: completedResults, // Only completed (non-abandoned) results for display
+          abandonedResults: abandonedResults, // Abandoned results for tracking
           completedCount: completedResults.length,
+          abandonedCount: abandonedResults.length,
           totalCount: items.length,
-          allItemsCompleted: completedResults.length >= items.length,
+          allItemsCompleted: completedResults.length >= items.length, // Original meaning: all have completed results
+          allItemsConsumed, // All slots used up (completed + abandoned)
+          hasOnlyAbandonedResults, // Series has no valid results to unlock
           completedAt: completedAt ? completedAt.toISOString() : null
         };
       });
