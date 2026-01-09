@@ -303,6 +303,7 @@ export interface IStorage {
   createAssessmentSession(session: InsertAssessmentSession): Promise<AssessmentSession>;
   getAssessmentSession(id: string): Promise<AssessmentSession | undefined>;
   getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
+  getSessionsByPartnerAndExternalUser(partnerId: string, externalUserId: string): Promise<AssessmentSession[]>;
   updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
   getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]>;
   
@@ -1696,6 +1697,17 @@ export class DatabaseStorage implements IStorage {
       .where(eq(assessmentSessions.partnerId, partnerId))
       .orderBy(desc(assessmentSessions.createdAt))
       .limit(limit);
+  }
+
+  async getSessionsByPartnerAndExternalUser(partnerId: string, externalUserId: string): Promise<AssessmentSession[]> {
+    return await db.select().from(assessmentSessions)
+      .where(
+        and(
+          eq(assessmentSessions.partnerId, partnerId),
+          eq(assessmentSessions.externalUserId, externalUserId)
+        )
+      )
+      .orderBy(desc(assessmentSessions.createdAt));
   }
 
   async updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void> {

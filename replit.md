@@ -42,6 +42,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
   - **Server-Side PDF Generation**: Production-quality PDFs generated with jsPDF for all 4 assessment types (FIT, AI Readiness, Prompt Architecture, AIQ) with skill bar charts, performance levels, and professional branding.
   - **Free Unlock Scheduler**: Hourly background job checks for sessions due for free unlock (30 days after completion) and sends results emails with PDF attachments.
   - **Persistent Delivery Tracking**: Database columns (`resultsDeliveryAttemptCount`, `lastResultsDeliveryAttemptAt`, `resultsDeliveryStatus`) ensure retry history survives server restarts. Max 3 attempts with 24-hour backoff. Sessions marked as 'failed' after max retries for manual intervention.
+  - **Bulk Results Pricing**: Candidates can purchase multiple assessment results together with volume discounts: 10% off for 2 results, 15% off for 3 results, 20% off for all 4 results. Endpoints: `/api/b2b-results/bulk-pricing`, `/api/b2b-results/bulk-checkout`, `/api/b2b-results/bulk-verify-payment`.
   - **Volume-Based Pricing Model** ($1.00 = 1 Credit, 6-month expiration policy):
     | Tier | Monthly Volume | Price Per Test | Comparisons (Base-30%) | Role Fit (Base-20%) | Trial Quota |
     |------|---------------|----------------|------------------------|---------------------|-------------|
@@ -62,6 +63,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
   - **In-App Notifications**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), and mark-all-read functionality.
   - **Team Member Management**: Email invitations with 7-day expiry, role-based access (viewer/member/admin), and member removal.
   - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for PAYG partners, branded email invitations, and downloadable error reports.
+  - **Multi-Assessment Invitation Flow**: Candidates can complete multiple assessments in sequence from a single invitation. The `/api/invite/:token` endpoint returns `completedAssessments` and `remainingTypes` for progress tracking. Invitations remain valid until all invited assessments are completed. StartAssessment page displays completed vs remaining assessments with visual progress indicators.
 - **Partner Integration Features**: 
   - **Webhook Notifications**: Event-based webhooks for assessment.started, assessment.completed, session.created, session.expired, results.ready with HMAC-SHA256 signature verification, exponential backoff retry logic, and delivery logging.
   - **ATS Integrations**: Connect with Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, or custom APIs with configurable sync modes (push/pull/bidirectional).

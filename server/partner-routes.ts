@@ -1541,6 +1541,446 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // ========================================
+  // BULK RESULTS PRICING & CHECKOUT
+  // ========================================
+  
+  // Bulk pricing discount tiers
+  const BULK_DISCOUNT_TIERS = {
+    2: 0.10, // 10% off for 2 results
+    3: 0.15, // 15% off for 3 results
+    4: 0.20, // 20% off for all 4 results
+  };
+  
+  // Get bulk pricing for multiple session results
+  // Security: All sessions must belong to the same partner and external user
+  app.post("/api/b2b-results/bulk-pricing", async (req: Request, res: Response) => {
+    try {
+      const { sessionIds } = req.body;
+      
+      if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+        return res.status(400).json({ error: "Session IDs required" });
+      }
+      
+      if (sessionIds.length > 4) {
+        return res.status(400).json({ error: "Maximum 4 sessions allowed" });
+      }
+      
+      // Fetch all sessions and validate
+      const sessions = await Promise.all(
+        sessionIds.map(id => storage.getAssessmentSession(id))
+      );
+      
+      // Filter for valid sessions
+      const validSessions = sessions.filter(s => 
+        s && 
+        s.status === 'completed' && 
+        s.resultsPaymentStatus !== 'paid' &&
+        (!s.resultsUnlockAt || new Date(s.resultsUnlockAt) > new Date())
+      );
+      
+      if (validSessions.length === 0) {
+        return res.status(400).json({ error: "No valid unpaid sessions found" });
+      }
+      
+      // SECURITY: Verify all sessions belong to the same partner and external user
+      const firstSession = validSessions[0]!;
+      const partnerId = firstSession.partnerId;
+      const externalUserId = firstSession.externalUserId;
+      const externalEmail = firstSession.externalEmail;
+      
+      const allSameOwner = validSessions.every(s => 
+        s!.partnerId === partnerId && 
+        (s!.externalUserId === externalUserId || s!.externalEmail === externalEmail)
+      );
+      
+      if (!allSameOwner) {
+        console.warn(`[Bulk Pricing] Security: Attempted bulk pricing across different users/partners`);
+        return res.status(403).json({ error: "All sessions must belong to the same candidate" });
+      }
+      
+      // Use first session for country code
+      const countryCode = validSessions[0]!.testerCountryCode || 'GB';
+      const currencyCode = getStripeCurrencyCode(countryCode);
+      const exchangeRates = await getExchangeRates();
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
+      
+      // Calculate individual and total prices
+      let totalOriginalPence = 0;
+      let totalDiscountedPence = 0;
+      const items: Array<{
+        sessionId: string;
+        assessmentType: string;
+        originalPrice: number;
+        discountedPrice: number;
+      }> = [];
+      
+      for (const session of validSessions) {
+        const assessmentType = normalizeAssessmentId(session!.assessmentType);
+        const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
+        const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
+        const standardDiscountedPence = Math.round(pppAdjustedPence * 0.75); // 75% of B2C price
+        
+        totalOriginalPence += pppAdjustedPence;
+        totalDiscountedPence += standardDiscountedPence;
+        
+        items.push({
+          sessionId: session!.id,
+          assessmentType: session!.assessmentType,
+          originalPrice: pppAdjustedPence,
+          discountedPrice: standardDiscountedPence,
+        });
+      }
+      
+      // Apply bulk discount based on number of items
+      const bulkDiscountRate = BULK_DISCOUNT_TIERS[validSessions.length as keyof typeof BULK_DISCOUNT_TIERS] || 0;
+      const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkDiscountRate);
+      const finalTotalPence = totalDiscountedPence - bulkDiscountAmount;
+      
+      // Convert to local currency
+      let displayTotal: string;
+      let displayOriginal: string;
+      let displaySavings: string;
+      let stripeAmount: number;
+      
+      if (currencyCode.toUpperCase() === 'GBP') {
+        stripeAmount = finalTotalPence;
+        displayTotal = `£${(finalTotalPence / 100).toFixed(2)}`;
+        displayOriginal = `£${(totalOriginalPence / 100).toFixed(2)}`;
+        displaySavings = `£${((totalOriginalPence - finalTotalPence) / 100).toFixed(2)}`;
+      } else {
+        const gbpRate = exchangeRates.rates['GBP'] || 1;
+        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+        const localTotal = (finalTotalPence / 100) * (targetRate / gbpRate);
+        const localOriginal = (totalOriginalPence / 100) * (targetRate / gbpRate);
+        const roundedTotal = roundPriceUp(localTotal);
+        const roundedOriginal = roundPriceUp(localOriginal);
+        
+        const currencySymbol = currencyCode.toUpperCase();
+        
+        if (isZeroDecimal) {
+          stripeAmount = Math.round(roundedTotal);
+          displayTotal = `${currencySymbol} ${roundedTotal.toLocaleString()}`;
+          displayOriginal = `${currencySymbol} ${roundedOriginal.toLocaleString()}`;
+          displaySavings = `${currencySymbol} ${(roundedOriginal - roundedTotal).toLocaleString()}`;
+        } else {
+          stripeAmount = Math.round(roundedTotal * 100);
+          displayTotal = `${currencySymbol} ${roundedTotal.toFixed(2)}`;
+          displayOriginal = `${currencySymbol} ${roundedOriginal.toFixed(2)}`;
+          displaySavings = `${currencySymbol} ${(roundedOriginal - roundedTotal).toFixed(2)}`;
+        }
+      }
+      
+      const partner = validSessions[0] ? await storage.getPartnerAccount(validSessions[0].partnerId) : null;
+      
+      res.json({
+        items,
+        pricing: {
+          itemCount: validSessions.length,
+          bulkDiscountPercent: bulkDiscountRate * 100,
+          currency: currencyCode,
+          amount: stripeAmount,
+          displayTotal,
+          displayOriginal,
+          displaySavings,
+          isZeroDecimal,
+        },
+        partnerCompanyName: partner?.companyName || partner?.name || 'Partner',
+      });
+    } catch (error) {
+      console.error("Error calculating bulk pricing:", error);
+      res.status(500).json({ error: "Failed to calculate bulk pricing" });
+    }
+  });
+  
+  // Create bulk checkout session for multiple results
+  // Security: All sessions must belong to the same partner and external user
+  app.post("/api/b2b-results/bulk-checkout", async (req: Request, res: Response) => {
+    try {
+      const { sessionIds } = req.body;
+      
+      if (!Array.isArray(sessionIds) || sessionIds.length === 0 || sessionIds.length > 4) {
+        return res.status(400).json({ error: "Invalid session IDs (1-4 required)" });
+      }
+      
+      // Fetch and validate all sessions
+      const sessions = await Promise.all(
+        sessionIds.map(id => storage.getAssessmentSession(id))
+      );
+      
+      const validSessions = sessions.filter(s => 
+        s && 
+        s.status === 'completed' && 
+        s.resultsPaymentStatus !== 'paid' &&
+        (!s.resultsUnlockAt || new Date(s.resultsUnlockAt) > new Date())
+      );
+      
+      if (validSessions.length === 0) {
+        return res.status(400).json({ error: "No valid unpaid sessions found" });
+      }
+      
+      // SECURITY: Verify all sessions belong to the same partner and external user
+      const firstSession = validSessions[0]!;
+      const partnerId = firstSession.partnerId;
+      const externalUserId = firstSession.externalUserId;
+      const externalEmail = firstSession.externalEmail;
+      
+      const allSameOwner = validSessions.every(s => 
+        s!.partnerId === partnerId && 
+        (s!.externalUserId === externalUserId || s!.externalEmail === externalEmail)
+      );
+      
+      if (!allSameOwner) {
+        console.warn(`[Bulk Checkout] Security: Attempted bulk checkout across different users/partners`);
+        return res.status(403).json({ error: "All sessions must belong to the same candidate" });
+      }
+      
+      // Calculate total price with bulk discount
+      const countryCode = validSessions[0]!.testerCountryCode || 'GB';
+      const currencyCode = getStripeCurrencyCode(countryCode);
+      const exchangeRates = await getExchangeRates();
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyCode.toUpperCase() as any);
+      
+      let totalDiscountedPence = 0;
+      
+      for (const session of validSessions) {
+        const assessmentType = normalizeAssessmentId(session!.assessmentType);
+        const basePriceInPence = ASSESSMENT_PRICES[assessmentType] || 500;
+        const pppAdjustedPence = getPPPAdjustedPriceInPence(basePriceInPence, countryCode);
+        const standardDiscountedPence = Math.round(pppAdjustedPence * 0.75);
+        totalDiscountedPence += standardDiscountedPence;
+      }
+      
+      const bulkDiscountRate = BULK_DISCOUNT_TIERS[validSessions.length as keyof typeof BULK_DISCOUNT_TIERS] || 0;
+      const bulkDiscountAmount = Math.round(totalDiscountedPence * bulkDiscountRate);
+      const finalTotalPence = totalDiscountedPence - bulkDiscountAmount;
+      
+      let stripeAmount: number;
+      
+      if (currencyCode.toUpperCase() === 'GBP') {
+        stripeAmount = finalTotalPence;
+      } else {
+        const gbpRate = exchangeRates.rates['GBP'] || 1;
+        const targetRate = exchangeRates.rates[currencyCode.toUpperCase()] || gbpRate;
+        const localAmount = (finalTotalPence / 100) * (targetRate / gbpRate);
+        const roundedAmount = roundPriceUp(localAmount);
+        
+        if (isZeroDecimal) {
+          stripeAmount = Math.round(roundedAmount);
+        } else {
+          stripeAmount = Math.round(roundedAmount * 100);
+        }
+      }
+      
+      const partner = validSessions[0] ? await storage.getPartnerAccount(validSessions[0].partnerId) : null;
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'https://humanmetrix.co.uk';
+      
+      const sessionIdsStr = validSessions.map(s => s!.id).join(',');
+      const assessmentNames = validSessions.map(s => {
+        const type = normalizeAssessmentId(s!.assessmentType);
+        const names: Record<string, string> = {
+          'fit': 'FIT',
+          'ai_readiness': 'AI Readiness',
+          'prompt_architecture': 'Prompt Architecture',
+          'aiq': 'AIQ',
+        };
+        return names[type] || type;
+      });
+      
+      // Use Airwallex if configured, otherwise fall back to Stripe
+      if (useAirwallex()) {
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `b2b_bulk_results_${Date.now()}`;
+        
+        const paymentIntent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: currencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/b2b-results-bulk-success?sessions=${sessionIdsStr}`,
+          customerEmail: validSessions[0]!.externalEmail || undefined,
+          description: `Assessment Results Bundle (${validSessions.length} tests)`,
+          metadata: {
+            type: 'b2b_bulk_results_unlock',
+            sessionIds: sessionIdsStr,
+            partnerId: validSessions[0]!.partnerId,
+          },
+        });
+        
+        res.json({
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          currency: currencyCode.toUpperCase(),
+          countryCode: countryCode,
+          amount: airwallexAmount,
+          sessionIds: validSessions.map(s => s!.id),
+        });
+      } else {
+        const checkoutSession = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency: currencyCode.toLowerCase(),
+              product_data: {
+                name: `Assessment Results Bundle`,
+                description: `Unlock ${validSessions.length} assessment results: ${assessmentNames.join(', ')}${bulkDiscountRate > 0 ? ` (${bulkDiscountRate * 100}% bulk discount applied)` : ''}`,
+              },
+              unit_amount: stripeAmount,
+            },
+            quantity: 1,
+          }],
+          mode: 'payment',
+          success_url: `${baseUrl}/b2b-results-bulk-success?sessions=${sessionIdsStr}&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/b2b-results-payment/${validSessions[0]!.id}`,
+          customer_email: validSessions[0]!.externalEmail || undefined,
+          metadata: {
+            type: 'b2b_bulk_results_unlock',
+            sessionIds: sessionIdsStr,
+            partnerId: validSessions[0]!.partnerId,
+          },
+        });
+        
+        res.json({
+          provider: 'stripe',
+          checkoutUrl: checkoutSession.url,
+          stripeSessionId: checkoutSession.id,
+          sessionIds: validSessions.map(s => s!.id),
+        });
+      }
+    } catch (error) {
+      console.error("Error creating bulk checkout:", error);
+      res.status(500).json({ error: "Failed to create bulk checkout" });
+    }
+  });
+  
+  // Verify bulk payment and unlock all results
+  // Security: Validates payment metadata matches requested sessions
+  app.post("/api/b2b-results/bulk-verify-payment", async (req: Request, res: Response) => {
+    try {
+      const { sessionIds, stripeSessionId, airwallexIntentId, provider } = req.body;
+      
+      if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+        return res.status(400).json({ error: "Session IDs required" });
+      }
+      
+      let paymentAmount: number | null = null;
+      let paymentCurrency: string | null = null;
+      let paymentSessionIds: string | null = null;
+      
+      if (provider === 'airwallex' && airwallexIntentId) {
+        const { getPaymentIntent } = await import("./airwallex");
+        const paymentIntent = await getPaymentIntent(airwallexIntentId);
+        
+        if (paymentIntent.status !== 'SUCCEEDED') {
+          return res.status(400).json({ error: "Payment not completed" });
+        }
+        
+        paymentAmount = Math.round(paymentIntent.amount * 100);
+        paymentCurrency = paymentIntent.currency?.toLowerCase();
+        paymentSessionIds = paymentIntent.metadata?.sessionIds;
+      } else if (stripeSessionId) {
+        const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+        
+        if (stripeSession.payment_status !== 'paid') {
+          return res.status(400).json({ error: "Payment not completed" });
+        }
+        
+        paymentAmount = stripeSession.amount_total;
+        paymentCurrency = stripeSession.currency;
+        paymentSessionIds = stripeSession.metadata?.sessionIds;
+      } else {
+        return res.status(400).json({ error: "No payment session provided" });
+      }
+      
+      // SECURITY: Verify payment metadata matches requested session IDs
+      const requestedIds = [...sessionIds].sort().join(',');
+      const paidIds = paymentSessionIds ? paymentSessionIds.split(',').sort().join(',') : null;
+      
+      if (!paidIds || requestedIds !== paidIds) {
+        console.warn(`[Bulk Verify] Security: Payment session mismatch. Requested: ${requestedIds}, Paid: ${paidIds}`);
+        return res.status(403).json({ error: "Payment session mismatch" });
+      }
+      
+      // Split payment amount across sessions
+      const amountPerSession = paymentAmount ? Math.round(paymentAmount / sessionIds.length) : null;
+      
+      // Unlock all sessions
+      const results: Array<{ sessionId: string; success: boolean; error?: string }> = [];
+      
+      for (const sessionId of sessionIds) {
+        try {
+          const session = await storage.getAssessmentSession(sessionId);
+          if (!session) {
+            results.push({ sessionId, success: false, error: "Session not found" });
+            continue;
+          }
+          
+          // Mark as paid
+          await storage.updateAssessmentSession(sessionId, {
+            resultsPaymentStatus: 'paid',
+            resultsPaidAt: new Date(),
+            resultsPaymentAmount: amountPerSession,
+            resultsPaymentCurrency: paymentCurrency,
+          } as any);
+          
+          // Send results email with PDF
+          if (session.externalEmail) {
+            try {
+              const partner = await storage.getPartnerAccount(session.partnerId);
+              const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+              
+              const pdfBuffer = generateB2BResultsPDF({
+                candidateName: session.externalUserId || undefined,
+                candidateEmail: session.externalEmail,
+                assessmentType: session.assessmentType,
+                scores: session.scores || {},
+                totalScore: session.totalScore || undefined,
+                percentile: session.percentile || undefined,
+                evaluations: session.evaluations || undefined,
+                completedAt: session.completedAt || new Date(),
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+              });
+              const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
+              
+              await sendB2BResultsEmail({
+                email: session.externalEmail,
+                candidateName: session.externalUserId || undefined,
+                assessmentType: session.assessmentType,
+                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+                pdfBuffer,
+                pdfFilename,
+              });
+              
+              await storage.updateAssessmentSession(sessionId, {
+                resultsEmailSentAt: new Date(),
+              } as any);
+              
+              console.log(`[B2B Bulk Results] Results email sent to ${session.externalEmail} for session ${sessionId}`);
+            } catch (emailError) {
+              console.error(`[B2B Bulk Results] Failed to send results email for session ${sessionId}:`, emailError);
+            }
+          }
+          
+          results.push({ sessionId, success: true });
+        } catch (error) {
+          console.error(`Error unlocking session ${sessionId}:`, error);
+          results.push({ sessionId, success: false, error: "Failed to unlock" });
+        }
+      }
+      
+      res.json({
+        success: results.every(r => r.success),
+        results,
+        paidAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error verifying bulk payment:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
   // Serve embed test page
   app.get("/embed-test.html", (req, res) => {
     try {
@@ -2076,14 +2516,37 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(410).json({ error: "This invitation has expired" });
       }
       
-      if (invitation.status === 'completed') {
-        return res.status(410).json({ error: "This invitation has already been completed" });
-      }
-      
       // Check if expired based on date
       if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
         await storage.updatePartnerCandidateInvitation(invitation.id, { status: 'expired' });
         return res.status(410).json({ error: "This invitation has expired" });
+      }
+      
+      // Get completed sessions for this candidate to track progress
+      const sessions = await storage.getSessionsByPartnerAndExternalUser(
+        invitation.partnerId,
+        invitation.externalUserId
+      );
+      
+      // Find completed assessment types
+      const completedAssessments = sessions
+        .filter(s => s.status === 'completed')
+        .map(s => ({
+          type: s.assessmentType,
+          sessionId: s.id,
+          completedAt: s.completedAt,
+          resultsPaymentStatus: s.resultsPaymentStatus || 'unpaid',
+        }));
+      
+      const completedTypes = completedAssessments.map(a => a.type);
+      const remainingTypes = invitation.assessmentTypes.filter(t => !completedTypes.includes(t));
+      
+      // If all assessments are completed, mark invitation as completed
+      if (remainingTypes.length === 0 && invitation.status !== 'completed') {
+        await storage.updatePartnerCandidateInvitation(invitation.id, { 
+          status: 'completed',
+          completedAt: new Date(),
+        });
       }
       
       // Get partner branding
@@ -2094,7 +2557,9 @@ export function registerPartnerRoutes(app: Express) {
         externalUserId: invitation.externalUserId,
         name: invitation.name,
         assessmentTypes: invitation.assessmentTypes,
-        status: invitation.status,
+        completedAssessments,
+        remainingTypes,
+        status: remainingTypes.length === 0 ? 'completed' : invitation.status,
         expiresAt: invitation.expiresAt,
         partnerName: partnerAccount?.companyName || 'HumanMetrix Partner',
         branding: partnerAccount?.brandingEnabled ? {
@@ -2129,8 +2594,8 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Invalid or expired invitation" });
       }
       
-      if (invitation.status === 'expired' || invitation.status === 'completed') {
-        return res.status(410).json({ error: "This invitation is no longer valid" });
+      if (invitation.status === 'expired') {
+        return res.status(410).json({ error: "This invitation has expired" });
       }
       
       // Check if expired based on date
@@ -2143,6 +2608,19 @@ export function registerPartnerRoutes(app: Express) {
       const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
       if (!invitation.assessmentTypes.includes(normalizedType)) {
         return res.status(400).json({ error: "Assessment type not included in this invitation" });
+      }
+      
+      // Check if this specific assessment has already been completed
+      const sessions = await storage.getSessionsByPartnerAndExternalUser(
+        invitation.partnerId,
+        invitation.externalUserId
+      );
+      const completedTypes = sessions
+        .filter(s => s.status === 'completed')
+        .map(s => s.assessmentType);
+      
+      if (completedTypes.includes(normalizedType)) {
+        return res.status(400).json({ error: "This assessment has already been completed" });
       }
       
       // Create assessment session
