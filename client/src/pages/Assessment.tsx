@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, AlertCircle, Info } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
@@ -25,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatAssessmentName, isAllAssessmentsComplete } from "@/lib/assessmentHelpers";
 import { AssessmentCompletionDialog } from "@/components/AssessmentCompletionDialog";
 
@@ -44,7 +54,9 @@ export default function Assessment() {
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
   const [evaluationProgress, setEvaluationProgress] = useState(0); // Progress 0-100 for evaluation
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -248,6 +260,39 @@ export default function Assessment() {
     },
   });
 
+  // Abandon mutation - marks assessment as incomplete
+  const abandonMutation = useMutation({
+    mutationFn: async () => {
+      if (!resultId) return;
+      const response = await apiRequest("POST", `/api/assessments/${resultId}/abandon`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Clear heartbeat
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+      // Clear timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      toast({
+        title: "Assessment Incomplete",
+        description: "Your assessment has been marked as incomplete.",
+        variant: "destructive",
+      });
+      setLocation("/dashboard?refresh=" + Date.now());
+    },
+  });
+
+  // Handle leaving the assessment
+  const handleLeaveAssessment = useCallback(() => {
+    setShowLeaveDialog(false);
+    abandonMutation.mutate();
+  }, [abandonMutation]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       window.location.href = "/api/login";
@@ -255,11 +300,53 @@ export default function Assessment() {
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
 
-  // Show warning when user tries to leave during assessment (but don't force logout)
+  // Heartbeat effect - sends ping every 30 seconds to keep session alive
+  useEffect(() => {
+    if (!resultId || isSubmitting || submitMutation.isSuccess) return;
+
+    // Send initial heartbeat
+    apiRequest("POST", `/api/assessments/${resultId}/heartbeat`).catch(() => {});
+
+    // Set up heartbeat interval (every 30 seconds)
+    heartbeatRef.current = setInterval(() => {
+      apiRequest("POST", `/api/assessments/${resultId}/heartbeat`).catch(() => {});
+    }, 30000);
+
+    return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    };
+  }, [resultId, isSubmitting, submitMutation.isSuccess]);
+
+  // Navigation guard - show dialog when trying to leave via back button
+  useEffect(() => {
+    if (!resultId || submitMutation.isSuccess || isSubmitting) return;
+
+    // Push a fake history entry so we can intercept the back button
+    window.history.pushState({ assessmentInProgress: true }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      // User pressed back button - show confirmation dialog
+      e.preventDefault();
+      // Push state again to prevent navigation
+      window.history.pushState({ assessmentInProgress: true }, '');
+      setShowLeaveDialog(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [resultId, submitMutation.isSuccess, isSubmitting]);
+
+  // Show warning when user tries to leave during assessment (browser close/refresh)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (resultId && !submitMutation.isSuccess && Object.keys(answers).length > 0) {
-        // Show browser's native "are you sure" dialog if they have unsaved answers
+      if (resultId && !submitMutation.isSuccess && !isSubmitting) {
+        // Show browser's native "are you sure" dialog
         e.preventDefault();
         e.returnValue = '';
       }
@@ -270,7 +357,7 @@ export default function Assessment() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [resultId, submitMutation.isSuccess, answers]);
+  }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
   // Timer effect
   useEffect(() => {
@@ -312,13 +399,16 @@ export default function Assessment() {
             // Submit even if incomplete
             submitMutation.mutate();
           } else {
-            // No answers provided - show error and redirect
+            // No answers provided - mark as abandoned
             toast({
               title: "Time Expired",
-              description: "No answers were provided. Please start the assessment again.",
+              description: "Your assessment has been marked as incomplete.",
               variant: "destructive",
             });
-            setLocation("/dashboard");
+            // Call abandon API
+            apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
+              setLocation("/dashboard?refresh=" + Date.now());
+            });
           }
           return 0;
         }
@@ -692,6 +782,32 @@ export default function Assessment() {
       </main>
       <Footer />
       
+      {/* Leave Confirmation Dialog */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent data-testid="leave-assessment-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Are you sure you want to leave?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left">
+              Your assessment will be marked as <strong>incomplete</strong> and you will not be able to resume it. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-stay">Stay</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLeaveAssessment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-leave-assessment"
+            >
+              Leave Assessment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Completion Dialog */}
       <AssessmentCompletionDialog
         open={showCompletionDialog}
