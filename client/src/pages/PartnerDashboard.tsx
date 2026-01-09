@@ -19,7 +19,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -1512,32 +1513,93 @@ export default function PartnerDashboard() {
               <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Team
               </TabsTrigger>
-              <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Usage
-              </TabsTrigger>
-              <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Billing
-              </TabsTrigger>
-              <TabsTrigger value="developer" data-testid="tab-developer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Developer
-              </TabsTrigger>
-              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
-                Notifications
-                {(notifications?.unreadCount ?? 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Settings
-              </TabsTrigger>
-              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Activity Log
-              </TabsTrigger>
+              
+              {/* Settings Dropdown - contains Usage, Billing, Developer, Analytics, Notifications, Settings, Activity Log */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      ['usage', 'billing', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                    data-testid="dropdown-settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                    {(notifications?.unreadCount ?? 0) > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center ml-1">
+                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
+                      </span>
+                    )}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('usage')}
+                    className={activeTab === 'usage' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-usage"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Usage
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('billing')}
+                    className={activeTab === 'billing' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-billing"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Billing
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('developer')}
+                    className={activeTab === 'developer' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-developer"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Developer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('analytics')}
+                    className={activeTab === 'analytics' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-analytics"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('notifications')}
+                    className={activeTab === 'notifications' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-notifications"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                    {(notifications?.unreadCount ?? 0) > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => { setActiveTab('settings'); initSettings(); }}
+                    className={activeTab === 'settings' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-settings"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Account Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('activity')}
+                    className={activeTab === 'activity' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-activity"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Activity Log
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
 
             {/* Home Tab */}
