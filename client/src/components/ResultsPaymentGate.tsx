@@ -141,6 +141,17 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
+      // Handle free unlock (100% discount codes like HMXDEMO or FREE)
+      if (data.free && data.success) {
+        toast({
+          title: "Results Unlocked!",
+          description: data.message || "Your results are now available",
+        });
+        // Redirect to results page
+        setLocation(`/my-results?purchaseId=${currentPurchase?.id}`);
+        return;
+      }
+      
       if (data.provider === 'airwallex') {
         // Use Airwallex hosted payment page
         const { init } = await import('@airwallex/components-sdk');
