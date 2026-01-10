@@ -135,6 +135,77 @@ function addFooter(pdf: jsPDF, pageNum: number, totalPages: number, pageWidth: n
   pdf.setTextColor(0, 0, 0);
 }
 
+// Helper to add "How to Read Our Reports" guide page (first page of report)
+function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  let yPos = 38;
+  
+  // Title with blue background
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(0, yPos, pageWidth, 28, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOW TO READ OUR REPORTS', pageWidth / 2, yPos + 12, { align: 'center' });
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A guide to understanding your assessment results', pageWidth / 2, yPos + 21, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
+  yPos = 75;
+  
+  // Helper for numbered items
+  const addGuideItem = (num: number, title: string, description: string, y: number): number => {
+    // Numbered circle
+    pdf.setFillColor(59, 130, 246);
+    pdf.circle(25, y, 4, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(String(num), 25, y + 1, { align: 'center' });
+    
+    // Title
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, 34, y + 1);
+    
+    // Description
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const lines = pdf.splitTextToSize(description, pageWidth - 55);
+    lines.forEach((line: string, idx: number) => {
+      pdf.text(line, 34, y + 7 + (idx * 5));
+    });
+    
+    return y + 10 + (lines.length * 5) + 6;
+  };
+  
+  // Individual Report Guide content
+  yPos = addGuideItem(1, 'Understanding Trait-Based Scores', 
+    'FIT and AI Readiness are trait-based assessments. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.', yPos);
+  
+  yPos = addGuideItem(2, 'AIQ (Ethics)', 
+    'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Scores: 81-100 Highly Developed, 61-80 Proficient, 41-60 Developing, 21-40 Emerging, 0-20 Foundational.', yPos);
+  
+  yPos = addGuideItem(3, 'FIT Assessment (Behavioral)', 
+    'Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores indicate stronger trait presence. Match against role requirements to assess fit.', yPos);
+  
+  yPos = addGuideItem(4, 'AI Readiness (Technical)', 
+    'Measures 9 AI-related capabilities including AI Literacy, Change Adaptability, and Data Fluency. Higher scores indicate stronger aptitude in each area.', yPos);
+  
+  yPos = addGuideItem(5, 'Prompt Architecture', 
+    'Evaluates AI prompt engineering skills across 7 difficulty levels. Each level tests clarity, structure, context relevance, creativity, and iterative improvement.', yPos);
+  
+  yPos = addGuideItem(6, 'Skills Legend', 
+    'The final page contains a complete reference of all assessed competencies with detailed descriptions. Use this to understand what each skill measures.', yPos);
+}
+
 // Helper to add Skills Legend page at the end of the PDF
 function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
   pdf.addPage();
@@ -481,7 +552,11 @@ export async function exportEnhancedCandidatePDF(
   const promptArchResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
   const aiqResultSummary = candidate.results?.find((r: any) => r.assessmentType === 'aiq' && r.status === 'completed');
 
-  // ========== PAGE 1: COVER PAGE ==========
+  // ========== PAGE 1: HOW TO READ OUR REPORTS GUIDE ==========
+  addReportGuidePage(pdf, pageWidth, pageHeight);
+  
+  // ========== PAGE 2: COVER PAGE ==========
+  pdf.addPage();
   let yPos = 30;
   
   addBackgroundPattern(pdf, pageWidth, pageHeight);
