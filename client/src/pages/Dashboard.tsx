@@ -529,7 +529,7 @@ export default function Dashboard() {
             )}
           </section>
 
-          {/* Add to Testing Suite - Show assessments not currently in the suite */}
+          {/* Add to Testing Suite - Show assessments not currently in the suite (excluding completed ones) */}
           {(() => {
             // All available assessment types
             const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
@@ -539,8 +539,20 @@ export default function Dashboard() {
               availableAssessments.map((a: any) => a.assessmentType)
             );
             
-            // Find missing types that can be added
-            const missingTypes = allAssessmentTypes.filter(type => !activeTypes.has(type));
+            // Get completed assessment types from results
+            const completedTypes = new Set<string>();
+            purchasesWithCompletedResults.forEach((purchase: any) => {
+              purchase.results?.forEach((result: any) => {
+                if (result.assessmentType) {
+                  completedTypes.add(result.assessmentType);
+                }
+              });
+            });
+            
+            // Find missing types that can be added (not active AND not already completed)
+            const missingTypes = allAssessmentTypes.filter(type => 
+              !activeTypes.has(type) && !completedTypes.has(type)
+            );
             
             // Only show this section if there are missing assessments AND user has at least one active assessment
             if (missingTypes.length === 0 || availableAssessments.length === 0) return null;
