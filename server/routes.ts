@@ -2111,7 +2111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
-            if (!existing || existing.status !== 'completed') {
+            // Only show if no result exists, or result is not completed AND not abandoned
+            if (!existing || (existing.status !== 'completed' && existing.status !== 'abandoned')) {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
               const purchaseItemKey = `purchase::${item.id}`;
               if (!addedAssessmentTypes.has(purchaseItemKey)) {
@@ -2148,12 +2149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
               
-              // Check if this SPECIFIC INVITATION's assessment was already completed
+              // Check if this SPECIFIC INVITATION's assessment was already completed or abandoned
               // (Not checking ALL results - allow multiple test series)
               const existingResult = await storage.getResultByInvitationAndType(invitation.id, normalizedType);
-              const alreadyCompleted = existingResult?.status === 'completed';
+              const alreadyConsumed = existingResult?.status === 'completed' || existingResult?.status === 'abandoned';
               
-              if (!alreadyCompleted) {
+              if (!alreadyConsumed) {
                 // Only add if we haven't already added this assessment type from THIS invitation
                 // Use invitation-specific key to allow same type from different invitations
                 const invitationTypeKey = `${invitation.id}::${normalizedType}`;
@@ -2189,25 +2190,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
               
-              // Use partner invitation-specific key to track which assessments we've added
-              const partnerInvTypeKey = `partner::${partnerInv.id}::${normalizedType}`;
+              // Check if this partner invitation's assessment was already completed or abandoned
+              const existingPartnerResult = await storage.getResultByPartnerInvitationAndType(partnerInv.id, normalizedType);
+              const partnerResultConsumed = existingPartnerResult?.status === 'completed' || existingPartnerResult?.status === 'abandoned';
               
-              if (!addedAssessmentTypes.has(partnerInvTypeKey)) {
-                // Track this type in required assessment types
-                if (!requiredAssessmentTypes.includes(normalizedType)) {
-                  requiredAssessmentTypes.push(normalizedType);
-                }
+              if (!partnerResultConsumed) {
+                // Use partner invitation-specific key to track which assessments we've added
+                const partnerInvTypeKey = `partner::${partnerInv.id}::${normalizedType}`;
                 
-                availableAssessments.push({
-                  purchaseItemId: `partner_invitation::${partnerInv.id}::${normalizedType}`,
-                  assessmentType: normalizedType,
-                  status: 'ready',
-                  source: 'partner_invitation',
-                  partnerInvitationId: partnerInv.id,
-                  partnerId: partnerInv.partnerId,
-                  canRemove: false, // Partner invitation-based assessments cannot be removed
-                });
-                addedAssessmentTypes.add(partnerInvTypeKey);
+                if (!addedAssessmentTypes.has(partnerInvTypeKey)) {
+                  // Track this type in required assessment types
+                  if (!requiredAssessmentTypes.includes(normalizedType)) {
+                    requiredAssessmentTypes.push(normalizedType);
+                  }
+                  
+                  availableAssessments.push({
+                    purchaseItemId: `partner_invitation::${partnerInv.id}::${normalizedType}`,
+                    assessmentType: normalizedType,
+                    status: 'ready',
+                    source: 'partner_invitation',
+                    partnerInvitationId: partnerInv.id,
+                    partnerId: partnerInv.partnerId,
+                    canRemove: false, // Partner invitation-based assessments cannot be removed
+                  });
+                  addedAssessmentTypes.add(partnerInvTypeKey);
+                }
               }
             }
           }
