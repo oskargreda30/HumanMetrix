@@ -2760,6 +2760,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Abandon assessment endpoint - called when user explicitly leaves assessment early
+  app.post("/api/assessments/:id/abandon", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Only allow abandoning in-progress assessments
+      if (result.status !== "in_progress") {
+        return res.status(400).json({
+          message: `Cannot abandon assessment. Status is "${result.status}". Only in-progress assessments can be abandoned.`,
+        });
+      }
+      
+      // Mark assessment as abandoned
+      await storage.updateAssessmentResult(id, {
+        status: "abandoned",
+        completedAt: new Date(),
+      });
+      
+      console.log(`[Assessment Abandon] Assessment ${id} abandoned by user ${userId}`);
+      
+      res.json({
+        success: true,
+        message: "Assessment has been marked as incomplete",
+      });
+    } catch (error) {
+      console.error("Error abandoning assessment:", error);
+      res.status(500).json({ message: "Failed to abandon assessment" });
+    }
+  });
+
   // Get assessment status (for pause/resume state checking)
   app.get("/api/assessments/:id/status", isAuthenticated, async (req: any, res) => {
     try {
