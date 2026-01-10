@@ -55,11 +55,11 @@ function addHeader(pdf: jsPDF, pageWidth: number) {
   pdf.setFont('helvetica', 'bold');
   pdf.text('HUMANMETRIX', 42, 20);
   
-  // Tagline - positioned below company name
+  // Tagline - positioned closer to company name (reduced gap from 7mm to 4mm)
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('AI-Powered Assessment Platform', 42, 27);
+  pdf.text('AI-Powered Assessment Platform', 42, 24);
   
   pdf.setTextColor(0, 0, 0);
 }
@@ -186,21 +186,21 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number): 
     return y + 10 + (lines.length * 5) + 6;
   };
   
-  // Individual Report Guide content
+  // Individual Report Guide content - reordered as requested
   yPos = addGuideItem(1, 'Understanding Trait-Based Scores', 
     'FIT and AI Readiness are trait-based assessments. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.', yPos);
   
-  yPos = addGuideItem(2, 'AIQ (Ethics)', 
-    'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Scores: 81-100 Highly Developed, 61-80 Proficient, 41-60 Developing, 21-40 Emerging, 0-20 Foundational.', yPos);
-  
-  yPos = addGuideItem(3, 'FIT Assessment (Behavioral)', 
+  yPos = addGuideItem(2, 'FIT Assessment (Behavioral)', 
     'Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores indicate stronger trait presence. Match against role requirements to assess fit.', yPos);
   
-  yPos = addGuideItem(4, 'AI Readiness (Technical)', 
+  yPos = addGuideItem(3, 'AI Readiness (Technical)', 
     'Measures 9 AI-related capabilities including AI Literacy, Change Adaptability, and Data Fluency. Higher scores indicate stronger aptitude in each area.', yPos);
   
-  yPos = addGuideItem(5, 'Prompt Architecture', 
+  yPos = addGuideItem(4, 'Prompt Architecture', 
     'Evaluates AI prompt engineering skills across 7 difficulty levels. Each level tests clarity, structure, context relevance, creativity, and iterative improvement.', yPos);
+  
+  yPos = addGuideItem(5, 'AIQ (Ethics)', 
+    'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Scores: 81-100 Highly Developed, 61-80 Proficient, 41-60 Developing, 21-40 Emerging, 0-20 Foundational.', yPos);
   
   yPos = addGuideItem(6, 'Skills Legend', 
     'The final page contains a complete reference of all assessed competencies with detailed descriptions. Use this to understand what each skill measures.', yPos);
@@ -343,6 +343,15 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   if (score >= 55) return { label: 'Competent', color: [234, 179, 8] };
   if (score >= 40) return { label: 'Developing', color: [249, 115, 22] };
   return { label: 'Needs Development', color: [239, 68, 68] };
+}
+
+// Helper to get blue shade for skill scores (darker = higher score)
+function getBlueShadeColor(score: number): [number, number, number] {
+  if (score >= 80) return [30, 64, 175];    // Dark blue (blue-800)
+  if (score >= 60) return [37, 99, 235];    // Medium-dark blue (blue-600)
+  if (score >= 40) return [59, 130, 246];   // Medium blue (blue-500)
+  if (score >= 20) return [96, 165, 250];   // Light-medium blue (blue-400)
+  return [147, 197, 253];                    // Light blue (blue-300)
 }
 
 // Helper to get AIQ band-specific colors (aligned with 20% band system)
@@ -582,10 +591,11 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  // Candidate Information Card
+  // Candidate Information Card with light blue border
   yPos = 110;
   pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
+  pdf.setDrawColor(191, 219, 254); // Light blue border (#BFDBFE)
+  pdf.setLineWidth(0.5);
   pdf.roundedRect(30, yPos, pageWidth - 60, 32, 3, 3, 'FD');
   
   pdf.setFontSize(10);
@@ -646,7 +656,8 @@ export async function exportEnhancedCandidatePDF(
     const boxInnerWidth = boxWidth - 5;
     
     pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(229, 231, 235);
+    pdf.setDrawColor(191, 219, 254); // Light blue border (#BFDBFE)
+    pdf.setLineWidth(0.5);
     pdf.roundedRect(xPos, yPos, boxInnerWidth, 28, 2, 2, 'FD');
     
     pdf.setFontSize(7);
@@ -857,13 +868,19 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
     pdf.text('FIT Assessment - Behavioral Skills', 20, yPos);
-    yPos += 7;
+    yPos += 6;
     
+    // What It Measures description
     pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, Interpersonal Agility', 20, yPos);
-    yPos += 12;
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Six core behavioural skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics,', 52, yPos);
+    yPos += 4;
+    pdf.text('Growth Mindset, and Interpersonal Agility.', 20, yPos);
+    yPos += 8;
     
     try {
       const startY = yPos;
@@ -885,18 +902,19 @@ export async function exportEnhancedCandidatePDF(
         pdf.setTextColor(55, 65, 81);
         pdf.text(`${skill.name}:`, leftColumnX, scoresY);
         
-        const perf = getPerformanceLevel(skill.score);
+        // Use blue shades instead of multicolor
+        const blueColor = getBlueShadeColor(skill.score);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
         pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
         
         scoresY += 6;
       });
       
-      // RIGHT SIDE: Radar Chart
+      // RIGHT SIDE: Radar Chart (scaled to 90%)
       const imgProps = pdf.getImageProperties(radarChartImages.fit);
-      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
-      const chartMaxHeight = 80;
+      const chartMaxWidth = (pageWidth - leftColumnX - leftColumnWidth - 25) * 0.9;
+      const chartMaxHeight = 80 * 0.9;
       
       let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
@@ -910,7 +928,19 @@ export async function exportEnhancedCandidatePDF(
       const chartX = leftColumnX + leftColumnWidth + 10;
       pdf.addImage(radarChartImages.fit, 'PNG', chartX, startY, chartWidth, chartHeight);
       
-      yPos = Math.max(scoresY, startY + chartHeight) + 8;
+      yPos = Math.max(scoresY, startY + chartHeight) + 5;
+      
+      // Workplace Impact at bottom of FIT section
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(59, 130, 246);
+      pdf.text('Workplace Impact:', 20, yPos);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Predicts adaptability, initiative, collaboration quality, and resilience under pressure.', 52, yPos);
+      yPos += 4;
+      pdf.text('High scorers drive innovation and navigate ambiguity effectively.', 20, yPos);
+      yPos += 10;
     } catch (error) {
       console.error('Error adding FIT chart:', error);
       yPos += 10;
@@ -920,25 +950,33 @@ export async function exportEnhancedCandidatePDF(
   // AI Readiness Radar Chart (on same page)
   const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness');
   if (radarChartImages?.aiReadiness && aiReadinessSkills.length > 0) {
-    // No page break - keep on same page
+    // Check if we need a new page for AI Readiness section
+    if (yPos > pageHeight - 100) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 45;
+    }
+    
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
     pdf.text('AI Readiness Assessment', 20, yPos);
-    yPos += 7;
+    yPos += 6;
     
+    // What It Measures description
     pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    const aiSkills1 = 'Measures: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency,';
-    const aiSkills2 = 'Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication,';
-    const aiSkills3 = 'Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise';
-    pdf.text(aiSkills1, 20, yPos);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Nine AI-specific competencies: AI Literacy, Prompting Effectiveness, Technical Fluency,', 52, yPos);
     yPos += 4;
-    pdf.text(aiSkills2, 20, yPos);
+    pdf.text('Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation,', 20, yPos);
     yPos += 4;
-    pdf.text(aiSkills3, 20, yPos);
-    yPos += 12;
+    pdf.text('and Cross-functional Collaboration.', 20, yPos);
+    yPos += 8;
     
     try {
       const startY = yPos;
@@ -960,18 +998,19 @@ export async function exportEnhancedCandidatePDF(
         pdf.setTextColor(55, 65, 81);
         pdf.text(`${skill.name}:`, leftColumnX, scoresY);
         
-        const perf = getPerformanceLevel(skill.score);
+        // Use blue shades instead of multicolor
+        const blueColor = getBlueShadeColor(skill.score);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
+        pdf.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
         pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
         
         scoresY += 6;
       });
       
-      // RIGHT SIDE: Radar Chart
+      // RIGHT SIDE: Radar Chart (scaled to 90%)
       const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
-      const chartMaxWidth = pageWidth - leftColumnX - leftColumnWidth - 25;
-      const chartMaxHeight = 80;
+      const chartMaxWidth = (pageWidth - leftColumnX - leftColumnWidth - 25) * 0.9;
+      const chartMaxHeight = 80 * 0.9;
       
       let chartWidth = chartMaxWidth;
       let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
@@ -986,6 +1025,18 @@ export async function exportEnhancedCandidatePDF(
       pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, startY, chartWidth, chartHeight);
       
       yPos = Math.max(scoresY, startY + chartHeight) + 5;
+      
+      // Workplace Impact at bottom of AI Readiness section
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(59, 130, 246);
+      pdf.text('Workplace Impact:', 20, yPos);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions,', 52, yPos);
+      yPos += 4;
+      pdf.text('and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.', 20, yPos);
+      yPos += 10;
     } catch (error) {
       console.error('Error adding AI Readiness chart:', error);
       yPos += 10;
@@ -999,6 +1050,7 @@ export async function exportEnhancedCandidatePDF(
     // Check if we need a new page
     if (yPos > pageHeight - 60) {
       pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
@@ -1006,11 +1058,17 @@ export async function exportEnhancedCandidatePDF(
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ASSESSMENT', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFontSize(10);
+    // What It Measures description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text('Progressive evaluation of prompt engineering skills across 7 difficulty levels', 20, yPos);
-    yPos += 10;
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure,', 52, yPos);
+    yPos += 4;
+    pdf.text('Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.', 20, yPos);
+    yPos += 8;
     
     // Overall score card
     const completedLevels = promptArchitectureData.filter(p => p.totalScore !== undefined);
@@ -1121,6 +1179,18 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
     pdf.text('Clarity (20%) • Structure (20%) • Context Relevance (20%) • Creativity (20%) • Iterative Improvement (20%)', 20, yPos);
+    yPos += 6;
+    
+    // Workplace Impact at bottom of Prompt Architecture section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools,', 52, yPos);
+    yPos += 4;
+    pdf.text('solve complex problems faster, and produce higher-quality AI-assisted outputs.', 20, yPos);
     yPos += 10;
     
     pdf.setTextColor(0, 0, 0);
@@ -1137,16 +1207,24 @@ export async function exportEnhancedCandidatePDF(
   if (aiqResult && aiqScore !== null) {
     if (yPos > pageHeight - 80) {
       pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
     
     yPos = addSectionHeader(pdf, 'ALGORITHMIC INTEGRITY QUOTIENT (AIQ)', yPos, pageWidth);
+    yPos += 2;
     
+    // What It Measures description
     pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94); // Green for AIQ
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring', 52, yPos);
+    yPos += 4;
+    pdf.text('(0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%).', 20, yPos);
     yPos += 8;
     
     // Get band interpretation for display
@@ -1196,7 +1274,19 @@ export async function exportEnhancedCandidatePDF(
     descLines.forEach((line: string, idx: number) => {
       pdf.text(line, pageWidth / 2, yPos + (idx * 4), { align: 'center' });
     });
-    yPos += descLines.length * 4 + 5;
+    yPos += descLines.length * 4 + 6;
+    
+    // Workplace Impact at bottom of AIQ section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94); // Green for AIQ
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Graded scoring captures nuanced ethical judgment. Identifies candidates who balance ethical imperatives', 52, yPos);
+    yPos += 4;
+    pdf.text('with operational realities, making them valuable for AI governance and deployment oversight roles.', 20, yPos);
+    yPos += 10;
   }
   
   pdf.setTextColor(0, 0, 0);
@@ -1435,58 +1525,54 @@ export async function exportEnhancedCandidatePDF(
   
   // Recommendations Section Header
   yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
-  yPos += 3;
+  yPos += 5;
   
-  const recBoxMargin = 20;
-  const recBoxWidth = (pageWidth - recBoxMargin * 2 - 5) / 2; // Two columns with 5mm gap
-  const recBoxPadding = 4;
-  const recLineHeight = 3.5;
+  const recMargin = 25;
+  const recContentWidth = pageWidth - recMargin * 2;
+  const recLineHeight = 4;
   
-  // Helper to calculate box height for content
-  const calculateBoxHeight = (items: string[], width: number): number => {
-    pdf.setFontSize(7);
-    let contentHeight = 8; // Title height
-    items.forEach(item => {
-      const lines = pdf.splitTextToSize(`• ${item}`, width - recBoxPadding * 2);
-      contentHeight += lines.length * recLineHeight + 1;
-    });
-    return contentHeight + recBoxPadding;
-  };
-  
-  // Helper to draw a recommendation box with fixed height
-  const drawRecBox = (
+  // Helper to draw a recommendation section as plain paragraphs (no boxes)
+  const drawRecSection = (
     title: string,
     items: string[],
-    x: number,
-    y: number,
-    width: number,
-    fixedHeight: number,
     titleColor: [number, number, number]
   ): void => {
-    // Draw box background with fixed height
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(x, y, width, fixedHeight, 2, 2, 'FD');
+    // Check for page break
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 45;
+    }
     
     // Draw title
-    pdf.setFontSize(8);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-    pdf.text(title, x + recBoxPadding, y + 5);
+    pdf.text(title, recMargin, yPos);
+    yPos += 5;
     
-    // Draw items
-    pdf.setFontSize(7);
+    // Draw items as plain paragraphs
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    let itemY = y + 9;
+    
     items.forEach(item => {
-      const lines = pdf.splitTextToSize(`• ${item}`, width - recBoxPadding * 2);
+      const lines = pdf.splitTextToSize(`• ${item}`, recContentWidth);
       lines.forEach((line: string) => {
-        pdf.text(line, x + recBoxPadding, itemY);
-        itemY += recLineHeight;
+        if (yPos > pageHeight - 20) {
+          pdf.addPage();
+          addBackgroundPattern(pdf, pageWidth, pageHeight);
+          addHeader(pdf, pageWidth);
+          yPos = 45;
+        }
+        pdf.text(line, recMargin + 3, yPos);
+        yPos += recLineHeight;
       });
-      itemY += 1;
+      yPos += 1; // Small gap between items
     });
+    
+    yPos += 6; // Gap before next section
   };
   
   // Development recommendations content - focus on actual improvement areas
@@ -1513,80 +1599,11 @@ export async function exportEnhancedCandidatePDF(
     developmentItems.push('Pursue leadership training to translate technical strengths into team impact.');
   }
   
-  // Calculate heights for all 4 boxes to find the maximum
-  const rolesCalcHeight = calculateBoxHeight(roleRecs.suitableRoles, recBoxWidth);
-  const thrivingCalcHeight = calculateBoxHeight(roleRecs.thrivingEnvironments, recBoxWidth);
-  const strengthsCalcHeight = calculateBoxHeight(roleRecs.roleStrengths, recBoxWidth);
-  const devCalcHeight = calculateBoxHeight(developmentItems, recBoxWidth);
-  
-  // Use the maximum height for all boxes (with a minimum of 45mm)
-  const uniformBoxHeight = Math.max(rolesCalcHeight, thrivingCalcHeight, strengthsCalcHeight, devCalcHeight, 45);
-  
-  // Check if we need a page break (need space for both rows)
-  const totalNeededHeight = (uniformBoxHeight * 2) + 8; // Two rows plus spacing
-  if (yPos > pageHeight - totalNeededHeight - 20) {
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 45;
-  }
-  
-  // Row 1: Most Suitable Roles (left) and Where Candidate Would Thrive (right)
-  const leftX = recBoxMargin;
-  const rightX = recBoxMargin + recBoxWidth + 5;
-  
-  drawRecBox(
-    'MOST SUITABLE ROLES',
-    roleRecs.suitableRoles,
-    leftX,
-    yPos,
-    recBoxWidth,
-    uniformBoxHeight,
-    [30, 58, 138] // Dark blue
-  );
-  
-  drawRecBox(
-    'WHERE THIS CANDIDATE WOULD THRIVE',
-    roleRecs.thrivingEnvironments,
-    rightX,
-    yPos,
-    recBoxWidth,
-    uniformBoxHeight,
-    [16, 185, 129] // Green
-  );
-  
-  yPos += uniformBoxHeight + 4;
-  
-  // Check for page break before second row
-  if (yPos > pageHeight - uniformBoxHeight - 20) {
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 45;
-  }
-  
-  // Row 2: Role Strengths (left) and Development Recommendations (right)
-  drawRecBox(
-    'ROLE STRENGTHS',
-    roleRecs.roleStrengths,
-    leftX,
-    yPos,
-    recBoxWidth,
-    uniformBoxHeight,
-    [139, 92, 246] // Purple
-  );
-  
-  drawRecBox(
-    'DEVELOPMENT RECOMMENDATIONS',
-    developmentItems,
-    rightX,
-    yPos,
-    recBoxWidth,
-    uniformBoxHeight,
-    [234, 88, 12] // Orange
-  );
-  
-  yPos += uniformBoxHeight + 4;
+  // Draw all sections as plain paragraphs
+  drawRecSection('MOST SUITABLE ROLES', roleRecs.suitableRoles, [30, 58, 138]); // Dark blue
+  drawRecSection('WHERE THIS CANDIDATE WOULD THRIVE', roleRecs.thrivingEnvironments, [16, 185, 129]); // Green
+  drawRecSection('ROLE STRENGTHS', roleRecs.roleStrengths, [139, 92, 246]); // Purple
+  drawRecSection('DEVELOPMENT RECOMMENDATIONS', developmentItems, [234, 88, 12]); // Orange
   
   pdf.setTextColor(0, 0, 0);
   
