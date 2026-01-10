@@ -1190,7 +1190,10 @@ export async function exportEnhancedCandidatePDF(
     r.assessmentType === 'aiq' && r.status === 'completed'
   );
   
-  if (aiqResult && aiqResult.totalScore !== null && aiqResult.totalScore !== undefined) {
+  // Extract AIQ score from either totalScore or scores['Algorithmic Integrity'] (for compatibility)
+  const aiqScore = aiqResult?.totalScore ?? aiqResult?.scores?.['Algorithmic Integrity'] ?? null;
+  
+  if (aiqResult && aiqScore !== null) {
     if (yPos > pageHeight - 80) {
       pdf.addPage();
       addHeader(pdf, pageWidth);
@@ -1206,8 +1209,8 @@ export async function exportEnhancedCandidatePDF(
     yPos += 8;
     
     // Get band interpretation for display
-    const aiqBand = getAIQBandInterpretation(aiqResult.totalScore);
-    const aiqBandColor = getAIQBandColor(aiqResult.totalScore);
+    const aiqBand = getAIQBandInterpretation(aiqScore);
+    const aiqBandColor = getAIQBandColor(aiqScore);
     
     // Score display - compact centered box with band color
     const boxWidth = 80;
@@ -1229,7 +1232,7 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
-    pdf.text(`${aiqResult.totalScore}%`, pageWidth / 2, yPos + 10, { align: 'center' });
+    pdf.text(`${aiqScore}%`, pageWidth / 2, yPos + 10, { align: 'center' });
     
     // Band title
     pdf.setFontSize(10);
