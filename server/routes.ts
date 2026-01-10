@@ -2111,6 +2111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
+            // Debug logging
+            console.log(`[AVAILABLE-ASSESSMENTS] PurchaseItem ${item.id} (${item.assessmentType}): existing result status = ${existing?.status || 'none'}`);
+            
             // Only show if no result exists, or result is not completed AND not abandoned
             if (!existing || (existing.status !== 'completed' && existing.status !== 'abandoned')) {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
