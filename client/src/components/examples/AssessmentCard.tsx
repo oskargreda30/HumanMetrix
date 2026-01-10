@@ -20,7 +20,7 @@ export default function AssessmentCardExample() {
         title="AI Readiness Assessment"
         description="Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage."
         questionCount={21}
-        duration="30 min"
+        duration="20 min"
         price="£5"
         icon={Sparkles}
         status="completed"
