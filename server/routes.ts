@@ -3539,10 +3539,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const duplicates = assessmentIds.filter((id: string) => existingTypes.has(id));
         const newAssessments = assessmentIds.filter((id: string) => !existingTypes.has(id));
         
-        // If ALL selected assessments are duplicates, return error
+        // If ALL selected assessments are duplicates, return success with redirect
+        // The user is already logged in at this point, so send them to dashboard
         if (newAssessments.length === 0) {
-          return res.status(400).json({ 
-            message: "These assessments are already in your dashboard. Complete them first or select different ones." 
+          return res.json({ 
+            message: "These assessments are already in your dashboard.",
+            alreadyInDashboard: true,
+            loggedIn: true
           });
         }
         

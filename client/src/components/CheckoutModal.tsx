@@ -229,9 +229,24 @@ export default function CheckoutModal({
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       // Force refetch to ensure fresh data
       await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
+      
+      // Handle case where assessments are already in dashboard (user is now logged in)
+      if (data.alreadyInDashboard) {
+        toast({
+          title: "Welcome back!",
+          description: "You're now signed in. Your assessments are ready in your dashboard.",
+          duration: 3000,
+        });
+        setIsProcessing(false);
+        onOpenChange(false);
+        // Use window.location to ensure full page reload with session
+        window.location.href = "/dashboard";
+        return;
+      }
       
       toast({
         title: "Success!",
@@ -250,7 +265,7 @@ export default function CheckoutModal({
         }, 2000);
       } else {
         // For authenticated users, navigate immediately with refresh flag
-        setLocation("/dashboard?refresh=" + Date.now());
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
       const errorMessage = error.message || "Failed to process request. Please try again.";
