@@ -53,11 +53,13 @@ export default function Assessment() {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
-  const [evaluationProgress, setEvaluationProgress] = useState(0); // Progress 0-100 for evaluation
+  const [evaluationProgress, setEvaluationProgress] = useState(0); // Displayed progress 0-100 for evaluation (smoothly animated)
+  const [targetEvaluationProgress, setTargetEvaluationProgress] = useState(0); // Target progress from server
   const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false); // Synchronous flag to prevent abandon after submit
+  const progressAnimationRef = useRef<NodeJS.Timeout | null>(null); // For smooth progress animation
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -136,6 +138,7 @@ export default function Assessment() {
     
     // Reset progress at start
     setEvaluationProgress(5); // Start at 5% to show immediate feedback
+    setTargetEvaluationProgress(5);
     
     for (let i = 0; i < maxPolls; i++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -157,24 +160,26 @@ export default function Assessment() {
         consecutiveErrors = 0; // Reset on successful request
         const statusData = await statusResponse.json();
         
-        // Update progress based on actual evaluation progress from server
+        // Update target progress based on actual evaluation progress from server
+        // The displayed progress will smoothly animate toward this target
         if (statusData.evaluationProgress) {
           const { completedEvaluations, totalEvaluations } = statusData.evaluationProgress;
           // Map 0-7 completions to 5-95% progress (save 5% for initial, 5% for completion)
           const progressPercent = Math.min(95, 5 + Math.floor((completedEvaluations / totalEvaluations) * 90));
-          setEvaluationProgress(progressPercent);
+          setTargetEvaluationProgress(progressPercent);
           console.log(`[Assessment] Poll ${i + 1}: ${completedEvaluations}/${totalEvaluations} evaluated (${progressPercent}%)`);
         } else {
           // Fallback to time-based progress if server doesn't report
           const elapsedPolls = i + 1;
           const expectedDuration = 15; // With parallel processing, expect ~15 polls (~45 seconds)
           const progressPercent = Math.min(95, 5 + Math.floor((elapsedPolls / expectedDuration) * 90));
-          setEvaluationProgress(progressPercent);
+          setTargetEvaluationProgress(progressPercent);
         }
         
         if (statusData.status === 'completed') {
           console.log('[Assessment] Evaluation completed successfully');
-          setEvaluationProgress(100); // Complete!
+          setTargetEvaluationProgress(100);
+          setEvaluationProgress(100); // Complete immediately
           return statusData;
         }
         
@@ -241,6 +246,7 @@ export default function Assessment() {
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error
       setEvaluationProgress(0); // Reset progress on error
+      setTargetEvaluationProgress(0);
       console.error("[Assessment] Submission error:", error);
       
       // Determine appropriate error message based on error type
@@ -342,6 +348,47 @@ export default function Assessment() {
     }
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
+
+  // Smooth progress animation - gradually increment displayed progress toward target
+  useEffect(() => {
+    // Only animate when there's a difference and we're evaluating
+    if (evaluationProgress >= targetEvaluationProgress || targetEvaluationProgress === 0) {
+      return;
+    }
+    
+    // Clear any existing animation
+    if (progressAnimationRef.current) {
+      clearInterval(progressAnimationRef.current);
+    }
+    
+    // Calculate increment speed based on the gap
+    const gap = targetEvaluationProgress - evaluationProgress;
+    // Animate over ~2 seconds with smooth steps
+    const steps = 20;
+    const incrementPerStep = gap / steps;
+    const intervalMs = 100; // 100ms per step = 2 seconds total
+    
+    progressAnimationRef.current = setInterval(() => {
+      setEvaluationProgress(prev => {
+        const next = prev + incrementPerStep;
+        if (next >= targetEvaluationProgress) {
+          if (progressAnimationRef.current) {
+            clearInterval(progressAnimationRef.current);
+            progressAnimationRef.current = null;
+          }
+          return targetEvaluationProgress;
+        }
+        return Math.round(next);
+      });
+    }, intervalMs);
+    
+    return () => {
+      if (progressAnimationRef.current) {
+        clearInterval(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
+    };
+  }, [targetEvaluationProgress]);
 
   // Heartbeat effect - sends ping every 30 seconds to keep session alive
   // Clears when assessment completes, submits, or component unmounts
@@ -629,7 +676,35 @@ export default function Assessment() {
     submitMutation.mutate();
   };
 
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  // Calculate progress with smooth sub-progress for Prompt Architecture
+  // For assessments with few questions (like PA with 7), add partial progress based on typing
+  const calculateProgress = () => {
+    const baseProgress = (currentQuestion / questions.length) * 100;
+    const questionIncrement = 100 / questions.length;
+    
+    // For Prompt Architecture, add partial progress based on text input length
+    if (isPromptArchitecture && currentQ) {
+      const currentAnswer = answers[currentQ.id] || "";
+      const charCount = currentAnswer.length;
+      // Smooth progress: 0-50 chars = 0-30% of increment, 50-150 chars = 30-70%, 150+ = 70-100%
+      let subProgress = 0;
+      if (charCount > 0) {
+        if (charCount <= 50) {
+          subProgress = (charCount / 50) * 0.3; // 0-30% of increment
+        } else if (charCount <= 150) {
+          subProgress = 0.3 + ((charCount - 50) / 100) * 0.4; // 30-70% of increment
+        } else {
+          subProgress = 0.7 + Math.min((charCount - 150) / 200, 0.3); // 70-100% of increment
+        }
+      }
+      return Math.min(100, baseProgress + (questionIncrement * subProgress));
+    }
+    
+    // For other assessments, standard progress (question completion based)
+    return ((currentQuestion + 1) / questions.length) * 100;
+  };
+  
+  const progress = calculateProgress();
 
   // Determine if assessment is actively in progress (started but not completed)
   const isAssessmentInProgress = resultId && !submitMutation.isSuccess && !showInstructions;
