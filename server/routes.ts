@@ -1089,77 +1089,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
         : `${req.protocol}://${req.hostname}`;
       
-      // Use Airwallex if configured, otherwise fall back to Stripe
-      if (isAirwallexConfigured()) {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
-        
-        const paymentIntent = await createPaymentIntent({
-          amount: airwallexAmount,
-          currency: currencyCode.toUpperCase(),
-          merchantOrderId,
-          returnUrl: `${baseUrl}/payment-callback`,
-          customerEmail: user.email,
-          description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
-          metadata: {
-            userId: userId.toString(),
-            purchaseId: unpaidPurchase.id.toString(),
-            isResultsPayment: 'true',
-            countryCode: currencyCountry,
-            pricingTier,
-            localCurrency: currencyCode,
-            isVPN: isVPN ? 'true' : 'false',
-          },
-        });
-        
-        res.json({ 
-          success: true,
-          provider: 'airwallex',
-          intentId: paymentIntent.id,
-          clientSecret: paymentIntent.clientSecret,
-          currency: currencyCode.toUpperCase(),
-          amount: airwallexAmount,
-          free: false 
-        });
-      } else {
-        // Fall back to Stripe checkout session
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: stripeCurrency,
-                product_data: {
-                  name: 'Assessment Results Access',
-                  description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
-                },
-                unit_amount: stripeAmount,
+      // Use Stripe for B2C payments (Airwallex reserved for B2B partner billing)
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: 'Assessment Results Access',
+                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
               },
-              quantity: 1,
+              unit_amount: stripeAmount,
             },
-          ],
-          mode: 'payment',
-          allow_promotion_codes: true,
-          success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/payment-cancel-callback`,
-          metadata: {
-            userId: userId.toString(),
-            purchaseId: unpaidPurchase.id.toString(),
-            isResultsPayment: 'true',
-            countryCode: currencyCountry,
-            pricingTier,
-            localCurrency: currencyCode,
-            isVPN: isVPN ? 'true' : 'false',
+            quantity: 1,
           },
-        });
-        
-        res.json({ 
-          success: true,
-          provider: 'stripe',
-          sessionUrl: session.url,
-          free: false 
-        });
-      }
+        ],
+        mode: 'payment',
+        allow_promotion_codes: true,
+        success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/payment-cancel-callback`,
+        metadata: {
+          userId: userId.toString(),
+          purchaseId: unpaidPurchase.id.toString(),
+          isResultsPayment: 'true',
+          countryCode: currencyCountry,
+          pricingTier,
+          localCurrency: currencyCode,
+          isVPN: isVPN ? 'true' : 'false',
+        },
+      });
+      
+      res.json({ 
+        success: true,
+        provider: 'stripe',
+        sessionUrl: session.url,
+        free: false 
+      });
     } catch (error: any) {
       console.error("Error unlocking results:", error);
       res.status(500).json({ 
