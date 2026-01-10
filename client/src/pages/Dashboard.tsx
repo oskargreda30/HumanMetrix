@@ -559,35 +559,75 @@ export default function Dashboard() {
             
             return (
               <section className="mb-12">
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-xl font-semibold text-white/80">Add to Testing Suite</h2>
-                  <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full">
-                    {missingTypes.length} available
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-3">
+                <h2 className="text-2xl font-semibold mb-4 text-white/70">Add to Testing Suite</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {missingTypes.map((type) => {
                     const metadata = getAssessmentMetadata(type);
                     const AssessmentIcon = metadata.icon;
                     return (
-                      <Button
+                      <Card 
                         key={type}
-                        variant="outline"
-                        className="h-auto py-2.5 px-4 bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 text-white gap-2.5"
-                        onClick={() => addAssessmentMutation.mutate(type)}
-                        disabled={addAssessmentMutation.isPending}
-                        data-testid={`button-add-${type}`}
+                        className="hover-elevate active-elevate-2 transition-all border-2 border-dashed border-muted-foreground/30 bg-card/60"
                       >
-                        <div className={`p-1.5 rounded-lg ${metadata.iconBg} shadow-sm`}>
-                          <AssessmentIcon className="h-3.5 w-3.5 text-white" />
+                        <div className="p-4">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0 opacity-70`}>
+                              <AssessmentIcon className="h-6 w-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-2 mb-1 flex-wrap">
+                                <Badge 
+                                  variant="secondary" 
+                                  className="flex-shrink-0 text-xs bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                                >
+                                  Not Added
+                                </Badge>
+                                <h3 className="text-lg font-bold leading-tight text-foreground/80">{formatAssessmentName(type)}</h3>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{metadata.description}</p>
+                          <div className="flex items-center gap-4 mb-4 pb-4 border-b border-dashed border-muted-foreground/20">
+                            <div className="flex items-center gap-2 text-sm">
+                              <div className="p-1.5 rounded-md bg-muted/50">
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm text-foreground/70">{metadata.questions}</div>
+                                <div className="text-xs text-muted-foreground">questions</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <div className="p-1.5 rounded-md bg-muted/50">
+                                <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm text-foreground/70">{metadata.minutes}</div>
+                                <div className="text-xs text-muted-foreground">minutes</div>
+                              </div>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline"
+                            className="w-full gap-2"
+                            onClick={() => addAssessmentMutation.mutate(type)}
+                            disabled={addAssessmentMutation.isPending}
+                            data-testid={`button-add-${type}`}
+                          >
+                            {addAssessmentMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4" />
+                                Add to Testing Suite
+                              </>
+                            )}
+                          </Button>
                         </div>
-                        <span className="font-medium">{formatAssessmentName(type)}</span>
-                        {addAssessmentMutation.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-white/60" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5 text-white/60" />
-                        )}
-                      </Button>
+                      </Card>
                     );
                   })}
                 </div>
