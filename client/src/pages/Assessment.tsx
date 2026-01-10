@@ -53,8 +53,8 @@ export default function Assessment() {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
-  const [evaluationProgress, setEvaluationProgress] = useState(0); // Displayed progress 0-100 for evaluation (smoothly animated)
-  const [targetEvaluationProgress, setTargetEvaluationProgress] = useState(0); // Target progress from server
+  const [evaluationProgress, setEvaluationProgress] = useState(0); // Displayed progress 0-100 for evaluation
+  const [isEvaluating, setIsEvaluating] = useState(false); // Track if currently evaluating (for time-based progress)
   const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
@@ -136,9 +136,9 @@ export default function Assessment() {
     let consecutiveErrors = 0;
     const maxConsecutiveErrors = 3;
     
-    // Reset progress at start
+    // Start time-based progress animation
     setEvaluationProgress(5); // Start at 5% to show immediate feedback
-    setTargetEvaluationProgress(5);
+    setIsEvaluating(true);
     
     for (let i = 0; i < maxPolls; i++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -160,30 +160,21 @@ export default function Assessment() {
         consecutiveErrors = 0; // Reset on successful request
         const statusData = await statusResponse.json();
         
-        // Update target progress based on actual evaluation progress from server
-        // The displayed progress will smoothly animate toward this target
+        // Log progress for debugging (progress animation is handled by useEffect)
         if (statusData.evaluationProgress) {
           const { completedEvaluations, totalEvaluations } = statusData.evaluationProgress;
-          // Map 0-7 completions to 5-95% progress (save 5% for initial, 5% for completion)
-          const progressPercent = Math.min(95, 5 + Math.floor((completedEvaluations / totalEvaluations) * 90));
-          setTargetEvaluationProgress(progressPercent);
-          console.log(`[Assessment] Poll ${i + 1}: ${completedEvaluations}/${totalEvaluations} evaluated (${progressPercent}%)`);
-        } else {
-          // Fallback to time-based progress if server doesn't report
-          const elapsedPolls = i + 1;
-          const expectedDuration = 15; // With parallel processing, expect ~15 polls (~45 seconds)
-          const progressPercent = Math.min(95, 5 + Math.floor((elapsedPolls / expectedDuration) * 90));
-          setTargetEvaluationProgress(progressPercent);
+          console.log(`[Assessment] Poll ${i + 1}: ${completedEvaluations}/${totalEvaluations} evaluated`);
         }
         
         if (statusData.status === 'completed') {
           console.log('[Assessment] Evaluation completed successfully');
-          setTargetEvaluationProgress(100);
+          setIsEvaluating(false);
           setEvaluationProgress(100); // Complete immediately
           return statusData;
         }
         
         if (statusData.status === 'failed' || statusData.status === 'evaluation_failed') {
+          setIsEvaluating(false);
           throw new Error(statusData.message || 'Evaluation failed. Please try again.');
         }
         
@@ -191,17 +182,20 @@ export default function Assessment() {
         console.log(`[Assessment] Poll ${i + 1}/${maxPolls}: status=${statusData.status}`);
       } catch (error: any) {
         if (error.message?.includes('Evaluation failed') || error.message?.includes('after multiple attempts')) {
+          setIsEvaluating(false);
           throw error;
         }
         consecutiveErrors++;
         console.warn(`[Assessment] Poll ${i + 1}/${maxPolls}: fetch error (${consecutiveErrors}/${maxConsecutiveErrors}):`, error.message);
         if (consecutiveErrors >= maxConsecutiveErrors) {
+          setIsEvaluating(false);
           throw new Error('Failed to check status after multiple attempts');
         }
         // Continue polling on transient network errors
       }
     }
     
+    setIsEvaluating(false);
     throw new Error('Evaluation timed out. Please refresh the page.');
   };
 
@@ -246,7 +240,7 @@ export default function Assessment() {
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error
       setEvaluationProgress(0); // Reset progress on error
-      setTargetEvaluationProgress(0);
+      setIsEvaluating(false);
       console.error("[Assessment] Submission error:", error);
       
       // Determine appropriate error message based on error type
@@ -349,36 +343,38 @@ export default function Assessment() {
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
 
-  // Smooth progress animation - gradually increment displayed progress toward target
+  // Time-based progress animation - slowly progress from 5% to 95% over average evaluation time
+  // Average AI evaluation takes ~50 seconds, so we progress accordingly and stop at 95% if it takes longer
   useEffect(() => {
-    // Only animate when there's a difference and we're evaluating
-    if (evaluationProgress >= targetEvaluationProgress || targetEvaluationProgress === 0) {
+    if (!isEvaluating) {
+      // Clear animation when not evaluating
+      if (progressAnimationRef.current) {
+        clearInterval(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
       return;
     }
     
-    // Clear any existing animation
-    if (progressAnimationRef.current) {
-      clearInterval(progressAnimationRef.current);
-    }
+    // Average evaluation time is ~50 seconds
+    // Progress from 5% to 95% (90% range) over this time
+    const averageEvaluationMs = 50000; // 50 seconds
+    const startProgress = 5;
+    const maxProgress = 95; // Stop at 95% until actually complete
+    const progressRange = maxProgress - startProgress; // 90%
     
-    // Calculate increment speed based on the gap
-    const gap = targetEvaluationProgress - evaluationProgress;
-    // Animate over ~2 seconds with smooth steps
-    const steps = 20;
-    const incrementPerStep = gap / steps;
-    const intervalMs = 100; // 100ms per step = 2 seconds total
+    // Update every 500ms for smooth animation
+    const intervalMs = 500;
+    const totalIntervals = averageEvaluationMs / intervalMs; // 100 intervals
+    const incrementPerInterval = progressRange / totalIntervals; // 0.9% per interval
     
     progressAnimationRef.current = setInterval(() => {
       setEvaluationProgress(prev => {
-        const next = prev + incrementPerStep;
-        if (next >= targetEvaluationProgress) {
-          if (progressAnimationRef.current) {
-            clearInterval(progressAnimationRef.current);
-            progressAnimationRef.current = null;
-          }
-          return targetEvaluationProgress;
+        // Stop at 95% - don't go higher until completion is confirmed
+        if (prev >= maxProgress) {
+          return maxProgress;
         }
-        return Math.round(next);
+        const next = prev + incrementPerInterval;
+        return Math.min(maxProgress, Math.round(next * 10) / 10);
       });
     }, intervalMs);
     
@@ -388,7 +384,7 @@ export default function Assessment() {
         progressAnimationRef.current = null;
       }
     };
-  }, [targetEvaluationProgress]);
+  }, [isEvaluating]);
 
   // Heartbeat effect - sends ping every 30 seconds to keep session alive
   // Clears when assessment completes, submits, or component unmounts
@@ -707,7 +703,7 @@ export default function Assessment() {
   const progress = calculateProgress();
 
   // Determine if assessment is actively in progress (started but not completed)
-  const isAssessmentInProgress = resultId && !submitMutation.isSuccess && !showInstructions;
+  const isAssessmentInProgress = !!(resultId && !submitMutation.isSuccess && !showInstructions);
 
   return (
     <div className="min-h-screen flex flex-col">
