@@ -20,8 +20,17 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Get redirect parameter from URL
-  const redirectTo = new URLSearchParams(window.location.search).get("redirect") || "/dashboard";
+  // Get query parameters from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTo = urlParams.get("redirect") || "/dashboard";
+  const prefillEmail = urlParams.get("email") || "";
+  
+  // Prefill email from query parameter on mount
+  useEffect(() => {
+    if (prefillEmail && !loginEmail) {
+      setLoginEmail(prefillEmail);
+    }
+  }, [prefillEmail]);
 
   // Redirect if already authenticated
   useEffect(() => {

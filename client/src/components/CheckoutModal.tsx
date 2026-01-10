@@ -246,9 +246,11 @@ export default function CheckoutModal({
       // If the error is about an existing account, redirect to login after showing the toast
       if (errorMessage.includes("already exists")) {
         onOpenChange(false); // Close the modal
+        const userEmail = email.trim();
         setTimeout(() => {
-          setLocation("/login");
-        }, 2000); // Wait 2 seconds so user can read the toast
+          // Use window.location for reliable navigation with email prefill
+          window.location.href = `/login${userEmail ? `?email=${encodeURIComponent(userEmail)}` : ''}`;
+        }, 1500); // Wait 1.5 seconds so user can read the toast
       }
     }
   };
