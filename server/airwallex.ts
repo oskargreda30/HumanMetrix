@@ -74,30 +74,41 @@ export async function createPaymentIntent(params: CreatePaymentIntentParams): Pr
     paymentIntentParams.metadata = params.metadata;
   }
 
-  const paymentIntent = await client.paymentAcceptance.paymentIntents.create(paymentIntentParams);
+  const paymentIntent = await client.paymentAcceptance.paymentIntents.createPaymentIntent(paymentIntentParams);
 
   return {
-    id: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
-    status: paymentIntent.status,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
+    id: paymentIntent.id || '',
+    clientSecret: paymentIntent.client_secret || '',
+    status: paymentIntent.status || '',
+    amount: paymentIntent.amount || 0,
+    currency: paymentIntent.currency || '',
   };
 }
 
 export async function getPaymentIntent(paymentIntentId: string): Promise<any> {
   const client = getAirwallexClient();
-  return client.paymentAcceptance.paymentIntents.retrieve(paymentIntentId);
+  // Use the list endpoint and filter by ID as a workaround
+  const result = await client.paymentAcceptance.paymentIntents.listPaymentIntents({
+    page_num: 0,
+    page_size: 100,
+  });
+  // Find the specific payment intent by ID from the list
+  const items = (result as any).items || [];
+  return items.find((item: any) => item.id === paymentIntentId) || result;
 }
 
 export async function confirmPaymentIntent(paymentIntentId: string, returnUrl: string): Promise<any> {
   const client = getAirwallexClient();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   
-  return client.paymentAcceptance.paymentIntents.confirm(paymentIntentId, {
-    request_id: requestId,
-    return_url: returnUrl,
-  });
+  // Use the correct form for confirmPaymentIntent - first arg is the intent ID as string
+  return client.paymentAcceptance.paymentIntents.confirmPaymentIntent(
+    paymentIntentId,
+    {
+      request_id: requestId,
+      return_url: returnUrl,
+    }
+  );
 }
 
 export function formatAmountForAirwallex(amountInPence: number): number {
