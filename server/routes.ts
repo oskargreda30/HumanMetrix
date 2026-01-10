@@ -2055,6 +2055,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if this purchase has only abandoned results (no completed ones)
         const hasOnlyAbandonedResults = abandonedResults.length > 0 && completedResults.length === 0;
         
+        // A series is "consumed" when all items are either completed OR abandoned
+        const consumedCount = completedResults.length + abandonedResults.length;
+        const allItemsConsumed = consumedCount >= items.length;
+        
         return {
           ...purchase,
           purchaseItems: items,
@@ -2062,7 +2066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completedCount: completedResults.length,
           abandonedCount: abandonedResults.length,
           totalCount: items.length,
-          allItemsCompleted: completedResults.length >= items.length,
+          allItemsCompleted: allItemsConsumed, // Series is complete when all items are consumed (completed OR abandoned)
           hasOnlyAbandonedResults,
           completedAt: completedAt ? completedAt.toISOString() : null
         };
@@ -3415,15 +3419,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingItems = await storage.getPurchaseItems(unpaidPurchase.id);
         const userResults = await storage.getResultsByUser(userId);
         
-        // Check if ALL items in this purchase have completed results
-        const allItemsCompleted = existingItems.every((item: any) => {
+        // Check if ALL items in this purchase are "consumed" (completed OR abandoned)
+        const allItemsConsumed = existingItems.every((item: any) => {
           const result = userResults.find((r: any) => r.purchaseItemId === item.id);
-          return result && result.status === 'completed';
+          return result && (result.status === 'completed' || result.status === 'abandoned');
         });
         
-        if (allItemsCompleted && existingItems.length > 0) {
-          // All assessments completed - allow creating a NEW testing series
-          console.log(`User ${email} has completed all assessments in purchase ${unpaidPurchase.id}, allowing new series`);
+        if (allItemsConsumed && existingItems.length > 0) {
+          // All assessments consumed (completed or abandoned) - allow creating a NEW testing series
+          console.log(`User ${email} has consumed all assessments in purchase ${unpaidPurchase.id}, allowing new series`);
           unpaidPurchase = undefined; // Force creation of new purchase
         }
       }
