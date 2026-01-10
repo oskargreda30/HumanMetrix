@@ -71,6 +71,21 @@ export default function CheckoutModal({
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Helper to get CSRF token from cookie
+  const getCsrfToken = (): string | null => {
+    const cookies = document.cookie.split(";");
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf("=");
+      if (eqIndex === -1) continue;
+      const name = trimmed.substring(0, eqIndex);
+      if (name === "csrf_token") {
+        return trimmed.substring(eqIndex + 1);
+      }
+    }
+    return null;
+  };
+
   // Check if email exists when it changes (debounced)
   useEffect(() => {
     if (!email || isAuthenticated || !email.includes("@")) {
@@ -81,10 +96,16 @@ export default function CheckoutModal({
     const timer = setTimeout(async () => {
       setIsCheckingEmail(true);
       try {
+        const csrfToken = getCsrfToken();
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (csrfToken) {
+          headers["x-csrf-token"] = csrfToken;
+        }
         const response = await fetch("/api/check-email-exists", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ email: email.trim() }),
+          credentials: "include",
         });
         if (response.ok) {
           const data = await response.json();
@@ -151,13 +172,10 @@ export default function CheckoutModal({
     // Only validate form fields if not authenticated
     if (!isAuthenticated) {
       if (isExistingUser) {
-        // Existing user just needs email and password
-        if (!email.trim() || !password.trim()) {
-          toast({
-            title: "Missing information",
-            description: "Please enter your email and password.",
-            variant: "destructive",
-          });
+        // Existing user detected - redirect to login immediately
+        if (!password.trim()) {
+          onOpenChange(false); // Close the modal
+          window.location.href = `/login?email=${encodeURIComponent(email.trim())}&existing=true`;
           return;
         }
       } else {
