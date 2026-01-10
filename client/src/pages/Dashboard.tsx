@@ -539,9 +539,33 @@ export default function Dashboard() {
               availableAssessments.map((a: any) => a.assessmentType)
             );
             
-            // Find missing types that can be added (not currently active)
-            // Note: We allow re-adding completed assessments so users can retake or manage their suite
-            const missingTypes = allAssessmentTypes.filter(type => !activeTypes.has(type));
+            // Get the active purchaseId(s) from available assessments
+            const activePurchaseIds = new Set(
+              availableAssessments
+                .filter((a: any) => a.purchaseId)
+                .map((a: any) => a.purchaseId)
+            );
+            
+            // Get completed types ONLY from the active purchase(s)
+            // Types completed in OTHER testing series can be re-added
+            const completedInActivePurchase = new Set<string>();
+            purchasesWithCompletedResults.forEach((purchase: any) => {
+              // Only consider completions from the active purchase
+              if (activePurchaseIds.has(purchase.id)) {
+                purchase.results?.forEach((result: any) => {
+                  if (result.assessmentType && (result.status === 'completed' || result.status === 'abandoned')) {
+                    completedInActivePurchase.add(result.assessmentType);
+                  }
+                });
+              }
+            });
+            
+            // Find missing types that can be added:
+            // - Not currently in Available Assessments (not active)
+            // - Not completed/abandoned in the active testing series
+            const missingTypes = allAssessmentTypes.filter(type => 
+              !activeTypes.has(type) && !completedInActivePurchase.has(type)
+            );
             
             // Only show this section if there are missing assessments AND user has at least one active assessment
             if (missingTypes.length === 0 || availableAssessments.length === 0) return null;
