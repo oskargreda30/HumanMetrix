@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -559,45 +559,35 @@ export default function Dashboard() {
             
             return (
               <section className="mb-12">
-                <h2 className="text-2xl font-semibold mb-4 text-white">Add to Testing Suite</h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-xl font-semibold text-white/80">Add to Testing Suite</h2>
+                  <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full">
+                    {missingTypes.length} available
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-3">
                   {missingTypes.map((type) => {
                     const metadata = getAssessmentMetadata(type);
                     const AssessmentIcon = metadata.icon;
                     return (
-                      <Card 
+                      <Button
                         key={type}
-                        className="border-dashed border-2 border-muted-foreground/30 bg-card/50"
+                        variant="outline"
+                        className="h-auto py-2.5 px-4 bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 text-white gap-2.5"
+                        onClick={() => addAssessmentMutation.mutate(type)}
+                        disabled={addAssessmentMutation.isPending}
+                        data-testid={`button-add-${type}`}
                       >
-                        <div className="p-4">
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className={`p-2 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0 opacity-60`}>
-                              <AssessmentIcon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base font-bold leading-tight">{formatAssessmentName(type)}</h3>
-                              <p className="text-xs text-muted-foreground mt-1">{metadata.description}</p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="w-full"
-                            onClick={() => addAssessmentMutation.mutate(type)}
-                            disabled={addAssessmentMutation.isPending}
-                            data-testid={`button-add-${type}`}
-                          >
-                            {addAssessmentMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                Adding...
-                              </>
-                            ) : (
-                              'Add to Suite'
-                            )}
-                          </Button>
+                        <div className={`p-1.5 rounded-lg ${metadata.iconBg} shadow-sm`}>
+                          <AssessmentIcon className="h-3.5 w-3.5 text-white" />
                         </div>
-                      </Card>
+                        <span className="font-medium">{formatAssessmentName(type)}</span>
+                        {addAssessmentMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-white/60" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 text-white/60" />
+                        )}
+                      </Button>
                     );
                   })}
                 </div>
