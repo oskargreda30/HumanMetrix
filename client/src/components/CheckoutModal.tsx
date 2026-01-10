@@ -235,12 +235,21 @@ export default function CheckoutModal({
         setLocation("/dashboard?refresh=" + Date.now());
       }
     } catch (error: any) {
+      const errorMessage = error.message || "Failed to process request. Please try again.";
       toast({
         title: "Error",
-        description: error.message || "Failed to process request. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsProcessing(false);
+      
+      // If the error is about an existing account, redirect to login after showing the toast
+      if (errorMessage.includes("already exists")) {
+        onOpenChange(false); // Close the modal
+        setTimeout(() => {
+          setLocation("/login");
+        }, 2000); // Wait 2 seconds so user can read the toast
+      }
     }
   };
 
