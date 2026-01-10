@@ -344,7 +344,7 @@ export default function Assessment() {
   }, [isAuthenticated]);
 
   // Time-based progress animation - slowly progress from 5% to 95% over average evaluation time
-  // Average AI evaluation takes ~50 seconds, so we progress accordingly and stop at 95% if it takes longer
+  // Average AI evaluation takes ~70 seconds, so we progress accordingly and stop at 95% if it takes longer
   useEffect(() => {
     if (!isEvaluating) {
       // Clear animation when not evaluating
@@ -355,17 +355,17 @@ export default function Assessment() {
       return;
     }
     
-    // Average evaluation time is ~50 seconds
+    // Average evaluation time is ~70 seconds (increased from 50s based on real usage)
     // Progress from 5% to 95% (90% range) over this time
-    const averageEvaluationMs = 50000; // 50 seconds
+    const averageEvaluationMs = 70000; // 70 seconds
     const startProgress = 5;
     const maxProgress = 95; // Stop at 95% until actually complete
     const progressRange = maxProgress - startProgress; // 90%
     
-    // Update every 500ms for smooth animation
-    const intervalMs = 500;
-    const totalIntervals = averageEvaluationMs / intervalMs; // 100 intervals
-    const incrementPerInterval = progressRange / totalIntervals; // 0.9% per interval
+    // Update every 200ms for smoother animation
+    const intervalMs = 200;
+    const totalIntervals = averageEvaluationMs / intervalMs; // 350 intervals
+    const incrementPerInterval = progressRange / totalIntervals; // ~0.26% per interval
     
     progressAnimationRef.current = setInterval(() => {
       setEvaluationProgress(prev => {
@@ -374,7 +374,7 @@ export default function Assessment() {
           return maxProgress;
         }
         const next = prev + incrementPerInterval;
-        return Math.min(maxProgress, Math.round(next * 10) / 10);
+        return Math.min(maxProgress, Math.round(next));
       });
     }, intervalMs);
     
@@ -902,9 +902,14 @@ export default function Assessment() {
                               {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
                             </span>
                           </div>
-                          <span className="text-muted-foreground">{evaluationProgress}%</span>
+                          <span className="text-muted-foreground">{Math.round(evaluationProgress)}%</span>
                         </div>
-                        <Progress value={evaluationProgress} className="h-2" data-testid="evaluation-progress-bar" />
+                        <Progress 
+                          value={evaluationProgress} 
+                          className="h-2" 
+                          indicatorClassName="transition-transform duration-300 ease-out"
+                          data-testid="evaluation-progress-bar" 
+                        />
                         <p className="text-xs text-muted-foreground text-center">
                           AI is analyzing your responses. This typically takes 1-2 minutes.
                         </p>
