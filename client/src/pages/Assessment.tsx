@@ -264,11 +264,21 @@ export default function Assessment() {
   // Abandon mutation - marks assessment as incomplete
   const abandonMutation = useMutation({
     mutationFn: async () => {
-      if (!resultId) return;
+      // If no resultId, we can't abandon - but still navigate back to dashboard
+      if (!resultId) {
+        console.log('[Assessment] No resultId - skipping abandon API call');
+        return { skipped: true };
+      }
+      console.log('[Assessment] Calling abandon API for result:', resultId);
       const response = await apiRequest("POST", `/api/assessments/${resultId}/abandon`);
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to abandon assessment');
+      }
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[Assessment] Abandon success:', data);
       // Clear heartbeat
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
@@ -279,11 +289,35 @@ export default function Assessment() {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      // Only show toast if we actually called the API (not skipped)
+      if (data && !data.skipped) {
+        toast({
+          title: "Assessment Incomplete",
+          description: "Your assessment has been marked as incomplete.",
+          variant: "destructive",
+        });
+      }
+      // Always navigate back to dashboard
+      console.log('[Assessment] Navigating to dashboard...');
+      setLocation("/dashboard?refresh=" + Date.now());
+    },
+    onError: (error: any) => {
+      console.error('[Assessment] Abandon error:', error);
+      // Clear intervals even on error
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       toast({
-        title: "Assessment Incomplete",
-        description: "Your assessment has been marked as incomplete.",
+        title: "Error",
+        description: error.message || "Failed to mark assessment as incomplete.",
         variant: "destructive",
       });
+      // Still navigate back to dashboard even on error
       setLocation("/dashboard?refresh=" + Date.now());
     },
   });
