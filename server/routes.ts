@@ -23,6 +23,23 @@ import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, g
 // Use Airwallex as primary payment processor if configured
 const useAirwallex = () => isAirwallexConfigured();
 
+// In-memory progress tracker for Prompt Architecture evaluations
+// Maps resultId -> { completed: number, total: number }
+const evaluationProgressMap = new Map<string, { completed: number; total: number }>();
+
+// Helper to update and get evaluation progress
+function updateEvaluationProgress(resultId: string, completed: number, total: number) {
+  evaluationProgressMap.set(resultId, { completed, total });
+}
+
+function getEvaluationProgress(resultId: string): { completed: number; total: number } | null {
+  return evaluationProgressMap.get(resultId) || null;
+}
+
+function clearEvaluationProgress(resultId: string) {
+  evaluationProgressMap.delete(resultId);
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 45000, // 45 seconds per request
@@ -2841,6 +2858,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
       }
       
+      // Get evaluation progress if evaluating
+      const evalProgress = result.status === 'evaluating' ? getEvaluationProgress(id) : null;
+      
       res.json({
         id: result.id,
         status: result.status,
@@ -2850,6 +2870,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pauseGraceExpiresAt: result.pauseGraceExpiresAt || null,
         resumeCount: result.resumeCount || 0,
         canPauseAgain: (result.resumeCount || 0) < 1,
+        // Evaluation progress for Prompt Architecture
+        evaluationProgress: evalProgress ? {
+          completedEvaluations: evalProgress.completed,
+          totalEvaluations: evalProgress.total,
+        } : null,
       });
     } catch (error) {
       console.error("Error getting assessment status:", error);
@@ -13406,6 +13431,7 @@ ${userPrompt}
 }
 
 // Calculate Prompt Architecture scores by evaluating all prompts
+// Processes 3 prompts in parallel to speed up evaluation while staying within OpenAI rate limits
 async function calculatePromptArchitectureScores(
   answers: Record<string, string>,
   resultId: string
@@ -13414,7 +13440,11 @@ async function calculatePromptArchitectureScores(
   totalScore: number;
   evaluations: any[];
 }> {
-  console.log(`[Prompt Arch] Starting evaluation for result ${resultId} with ${Object.keys(answers).length} prompts`);
+  const totalPrompts = Object.keys(answers).length;
+  console.log(`[Prompt Arch] Starting parallel evaluation for result ${resultId} with ${totalPrompts} prompts (batch size: 3)`);
+  
+  // Initialize progress tracking
+  updateEvaluationProgress(resultId, 0, totalPrompts);
   
   const levelDescriptions: Record<string, string> = {
     "1": "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
@@ -13438,35 +13468,70 @@ async function calculatePromptArchitectureScores(
   let creativityTotal = 0;
   let iterativeTotal = 0;
 
-  // Step 1: Evaluate all prompts with GPT (external API calls - cannot be rolled back)
+  // Prepare all evaluation tasks
+  const evaluationTasks: Array<{
+    levelKey: string;
+    userPrompt: string;
+    levelNum: number;
+    taskDesc: string;
+  }> = [];
+  
   for (const [levelKey, userPrompt] of Object.entries(answers)) {
-    // Extract numeric level from key (e.g., "level-1" -> 1)
     const levelMatch = levelKey.match(/level-?(\d+)/);
     const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
-    
     const taskDesc = levelDescriptions[levelNum.toString()] || `Level ${levelNum} task`;
+    evaluationTasks.push({ levelKey, userPrompt, levelNum, taskDesc });
+  }
+
+  // Process in batches of 3 for parallel execution
+  const BATCH_SIZE = 3;
+  let completedCount = 0;
+  
+  for (let i = 0; i < evaluationTasks.length; i += BATCH_SIZE) {
+    const batch = evaluationTasks.slice(i, i + BATCH_SIZE);
+    const batchStartTime = Date.now();
+    console.log(`[Prompt Arch] Processing batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} prompts)`);
     
     try {
-      const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+      // Run batch in parallel using Promise.all
+      const batchResults = await Promise.all(
+        batch.map(async ({ userPrompt, levelNum, taskDesc }) => {
+          const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+          return { levelNum, userPrompt, evaluation };
+        })
+      );
       
-      evaluationsWithData.push({
-        level: levelNum,
-        userPrompt,
-        evaluation,
-      });
+      // Process results from the batch
+      for (const { levelNum, userPrompt, evaluation } of batchResults) {
+        evaluationsWithData.push({
+          level: levelNum,
+          userPrompt,
+          evaluation,
+        });
 
-      clarityTotal += evaluation.clarity;
-      structureTotal += evaluation.structure;
-      contextTotal += evaluation.contextRelevance;
-      creativityTotal += evaluation.creativity;
-      iterativeTotal += evaluation.iterativeImprovement;
+        clarityTotal += evaluation.clarity;
+        structureTotal += evaluation.structure;
+        contextTotal += evaluation.contextRelevance;
+        creativityTotal += evaluation.creativity;
+        iterativeTotal += evaluation.iterativeImprovement;
+        
+        completedCount++;
+      }
+      
+      // Update progress after each batch completes
+      updateEvaluationProgress(resultId, completedCount, totalPrompts);
+      console.log(`[Prompt Arch] Batch completed in ${Date.now() - batchStartTime}ms. Progress: ${completedCount}/${totalPrompts}`);
+      
     } catch (error: any) {
-      console.error(`[Prompt Arch ERROR] Failed to evaluate level ${levelNum}:`, error.message);
+      console.error(`[Prompt Arch ERROR] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error.message);
+      clearEvaluationProgress(resultId);
       throw error; // Rethrow to stop processing
     }
   }
   
-  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully`);
+  // Clear progress tracking on completion
+  clearEvaluationProgress(resultId);
+  console.log(`[Prompt Arch] All ${evaluationsWithData.length} prompts evaluated successfully (parallel processing)`);
 
   // Calculate average scores across all levels
   const numLevels = Object.keys(answers).length;

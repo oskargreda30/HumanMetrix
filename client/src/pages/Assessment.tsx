@@ -140,13 +140,6 @@ export default function Assessment() {
     for (let i = 0; i < maxPolls; i++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
-      // Update progress - simulate gradual increase (max 95% until complete)
-      // Progress increases faster at the start, slower towards the end
-      const elapsedPolls = i + 1;
-      const expectedDuration = 40; // Expect ~40 polls (2 minutes) for typical evaluation
-      const progressPercent = Math.min(95, 5 + Math.floor((elapsedPolls / expectedDuration) * 90));
-      setEvaluationProgress(progressPercent);
-      
       try {
         const statusResponse = await fetch(`/api/assessments/${assessmentId}/status`, {
           credentials: 'include',
@@ -163,6 +156,21 @@ export default function Assessment() {
         
         consecutiveErrors = 0; // Reset on successful request
         const statusData = await statusResponse.json();
+        
+        // Update progress based on actual evaluation progress from server
+        if (statusData.evaluationProgress) {
+          const { completedEvaluations, totalEvaluations } = statusData.evaluationProgress;
+          // Map 0-7 completions to 5-95% progress (save 5% for initial, 5% for completion)
+          const progressPercent = Math.min(95, 5 + Math.floor((completedEvaluations / totalEvaluations) * 90));
+          setEvaluationProgress(progressPercent);
+          console.log(`[Assessment] Poll ${i + 1}: ${completedEvaluations}/${totalEvaluations} evaluated (${progressPercent}%)`);
+        } else {
+          // Fallback to time-based progress if server doesn't report
+          const elapsedPolls = i + 1;
+          const expectedDuration = 15; // With parallel processing, expect ~15 polls (~45 seconds)
+          const progressPercent = Math.min(95, 5 + Math.floor((elapsedPolls / expectedDuration) * 90));
+          setEvaluationProgress(progressPercent);
+        }
         
         if (statusData.status === 'completed') {
           console.log('[Assessment] Evaluation completed successfully');
