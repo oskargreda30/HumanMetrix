@@ -78,18 +78,95 @@ export const PDF_MARGINS = {
 };
 
 // Mobile-friendly PDF save function
-// On mobile browsers, pdf.save() often only works once per session
-// This function opens the PDF in a new tab on mobile for reliable viewing
+// On mobile browsers, pdf.save() often fails silently, especially on iOS Safari
+// This function uses multiple strategies to ensure reliable PDF viewing/download
 export function savePdfMobile(pdf: jsPDF, filename: string) {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isAndroid = /android/.test(userAgent);
+  const isMobile = isIOS || isAndroid;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   
-  if (isMobile) {
-    // On mobile, open PDF in new tab instead of downloading
-    // This works more reliably across multiple PDF generations
-    const blobUrl = pdf.output('bloburl');
-    window.open(blobUrl as string, '_blank');
-  } else {
-    // On desktop, use normal download
+  if (!isMobile) {
+    // Desktop: use normal download
     pdf.save(filename);
+    return;
+  }
+  
+  // Mobile approach: Generate blob and use multiple fallback strategies
+  const pdfBlob = pdf.output('blob');
+  
+  if (isIOS && isSafari) {
+    // iOS Safari: Use FileReader to convert to data URL and open in new tab
+    // This is the most reliable method for iOS Safari
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      // Open the data URL in a new window/tab
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${filename}</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #f0f0f0; }
+                embed { width: 100%; height: 100vh; }
+              </style>
+            </head>
+            <body>
+              <embed src="${dataUrl}" type="application/pdf" width="100%" height="100%">
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        // Fallback: try to download directly if popup blocked
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+    reader.readAsDataURL(pdfBlob);
+  } else if (isAndroid) {
+    // Android: Create blob URL and open in new tab, or trigger download
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    
+    // Try opening in new tab first
+    const newWindow = window.open(blobUrl, '_blank');
+    
+    if (!newWindow) {
+      // Fallback: create download link
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup after a delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } else {
+      // Revoke URL after delay to allow download
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    }
+  } else {
+    // Other mobile browsers: try standard approach with fallback
+    try {
+      pdf.save(filename);
+    } catch {
+      // Fallback: open blob URL
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    }
   }
 }
