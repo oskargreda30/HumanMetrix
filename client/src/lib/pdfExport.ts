@@ -368,8 +368,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   const leftMargin = 25;
   const indent = 5; // Indent for skill names within each section
   
-  // FIT Assessment Skills - shorter names, aligned at 60
-  const fitDescColumn = 60;
+  // FIT Assessment Skills - "Interpersonal Agility:" is longest, aligned at 68
+  const fitDescColumn = 68;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
@@ -410,8 +410,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   });
   yPos += 4;
   
-  // Prompt Architecture Dimensions - medium names, aligned at 65
-  const promptDescColumn = 65;
+  // Prompt Architecture Dimensions - "Iterative Improvement:" is longest, aligned at 72
+  const promptDescColumn = 72;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(234, 179, 8);
