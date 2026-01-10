@@ -2111,9 +2111,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const existing = await storage.getResultByPurchaseItem(item.id);
             
-            // Debug logging
-            console.log(`[AVAILABLE-ASSESSMENTS] PurchaseItem ${item.id} (${item.assessmentType}): existing result status = ${existing?.status || 'none'}`);
-            
             // Only show if no result exists, or result is not completed AND not abandoned
             if (!existing || (existing.status !== 'completed' && existing.status !== 'abandoned')) {
               // Use purchase-item-specific key to allow same type from different purchases (multiple testing series)
@@ -2939,52 +2936,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scores = calculateAIQScores(answers);
         totalScore = scores['Algorithmic Integrity']; // AIQ has a single score
       } else if (result.assessmentType === ASSESSMENT_TYPES.PROMPT_ARCHITECTURE) {
-        // For Prompt Architecture, use OpenAI GPT evaluation
-        // This includes transactional storage of evaluations AND status update
+        // For Prompt Architecture, use async evaluation pattern:
+        // 1. Save answers and set status to 'evaluating'
+        // 2. Return 202 immediately
+        // 3. Run GPT evaluation in background
+        // 4. Frontend polls /api/assessments/:id/status until complete
+        
+        console.log(`[Assessment Submit] Starting async Prompt Architecture evaluation for assessment ${id}`);
+        
+        // Save answers and set status to 'evaluating'
         try {
-          console.log(`[Assessment Submit] Starting Prompt Architecture evaluation for assessment ${id}`);
-          const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
-          scores = promptEvalResult.scores;
-          totalScore = promptEvalResult.totalScore;
-          evaluations = promptEvalResult.evaluations;
-          
-          console.log(`[Assessment Submit] Prompt Architecture evaluation completed successfully`);
-          
-          // The function already updated the assessment result in a transaction
-          // Just return the results
-          return res.json({ success: true, scores, totalScore, evaluations });
-        } catch (error: any) {
-          console.error(`[Assessment Submit ERROR] Prompt Architecture failed for assessment ${id}:`, {
-            error: error.message,
-            stack: error.stack
-          });
-          
-          // Handle OpenAI API errors gracefully
-          if (error.message?.includes('quota') || error.message?.includes('429')) {
-            return res.status(402).json({ 
-              message: "OpenAI API quota exceeded. Please add credits to your OpenAI account to use Prompt Architecture assessment.",
-              error: "quota_exceeded"
-            });
-          }
-          if (error.message?.includes('invalid') && error.message?.includes('key')) {
-            return res.status(500).json({ 
-              message: "OpenAI API configuration error. Please contact support.",
-              error: "api_config_error"
-            });
-          }
-          if (error.message?.includes('timeout')) {
-            return res.status(504).json({ 
-              message: "OpenAI API request timed out. Please try again.",
-              error: "timeout"
-            });
-          }
-          
-          // Return detailed error message to help debug
-          return res.status(500).json({ 
-            message: error.message || "Failed to evaluate prompts with AI. Please try again.",
-            error: "evaluation_failed"
-          });
+          await db.update(assessmentResults)
+            .set({
+              answers,
+              status: 'evaluating',
+            })
+            .where(eq(assessmentResults.id, id));
+        } catch (dbError: any) {
+          console.error(`[Assessment Submit ERROR] Failed to save answers for ${id}:`, dbError.message);
+          return res.status(500).json({ message: "Failed to save answers", error: "database_error" });
         }
+        
+        // Return 202 immediately - evaluation will happen in background
+        res.status(202).json({ 
+          success: true, 
+          status: 'evaluating',
+          message: 'Evaluation in progress. Please poll /api/assessments/:id/status for completion.'
+        });
+        
+        // Run evaluation in background (don't await - fire and forget)
+        (async () => {
+          try {
+            console.log(`[Prompt Arch Background] Starting GPT evaluation for assessment ${id}`);
+            const promptEvalResult = await calculatePromptArchitectureScores(answers, id);
+            console.log(`[Prompt Arch Background] Evaluation completed for assessment ${id}:`, {
+              scores: promptEvalResult.scores,
+              totalScore: promptEvalResult.totalScore
+            });
+            // calculatePromptArchitectureScores already updates the database in a transaction
+          } catch (error: any) {
+            console.error(`[Prompt Arch Background ERROR] Evaluation failed for assessment ${id}:`, {
+              error: error.message,
+              stack: error.stack
+            });
+            
+            // Mark as failed so frontend can detect
+            try {
+              await db.update(assessmentResults)
+                .set({
+                  status: 'evaluation_failed',
+                  completedAt: new Date(),
+                })
+                .where(eq(assessmentResults.id, id));
+            } catch (dbError) {
+              console.error(`[Prompt Arch Background ERROR] Failed to mark evaluation as failed:`, dbError);
+            }
+          }
+        })();
+        
+        return; // Response already sent
       }
 
       // For other assessment types, update assessment result

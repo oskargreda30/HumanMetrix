@@ -170,8 +170,8 @@ export default function Assessment() {
           return statusData;
         }
         
-        if (statusData.status === 'failed') {
-          throw new Error(statusData.message || 'Evaluation failed');
+        if (statusData.status === 'failed' || statusData.status === 'evaluation_failed') {
+          throw new Error(statusData.message || 'Evaluation failed. Please try again.');
         }
         
         // Still evaluating - continue polling
