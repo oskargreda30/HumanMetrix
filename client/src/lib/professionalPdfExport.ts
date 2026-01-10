@@ -143,6 +143,106 @@ function getPerformanceLevel(score: number): { label: string; color: [number, nu
   return { label: 'Needs Development', color: [239, 68, 68] };
 }
 
+// Helper to add "How to Read Our Reports" page
+function addHowToReadPage(pdf: jsPDF, pageWidth: number, pageHeight: number) {
+  // Header with logo and branding
+  addHeader(pdf, pageWidth);
+  
+  // Blue banner with title
+  let yPos = 50;
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(0, yPos, pageWidth, 35, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(22);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOW TO READ OUR REPORTS', pageWidth / 2, yPos + 15, { align: 'center' });
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A step-by-step guide for hiring managers and stakeholders', pageWidth / 2, yPos + 26, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
+  
+  // Content sections
+  yPos = 100;
+  const leftMargin = 25;
+  const contentWidth = pageWidth - 50;
+  const circleRadius = 5;
+  const circleX = leftMargin + circleRadius;
+  
+  const sections = [
+    {
+      number: '1',
+      title: 'Understanding Trait-Based Scores',
+      description: 'FIT and AI Readiness are trait-based assessments. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.'
+    },
+    {
+      number: '2',
+      title: 'AIQ (Ethics)',
+      description: 'Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.'
+    },
+    {
+      number: '3',
+      title: 'FIT Assessment (Behavioral)',
+      description: 'Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.'
+    },
+    {
+      number: '4',
+      title: 'AI Readiness (Technical)',
+      description: 'Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.'
+    },
+    {
+      number: '5',
+      title: 'Prompt Architecture',
+      description: 'Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.'
+    },
+    {
+      number: '6',
+      title: 'Trait Profile Summary',
+      description: 'Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis or Candidate Comparison tool to determine which traits matter for specific positions.'
+    }
+  ];
+  
+  sections.forEach((section, index) => {
+    // Numbered circle
+    pdf.setFillColor(59, 130, 246);
+    pdf.circle(circleX, yPos + 3, circleRadius, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(section.number, circleX, yPos + 4.5, { align: 'center' });
+    
+    // Section title
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(section.title, leftMargin + circleRadius * 2 + 8, yPos + 4);
+    
+    // Section description
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Word wrap the description
+    const descriptionLines = pdf.splitTextToSize(section.description, contentWidth - circleRadius * 2 - 10);
+    pdf.text(descriptionLines, leftMargin + circleRadius * 2 + 8, yPos + 12);
+    
+    // Calculate spacing for next section
+    const lineHeight = 4.5;
+    const descHeight = descriptionLines.length * lineHeight;
+    yPos += 18 + descHeight;
+    
+    // Add separator line except after last item
+    if (index < sections.length - 1) {
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setLineWidth(0.3);
+      pdf.line(leftMargin, yPos - 4, pageWidth - leftMargin, yPos - 4);
+    }
+  });
+}
+
 export async function exportProfessionalCandidatePDF(
   candidate: CandidateData,
   skills: SkillData[],
@@ -156,7 +256,11 @@ export async function exportProfessionalCandidatePDF(
     ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
     : 'Candidate';
 
-  // ========== PAGE 1: COVER PAGE ==========
+  // ========== PAGE 1: HOW TO READ OUR REPORTS ==========
+  addHowToReadPage(pdf, pageWidth, pageHeight);
+  
+  // ========== PAGE 2: COVER PAGE ==========
+  pdf.addPage();
   let yPos = 30;
   
   // Header
