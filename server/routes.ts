@@ -3387,12 +3387,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please select at least one assessment" });
       }
 
-      if (!firstName || !lastName || !email) {
-        return res.status(400).json({ message: "Please provide your name and email" });
+      if (!email) {
+        return res.status(400).json({ message: "Please provide your email address" });
       }
 
       if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
         return res.status(400).json({ message: "Please provide a valid email address" });
+      }
+      
+      // Name is only required for new users (not when password is provided for existing user login)
+      if (!password && (!firstName || !lastName)) {
+        return res.status(400).json({ message: "Please provide your name and email" });
       }
 
       // Validate assessment IDs using ASSESSMENT_PRICES as source of truth
