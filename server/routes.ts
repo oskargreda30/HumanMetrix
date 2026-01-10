@@ -988,22 +988,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get completed assessments and check for DISTINCT types
+      // Get completed OR abandoned assessments and check for DISTINCT types
+      // Business rule: Abandoned assessments are treated as "consumed" and SHOULD be charged
       const results = await storage.getResultsByUser(userId);
-      const completedResults = results.filter((r: any) => r.status === 'completed');
+      const consumedResults = results.filter((r: any) => r.status === 'completed' || r.status === 'abandoned');
       
       // Get unique assessment types to prevent duplicate completions from bypassing check
-      const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+      const uniqueAssessmentTypes = new Set(consumedResults.map((r: any) => r.assessmentType));
       
-      // CRITICAL: Require all REQUIRED assessments to be completed before allowing unlock
-      const allRequiredCompleted = requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
+      // CRITICAL: Require all REQUIRED assessments to be consumed (completed OR abandoned) before allowing unlock
+      const allRequiredConsumed = requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type));
       
-      if (!allRequiredCompleted) {
-        // Count how many of the REQUIRED assessments are completed
-        const completedRequiredCount = requiredAssessmentTypes.filter(type => uniqueAssessmentTypes.has(type)).length;
+      if (!allRequiredConsumed) {
+        // Count how many of the REQUIRED assessments are consumed
+        const consumedRequiredCount = requiredAssessmentTypes.filter(type => uniqueAssessmentTypes.has(type)).length;
         return res.status(400).json({ 
-          message: `You must complete all required assessments before unlocking results. You have completed ${completedRequiredCount} of ${requiredAssessmentTypes.length} required assessments.`,
-          completedCount: completedRequiredCount,
+          message: `You must complete all required assessments before unlocking results. You have completed ${consumedRequiredCount} of ${requiredAssessmentTypes.length} required assessments.`,
+          completedCount: consumedRequiredCount,
           required: requiredAssessmentTypes.length
         });
       }
