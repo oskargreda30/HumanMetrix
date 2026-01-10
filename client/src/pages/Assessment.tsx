@@ -753,7 +753,8 @@ export default function Assessment() {
                         onPaste={(e) => {
                           e.preventDefault();
                         }}
-                        className="min-h-[200px] text-base"
+                        disabled={isSubmitting}
+                        className="min-h-[200px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
