@@ -163,8 +163,11 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   pdf.text('Reference guide for all assessed competencies across the four assessment types', 20, yPos);
   yPos += 8;
   
-  const descColumnX = 85;
+  const leftMargin = 25;
+  const indent = 5;
   
+  // FIT Assessment Skills - "Interpersonal Agility:" is longest, aligned at 68
+  const fitDescColumn = 68;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
@@ -176,13 +179,15 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   FIT_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
+    pdf.text(`${skill.displayName}:`, leftMargin + indent, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(skill.description || '', descColumnX, yPos);
+    pdf.text(skill.description || '', fitDescColumn, yPos);
     yPos += 5;
   });
   yPos += 4;
   
+  // AI Readiness Skills - longer names, aligned at 95
+  const aiDescColumn = 95;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(34, 197, 94);
@@ -194,15 +199,17 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   AI_READINESS_SKILLS.forEach((skill) => {
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${skill.displayName}:`, 25, yPos);
+    pdf.text(`${skill.displayName}:`, leftMargin + indent, yPos);
     pdf.setFont('helvetica', 'normal');
-    const descWidth = pageWidth - descColumnX - 15;
+    const descWidth = pageWidth - aiDescColumn - 15;
     const descLines = pdf.splitTextToSize(skill.description || '', descWidth);
-    pdf.text(descLines[0], descColumnX, yPos);
+    pdf.text(descLines[0], aiDescColumn, yPos);
     yPos += 5;
   });
   yPos += 4;
   
+  // Prompt Architecture Dimensions - "Iterative Improvement:" is longest, aligned at 72
+  const promptDescColumn = 72;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(234, 179, 8);
@@ -214,9 +221,9 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   PROMPT_ARCHITECTURE_DIMENSIONS.forEach((dim) => {
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${dim.displayName}:`, 25, yPos);
+    pdf.text(`${dim.displayName}:`, leftMargin + indent, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(dim.description, descColumnX, yPos);
+    pdf.text(dim.description, promptDescColumn, yPos);
     yPos += 5;
   });
   yPos += 4;
@@ -228,6 +235,8 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
     yPos = 38;
   }
   
+  // AIQ Scoring Bands - aligned at 80
+  const aiqDescColumn = 80;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(147, 51, 234);
@@ -239,9 +248,9 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   AIQ_BANDS.forEach((band) => {
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${band.range} (${band.title}):`, 25, yPos);
+    pdf.text(`${band.range} (${band.title}):`, leftMargin + indent, yPos);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(band.description, descColumnX, yPos);
+    pdf.text(band.description, aiqDescColumn, yPos);
     yPos += 5;
   });
   
