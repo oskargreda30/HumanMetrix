@@ -24,13 +24,23 @@ export default function Login() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTo = urlParams.get("redirect") || "/dashboard";
   const prefillEmail = urlParams.get("email") || "";
+  const isExistingUser = urlParams.get("existing") === "true";
   
-  // Prefill email from query parameter on mount
+  // Prefill email and show toast for existing users
   useEffect(() => {
     if (prefillEmail && !loginEmail) {
       setLoginEmail(prefillEmail);
     }
-  }, [prefillEmail]);
+    if (isExistingUser) {
+      toast({
+        title: "Account exists",
+        description: "An account with this email already exists. Please enter your password to continue.",
+        variant: "destructive",
+      });
+      // Clean up URL without reloading
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [prefillEmail, isExistingUser]);
 
   // Redirect if already authenticated
   useEffect(() => {

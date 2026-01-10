@@ -236,22 +236,22 @@ export default function CheckoutModal({
       }
     } catch (error: any) {
       const errorMessage = error.message || "Failed to process request. Please try again.";
+      
+      // If the error is about an existing account, redirect immediately to login
+      if (errorMessage.includes("already exists")) {
+        onOpenChange(false); // Close the modal
+        const userEmail = email.trim();
+        // Redirect immediately with email prefill and message flag
+        window.location.href = `/login?email=${encodeURIComponent(userEmail)}&existing=true`;
+        return;
+      }
+      
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
       setIsProcessing(false);
-      
-      // If the error is about an existing account, redirect to login after showing the toast
-      if (errorMessage.includes("already exists")) {
-        onOpenChange(false); // Close the modal
-        const userEmail = email.trim();
-        setTimeout(() => {
-          // Use window.location for reliable navigation with email prefill
-          window.location.href = `/login${userEmail ? `?email=${encodeURIComponent(userEmail)}` : ''}`;
-        }, 1500); // Wait 1.5 seconds so user can read the toast
-      }
     }
   };
 
