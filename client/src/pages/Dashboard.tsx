@@ -177,7 +177,7 @@ export default function Dashboard() {
     onSuccess: () => {
       toast({
         title: "Assessment Removed",
-        description: "The assessment has been removed from your dashboard.",
+        description: "The assessment has been removed from your testing suite.",
       });
       setAssessmentToRemove(null);
       queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
@@ -190,6 +190,29 @@ export default function Dashboard() {
         variant: "destructive",
       });
       setAssessmentToRemove(null);
+    },
+  });
+  
+  // Add assessment mutation - adds an assessment back to the testing suite
+  const addAssessmentMutation = useMutation({
+    mutationFn: async (assessmentType: string) => {
+      const res = await apiRequest("POST", "/api/purchase-items/add", { assessmentType });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Assessment Added",
+        description: "The assessment has been added to your testing suite.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add assessment",
+        variant: "destructive",
+      });
     },
   });
 
@@ -506,6 +529,70 @@ export default function Dashboard() {
             )}
           </section>
 
+          {/* Add to Testing Suite - Show assessments not currently in the suite */}
+          {(() => {
+            // All available assessment types
+            const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+            
+            // Get currently active assessment types
+            const activeTypes = new Set(
+              availableAssessments.map((a: any) => a.assessmentType)
+            );
+            
+            // Find missing types that can be added
+            const missingTypes = allAssessmentTypes.filter(type => !activeTypes.has(type));
+            
+            // Only show this section if there are missing assessments AND user has at least one active assessment
+            if (missingTypes.length === 0 || availableAssessments.length === 0) return null;
+            
+            return (
+              <section className="mb-12">
+                <h2 className="text-2xl font-semibold mb-4 text-white">Add to Testing Suite</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {missingTypes.map((type) => {
+                    const metadata = getAssessmentMetadata(type);
+                    const AssessmentIcon = metadata.icon;
+                    return (
+                      <Card 
+                        key={type}
+                        className="border-dashed border-2 border-muted-foreground/30 bg-card/50"
+                      >
+                        <div className="p-4">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`p-2 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0 opacity-60`}>
+                              <AssessmentIcon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base font-bold leading-tight">{formatAssessmentName(type)}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">{metadata.description}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="w-full"
+                            onClick={() => addAssessmentMutation.mutate(type)}
+                            disabled={addAssessmentMutation.isPending}
+                            data-testid={`button-add-${type}`}
+                          >
+                            {addAssessmentMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              'Add to Suite'
+                            )}
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
+
           {/* Completed Testing Series (Batches) */}
           {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12">
@@ -697,7 +784,7 @@ export default function Dashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Assessment</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {assessmentToRemove?.name}? This action cannot be undone.
+              Are you sure you want to remove {assessmentToRemove?.name} from the testing suite? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -2003,6 +2003,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add an assessment to user's testing suite (re-add a previously removed assessment)
+  app.post("/api/purchase-items/add", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { assessmentType } = req.body;
+      
+      if (!assessmentType) {
+        return res.status(400).json({ message: "Assessment type is required" });
+      }
+      
+      // Validate assessment type
+      const validTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+      if (!validTypes.includes(assessmentType)) {
+        return res.status(400).json({ message: "Invalid assessment type" });
+      }
+      
+      // Get the user to check if they're employer-onboarded or have active invitations
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Employer-onboarded users cannot add assessments themselves
+      if (user.organizationId) {
+        return res.status(403).json({ message: "Contact your employer to add assessments" });
+      }
+      
+      // Get user's purchases to find one to add the assessment to
+      const purchases = await storage.getPurchasesByUser(userId);
+      
+      // Find a valid purchase to add the assessment to (self-purchased, not from invitation)
+      const validPurchase = purchases.find(p => 
+        p.status === 'completed' && !p.invitationId
+      );
+      
+      if (!validPurchase) {
+        return res.status(400).json({ message: "No valid purchase found. Please purchase a testing series first." });
+      }
+      
+      // Check if user already has this assessment type in their available assessments
+      const existingItems = await storage.getPurchaseItems(validPurchase.id);
+      const alreadyExists = existingItems.some(item => item.assessmentType === assessmentType);
+      
+      if (alreadyExists) {
+        return res.status(400).json({ message: "This assessment is already in your testing suite" });
+      }
+      
+      // Create new purchase item
+      const newItem = await storage.createPurchaseItem({
+        purchaseId: validPurchase.id,
+        assessmentType,
+        price: 0, // Free addition to existing purchase
+      });
+      
+      res.json({ success: true, message: "Assessment added successfully", item: newItem });
+    } catch (error) {
+      console.error("Error adding assessment:", error);
+      res.status(500).json({ message: "Failed to add assessment" });
+    }
+  });
+
   // Get user's purchases with their results grouped (for batch viewing)
   app.get("/api/purchases-with-results", isAuthenticated, async (req: any, res) => {
     try {
