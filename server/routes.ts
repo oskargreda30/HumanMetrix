@@ -2042,6 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         const completedResults = resultsForPurchase.filter(r => r.status === 'completed');
+        const abandonedResults = resultsForPurchase.filter(r => r.status === 'abandoned');
         
         // Find the latest completion date for this purchase
         const completedAt = completedResults.length > 0
@@ -2051,13 +2052,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .sort((a, b) => b.getTime() - a.getTime())[0]
           : null;
         
+        // Check if this purchase has only abandoned results (no completed ones)
+        const hasOnlyAbandonedResults = abandonedResults.length > 0 && completedResults.length === 0;
+        
         return {
           ...purchase,
           purchaseItems: items,
           results: resultsForPurchase,  // All results, including multiple attempts
           completedCount: completedResults.length,
+          abandonedCount: abandonedResults.length,
           totalCount: items.length,
           allItemsCompleted: completedResults.length >= items.length,
+          hasOnlyAbandonedResults,
           completedAt: completedAt ? completedAt.toISOString() : null
         };
       });
