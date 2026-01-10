@@ -31,6 +31,7 @@ import PaymentCallback from "@/pages/PaymentCallback";
 import PaymentCancelCallback from "@/pages/PaymentCancelCallback";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import EULA from "@/pages/EULA";
 import AdminInvitations from "@/pages/AdminInvitations";
 import AdminDashboard from "@/pages/AdminDashboard";
 import GenerateSamplePDFs from "@/pages/GenerateSamplePDFs";
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/payment-cancel-callback" component={PaymentCancelCallback} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/eula" component={EULA} />
       <Route path="/team" component={Team} />
       <Route path="/news" component={Subscribe} />
       <Route path="/developers" component={Developers} />
