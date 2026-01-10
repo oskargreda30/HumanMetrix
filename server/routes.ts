@@ -1092,13 +1092,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use Stripe for B2C payments (Airwallex reserved for B2B partner billing)
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        customer_email: user.email, // Pre-fill email from account (results sent to this email)
         line_items: [
           {
             price_data: {
               currency: stripeCurrency,
               product_data: {
                 name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}. Results will be sent to your account email.`,
               },
               unit_amount: stripeAmount,
             },
