@@ -10,6 +10,7 @@ const reports = [
     downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
     testId: "individual",
     comingSoon: false,
+    category: "individual" as const,
   },
   {
     icon: Users,
@@ -19,6 +20,7 @@ const reports = [
     downloadName: "Candidate_Comparison_Example_Report_HumanMetrix.pdf",
     testId: "comparison",
     comingSoon: false,
+    category: "employer" as const,
   },
   {
     icon: Target,
@@ -28,6 +30,7 @@ const reports = [
     downloadName: "Role_Fit_Example_Report_HumanMetrix.pdf",
     testId: "rolefit",
     comingSoon: false,
+    category: "employer" as const,
   },
   {
     icon: UsersRound,
@@ -37,6 +40,7 @@ const reports = [
     downloadName: "",
     testId: "multi-rolefit",
     comingSoon: true,
+    category: "employer" as const,
   },
 ];
 
@@ -145,42 +149,50 @@ export default function SampleReportsSection() {
           {reports.map((report, index) => (
             <div 
               key={index} 
-              className={`relative rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center justify-center space-y-3 md:space-y-4 ${report.comingSoon ? 'opacity-80' : 'hover-elevate'}`}
+              className={`relative rounded-xl bg-[#1a2744]/50 border border-cyan-400/10 p-4 md:p-6 flex flex-col items-center ${report.comingSoon ? 'opacity-80' : 'hover-elevate'}`}
               data-testid={`card-report-${report.testId}`}
             >
-              {report.comingSoon && (
-                <div className="absolute top-2 right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-testid={`badge-coming-soon-${report.testId}`}>
-                  Coming Soon
-                </div>
-              )}
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+              <div 
+                className={`absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  report.category === 'individual' 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                }`}
+                data-testid={`badge-category-${report.testId}`}
+              >
+                {report.category === 'individual' ? 'For Job Seekers' : 'For Employers'}
+              </div>
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center mt-6">
                 <report.icon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" data-testid={`icon-report-${report.testId}`} />
               </div>
-              <h3 className="text-sm md:text-lg font-semibold text-white text-center" data-testid={`text-report-${report.testId}-title`}>
+              <h3 className="text-sm md:text-lg font-semibold text-white text-center mt-3 md:mt-4" data-testid={`text-report-${report.testId}-title`}>
                 {report.title}
               </h3>
-              {report.comingSoon ? (
-                <Button 
-                  size="sm"
-                  disabled
-                  className="w-full bg-gray-500/50 text-gray-300 border-0 text-xs cursor-not-allowed"
-                  data-testid={`button-download-${report.testId}`}
-                >
-                  <Download className="mr-1.5 h-3 w-3" />
-                  Coming Soon
-                </Button>
-              ) : (
-                <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
+              <div className="flex-grow" />
+              <div className="w-full mt-3 md:mt-4">
+                {report.comingSoon ? (
                   <Button 
                     size="sm"
-                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
+                    disabled
+                    className="w-full bg-gray-500/50 text-gray-300 border-0 text-xs cursor-not-allowed"
                     data-testid={`button-download-${report.testId}`}
                   >
                     <Download className="mr-1.5 h-3 w-3" />
-                    Download Sample
+                    Coming Soon
                   </Button>
-                </a>
-              )}
+                ) : (
+                  <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
+                    <Button 
+                      size="sm"
+                      className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
+                      data-testid={`button-download-${report.testId}`}
+                    >
+                      <Download className="mr-1.5 h-3 w-3" />
+                      Download Sample
+                    </Button>
+                  </a>
+                )}
+              </div>
             </div>
           ))}
         </div>
