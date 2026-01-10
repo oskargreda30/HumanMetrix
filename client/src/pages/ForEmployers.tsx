@@ -13,7 +13,13 @@ import {
   BarChart3, 
   FileCheck, 
   Mail, 
-  Clock 
+  Clock,
+  Phone,
+  Settings,
+  Puzzle,
+  Send,
+  ClipboardCheck,
+  CheckCircle
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
@@ -67,6 +73,45 @@ const useCases = [
   {
     title: "Internal Mobility",
     description: "Make data-driven decisions about role transitions by understanding each employee's skill profile.",
+  },
+];
+
+const howItWorks = [
+  {
+    step: 1,
+    icon: Phone,
+    title: "Discovery Call",
+    description: "Schedule a consultation to discuss your hiring needs and assessment requirements",
+  },
+  {
+    step: 2,
+    icon: Settings,
+    title: "Account Setup",
+    description: "We create your partner account with custom branding, API access, and billing preferences",
+  },
+  {
+    step: 3,
+    icon: Puzzle,
+    title: "Integration",
+    description: "Choose your method: embed via widget, use the partner portal, or connect to your ATS",
+  },
+  {
+    step: 4,
+    icon: Send,
+    title: "Invite Candidates",
+    description: "Send branded assessment invitations via email, CSV upload, or API integration",
+  },
+  {
+    step: 5,
+    icon: ClipboardCheck,
+    title: "Assessments Complete",
+    description: "Candidates take FIT, AI Readiness, Prompt Architecture, and AIQ tests",
+  },
+  {
+    step: 6,
+    icon: CheckCircle,
+    title: "Review & Hire",
+    description: "Access comprehensive reports, compare candidates, and get AI-powered role fit analysis",
   },
 ];
 
@@ -179,8 +224,74 @@ export default function ForEmployers() {
           </div>
         </section>
 
+        {/* How It Works */}
+        <section className="py-12 md:py-24 bg-muted/30" data-testid="section-how-it-works">
+          <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-8 md:mb-16">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4" data-testid="text-how-it-works-heading">
+                How It Works
+              </h2>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="text-how-it-works-subheading">
+                From first contact to hiring decision in six simple steps
+              </p>
+            </div>
+
+            {/* Desktop: Horizontal timeline */}
+            <div className="hidden lg:block" data-testid="timeline-desktop">
+              <div className="relative">
+                {/* Connecting line */}
+                <div className="absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+                
+                <div className="grid grid-cols-6 gap-4">
+                  {howItWorks.map((item, index) => (
+                    <div key={index} className="relative flex flex-col items-center text-center" data-testid={`step-${item.step}`}>
+                      {/* Step number circle */}
+                      <div className="relative z-10 h-24 w-24 rounded-full bg-background border-2 border-primary/30 flex flex-col items-center justify-center shadow-lg mb-4">
+                        <item.icon className="h-8 w-8 text-primary mb-1" />
+                        <span className="text-xs font-bold text-primary">Step {item.step}</span>
+                      </div>
+                      <h3 className="text-sm font-semibold mb-2">{item.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed px-1">
+                        {item.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile/Tablet: Vertical timeline */}
+            <div className="lg:hidden" data-testid="timeline-mobile">
+              <div className="relative">
+                {/* Vertical connecting line */}
+                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20" />
+                
+                <div className="space-y-6">
+                  {howItWorks.map((item, index) => (
+                    <div key={index} className="relative flex items-start gap-4" data-testid={`step-mobile-${item.step}`}>
+                      {/* Step circle */}
+                      <div className="relative z-10 h-12 w-12 flex-shrink-0 rounded-full bg-background border-2 border-primary/30 flex items-center justify-center shadow-md">
+                        <item.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-primary">Step {item.step}</span>
+                          <h3 className="text-sm font-semibold">{item.title}</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Use Cases */}
-        <section className="py-12 md:py-24 bg-muted/30">
+        <section className="py-12 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-8 md:mb-16">
               <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
