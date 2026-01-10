@@ -850,16 +850,21 @@ export default function Assessment() {
                       onValueChange={handleAnswerChange}
                     >
                       {(currentQ as any).options?.map((option: any) => (
-                        <div key={option.value} className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2">
+                        <div 
+                          key={option.value} 
+                          className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2 cursor-pointer"
+                          onClick={() => handleAnswerChange(option.value)}
+                          data-testid={`answer-container-${currentQ.id}-${option.value}`}
+                        >
                           <RadioGroupItem
                             value={option.value}
                             id={`${currentQ.id}-${option.value}`}
                             data-testid={`radio-${currentQ.id}-${option.value}`}
-                            className="mt-0.5"
+                            className="mt-0.5 pointer-events-none"
                           />
                           <Label
                             htmlFor={`${currentQ.id}-${option.value}`}
-                            className="flex-1 cursor-pointer"
+                            className="flex-1 cursor-pointer pointer-events-none"
                           >
                             <span className="text-sm">
                               <span className="font-medium">{option.value}.</span>{" "}
