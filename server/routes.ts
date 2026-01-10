@@ -1681,7 +1681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           line_items: lineItems,
           mode: "payment",
           success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/assessments`,
+          cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
           metadata: {
             customerEmail,
             customerName,
@@ -1903,7 +1903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         line_items: lineItems,
         mode: "payment",
         success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId,
           assessmentIds: JSON.stringify(assessmentIds),
