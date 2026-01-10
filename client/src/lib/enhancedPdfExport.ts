@@ -1537,7 +1537,7 @@ export async function exportEnhancedCandidatePDF(
     items: string[],
     titleColor: [number, number, number]
   ): void => {
-    // Check for page break
+    // Check for page break before starting section
     if (yPos > pageHeight - 40) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -1546,11 +1546,15 @@ export async function exportEnhancedCandidatePDF(
     }
     
     // Draw title
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-    pdf.text(title, recMargin, yPos);
-    yPos += 5;
+    const drawTitle = () => {
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+      pdf.text(title, recMargin, yPos);
+      yPos += 5;
+    };
+    
+    drawTitle();
     
     // Draw items as plain paragraphs
     pdf.setFontSize(8);
@@ -1559,12 +1563,22 @@ export async function exportEnhancedCandidatePDF(
     
     items.forEach(item => {
       const lines = pdf.splitTextToSize(`• ${item}`, recContentWidth);
-      lines.forEach((line: string) => {
+      lines.forEach((line: string, lineIdx: number) => {
         if (yPos > pageHeight - 20) {
           pdf.addPage();
           addBackgroundPattern(pdf, pageWidth, pageHeight);
           addHeader(pdf, pageWidth);
           yPos = 45;
+          // Re-render title with "(continued)" suffix on new page
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+          pdf.text(`${title} (continued)`, recMargin, yPos);
+          yPos += 5;
+          // Reset text styling for items
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(55, 65, 81);
         }
         pdf.text(line, recMargin + 3, yPos);
         yPos += recLineHeight;
