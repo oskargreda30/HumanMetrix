@@ -438,7 +438,7 @@ export default function MyResults() {
                     <div className="text-xs text-muted-foreground">Average Score</div>
                   </div>
                   <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-lg font-bold text-primary mb-1 truncate px-1">{topSkill.name}</div>
+                    <div className="text-sm font-bold text-primary mb-1 px-1 leading-tight">{topSkill.name}</div>
                     <div className="text-xs text-muted-foreground">Top Skill ({topSkill.score})</div>
                   </div>
                 </div>
