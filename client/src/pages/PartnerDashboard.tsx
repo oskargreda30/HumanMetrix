@@ -19,7 +19,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -545,6 +546,7 @@ interface PartnerAnalytics {
   testsOverTime: Array<{ date: string; count: number }>;
   byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
   byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
+  scoreDistribution?: Array<{ type: string; buckets: Array<{ range: string; count: number }> }>;
 }
 
 interface PartnerNotification {
@@ -620,6 +622,11 @@ export default function PartnerDashboard() {
   const [brandingWelcomeMessage, setBrandingWelcomeMessage] = useState("");
   const [brandingCompanyDisplayName, setBrandingCompanyDisplayName] = useState("");
   const [brandingLogoUrl, setBrandingLogoUrl] = useState("");
+  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
@@ -882,6 +889,50 @@ export default function PartnerDashboard() {
       });
     },
   });
+
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const response = await apiRequest("POST", "/api/change-password", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to change password",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "New password and confirm password must match.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    changePasswordMutation.mutate({ currentPassword, newPassword });
+  };
 
   // Purchase test package mutation
   const purchaseMutation = useMutation({
@@ -1450,41 +1501,105 @@ export default function PartnerDashboard() {
               <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
               </TabsTrigger>
-              <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Organizations
-              </TabsTrigger>
+              {/* Organizations tab hidden for now - feature preserved in code */}
+              {false && (
+                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Organizations
+                </TabsTrigger>
+              )}
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
               <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Team
               </TabsTrigger>
-              <TabsTrigger value="usage" data-testid="tab-usage" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Usage
-              </TabsTrigger>
-              <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Billing
-              </TabsTrigger>
-              <TabsTrigger value="developer" data-testid="tab-developer" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Developer
-              </TabsTrigger>
-              <TabsTrigger value="analytics" data-testid="tab-analytics" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value="notifications" data-testid="tab-notifications" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
-                Notifications
-                {(notifications?.unreadCount ?? 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="settings" data-testid="tab-settings" onClick={initSettings} className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Settings
-              </TabsTrigger>
-              <TabsTrigger value="activity" data-testid="tab-activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Activity Log
-              </TabsTrigger>
+              
+              {/* Settings Dropdown - contains Usage, Billing, Developer, Analytics, Notifications, Settings, Activity Log */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      ['usage', 'billing', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                    data-testid="dropdown-settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                    {(notifications?.unreadCount ?? 0) > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center ml-1">
+                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
+                      </span>
+                    )}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('usage')}
+                    className={activeTab === 'usage' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-usage"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Usage
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('billing')}
+                    className={activeTab === 'billing' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-billing"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Billing
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('developer')}
+                    className={activeTab === 'developer' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-developer"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Developer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('analytics')}
+                    className={activeTab === 'analytics' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-analytics"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('notifications')}
+                    className={activeTab === 'notifications' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-notifications"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                    {(notifications?.unreadCount ?? 0) > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => { setActiveTab('settings'); initSettings(); }}
+                    className={activeTab === 'settings' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-settings"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Account Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab('activity')}
+                    className={activeTab === 'activity' ? 'bg-accent' : ''}
+                    data-testid="dropdown-item-activity"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Activity Log
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
 
             {/* Home Tab */}
@@ -1493,12 +1608,12 @@ export default function PartnerDashboard() {
               {(() => {
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
-                const hasOrganization = (organizations?.organizations?.length ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
                 const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
                 
-                const completedSteps = [hasApiKey, hasAssessment, hasOrganization, hasTeamMember].filter(Boolean).length;
-                const totalSteps = 4;
+                // Organization step hidden for now
+                const completedSteps = [hasApiKey, hasAssessment, hasTeamMember].filter(Boolean).length;
+                const totalSteps = 3;
                 const allComplete = completedSteps === totalSteps;
                 
                 // Hide if all steps are complete
@@ -1577,33 +1692,7 @@ export default function PartnerDashboard() {
                           {!hasAssessment && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
                         </button>
 
-                        {/* Step 3: Create Organization */}
-                        <button
-                          onClick={() => setActiveTab('organizations')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
-                            hasOrganization ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
-                          }`}
-                          data-testid="setup-step-organization"
-                        >
-                          <div className={`p-1.5 rounded-full ${hasOrganization ? 'bg-green-500/20' : 'bg-muted'}`}>
-                            {hasOrganization ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className={`font-medium text-sm ${hasOrganization ? 'text-green-700 dark:text-green-400' : ''}`}>
-                              Create an organization
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {hasOrganization ? `${organizations?.organizations?.length} organization(s) created` : 'Group assessments by client or department'}
-                            </div>
-                          </div>
-                          {!hasOrganization && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                        </button>
-
-                        {/* Step 4: Invite Team Member */}
+                        {/* Step 3: Invite Team Member */}
                         <button
                           onClick={() => setActiveTab('team')}
                           className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
@@ -1922,10 +2011,15 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("organizations"); window.scrollTo(0, 0); }} data-testid="card-quick-organizations">
+                <Card className="relative opacity-75" data-testid="card-quick-organizations">
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                      Coming Soon
+                    </Badge>
+                  </div>
                   <CardContent className="pt-6 text-center">
-                    <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">Organizations</h3>
+                    <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <h3 className="font-semibold text-muted-foreground">Organizations</h3>
                     <p className="text-sm text-muted-foreground">Manage clients</p>
                   </CardContent>
                 </Card>
@@ -2971,9 +3065,8 @@ export default function PartnerDashboard() {
                                 key={pkg.size} 
                                 className="border rounded-lg p-4 hover:border-primary transition-colors"
                               >
-                                <div className="font-semibold text-lg">{pkg.name}</div>
                                 <div className="text-2xl font-bold text-primary">
-                                  {pkg.size.toLocaleString()} tests
+                                  {pkg.size.toLocaleString()} Tests
                                 </div>
                                 <div className="text-sm text-muted-foreground mb-3">
                                   {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
@@ -3472,6 +3565,64 @@ export default function PartnerDashboard() {
                     </CardContent>
                   </Card>
 
+                  {/* Change Password Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Lock className="h-5 w-5" />
+                        Change Password
+                      </CardTitle>
+                      <CardDescription>
+                        Update your account password
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input
+                          id="current-password"
+                          type="password"
+                          placeholder="Enter current password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          data-testid="input-current-password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input
+                          id="new-password"
+                          type="password"
+                          placeholder="Enter new password (min 8 characters)"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          data-testid="input-new-password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Confirm new password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          data-testid="input-confirm-password"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleChangePassword}
+                        disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+                        data-testid="button-change-password"
+                      >
+                        {changePasswordMutation.isPending && (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        )}
+                        Change Password
+                      </Button>
+                    </CardContent>
+                  </Card>
+
                   <div className="flex justify-end">
                     <Button
                       onClick={handleSaveSettings}
@@ -3658,7 +3809,7 @@ export default function PartnerDashboard() {
                             {analytics.scoreDistribution.map((dist, i) => (
                               <div key={i} className="space-y-3">
                                 <h4 className="font-medium text-sm">
-                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  {dist.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                 </h4>
                                 <div className="h-40">
                                   <ResponsiveContainer width="100%" height="100%">

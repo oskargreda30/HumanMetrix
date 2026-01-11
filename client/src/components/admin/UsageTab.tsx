@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity, Plus, ShoppingCart } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, Building2, BarChart3, CreditCard, Activity, Plus, ShoppingCart, Key } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -21,6 +21,16 @@ interface PartnerUsageStats {
   isSuspended: boolean;
   currentMonthSessions: number;
   totalTestsCompleted: number;
+  freeTestsAllocated: number;
+}
+
+interface TestModePartnerStats {
+  partnerId: string;
+  partnerName: string;
+  companyName: string | null;
+  testSessions: number;
+  testCompletions: number;
+  lastTestUsage: string | null;
 }
 
 interface PlatformUsageStats {
@@ -34,6 +44,14 @@ interface PlatformUsageStats {
     currentMonthSessions: number;
   };
   partners: PartnerUsageStats[];
+  testMode?: {
+    totals: {
+      totalTestSessions: number;
+      totalTestCompletions: number;
+      partnersUsingTestMode: number;
+    };
+    byPartner: TestModePartnerStats[];
+  };
 }
 
 interface OrgUsageStats {
@@ -229,7 +247,7 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
                   </div>
                   <div className="flex items-center gap-6 text-sm ml-4">
                     <div className="text-center">
-                      <div className="font-semibold">{partner.testsPurchased}</div>
+                      <div className="font-semibold">{Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0))}</div>
                       <div className="text-muted-foreground text-xs">Purchased</div>
                     </div>
                     <div className="text-center">
@@ -251,17 +269,109 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Test API Key Usage Monitoring */}
+      {stats.testMode && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Test API Key Usage
+              <Badge variant="outline" className="ml-2">This Month</Badge>
+            </CardTitle>
+            <CardDescription>
+              Monitor test API key activity to detect potential abuse
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-amber-600" data-testid="text-test-sessions">
+                  {stats.testMode.totals.totalTestSessions}
+                </div>
+                <div className="text-sm text-muted-foreground">Test Sessions Created</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-amber-600" data-testid="text-test-completions">
+                  {stats.testMode.totals.totalTestCompletions}
+                </div>
+                <div className="text-sm text-muted-foreground">Test Completions</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold" data-testid="text-partners-test-mode">
+                  {stats.testMode.totals.partnersUsingTestMode}
+                </div>
+                <div className="text-sm text-muted-foreground">Partners Using Test Keys</div>
+              </div>
+            </div>
+
+            {stats.testMode.byPartner.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                No test API key usage this month
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">Usage By Partner</h4>
+                {stats.testMode.byPartner.map((partner) => {
+                  const isHighUsage = partner.testCompletions > 10;
+                  return (
+                    <div
+                      key={partner.partnerId}
+                      className={`flex items-center justify-between p-3 border rounded-lg ${isHighUsage ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                      data-testid={`test-usage-${partner.partnerId}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-md ${isHighUsage ? 'bg-amber-500/20' : 'bg-muted'}`}>
+                          <Key className={`h-4 w-4 ${isHighUsage ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {partner.companyName || partner.partnerName}
+                            {isHighUsage && (
+                              <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 border-amber-500/30 text-xs">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                High Usage
+                              </Badge>
+                            )}
+                          </div>
+                          {partner.lastTestUsage && (
+                            <div className="text-xs text-muted-foreground">
+                              Last activity: {new Date(partner.lastTestUsage).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-semibold">{partner.testSessions}</div>
+                          <div className="text-muted-foreground text-xs">Sessions</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`font-semibold ${isHighUsage ? 'text-amber-600' : ''}`}>{partner.testCompletions}</div>
+                          <div className="text-muted-foreground text-xs">Completed</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
+// Volume-based pricing tiers per pricing document ($1.00 = 1 Credit, 6-month expiration)
+// Boutique (1-100): $20/test, Growth (101-500): $10/test, Small Enterprise (501-2,500): $5/test
+// Enterprise (2,501-9,999): $2.50/test, Pro (10,000+): $1.00/test
 const PACKAGE_TIERS: PackageTier[] = [
-  { size: 10, pricePerTest: 5.00, name: "Starter", totalPrice: 50, displayPrice: "£50", displayPricePerTest: "£5.00" },
-  { size: 25, pricePerTest: 4.50, name: "Basic", totalPrice: 112.50, displayPrice: "£112.50", displayPricePerTest: "£4.50" },
-  { size: 50, pricePerTest: 4.00, name: "Standard", totalPrice: 200, displayPrice: "£200", displayPricePerTest: "£4.00" },
-  { size: 100, pricePerTest: 3.50, name: "Professional", totalPrice: 350, displayPrice: "£350", displayPricePerTest: "£3.50" },
-  { size: 250, pricePerTest: 3.00, name: "Enterprise", totalPrice: 750, displayPrice: "£750", displayPricePerTest: "£3.00" },
-  { size: 500, pricePerTest: 2.50, name: "Enterprise+", totalPrice: 1250, displayPrice: "£1,250", displayPricePerTest: "£2.50" },
+  { size: 50, pricePerTest: 20.00, name: "Boutique", totalPrice: 1000, displayPrice: "$1,000", displayPricePerTest: "$20.00" },
+  { size: 250, pricePerTest: 10.00, name: "Growth", totalPrice: 2500, displayPrice: "$2,500", displayPricePerTest: "$10.00" },
+  { size: 1000, pricePerTest: 5.00, name: "Small Enterprise", totalPrice: 5000, displayPrice: "$5,000", displayPricePerTest: "$5.00" },
+  { size: 5000, pricePerTest: 2.50, name: "Enterprise", totalPrice: 12500, displayPrice: "$12,500", displayPricePerTest: "$2.50" },
+  { size: 10000, pricePerTest: 1.00, name: "Pro", totalPrice: 10000, displayPrice: "$10,000", displayPricePerTest: "$1.00" },
 ];
 
 function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
@@ -336,7 +446,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="text-org-tests-purchased">
-              {partner.testsPurchased.toLocaleString()}
+              {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               Total prepaid tests
@@ -505,7 +615,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-primary">{partner.testsPurchased}</div>
+              <div className="text-2xl font-bold text-primary">{Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0))}</div>
               <div className="text-sm text-muted-foreground">Total Purchased</div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">

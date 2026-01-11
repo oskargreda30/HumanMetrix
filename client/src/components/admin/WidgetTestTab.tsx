@@ -25,6 +25,7 @@ interface ApiKey {
   permissions: string[];
   isActive: boolean;
   lastUsedAt: string | null;
+  environment: 'test' | 'live';
 }
 
 interface TestSession {
@@ -40,7 +41,7 @@ export default function WidgetTestTab() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
   const [assessmentType, setAssessmentType] = useState<string>("fit");
-  const [testEmail, setTestEmail] = useState<string>("test@example.com");
+  const [testEmail, setTestEmail] = useState<string>("");
   const [externalUserId, setExternalUserId] = useState<string>("");
   const [metadataJson, setMetadataJson] = useState<string>('{\n  "jobRole": "Software Engineer",\n  "department": "Engineering"\n}');
   const [metadataError, setMetadataError] = useState<string>("");
@@ -188,9 +189,25 @@ export default function WidgetTestTab() {
                       {keysLoading ? (
                         <SelectItem value="loading" disabled>Loading...</SelectItem>
                       ) : apiKeys?.length ? (
-                        apiKeys.filter(k => k.isActive).map((key) => (
+                        apiKeys.map((key) => (
                           <SelectItem key={key.id} value={key.id.toString()}>
-                            {key.keyPrefix}*** ({key.permissions.join(", ")})
+                            <span className="flex items-center gap-2">
+                              <span className={!key.isActive ? "text-slate-400" : ""}>
+                                {key.keyPrefix}*** 
+                              </span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                key.environment === 'live' 
+                                  ? 'bg-orange-500/20 text-orange-300' 
+                                  : 'bg-blue-500/20 text-blue-300'
+                              }`}>
+                                {key.environment}
+                              </span>
+                              {!key.isActive && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">
+                                  deactivated
+                                </span>
+                              )}
+                            </span>
                           </SelectItem>
                         ))
                       ) : (
@@ -239,7 +256,9 @@ export default function WidgetTestTab() {
                   placeholder="candidate@example.com"
                   data-testid="input-widget-test-email"
                 />
-                <p className="text-xs text-slate-500">Candidate email for notifications (optional)</p>
+                <p className="text-xs text-slate-500">
+                  {testEmail ? "Candidate will receive results at this email" : "Leave empty to prompt test-taker for their email (recommended for live testing)"}
+                </p>
               </div>
 
               <div className="space-y-2">
