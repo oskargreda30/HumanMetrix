@@ -395,6 +395,8 @@ export default function PartnersTab() {
     if (recommendedCurrency && CURRENCIES[recommendedCurrency]) {
       setSelectedCurrency(recommendedCurrency);
     }
+    // Auto-set phone country code to match selected country
+    setSelectedPhoneCountry(countryCode);
   };
 
   const createPartnerMutation = useMutation({
