@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import ReactFlagsSelect from "react-flags-select";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+
+// Country code to currency mapping
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  GB: "GBP", US: "USD", DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", IE: "EUR", PT: "EUR", FI: "EUR", GR: "EUR",
+  SG: "SGD", AU: "AUD", CA: "CAD", JP: "JPY", CH: "CHF", NZ: "NZD", HK: "HKD",
+  MY: "MYR", TH: "THB", PH: "PHP", IN: "INR", AE: "AED", SA: "SAR", ZA: "ZAR", BR: "BRL", MX: "MXN", KR: "KRW", TW: "TWD",
+  ID: "IDR", VN: "VND", MM: "MMK", KH: "KHR", LA: "LAK", BN: "BND", PK: "PKR", BD: "BDT", LK: "LKR", NP: "NPR",
+  TR: "TRY", EG: "EGP", NG: "NGN", KE: "KES", CL: "CLP", CO: "COP", PE: "PEN", AR: "ARS",
+};
 
 interface Partner {
   id: string;
@@ -334,12 +346,47 @@ export default function PartnersTab() {
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
+
+  // Auto-detect country based on user location
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const response = await fetch("/api/geolocation");
+        const data = await response.json();
+        if (data.countryCode) {
+          setSelectedCountry(data.countryCode);
+          // Auto-set currency based on detected country
+          const currency = COUNTRY_TO_CURRENCY[data.countryCode];
+          if (currency) {
+            setSelectedCurrency(currency);
+          }
+        }
+      } catch {
+        // Silently fail - user can select manually
+      }
+    };
+    detectCountry();
+  }, []);
+
+  // Auto-update currency when country changes
+  const handleCountryChange = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    const currency = COUNTRY_TO_CURRENCY[countryCode];
+    if (currency) {
+      setSelectedCurrency(currency);
+    }
+  };
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
       name: string; 
       companyName: string; 
       email: string; 
+      country?: string;
+      phone?: string;
+      currency?: string;
       pricePerAssessment: number; 
       organizationId?: string;
       billingType: 'prepaid' | 'auto_bill' | 'invoice';
@@ -361,6 +408,8 @@ export default function PartnersTab() {
       setFreeTests(0);
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
+      setPhoneNumber("");
+      // Keep country/currency detected for next partner creation
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -517,8 +566,8 @@ export default function PartnersTab() {
       name: formData.get("name") as string,
       companyName: formData.get("companyName") as string,
       email: formData.get("email") as string,
-      country: (formData.get("country") as string) || undefined,
-      phone: (formData.get("phone") as string) || undefined,
+      country: selectedCountry || undefined,
+      phone: phoneNumber || undefined,
       currency: selectedCurrency,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
@@ -1652,15 +1701,29 @@ export default function PartnersTab() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" name="email" type="email" required className="bg-slate-800 border-slate-600" data-testid="input-partner-email" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input id="country" name="country" placeholder="e.g. United Kingdom" className="bg-slate-800 border-slate-600" data-testid="input-partner-country" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" name="phone" type="tel" placeholder="+44 7..." className="bg-slate-800 border-slate-600" data-testid="input-partner-phone" />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <ReactFlagsSelect
+                    selected={selectedCountry}
+                    onSelect={handleCountryChange}
+                    searchable
+                    searchPlaceholder="Search countries..."
+                    placeholder="Select country"
+                    className="country-flags-select-dark"
+                    selectButtonClassName="bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                    data-testid="select-partner-country"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <PhoneInput
+                    international
+                    defaultCountry={selectedCountry as any || "GB"}
+                    value={phoneNumber}
+                    onChange={(value) => setPhoneNumber(value || "")}
+                    className="phone-input-dark"
+                    data-testid="input-partner-phone"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
