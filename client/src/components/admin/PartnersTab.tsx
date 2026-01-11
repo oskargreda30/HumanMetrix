@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,23 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import ReactFlagsSelect from "react-flags-select";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-
-// Country code to currency mapping
-const COUNTRY_TO_CURRENCY: Record<string, string> = {
-  GB: "GBP", US: "USD", DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", IE: "EUR", PT: "EUR", FI: "EUR", GR: "EUR",
-  SG: "SGD", AU: "AUD", CA: "CAD", JP: "JPY", CH: "CHF", NZ: "NZD", HK: "HKD",
-  MY: "MYR", TH: "THB", PH: "PHP", IN: "INR", AE: "AED", SA: "SAR", ZA: "ZAR", BR: "BRL", MX: "MXN", KR: "KRW", TW: "TWD",
-  ID: "IDR", VN: "VND", MM: "MMK", KH: "KHR", LA: "LAK", BN: "BND", PK: "PKR", BD: "BDT", LK: "LKR", NP: "NPR",
-  TR: "TRY", EG: "EGP", NG: "NGN", KE: "KES", CL: "CLP", CO: "COP", PE: "PEN", AR: "ARS",
-};
+import { CURRENCIES } from "@shared/currencies";
+import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 interface Partner {
   id: string;
@@ -46,7 +39,7 @@ interface Partner {
   activeApiKeys: number;
   totalApiKeys: number;
   lastApiActivity: string | null;
-  billingType: 'prepaid' | 'auto_bill' | 'invoice';
+  billingType: 'payg' | 'subscription' | 'enterprise';
   freeTestsAllocated: number;
   prepaidBalance: number;
   currentMonthUsage: number;
@@ -54,6 +47,7 @@ interface Partner {
   paymentTermsDays: number | null;
   invoiceNotes: string | null;
   invoiceContact: string | null;
+  currency: string;
 }
 
 interface ApiKey {
@@ -78,6 +72,7 @@ interface UsageEvent {
   billable: boolean;
   billedAmount: number | null;
   createdAt: string;
+  isTestMode?: boolean;
 }
 
 interface PartnerUsage {
@@ -219,7 +214,7 @@ export default function PartnersTab() {
 
   const { data: partnerInvoices, isLoading: invoicesLoading, refetch: refetchInvoices } = useQuery<PartnerInvoice[]>({
     queryKey: ["/api/admin/partners", detailPartner?.id, "invoices"],
-    enabled: !!detailPartner && detailPartner.billingType === 'invoice',
+    enabled: !!detailPartner && detailPartner.billingType === 'enterprise',
   });
 
   // Partner organisations query
@@ -341,41 +336,64 @@ export default function PartnersTab() {
     return result;
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
-  const [billingType, setBillingType] = useState<"prepaid" | "auto_bill" | "invoice">("prepaid");
+  const [billingType, setBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
   const [freeTests, setFreeTests] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("GBP");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<string>("GB");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
+  
+  const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
+  
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value, selectedPhoneCountry);
+    setPhoneNumber(formatted);
+  };
+  
+  const handlePhoneCountryChange = (countryCode: string) => {
+    setSelectedPhoneCountry(countryCode);
+    if (phoneNumber) {
+      const formatted = formatPhoneNumber(phoneNumber, countryCode);
+      setPhoneNumber(formatted);
+    }
+  };
 
-  // Auto-detect country based on user location
-  useEffect(() => {
-    const detectCountry = async () => {
-      try {
-        const response = await fetch("/api/geolocation");
-        const data = await response.json();
-        if (data.countryCode) {
-          setSelectedCountry(data.countryCode);
-          // Auto-set currency based on detected country
-          const currency = COUNTRY_TO_CURRENCY[data.countryCode];
-          if (currency) {
-            setSelectedCurrency(currency);
-          }
-        }
-      } catch {
-        // Silently fail - user can select manually
-      }
-    };
-    detectCountry();
-  }, []);
+  // Country to currency mapping for auto-recommendation
+  const COUNTRY_TO_CURRENCY: Record<string, string> = {
+    // Europe
+    GB: 'GBP', UK: 'GBP', IE: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', PT: 'EUR', NL: 'EUR', BE: 'EUR',
+    AT: 'EUR', GR: 'EUR', FI: 'EUR', LU: 'EUR', MT: 'EUR', CY: 'EUR', EE: 'EUR', LV: 'EUR', LT: 'EUR', SK: 'EUR',
+    SI: 'EUR', HR: 'EUR', CH: 'CHF', NO: 'NOK', SE: 'SEK', DK: 'DKK', PL: 'PLN', CZ: 'CZK', HU: 'HUF', RO: 'RON',
+    BG: 'BGN', RS: 'RSD', UA: 'UAH', RU: 'RUB', BY: 'BYN', MD: 'MDL', AL: 'ALL', MK: 'MKD', BA: 'BAM', ME: 'EUR',
+    XK: 'EUR', IS: 'ISK', LI: 'CHF', AD: 'EUR', MC: 'EUR', SM: 'EUR', VA: 'EUR',
+    // Americas
+    US: 'USD', CA: 'CAD', MX: 'MXN', BR: 'BRL', AR: 'ARS', CL: 'CLP', CO: 'COP', PE: 'PEN', VE: 'VES', EC: 'USD',
+    BO: 'BOB', PY: 'PYG', UY: 'UYU', GY: 'GYD', SR: 'SRD', GT: 'GTQ', HN: 'HNL', SV: 'USD', NI: 'NIO', CR: 'CRC',
+    PA: 'USD', BZ: 'BZD', CU: 'CUP', DO: 'DOP', HT: 'HTG', JM: 'JMD', TT: 'TTD', BB: 'BBD', BS: 'BSD', PR: 'USD',
+    // Asia Pacific
+    AU: 'AUD', NZ: 'NZD', JP: 'JPY', KR: 'KRW', CN: 'CNY', HK: 'HKD', TW: 'TWD', SG: 'SGD', MY: 'MYR', TH: 'THB',
+    ID: 'IDR', PH: 'PHP', VN: 'VND', IN: 'INR', PK: 'PKR', BD: 'BDT', LK: 'LKR', NP: 'NPR', MM: 'MMK', KH: 'KHR',
+    LA: 'LAK', BN: 'BND', MO: 'MOP', MN: 'MNT', KZ: 'KZT', UZ: 'UZS', TM: 'TMT', KG: 'KGS', TJ: 'TJS', AZ: 'AZN',
+    AM: 'AMD', GE: 'GEL', FJ: 'FJD', PG: 'PGK', WS: 'WST', TO: 'TOP', VU: 'VUV', SB: 'SBD',
+    // Middle East & North Africa
+    AE: 'AED', SA: 'SAR', QA: 'QAR', KW: 'KWD', BH: 'BHD', OM: 'OMR', JO: 'JOD', LB: 'LBP', IQ: 'IQD', IR: 'IRR',
+    IL: 'ILS', PS: 'ILS', SY: 'SYP', YE: 'YER', EG: 'EGP', LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', TR: 'TRY',
+    // Sub-Saharan Africa
+    ZA: 'ZAR', NG: 'NGN', KE: 'KES', GH: 'GHS', TZ: 'TZS', UG: 'UGX', RW: 'RWF', ET: 'ETB', MW: 'MWK', ZM: 'ZMW',
+    ZW: 'ZWL', BW: 'BWP', NA: 'NAD', MZ: 'MZN', AO: 'AOA', CM: 'XAF', CI: 'XOF', SN: 'XOF', ML: 'XOF', BF: 'XOF',
+    NE: 'XOF', TG: 'XOF', BJ: 'XOF', GA: 'XAF', CG: 'XAF', CD: 'CDF', MU: 'MUR', SC: 'SCR', MG: 'MGA',
+  };
 
-  // Auto-update currency when country changes
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode);
-    const currency = COUNTRY_TO_CURRENCY[countryCode];
-    if (currency) {
-      setSelectedCurrency(currency);
+    // Auto-recommend currency based on country
+    const recommendedCurrency = COUNTRY_TO_CURRENCY[countryCode];
+    if (recommendedCurrency && CURRENCIES[recommendedCurrency]) {
+      setSelectedCurrency(recommendedCurrency);
     }
   };
 
@@ -389,7 +407,7 @@ export default function PartnersTab() {
       currency?: string;
       pricePerAssessment: number; 
       organizationId?: string;
-      billingType: 'prepaid' | 'auto_bill' | 'invoice';
+      billingType: 'payg' | 'subscription' | 'enterprise';
       freeTestsAllocated: number;
       prepaidBalance?: number;
       billingCycleAnchor?: number;
@@ -404,12 +422,14 @@ export default function PartnersTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       setIsCreateOpen(false);
       setSelectedOrganizationId("");
-      setBillingType("prepaid");
+      setBillingType("payg");
       setFreeTests(0);
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
+      setSelectedCountry("");
+      setSelectedPhoneCountry("GB");
       setPhoneNumber("");
-      // Keep country/currency detected for next partner creation
+      setSelectedCurrency("GBP");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -504,6 +524,9 @@ export default function PartnersTab() {
 
   // Delete partner state and mutation
   const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
+  
+  // Track which partner is having their email resent
+  const [resendingEmailPartnerId, setResendingEmailPartnerId] = useState<string | null>(null);
 
   const deletePartnerMutation = useMutation({
     mutationFn: async (partnerId: string) => {
@@ -518,6 +541,22 @@ export default function PartnersTab() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to delete partner", variant: "destructive" });
+    },
+  });
+
+  const resendWelcomeEmailMutation = useMutation({
+    mutationFn: async (partnerId: string) => {
+      setResendingEmailPartnerId(partnerId);
+      const res = await apiRequest("POST", `/api/admin/partners/${partnerId}/resend-welcome`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setResendingEmailPartnerId(null);
+      toast({ title: "Email sent", description: `Welcome email with new credentials sent to ${data.email}` });
+    },
+    onError: (error: any) => {
+      setResendingEmailPartnerId(null);
+      toast({ title: "Error", description: error.message || "Failed to send welcome email", variant: "destructive" });
     },
   });
 
@@ -566,21 +605,21 @@ export default function PartnersTab() {
       name: formData.get("name") as string,
       companyName: formData.get("companyName") as string,
       email: formData.get("email") as string,
-      country: selectedCountry || undefined,
-      phone: phoneNumber || undefined,
+      country: (formData.get("country") as string) || undefined,
+      phone: (formData.get("phone") as string) || undefined,
       currency: selectedCurrency,
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
       billingType,
       freeTestsAllocated: freeTests,
-      // Prepaid fields
-      prepaidBalance: billingType === "prepaid" ? freeTests : undefined,
-      // Auto-bill fields
-      billingCycleAnchor: billingType === "auto_bill" ? billingCycleAnchor : undefined,
-      // Invoice fields
-      paymentTermsDays: billingType === "invoice" ? paymentTerms : undefined,
-      invoiceNotes: billingType === "invoice" ? (formData.get("invoiceNotes") as string) : undefined,
-      invoiceContact: billingType === "invoice" ? (formData.get("invoiceContact") as string) : undefined,
+      // PAYG and Enterprise use prepaid balance
+      prepaidBalance: (billingType === "payg" || billingType === "enterprise") ? freeTests : undefined,
+      // Subscription uses billing cycle
+      billingCycleAnchor: billingType === "subscription" ? billingCycleAnchor : undefined,
+      // Enterprise uses invoice fields
+      paymentTermsDays: billingType === "enterprise" ? paymentTerms : undefined,
+      invoiceNotes: billingType === "enterprise" ? (formData.get("invoiceNotes") as string) : undefined,
+      invoiceContact: billingType === "enterprise" ? (formData.get("invoiceContact") as string) : undefined,
     });
   };
 
@@ -599,8 +638,15 @@ export default function PartnersTab() {
     }
   };
 
-  const formatCurrency = (pence: number) => {
-    return `£${(pence / 100).toFixed(2)}`;
+  const formatCurrency = (pence: number, currency?: string) => {
+    const currencySymbols: Record<string, string> = {
+      gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
+      inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
+      lkr: 'Rs', mmk: 'K', khr: '៛', npr: '₨', try: '₺', egp: 'E£', ngn: '₦', kes: 'KSh',
+      zar: 'R', brl: 'R$', mxn: 'MX$', ars: 'AR$',
+    };
+    const symbol = currencySymbols[(currency || 'gbp').toLowerCase()] || '£';
+    return `${symbol}${(pence / 100).toFixed(2)}`;
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -664,7 +710,7 @@ export default function PartnersTab() {
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-white/60 text-sm mb-1">Monthly Billable</div>
-                <div className="text-2xl font-bold text-cyan-400">{formatCurrency(detailPartner.currentMonthBillable)}</div>
+                <div className="text-2xl font-bold text-cyan-400">{formatCurrency(detailPartner.currentMonthBillable, detailPartner.currency)}</div>
                 <div className="text-white/50 text-xs">this period</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
@@ -707,33 +753,42 @@ export default function PartnersTab() {
                       <TableRow className="border-white/20">
                         <TableHead className="text-white/70">Event</TableHead>
                         <TableHead className="text-white/70">Assessment</TableHead>
-                        <TableHead className="text-white/70">Billable</TableHead>
+                        <TableHead className="text-white/70">Type</TableHead>
                         <TableHead className="text-white/70">Amount</TableHead>
                         <TableHead className="text-white/70">Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {partnerUsage.recentEvents.slice(0, 20).map((event) => (
-                        <TableRow key={event.id} className="border-white/10">
-                          <TableCell className="text-white">
-                            <Badge variant="outline" className="border-white/30 text-white/80">
-                              {event.eventType.replace(/_/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-white/80">{event.assessmentType || "-"}</TableCell>
-                          <TableCell>
-                            {event.billable ? (
-                              <Badge className="bg-green-500/20 text-green-300">Yes</Badge>
-                            ) : (
-                              <Badge className="bg-white/10 text-white/50">No</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-white/80">
-                            {event.billedAmount ? formatCurrency(event.billedAmount) : "-"}
-                          </TableCell>
-                          <TableCell className="text-white/60 text-sm">{formatDate(event.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {partnerUsage.recentEvents.slice(0, 20).map((event) => {
+                        const testType = event.isTestMode 
+                          ? 'test' 
+                          : event.billable 
+                            ? 'billed' 
+                            : 'free';
+                        return (
+                          <TableRow key={event.id} className="border-white/10">
+                            <TableCell className="text-white">
+                              <Badge variant="outline" className="border-white/30 text-white/80">
+                                {event.eventType.replace(/_/g, " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white/80">{event.assessmentType || "-"}</TableCell>
+                            <TableCell>
+                              {testType === 'test' ? (
+                                <Badge className="bg-purple-500/20 text-purple-300">Test Session</Badge>
+                              ) : testType === 'free' ? (
+                                <Badge className="bg-blue-500/20 text-blue-300">Free Test</Badge>
+                              ) : (
+                                <Badge className="bg-green-500/20 text-green-300">Billed</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/80">
+                              {event.billedAmount ? formatCurrency(event.billedAmount, detailPartner.currency) : "-"}
+                            </TableCell>
+                            <TableCell className="text-white/60 text-sm">{formatDate(event.createdAt)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 ) : (
@@ -955,11 +1010,15 @@ export default function PartnersTab() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="text-white/60 text-sm mb-1">Price Per Assessment</div>
-                      <div className="text-xl font-bold text-white">{formatCurrency(detailPartner.pricePerAssessment)}</div>
+                      <div className="text-xl font-bold text-white">{formatCurrency(detailPartner.pricePerAssessment, detailPartner.currency)}</div>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="text-white/60 text-sm mb-1">Monthly Quota</div>
-                      <div className="text-xl font-bold text-white">{detailPartner.monthlyQuota || "Unlimited"}</div>
+                      <div className="text-xl font-bold text-white">
+                        {detailPartner.billingType === 'payg' || detailPartner.billingType === 'enterprise' 
+                          ? `${detailPartner.prepaidBalance || 0} credits`
+                          : detailPartner.monthlyQuota || "Unlimited"}
+                      </div>
                     </div>
                   </div>
                   
@@ -968,25 +1027,25 @@ export default function PartnersTab() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="text-white/60 text-sm">Billing Model:</span>
-                        {detailPartner.billingType === 'prepaid' ? (
-                          <Badge className="bg-cyan-500/20 text-cyan-300">Prepaid (Top-up)</Badge>
-                        ) : detailPartner.billingType === 'auto_bill' ? (
-                          <Badge className="bg-green-500/20 text-green-300">Auto-Bill (Card on File)</Badge>
+                        {detailPartner.billingType === 'payg' ? (
+                          <Badge className="bg-cyan-500/20 text-cyan-300">Pay As You Go (PAYG)</Badge>
+                        ) : detailPartner.billingType === 'subscription' ? (
+                          <Badge className="bg-green-500/20 text-green-300">Subscription + Auto-Bill</Badge>
                         ) : (
-                          <Badge className="bg-purple-500/20 text-purple-300">Invoice (Enterprise)</Badge>
+                          <Badge className="bg-purple-500/20 text-purple-300">Enterprise Prepayment</Badge>
                         )}
                       </div>
                       
-                      {/* Prepaid balance */}
-                      {detailPartner.billingType === 'prepaid' && (
+                      {/* PAYG balance */}
+                      {(detailPartner.billingType === 'payg' || detailPartner.billingType === 'enterprise') && (
                         <div className="flex items-center gap-3">
-                          <span className="text-white/60 text-sm">Prepaid Balance:</span>
+                          <span className="text-white/60 text-sm">Credit Balance:</span>
                           <span className="text-white font-bold">{detailPartner.prepaidBalance || 0} tests</span>
                         </div>
                       )}
                       
-                      {/* Auto-bill monthly usage */}
-                      {detailPartner.billingType === 'auto_bill' && (
+                      {/* Subscription monthly usage */}
+                      {detailPartner.billingType === 'subscription' && (
                         <>
                           <div className="flex items-center gap-3">
                             <span className="text-white/60 text-sm">Current Month Usage:</span>
@@ -1003,14 +1062,14 @@ export default function PartnersTab() {
                           ) : (
                             <div className="flex items-center gap-2">
                               <Badge className="bg-amber-500/20 text-amber-300">No Card on File</Badge>
-                              <span className="text-amber-300 text-xs">Card required for auto-billing</span>
+                              <span className="text-amber-300 text-xs">Card required for subscription</span>
                             </div>
                           )}
                         </>
                       )}
                       
-                      {/* Invoice settings */}
-                      {detailPartner.billingType === 'invoice' && (
+                      {/* Enterprise settings */}
+                      {detailPartner.billingType === 'enterprise' && (
                         <>
                           <div className="flex items-center gap-3">
                             <span className="text-white/60 text-sm">Current Month Usage:</span>
@@ -1046,7 +1105,7 @@ export default function PartnersTab() {
                   </div>
 
                   <div className="bg-white/5 rounded-lg p-4">
-                    <div className="text-white/60 text-sm mb-2">Stripe Integration</div>
+                    <div className="text-white/60 text-sm mb-2">Payment Integration</div>
                     {detailPartner.stripeCustomerId ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -1065,7 +1124,7 @@ export default function PartnersTab() {
                   </div>
 
                   {/* Invoice Management Section - Only for Invoice-billed Partners */}
-                  {detailPartner.billingType === 'invoice' && (
+                  {detailPartner.billingType === 'enterprise' && (
                     <div className="bg-white/5 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -1553,7 +1612,7 @@ export default function PartnersTab() {
                 />
                 {invoiceTestsUsed && detailPartner.pricePerAssessment && (
                   <p className="text-sm text-slate-400">
-                    Subtotal: £{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}
+                    Subtotal: {formatCurrency(parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment, detailPartner.currency)}
                   </p>
                 )}
               </div>
@@ -1589,19 +1648,19 @@ export default function PartnersTab() {
                   <div className="text-sm text-slate-400 mb-2">Invoice Preview</div>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-white/70">{invoiceTestsUsed} tests @ £{(detailPartner.pricePerAssessment / 100).toFixed(2)}</span>
-                      <span className="text-white">£{((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100).toFixed(2)}</span>
+                      <span className="text-white/70">{invoiceTestsUsed} tests @ {formatCurrency(detailPartner.pricePerAssessment, detailPartner.currency)}</span>
+                      <span className="text-white">{formatCurrency(parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment, detailPartner.currency)}</span>
                     </div>
                     {parseInt(invoiceVatRate) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-white/70">VAT ({invoiceVatRate}%)</span>
-                        <span className="text-white">£{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (parseInt(invoiceVatRate) / 100)).toFixed(2)}</span>
+                        <span className="text-white">{formatCurrency(Math.round((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) * (parseInt(invoiceVatRate) / 100)), detailPartner.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between pt-2 border-t border-slate-600 font-medium">
                       <span className="text-white">Total</span>
                       <span className="text-cyan-400">
-                        £{(((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) / 100) * (1 + parseInt(invoiceVatRate) / 100)).toFixed(2)}
+                        {formatCurrency(Math.round((parseInt(invoiceTestsUsed) * detailPartner.pricePerAssessment) * (1 + parseInt(invoiceVatRate) / 100)), detailPartner.currency)}
                       </span>
                     </div>
                     <div className="text-white/50 text-xs mt-2">
@@ -1703,27 +1762,120 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <ReactFlagsSelect
-                    selected={selectedCountry}
-                    onSelect={handleCountryChange}
-                    searchable
-                    searchPlaceholder="Search countries..."
-                    placeholder="Select country"
-                    className="country-flags-select-dark"
-                    selectButtonClassName="bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
-                    data-testid="select-partner-country"
-                  />
+                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={countryOpen}
+                        className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                        data-testid="select-partner-country"
+                      >
+                        {selectedCountry ? (
+                          <>
+                            {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{" "}
+                            {COUNTRIES.find(c => c.code === selectedCountry)?.name}
+                          </>
+                        ) : (
+                          "Select country..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700" align="start">
+                      <Command className="bg-slate-800">
+                        <CommandInput placeholder="Search country..." className="text-white" />
+                        <CommandList>
+                          <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
+                          <CommandGroup>
+                            {COUNTRIES.map((country) => (
+                              <CommandItem
+                                key={country.code}
+                                value={`${country.name} ${country.code}`}
+                                onSelect={() => {
+                                  handleCountryChange(country.code);
+                                  setCountryOpen(false);
+                                }}
+                                className="text-white hover:bg-slate-700 cursor-pointer"
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${selectedCountry === country.code ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="mr-2">{country.flag}</span>
+                                {country.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <input type="hidden" name="country" value={selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry)?.name || '' : ''} />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
-                  <PhoneInput
-                    international
-                    defaultCountry={selectedCountry as any || "GB"}
-                    value={phoneNumber}
-                    onChange={(value) => setPhoneNumber(value || "")}
-                    className="phone-input-dark"
-                    data-testid="input-partner-phone"
-                  />
+                  <div className="flex gap-2">
+                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={phoneCodeOpen}
+                          className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                          data-testid="select-phone-code"
+                        >
+                          {selectedPhoneCountryData ? (
+                            <>
+                              {selectedPhoneCountryData.flag}{" "}
+                              {selectedPhoneCountryData.dialCode}
+                            </>
+                          ) : (
+                            "🇬🇧 +44"
+                          )}
+                          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700" align="start">
+                        <Command className="bg-slate-800">
+                          <CommandInput placeholder="Search country code..." className="text-white" />
+                          <CommandList>
+                            <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {COUNTRIES.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={`${country.name} ${country.dialCode} ${country.code}`}
+                                  onSelect={() => {
+                                    handlePhoneCountryChange(country.code);
+                                    setPhoneCodeOpen(false);
+                                  }}
+                                  className="text-white hover:bg-slate-700 cursor-pointer"
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${selectedPhoneCountry === country.code ? "opacity-100" : "opacity-0"}`}
+                                  />
+                                  <span className="mr-2">{country.flag}</span>
+                                  <span className="mr-2">{country.name}</span>
+                                  <span className="text-slate-400">{country.dialCode}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <Input 
+                      id="phoneNumber" 
+                      name="phoneNumber" 
+                      type="tel" 
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder={getPhonePlaceholder(selectedPhoneCountry)} 
+                      className="flex-1 bg-slate-800 border-slate-600" 
+                      data-testid="input-partner-phone" 
+                    />
+                  </div>
+                  <input type="hidden" name="phone" value={selectedPhoneCountryData?.dialCode || '+44'} />
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
@@ -1732,56 +1884,33 @@ export default function PartnersTab() {
                       <SelectValue placeholder="Select currency..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                      {/* Tier 1 - Developed Markets */}
-                      <SelectItem value="GBP" className="text-white">GBP (£) - British Pound</SelectItem>
-                      <SelectItem value="USD" className="text-white">USD ($) - US Dollar</SelectItem>
-                      <SelectItem value="EUR" className="text-white">EUR (€) - Euro</SelectItem>
-                      <SelectItem value="SGD" className="text-white">SGD (S$) - Singapore Dollar</SelectItem>
-                      <SelectItem value="AUD" className="text-white">AUD (A$) - Australian Dollar</SelectItem>
-                      <SelectItem value="CAD" className="text-white">CAD (C$) - Canadian Dollar</SelectItem>
-                      <SelectItem value="JPY" className="text-white">JPY (¥) - Japanese Yen</SelectItem>
-                      <SelectItem value="CHF" className="text-white">CHF (Fr) - Swiss Franc</SelectItem>
-                      <SelectItem value="NZD" className="text-white">NZD (NZ$) - New Zealand Dollar</SelectItem>
-                      <SelectItem value="HKD" className="text-white">HKD (HK$) - Hong Kong Dollar</SelectItem>
-                      {/* Tier 2 - Emerging Markets */}
-                      <SelectItem value="MYR" className="text-white">MYR (RM) - Malaysian Ringgit</SelectItem>
-                      <SelectItem value="THB" className="text-white">THB (฿) - Thai Baht</SelectItem>
-                      <SelectItem value="PHP" className="text-white">PHP (₱) - Philippine Peso</SelectItem>
-                      <SelectItem value="INR" className="text-white">INR (₹) - Indian Rupee</SelectItem>
-                      <SelectItem value="AED" className="text-white">AED (د.إ) - UAE Dirham</SelectItem>
-                      <SelectItem value="SAR" className="text-white">SAR (﷼) - Saudi Riyal</SelectItem>
-                      <SelectItem value="ZAR" className="text-white">ZAR (R) - South African Rand</SelectItem>
-                      <SelectItem value="BRL" className="text-white">BRL (R$) - Brazilian Real</SelectItem>
-                      <SelectItem value="MXN" className="text-white">MXN (Mex$) - Mexican Peso</SelectItem>
-                      <SelectItem value="KRW" className="text-white">KRW (₩) - South Korean Won</SelectItem>
-                      <SelectItem value="TWD" className="text-white">TWD (NT$) - Taiwan Dollar</SelectItem>
-                      {/* Tier 3 - SEA Emerging Markets */}
-                      <SelectItem value="IDR" className="text-white">IDR (Rp) - Indonesian Rupiah</SelectItem>
-                      <SelectItem value="VND" className="text-white">VND (₫) - Vietnamese Dong</SelectItem>
-                      <SelectItem value="MMK" className="text-white">MMK (K) - Myanmar Kyat</SelectItem>
-                      <SelectItem value="KHR" className="text-white">KHR (៛) - Cambodian Riel</SelectItem>
-                      <SelectItem value="LAK" className="text-white">LAK (₭) - Lao Kip</SelectItem>
-                      <SelectItem value="BND" className="text-white">BND (B$) - Brunei Dollar</SelectItem>
-                      <SelectItem value="PKR" className="text-white">PKR (₨) - Pakistani Rupee</SelectItem>
-                      <SelectItem value="BDT" className="text-white">BDT (৳) - Bangladeshi Taka</SelectItem>
-                      <SelectItem value="LKR" className="text-white">LKR (Rs) - Sri Lankan Rupee</SelectItem>
-                      <SelectItem value="NPR" className="text-white">NPR (₨) - Nepalese Rupee</SelectItem>
-                      <SelectItem value="TRY" className="text-white">TRY (₺) - Turkish Lira</SelectItem>
-                      <SelectItem value="EGP" className="text-white">EGP (E£) - Egyptian Pound</SelectItem>
-                      <SelectItem value="NGN" className="text-white">NGN (₦) - Nigerian Naira</SelectItem>
-                      <SelectItem value="KES" className="text-white">KES (KSh) - Kenyan Shilling</SelectItem>
-                      <SelectItem value="CLP" className="text-white">CLP (CLP$) - Chilean Peso</SelectItem>
-                      <SelectItem value="COP" className="text-white">COP (COL$) - Colombian Peso</SelectItem>
-                      <SelectItem value="PEN" className="text-white">PEN (S/) - Peruvian Sol</SelectItem>
-                      <SelectItem value="ARS" className="text-white">ARS (AR$) - Argentine Peso</SelectItem>
+                      {Object.values(CURRENCIES)
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((currency) => (
+                          <SelectItem 
+                            key={currency.code} 
+                            value={currency.code} 
+                            className="text-white"
+                          >
+                            {currency.code} ({currency.symbol}) - {currency.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-slate-400">Partner's preferred billing currency</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pricePerAssessment">Price Per Assessment (pence)</Label>
+                  <Label htmlFor="pricePerAssessment">
+                    Price Per Assessment ({selectedCurrency && CURRENCIES[selectedCurrency] 
+                      ? `${CURRENCIES[selectedCurrency].code} minor units` 
+                      : 'minor units'})
+                  </Label>
                   <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
-                  <p className="text-xs text-slate-400">500 pence = £5.00</p>
+                  <p className="text-xs text-slate-400">
+                    {selectedCurrency && CURRENCIES[selectedCurrency] 
+                      ? `500 = ${CURRENCIES[selectedCurrency].symbol}${CURRENCIES[selectedCurrency].decimalPlaces === 0 ? '500' : '5.00'}`
+                      : '500 = 5.00 in major units'}
+                  </p>
                 </div>
                 
                 <div className="border-t border-slate-700 pt-4 mt-4">
@@ -1808,26 +1937,26 @@ export default function PartnersTab() {
 
                   <div className="space-y-2 mt-4">
                     <Label>Billing Model</Label>
-                    <Select value={billingType} onValueChange={(v) => setBillingType(v as "prepaid" | "auto_bill" | "invoice")}>
+                    <Select value={billingType} onValueChange={(v) => setBillingType(v as "payg" | "subscription" | "enterprise")}>
                       <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-billing-type">
                         <SelectValue placeholder="Select billing model..." />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700">
-                        <SelectItem value="prepaid" className="text-white">Prepaid (Top-up Packages)</SelectItem>
-                        <SelectItem value="auto_bill" className="text-white">Auto-Bill (Card on File)</SelectItem>
-                        <SelectItem value="invoice" className="text-white">Invoice (Enterprise)</SelectItem>
+                        <SelectItem value="payg" className="text-white">Pay As You Go (PAYG)</SelectItem>
+                        <SelectItem value="subscription" className="text-white">Subscription + Auto-Bill</SelectItem>
+                        <SelectItem value="enterprise" className="text-white">Enterprise Prepayment</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-slate-400">
-                      {billingType === "prepaid" 
-                        ? "Partner purchases test packages upfront via Stripe checkout" 
-                        : billingType === "auto_bill"
-                        ? "Partner's card is charged automatically at month-end based on usage"
-                        : "Partner receives invoices for usage at the end of each billing period"}
+                      {billingType === "payg" 
+                        ? "No card on file. Bulk discounts via upfront purchase. API suspended at zero credits." 
+                        : billingType === "subscription"
+                        ? "Card on file. Min monthly charge + auto-bill for additional usage at base rates."
+                        : "For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended."}
                     </p>
                   </div>
 
-                  {billingType === "auto_bill" && (
+                  {billingType === "subscription" && (
                     <div className="space-y-2 mt-4">
                       <Label>Billing Cycle Day</Label>
                       <Select value={String(billingCycleAnchor)} onValueChange={(v) => setBillingCycleAnchor(parseInt(v))}>
@@ -1844,7 +1973,7 @@ export default function PartnersTab() {
                     </div>
                   )}
 
-                  {billingType === "invoice" && (
+                  {billingType === "enterprise" && (
                     <>
                       <div className="space-y-2 mt-4">
                         <Label>Payment Terms</Label>
@@ -1895,7 +2024,10 @@ export default function PartnersTab() {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
                       <SelectItem value="none" className="text-slate-400">None</SelectItem>
-                      {organizations?.map((org) => (
+                      {/* Deduplicate organizations by ID to handle any duplicate entries */}
+                      {organizations?.filter((org, index, arr) => 
+                        arr.findIndex(o => o.id === org.id) === index
+                      ).map((org) => (
                         <SelectItem key={org.id} value={org.id} className="text-white">
                           {org.name}
                         </SelectItem>
@@ -1977,7 +2109,7 @@ export default function PartnersTab() {
               </div>
               <div className="bg-white/5 rounded-lg p-3">
                 <div className="text-white/60 text-xs mb-1">Monthly Revenue</div>
-                <div className="text-xl font-bold text-amber-400">{formatCurrency(partners.reduce((sum, p) => sum + p.currentMonthBillable, 0))}</div>
+                <div className="text-xl font-bold text-amber-400">{formatCurrency(partners.reduce((sum, p) => sum + p.currentMonthBillable, 0), 'gbp')}</div>
               </div>
             </div>
           )}
@@ -1989,6 +2121,7 @@ export default function PartnersTab() {
                   <TableHead className="text-white/70 cursor-pointer" onClick={() => handleSort("name")}>
                     Partner {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                   </TableHead>
+                  <TableHead className="text-white/70">Email</TableHead>
                   <TableHead className="text-white/70 cursor-pointer" onClick={() => handleSort("currentMonthSessions")}>
                     This Month {sortField === "currentMonthSessions" && (sortDirection === "asc" ? "↑" : "↓")}
                   </TableHead>
@@ -2012,11 +2145,14 @@ export default function PartnersTab() {
                         {partner.companyName && <div className="text-sm text-white/60">{partner.name}</div>}
                       </div>
                     </TableCell>
+                    <TableCell className="text-white/80 text-sm">
+                      {partner.email}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300">{partner.currentMonthSessions}</Badge>
                     </TableCell>
                     <TableCell className="text-white/80">{partner.totalTestsCompleted}</TableCell>
-                    <TableCell className="text-amber-300 font-medium">{formatCurrency(partner.currentMonthBillable)}</TableCell>
+                    <TableCell className="text-amber-300 font-medium">{formatCurrency(partner.currentMonthBillable, partner.currency)}</TableCell>
                     <TableCell>
                       <span className="text-white/80">{partner.activeApiKeys}</span>
                       <span className="text-white/40">/{partner.totalApiKeys}</span>
@@ -2030,6 +2166,17 @@ export default function PartnersTab() {
                       <div className="flex gap-1 items-center">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPartner(partner); }} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10" data-testid={`button-manage-keys-${partner.id}`}>
                           <Key className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => { e.stopPropagation(); resendWelcomeEmailMutation.mutate(partner.id); }} 
+                          disabled={resendingEmailPartnerId === partner.id}
+                          className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10" 
+                          data-testid={`button-resend-email-${partner.id}`}
+                          title="Resend welcome email with new password"
+                        >
+                          {resendingEmailPartnerId === partner.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                         </Button>
                         <Switch
                           checked={partner.isActive}
