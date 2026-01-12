@@ -42,6 +42,7 @@ import StartAssessment from "@/pages/StartAssessment";
 import WidgetTest from "@/pages/WidgetTest";
 import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
+import AcceptPartnerInvite from "@/pages/AcceptPartnerInvite";
 import Team from "@/pages/Team";
 import NotFound from "@/pages/not-found";
 
@@ -133,6 +134,7 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
       <Route path="/candidate-portal">
