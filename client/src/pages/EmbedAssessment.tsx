@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
@@ -847,43 +848,77 @@ export default function EmbedAssessment() {
                       </Button>
                     </div>
                     
-                    <Label htmlFor="verification-code" className={textPrimary}>
+                    <Label className={textPrimary}>
                       Enter Verification Code
                     </Label>
-                    <Input
-                      id="verification-code"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
-                      placeholder="Enter 6-digit code"
-                      value={verificationCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        setVerificationCode(value);
-                        if (codeError) setCodeError("");
-                      }}
-                      className={`${inputBg} text-center text-2xl tracking-widest font-mono ${codeError ? 'border-red-500' : ''}`}
-                      data-testid="input-verification-code"
-                    />
+                    <div className="flex justify-center" data-testid="input-verification-code">
+                      <InputOTP
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={(value) => {
+                          setVerificationCode(value);
+                          if (codeError) setCodeError("");
+                        }}
+                        onComplete={(value) => {
+                          setVerificationCode(value);
+                          // Auto-submit when all 6 digits are entered
+                          setTimeout(() => {
+                            const verifyBtn = document.querySelector('[data-testid="button-verify-code"]') as HTMLButtonElement;
+                            if (verifyBtn && !verifyBtn.disabled) {
+                              verifyBtn.click();
+                            }
+                          }, 100);
+                        }}
+                        disabled={isVerifying}
+                        className={codeError ? '[&_div]:border-red-500' : ''}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot 
+                            index={0} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                          <InputOTPSlot 
+                            index={1} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                          <InputOTPSlot 
+                            index={2} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                          <InputOTPSlot 
+                            index={3} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                          <InputOTPSlot 
+                            index={4} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                          <InputOTPSlot 
+                            index={5} 
+                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                          />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                     {codeError && (
-                      <p className="text-sm text-red-500" data-testid="text-code-error">{codeError}</p>
+                      <p className="text-sm text-red-500 text-center" data-testid="text-code-error">{codeError}</p>
+                    )}
+                    
+                    {isVerifying && (
+                      <div className="flex items-center justify-center gap-2 py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" style={{ color: primaryColor }} />
+                        <span className={`text-sm ${textMuted}`}>Verifying...</span>
+                      </div>
                     )}
                     
                     <Button
                       onClick={verifyEmailCode}
                       className="w-full"
-                      style={{ backgroundColor: primaryColor }}
+                      style={{ backgroundColor: primaryColor, visibility: isVerifying ? 'hidden' : 'visible' }}
                       disabled={isVerifying || verificationCode.length !== 6}
                       data-testid="button-verify-code"
                     >
-                      {isVerifying ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Verifying...
-                        </>
-                      ) : (
-                        "Verify Email"
-                      )}
+                      Verify Email
                     </Button>
                     
                     <div className="flex items-center justify-center gap-2">
