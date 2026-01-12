@@ -3,8 +3,8 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, formatPriceGBP } from "@shared/schema";
-import { getQuestionLocale, getPPPAdjustedPriceInPence } from "@shared/currencies";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT } from "@shared/schema";
+import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
@@ -863,20 +863,26 @@ export function registerPartnerRoutes(app: Express) {
             
             // Get user's country code for PPP pricing (stored during session start)
             const userCountryCode = (updatedSession?.metadata as any)?.countryCode || 'GB';
+            const userCurrency = getCurrencyForCountry(userCountryCode);
+            const currencyCode = COUNTRY_CURRENCY_MAP[userCountryCode.toUpperCase()] || 'GBP';
             
             // Use PPP-adjusted pricing based on user's location (same as B2C)
             // Then apply 25% B2B discount on top of PPP-adjusted price
-            const pppAdjustedPrice = getPPPAdjustedPriceInPence(B2C_RETAIL_PRICE_PER_ASSESSMENT, userCountryCode);
-            const discountedPrice = Math.round(pppAdjustedPrice * 0.75); // 25% off PPP-adjusted price
+            const pppAdjustedPricePence = getPPPAdjustedPriceInPence(B2C_RETAIL_PRICE_PER_ASSESSMENT, userCountryCode);
+            const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75); // 25% off PPP-adjusted price
             
-            console.log(`[B2B Pricing] Country: ${userCountryCode}, PPP price: ${pppAdjustedPrice}p (${formatPriceGBP(pppAdjustedPrice)}), Discounted: ${discountedPrice}p (${formatPriceGBP(discountedPrice)})`);
+            // Format prices in user's local currency using same B2C functions
+            const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
+            const discountedPriceDisplay = formatPrice(discountedPricePence, userCurrency);
+            
+            console.log(`[B2B Pricing] Country: ${userCountryCode}, Currency: ${currencyCode}, PPP: ${pppAdjustedPricePence}p (${originalPriceDisplay}), Discounted: ${discountedPricePence}p (${discountedPriceDisplay})`);
             
             // Calculate 30-day free unlock date
             const freeUnlockDate = new Date();
             freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
             
-            // Create payment URL - points to a results purchase page
-            const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}`;
+            // Create payment URL with country code for consistent pricing on payment page
+            const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}&country=${userCountryCode}`;
             
             await sendB2BCongratulatoryEmail({
               email: candidateEmail,
@@ -884,8 +890,8 @@ export function registerPartnerRoutes(app: Express) {
               assessmentType: session.assessmentType,
               partnerCompanyName: partner.companyName || partner.name,
               paymentUrl,
-              paymentAmount: formatPriceGBP(discountedPrice),
-              originalPaymentAmount: formatPriceGBP(pppAdjustedPrice),
+              paymentAmount: discountedPriceDisplay,
+              originalPaymentAmount: originalPriceDisplay,
               freeUnlockDate,
             });
             
@@ -906,11 +912,15 @@ export function registerPartnerRoutes(app: Express) {
               console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
               
               // Use PPP-adjusted pricing for bundle (same country code for consistency)
-              const bundlePppAdjustedTotal = pppAdjustedPrice * 4;
-              const bundleDiscountedPrice = Math.round(bundlePppAdjustedTotal * 0.60); // 40% off PPP-adjusted total
+              const bundlePppAdjustedTotalPence = pppAdjustedPricePence * 4;
+              const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * 0.60); // 40% off PPP-adjusted total
               
-              // Create bundle payment URL
-              const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}`;
+              // Format bundle prices in user's local currency
+              const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
+              const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
+              
+              // Create bundle payment URL with country code
+              const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}`;
               
               await sendB2BAllCompleteEmail({
                 email: candidateEmail,
@@ -918,8 +928,8 @@ export function registerPartnerRoutes(app: Express) {
                 partnerCompanyName: partner.companyName || partner.name,
                 completedAssessments: allAssessmentTypes,
                 paymentUrl: bundlePaymentUrl,
-                bundlePrice: formatPriceGBP(bundleDiscountedPrice),
-                originalTotalPrice: formatPriceGBP(bundlePppAdjustedTotal),
+                bundlePrice: bundleDiscountedDisplay,
+                originalTotalPrice: bundleOriginalDisplay,
                 discountPercentage: 40,
                 freeUnlockDate,
               });
