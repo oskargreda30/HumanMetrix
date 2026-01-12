@@ -48,11 +48,16 @@ interface ApiKeysData {
 interface DeveloperSubTabsProps {
   apiKeys: ApiKeysData | undefined;
   apiKeysLoading: boolean;
-  onCreateKey: () => void;
+  onCreateTestKey: () => void;
+  onCreateLiveKey: () => void;
   onRotateKey: (id: string) => void;
   onRevokeKey: (id: string) => void;
   rotatingKeyId: string | null;
   revokingKeyId: string | null;
+  creatingKeyType: 'test' | 'live' | null;
+  newKeyData: { fullKey: string; environment: string } | null;
+  onClearNewKey: () => void;
+  onReactivateKey: () => void;
 }
 
 function formatDate(dateString: string): string {
@@ -66,11 +71,16 @@ function formatDate(dateString: string): string {
 export function DeveloperSubTabs({
   apiKeys,
   apiKeysLoading,
-  onCreateKey,
+  onCreateTestKey,
+  onCreateLiveKey,
   onRotateKey,
   onRevokeKey,
   rotatingKeyId,
   revokingKeyId,
+  creatingKeyType,
+  newKeyData,
+  onClearNewKey,
+  onReactivateKey,
 }: DeveloperSubTabsProps) {
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
 
@@ -112,14 +122,26 @@ export function DeveloperSubTabs({
                 </div>
                 <CardDescription>Manage your API keys for accessing the HumanMetrix API</CardDescription>
               </div>
-              <Button 
-                onClick={onCreateKey}
-                className="bg-cyan-600 hover:bg-cyan-700"
-                data-testid="button-create-api-key"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Key
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={onCreateTestKey}
+                  variant="outline"
+                  disabled={creatingKeyType !== null}
+                  data-testid="button-create-test-key"
+                >
+                  {creatingKeyType === 'test' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TestTube className="h-4 w-4 mr-2" />}
+                  Create Test Key
+                </Button>
+                <Button 
+                  onClick={onCreateLiveKey}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                  disabled={creatingKeyType !== null}
+                  data-testid="button-create-live-key"
+                >
+                  {creatingKeyType === 'live' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                  Create Live Key
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {apiKeysLoading ? (
@@ -194,14 +216,24 @@ export function DeveloperSubTabs({
                   <Key className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p className="font-medium">No API keys yet</p>
                   <p className="text-sm mt-1">API keys let you integrate HumanMetrix into your applications.</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4"
-                    onClick={onCreateKey}
-                  >
-                    Create Your First API Key
-                  </Button>
+                  <div className="flex gap-2 justify-center mt-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={onCreateTestKey}
+                      disabled={creatingKeyType !== null}
+                    >
+                      Create Test Key
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="bg-cyan-600 hover:bg-cyan-700"
+                      onClick={onCreateLiveKey}
+                      disabled={creatingKeyType !== null}
+                    >
+                      Create Live Key
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
