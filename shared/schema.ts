@@ -17,6 +17,7 @@ export const sessions = pgTable(
 // User role enum
 export const USER_ROLES = {
   CANDIDATE: "candidate",
+  PARTNER_TEAM_MEMBER: "partner_team_member",
   ORGANIZATION_ADMIN: "organization_admin",
   PARTNER_ADMIN: "partner_admin",
   SUPER_ADMIN: "super_admin",

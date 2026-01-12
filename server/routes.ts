@@ -9036,7 +9036,7 @@ Format your response as JSON with this structure:
           passwordHash,
           firstName,
           lastName,
-          role: 'candidate', // Base role, partner team role is separate
+          role: 'partner_team_member', // Partner team member role for direct dashboard access
         });
         
         newUserId = newUser.id;
