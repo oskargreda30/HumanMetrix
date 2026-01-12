@@ -2511,3 +2511,93 @@ Assessment completed as part of your evaluation with ${partnerName}.
     return { success: false, error: error.message };
   }
 }
+
+// Email Verification Code - sent to verify email before starting B2B assessment
+export async function sendEmailVerificationCode(
+  email: string,
+  code: string,
+  partnerName?: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Verification code email not sent to ${email} - email not configured`);
+    return { success: false };
+  }
+  
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'https://humanmetrix.co.uk';
+  
+  const partnerText = partnerName ? ` for ${partnerName}` : '';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: `Your verification code: ${code}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .code-box { background: #f0f9ff; border: 2px solid #0891b2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+            .code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0891b2; font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <h2 style="text-align: center;">Verify Your Email</h2>
+              
+              <p style="text-align: center;">Enter the following code to verify your email address and start your assessment${partnerText}:</p>
+              
+              <div class="code-box">
+                <div class="code">${code}</div>
+                <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">This code expires in 10 minutes</p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Your HumanMetrix Verification Code
+
+Enter this code to verify your email and start your assessment${partnerText}:
+
+${code}
+
+This code expires in 10 minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Verification code email sent to ${email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send verification code email to ${email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}

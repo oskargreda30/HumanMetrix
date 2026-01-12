@@ -117,6 +117,9 @@ import {
   systemSettings,
   type SystemSetting,
   type InsertSystemSetting,
+  emailVerificationCodes,
+  type EmailVerificationCode,
+  type InsertEmailVerificationCode,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -500,6 +503,14 @@ export interface IStorage {
   getAllSystemSettings(): Promise<SystemSetting[]>;
   upsertSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
   deleteSystemSetting(key: string): Promise<void>;
+
+  // Email verification code operations
+  createEmailVerificationCode(data: InsertEmailVerificationCode): Promise<EmailVerificationCode>;
+  getEmailVerificationCode(email: string, code: string): Promise<EmailVerificationCode | undefined>;
+  getActiveVerificationCode(email: string, sessionId: string): Promise<EmailVerificationCode | undefined>;
+  updateEmailVerificationCode(id: string, updates: Partial<{ attempts: number; verified: boolean }>): Promise<void>;
+  deleteEmailVerificationCode(id: string): Promise<void>;
+  deleteExpiredVerificationCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3370,6 +3381,61 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSystemSetting(key: string): Promise<void> {
     await db.delete(systemSettings).where(eq(systemSettings.key, key));
+  }
+
+  // Email verification code operations
+  async createEmailVerificationCode(data: InsertEmailVerificationCode): Promise<EmailVerificationCode> {
+    // Delete any existing codes for this email+session first
+    if (data.sessionId) {
+      await db.delete(emailVerificationCodes).where(
+        and(
+          eq(emailVerificationCodes.email, data.email.toLowerCase()),
+          eq(emailVerificationCodes.sessionId, data.sessionId)
+        )
+      );
+    }
+    const [result] = await db.insert(emailVerificationCodes).values({
+      ...data,
+      email: data.email.toLowerCase(),
+    }).returning();
+    return result;
+  }
+
+  async getEmailVerificationCode(email: string, code: string): Promise<EmailVerificationCode | undefined> {
+    const [result] = await db.select().from(emailVerificationCodes).where(
+      and(
+        eq(emailVerificationCodes.email, email.toLowerCase()),
+        eq(emailVerificationCodes.code, code),
+        eq(emailVerificationCodes.verified, false),
+        gte(emailVerificationCodes.expiresAt, new Date())
+      )
+    );
+    return result;
+  }
+
+  async getActiveVerificationCode(email: string, sessionId: string): Promise<EmailVerificationCode | undefined> {
+    const [result] = await db.select().from(emailVerificationCodes).where(
+      and(
+        eq(emailVerificationCodes.email, email.toLowerCase()),
+        eq(emailVerificationCodes.sessionId, sessionId),
+        gte(emailVerificationCodes.expiresAt, new Date())
+      )
+    ).orderBy(desc(emailVerificationCodes.createdAt)).limit(1);
+    return result;
+  }
+
+  async updateEmailVerificationCode(id: string, updates: Partial<{ attempts: number; verified: boolean }>): Promise<void> {
+    await db.update(emailVerificationCodes).set(updates).where(eq(emailVerificationCodes.id, id));
+  }
+
+  async deleteEmailVerificationCode(id: string): Promise<void> {
+    await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.id, id));
+  }
+
+  async deleteExpiredVerificationCodes(): Promise<void> {
+    await db.delete(emailVerificationCodes).where(
+      lte(emailVerificationCodes.expiresAt, new Date())
+    );
   }
 }
 

@@ -539,6 +539,130 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Send email verification code
+  app.post(
+    "/api/embed/session/:sessionId/send-verification-code",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const { email } = req.body || {};
+        
+        if (!email || typeof email !== 'string') {
+          return res.status(400).json({ error: "Email is required" });
+        }
+        
+        // Normalize email consistently
+        const normalizedEmail = email.trim().toLowerCase();
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+          return res.status(400).json({ error: "Invalid email format" });
+        }
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Check for existing unexpired code (rate limiting)
+        const existingCode = await storage.getActiveVerificationCode(normalizedEmail, sessionId);
+        if (existingCode && existingCode.createdAt) {
+          const timeSinceCreation = Date.now() - new Date(existingCode.createdAt).getTime();
+          if (timeSinceCreation < 60000) { // 1 minute cooldown
+            return res.status(429).json({ 
+              error: "Please wait before requesting another code",
+              retryAfter: Math.ceil((60000 - timeSinceCreation) / 1000)
+            });
+          }
+        }
+        
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store code with 10-minute expiry
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await storage.createEmailVerificationCode({
+          email: normalizedEmail,
+          code,
+          sessionId,
+          partnerId: session.partnerId,
+          expiresAt,
+        });
+        
+        // Send the code via email (send to original email case for display)
+        const partner = await storage.getPartnerAccount(session.partnerId);
+        const { sendEmailVerificationCode } = await import("./email");
+        const result = await sendEmailVerificationCode(
+          email.trim(), // Original case for email display
+          code,
+          partner?.companyName || partner?.name
+        );
+        
+        if (!result.success) {
+          return res.status(500).json({ error: "Failed to send verification email" });
+        }
+        
+        res.json({ success: true, message: "Verification code sent" });
+      } catch (error) {
+        console.error("Error sending verification code:", error);
+        res.status(500).json({ error: "Failed to send verification code" });
+      }
+    }
+  );
+
+  // Verify email code
+  app.post(
+    "/api/embed/session/:sessionId/verify-email",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const { email, code } = req.body || {};
+        
+        if (!email || !code) {
+          return res.status(400).json({ error: "Email and code are required" });
+        }
+        
+        // Normalize email consistently
+        const normalizedEmail = email.trim().toLowerCase();
+        
+        const session = await storage.getAssessmentSession(sessionId);
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        // Find the verification code
+        const verification = await storage.getEmailVerificationCode(normalizedEmail, code);
+        
+        if (!verification) {
+          // Track failed attempt on active code if exists
+          const activeCode = await storage.getActiveVerificationCode(normalizedEmail, sessionId);
+          if (activeCode) {
+            const newAttempts = (activeCode.attempts || 0) + 1;
+            await storage.updateEmailVerificationCode(activeCode.id, { attempts: newAttempts });
+            
+            if (newAttempts >= 5) {
+              return res.status(429).json({ error: "Too many failed attempts. Please request a new code." });
+            }
+          }
+          return res.status(400).json({ error: "Invalid or expired verification code" });
+        }
+        
+        // Check if code belongs to this session
+        if (verification.sessionId !== sessionId) {
+          return res.status(400).json({ error: "Invalid verification code" });
+        }
+        
+        // Mark as verified
+        await storage.updateEmailVerificationCode(verification.id, { verified: true });
+        
+        res.json({ success: true, verified: true });
+      } catch (error) {
+        console.error("Error verifying email:", error);
+        res.status(500).json({ error: "Failed to verify email" });
+      }
+    }
+  );
+
   app.post(
     "/api/embed/session/:sessionId/start",
     async (req: Request, res: Response) => {
@@ -573,6 +697,26 @@ export function registerPartnerRoutes(app: Express) {
             status: "started",
           });
         }
+        
+        // Require verified email before starting (for B2B widget security)
+        if (!candidateEmail || typeof candidateEmail !== 'string') {
+          return res.status(400).json({ error: "Email is required" });
+        }
+        
+        // Normalize email to lowercase for consistent lookup
+        const trimmedEmail = candidateEmail.trim().toLowerCase();
+        
+        // Check if email is verified for this session
+        const verification = await storage.getActiveVerificationCode(trimmedEmail, sessionId);
+        if (!verification || !verification.verified) {
+          return res.status(400).json({ 
+            error: "Email not verified. Please verify your email first.",
+            code: "EMAIL_NOT_VERIFIED"
+          });
+        }
+        
+        // Delete the verification code after use (prevent replay attacks)
+        await storage.deleteEmailVerificationCode(verification.id);
         
         // Detect user's country from IP for PPP pricing
         let countryCode = 'GB'; // Default to UK for full pricing

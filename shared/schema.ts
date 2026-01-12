@@ -1477,3 +1477,30 @@ export const SYSTEM_SETTING_KEYS = {
   RUN_TESTS_BEFORE_DEPLOY: "run_tests_before_deploy",
   MAINTENANCE_MODE: "maintenance_mode",
 } as const;
+
+// Email verification codes - for B2B widget email verification
+export const emailVerificationCodes = pgTable("email_verification_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  sessionId: varchar("session_id").references(() => assessmentSessions.id, { onDelete: "cascade" }),
+  partnerId: varchar("partner_id").references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  attempts: integer("attempts").notNull().default(0),
+  verified: boolean("verified").notNull().default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_email_verification_email").on(table.email),
+  index("idx_email_verification_session").on(table.sessionId),
+  index("idx_email_verification_expires").on(table.expiresAt),
+]);
+
+export const insertEmailVerificationCodeSchema = createInsertSchema(emailVerificationCodes).omit({
+  id: true,
+  createdAt: true,
+  attempts: true,
+  verified: true,
+});
+
+export type InsertEmailVerificationCode = z.infer<typeof insertEmailVerificationCodeSchema>;
+export type EmailVerificationCode = typeof emailVerificationCodes.$inferSelect;

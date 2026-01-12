@@ -102,6 +102,12 @@ export default function EmbedAssessment() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [candidateEmail, setCandidateEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationStep, setVerificationStep] = useState<"email" | "code" | "verified">("email");
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [codeError, setCodeError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
 
@@ -189,11 +195,18 @@ export default function EmbedAssessment() {
     return emailRegex.test(email);
   };
 
-  const startAssessment = async () => {
-    // Validate email - required for B2B widget
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const sendVerificationCode = async () => {
     const trimmedEmail = candidateEmail.trim();
     if (!trimmedEmail) {
-      setEmailError("Email is required to receive your results");
+      setEmailError("Email is required");
       return;
     }
     if (!validateEmail(trimmedEmail)) {
@@ -201,6 +214,75 @@ export default function EmbedAssessment() {
       return;
     }
     setEmailError("");
+    setIsSendingCode(true);
+
+    try {
+      const res = await fetch(`/api/embed/session/${sessionId}/send-verification-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 429 && data.retryAfter) {
+          setResendCooldown(data.retryAfter);
+        }
+        setEmailError(data.error || "Failed to send verification code");
+        return;
+      }
+
+      setVerificationStep("code");
+      setResendCooldown(60); // 60 second cooldown for resend
+    } catch (err) {
+      setEmailError("Failed to send verification code");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const verifyEmailCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      setCodeError("Please enter the 6-digit code");
+      return;
+    }
+    setCodeError("");
+    setIsVerifying(true);
+
+    try {
+      const res = await fetch(`/api/embed/session/${sessionId}/verify-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: candidateEmail.trim(), 
+          code: verificationCode 
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setCodeError(data.error || "Invalid verification code");
+        return;
+      }
+
+      setVerificationStep("verified");
+    } catch (err) {
+      setCodeError("Failed to verify code");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const startAssessment = async () => {
+    // Ensure email is verified before starting
+    if (verificationStep !== "verified") {
+      setEmailError("Please verify your email first");
+      return;
+    }
+
+    const trimmedEmail = candidateEmail.trim();
 
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
@@ -211,6 +293,11 @@ export default function EmbedAssessment() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (data.code === "EMAIL_NOT_VERIFIED") {
+          setVerificationStep("email");
+          setEmailError("Email verification expired. Please verify again.");
+          return;
+        }
         setStatus("error");
         setErrorMessage(getHumanReadableError(data, "Failed to start session"));
         return;
@@ -614,38 +701,159 @@ export default function EmbedAssessment() {
               </ul>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="candidate-email" className={textPrimary}>
-                Your Email Address <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="candidate-email"
-                type="email"
-                placeholder="Enter your email to receive your results"
-                value={candidateEmail}
-                onChange={(e) => {
-                  setCandidateEmail(e.target.value);
-                  if (emailError) setEmailError("");
-                }}
-                className={`${inputBg} ${emailError ? 'border-red-500' : ''}`}
-                data-testid="input-candidate-email"
-              />
-              {emailError && (
-                <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
+            {/* Email Verification Flow */}
+            <div className="space-y-4">
+              {/* Step 1: Email Input */}
+              {verificationStep === "email" && (
+                <div className="space-y-2">
+                  <Label htmlFor="candidate-email" className={textPrimary}>
+                    Your Email Address <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="candidate-email"
+                    type="email"
+                    placeholder="Enter your email to receive your results"
+                    value={candidateEmail}
+                    onChange={(e) => {
+                      setCandidateEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
+                    className={`${inputBg} ${emailError ? 'border-red-500' : ''}`}
+                    data-testid="input-candidate-email"
+                  />
+                  {emailError && (
+                    <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
+                  )}
+                  <p className={`text-xs ${textMuted}`}>
+                    We'll send a verification code to confirm your email address.
+                  </p>
+                  <Button
+                    onClick={sendVerificationCode}
+                    className="w-full"
+                    style={{ backgroundColor: primaryColor }}
+                    disabled={isSendingCode}
+                    data-testid="button-send-code"
+                  >
+                    {isSendingCode ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending Code...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Send Verification Code
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
-              <p className={`text-xs ${textMuted}`}>
-                We'll send you a payment link to view your results immediately, or you can wait 30 days for free access.
-              </p>
-            </div>
 
-            <Button
-              onClick={startAssessment}
-              className="w-full"
-              style={{ backgroundColor: primaryColor }}
-              data-testid="button-start-assessment"
-            >
-              Start Assessment
-            </Button>
+              {/* Step 2: Verification Code Input */}
+              {verificationStep === "code" && (
+                <div className="space-y-3">
+                  <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className={`text-sm ${textPrimary}`}>Code sent to</p>
+                      <p className={`text-sm font-medium ${textSecondary}`}>{candidateEmail}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-auto text-xs"
+                      onClick={() => {
+                        setVerificationStep("email");
+                        setVerificationCode("");
+                        setCodeError("");
+                      }}
+                      data-testid="button-change-email"
+                    >
+                      Change
+                    </Button>
+                  </div>
+                  
+                  <Label htmlFor="verification-code" className={textPrimary}>
+                    Enter Verification Code
+                  </Label>
+                  <Input
+                    id="verification-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setVerificationCode(value);
+                      if (codeError) setCodeError("");
+                    }}
+                    className={`${inputBg} text-center text-2xl tracking-widest font-mono ${codeError ? 'border-red-500' : ''}`}
+                    data-testid="input-verification-code"
+                  />
+                  {codeError && (
+                    <p className="text-sm text-red-500" data-testid="text-code-error">{codeError}</p>
+                  )}
+                  
+                  <Button
+                    onClick={verifyEmailCode}
+                    className="w-full"
+                    style={{ backgroundColor: primaryColor }}
+                    disabled={isVerifying || verificationCode.length !== 6}
+                    data-testid="button-verify-code"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify Email"
+                    )}
+                  </Button>
+                  
+                  <div className="flex items-center justify-center gap-2">
+                    <span className={`text-sm ${textMuted}`}>Didn't receive the code?</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={sendVerificationCode}
+                      disabled={resendCooldown > 0 || isSendingCode}
+                      className="text-sm underline"
+                      data-testid="button-resend-code"
+                    >
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Email Verified - Ready to Start */}
+              {verificationStep === "verified" && (
+                <div className="space-y-3">
+                  <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className={`text-sm font-medium ${textPrimary}`}>Email Verified</p>
+                      <p className={`text-sm ${textSecondary}`}>{candidateEmail}</p>
+                    </div>
+                  </div>
+                  
+                  <p className={`text-xs ${textMuted}`}>
+                    After completing the assessment, you'll receive a payment link to view your results immediately, or you can wait 30 days for free access.
+                  </p>
+                  
+                  <Button
+                    onClick={startAssessment}
+                    className="w-full"
+                    style={{ backgroundColor: primaryColor }}
+                    data-testid="button-start-assessment"
+                  >
+                    Start Assessment
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
