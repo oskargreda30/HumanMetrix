@@ -2276,6 +2276,7 @@ export function registerPartnerRoutes(app: Express) {
       const checkoutSession = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
+        allow_promotion_codes: true,
         line_items: [{
           price_data: {
             currency: stripeCurrency,
