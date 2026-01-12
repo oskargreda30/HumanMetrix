@@ -1436,6 +1436,19 @@ export default function PartnerDashboard() {
     ? Math.round((partner.testsConsumed / partner.testsPurchased) * 100) 
     : 0;
 
+  // Role-based access control for tabs
+  // Viewer: Read-only access to Overview, Results, Analysis, Notifications
+  // Member: Above + Invitations, Usage, Analytics
+  // Admin/Owner: Full access to all features
+  const isViewer = teamMemberRole === 'viewer';
+  const isMemberOrAbove = !isViewer; // member, admin, owner, or direct partner
+  const canAccessBilling = isAdmin; // Only admin/owner can access billing
+  const canAccessUsage = isMemberOrAbove; // member+ can see usage
+  const canAccessInvitations = isMemberOrAbove; // member+ can send invitations
+  const canAccessAnalytics = isMemberOrAbove; // member+ can see analytics
+  const canAccessSettings = isAdmin; // Only admin/owner can access account settings
+  const canAccessActivityLog = isMemberOrAbove; // member+ can see activity log
+
   return (
     <div className="min-h-screen flex flex-col relative">
       <Helmet>
@@ -1520,9 +1533,11 @@ export default function PartnerDashboard() {
                   Organizations
                 </TabsTrigger>
               )}
-              <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Invitations
-              </TabsTrigger>
+              {canAccessInvitations && (
+                <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Invitations
+                </TabsTrigger>
+              )}
               {isAdmin && (
                 <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Team
@@ -1551,22 +1566,26 @@ export default function PartnerDashboard() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('usage')}
-                    className={activeTab === 'usage' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-usage"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Usage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('billing')}
-                    className={activeTab === 'billing' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-billing"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Billing
-                  </DropdownMenuItem>
+                  {canAccessUsage && (
+                    <DropdownMenuItem 
+                      onClick={() => setActiveTab('usage')}
+                      className={activeTab === 'usage' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-usage"
+                    >
+                      <Activity className="h-4 w-4 mr-2" />
+                      Usage
+                    </DropdownMenuItem>
+                  )}
+                  {canAccessBilling && (
+                    <DropdownMenuItem 
+                      onClick={() => setActiveTab('billing')}
+                      className={activeTab === 'billing' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-billing"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Billing
+                    </DropdownMenuItem>
+                  )}
                   {isAdmin && (
                     <DropdownMenuItem 
                       onClick={() => setActiveTab('developer')}
@@ -1577,14 +1596,16 @@ export default function PartnerDashboard() {
                       Developer
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('analytics')}
-                    className={activeTab === 'analytics' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-analytics"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
-                  </DropdownMenuItem>
+                  {canAccessAnalytics && (
+                    <DropdownMenuItem 
+                      onClick={() => setActiveTab('analytics')}
+                      className={activeTab === 'analytics' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-analytics"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Analytics
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setActiveTab('notifications')}
@@ -1599,22 +1620,26 @@ export default function PartnerDashboard() {
                       </span>
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => { setActiveTab('settings'); initSettings(); }}
-                    className={activeTab === 'settings' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-settings"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Account Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('activity')}
-                    className={activeTab === 'activity' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-activity"
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Activity Log
-                  </DropdownMenuItem>
+                  {canAccessSettings && (
+                    <DropdownMenuItem 
+                      onClick={() => { setActiveTab('settings'); initSettings(); }}
+                      className={activeTab === 'settings' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-settings"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Account Settings
+                    </DropdownMenuItem>
+                  )}
+                  {canAccessActivityLog && (
+                    <DropdownMenuItem 
+                      onClick={() => setActiveTab('activity')}
+                      className={activeTab === 'activity' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-activity"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Activity Log
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </TabsList>
