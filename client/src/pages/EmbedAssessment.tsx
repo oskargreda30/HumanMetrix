@@ -848,78 +848,113 @@ export default function EmbedAssessment() {
                       </Button>
                     </div>
                     
-                    <Label className={textPrimary}>
-                      Enter Verification Code
-                    </Label>
-                    <div className="flex justify-center" data-testid="input-verification-code">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(value) => {
-                          setVerificationCode(value);
-                          if (codeError) setCodeError("");
-                        }}
-                        onComplete={(value) => {
-                          setVerificationCode(value);
-                          // Auto-submit when all 6 digits are entered
-                          setTimeout(() => {
-                            const verifyBtn = document.querySelector('[data-testid="button-verify-code"]') as HTMLButtonElement;
-                            if (verifyBtn && !verifyBtn.disabled) {
-                              verifyBtn.click();
-                            }
-                          }, 100);
-                        }}
-                        disabled={isVerifying}
-                        className={codeError ? '[&_div]:border-red-500' : ''}
-                      >
-                        <InputOTPGroup className="gap-2">
-                          <InputOTPSlot 
-                            index={0} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                          <InputOTPSlot 
-                            index={1} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                          <InputOTPSlot 
-                            index={2} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                          <InputOTPSlot 
-                            index={3} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                          <InputOTPSlot 
-                            index={4} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                          <InputOTPSlot 
-                            index={5} 
-                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
-                          />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                    {codeError && (
-                      <p className="text-sm text-red-500 text-center" data-testid="text-code-error">{codeError}</p>
-                    )}
-                    
-                    {isVerifying && (
-                      <div className="flex items-center justify-center gap-2 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin" style={{ color: primaryColor }} />
-                        <span className={`text-sm ${textMuted}`}>Verifying...</span>
+                    <div className="text-center space-y-4">
+                      <div>
+                        <Label className={`text-base font-medium ${textPrimary}`}>
+                          Enter Verification Code
+                        </Label>
+                        <p className={`text-xs ${textMuted} mt-1`}>
+                          Enter the 6-digit code sent to your email
+                        </p>
                       </div>
-                    )}
-                    
-                    <Button
-                      onClick={verifyEmailCode}
-                      className="w-full"
-                      style={{ backgroundColor: primaryColor, visibility: isVerifying ? 'hidden' : 'visible' }}
-                      disabled={isVerifying || verificationCode.length !== 6}
-                      data-testid="button-verify-code"
-                    >
-                      Verify Email
-                    </Button>
+                      
+                      <div className="flex justify-center py-2" data-testid="input-verification-code">
+                        <InputOTP
+                          maxLength={6}
+                          value={verificationCode}
+                          onChange={(value) => {
+                            setVerificationCode(value);
+                            if (codeError) setCodeError("");
+                          }}
+                          onComplete={(value) => {
+                            setVerificationCode(value);
+                            // Auto-submit when all 6 digits are entered
+                            setTimeout(() => {
+                              const verifyBtn = document.querySelector('[data-testid="button-verify-code"]') as HTMLButtonElement;
+                              if (verifyBtn && !verifyBtn.disabled) {
+                                verifyBtn.click();
+                              }
+                            }, 100);
+                          }}
+                          disabled={isVerifying}
+                        >
+                          <InputOTPGroup className="gap-3">
+                            <InputOTPSlot 
+                              index={0} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                            <InputOTPSlot 
+                              index={1} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                            <InputOTPSlot 
+                              index={2} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                            <div className={`flex items-center px-1 ${textMuted}`}>
+                              <div className="w-2 h-0.5 bg-current rounded-full opacity-40"></div>
+                            </div>
+                            <InputOTPSlot 
+                              index={3} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                            <InputOTPSlot 
+                              index={4} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                            <InputOTPSlot 
+                              index={5} 
+                              className={`h-14 w-11 text-2xl font-semibold rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                                isLight 
+                                  ? 'bg-white border-gray-200 text-gray-900 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20' 
+                                  : 'bg-slate-800 border-slate-600 text-white focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-400/20'
+                              } ${codeError ? 'border-red-500' : ''}`}
+                            />
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </div>
+                      
+                      {codeError && (
+                        <p className="text-sm text-red-500 text-center" data-testid="text-code-error">{codeError}</p>
+                      )}
+                      
+                      {isVerifying ? (
+                        <div className="flex items-center justify-center gap-2 py-3">
+                          <Loader2 className="h-5 w-5 animate-spin" style={{ color: primaryColor }} />
+                          <span className={`text-sm font-medium ${textSecondary}`}>Verifying code...</span>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={verifyEmailCode}
+                          className="w-full"
+                          style={{ backgroundColor: primaryColor }}
+                          disabled={verificationCode.length !== 6}
+                          data-testid="button-verify-code"
+                        >
+                          Verify Email
+                        </Button>
+                      )}
+                    </div>
                     
                     <div className="flex items-center justify-center gap-2">
                       <span className={`text-sm ${textMuted}`}>Didn't receive the code?</span>
