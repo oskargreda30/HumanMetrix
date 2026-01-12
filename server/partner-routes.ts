@@ -954,16 +954,26 @@ export function registerPartnerRoutes(app: Express) {
           );
           console.log(`[Test Session] Skipping billing for test session ${sessionId}`);
         } else {
-          // Track as billable production session
+          // Check if this test should use a free credit (from welcome package)
+          // Free tests are consumed first, then paid credits
+          const quotaBalanceBefore = await storage.getPartnerQuotaBalance(session.partnerId);
+          const freeTestsRemaining = Math.max(0, (quotaBalanceBefore.freeTestsAllocated || 0) - quotaBalanceBefore.testsConsumed);
+          const isUsingFreeCredit = freeTestsRemaining > 0;
+          
+          // Track usage - free tests are not billed
           await trackUsage(
             session.partnerId,
             session.apiKeyId,
             sessionId,
             "session_completed",
             session.assessmentType,
-            true,
-            partner?.pricePerAssessment || 500
+            !isUsingFreeCredit, // Only billable if not using free credit
+            isUsingFreeCredit ? 0 : (partner?.pricePerAssessment || 500)
           );
+          
+          if (isUsingFreeCredit) {
+            console.log(`[Free Test] Using complimentary test credit for session ${sessionId} (${freeTestsRemaining} remaining before this test)`);
+          }
           
           // Consume a test credit from the partner's prepaid quota (only for production sessions)
           const quotaResult = await consumeTestCredit(
