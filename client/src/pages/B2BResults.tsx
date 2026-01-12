@@ -198,52 +198,6 @@ export default function B2BResults() {
                 )}
               </Button>
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">or</span>
-              </div>
-            </div>
-
-            <div className="bg-muted/50 border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Complete Assessment Bundle</span>
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                  {data.pricing.bundle.discountPercent}% OFF
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Unlock results for all 4 assessment types (FIT, AI Readiness, Prompt Architecture, AIQ).
-              </p>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-lg line-through text-muted-foreground">
-                  {data.pricing.bundle.originalDisplay}
-                </span>
-                <span className="text-2xl font-bold">
-                  {data.pricing.bundle.discountedDisplay}
-                </span>
-              </div>
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                size="lg"
-                onClick={() => handleCheckout(true)}
-                disabled={isCheckingOut}
-                data-testid="button-unlock-bundle"
-              >
-                {isCheckingOut && checkoutType === 'bundle' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Redirecting to payment...
-                  </>
-                ) : (
-                  'Get Complete Bundle'
-                )}
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
