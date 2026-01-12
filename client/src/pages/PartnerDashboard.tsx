@@ -2510,7 +2510,7 @@ export default function PartnerDashboard() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid gap-4 md:grid-cols-3">
+                          <div className={`grid gap-4 ${avgUsage > 0 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                             <div className="p-4 rounded-lg bg-muted/30 border">
                               <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                                 <BarChart3 className="h-3 w-3" />
@@ -2537,18 +2537,20 @@ export default function PartnerDashboard() {
                               </p>
                             </div>
 
-                            <div className="p-4 rounded-lg bg-muted/30 border">
-                              <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Credits Runway
+                            {avgUsage > 0 && (
+                              <div className="p-4 rounded-lg bg-muted/30 border">
+                                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  Credits Runway
+                                </div>
+                                <div className={`text-2xl font-bold ${monthsUntilEmpty !== null && monthsUntilEmpty <= 2 ? 'text-destructive' : monthsUntilEmpty !== null && monthsUntilEmpty <= 4 ? 'text-amber-500' : ''}`} data-testid="text-runway">
+                                  {monthsUntilEmpty === null ? '12+ months' : monthsUntilEmpty === 0 ? 'This month' : `${monthsUntilEmpty} month${monthsUntilEmpty !== 1 ? 's' : ''}`}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {runOutDate ? `Until ~${runOutDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : 'At current rate'}
+                                </p>
                               </div>
-                              <div className={`text-2xl font-bold ${monthsUntilEmpty !== null && monthsUntilEmpty <= 2 ? 'text-destructive' : monthsUntilEmpty !== null && monthsUntilEmpty <= 4 ? 'text-amber-500' : ''}`} data-testid="text-runway">
-                                {monthsUntilEmpty === null ? '12+ months' : monthsUntilEmpty === 0 ? 'This month' : `${monthsUntilEmpty} month${monthsUntilEmpty !== 1 ? 's' : ''}`}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {runOutDate ? `Until ~${runOutDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : 'At current rate'}
-                              </p>
-                            </div>
+                            )}
                           </div>
 
                           {monthsUntilEmpty !== null && monthsUntilEmpty <= 3 && (
