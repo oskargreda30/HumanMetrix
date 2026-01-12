@@ -10735,6 +10735,9 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
+      // First, delete all team members for this partner (to avoid FK constraint on invited_by_user_id)
+      await storage.deleteAllPartnerTeamMembers(req.params.id);
+      
       // Find and delete the associated user account (partner_admin with same email)
       const partnerUser = await storage.getUserByEmail(partner.email);
       if (partnerUser && partnerUser.role === 'partner_admin') {

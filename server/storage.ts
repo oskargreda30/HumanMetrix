@@ -459,6 +459,7 @@ export interface IStorage {
   getPartnerTeamMembers(partnerId: string): Promise<PartnerTeamMember[]>;
   updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void>;
   deletePartnerTeamMember(id: string): Promise<void>;
+  deleteAllPartnerTeamMembers(partnerId: string): Promise<void>;
 
   // Partner analytics operations
   getPartnerAnalytics(partnerId: string, period: 'daily' | 'weekly' | 'monthly', days?: number): Promise<{
@@ -3042,6 +3043,10 @@ export class DatabaseStorage implements IStorage {
 
   async deletePartnerTeamMember(id: string): Promise<void> {
     await db.delete(partnerTeamMembers).where(eq(partnerTeamMembers.id, id));
+  }
+
+  async deleteAllPartnerTeamMembers(partnerId: string): Promise<void> {
+    await db.delete(partnerTeamMembers).where(eq(partnerTeamMembers.partnerId, partnerId));
   }
 
   // Partner analytics operations
