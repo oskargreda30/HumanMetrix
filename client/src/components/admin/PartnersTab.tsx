@@ -1818,7 +1818,7 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <Popover open={countryOpen} onOpenChange={setCountryOpen} modal={false}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -1826,6 +1826,7 @@ export default function PartnersTab() {
                         aria-expanded={countryOpen}
                         className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
                         data-testid="select-partner-country"
+                        type="button"
                       >
                         {selectedCountry ? (
                           <>
@@ -1838,9 +1839,9 @@ export default function PartnersTab() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700 z-50" align="start">
+                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700 z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                       <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
-                        <CommandInput placeholder="Search country..." className="text-white placeholder:text-slate-400" />
+                        <CommandInput placeholder="Search country..." className="text-white placeholder:text-slate-400" autoFocus />
                         <CommandList>
                           <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                           <CommandGroup>
@@ -1871,7 +1872,7 @@ export default function PartnersTab() {
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
                   <div className="flex gap-2">
-                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen}>
+                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -1879,6 +1880,7 @@ export default function PartnersTab() {
                           aria-expanded={phoneCodeOpen}
                           className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
                           data-testid="select-phone-code"
+                          type="button"
                         >
                           {selectedPhoneCountryData ? (
                             <>
@@ -1891,9 +1893,9 @@ export default function PartnersTab() {
                           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700 z-50" align="start">
+                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700 z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                         <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
-                          <CommandInput placeholder="Search country code..." className="text-white placeholder:text-slate-400" />
+                          <CommandInput placeholder="Search country code..." className="text-white placeholder:text-slate-400" autoFocus />
                           <CommandList>
                             <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                             <CommandGroup>
