@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -97,6 +97,10 @@ export default function EmbedAssessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedScores, setCompletedScores] = useState<any>(null);
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes default
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSubmittedRef = useRef<boolean>(false);
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -242,6 +246,106 @@ export default function EmbedAssessment() {
       saveProgressImmediately(currentIndex);
     }, 2000);
   }, [sessionId, status, currentIndex, saveProgressImmediately]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get time limit based on assessment type (in seconds)
+  const getTimeLimit = () => {
+    if (!session) return 1200;
+    const type = session.assessmentType.replace(/-/g, '_');
+    if (type === 'prompt_architecture') return 120; // 2 minutes per question
+    return 1200; // 20 minutes for other assessments
+  };
+
+  // Initialize timer when assessment starts
+  useEffect(() => {
+    if (status === 'started' && session) {
+      const isPromptArch = session.assessmentType.replace(/-/g, '_') === 'prompt_architecture';
+      setTimeRemaining(isPromptArch ? 120 : 1200);
+    }
+  }, [status, session]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (status !== 'started' || isSubmitting) return;
+
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        const newTime = prev - 1;
+
+        // Show warning at 5 minutes for regular or 30 seconds for prompt architecture
+        const warningThreshold = session?.assessmentType.replace(/-/g, '_') === 'prompt_architecture' ? 30 : 300;
+        if (newTime === warningThreshold && !showTimeWarning) {
+          setShowTimeWarning(true);
+        }
+
+        // Auto-submit when time runs out
+        if (newTime <= 0) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+
+          setIsSubmitting(true);
+
+          // Only auto-submit if user has answered at least one question
+          if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
+            hasSubmittedRef.current = true;
+            // Submit with current answers
+            fetch(`/api/embed/session/${sessionId}/submit`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answers: answersRef.current }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                setCompletedScores(data);
+                setStatus("completed");
+                if (window.parent !== window) {
+                  window.parent.postMessage(
+                    {
+                      type: "humanmetrix:completed",
+                      sessionId,
+                      scores: data.scores,
+                      totalScore: data.totalScore,
+                      percentile: data.percentile,
+                    },
+                    "*"
+                  );
+                }
+              })
+              .catch(() => {
+                setStatus("error");
+                setErrorMessage("Failed to submit assessment on time expiry");
+              });
+          }
+          return 0;
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [status, isSubmitting, showTimeWarning, sessionId, session]);
+
+  // Reset timer for prompt architecture when moving to next question
+  useEffect(() => {
+    if (status === 'started' && session?.assessmentType.replace(/-/g, '_') === 'prompt_architecture') {
+      setTimeRemaining(120); // Reset to 2 minutes per question
+      setShowTimeWarning(false);
+    }
+  }, [currentIndex]);
 
   const handleAnswerChange = (value: string) => {
     const currentQ = questions[currentIndex];
@@ -452,7 +556,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>Take your time - there is no time limit</li>
+                <li>You have 20 minutes to complete the assessment</li>
               </ul>
             </div>
             <Button
@@ -500,11 +604,28 @@ export default function EmbedAssessment() {
             >
               {session && getAssessmentDisplayName(session.assessmentType)}
             </Badge>
-            <span className={`text-sm ${textMuted}`}>
-              Question {currentIndex + 1} of {questions.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`text-sm ${textMuted}`}>
+                Question {currentIndex + 1} of {questions.length}
+              </span>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${
+                timeRemaining <= (isPromptArchitecture ? 30 : 300) 
+                  ? 'bg-red-500/20 text-red-400' 
+                  : isLight ? 'bg-gray-200 text-gray-700' : 'bg-slate-700 text-slate-300'
+              }`}>
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-semibold" data-testid="timer-display">
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+            </div>
           </div>
           <Progress value={progress} className="h-2" style={{ '--progress-color': primaryColor } as any} />
+          {showTimeWarning && (
+            <div className={`mt-2 text-sm text-center ${isLight ? 'text-red-600' : 'text-red-400'}`}>
+              {isPromptArchitecture ? '30 seconds remaining!' : '5 minutes remaining!'}
+            </div>
+          )}
         </div>
 
         <Card className={bgCard}>
