@@ -6834,6 +6834,8 @@ Format your response as JSON with this structure:
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
+      let teamMemberRole: string | null = null;
+      let isTeamMember = false;
       
       if (user?.organizationId) {
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
@@ -6853,6 +6855,16 @@ Format your response as JSON with this structure:
         }
       }
       
+      // Check if user is a team member of a partner
+      if (!matchingPartner) {
+        const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
+        if (teamMembership) {
+          matchingPartner = await storage.getPartnerAccount(teamMembership.partnerId);
+          teamMemberRole = teamMembership.role;
+          isTeamMember = true;
+        }
+      }
+      
       if (!matchingPartner) {
         return res.json({ hasPartnerAccount: false });
       }
@@ -6862,6 +6874,8 @@ Format your response as JSON with this structure:
       
       res.json({
         hasPartnerAccount: true,
+        isTeamMember,
+        teamMemberRole,
         partner: {
           id: matchingPartner.id,
           name: matchingPartner.name,
@@ -8077,23 +8091,38 @@ Format your response as JSON with this structure:
 
   // ==================== PARTNER INTEGRATION MANAGEMENT ====================
   
-  // Helper function to get partner for authenticated user
-  async function getPartnerForUser(userId: string) {
+  // Helper function to get partner for authenticated user (including team members)
+  async function getPartnerForUser(userId: string): Promise<{ partner: any; teamMemberRole?: string; isTeamMember?: boolean } | null> {
     const user = await storage.getUser(userId);
     if (!user) return null;
     
-    // Partner admins, org admins, and super admins can access partner features
+    // Partner admins, org admins, and super admins can access partner features directly
     const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
-    if (!hasPartnerAccess) return null;
     
     let partner = null;
-    if (user.organizationId) {
-      partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+    
+    if (hasPartnerAccess) {
+      if (user.organizationId) {
+        partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      if (!partner && user.email) {
+        partner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      if (partner) {
+        return { partner, isTeamMember: false };
+      }
     }
-    if (!partner && user.email) {
-      partner = await storage.getPartnerAccountByEmail(user.email);
+    
+    // Check if user is a team member of a partner
+    const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
+    if (teamMembership) {
+      partner = await storage.getPartnerAccount(teamMembership.partnerId);
+      if (partner) {
+        return { partner, teamMemberRole: teamMembership.role, isTeamMember: true };
+      }
     }
-    return partner;
+    
+    return null;
   }
 
   // ===== WEBHOOKS =====
@@ -8101,7 +8130,8 @@ Format your response as JSON with this structure:
   // Get partner's webhooks
   app.get("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8116,7 +8146,8 @@ Format your response as JSON with this structure:
   // Create webhook
   app.post("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8152,7 +8183,8 @@ Format your response as JSON with this structure:
   // Update webhook
   app.patch("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8184,7 +8216,8 @@ Format your response as JSON with this structure:
   // Delete webhook
   app.delete("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8205,7 +8238,8 @@ Format your response as JSON with this structure:
   // Get webhook delivery logs
   app.get("/api/partner/me/webhooks/:id/logs", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8226,7 +8260,8 @@ Format your response as JSON with this structure:
   // Rotate webhook secret
   app.post("/api/partner/me/webhooks/:id/rotate-secret", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8251,7 +8286,8 @@ Format your response as JSON with this structure:
   // Test webhook - sends a test ping event
   app.post("/api/partner/me/webhooks/:id/test", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8379,7 +8415,8 @@ Format your response as JSON with this structure:
   // Get partner's ATS integrations
   app.get("/api/partner/me/ats-integrations", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8399,7 +8436,8 @@ Format your response as JSON with this structure:
   // Create ATS integration
   app.post("/api/partner/me/ats-integrations", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8431,7 +8469,8 @@ Format your response as JSON with this structure:
   // Update ATS integration
   app.patch("/api/partner/me/ats-integrations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8463,7 +8502,8 @@ Format your response as JSON with this structure:
   // Delete ATS integration
   app.delete("/api/partner/me/ats-integrations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8486,7 +8526,8 @@ Format your response as JSON with this structure:
   // Get partner's scheduled exports
   app.get("/api/partner/me/scheduled-exports", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8507,7 +8548,8 @@ Format your response as JSON with this structure:
   // Create scheduled export
   app.post("/api/partner/me/scheduled-exports", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8547,7 +8589,8 @@ Format your response as JSON with this structure:
   // Update scheduled export
   app.patch("/api/partner/me/scheduled-exports/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8596,7 +8639,8 @@ Format your response as JSON with this structure:
   // Delete scheduled export
   app.delete("/api/partner/me/scheduled-exports/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8654,7 +8698,8 @@ Format your response as JSON with this structure:
   // Get partner analytics
   app.get("/api/partner/me/analytics", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8675,7 +8720,8 @@ Format your response as JSON with this structure:
   // Export results as CSV
   app.get("/api/partner/me/export/results", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8715,7 +8761,8 @@ Format your response as JSON with this structure:
   // Export usage report as CSV
   app.get("/api/partner/me/export/usage", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8746,7 +8793,8 @@ Format your response as JSON with this structure:
   // Export billing history as CSV
   app.get("/api/partner/me/export/billing", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8795,7 +8843,8 @@ Format your response as JSON with this structure:
   // Get notifications
   app.get("/api/partner/me/notifications", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8816,7 +8865,8 @@ Format your response as JSON with this structure:
   // Mark notification as read
   app.post("/api/partner/me/notifications/:id/read", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8833,7 +8883,8 @@ Format your response as JSON with this structure:
   // Mark all notifications as read
   app.post("/api/partner/me/notifications/read-all", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8851,7 +8902,8 @@ Format your response as JSON with this structure:
   // Get team members
   app.get("/api/partner/me/team", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8867,7 +8919,8 @@ Format your response as JSON with this structure:
   // Invite team member
   app.post("/api/partner/me/team/invite", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -8971,14 +9024,51 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "This invitation has already been accepted" });
       }
       
-      // Update member status to accepted
+      // Get partner for notification and company name
+      const partner = await storage.getPartnerAccount(member.partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner account not found" });
+      }
+      
+      // Check if user already exists
+      let existingUser = await storage.getUserByEmail(member.email.toLowerCase());
+      let temporaryPassword: string | null = null;
+      let newUserId: string;
+      
+      if (existingUser) {
+        // User already has an account, just link them
+        newUserId = existingUser.id;
+      } else {
+        // Create new user account with temporary password
+        temporaryPassword = generateTemporaryPassword();
+        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+        
+        // Parse name into first and last name
+        let firstName: string | undefined;
+        let lastName: string | undefined;
+        if (member.name) {
+          const nameParts = member.name.trim().split(/\s+/);
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ') || undefined;
+        }
+        
+        const newUser = await storage.createUser({
+          email: member.email.toLowerCase(),
+          passwordHash,
+          firstName,
+          lastName,
+          role: 'candidate', // Base role, partner team role is separate
+        });
+        
+        newUserId = newUser.id;
+      }
+      
+      // Update member status to accepted and link to user
       await storage.updatePartnerTeamMember(member.id, {
         inviteStatus: 'accepted',
         acceptedAt: new Date(),
+        userId: newUserId,
       } as any);
-      
-      // Get partner for notification
-      const partner = await storage.getPartnerAccount(member.partnerId);
       
       // Create notification for team member joining
       await storage.createPartnerNotification({
@@ -8989,10 +9079,30 @@ Format your response as JSON with this structure:
         metadata: { memberId: member.id, memberEmail: member.email, memberName: member.name, role: member.role },
       });
       
+      // Send credentials email if new user was created
+      if (temporaryPassword) {
+        try {
+          const { sendPartnerTeamCredentialsEmail } = await import('./email');
+          await sendPartnerTeamCredentialsEmail({
+            email: member.email.toLowerCase(),
+            name: member.name || undefined,
+            companyName: partner.companyName || 'HumanMetrix Partner',
+            role: member.role || 'member',
+            temporaryPassword,
+          });
+        } catch (emailError) {
+          console.error("Failed to send credentials email:", emailError);
+          // Don't fail the request, user can still use password reset
+        }
+      }
+      
       res.json({ 
         success: true, 
-        message: "Invitation accepted successfully",
-        partner: partner ? { companyName: partner.companyName } : null,
+        message: temporaryPassword 
+          ? "Invitation accepted! Check your email for login credentials."
+          : "Invitation accepted! You can log in with your existing account.",
+        partner: { companyName: partner.companyName },
+        existingAccount: !temporaryPassword,
       });
     } catch (error) {
       console.error("Error accepting team invitation:", error);
@@ -9003,7 +9113,8 @@ Format your response as JSON with this structure:
   // Remove team member
   app.delete("/api/partner/me/team/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9034,7 +9145,8 @@ Format your response as JSON with this structure:
   // Update team member role
   app.patch("/api/partner/me/team/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9062,7 +9174,8 @@ Format your response as JSON with this structure:
   // List partner organizations
   app.get("/api/partner/me/organizations", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9092,7 +9205,8 @@ Format your response as JSON with this structure:
   // Create partner organization
   app.post("/api/partner/me/organizations", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9128,7 +9242,8 @@ Format your response as JSON with this structure:
   // Get partner organization details with tests
   app.get("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9178,7 +9293,8 @@ Format your response as JSON with this structure:
   // Update partner organization
   app.patch("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9207,7 +9323,8 @@ Format your response as JSON with this structure:
   // Delete partner organization
   app.delete("/api/partner/me/organizations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9228,7 +9345,8 @@ Format your response as JSON with this structure:
   // Get partner activity log
   app.get("/api/partner/me/activity-log", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9281,7 +9399,8 @@ Format your response as JSON with this structure:
   // Get partner candidate results
   app.get("/api/partner/me/results", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9337,7 +9456,8 @@ Format your response as JSON with this structure:
   // Partner: Get candidates from partner's sessions (for analysis tab)
   app.get("/api/partner/me/candidates", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9415,7 +9535,8 @@ Format your response as JSON with this structure:
   // Partner: Compare candidates (for analysis tab)
   app.get("/api/partner/me/compare", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9589,7 +9710,8 @@ Format your response as JSON with this structure:
   // Partner: Get available roles (for analysis tab)
   app.get("/api/partner/me/roles", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9606,7 +9728,8 @@ Format your response as JSON with this structure:
   // Partner: Get role alignment for a candidate (for analysis tab)
   app.get("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
@@ -9746,7 +9869,8 @@ Format your response as JSON with this structure:
   // Partner: Trigger role alignment analysis (POST)
   app.post("/api/partner/me/role-alignment", isAuthenticated, async (req: any, res) => {
     try {
-      const partner = await getPartnerForUser(req.user.id);
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }

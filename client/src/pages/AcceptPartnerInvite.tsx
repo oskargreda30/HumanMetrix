@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, UserPlus } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, UserPlus, Mail } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function AcceptPartnerInvite() {
@@ -11,6 +11,7 @@ export default function AcceptPartnerInvite() {
   const [status, setStatus] = useState<"loading" | "success" | "error" | "idle">("idle");
   const [message, setMessage] = useState("");
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [existingAccount, setExistingAccount] = useState(false);
 
   const acceptInvitation = async () => {
     if (!token) {
@@ -28,6 +29,7 @@ export default function AcceptPartnerInvite() {
       setStatus("success");
       setMessage(data.message || "Invitation accepted successfully!");
       setCompanyName(data.partner?.companyName || null);
+      setExistingAccount(data.existingAccount || false);
     } catch (error: any) {
       setStatus("error");
       setMessage(error.message || "Failed to accept invitation");
@@ -80,10 +82,23 @@ export default function AcceptPartnerInvite() {
         </CardHeader>
         <CardContent className="space-y-4">
           {status === "success" && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground text-center">
-                You can now access the partner dashboard to view assessment results and collaborate with your team.
-              </p>
+            <div className="space-y-4">
+              {!existingAccount && (
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">Check your email</p>
+                    <p className="text-muted-foreground">
+                      We've sent your login credentials to your email address. Use them to log in to the partner dashboard.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {existingAccount && (
+                <p className="text-sm text-muted-foreground text-center">
+                  You already have an account. Use your existing credentials to log in and access the partner dashboard.
+                </p>
+              )}
               <Button 
                 className="w-full" 
                 onClick={() => setLocation("/login")}

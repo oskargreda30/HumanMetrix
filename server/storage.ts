@@ -453,6 +453,7 @@ export interface IStorage {
   getPartnerTeamMember(id: string): Promise<PartnerTeamMember | undefined>;
   getPartnerTeamMemberByToken(token: string): Promise<PartnerTeamMember | undefined>;
   getPartnerTeamMemberByEmail(partnerId: string, email: string): Promise<PartnerTeamMember | undefined>;
+  getPartnerTeamMemberByUserId(userId: string): Promise<PartnerTeamMember | undefined>;
   getPartnerTeamMembers(partnerId: string): Promise<PartnerTeamMember[]>;
   updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void>;
   deletePartnerTeamMember(id: string): Promise<void>;
@@ -2972,6 +2973,15 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(partnerTeamMembers.partnerId, partnerId),
         eq(partnerTeamMembers.email, email.toLowerCase())
+      ));
+    return result;
+  }
+
+  async getPartnerTeamMemberByUserId(userId: string): Promise<PartnerTeamMember | undefined> {
+    const [result] = await db.select().from(partnerTeamMembers)
+      .where(and(
+        eq(partnerTeamMembers.userId, userId),
+        eq(partnerTeamMembers.inviteStatus, 'accepted')
       ));
     return result;
   }

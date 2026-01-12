@@ -2099,3 +2099,150 @@ If you didn't expect this invitation, you can safely ignore this email.
     return { success: false, error: error.message };
   }
 }
+
+interface PartnerTeamCredentialsDetails {
+  email: string;
+  name?: string;
+  companyName: string;
+  role: string;
+  temporaryPassword: string;
+}
+
+export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCredentialsDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Partner team credentials email not sent to ${details.email} - email not configured`);
+    return { success: false, error: 'Email not configured' };
+  }
+  
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : process.env.REPLIT_DOMAINS?.split(',')[0] 
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : 'https://www.humanmetrix.co.uk';
+  
+  const loginUrl = `${baseUrl}/login`;
+  const greeting = details.name ? `Hello ${details.name},` : 'Hello,';
+  const roleDisplay = details.role === 'admin' ? 'Administrator' : details.role === 'member' ? 'Team Member' : 'Viewer';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `Your HumanMetrix Login Credentials - ${details.companyName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f3f4f6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+            .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+            .content { background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; }
+            .success-badge { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; text-align: center; }
+            .success-badge span { color: #059669; font-weight: 600; font-size: 14px; }
+            .credentials-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0; }
+            .credentials-box h3 { margin: 0 0 15px 0; color: #1e293b; font-size: 16px; }
+            .credential-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+            .credential-item:last-child { border-bottom: none; }
+            .credential-label { color: #64748b; font-size: 14px; }
+            .credential-value { color: #0f172a; font-weight: 600; font-family: monospace; font-size: 14px; }
+            .role-badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .button:hover { background: #0e7490; }
+            .warning { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #92400e; font-size: 13px; }
+            .security-note { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #991b1b; font-size: 13px; }
+            .footer { text-align: center; padding: 25px; color: #6b7280; font-size: 14px; background: #f9fafb; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>HumanMetrix</h1>
+              <p>Your Account is Ready</p>
+            </div>
+            <div class="content">
+              <div class="success-badge">
+                <span>Welcome to the Team!</span>
+              </div>
+              
+              <h2 style="margin-top: 0;">${greeting}</h2>
+              <p>Your account has been created for <strong>${details.companyName}</strong>'s team on HumanMetrix. You can now log in to access the partner dashboard.</p>
+              
+              <p>Your role: <span class="role-badge">${roleDisplay}</span></p>
+              
+              <div class="credentials-box">
+                <h3>Your Login Credentials</h3>
+                <div class="credential-item">
+                  <span class="credential-label">Email:</span>
+                  <span class="credential-value">${details.email}</span>
+                </div>
+                <div class="credential-item">
+                  <span class="credential-label">Temporary Password:</span>
+                  <span class="credential-value">${details.temporaryPassword}</span>
+                </div>
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${loginUrl}" class="button">Log In Now</a>
+              </div>
+              
+              <div class="security-note">
+                <strong>Security Reminder:</strong> For your security, please change your password after your first login. Go to Account Settings to update your password.
+              </div>
+              
+              <div class="warning">
+                <strong>Keep this email secure:</strong> This email contains your login credentials. Do not share this email or your password with anyone.
+              </div>
+              
+              <p style="margin-top: 25px;">If you have any questions, please contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a>.</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
+              <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">
+                If you didn't request this account, please contact support immediately.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Your HumanMetrix Account is Ready - ${details.companyName}
+
+${greeting}
+
+Your account has been created for ${details.companyName}'s team on HumanMetrix. You can now log in to access the partner dashboard.
+
+Your role: ${roleDisplay}
+
+YOUR LOGIN CREDENTIALS
+----------------------
+Email: ${details.email}
+Temporary Password: ${details.temporaryPassword}
+
+Log in at: ${loginUrl}
+
+SECURITY REMINDER: For your security, please change your password after your first login.
+
+Keep this email secure: This email contains your login credentials. Do not share this email or your password with anyone.
+
+If you have any questions, please contact us at hello@humanmetrix.co.uk.
+
+---
+© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
+If you didn't request this account, please contact support immediately.
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Partner team credentials email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send partner team credentials email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
