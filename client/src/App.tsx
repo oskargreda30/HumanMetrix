@@ -44,6 +44,8 @@ import PartnerPackageSuccess from "@/pages/PartnerPackageSuccess";
 import PartnerDashboard from "@/pages/PartnerDashboard";
 import AcceptPartnerInvite from "@/pages/AcceptPartnerInvite";
 import Team from "@/pages/Team";
+import B2BResults from "@/pages/B2BResults";
+import B2BPaymentCallback from "@/pages/B2BPaymentCallback";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -101,6 +103,8 @@ function Router() {
       <Route path="/developers" component={Developers} />
       <Route path="/embed/assessment" component={EmbedAssessment} />
       <Route path="/start-assessment" component={StartAssessment} />
+      <Route path="/b2b-results" component={B2BResults} />
+      <Route path="/b2b-payment-callback" component={B2BPaymentCallback} />
       <Route path="/admin">
         {() => <Redirect to="/admin/dashboard" />}
       </Route>

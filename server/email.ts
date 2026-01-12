@@ -2402,3 +2402,112 @@ If you didn't request this account, please contact support immediately.
     return { success: false, error: error.message };
   }
 }
+
+// B2B Results Unlocked Email - sent immediately after successful payment
+export async function sendB2BResultsUnlockedEmail(
+  email: string,
+  assessmentType: string,
+  partnerName: string,
+  resultsUrl: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`B2B results unlocked email not sent to ${email} - email not configured`);
+    return { success: false };
+  }
+  
+  const assessmentName = formatAssessmentName(assessmentType);
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'https://humanmetrix.co.uk';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: `Your ${assessmentName} Results Are Now Unlocked!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="${baseUrl}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Payment Successful</span>
+              </div>
+              
+              <h2 style="text-align: center;">Your Results Are Ready!</h2>
+              
+              <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now unlocked and ready for viewing.</p>
+              
+              <div style="text-align: center;">
+                <a href="${resultsUrl}" class="button">View Your Results</a>
+              </div>
+              
+              <h3>What You'll Find in Your Results:</h3>
+              <ul>
+                <li>Your overall assessment score and percentile ranking</li>
+                <li>Detailed breakdown of your performance</li>
+                <li>Personalized insights and recommendations</li>
+                <li>Industry benchmarking data</li>
+              </ul>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Assessment completed as part of your evaluation with <strong>${partnerName}</strong>.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Your ${assessmentName} Results Are Now Unlocked!
+
+Thank you for your payment! Your results are now unlocked and ready for viewing.
+
+View your results here: ${resultsUrl}
+
+WHAT YOU'LL FIND IN YOUR RESULTS:
+- Your overall assessment score and percentile ranking
+- Detailed breakdown of your performance
+- Personalized insights and recommendations
+- Industry benchmarking data
+
+Assessment completed as part of your evaluation with ${partnerName}.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ B2B results unlocked email sent to ${email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send B2B results unlocked email to ${email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}

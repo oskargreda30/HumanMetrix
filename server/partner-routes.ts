@@ -1946,6 +1946,299 @@ export function registerPartnerRoutes(app: Express) {
       res.status(404).send("// SDK not found");
     }
   });
+
+  // ===== B2B Results Payment Flow =====
+  // GET /api/b2b/results/:sessionId - Get session info and pricing for unlock page
+  app.get("/api/b2b/results/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const countryCode = (req.query.country as string)?.toUpperCase() || 'GB';
+      
+      // Get session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Validate session is completed and results not yet released
+      if (session.status !== 'completed') {
+        return res.status(400).json({ error: "Assessment not completed" });
+      }
+      
+      // Check if already paid/released
+      if ((session as any).resultsPaymentStatus === 'paid' || (session as any).resultsReleaseStatus === 'released') {
+        return res.status(400).json({ 
+          error: "Results already unlocked",
+          resultsUrl: `/embed/assessment?session=${sessionId}&showResults=true`
+        });
+      }
+      
+      // Get partner info
+      const partner = await storage.getPartnerAccount(session.partnerId);
+      
+      // Calculate pricing: B2C base + assessment price, then PPP, then 25% discount
+      const normalizedType = normalizeAssessmentId(session.assessmentType);
+      const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+      const b2cPriceInPence = BASE_FEE + assessmentPrice;
+      
+      // PPP adjustment
+      const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode);
+      
+      // 25% discount for single assessment
+      const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
+      
+      // Get currency for display - both original and discounted should show PPP-adjusted prices
+      const currencyCode = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
+      // Format PPP-adjusted original (pre-discount) price - skip double PPP adjustment
+      const originalPriceDisplay = formatPrice(pppAdjustedPricePence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      const discountedPriceDisplay = formatPrice(discountedPricePence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      
+      // Calculate bundle pricing (all 4 assessments)
+      const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
+      const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
+      const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode);
+      const bundleDiscountedPence = Math.round(bundlePppAdjustedPence * 0.60); // 40% discount for bundle
+      // Format PPP-adjusted bundle prices - skip double PPP adjustment
+      const bundleOriginalDisplay = formatPrice(bundlePppAdjustedPence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      
+      // Calculate free release date
+      const releaseDate = (session as any).resultsReleaseScheduledAt || (session as any).resultsUnlockAt;
+      
+      res.json({
+        sessionId: session.id,
+        assessmentType: session.assessmentType,
+        email: session.externalEmail,
+        partnerName: partner?.companyName || partner?.name || 'Partner',
+        completedAt: session.completedAt,
+        countryCode,
+        currencyCode,
+        pricing: {
+          single: {
+            originalPricePence: pppAdjustedPricePence,
+            discountedPricePence,
+            originalDisplay: originalPriceDisplay,
+            discountedDisplay: discountedPriceDisplay,
+            discountPercent: 25
+          },
+          bundle: {
+            originalPricePence: bundlePppAdjustedPence,
+            discountedPricePence: bundleDiscountedPence,
+            originalDisplay: bundleOriginalDisplay,
+            discountedDisplay: bundleDiscountedDisplay,
+            discountPercent: 40
+          }
+        },
+        freeAccessDate: releaseDate ? new Date(releaseDate).toISOString() : null,
+      });
+    } catch (error) {
+      console.error("Error getting B2B results info:", error);
+      res.status(500).json({ error: "Failed to get session info" });
+    }
+  });
+
+  // POST /api/b2b/results/:sessionId/checkout - Create Stripe checkout session
+  app.post("/api/b2b/results/:sessionId/checkout", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { countryCode = 'GB', isBundle = false } = req.body;
+      
+      // Get session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      if (session.status !== 'completed') {
+        return res.status(400).json({ error: "Assessment not completed" });
+      }
+      
+      if ((session as any).resultsPaymentStatus === 'paid') {
+        return res.status(400).json({ error: "Results already paid for" });
+      }
+      
+      // Calculate pricing
+      const normalizedType = normalizeAssessmentId(session.assessmentType);
+      const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+      let priceInPence: number;
+      let discountPercent: number;
+      let productName: string;
+      
+      if (isBundle) {
+        const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
+        const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
+        const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode.toUpperCase());
+        priceInPence = Math.round(bundlePppAdjustedPence * 0.60); // 40% discount
+        discountPercent = 40;
+        productName = 'HumanMetrix Complete Assessment Bundle';
+      } else {
+        const b2cPriceInPence = BASE_FEE + assessmentPrice;
+        const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode.toUpperCase());
+        priceInPence = Math.round(pppAdjustedPricePence * 0.75); // 25% discount
+        discountPercent = 25;
+        productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
+      }
+      
+      // Get currency for Stripe
+      const currencyCode = COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP';
+      const { convertToStripeCurrencyAmount, getStripeCurrencyCode } = await import("@shared/currencies");
+      const stripeAmount = convertToStripeCurrencyAmount(priceInPence, currencyCode, undefined); // PPP already applied
+      const stripeCurrency = getStripeCurrencyCode(countryCode);
+      
+      // Get base URL
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'https://humanmetrix.co.uk';
+      
+      // Create Stripe Checkout Session
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: stripeCurrency,
+            product_data: {
+              name: productName,
+              description: `Immediate access to your detailed assessment results with ${discountPercent}% discount`,
+            },
+            unit_amount: stripeAmount,
+          },
+          quantity: 1,
+        }],
+        success_url: `${baseUrl}/b2b-payment-callback?session_id={CHECKOUT_SESSION_ID}&b2b_session=${sessionId}`,
+        cancel_url: `${baseUrl}/b2b-results?session=${sessionId}&country=${countryCode}`,
+        metadata: {
+          b2b_session_id: sessionId,
+          partner_id: session.partnerId,
+          assessment_type: session.assessmentType,
+          is_bundle: isBundle.toString(),
+          country_code: countryCode,
+          payment_type: 'b2b_results_unlock',
+        },
+        customer_email: session.externalEmail || undefined,
+      });
+      
+      console.log(`[B2B Checkout] Created session ${checkoutSession.id} for B2B session ${sessionId}, amount: ${stripeAmount} ${stripeCurrency}`);
+      
+      res.json({
+        checkoutUrl: checkoutSession.url,
+        checkoutSessionId: checkoutSession.id,
+      });
+    } catch (error) {
+      console.error("Error creating B2B checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // POST /api/b2b/process-payment - Process B2B results payment after Stripe callback
+  app.post("/api/b2b/process-payment", async (req: Request, res: Response) => {
+    try {
+      const { stripeSessionId, b2bSessionId } = req.body;
+      
+      if (!stripeSessionId || !b2bSessionId) {
+        return res.status(400).json({ error: "Missing session IDs" });
+      }
+      
+      // Verify Stripe payment
+      const checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      
+      if (checkoutSession.payment_status !== 'paid') {
+        return res.status(400).json({ error: "Payment not completed" });
+      }
+      
+      // Verify metadata matches
+      if (checkoutSession.metadata?.b2b_session_id !== b2bSessionId) {
+        return res.status(400).json({ error: "Session ID mismatch" });
+      }
+      
+      // Get B2B session
+      const session = await storage.getAssessmentSession(b2bSessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Check if already processed
+      if ((session as any).resultsPaymentStatus === 'paid') {
+        return res.json({ 
+          success: true, 
+          message: "Already processed",
+          resultsUrl: `/embed/assessment?session=${b2bSessionId}&showResults=true`
+        });
+      }
+      
+      // Update session with payment info - payment fields first, delivery status after email success
+      const now = new Date();
+      const isBundle = checkoutSession.metadata?.is_bundle === 'true';
+      
+      // First update: Mark payment as complete but delivery as pending
+      await storage.updateAssessmentSession(b2bSessionId, {
+        // New release fields
+        resultsReleaseStatus: 'released',
+        resultsReleasedAt: now,
+        // Legacy fields - mark paid but NOT delivered yet
+        resultsPaymentStatus: 'paid',
+        // Payment tracking
+        resultsPaidAt: now,
+        resultsPaymentAmount: checkoutSession.amount_total,
+        resultsPaymentCurrency: checkoutSession.currency?.toUpperCase(),
+      } as any);
+      
+      console.log(`[B2B Payment] Successfully processed payment for session ${b2bSessionId}, isBundle: ${isBundle}`);
+      
+      // Send immediate results notification email
+      const partner = await storage.getPartnerAccount(session.partnerId);
+      let emailSent = false;
+      
+      if (session.externalEmail) {
+        try {
+          const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+            : 'https://humanmetrix.co.uk';
+          const resultsUrl = `${baseUrl}/embed/assessment?session=${b2bSessionId}&showResults=true`;
+          
+          const { sendB2BResultsUnlockedEmail } = await import("./email");
+          const emailResult = await sendB2BResultsUnlockedEmail(
+            session.externalEmail,
+            session.assessmentType.toUpperCase(),
+            partner?.companyName || partner?.name || 'HumanMetrix Partner',
+            resultsUrl
+          );
+          
+          if (emailResult.success) {
+            emailSent = true;
+            console.log(`[B2B Payment] Sent results unlocked email to ${session.externalEmail}`);
+          } else {
+            throw new Error('Email send failed');
+          }
+        } catch (emailError) {
+          console.error(`[B2B Payment] Failed to send results email:`, emailError);
+          // Track failed attempt for scheduler retry
+          await storage.updateAssessmentSession(b2bSessionId, {
+            resultsDeliveryStatus: 'pending',
+            resultsDeliveryAttemptCount: ((session as any).resultsDeliveryAttemptCount || 0) + 1,
+            lastResultsDeliveryAttemptAt: now,
+          } as any);
+        }
+      }
+      
+      // Only update delivery status to 'sent' after successful email
+      if (emailSent) {
+        await storage.updateAssessmentSession(b2bSessionId, {
+          resultsDeliveryStatus: 'sent',
+          resultsEmailSentAt: now,
+        } as any);
+      }
+      
+      res.json({
+        success: true,
+        message: "Results unlocked successfully",
+        resultsUrl: `/embed/assessment?session=${b2bSessionId}&showResults=true`
+      });
+    } catch (error) {
+      console.error("Error processing B2B payment:", error);
+      res.status(500).json({ error: "Failed to process payment" });
+    }
+  });
 }
 
 function getBaseUrl(req: Request): string {
