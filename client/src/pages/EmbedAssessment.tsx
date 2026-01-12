@@ -588,6 +588,51 @@ export default function EmbedAssessment() {
     const accentColor = branding?.accentColor || '#06b6d4';
     const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
     
+    // Simplified completion screen for test sessions
+    if (session?.isTestSession) {
+      return (
+        <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-test">
+          <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
+            <CardContent className="pt-6 text-center">
+              {branding?.logoUrl && (
+                <img 
+                  src={branding.logoUrl} 
+                  alt={displayName}
+                  className="h-10 max-w-[150px] object-contain mx-auto mb-4"
+                />
+              )}
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Test Complete</h2>
+              <p className={`${textSecondary} mb-4`}>The assessment has been completed successfully.</p>
+              
+              <div className={`${bgCardAlt} p-4 rounded-lg border border-amber-500/30`}>
+                <div className="flex items-center justify-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <p className="text-sm text-amber-500 font-medium">Developer Test Mode</p>
+                </div>
+                <p className={`text-xs ${textMuted} mt-2`}>
+                  This was a test session. No billing occurred and no emails were sent.
+                  In production, candidates will receive payment links to access their results.
+                </p>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+                <span className={`text-xs ${textMuted}`}>Powered by</span>
+                <div className="flex items-center gap-1.5">
+                  <img 
+                    src="/assets/humanmetrix-logo.png" 
+                    alt="HumanMetrix" 
+                    className="h-5 w-5 object-contain"
+                  />
+                  <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
     // Calculate 30-day free unlock date
     const freeUnlockDate = new Date();
     freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
@@ -706,184 +751,184 @@ export default function EmbedAssessment() {
               </ul>
             </div>
 
-            {/* Email Verification Flow */}
-            <div className="space-y-4">
-              {/* Test Mode Indicator */}
-              {session?.isTestSession && (
-                <div className={`${bgCardAlt} p-3 rounded-lg border border-amber-500/30`}>
+            {/* Test Mode - Simplified Start Flow */}
+            {session?.isTestSession ? (
+              <div className="space-y-4">
+                <div className={`${bgCardAlt} p-4 rounded-lg border border-amber-500/30`}>
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-amber-500" />
                     <p className="text-sm text-amber-500 font-medium">Developer Test Mode</p>
                   </div>
-                  <p className={`text-xs ${textMuted} mt-1`}>
-                    Email verification is disabled. This session will not be billed.
+                  <p className={`text-xs ${textMuted} mt-2`}>
+                    This is a test session. Email verification and billing are disabled. 
+                    Use this to validate your integration before going live.
                   </p>
                 </div>
-              )}
-
-              {/* Step 1: Email Input - Only for non-test sessions */}
-              {!session?.isTestSession && verificationStep === "email" && (
-                <div className="space-y-2">
-                  <Label htmlFor="candidate-email" className={textPrimary}>
-                    Your Email Address <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="candidate-email"
-                    type="email"
-                    placeholder="Enter your email to receive your results"
-                    value={candidateEmail}
-                    onChange={(e) => {
-                      setCandidateEmail(e.target.value);
-                      if (emailError) setEmailError("");
-                    }}
-                    className={`${inputBg} ${emailError ? 'border-red-500' : ''}`}
-                    data-testid="input-candidate-email"
-                  />
-                  {emailError && (
-                    <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
-                  )}
-                  <p className={`text-xs ${textMuted}`}>
-                    We'll send a verification code to confirm your email address.
-                  </p>
-                  <Button
-                    onClick={sendVerificationCode}
-                    className="w-full"
-                    style={{ backgroundColor: primaryColor }}
-                    disabled={isSendingCode}
-                    data-testid="button-send-code"
-                  >
-                    {isSendingCode ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending Code...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send Verification Code
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {/* Step 2: Verification Code Input - Only for non-test sessions */}
-              {!session?.isTestSession && verificationStep === "code" && (
-                <div className="space-y-3">
-                  <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className={`text-sm ${textPrimary}`}>Code sent to</p>
-                      <p className={`text-sm font-medium ${textSecondary}`}>{candidateEmail}</p>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="ml-auto text-xs"
-                      onClick={() => {
-                        setVerificationStep("email");
-                        setVerificationCode("");
-                        setCodeError("");
-                      }}
-                      data-testid="button-change-email"
-                    >
-                      Change
-                    </Button>
-                  </div>
-                  
-                  <Label htmlFor="verification-code" className={textPrimary}>
-                    Enter Verification Code
-                  </Label>
-                  <Input
-                    id="verification-code"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="Enter 6-digit code"
-                    value={verificationCode}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setVerificationCode(value);
-                      if (codeError) setCodeError("");
-                    }}
-                    className={`${inputBg} text-center text-2xl tracking-widest font-mono ${codeError ? 'border-red-500' : ''}`}
-                    data-testid="input-verification-code"
-                  />
-                  {codeError && (
-                    <p className="text-sm text-red-500" data-testid="text-code-error">{codeError}</p>
-                  )}
-                  
-                  <Button
-                    onClick={verifyEmailCode}
-                    className="w-full"
-                    style={{ backgroundColor: primaryColor }}
-                    disabled={isVerifying || verificationCode.length !== 6}
-                    data-testid="button-verify-code"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify Email"
-                    )}
-                  </Button>
-                  
-                  <div className="flex items-center justify-center gap-2">
-                    <span className={`text-sm ${textMuted}`}>Didn't receive the code?</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={sendVerificationCode}
-                      disabled={resendCooldown > 0 || isSendingCode}
-                      className="text-sm underline"
-                      data-testid="button-resend-code"
-                    >
-                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Email Verified - Ready to Start (non-test sessions) */}
-              {!session?.isTestSession && verificationStep === "verified" && (
-                <div className="space-y-3">
-                  <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className={`text-sm font-medium ${textPrimary}`}>Email Verified</p>
-                      <p className={`text-sm ${textSecondary}`}>{candidateEmail}</p>
-                    </div>
-                  </div>
-                  
-                  <p className={`text-xs ${textMuted}`}>
-                    After completing the assessment, you'll receive a payment link to view your results immediately, or you can wait 30 days for free access.
-                  </p>
-                  
-                  <Button
-                    onClick={startAssessment}
-                    className="w-full"
-                    style={{ backgroundColor: primaryColor }}
-                    data-testid="button-start-assessment"
-                  >
-                    Start Assessment
-                  </Button>
-                </div>
-              )}
-
-              {/* Test Mode - Direct Start Button (no email verification) */}
-              {session?.isTestSession && (
+                
                 <Button
                   onClick={startAssessment}
                   className="w-full"
                   style={{ backgroundColor: primaryColor }}
                   data-testid="button-start-assessment-test"
                 >
-                  Start Assessment (Test Mode)
+                  Start Test
                 </Button>
-              )}
-            </div>
+              </div>
+            ) : (
+              /* Production Mode - Email Verification Flow */
+              <div className="space-y-4">
+                {/* Step 1: Email Input */}
+                {verificationStep === "email" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="candidate-email" className={textPrimary}>
+                      Your Email Address <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="candidate-email"
+                      type="email"
+                      placeholder="Enter your email to receive your results"
+                      value={candidateEmail}
+                      onChange={(e) => {
+                        setCandidateEmail(e.target.value);
+                        if (emailError) setEmailError("");
+                      }}
+                      className={`${inputBg} ${emailError ? 'border-red-500' : ''}`}
+                      data-testid="input-candidate-email"
+                    />
+                    {emailError && (
+                      <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
+                    )}
+                    <p className={`text-xs ${textMuted}`}>
+                      We'll send a verification code to confirm your email address.
+                    </p>
+                    <Button
+                      onClick={sendVerificationCode}
+                      className="w-full"
+                      style={{ backgroundColor: primaryColor }}
+                      disabled={isSendingCode}
+                      data-testid="button-send-code"
+                    >
+                      {isSendingCode ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending Code...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Verification Code
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Step 2: Verification Code Input */}
+                {verificationStep === "code" && (
+                  <div className="space-y-3">
+                    <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className={`text-sm ${textPrimary}`}>Code sent to</p>
+                        <p className={`text-sm font-medium ${textSecondary}`}>{candidateEmail}</p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-auto text-xs"
+                        onClick={() => {
+                          setVerificationStep("email");
+                          setVerificationCode("");
+                          setCodeError("");
+                        }}
+                        data-testid="button-change-email"
+                      >
+                        Change
+                      </Button>
+                    </div>
+                    
+                    <Label htmlFor="verification-code" className={textPrimary}>
+                      Enter Verification Code
+                    </Label>
+                    <Input
+                      id="verification-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setVerificationCode(value);
+                        if (codeError) setCodeError("");
+                      }}
+                      className={`${inputBg} text-center text-2xl tracking-widest font-mono ${codeError ? 'border-red-500' : ''}`}
+                      data-testid="input-verification-code"
+                    />
+                    {codeError && (
+                      <p className="text-sm text-red-500" data-testid="text-code-error">{codeError}</p>
+                    )}
+                    
+                    <Button
+                      onClick={verifyEmailCode}
+                      className="w-full"
+                      style={{ backgroundColor: primaryColor }}
+                      disabled={isVerifying || verificationCode.length !== 6}
+                      data-testid="button-verify-code"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        "Verify Email"
+                      )}
+                    </Button>
+                    
+                    <div className="flex items-center justify-center gap-2">
+                      <span className={`text-sm ${textMuted}`}>Didn't receive the code?</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={sendVerificationCode}
+                        disabled={resendCooldown > 0 || isSendingCode}
+                        className="text-sm underline"
+                        data-testid="button-resend-code"
+                      >
+                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Email Verified - Ready to Start */}
+                {verificationStep === "verified" && (
+                  <div className="space-y-3">
+                    <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className={`text-sm font-medium ${textPrimary}`}>Email Verified</p>
+                        <p className={`text-sm ${textSecondary}`}>{candidateEmail}</p>
+                      </div>
+                    </div>
+                    
+                    <p className={`text-xs ${textMuted}`}>
+                      After completing the assessment, you'll receive a payment link to view your results immediately, or you can wait 30 days for free access.
+                    </p>
+                    
+                    <Button
+                      onClick={startAssessment}
+                      className="w-full"
+                      style={{ backgroundColor: primaryColor }}
+                      data-testid="button-start-assessment"
+                    >
+                      Start Assessment
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
