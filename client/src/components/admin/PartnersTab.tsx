@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, ChevronDown, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -1888,7 +1888,7 @@ export default function PartnersTab() {
                       ) : (
                         <span className="text-slate-400">Select country...</span>
                       )}
-                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                     {countryDropdownOpen && (
                       <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-700 bg-slate-800 shadow-lg">
@@ -2004,7 +2004,7 @@ export default function PartnersTab() {
                         ) : (
                           <span className="text-slate-400">+44</span>
                         )}
-                        <Search className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                        <ChevronDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                       {phoneCodeDropdownOpen && (
                         <div className="absolute z-50 mt-1 w-[280px] rounded-md border border-slate-700 bg-slate-800 shadow-lg">
