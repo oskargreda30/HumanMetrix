@@ -312,6 +312,7 @@ export interface IStorage {
   getUsageEventsByPartner(partnerId: string, startDate?: Date, endDate?: Date): Promise<UsageEvent[]>;
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
+  getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean })[]>;
   getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
   getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]>;
   
@@ -1797,6 +1798,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(usageEvents.partnerId, partnerId))
       .orderBy(desc(usageEvents.createdAt))
       .limit(limit);
+  }
+
+  async getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean })[]> {
+    const events = await db
+      .select({
+        id: usageEvents.id,
+        partnerId: usageEvents.partnerId,
+        partnerOrganisationId: usageEvents.partnerOrganisationId,
+        apiKeyId: usageEvents.apiKeyId,
+        sessionId: usageEvents.sessionId,
+        eventType: usageEvents.eventType,
+        assessmentType: usageEvents.assessmentType,
+        billable: usageEvents.billable,
+        billedAmount: usageEvents.billedAmount,
+        stripeUsageRecordId: usageEvents.stripeUsageRecordId,
+        metadata: usageEvents.metadata,
+        createdAt: usageEvents.createdAt,
+        isTestMode: sql<boolean>`COALESCE(${assessmentSessions.isTestSession}, false)`.as('is_test_mode'),
+      })
+      .from(usageEvents)
+      .leftJoin(assessmentSessions, eq(usageEvents.sessionId, assessmentSessions.id))
+      .where(eq(usageEvents.partnerId, partnerId))
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(limit);
+    
+    return events.map(e => ({
+      ...e,
+      isTestMode: Boolean(e.isTestMode),
+    }));
   }
 
   async getApiKeysByPartner(partnerId: string): Promise<PartnerApiKey[]> {

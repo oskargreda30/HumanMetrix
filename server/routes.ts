@@ -10885,7 +10885,8 @@ Format your response as JSON with this structure:
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       
       const usage = await storage.getUsageSummaryByPartner(partner.id, startOfMonth, endOfMonth);
-      const recentEvents = await storage.getRecentUsageEvents(partner.id, 100);
+      // Use enriched version that includes isTestMode from session data
+      const recentEvents = await storage.getRecentUsageEventsEnriched(partner.id, 100);
       
       res.json({
         period: { start: startOfMonth, end: endOfMonth },
