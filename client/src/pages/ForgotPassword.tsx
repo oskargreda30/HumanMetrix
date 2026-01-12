@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { isValidEmail } from "@/lib/validation";
 import { ArrowLeft, Mail } from "lucide-react";
 
 export default function ForgotPassword() {
@@ -18,11 +19,22 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email format
+    if (!isValidEmail(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       await apiRequest("POST", "/api/request-password-reset", {
-        email,
+        email: email.trim(),
       });
       
       setEmailSent(true);

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, ArrowRight, CheckCircle, Sparkles } from "lucide-react";
+import { isValidEmail } from "@/lib/validation";
 import { SEO } from "@/lib/seo";
 
 export default function Subscribe() {
@@ -44,7 +45,7 @@ export default function Subscribe() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
+    if (!isValidEmail(email)) {
       toast({
         title: "Invalid email",
         description: "Please enter a valid email address.",
@@ -52,7 +53,7 @@ export default function Subscribe() {
       });
       return;
     }
-    subscribeMutation.mutate(email);
+    subscribeMutation.mutate(email.trim());
   };
 
   return (

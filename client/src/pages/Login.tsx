@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Eye, EyeOff } from "lucide-react";
+import { isValidEmail } from "@/lib/validation";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -69,11 +70,32 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email format
+    if (!isValidEmail(loginEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate password is provided
+    if (!loginPassword.trim()) {
+      toast({
+        title: "Password required",
+        description: "Please enter your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       await apiRequest("POST", "/api/login", {
-        email: loginEmail,
+        email: loginEmail.trim(),
         password: loginPassword,
       });
       
