@@ -2159,11 +2159,11 @@ export function registerPartnerRoutes(app: Express) {
       // 25% discount for single assessment
       const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
       
-      // Get currency for display - both original and discounted should show PPP-adjusted prices
-      const currencyCode = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
+      // Get currency config for display - both original and discounted should show PPP-adjusted prices
+      const userCurrency = getCurrencyForCountry(countryCode);
       // Format PPP-adjusted original (pre-discount) price - skip double PPP adjustment
-      const originalPriceDisplay = formatPrice(pppAdjustedPricePence, currencyCode, { countryCode, skipPPPAdjustment: true });
-      const discountedPriceDisplay = formatPrice(discountedPricePence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
+      const discountedPriceDisplay = formatPrice(discountedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
       
       // Calculate bundle pricing (all 4 assessments)
       const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
@@ -2171,8 +2171,8 @@ export function registerPartnerRoutes(app: Express) {
       const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode);
       const bundleDiscountedPence = Math.round(bundlePppAdjustedPence * 0.60); // 40% discount for bundle
       // Format PPP-adjusted bundle prices - skip double PPP adjustment
-      const bundleOriginalDisplay = formatPrice(bundlePppAdjustedPence, currencyCode, { countryCode, skipPPPAdjustment: true });
-      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, currencyCode, { countryCode, skipPPPAdjustment: true });
+      const bundleOriginalDisplay = formatPrice(bundlePppAdjustedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
+      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
       
       // Calculate free release date
       const releaseDate = (session as any).resultsReleaseScheduledAt || (session as any).resultsUnlockAt;
@@ -2184,7 +2184,7 @@ export function registerPartnerRoutes(app: Express) {
         partnerName: partner?.companyName || partner?.name || 'Partner',
         completedAt: session.completedAt,
         countryCode,
-        currencyCode,
+        currencyCode: userCurrency.code,
         pricing: {
           single: {
             originalPricePence: pppAdjustedPricePence,
