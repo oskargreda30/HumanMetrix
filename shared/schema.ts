@@ -674,6 +674,11 @@ export const partnerAccounts = pgTable("partner_accounts", {
   brandingWelcomeTitle: varchar("branding_welcome_title"), // Custom welcome title for candidates
   brandingWelcomeMessage: text("branding_welcome_message"), // Custom welcome message
   brandingCompanyDisplayName: varchar("branding_company_display_name"), // Display name shown to candidates (can differ from companyName)
+  // Terms acceptance tracking
+  termsAccepted: boolean("terms_accepted").notNull().default(false), // EULA and Privacy Policy accepted
+  termsAcceptedAt: timestamp("terms_accepted_at"), // When terms were accepted
+  // Tour completion tracking
+  tourCompleted: boolean("tour_completed").notNull().default(false), // Dashboard tour has been completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
