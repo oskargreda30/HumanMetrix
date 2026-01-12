@@ -695,6 +695,10 @@ export default function PartnersTab() {
                   <Key className="h-4 w-4 mr-1" />
                   Manage API Keys
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => setDeleteConfirmPartner(detailPartner)} className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20" data-testid="button-delete-partner-detail">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
               </div>
             </div>
           </CardHeader>

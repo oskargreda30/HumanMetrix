@@ -1801,6 +1801,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean })[]> {
+    // Join with partner_api_keys to determine if the API key was a test key
     const events = await db
       .select({
         id: usageEvents.id,
@@ -1815,10 +1816,10 @@ export class DatabaseStorage implements IStorage {
         stripeUsageRecordId: usageEvents.stripeUsageRecordId,
         metadata: usageEvents.metadata,
         createdAt: usageEvents.createdAt,
-        isTestMode: sql<boolean>`COALESCE(${assessmentSessions.isTestSession}, false)`.as('is_test_mode'),
+        isTestMode: sql<boolean>`COALESCE(${partnerApiKeys.environment} = 'test', false)`.as('is_test_mode'),
       })
       .from(usageEvents)
-      .leftJoin(assessmentSessions, eq(usageEvents.sessionId, assessmentSessions.id))
+      .leftJoin(partnerApiKeys, eq(usageEvents.apiKeyId, partnerApiKeys.id))
       .where(eq(usageEvents.partnerId, partnerId))
       .orderBy(desc(usageEvents.createdAt))
       .limit(limit);
