@@ -346,6 +346,8 @@ export default function PartnersTab() {
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [countryOpen, setCountryOpen] = useState(false);
   const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [phoneCodeSearch, setPhoneCodeSearch] = useState("");
   
   const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
   
@@ -432,6 +434,8 @@ export default function PartnersTab() {
       setSelectedPhoneCountry("GB");
       setPhoneNumber("");
       setSelectedCurrency("GBP");
+      setCountrySearch("");
+      setPhoneCodeSearch("");
       toast({ title: "Partner created", description: "New partner account has been created." });
     },
     onError: (error: any) => {
@@ -1818,7 +1822,10 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <Popover open={countryOpen} onOpenChange={(open) => {
+                    setCountryOpen(open);
+                    if (!open) setCountrySearch("");
+                  }}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -1839,8 +1846,13 @@ export default function PartnersTab() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700" align="start">
-                      <Command className="bg-slate-800">
-                        <CommandInput placeholder="Search country..." className="text-white" />
+                      <Command className="bg-slate-800" shouldFilter={true}>
+                        <CommandInput 
+                          placeholder="Search country..." 
+                          className="text-white" 
+                          value={countrySearch}
+                          onValueChange={setCountrySearch}
+                        />
                         <CommandList>
                           <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                           <CommandGroup>
@@ -1851,6 +1863,7 @@ export default function PartnersTab() {
                                 onSelect={() => {
                                   handleCountryChange(country.code);
                                   setCountryOpen(false);
+                                  setCountrySearch("");
                                 }}
                                 className="text-white hover:bg-slate-700 cursor-pointer"
                               >
@@ -1871,7 +1884,10 @@ export default function PartnersTab() {
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
                   <div className="flex gap-2">
-                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen}>
+                    <Popover open={phoneCodeOpen} onOpenChange={(open) => {
+                      setPhoneCodeOpen(open);
+                      if (!open) setPhoneCodeSearch("");
+                    }}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -1892,8 +1908,13 @@ export default function PartnersTab() {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700" align="start">
-                        <Command className="bg-slate-800">
-                          <CommandInput placeholder="Search country code..." className="text-white" />
+                        <Command className="bg-slate-800" shouldFilter={true}>
+                          <CommandInput 
+                            placeholder="Search country code..." 
+                            className="text-white"
+                            value={phoneCodeSearch}
+                            onValueChange={setPhoneCodeSearch}
+                          />
                           <CommandList>
                             <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                             <CommandGroup>
@@ -1904,6 +1925,7 @@ export default function PartnersTab() {
                                   onSelect={() => {
                                     handlePhoneCountryChange(country.code);
                                     setPhoneCodeOpen(false);
+                                    setPhoneCodeSearch("");
                                   }}
                                   className="text-white hover:bg-slate-700 cursor-pointer"
                                 >
@@ -1946,7 +1968,7 @@ export default function PartnersTab() {
                           <SelectItem 
                             key={currency.code} 
                             value={currency.code} 
-                            className="text-white"
+                            className="text-white hover:bg-slate-700 focus:bg-slate-700 cursor-pointer"
                           >
                             {currency.code} ({currency.symbol}) - {currency.name}
                           </SelectItem>
