@@ -526,7 +526,21 @@ export function registerPartnerRoutes(app: Express) {
           lastActivityAt: session.lastActivityAt || null,
           // Test mode flag - skip email verification for developer testing
           isTestSession,
+          // Results status for determining if results can be shown
+          resultsPaymentStatus: session.resultsPaymentStatus,
+          resultsReleaseStatus: session.resultsReleaseStatus,
         };
+        
+        // Include results data if payment is completed or results are released
+        const canViewResults = session.resultsPaymentStatus === 'paid' || session.resultsReleaseStatus === 'released';
+        if (canViewResults && session.status === 'completed') {
+          response.results = {
+            scores: session.scores,
+            totalScore: session.totalScore,
+            percentile: session.percentile,
+            evaluations: session.evaluations,
+          };
+        }
         
         if (partner?.brandingEnabled) {
           response.branding = {

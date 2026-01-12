@@ -38,6 +38,14 @@ interface SessionData {
   lastAnsweredIndex?: number | null;
   lastActivityAt?: string | null;
   isTestSession?: boolean;
+  resultsPaymentStatus?: string;
+  resultsReleaseStatus?: string;
+  results?: {
+    scores: Record<string, any>;
+    totalScore: number;
+    percentile: number;
+    evaluations?: Record<string, any>;
+  };
 }
 
 type Question = {
@@ -91,6 +99,7 @@ export default function EmbedAssessment() {
   const params = new URLSearchParams(searchString);
   const sessionId = params.get("session");
   const theme = params.get("theme") || "dark";
+  const showResultsParam = params.get("showResults") === "true";
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
@@ -588,6 +597,119 @@ export default function EmbedAssessment() {
     const branding = session?.branding;
     const accentColor = branding?.accentColor || '#06b6d4';
     const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
+    
+    // Check if results should be shown (payment completed or results released)
+    const canViewResults = session?.resultsPaymentStatus === 'paid' || session?.resultsReleaseStatus === 'released';
+    const hasResults = session?.results && session.results.totalScore !== undefined;
+    
+    // Show actual results if payment is complete and showResults param is set
+    if ((showResultsParam || canViewResults) && hasResults) {
+      const results = session.results;
+      const assessmentType = session.assessmentType;
+      const assessmentName = getAssessmentDisplayName(assessmentType);
+      
+      return (
+        <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-results">
+          <div className="max-w-4xl mx-auto">
+            <Card className={bgCard}>
+              <CardHeader className="text-center border-b border-slate-700/30 pb-6">
+                {branding?.logoUrl && (
+                  <img 
+                    src={branding.logoUrl} 
+                    alt={displayName}
+                    className="h-10 max-w-[150px] object-contain mx-auto mb-4"
+                  />
+                )}
+                <Badge className="mx-auto mb-3 bg-green-500/20 text-green-400 border-green-500/30">
+                  Results Unlocked
+                </Badge>
+                <CardTitle className={textPrimary}>{assessmentName} Results</CardTitle>
+                <p className={`${textSecondary} text-sm mt-2`}>
+                  Your assessment has been scored and your results are ready.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
+                    <p className={`text-sm ${textMuted} mb-2`}>Overall Score</p>
+                    <p className="text-4xl font-bold" style={{ color: accentColor }}>
+                      {results.totalScore}%
+                    </p>
+                  </div>
+                  <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
+                    <p className={`text-sm ${textMuted} mb-2`}>Percentile</p>
+                    <p className="text-4xl font-bold" style={{ color: accentColor }}>
+                      {results.percentile}%
+                    </p>
+                    <p className={`text-xs ${textMuted} mt-1`}>
+                      You scored better than {results.percentile}% of test takers
+                    </p>
+                  </div>
+                </div>
+                
+                {results.scores && Object.keys(results.scores).length > 0 && (
+                  <div className="mb-8">
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Score Breakdown</h3>
+                    <div className="space-y-4">
+                      {Object.entries(results.scores).map(([category, score]) => (
+                        <div key={category} className={`${bgCardAlt} rounded-lg p-4`}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className={`font-medium ${textPrimary} capitalize`}>
+                              {category.replace(/_/g, ' ')}
+                            </span>
+                            <span className="font-semibold" style={{ color: accentColor }}>
+                              {typeof score === 'number' ? `${score}%` : String(score)}
+                            </span>
+                          </div>
+                          {typeof score === 'number' && (
+                            <Progress value={score} className="h-2" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {results.evaluations && Object.keys(results.evaluations).length > 0 && (
+                  <div>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Detailed Evaluations</h3>
+                    <div className="space-y-4">
+                      {Object.entries(results.evaluations).map(([key, evaluation]: [string, any]) => (
+                        <div key={key} className={`${bgCardAlt} rounded-lg p-4`}>
+                          <h4 className={`font-medium ${textPrimary} mb-2 capitalize`}>
+                            {key.replace(/_/g, ' ')}
+                          </h4>
+                          {typeof evaluation === 'object' && evaluation?.feedback && (
+                            <p className={`text-sm ${textSecondary}`}>{evaluation.feedback}</p>
+                          )}
+                          {typeof evaluation === 'object' && evaluation?.score !== undefined && (
+                            <p className="text-sm mt-2" style={{ color: accentColor }}>
+                              Score: {evaluation.score}%
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-8 pt-6 border-t border-slate-700/30 flex items-center justify-center gap-2">
+                  <span className={`text-xs ${textMuted}`}>Powered by</span>
+                  <div className="flex items-center gap-1.5">
+                    <img 
+                      src="/assets/humanmetrix-logo.png" 
+                      alt="HumanMetrix" 
+                      className="h-5 w-5 object-contain"
+                    />
+                    <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
     
     // Simplified completion screen for test sessions
     if (session?.isTestSession) {
