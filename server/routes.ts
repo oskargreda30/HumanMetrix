@@ -1425,9 +1425,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json({ received: true, alreadyProcessed: true });
           }
           
-          // Mark as paid
+          // Mark as paid - keep delivery status as pending until email is sent
           await storage.updateAssessmentSession(sessionId, {
             resultsPaymentStatus: 'paid',
+            resultsReleaseStatus: 'paid', // Mark as paid (no longer waiting for 30-day release)
             resultsPaidAt: new Date(),
             resultsPaymentAmount: Math.round((paymentIntent.amount || 0) * 100),
             resultsPaymentCurrency: (paymentIntent.currency || 'gbp').toLowerCase(),
@@ -1462,13 +1463,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 pdfFilename: `${assessmentName.replace(/\s/g, '_')}_Results.pdf`,
               });
               
+              // Email sent successfully - update delivery status
               await storage.updateAssessmentSession(sessionId, {
                 resultsEmailSentAt: new Date(),
+                resultsDeliveryStatus: 'sent',
+                resultsReleasedAt: new Date(),
               } as any);
               
               console.log(`[Airwallex Webhook] ✓ Results email sent to ${session.externalEmail}`);
             } catch (emailError) {
               console.error(`[Airwallex Webhook] Failed to send B2B results email:`, emailError);
+              // Track failed attempt so scheduler can retry
+              const currentAttempts = (session as any).resultsDeliveryAttemptCount || 0;
+              await storage.updateAssessmentSession(sessionId, {
+                lastResultsDeliveryAttemptAt: new Date(),
+                resultsDeliveryAttemptCount: currentAttempts + 1,
+              } as any);
             }
           }
         }

@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT } from "@shared/schema";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -750,6 +750,10 @@ export function registerPartnerRoutes(app: Express) {
         const resultsReleaseScheduledAt = new Date(now);
         resultsReleaseScheduledAt.setDate(resultsReleaseScheduledAt.getDate() + 30);
         
+        // Check if this is a test session (created with test API key)
+        const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
+        const isTestSession = apiKey?.isTestKey === true;
+        
         await storage.updateAssessmentSession(sessionId, {
           status: "completed",
           answers,
@@ -758,8 +762,15 @@ export function registerPartnerRoutes(app: Express) {
           percentile,
           evaluations,
           completedAt: now,
+          // New release fields
           resultsReleaseScheduledAt,
           resultsReleaseStatus: "pending",
+          // Legacy fields for scheduler compatibility
+          resultsUnlockAt: resultsReleaseScheduledAt,
+          resultsPaymentStatus: "unpaid",
+          resultsDeliveryStatus: "pending",
+          resultsDeliveryAttemptCount: 0,
+          isTestSession,
         } as any);
         
         await trackUsage(
@@ -873,16 +884,20 @@ export function registerPartnerRoutes(app: Express) {
             const userCurrency = getCurrencyForCountry(userCountryCode);
             const currencyCode = COUNTRY_CURRENCY_MAP[userCountryCode.toUpperCase()] || 'GBP';
             
-            // Use PPP-adjusted pricing based on user's location (same as B2C)
-            // Then apply 25% B2B discount on top of PPP-adjusted price
-            const pppAdjustedPricePence = getPPPAdjustedPriceInPence(B2C_RETAIL_PRICE_PER_ASSESSMENT, userCountryCode);
+            // Calculate B2C price: BASE_FEE + per-assessment price (exactly matches B2C pricing)
+            const normalizedType = normalizeAssessmentId(session.assessmentType);
+            const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400; // Default to £4 if unknown
+            const b2cPriceInPence = BASE_FEE + assessmentPrice;
+            
+            // Apply PPP adjustment, then 25% B2B discount
+            const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, userCountryCode);
             const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75); // 25% off PPP-adjusted price
             
             // Format prices in user's local currency using same B2C functions
             const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
             const discountedPriceDisplay = formatPrice(discountedPricePence, userCurrency);
             
-            console.log(`[B2B Pricing] Country: ${userCountryCode}, Currency: ${currencyCode}, PPP: ${pppAdjustedPricePence}p (${originalPriceDisplay}), Discounted: ${discountedPricePence}p (${discountedPriceDisplay})`);
+            console.log(`[B2B Pricing] Assessment: ${normalizedType}, Base: ${BASE_FEE}p + ${assessmentPrice}p = ${b2cPriceInPence}p, Country: ${userCountryCode}, PPP: ${pppAdjustedPricePence}p (${originalPriceDisplay}), Discounted: ${discountedPricePence}p (${discountedPriceDisplay})`);
             
             // Calculate 30-day free unlock date
             const freeUnlockDate = new Date();
@@ -918,13 +933,19 @@ export function registerPartnerRoutes(app: Express) {
             if (allComplete) {
               console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
               
-              // Use PPP-adjusted pricing for bundle (same country code for consistency)
-              const bundlePppAdjustedTotalPence = pppAdjustedPricePence * 4;
+              // Calculate B2C bundle price: BASE_FEE + all 4 assessment prices (exactly matches B2C)
+              const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
+              const bundleB2CPricePence = BASE_FEE + allAssessmentPrices; // £15 + £4 + £5 + £5 + £4 = £33
+              
+              // Apply PPP adjustment, then 40% B2B bundle discount
+              const bundlePppAdjustedTotalPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, userCountryCode);
               const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * 0.60); // 40% off PPP-adjusted total
               
               // Format bundle prices in user's local currency
               const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
               const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
+              
+              console.log(`[B2B Bundle Pricing] Base: ${BASE_FEE}p + Assessments: ${allAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), Discounted: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
               
               // Create bundle payment URL with country code
               const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}`;

@@ -814,15 +814,29 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // Delayed results fields for B2B widget (30-day free release)
+  // Test session flag (prevents emails being sent for test API key sessions)
+  isTestSession: boolean("is_test_session").default(false),
+  // Delayed results delivery fields for B2B widget (30-day free release)
   resultsReleaseScheduledAt: timestamp("results_release_scheduled_at"), // When free results should be auto-emailed (completedAt + 30 days)
   resultsReleasedAt: timestamp("results_released_at"), // When results were actually released (paid or auto)
   resultsReleaseStatus: varchar("results_release_status").default("pending"), // pending, paid, released, cancelled
+  // Legacy fields for scheduler compatibility
+  resultsUnlockAt: timestamp("results_unlock_at"), // When free results become available (30 days after completion)
+  resultsEmailSentAt: timestamp("results_email_sent_at"), // When results email was successfully sent
+  resultsPaymentStatus: varchar("results_payment_status").default("unpaid"), // unpaid, paid
+  resultsDeliveryStatus: varchar("results_delivery_status").default("pending"), // pending, sent, failed
+  resultsDeliveryAttemptCount: integer("results_delivery_attempt_count").default(0), // Number of email delivery attempts
+  lastResultsDeliveryAttemptAt: timestamp("last_results_delivery_attempt_at"), // Last email delivery attempt timestamp
+  // Payment details
+  resultsPaidAt: timestamp("results_paid_at"), // When payment was received
+  resultsPaymentAmount: integer("results_payment_amount"), // Amount paid in pence
+  resultsPaymentCurrency: varchar("results_payment_currency"), // Currency of payment (e.g., 'gbp', 'usd')
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
   index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
   index("idx_assessment_sessions_release").on(table.resultsReleaseStatus, table.resultsReleaseScheduledAt),
+  index("idx_assessment_sessions_unlock").on(table.resultsPaymentStatus, table.resultsUnlockAt),
 ]);
 
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({
