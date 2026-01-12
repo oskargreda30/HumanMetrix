@@ -6987,29 +6987,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get detailed usage stats
+  // Partner self-service: Get detailed usage stats (member+ only)
   app.get("/api/partner/me/usage", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user?.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user?.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
       }
       
       const now = new Date();
@@ -7064,29 +7052,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get billing history (invoices/receipts)
+  // Partner self-service: Get billing history (admin only)
   app.get("/api/partner/me/billing", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user?.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user?.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       // Get all test packages (completed ones are receipts)
@@ -7150,29 +7126,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get credit package pricing converted to partner's currency
+  // Partner self-service: Get credit package pricing (admin only)
   app.get("/api/partner/me/pricing", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user?.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user?.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       // Get exchange rates
@@ -7498,29 +7462,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get settings
+  // Get partner settings (admin only)
   app.get("/api/partner/me/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Find partner account associated with this user's organisation or email
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       
       if (!matchingPartner) {
-        return res.status(404).json({ hasPartnerAccount: false });
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       res.json({
@@ -7553,35 +7505,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Update settings
+  // Update partner settings (admin only)
   app.patch("/api/partner/me/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only admins can change partner settings
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required to modify settings" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const { 
@@ -8703,13 +8637,16 @@ Format your response as JSON with this structure:
 
   // ===== PARTNER ANALYTICS =====
   
-  // Get partner analytics
+  // Get partner analytics (member+ only)
   app.get("/api/partner/me/analytics", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
       }
       
       const period = (req.query.period as 'daily' | 'weekly' | 'monthly') || 'daily';
@@ -8725,13 +8662,16 @@ Format your response as JSON with this structure:
 
   // ===== PARTNER DATA EXPORTS =====
   
-  // Export results as CSV
+  // Export results as CSV (member+ only)
   app.get("/api/partner/me/export/results", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
       }
       
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
@@ -8766,13 +8706,16 @@ Format your response as JSON with this structure:
     }
   });
   
-  // Export usage report as CSV
+  // Export usage report as CSV (member+ only)
   app.get("/api/partner/me/export/usage", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
       }
       
       const events = await storage.getUsageEventsByPartner(partner.id);
@@ -8798,13 +8741,16 @@ Format your response as JSON with this structure:
     }
   });
   
-  // Export billing history as CSV
+  // Export billing as CSV (admin only)
   app.get("/api/partner/me/export/billing", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const packages = await storage.getPartnerTestPackages(partner.id);
@@ -9359,13 +9305,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Get partner activity log
+  // Get partner activity log (member+ only)
   app.get("/api/partner/me/activity-log", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
       }
       
       const limit = parseInt(req.query.limit as string) || 50;
