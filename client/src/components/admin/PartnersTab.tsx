@@ -1724,6 +1724,56 @@ export default function PartnersTab() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Partner Confirmation Dialog (for detail view) */}
+        <Dialog open={!!deleteConfirmPartner} onOpenChange={() => setDeleteConfirmPartner(null)}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+                Delete Partner
+              </DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Are you sure you want to permanently delete this partner account?
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+                <p className="text-white font-medium mb-2">{deleteConfirmPartner?.companyName || deleteConfirmPartner?.name}</p>
+                <p className="text-sm text-slate-400">{deleteConfirmPartner?.email}</p>
+              </div>
+              <p className="text-sm text-red-300">
+                This action cannot be undone. All associated data including API keys, sessions, usage records, and invoices will be permanently deleted.
+              </p>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDeleteConfirmPartner(null)} className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700" data-testid="button-cancel-delete-partner-detail">
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteConfirmPartner && deletePartnerMutation.mutate(deleteConfirmPartner.id)}
+                disabled={deletePartnerMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+                data-testid="button-confirm-delete-partner-detail"
+              >
+                {deletePartnerMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Partner
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
