@@ -8902,17 +8902,14 @@ Format your response as JSON with this structure:
       
       // Send invitation email
       try {
-        const { sendEmail } = await import('./email');
-        await sendEmail({
-          to: email,
-          subject: `You've been invited to join ${partner.companyName} on HumanMetrix`,
-          html: `
-            <h2>Team Invitation</h2>
-            <p>You've been invited to join <strong>${partner.companyName}</strong>'s team on HumanMetrix.</p>
-            <p>Click the link below to accept the invitation:</p>
-            <p><a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://www.humanmetrix.co.uk'}/partner/accept-invite/${inviteToken}">Accept Invitation</a></p>
-            <p>This invitation expires in 7 days.</p>
-          `,
+        const { sendPartnerTeamInvitationEmail } = await import('./email');
+        await sendPartnerTeamInvitationEmail({
+          email: email.toLowerCase(),
+          inviteeName: name || undefined,
+          inviterName: req.user.name || req.user.email,
+          companyName: partner.companyName || 'HumanMetrix Partner',
+          inviteToken,
+          role: role || 'member',
         });
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);

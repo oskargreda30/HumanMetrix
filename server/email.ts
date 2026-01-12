@@ -1961,3 +1961,141 @@ Questions about your results? Contact us at ${baseUrl}/contact
     return { success: false, error: error.message };
   }
 }
+
+// Send partner team invitation email
+export interface PartnerTeamInvitationDetails {
+  email: string;
+  inviteeName?: string;
+  inviterName: string;
+  companyName: string;
+  inviteToken: string;
+  role: string;
+}
+
+export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitationDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Partner team invitation email not sent to ${details.email} - email not configured`);
+    return { success: false, error: 'Email not configured' };
+  }
+  
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : process.env.REPLIT_DOMAINS?.split(',')[0] 
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : 'https://www.humanmetrix.co.uk';
+  
+  const acceptUrl = `${baseUrl}/partner/accept-invite/${details.inviteToken}`;
+  const greeting = details.inviteeName ? `Hello ${details.inviteeName},` : 'Hello,';
+  const roleDisplay = details.role === 'admin' ? 'Administrator' : details.role === 'member' ? 'Team Member' : 'Viewer';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `You've been invited to join ${details.companyName} on HumanMetrix`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f3f4f6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+            .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+            .content { background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; }
+            .invite-badge { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; text-align: center; }
+            .invite-badge span { color: #059669; font-weight: 600; font-size: 14px; }
+            .role-badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .button:hover { background: #0e7490; }
+            .info-section { background: #f0f9ff; border-radius: 8px; padding: 20px; margin: 25px 0; }
+            .info-section h3 { margin: 0 0 12px 0; color: #0369a1; font-size: 16px; }
+            .info-section ul { margin: 0; padding-left: 20px; }
+            .info-section li { margin: 8px 0; color: #0c4a6e; }
+            .warning { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #92400e; font-size: 13px; }
+            .footer { text-align: center; padding: 25px; color: #6b7280; font-size: 14px; background: #f9fafb; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>HumanMetrix</h1>
+              <p>Team Invitation</p>
+            </div>
+            <div class="content">
+              <div class="invite-badge">
+                <span>You've Been Invited!</span>
+              </div>
+              
+              <h2 style="margin-top: 0;">${greeting}</h2>
+              <p><strong>${details.inviterName}</strong> has invited you to join <strong>${details.companyName}</strong>'s team on HumanMetrix.</p>
+              
+              <p>Your role: <span class="role-badge">${roleDisplay}</span></p>
+              
+              <div style="text-align: center;">
+                <a href="${acceptUrl}" class="button">Accept Invitation</a>
+              </div>
+              
+              <div class="info-section">
+                <h3>What You'll Have Access To</h3>
+                <ul>
+                  <li>View assessment results and candidate data</li>
+                  <li>Access analytics and reporting</li>
+                  ${details.role === 'admin' ? '<li>Manage team members and settings</li>' : ''}
+                  ${details.role !== 'viewer' ? '<li>Invite candidates to assessments</li>' : ''}
+                </ul>
+              </div>
+              
+              <div class="warning">
+                <strong>Note:</strong> This invitation will expire in 7 days. Please accept it before then.
+              </div>
+              
+              <p style="margin-top: 25px;">If you have any questions, please contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a>.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
+              <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Team Invitation - HumanMetrix
+
+${greeting}
+
+${details.inviterName} has invited you to join ${details.companyName}'s team on HumanMetrix.
+
+Your role: ${roleDisplay}
+
+Accept the invitation by visiting: ${acceptUrl}
+
+What You'll Have Access To:
+- View assessment results and candidate data
+- Access analytics and reporting
+${details.role === 'admin' ? '- Manage team members and settings\n' : ''}${details.role !== 'viewer' ? '- Invite candidates to assessments\n' : ''}
+
+Note: This invitation will expire in 7 days. Please accept it before then.
+
+If you have any questions, please contact us at hello@humanmetrix.co.uk.
+
+---
+© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
+If you didn't expect this invitation, you can safely ignore this email.
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Partner team invitation email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send partner team invitation email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
