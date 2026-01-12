@@ -504,6 +504,10 @@ export function registerPartnerRoutes(app: Express) {
         
         const partner = await storage.getPartnerAccount(session.partnerId);
         
+        // Check if this session was created with a test API key
+        const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
+        const isTestSession = apiKey?.isTestKey === true;
+        
         const response: any = {
           sessionId: session.id,
           assessmentType: session.assessmentType,
@@ -517,6 +521,8 @@ export function registerPartnerRoutes(app: Express) {
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,
           lastActivityAt: session.lastActivityAt || null,
+          // Test mode flag - skip email verification for developer testing
+          isTestSession,
         };
         
         if (partner?.brandingEnabled) {
@@ -698,25 +704,34 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        // Require verified email before starting (for B2B widget security)
-        if (!candidateEmail || typeof candidateEmail !== 'string') {
-          return res.status(400).json({ error: "Email is required" });
+        // Check if this is a test session (created with test API key)
+        const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
+        const isTestSession = apiKey?.isTestKey === true;
+        
+        // For test sessions, skip email verification requirement
+        if (isTestSession) {
+          console.log(`[Test Session] Skipping email verification for test session ${sessionId}`);
+        } else {
+          // Require verified email before starting (for B2B widget security)
+          if (!candidateEmail || typeof candidateEmail !== 'string') {
+            return res.status(400).json({ error: "Email is required" });
+          }
+          
+          // Normalize email to lowercase for consistent lookup
+          const trimmedEmail = candidateEmail.trim().toLowerCase();
+          
+          // Check if email is verified for this session
+          const verification = await storage.getActiveVerificationCode(trimmedEmail, sessionId);
+          if (!verification || !verification.verified) {
+            return res.status(400).json({ 
+              error: "Email not verified. Please verify your email first.",
+              code: "EMAIL_NOT_VERIFIED"
+            });
+          }
+          
+          // Delete the verification code after use (prevent replay attacks)
+          await storage.deleteEmailVerificationCode(verification.id);
         }
-        
-        // Normalize email to lowercase for consistent lookup
-        const trimmedEmail = candidateEmail.trim().toLowerCase();
-        
-        // Check if email is verified for this session
-        const verification = await storage.getActiveVerificationCode(trimmedEmail, sessionId);
-        if (!verification || !verification.verified) {
-          return res.status(400).json({ 
-            error: "Email not verified. Please verify your email first.",
-            code: "EMAIL_NOT_VERIFIED"
-          });
-        }
-        
-        // Delete the verification code after use (prevent replay attacks)
-        await storage.deleteEmailVerificationCode(verification.id);
         
         // Detect user's country from IP for PPP pricing
         let countryCode = 'GB'; // Default to UK for full pricing
@@ -741,12 +756,13 @@ export function registerPartnerRoutes(app: Express) {
           console.error('[B2B Session] Country detection failed, defaulting to GB:', geoError);
         }
         
-        // Update session with email and country code if provided
+        // Update session with email, country code, and test flag if provided
         const existingMetadata = session.metadata || {};
         const updateData: any = {
           status: "started",
           startedAt: new Date(),
           metadata: { ...existingMetadata, countryCode },
+          isTestSession, // Persist test session flag for downstream endpoints
         };
         if (candidateEmail && typeof candidateEmail === 'string') {
           updateData.externalEmail = candidateEmail.trim();
@@ -894,9 +910,13 @@ export function registerPartnerRoutes(app: Express) {
         const resultsReleaseScheduledAt = new Date(now);
         resultsReleaseScheduledAt.setDate(resultsReleaseScheduledAt.getDate() + 30);
         
-        // Check if this is a test session (created with test API key)
-        const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
-        const isTestSession = apiKey?.isTestKey === true;
+        // Check if this is a test session - prefer stored flag, fallback to API key lookup
+        // This ensures test mode is consistent even if API key lookup fails
+        let isTestSession = session.isTestSession === true;
+        if (!isTestSession && session.apiKeyId) {
+          const apiKey = await storage.getPartnerApiKey(session.apiKeyId);
+          isTestSession = apiKey?.isTestKey === true;
+        }
         
         await storage.updateAssessmentSession(sessionId, {
           status: "completed",
@@ -1028,11 +1048,17 @@ export function registerPartnerRoutes(app: Express) {
         }
         
         // Send B2B congratulatory email with payment link if email is available
+        // Skip email for test sessions (developer testing purposes)
+        if (isTestSession) {
+          console.log(`[Test Session] Skipping congratulatory email for test session ${sessionId}`);
+        }
+        
         // Refresh session to get the email that was saved during start
         const updatedSession = await storage.getAssessmentSession(sessionId);
         const candidateEmail = updatedSession?.externalEmail;
         
-        if (candidateEmail && partner) {
+        // Only send emails for non-test production sessions
+        if (candidateEmail && partner && !isTestSession) {
           try {
             // Generate payment URL for immediate access
             const baseUrl = process.env.REPLIT_DEV_DOMAIN 
@@ -2330,10 +2356,18 @@ export function registerPartnerRoutes(app: Express) {
       console.log(`[B2B Payment] Successfully processed payment for session ${b2bSessionId}, isBundle: ${isBundle}`);
       
       // Send immediate results notification email
+      // Skip email for test sessions (developer testing purposes)
       const partner = await storage.getPartnerAccount(session.partnerId);
       let emailSent = false;
       
-      if (session.externalEmail) {
+      // Check if this is a test session
+      const sessionIsTest = (session as any).isTestSession === true;
+      if (sessionIsTest) {
+        console.log(`[Test Session] Skipping payment success email for test session ${b2bSessionId}`);
+        emailSent = true; // Mark as "sent" to avoid retry attempts
+      }
+      
+      if (session.externalEmail && !sessionIsTest) {
         try {
           const baseUrl = process.env.REPLIT_DEV_DOMAIN 
             ? `https://${process.env.REPLIT_DEV_DOMAIN}`

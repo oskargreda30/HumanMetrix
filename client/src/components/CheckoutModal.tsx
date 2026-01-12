@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +80,7 @@ export default function CheckoutModal({
   const [isExistingUser, setIsExistingUser] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
 
   // Helper to get CSRF token from cookie
   const getCsrfToken = (): string | null => {
@@ -131,6 +142,7 @@ export default function CheckoutModal({
       setPassword("");
       setIsExistingUser(false);
       setIsProcessing(false);
+      setShowEmailConfirmation(false);
       return;
     }
     
@@ -154,20 +166,16 @@ export default function CheckoutModal({
     setSelectedAssessments(newSelected);
   };
 
-  const handleProceed = async () => {
+  // Validation logic - returns true if valid, false otherwise
+  const validateForm = (): boolean => {
     if (selectedAssessments.size === 0) {
       toast({
         title: "No assessments selected",
         description: "Please select at least one assessment to continue.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
-
-    // Use logged-in user's info if authenticated, otherwise use form data
-    const userFirstName = isAuthenticated && user ? user.firstName : firstName.trim();
-    const userLastName = isAuthenticated && user ? user.lastName : lastName.trim();
-    const userEmail = isAuthenticated && user ? user.email : email.trim();
 
     // Only validate form fields if not authenticated
     if (!isAuthenticated) {
@@ -176,7 +184,7 @@ export default function CheckoutModal({
         if (!password.trim()) {
           onOpenChange(false); // Close the modal
           window.location.href = `/login?email=${encodeURIComponent(email.trim())}&existing=true`;
-          return;
+          return false;
         }
       } else {
         // New user needs all fields
@@ -186,7 +194,7 @@ export default function CheckoutModal({
             description: "Please fill in all fields (name and email).",
             variant: "destructive",
           });
-          return;
+          return false;
         }
       }
 
@@ -196,9 +204,38 @@ export default function CheckoutModal({
           description: "Please enter a valid email address.",
           variant: "destructive",
         });
-        return;
+        return false;
       }
     }
+    return true;
+  };
+
+  // Show email confirmation before proceeding (for new users)
+  const handleProceedClick = () => {
+    if (!validateForm()) return;
+    
+    // For authenticated users, proceed directly (their email is already verified)
+    // For existing users with password, proceed directly (they already have an account)
+    // For new users, show email confirmation dialog
+    if (isAuthenticated) {
+      handleProceed();
+    } else if (isExistingUser && password.trim()) {
+      // Existing user has entered password, proceed to login+checkout
+      handleProceed();
+    } else if (!isExistingUser) {
+      // New user - show email confirmation dialog
+      setShowEmailConfirmation(true);
+    }
+    // Note: If isExistingUser but no password, validateForm already handles redirect to login
+  };
+
+  const handleProceed = async () => {
+    setShowEmailConfirmation(false);
+    
+    // Use logged-in user's info if authenticated, otherwise use form data
+    const userFirstName = isAuthenticated && user ? user.firstName : firstName.trim();
+    const userLastName = isAuthenticated && user ? user.lastName : lastName.trim();
+    const userEmail = isAuthenticated && user ? user.email : email.trim();
 
     setIsProcessing(true);
 
@@ -494,7 +531,7 @@ export default function CheckoutModal({
           <Button
             className="w-full"
             size="lg"
-            onClick={handleProceed}
+            onClick={handleProceedClick}
             disabled={isProcessing || selectedAssessments.size === 0 || isCheckingEmail}
             data-testid="checkout-button-proceed"
           >
@@ -506,6 +543,30 @@ export default function CheckoutModal({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Email Confirmation Dialog */}
+      <AlertDialog open={showEmailConfirmation} onOpenChange={setShowEmailConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Your Email Address</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>Please confirm your email address is correct. Your login details and assessment results will be sent to:</p>
+              <div className="bg-muted p-3 rounded-lg text-center">
+                <p className="text-foreground font-medium text-lg">{email.trim()}</p>
+              </div>
+              <p className="text-sm">Make sure this is correct, as you won't be able to change it later.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-email-confirm-cancel">
+              Edit Email
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleProceed} data-testid="button-email-confirm">
+              Yes, This is Correct
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

@@ -35,6 +35,7 @@ interface SessionData {
   savedAnswers?: Record<string, any> | null;
   lastAnsweredIndex?: number | null;
   lastActivityAt?: string | null;
+  isTestSession?: boolean;
 }
 
 type Question = {
@@ -276,13 +277,17 @@ export default function EmbedAssessment() {
   };
 
   const startAssessment = async () => {
-    // Ensure email is verified before starting
-    if (verificationStep !== "verified") {
+    // For test sessions, skip email verification requirement
+    // For production sessions, ensure email is verified before starting
+    if (!session?.isTestSession && verificationStep !== "verified") {
       setEmailError("Please verify your email first");
       return;
     }
 
-    const trimmedEmail = candidateEmail.trim();
+    // For test sessions, use a placeholder email or the one entered
+    const trimmedEmail = session?.isTestSession 
+      ? (candidateEmail.trim() || `test-${Date.now()}@test.example.com`)
+      : candidateEmail.trim();
 
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
@@ -703,8 +708,21 @@ export default function EmbedAssessment() {
 
             {/* Email Verification Flow */}
             <div className="space-y-4">
-              {/* Step 1: Email Input */}
-              {verificationStep === "email" && (
+              {/* Test Mode Indicator */}
+              {session?.isTestSession && (
+                <div className={`${bgCardAlt} p-3 rounded-lg border border-amber-500/30`}>
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <p className="text-sm text-amber-500 font-medium">Developer Test Mode</p>
+                  </div>
+                  <p className={`text-xs ${textMuted} mt-1`}>
+                    Email verification is disabled. This session will not be billed.
+                  </p>
+                </div>
+              )}
+
+              {/* Step 1: Email Input - Only for non-test sessions */}
+              {!session?.isTestSession && verificationStep === "email" && (
                 <div className="space-y-2">
                   <Label htmlFor="candidate-email" className={textPrimary}>
                     Your Email Address <span className="text-red-500">*</span>
@@ -749,8 +767,8 @@ export default function EmbedAssessment() {
                 </div>
               )}
 
-              {/* Step 2: Verification Code Input */}
-              {verificationStep === "code" && (
+              {/* Step 2: Verification Code Input - Only for non-test sessions */}
+              {!session?.isTestSession && verificationStep === "code" && (
                 <div className="space-y-3">
                   <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
                     <CheckCircle className="h-5 w-5 text-green-500" />
@@ -828,8 +846,8 @@ export default function EmbedAssessment() {
                 </div>
               )}
 
-              {/* Step 3: Email Verified - Ready to Start */}
-              {verificationStep === "verified" && (
+              {/* Step 3: Email Verified - Ready to Start (non-test sessions) */}
+              {!session?.isTestSession && verificationStep === "verified" && (
                 <div className="space-y-3">
                   <div className={`${bgCardAlt} p-4 rounded-lg flex items-center gap-3`}>
                     <CheckCircle className="h-5 w-5 text-green-500" />
@@ -852,6 +870,18 @@ export default function EmbedAssessment() {
                     Start Assessment
                   </Button>
                 </div>
+              )}
+
+              {/* Test Mode - Direct Start Button (no email verification) */}
+              {session?.isTestSession && (
+                <Button
+                  onClick={startAssessment}
+                  className="w-full"
+                  style={{ backgroundColor: primaryColor }}
+                  data-testid="button-start-assessment-test"
+                >
+                  Start Assessment (Test Mode)
+                </Button>
               )}
             </div>
 
