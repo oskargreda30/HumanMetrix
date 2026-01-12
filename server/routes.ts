@@ -6869,6 +6869,12 @@ Format your response as JSON with this structure:
         return res.json({ hasPartnerAccount: false });
       }
       
+      // Determine if user has admin access
+      // Direct partner access (org_admin, super_admin, partner_admin) = admin
+      // Team members with 'admin' or 'owner' role = admin
+      const hasDirectAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+      const isAdmin = hasDirectAccess || (isTeamMember && (teamMemberRole === 'admin' || teamMemberRole === 'owner'));
+      
       const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
       const apiKeys = await storage.getApiKeysByPartner(matchingPartner.id);
       
@@ -6876,6 +6882,7 @@ Format your response as JSON with this structure:
         hasPartnerAccount: true,
         isTeamMember,
         teamMemberRole,
+        isAdmin,
         partner: {
           id: matchingPartner.id,
           name: matchingPartner.name,
@@ -7666,35 +7673,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Get API keys (masked)
+  // Partner self-service: Get API keys (masked, admin only)
   app.get("/api/partner/me/api-keys", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only admins can view API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required to view API keys" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
-      
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       if (!matchingPartner) {
         return res.status(404).json({ hasPartnerAccount: false, apiKeys: [] });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to view API keys" });
       }
       
       // Get ALL API keys for this partner including deactivated ones (don't expose full key or hash)
@@ -7725,36 +7713,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Rotate API key (generates new key with same config)
+  // Partner self-service: Rotate API key (generates new key with same config, admin only)
   app.post("/api/partner/me/api-keys/:keyId/rotate", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
       const { keyId } = req.params;
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only admins can rotate API keys
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required to rotate API keys" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
-      
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to rotate API keys" });
       }
       
       // Get the existing key
@@ -7797,35 +7766,17 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Revoke API key
+  // Partner self-service: Revoke API key (admin only)
   app.delete("/api/partner/me/api-keys/:keyId", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
       const { keyId } = req.params;
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required to revoke API keys" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
-      
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to revoke API keys" });
       }
       
       // Get the existing key
@@ -7856,34 +7807,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Partner self-service: Create new API key
+  // Partner self-service: Create new API key (admin only)
   app.post("/api/partner/me/api-keys", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const hasAdminAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
-      if (!hasAdminAccess) {
-        return res.status(403).json({ message: "Forbidden: Admin access required to create API keys" });
-      }
-      
-      // Find partner account
-      let matchingPartner = null;
-      
-      if (user.organizationId) {
-        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
-      }
-      
-      if (!matchingPartner && user.email) {
-        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
-      }
-      
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to create API keys" });
       }
       
       const { name, environment = 'test', organisationId } = req.body;
@@ -8092,7 +8025,7 @@ Format your response as JSON with this structure:
   // ==================== PARTNER INTEGRATION MANAGEMENT ====================
   
   // Helper function to get partner for authenticated user (including team members)
-  async function getPartnerForUser(userId: string): Promise<{ partner: any; teamMemberRole?: string; isTeamMember?: boolean } | null> {
+  async function getPartnerForUser(userId: string): Promise<{ partner: any; teamMemberRole?: string; isTeamMember?: boolean; isAdmin?: boolean } | null> {
     const user = await storage.getUser(userId);
     if (!user) return null;
     
@@ -8109,7 +8042,7 @@ Format your response as JSON with this structure:
         partner = await storage.getPartnerAccountByEmail(user.email);
       }
       if (partner) {
-        return { partner, isTeamMember: false };
+        return { partner, isTeamMember: false, isAdmin: true };
       }
     }
     
@@ -8118,22 +8051,32 @@ Format your response as JSON with this structure:
     if (teamMembership) {
       partner = await storage.getPartnerAccount(teamMembership.partnerId);
       if (partner) {
-        return { partner, teamMemberRole: teamMembership.role, isTeamMember: true };
+        // Team members with 'admin' or 'owner' role have admin access
+        const isAdmin = teamMembership.role === 'admin' || teamMembership.role === 'owner';
+        return { partner, teamMemberRole: teamMembership.role, isTeamMember: true, isAdmin };
       }
     }
     
     return null;
   }
+  
+  // Helper to require admin access for sensitive partner endpoints
+  function requirePartnerAdmin(partnerData: { isAdmin?: boolean } | null): boolean {
+    return partnerData?.isAdmin === true;
+  }
 
   // ===== WEBHOOKS =====
   
-  // Get partner's webhooks
+  // Get partner's webhooks (admin only)
   app.get("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       const webhooks = await storage.getPartnerWebhooks(partner.id);
       res.json(webhooks);
@@ -8143,13 +8086,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Create webhook
+  // Create webhook (admin only)
   app.post("/api/partner/me/webhooks", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const { name, url, events, maxRetries, retryDelaySeconds } = req.body;
@@ -8180,13 +8126,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Update webhook
+  // Update webhook (admin only)
   app.patch("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
@@ -8213,13 +8162,16 @@ Format your response as JSON with this structure:
     }
   });
 
-  // Delete webhook
+  // Delete webhook (admin only)
   app.delete("/api/partner/me/webhooks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
@@ -8420,6 +8372,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
       const integrations = await storage.getPartnerAtsIntegrations(partner.id);
       // Mask sensitive credentials
       const masked = integrations.map(i => ({
@@ -8440,6 +8395,9 @@ Format your response as JSON with this structure:
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const { provider, name, baseUrl, credentials, fieldMapping, syncMode } = req.body;
@@ -8474,6 +8432,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
       
       const integration = await storage.getPartnerAtsIntegration(req.params.id);
       if (!integration || integration.partnerId !== partner.id) {
@@ -8507,6 +8468,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
       
       const integration = await storage.getPartnerAtsIntegration(req.params.id);
       if (!integration || integration.partnerId !== partner.id) {
@@ -8531,6 +8495,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
       const exports = await storage.getPartnerScheduledExports(partner.id);
       // Mask sensitive delivery credentials
       const masked = exports.map(e => ({
@@ -8552,6 +8519,9 @@ Format your response as JSON with this structure:
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const { name, frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryEmail, deliveryWebhookUrl } = req.body;
@@ -8593,6 +8563,9 @@ Format your response as JSON with this structure:
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
@@ -8643,6 +8616,9 @@ Format your response as JSON with this structure:
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
       }
       
       const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
@@ -8924,6 +8900,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to invite team members" });
+      }
       
       const { email, name, role } = req.body;
       
@@ -9118,6 +9097,9 @@ Format your response as JSON with this structure:
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
       }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to remove team members" });
+      }
       
       const member = await storage.getPartnerTeamMember(req.params.id);
       if (!member || member.partnerId !== partner.id) {
@@ -9149,6 +9131,9 @@ Format your response as JSON with this structure:
       const partner = partnerData?.partner;
       if (!partner) {
         return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to update team members" });
       }
       
       const member = await storage.getPartnerTeamMember(req.params.id);

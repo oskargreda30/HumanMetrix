@@ -370,6 +370,9 @@ function PrepaidCardManagement({ partnerId, currency }: { partnerId: string; cur
 
 interface PartnerAccount {
   hasPartnerAccount: boolean;
+  isTeamMember?: boolean;
+  teamMemberRole?: string;
+  isAdmin?: boolean;
   partner?: {
     id: string;
     name: string;
@@ -1426,6 +1429,9 @@ export default function PartnerDashboard() {
   }
 
   const partner = account.partner!;
+  const isAdmin = account.isAdmin ?? true; // Default to true for backwards compatibility
+  const isTeamMember = account.isTeamMember ?? false;
+  const teamMemberRole = account.teamMemberRole;
   const usagePercentage = partner.testsPurchased > 0 
     ? Math.round((partner.testsConsumed / partner.testsPurchased) * 100) 
     : 0;
@@ -1473,6 +1479,12 @@ export default function PartnerDashboard() {
                       Partner
                     </Badge>
                   )}
+                  {isTeamMember && teamMemberRole && (
+                    <Badge variant="outline" className="gap-1.5 bg-white/10 text-white/90 border-white/20 capitalize">
+                      <Users className="h-3 w-3" />
+                      {teamMemberRole}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-white/80">
                   Manage your assessments, organizations, and API integrations
@@ -1511,9 +1523,11 @@ export default function PartnerDashboard() {
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
-              <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Team
-              </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Team
+                </TabsTrigger>
+              )}
               
               {/* Settings Dropdown - contains Usage, Billing, Developer, Analytics, Notifications, Settings, Activity Log */}
               <DropdownMenu>
@@ -1553,14 +1567,16 @@ export default function PartnerDashboard() {
                     <CreditCard className="h-4 w-4 mr-2" />
                     Billing
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setActiveTab('developer')}
-                    className={activeTab === 'developer' ? 'bg-accent' : ''}
-                    data-testid="dropdown-item-developer"
-                  >
-                    <Key className="h-4 w-4 mr-2" />
-                    Developer
-                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem 
+                      onClick={() => setActiveTab('developer')}
+                      className={activeTab === 'developer' ? 'bg-accent' : ''}
+                      data-testid="dropdown-item-developer"
+                    >
+                      <Key className="h-4 w-4 mr-2" />
+                      Developer
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem 
                     onClick={() => setActiveTab('analytics')}
                     className={activeTab === 'analytics' ? 'bg-accent' : ''}
