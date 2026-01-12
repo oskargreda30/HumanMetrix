@@ -633,6 +633,7 @@ export default function PartnerDashboard() {
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
   const [confirmRotateKeyId, setConfirmRotateKeyId] = useState<string | null>(null);
   const [confirmRevokeKeyId, setConfirmRevokeKeyId] = useState<string | null>(null);
+  const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<string | null>(null);
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
@@ -3973,7 +3974,7 @@ export default function PartnerDashboard() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => removeMemberMutation.mutate(member.id)}
+                              onClick={() => setConfirmRemoveMemberId(member.id)}
                               disabled={removeMemberMutation.isPending}
                               data-testid={`button-remove-member-${member.id}`}
                             >
@@ -4257,6 +4258,34 @@ export default function PartnerDashboard() {
             >
               {revokingKeyId === confirmRevokeKeyId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Revoke Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Team Member Confirmation */}
+      <AlertDialog open={!!confirmRemoveMemberId} onOpenChange={(open) => !open && setConfirmRemoveMemberId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team Member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this team member? They will lose access to your partner account immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove-member">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (confirmRemoveMemberId) {
+                  removeMemberMutation.mutate(confirmRemoveMemberId);
+                  setConfirmRemoveMemberId(null);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-remove-member"
+            >
+              {removeMemberMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Remove Member
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
