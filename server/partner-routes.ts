@@ -773,74 +773,90 @@ export function registerPartnerRoutes(app: Express) {
           isTestSession,
         } as any);
         
-        await trackUsage(
-          session.partnerId,
-          session.apiKeyId,
-          sessionId,
-          "session_completed",
-          session.assessmentType,
-          true,
-          partner?.pricePerAssessment || 500
-        );
-        
-        // Consume a test credit from the partner's prepaid quota
-        const quotaResult = await consumeTestCredit(
-          session.partnerId,
-          sessionId,
-          session.assessmentType
-        );
-        
-        // Handle quota consumption failure - block result delivery if quota couldn't be deducted
-        if (!quotaResult.success) {
-          console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
-          // Return error but assessment data is saved - admin can add credits for retry
-          return res.status(402).json({
-            error: "Quota Consumption Failed",
-            message: "Unable to deduct test credit. Please ensure you have available quota.",
-            sessionId: session.id,
-            status: "billing_pending",
-          });
-        }
-        
-        // Send quota warning emails if thresholds are crossed
-        if (partner) {
-          const balance = await storage.getPartnerQuotaBalance(session.partnerId);
-          const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+        // Only track billable usage and consume quota for non-test sessions
+        if (isTestSession) {
+          // Track as non-billable test session
+          await trackUsage(
+            session.partnerId,
+            session.apiKeyId,
+            sessionId,
+            "session_completed",
+            session.assessmentType,
+            false, // NOT billable for test sessions
+            0 // No charge for test sessions
+          );
+          console.log(`[Test Session] Skipping billing for test session ${sessionId}`);
+        } else {
+          // Track as billable production session
+          await trackUsage(
+            session.partnerId,
+            session.apiKeyId,
+            sessionId,
+            "session_completed",
+            session.assessmentType,
+            true,
+            partner?.pricePerAssessment || 500
+          );
           
-          if (quotaResult.shouldNotifyFirst) {
-            await sendPartnerQuotaWarning70(
-              alertEmail,
-              partner.companyName || partner.name,
-              balance.testsConsumed,
-              balance.testsPurchased,
-              balance.remaining
-            );
-          }
-          if (quotaResult.shouldNotifyUrgent) {
-            await sendPartnerQuotaWarning90(
-              alertEmail,
-              partner.companyName || partner.name,
-              balance.testsConsumed,
-              balance.testsPurchased,
-              balance.remaining
-            );
-          }
-          if (quotaResult.suspended) {
-            await sendPartnerAccessSuspendedEmail(
-              alertEmail,
-              partner.companyName || partner.name
-            );
+          // Consume a test credit from the partner's prepaid quota (only for production sessions)
+          const quotaResult = await consumeTestCredit(
+            session.partnerId,
+            sessionId,
+            session.assessmentType
+          );
+          
+          // Handle quota consumption failure - block result delivery if quota couldn't be deducted
+          if (!quotaResult.success) {
+            console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
+            // Return error but assessment data is saved - admin can add credits for retry
+            return res.status(402).json({
+              error: "Quota Consumption Failed",
+              message: "Unable to deduct test credit. Please ensure you have available quota.",
+              sessionId: session.id,
+              status: "billing_pending",
+            });
           }
           
-          // Handle auto top-up if triggered
-          if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
-            try {
-              await processAutoTopUp(partner);
-            } catch (err) {
-              console.error('Auto top-up failed:', err);
+          // Send quota warning emails if thresholds are crossed
+          if (partner) {
+            const balance = await storage.getPartnerQuotaBalance(session.partnerId);
+            const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
+            
+            if (quotaResult.shouldNotifyFirst) {
+              await sendPartnerQuotaWarning70(
+                alertEmail,
+                partner.companyName || partner.name,
+                balance.testsConsumed,
+                balance.testsPurchased,
+                balance.remaining
+              );
+            }
+            if (quotaResult.shouldNotifyUrgent) {
+              await sendPartnerQuotaWarning90(
+                alertEmail,
+                partner.companyName || partner.name,
+                balance.testsConsumed,
+                balance.testsPurchased,
+                balance.remaining
+              );
+            }
+            if (quotaResult.suspended) {
+              await sendPartnerAccessSuspendedEmail(
+                alertEmail,
+                partner.companyName || partner.name
+              );
+            }
+          
+            // Handle auto top-up if triggered
+            if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
+              try {
+                await processAutoTopUp(partner);
+              } catch (err) {
+                console.error('Auto top-up failed:', err);
+              }
             }
           }
-        }
+        } // End of else block for non-test sessions
         
         // Create notification for assessment completion
         await storage.createPartnerNotification({
