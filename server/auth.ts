@@ -3,6 +3,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
+import { isValidEmail, isValidName, normalizeEmail } from "@shared/validation";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -59,8 +60,12 @@ export async function setupAuth(app: Express) {
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
+      
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
 
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByEmail(normalizeEmail(email));
       if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
@@ -118,9 +123,23 @@ export async function setupAuth(app: Express) {
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
+      
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      // Validate names if provided
+      if (firstName && !isValidName(firstName)) {
+        return res.status(400).json({ message: "Invalid first name format" });
+      }
+      if (lastName && !isValidName(lastName)) {
+        return res.status(400).json({ message: "Invalid last name format" });
+      }
 
+      const normalizedEmail = normalizeEmail(email);
+      
       // Check if user exists
-      const existingUser = await storage.getUserByEmail(email);
+      const existingUser = await storage.getUserByEmail(normalizedEmail);
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
@@ -128,12 +147,12 @@ export async function setupAuth(app: Express) {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Create user
+      // Create user with normalized email
       const user = await storage.createUser({
-        email,
+        email: normalizedEmail,
         passwordHash,
-        firstName: firstName || null,
-        lastName: lastName || null,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
         profileImageUrl: null,
       });
 
@@ -198,8 +217,12 @@ export async function setupAuth(app: Express) {
       if (!email) {
         return res.status(400).json({ message: "Email required" });
       }
+      
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
 
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByEmail(normalizeEmail(email));
       if (!user) {
         // Don't reveal if email exists for security
         return res.json({ message: "If the email exists, a reset link has been sent" });

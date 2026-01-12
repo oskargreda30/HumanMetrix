@@ -18,6 +18,7 @@ import bcrypt from "bcryptjs";
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
+import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 
 // Use Airwallex as primary payment processor if configured
@@ -480,12 +481,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "All fields are required" });
       }
       
-      if (typeof email !== 'string' || !email.includes('@')) {
+      if (typeof email !== 'string' || !isValidEmail(email)) {
         return res.status(400).json({ message: "Invalid email address" });
+      }
+      
+      if (typeof name !== 'string' || !isValidName(name)) {
+        return res.status(400).json({ message: "Invalid name format" });
       }
 
       // Send email
-      const result = await sendGeneralEnquiryEmail({ name, email, subject, message });
+      const result = await sendGeneralEnquiryEmail({ name: name.trim(), email, subject, message });
 
       if (result.success) {
         res.json({ 
@@ -510,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, source } = req.body;
       
-      if (!email || typeof email !== 'string' || !email.includes('@')) {
+      if (!email || typeof email !== 'string' || !isValidEmail(email)) {
         return res.status(400).json({ message: "Valid email address is required" });
       }
 
@@ -3374,7 +3379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = req.body;
       
-      if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      if (!email || !isValidEmail(email)) {
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
       
@@ -3401,13 +3406,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please provide your email address" });
       }
 
-      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
       
       // Name is only required for new users (not when password is provided for existing user login)
       if (!password && (!firstName || !lastName)) {
         return res.status(400).json({ message: "Please provide your name and email" });
+      }
+      
+      // Validate name format if provided
+      if (firstName && !isValidName(firstName)) {
+        return res.status(400).json({ message: "Invalid first name format" });
+      }
+      if (lastName && !isValidName(lastName)) {
+        return res.status(400).json({ message: "Invalid last name format" });
       }
 
       // Validate assessment IDs using ASSESSMENT_PRICES as source of truth
@@ -8898,6 +8911,14 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Email is required" });
       }
       
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Please provide a valid email address" });
+      }
+      
+      if (name && !isValidName(name)) {
+        return res.status(400).json({ message: "Invalid name format" });
+      }
+      
       // Check if already invited
       const existing = await storage.getPartnerTeamMemberByEmail(partner.id, email);
       if (existing) {
@@ -9131,6 +9152,11 @@ Format your response as JSON with this structure:
       
       const { role } = req.body;
       if (role) {
+        // Validate role is one of allowed values
+        const validRoles = ['viewer', 'member', 'admin', 'owner'];
+        if (!validRoles.includes(role)) {
+          return res.status(400).json({ message: "Invalid role. Must be one of: viewer, member, admin, owner" });
+        }
         await storage.updatePartnerTeamMember(req.params.id, { role });
       }
       
@@ -9188,6 +9214,21 @@ Format your response as JSON with this structure:
       
       if (!name || !slug) {
         return res.status(400).json({ message: "Name and slug are required" });
+      }
+      
+      // Validate name format
+      if (!isValidName(name)) {
+        return res.status(400).json({ message: "Invalid organization name format" });
+      }
+      
+      // Validate admin email if provided
+      if (adminEmail && !isValidEmail(adminEmail)) {
+        return res.status(400).json({ message: "Invalid admin email format" });
+      }
+      
+      // Validate admin name if provided
+      if (adminName && !isValidName(adminName)) {
+        return res.status(400).json({ message: "Invalid admin name format" });
       }
       
       // Check if slug already exists for this partner

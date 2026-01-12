@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { isValidEmail, isValidName } from "@/lib/validation";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 type FooterLink = {
@@ -71,6 +72,24 @@ export default function Footer() {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isValidName(formData.name)) {
+      toast({
+        title: "Invalid name",
+        description: "Please enter a valid name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isValidEmail(formData.email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
         variant: "destructive"
       });
       return;
