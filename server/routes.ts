@@ -8064,6 +8064,38 @@ Format your response as JSON with this structure:
   function requirePartnerAdmin(partnerData: { isAdmin?: boolean } | null): boolean {
     return partnerData?.isAdmin === true;
   }
+  
+  // Role hierarchy for partner team members
+  // viewer < member < admin < owner
+  const ROLE_HIERARCHY: Record<string, number> = {
+    'viewer': 1,
+    'member': 2,
+    'admin': 3,
+    'owner': 4,
+  };
+  
+  // Helper to check if user has at least the required role level
+  // Direct partner admins (isAdmin=true, isTeamMember=false) have full access
+  function requirePartnerRole(
+    partnerData: { isAdmin?: boolean; isTeamMember?: boolean; teamMemberRole?: string } | null,
+    minRole: 'viewer' | 'member' | 'admin' | 'owner'
+  ): boolean {
+    if (!partnerData) return false;
+    
+    // Direct partner admins (not team members) have full access
+    if (partnerData.isAdmin && !partnerData.isTeamMember) {
+      return true;
+    }
+    
+    // For team members, check role hierarchy
+    const userRole = partnerData.teamMemberRole;
+    if (!userRole) return false;
+    
+    const userLevel = ROLE_HIERARCHY[userRole] ?? 0;
+    const requiredLevel = ROLE_HIERARCHY[minRole] ?? 0;
+    
+    return userLevel >= requiredLevel;
+  }
 
   // ===== WEBHOOKS =====
   
