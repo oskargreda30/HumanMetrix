@@ -224,6 +224,7 @@ export function registerPartnerRoutes(app: Express) {
           expiresAt,
           status: "created",
           questionLocale,
+          isTestSession: apiKey.environment === "test", // Persist test session flag for widget display
         });
         
         await trackUsage(
@@ -506,8 +507,9 @@ export function registerPartnerRoutes(app: Express) {
         const partner = await storage.getPartnerAccount(session.partnerId);
         
         // Check if this session was created with a test API key
+        // First check the persisted flag, then fallback to checking the API key environment
         const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
-        const isTestSession = apiKey?.isTestKey === true;
+        const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
         const response: any = {
           sessionId: session.id,
@@ -707,7 +709,7 @@ export function registerPartnerRoutes(app: Express) {
         
         // Check if this is a test session (created with test API key)
         const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
-        const isTestSession = apiKey?.isTestKey === true;
+        const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
         // For test sessions, skip email verification requirement
         if (isTestSession) {
@@ -916,7 +918,7 @@ export function registerPartnerRoutes(app: Express) {
         let isTestSession = session.isTestSession === true;
         if (!isTestSession && session.apiKeyId) {
           const apiKey = await storage.getPartnerApiKey(session.apiKeyId);
-          isTestSession = apiKey?.isTestKey === true;
+          isTestSession = apiKey?.environment === "test";
         }
         
         await storage.updateAssessmentSession(sessionId, {
