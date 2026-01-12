@@ -1838,9 +1838,9 @@ export default function PartnersTab() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700" align="start">
-                      <Command className="bg-slate-800">
-                        <CommandInput placeholder="Search country..." className="text-white" />
+                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700 z-50" align="start">
+                      <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
+                        <CommandInput placeholder="Search country..." className="text-white placeholder:text-slate-400" />
                         <CommandList>
                           <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                           <CommandGroup>
@@ -1891,9 +1891,9 @@ export default function PartnersTab() {
                           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700" align="start">
-                        <Command className="bg-slate-800">
-                          <CommandInput placeholder="Search country code..." className="text-white" />
+                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700 z-50" align="start">
+                        <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
+                          <CommandInput placeholder="Search country code..." className="text-white placeholder:text-slate-400" />
                           <CommandList>
                             <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
                             <CommandGroup>
