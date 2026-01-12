@@ -65,6 +65,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
 - **Logging Security**: API response logging sanitises sensitive fields and is disabled in production.
 - **Input Validation System**: Centralized validation utilities in `shared/validation.ts` and `client/src/lib/validation.ts` with RFC 5322-compliant email regex, name regex supporting international characters and business names (allowing &, commas, parentheses), and phone number validation. Storage layer normalizes emails (trim + lowercase) and trims names on all createUser operations. Key API endpoints validate input using shared helpers (isValidEmail, isValidName) before persistence.
+- **Custom Accessible Dropdowns**: Partner creation modal uses custom inline searchable dropdowns for country and phone code selection (instead of Radix portaled components) to work within Dialog modals. Features include full keyboard navigation (Arrow keys, Enter, Escape, Tab), ARIA combobox semantics (role="combobox", aria-controls, aria-activedescendant, role="listbox", role="option", aria-selected), search filtering, click-outside closing, and auto-scroll to highlighted option.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.

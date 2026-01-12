@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -341,6 +341,16 @@ export default function PartnersTab() {
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<string>("GB");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [countrySearch, setCountrySearch] = useState<string>("");
+  const [phoneCodeSearch, setPhoneCodeSearch] = useState<string>("");
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [phoneCodeDropdownOpen, setPhoneCodeDropdownOpen] = useState(false);
+  const [countryHighlightIndex, setCountryHighlightIndex] = useState(0);
+  const [phoneCodeHighlightIndex, setPhoneCodeHighlightIndex] = useState(0);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const phoneCodeDropdownRef = useRef<HTMLDivElement>(null);
+  const countryListRef = useRef<HTMLDivElement>(null);
+  const phoneCodeListRef = useRef<HTMLDivElement>(null);
   
   const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
   
@@ -385,6 +395,9 @@ export default function PartnersTab() {
 
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode);
+    setCountryDropdownOpen(false);
+    setCountrySearch("");
+    setCountryHighlightIndex(0);
     // Auto-recommend currency based on country
     const recommendedCurrency = COUNTRY_TO_CURRENCY[countryCode];
     if (recommendedCurrency && CURRENCIES[recommendedCurrency]) {
@@ -393,6 +406,47 @@ export default function PartnersTab() {
     // Auto-set phone country code to match selected country
     setSelectedPhoneCountry(countryCode);
   };
+
+  const handlePhoneCodeSelect = (countryCode: string) => {
+    handlePhoneCountryChange(countryCode);
+    setPhoneCodeDropdownOpen(false);
+    setPhoneCodeSearch("");
+    setPhoneCodeHighlightIndex(0);
+  };
+
+  // Filtered lists for search
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return COUNTRIES;
+    const search = countrySearch.toLowerCase();
+    return COUNTRIES.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.code.toLowerCase().includes(search)
+    );
+  }, [countrySearch]);
+
+  const filteredPhoneCodes = useMemo(() => {
+    if (!phoneCodeSearch.trim()) return COUNTRIES;
+    const search = phoneCodeSearch.toLowerCase();
+    return COUNTRIES.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.dialCode.includes(search) ||
+      c.code.toLowerCase().includes(search)
+    );
+  }, [phoneCodeSearch]);
+
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
+      if (phoneCodeDropdownRef.current && !phoneCodeDropdownRef.current.contains(event.target as Node)) {
+        setPhoneCodeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const createPartnerMutation = useMutation({
     mutationFn: async (data: { 
@@ -1813,56 +1867,235 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Select value={selectedCountry} onValueChange={handleCountryChange}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-country">
-                      <SelectValue placeholder="Select country...">
-                        {selectedCountry && (
-                          <>
-                            {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{" "}
-                            {COUNTRIES.find(c => c.code === selectedCountry)?.name}
-                          </>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                      {COUNTRIES.map((country) => (
-                        <SelectItem 
-                          key={country.code} 
-                          value={country.code}
-                          className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
-                        >
-                          {country.flag} {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div ref={countryDropdownRef} className="relative">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCountryDropdownOpen(!countryDropdownOpen);
+                        setCountryHighlightIndex(0);
+                      }}
+                      aria-haspopup="listbox"
+                      aria-expanded={countryDropdownOpen}
+                      className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                      data-testid="select-partner-country"
+                    >
+                      {selectedCountry ? (
+                        <>
+                          {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{" "}
+                          {COUNTRIES.find(c => c.code === selectedCountry)?.name}
+                        </>
+                      ) : (
+                        <span className="text-slate-400">Select country...</span>
+                      )}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                    {countryDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+                        <div className="p-2 border-b border-slate-700">
+                          <Input
+                            role="combobox"
+                            aria-controls="country-listbox"
+                            aria-expanded={countryDropdownOpen}
+                            aria-activedescendant={filteredCountries.length > 0 && countryHighlightIndex >= 0 ? `country-option-${filteredCountries[countryHighlightIndex]?.code}` : undefined}
+                            aria-autocomplete="list"
+                            placeholder="Search country..."
+                            value={countrySearch}
+                            onChange={(e) => {
+                              setCountrySearch(e.target.value);
+                              setCountryHighlightIndex(0);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (filteredCountries.length > 0 && countryHighlightIndex >= 0 && countryHighlightIndex < filteredCountries.length) {
+                                  handleCountryChange(filteredCountries[countryHighlightIndex].code);
+                                }
+                              } else if (e.key === 'Escape' || e.key === 'Tab') {
+                                setCountryDropdownOpen(false);
+                                setCountrySearch("");
+                                setCountryHighlightIndex(0);
+                              } else if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                if (filteredCountries.length > 0) {
+                                  setCountryHighlightIndex(prev => 
+                                    prev < filteredCountries.length - 1 ? prev + 1 : 0
+                                  );
+                                }
+                              } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                if (filteredCountries.length > 0) {
+                                  setCountryHighlightIndex(prev => 
+                                    prev > 0 ? prev - 1 : filteredCountries.length - 1
+                                  );
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              if (!countryDropdownRef.current?.contains(e.relatedTarget as Node)) {
+                                setTimeout(() => {
+                                  setCountryDropdownOpen(false);
+                                  setCountrySearch("");
+                                  setCountryHighlightIndex(0);
+                                }, 150);
+                              }
+                            }}
+                            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                            autoFocus
+                            data-testid="input-country-search"
+                          />
+                        </div>
+                        <div ref={countryListRef} id="country-listbox" className="max-h-[200px] overflow-y-auto" role="listbox" aria-label="Countries">
+                          {filteredCountries.length === 0 ? (
+                            <div className="p-2 text-center text-slate-400 text-sm" role="status">No country found</div>
+                          ) : (
+                            filteredCountries.map((country, index) => (
+                              <div
+                                key={country.code}
+                                id={`country-option-${country.code}`}
+                                ref={(el) => {
+                                  if (index === countryHighlightIndex && el) {
+                                    el.scrollIntoView({ block: 'nearest' });
+                                  }
+                                }}
+                                onClick={() => handleCountryChange(country.code)}
+                                role="option"
+                                aria-selected={selectedCountry === country.code || index === countryHighlightIndex}
+                                className={`px-3 py-2 cursor-pointer text-white flex items-center gap-2 ${
+                                  index === countryHighlightIndex ? 'bg-slate-600' : 'hover:bg-slate-700'
+                                }`}
+                                data-testid={`country-option-${country.code}`}
+                              >
+                                <span>{country.flag}</span>
+                                <span>{country.name}</span>
+                                {selectedCountry === country.code && (
+                                  <CheckCircle className="ml-auto h-4 w-4 text-cyan-400" />
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <input type="hidden" name="country" value={selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry)?.name || '' : ''} />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
                   <div className="flex gap-2">
-                    <Select value={selectedPhoneCountry} onValueChange={handlePhoneCountryChange}>
-                      <SelectTrigger className="w-[140px] bg-slate-800 border-slate-600" data-testid="select-phone-code">
-                        <SelectValue placeholder="🇬🇧 +44">
-                          {selectedPhoneCountryData && (
-                            <>
-                              {selectedPhoneCountryData.flag} {selectedPhoneCountryData.dialCode}
-                            </>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                        {COUNTRIES.map((country) => (
-                          <SelectItem 
-                            key={country.code} 
-                            value={country.code}
-                            className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
-                          >
-                            {country.flag} {country.name} {country.dialCode}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div ref={phoneCodeDropdownRef} className="relative">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setPhoneCodeDropdownOpen(!phoneCodeDropdownOpen);
+                          setPhoneCodeHighlightIndex(0);
+                        }}
+                        aria-haspopup="listbox"
+                        aria-expanded={phoneCodeDropdownOpen}
+                        className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                        data-testid="select-phone-code"
+                      >
+                        {selectedPhoneCountryData ? (
+                          <>
+                            {selectedPhoneCountryData.flag} {selectedPhoneCountryData.dialCode}
+                          </>
+                        ) : (
+                          <span className="text-slate-400">+44</span>
+                        )}
+                        <Search className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                      {phoneCodeDropdownOpen && (
+                        <div className="absolute z-50 mt-1 w-[280px] rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+                          <div className="p-2 border-b border-slate-700">
+                            <Input
+                              role="combobox"
+                              aria-controls="phone-code-listbox"
+                              aria-expanded={phoneCodeDropdownOpen}
+                              aria-activedescendant={filteredPhoneCodes.length > 0 && phoneCodeHighlightIndex >= 0 ? `phone-code-option-${filteredPhoneCodes[phoneCodeHighlightIndex]?.code}` : undefined}
+                              aria-autocomplete="list"
+                              placeholder="Search country code..."
+                              value={phoneCodeSearch}
+                              onChange={(e) => {
+                                setPhoneCodeSearch(e.target.value);
+                                setPhoneCodeHighlightIndex(0);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (filteredPhoneCodes.length > 0 && phoneCodeHighlightIndex >= 0 && phoneCodeHighlightIndex < filteredPhoneCodes.length) {
+                                    handlePhoneCodeSelect(filteredPhoneCodes[phoneCodeHighlightIndex].code);
+                                  }
+                                } else if (e.key === 'Escape' || e.key === 'Tab') {
+                                  setPhoneCodeDropdownOpen(false);
+                                  setPhoneCodeSearch("");
+                                  setPhoneCodeHighlightIndex(0);
+                                } else if (e.key === 'ArrowDown') {
+                                  e.preventDefault();
+                                  if (filteredPhoneCodes.length > 0) {
+                                    setPhoneCodeHighlightIndex(prev => 
+                                      prev < filteredPhoneCodes.length - 1 ? prev + 1 : 0
+                                    );
+                                  }
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  if (filteredPhoneCodes.length > 0) {
+                                    setPhoneCodeHighlightIndex(prev => 
+                                      prev > 0 ? prev - 1 : filteredPhoneCodes.length - 1
+                                    );
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                if (!phoneCodeDropdownRef.current?.contains(e.relatedTarget as Node)) {
+                                  setTimeout(() => {
+                                    setPhoneCodeDropdownOpen(false);
+                                    setPhoneCodeSearch("");
+                                    setPhoneCodeHighlightIndex(0);
+                                  }, 150);
+                                }
+                              }}
+                              className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                              autoFocus
+                              data-testid="input-phone-code-search"
+                            />
+                          </div>
+                          <div ref={phoneCodeListRef} id="phone-code-listbox" className="max-h-[200px] overflow-y-auto" role="listbox" aria-label="Phone country codes">
+                            {filteredPhoneCodes.length === 0 ? (
+                              <div className="p-2 text-center text-slate-400 text-sm" role="status">No country found</div>
+                            ) : (
+                              filteredPhoneCodes.map((country, index) => (
+                                <div
+                                  key={country.code}
+                                  id={`phone-code-option-${country.code}`}
+                                  ref={(el) => {
+                                    if (index === phoneCodeHighlightIndex && el) {
+                                      el.scrollIntoView({ block: 'nearest' });
+                                    }
+                                  }}
+                                  onClick={() => handlePhoneCodeSelect(country.code)}
+                                  role="option"
+                                  aria-selected={selectedPhoneCountry === country.code || index === phoneCodeHighlightIndex}
+                                  className={`px-3 py-2 cursor-pointer text-white flex items-center gap-2 ${
+                                    index === phoneCodeHighlightIndex ? 'bg-slate-600' : 'hover:bg-slate-700'
+                                  }`}
+                                  data-testid={`phone-code-option-${country.code}`}
+                                >
+                                  <span>{country.flag}</span>
+                                  <span className="flex-1">{country.name}</span>
+                                  <span className="text-slate-400">{country.dialCode}</span>
+                                  {selectedPhoneCountry === country.code && (
+                                    <CheckCircle className="h-4 w-4 text-cyan-400" />
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <Input 
                       id="phoneNumber" 
                       name="phoneNumber" 
