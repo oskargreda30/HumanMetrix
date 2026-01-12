@@ -4,7 +4,7 @@ import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCre
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, formatPriceGBP } from "@shared/schema";
-import { getQuestionLocale } from "@shared/currencies";
+import { getQuestionLocale, getPPPAdjustedPriceInPence } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
@@ -574,10 +574,35 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        // Update session with email if provided (overrides any existing email)
+        // Detect user's country from IP for PPP pricing
+        let countryCode = 'GB'; // Default to UK for full pricing
+        try {
+          const forwardedFor = req.headers['x-forwarded-for'];
+          const clientIP = forwardedFor 
+            ? (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim())
+            : req.socket.remoteAddress;
+          
+          if (clientIP && !clientIP.startsWith('127.') && !clientIP.startsWith('::1') && !clientIP.startsWith('192.168.')) {
+            // Note: ip-api.com free tier only supports HTTP, but we use it server-side only
+            // For production, consider using a paid geolocation service with HTTPS support
+            const response = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,countryCode,message`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.status === 'success' && data.countryCode) {
+                countryCode = data.countryCode;
+              }
+            }
+          }
+        } catch (geoError) {
+          console.error('[B2B Session] Country detection failed, defaulting to GB:', geoError);
+        }
+        
+        // Update session with email and country code if provided
+        const existingMetadata = session.metadata || {};
         const updateData: any = {
           status: "started",
           startedAt: new Date(),
+          metadata: { ...existingMetadata, countryCode },
         };
         if (candidateEmail && typeof candidateEmail === 'string') {
           updateData.externalEmail = candidateEmail.trim();
@@ -836,9 +861,15 @@ export function registerPartnerRoutes(app: Express) {
               ? `https://${process.env.REPLIT_DEV_DOMAIN}`
               : 'https://humanmetrix.co.uk';
             
-            // Use centralized B2C retail price for consistent email pricing
-            const originalPrice = B2C_RETAIL_PRICE_PER_ASSESSMENT;
-            const discountedPrice = Math.round(originalPrice * 0.75); // 25% off = £15.00
+            // Get user's country code for PPP pricing (stored during session start)
+            const userCountryCode = (updatedSession?.metadata as any)?.countryCode || 'GB';
+            
+            // Use PPP-adjusted pricing based on user's location (same as B2C)
+            // Then apply 25% B2B discount on top of PPP-adjusted price
+            const pppAdjustedPrice = getPPPAdjustedPriceInPence(B2C_RETAIL_PRICE_PER_ASSESSMENT, userCountryCode);
+            const discountedPrice = Math.round(pppAdjustedPrice * 0.75); // 25% off PPP-adjusted price
+            
+            console.log(`[B2B Pricing] Country: ${userCountryCode}, PPP price: ${pppAdjustedPrice}p (${formatPriceGBP(pppAdjustedPrice)}), Discounted: ${discountedPrice}p (${formatPriceGBP(discountedPrice)})`);
             
             // Calculate 30-day free unlock date
             const freeUnlockDate = new Date();
@@ -854,7 +885,7 @@ export function registerPartnerRoutes(app: Express) {
               partnerCompanyName: partner.companyName || partner.name,
               paymentUrl,
               paymentAmount: formatPriceGBP(discountedPrice),
-              originalPaymentAmount: formatPriceGBP(originalPrice),
+              originalPaymentAmount: formatPriceGBP(pppAdjustedPrice),
               freeUnlockDate,
             });
             
@@ -874,9 +905,9 @@ export function registerPartnerRoutes(app: Express) {
             if (allComplete) {
               console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
               
-              // Use centralized B2C retail price for bundle calculations
-              const bundleOriginalTotal = B2C_RETAIL_PRICE_PER_ASSESSMENT * 4; // £80.00 total
-              const bundleDiscountedPrice = Math.round(bundleOriginalTotal * 0.60); // 40% off = £48.00
+              // Use PPP-adjusted pricing for bundle (same country code for consistency)
+              const bundlePppAdjustedTotal = pppAdjustedPrice * 4;
+              const bundleDiscountedPrice = Math.round(bundlePppAdjustedTotal * 0.60); // 40% off PPP-adjusted total
               
               // Create bundle payment URL
               const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}`;
@@ -888,7 +919,7 @@ export function registerPartnerRoutes(app: Express) {
                 completedAssessments: allAssessmentTypes,
                 paymentUrl: bundlePaymentUrl,
                 bundlePrice: formatPriceGBP(bundleDiscountedPrice),
-                originalTotalPrice: formatPriceGBP(bundleOriginalTotal),
+                originalTotalPrice: formatPriceGBP(bundlePppAdjustedTotal),
                 discountPercentage: 40,
                 freeUnlockDate,
               });
