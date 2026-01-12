@@ -9,7 +9,6 @@ import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 import { z } from "zod";
-import { isValidEmail, normalizeEmail } from "@shared/validation";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -1299,8 +1298,9 @@ export function registerPartnerRoutes(app: Express) {
           continue;
         }
         
-        // Validate email format using shared validation
-        if (!isValidEmail(candidate.email.trim())) {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(candidate.email.trim())) {
           validationErrors.push({ row, externalUserId: identifier, field: 'email', error: 'Invalid email format' });
           continue;
         }

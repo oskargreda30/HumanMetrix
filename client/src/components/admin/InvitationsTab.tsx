@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { isValidEmail, isValidName } from "@/lib/validation";
 import { Loader2, Send, Mail, Calendar, CheckCircle2, Clock, XCircle, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 
@@ -65,25 +64,6 @@ export default function InvitationsTab() {
       });
       return;
     }
-    
-    if (!isValidEmail(candidateEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!isValidName(candidateName)) {
-      toast({
-        title: "Invalid name",
-        description: "Name contains invalid characters.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     createInvitation.mutate({
       candidateEmail,
       candidateName,

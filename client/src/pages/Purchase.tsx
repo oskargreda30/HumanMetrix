@@ -11,7 +11,6 @@ import { CheckCircle2, Info, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
-import { isValidEmail, isValidName } from "@/lib/validation";
 
 type Assessment = {
   id: string;
@@ -115,25 +114,7 @@ export default function Purchase() {
         return;
       }
 
-      if (!isValidName(firstName)) {
-        toast({
-          title: "Invalid first name",
-          description: "First name contains invalid characters.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!isValidName(lastName)) {
-        toast({
-          title: "Invalid last name",
-          description: "Last name contains invalid characters.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!isValidEmail(email)) {
+      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
         toast({
           title: "Invalid email",
           description: "Please enter a valid email address.",

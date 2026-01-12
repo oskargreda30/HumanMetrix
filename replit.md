@@ -64,7 +64,6 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Cache Refresh Pattern**: For data changes.
 - **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
 - **Logging Security**: API response logging sanitises sensitive fields and is disabled in production.
-- **Input Validation System**: Centralized validation utilities in `shared/validation.ts` and `client/src/lib/validation.ts` with RFC 5322-compliant email regex, name regex supporting international characters and business names (allowing &, commas, parentheses), and phone number validation. Storage layer normalizes emails (trim + lowercase) and trims names on all createUser operations. Key API endpoints validate input using shared helpers (isValidEmail, isValidName) before persistence.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.

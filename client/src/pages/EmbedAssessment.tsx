@@ -12,7 +12,6 @@ import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, 
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
-import { isValidEmail } from "@/lib/validation";
 
 interface PartnerBranding {
   enabled: boolean;
@@ -193,7 +192,8 @@ export default function EmbedAssessment() {
   };
 
   const validateEmail = (email: string): boolean => {
-    return isValidEmail(email);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   // Resend cooldown timer

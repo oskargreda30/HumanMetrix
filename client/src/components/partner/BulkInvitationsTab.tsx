@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { EMAIL_REGEX, isValidName } from "@/lib/validation";
 import {
   Upload,
   Plus,
@@ -156,7 +155,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   const validateCandidates = (): ValidationError[] => {
     const errors: ValidationError[] = [];
     const seenEmails = new Set<string>();
-    const emailRegex = EMAIL_REGEX;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     candidates.forEach((candidate, index) => {
       const row = index + 1;

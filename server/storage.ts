@@ -521,9 +521,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    // Normalize email before searching
-    const normalizedEmail = email.trim().toLowerCase();
-    const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
@@ -533,14 +531,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
-    // Normalize email and trim name fields before inserting
-    const normalizedData = {
-      ...userData,
-      email: userData.email.trim().toLowerCase(),
-      firstName: userData.firstName?.trim() || null,
-      lastName: userData.lastName?.trim() || null,
-    };
-    const [user] = await db.insert(users).values(normalizedData).returning();
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
 

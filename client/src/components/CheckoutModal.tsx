@@ -26,7 +26,6 @@ import { CheckCircle2, Clock, FileText, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
-import { isValidEmail, isValidName } from "@/lib/validation";
 import type { BasketItem } from "@/contexts/BasketContext";
 
 const assessments = [
@@ -197,29 +196,9 @@ export default function CheckoutModal({
           });
           return false;
         }
-        
-        // Validate name format
-        if (!isValidName(firstName)) {
-          toast({
-            title: "Invalid first name",
-            description: "First name contains invalid characters.",
-            variant: "destructive",
-          });
-          return false;
-        }
-        
-        if (!isValidName(lastName)) {
-          toast({
-            title: "Invalid last name",
-            description: "Last name contains invalid characters.",
-            variant: "destructive",
-          });
-          return false;
-        }
       }
 
-      // Validate email format with proper regex
-      if (!isValidEmail(email)) {
+      if (!email.includes("@")) {
         toast({
           title: "Invalid email",
           description: "Please enter a valid email address.",
