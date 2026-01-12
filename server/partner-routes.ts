@@ -745,6 +745,11 @@ export function registerPartnerRoutes(app: Express) {
           answers
         );
         
+        // Calculate 30-day free results release date
+        const now = new Date();
+        const resultsReleaseScheduledAt = new Date(now);
+        resultsReleaseScheduledAt.setDate(resultsReleaseScheduledAt.getDate() + 30);
+        
         await storage.updateAssessmentSession(sessionId, {
           status: "completed",
           answers,
@@ -752,7 +757,9 @@ export function registerPartnerRoutes(app: Express) {
           totalScore,
           percentile,
           evaluations,
-          completedAt: new Date(),
+          completedAt: now,
+          resultsReleaseScheduledAt,
+          resultsReleaseStatus: "pending",
         } as any);
         
         await trackUsage(

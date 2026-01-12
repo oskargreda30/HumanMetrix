@@ -814,10 +814,15 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Delayed results fields for B2B widget (30-day free release)
+  resultsReleaseScheduledAt: timestamp("results_release_scheduled_at"), // When free results should be auto-emailed (completedAt + 30 days)
+  resultsReleasedAt: timestamp("results_released_at"), // When results were actually released (paid or auto)
+  resultsReleaseStatus: varchar("results_release_status").default("pending"), // pending, paid, released, cancelled
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
   index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
+  index("idx_assessment_sessions_release").on(table.resultsReleaseStatus, table.resultsReleaseScheduledAt),
 ]);
 
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({

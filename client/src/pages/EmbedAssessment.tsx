@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -496,9 +496,18 @@ export default function EmbedAssessment() {
     const accentColor = branding?.accentColor || '#06b6d4';
     const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
     
+    // Calculate 30-day free unlock date
+    const freeUnlockDate = new Date();
+    freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
+    const formattedDate = freeUnlockDate.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-completed">
-        <Card className={`max-w-md ${bgCard} border-green-500/30`}>
+      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed">
+        <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
           <CardContent className="pt-6 text-center">
             {branding?.logoUrl && (
               <img 
@@ -510,13 +519,32 @@ export default function EmbedAssessment() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Assessment Complete</h2>
             <p className={`${textSecondary} mb-4`}>Thank you for completing the assessment.</p>
-            {completedScores && (
-              <div className={`${bgCardAlt} rounded-lg p-4`}>
-                <p className="text-lg font-semibold" style={{ color: accentColor }}>
-                  Score: {completedScores.totalScore}%
-                </p>
+            
+            <div className={`${bgCardAlt} rounded-lg p-5 text-left space-y-4`}>
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className={`font-medium ${textPrimary}`}>Check Your Email</p>
+                  <p className={`text-sm ${textMuted}`}>
+                    We've sent you a link to view your detailed results. Pay a small fee for instant access.
+                  </p>
+                </div>
               </div>
-            )}
+              
+              <div className="flex items-start gap-3">
+                <Calendar className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className={`font-medium ${textPrimary}`}>Or Wait for Free Results</p>
+                  <p className={`text-sm ${textMuted}`}>
+                    Your full results will be emailed to you automatically on <span className="font-medium" style={{ color: accentColor }}>{formattedDate}</span> at no cost.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <p className={`text-xs ${textMuted} mt-4`}>
+              Didn't receive the email? Check your spam folder or contact support.
+            </p>
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
