@@ -872,30 +872,30 @@ export default function EmbedAssessment() {
                         disabled={isVerifying}
                         className={codeError ? '[&_div]:border-red-500' : ''}
                       >
-                        <InputOTPGroup>
+                        <InputOTPGroup className="gap-2">
                           <InputOTPSlot 
                             index={0} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                           <InputOTPSlot 
                             index={1} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                           <InputOTPSlot 
                             index={2} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                           <InputOTPSlot 
                             index={3} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                           <InputOTPSlot 
                             index={4} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                           <InputOTPSlot 
                             index={5} 
-                            className={`h-12 w-12 text-xl font-mono ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
+                            className={`h-12 w-12 text-xl font-mono rounded-md border ${isLight ? 'bg-white border-gray-300' : 'bg-slate-900 border-slate-600 text-white'}`}
                           />
                         </InputOTPGroup>
                       </InputOTP>
