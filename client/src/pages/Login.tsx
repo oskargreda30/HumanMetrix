@@ -85,6 +85,24 @@ export default function Login() {
         description: "Logged in successfully!",
       });
       
+      // Check if user is a partner team member and redirect accordingly
+      // Only do this if no explicit redirect is set (default dashboard redirect)
+      if (redirectTo === "/dashboard") {
+        try {
+          const partnerRes = await fetch("/api/partner/account", { credentials: "include" });
+          if (partnerRes.ok) {
+            const partnerData = await partnerRes.json();
+            if (partnerData.hasPartnerAccount) {
+              // User has partner access (either direct or as team member)
+              setLocation("/partner");
+              return;
+            }
+          }
+        } catch {
+          // If partner check fails, fall through to default redirect
+        }
+      }
+      
       setLocation(redirectTo);
     } catch (error: any) {
       toast({
