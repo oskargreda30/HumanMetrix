@@ -17,9 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CURRENCIES } from "@shared/currencies";
 import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
 
 interface Partner {
   id: string;
@@ -344,8 +341,6 @@ export default function PartnersTab() {
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<string>("GB");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [countryOpen, setCountryOpen] = useState(false);
-  const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
   
   const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
   
@@ -1818,110 +1813,56 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Popover open={countryOpen} onOpenChange={setCountryOpen} modal={false}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={countryOpen}
-                        className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
-                        data-testid="select-partner-country"
-                        type="button"
-                      >
-                        {selectedCountry ? (
+                  <Select value={selectedCountry} onValueChange={handleCountryChange}>
+                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-country">
+                      <SelectValue placeholder="Select country...">
+                        {selectedCountry && (
                           <>
                             {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{" "}
                             {COUNTRIES.find(c => c.code === selectedCountry)?.name}
                           </>
-                        ) : (
-                          "Select country..."
                         )}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-slate-800 border-slate-700 z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                      <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
-                        <CommandInput placeholder="Search country..." className="text-white placeholder:text-slate-400" autoFocus />
-                        <CommandList>
-                          <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
-                          <CommandGroup>
-                            {COUNTRIES.map((country) => (
-                              <CommandItem
-                                key={country.code}
-                                value={`${country.name} ${country.code}`}
-                                onSelect={() => {
-                                  handleCountryChange(country.code);
-                                  setCountryOpen(false);
-                                }}
-                                className="text-white hover:bg-slate-700 cursor-pointer"
-                              >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${selectedCountry === country.code ? "opacity-100" : "opacity-0"}`}
-                                />
-                                <span className="mr-2">{country.flag}</span>
-                                {country.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
+                      {COUNTRIES.map((country) => (
+                        <SelectItem 
+                          key={country.code} 
+                          value={country.code}
+                          className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
+                        >
+                          {country.flag} {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <input type="hidden" name="country" value={selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry)?.name || '' : ''} />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
                   <div className="flex gap-2">
-                    <Popover open={phoneCodeOpen} onOpenChange={setPhoneCodeOpen} modal={false}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={phoneCodeOpen}
-                          className="w-[140px] justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
-                          data-testid="select-phone-code"
-                          type="button"
-                        >
-                          {selectedPhoneCountryData ? (
+                    <Select value={selectedPhoneCountry} onValueChange={handlePhoneCountryChange}>
+                      <SelectTrigger className="w-[140px] bg-slate-800 border-slate-600" data-testid="select-phone-code">
+                        <SelectValue placeholder="🇬🇧 +44">
+                          {selectedPhoneCountryData && (
                             <>
-                              {selectedPhoneCountryData.flag}{" "}
-                              {selectedPhoneCountryData.dialCode}
+                              {selectedPhoneCountryData.flag} {selectedPhoneCountryData.dialCode}
                             </>
-                          ) : (
-                            "🇬🇧 +44"
                           )}
-                          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-0 bg-slate-800 border-slate-700 z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                        <Command className="bg-slate-800 [&_[cmdk-input-wrapper]]:border-slate-600">
-                          <CommandInput placeholder="Search country code..." className="text-white placeholder:text-slate-400" autoFocus />
-                          <CommandList>
-                            <CommandEmpty className="text-slate-400">No country found.</CommandEmpty>
-                            <CommandGroup>
-                              {COUNTRIES.map((country) => (
-                                <CommandItem
-                                  key={country.code}
-                                  value={`${country.name} ${country.dialCode} ${country.code}`}
-                                  onSelect={() => {
-                                    handlePhoneCountryChange(country.code);
-                                    setPhoneCodeOpen(false);
-                                  }}
-                                  className="text-white hover:bg-slate-700 cursor-pointer"
-                                >
-                                  <Check
-                                    className={`mr-2 h-4 w-4 ${selectedPhoneCountry === country.code ? "opacity-100" : "opacity-0"}`}
-                                  />
-                                  <span className="mr-2">{country.flag}</span>
-                                  <span className="mr-2">{country.name}</span>
-                                  <span className="text-slate-400">{country.dialCode}</span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
+                        {COUNTRIES.map((country) => (
+                          <SelectItem 
+                            key={country.code} 
+                            value={country.code}
+                            className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
+                          >
+                            {country.flag} {country.name} {country.dialCode}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input 
                       id="phoneNumber" 
                       name="phoneNumber" 
@@ -1948,7 +1889,7 @@ export default function PartnersTab() {
                           <SelectItem 
                             key={currency.code} 
                             value={currency.code} 
-                            className="text-white"
+                            className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
                           >
                             {currency.code} ({currency.symbol}) - {currency.name}
                           </SelectItem>
