@@ -554,6 +554,15 @@ export const ASSESSMENT_PRICES = {
 
 export const BASE_FEE = 1500; // £15.00 in pence
 
+// B2C Retail Price - the public price test-takers pay to access their results
+// Used for B2B test-taker emails (individual 25% discount, bundle 40% discount)
+export const B2C_RETAIL_PRICE_PER_ASSESSMENT = 2000; // £20.00 in pence
+
+// Helper for formatting prices in pence to GBP display
+export function formatPriceGBP(pence: number): string {
+  return `£${(pence / 100).toFixed(2)}`;
+}
+
 // ============================================
 // B2B Volume-Based Pricing ($1.00 = 1 Credit, 6-month expiration)
 // ============================================

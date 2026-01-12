@@ -1838,6 +1838,162 @@ Thank you for completing your assessment!
   }
 }
 
+// B2B All Assessments Complete Email - sent when all 4 assessments are completed with bulk discount
+interface B2BAllCompleteEmailDetails {
+  email: string;
+  candidateName?: string;
+  partnerCompanyName: string;
+  completedAssessments: string[]; // List of completed assessment types
+  paymentUrl: string;
+  bundlePrice: string; // Formatted bundle price with discount (e.g., "£60.00")
+  originalTotalPrice: string; // Formatted original total price (e.g., "£80.00")
+  discountPercentage: number; // e.g., 40
+  freeUnlockDate: Date; // 30 days after last completion
+}
+
+export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetails) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`B2B all-complete email not sent to ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  const displayName = details.email;
+  const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+  
+  const assessmentsList = details.completedAssessments.map(formatAssessmentName);
+  const assessmentsHtml = assessmentsList.map(a => `<li style="margin: 5px 0;">${a}</li>`).join('');
+  const assessmentsText = assessmentsList.join(', ');
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `🎉 All Assessments Complete - Unlock All Results with ${details.discountPercentage}% Bundle Discount!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; font-size: 18px; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .celebration-badge { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 24px; border-radius: 25px; display: inline-block; font-weight: 700; margin: 10px 0; font-size: 16px; }
+            .bundle-box { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #f59e0b; }
+            .price-container { text-align: center; margin: 15px 0; }
+            .original-price { text-decoration: line-through; color: #6b7280; font-size: 20px; }
+            .bundle-price { font-size: 36px; font-weight: bold; color: #059669; }
+            .savings-badge { background: #dc2626; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+            .assessments-list { background: #f0fdf4; padding: 15px 25px; border-radius: 8px; border-left: 4px solid #10b981; }
+            .option-free { background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="celebration-badge">🎉 All Assessments Complete!</span>
+              </div>
+              
+              <h2 style="text-align: center; margin-top: 20px;">Outstanding Achievement, ${displayName}!</h2>
+              
+              <p style="text-align: center; font-size: 16px;">You've completed all four assessments as part of your evaluation with <strong>${details.partnerCompanyName}</strong>. This is a significant accomplishment!</p>
+              
+              <div class="assessments-list">
+                <h4 style="margin: 0 0 10px 0; color: #059669;">✓ Completed Assessments:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                  ${assessmentsHtml}
+                </ul>
+              </div>
+              
+              <div class="bundle-box">
+                <h3 style="margin: 0 0 15px 0; text-align: center; color: #92400e;">🎁 Exclusive Bundle Offer</h3>
+                <p style="text-align: center; margin: 0;">Unlock <strong>ALL</strong> your assessment results together and save big!</p>
+                
+                <div class="price-container">
+                  <span class="original-price">${details.originalTotalPrice}</span>
+                  <br/>
+                  <span class="bundle-price">${details.bundlePrice}</span>
+                  <br/>
+                  <span class="savings-badge">SAVE ${details.discountPercentage}%</span>
+                </div>
+                
+                <p style="text-align: center; font-size: 14px; color: #78350f; margin: 15px 0 0 0;">
+                  Get comprehensive PDF reports for all 4 assessments with insights and recommendations.
+                </p>
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${details.paymentUrl}" class="button">Unlock All Results Now</a>
+              </div>
+              
+              <div class="option-free">
+                <strong style="color: #059669;">🕐 Free Access Option</strong>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">All your results will be available for free on <strong>${freeDate}</strong>. We'll send you an email when they're ready.</p>
+              </div>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+🎉 OUTSTANDING ACHIEVEMENT, ${displayName}!
+
+You've completed all four assessments as part of your evaluation with ${details.partnerCompanyName}. This is a significant accomplishment!
+
+COMPLETED ASSESSMENTS:
+${assessmentsText}
+
+═══════════════════════════════════════
+🎁 EXCLUSIVE BUNDLE OFFER
+═══════════════════════════════════════
+
+Unlock ALL your assessment results together and save ${details.discountPercentage}%!
+
+Original Price: ${details.originalTotalPrice}
+Bundle Price: ${details.bundlePrice}
+SAVINGS: ${details.discountPercentage}% OFF!
+
+Get comprehensive PDF reports for all 4 assessments with insights and recommendations.
+
+Click here to unlock all results: ${details.paymentUrl}
+
+FREE ACCESS
+All your results will be available for free on ${freeDate}.
+We'll send you an email when they're ready.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ B2B all-complete email sent to ${details.email} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`❌ Failed to send B2B all-complete email to ${details.email}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 // B2B Test-Taker Results Email - sent after payment with PDF attachment
 interface B2BResultsEmailDetails {
   email: string;

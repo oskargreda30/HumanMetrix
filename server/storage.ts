@@ -305,6 +305,7 @@ export interface IStorage {
   getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
   updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
   getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]>;
+  getCompletedB2BSessionsByEmail(email: string, partnerId: string): Promise<AssessmentSession[]>;
   
   // Usage event operations
   createUsageEvent(event: InsertUsageEvent): Promise<UsageEvent>;
@@ -1731,6 +1732,18 @@ export class DatabaseStorage implements IStorage {
             // Case 2: Paid but email failed - paid session without email sent
             eq(assessmentSessions.resultsPaymentStatus, 'paid')
           )
+        )
+      );
+  }
+
+  async getCompletedB2BSessionsByEmail(email: string, partnerId: string): Promise<AssessmentSession[]> {
+    // Get all completed sessions for the given email and partner
+    return await db.select().from(assessmentSessions)
+      .where(
+        and(
+          eq(assessmentSessions.partnerId, partnerId),
+          eq(assessmentSessions.status, 'completed'),
+          sql`LOWER(${assessmentSessions.externalEmail}) = LOWER(${email})`
         )
       );
   }

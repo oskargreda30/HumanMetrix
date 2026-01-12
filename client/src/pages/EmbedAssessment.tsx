@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock } from "lucide-react";
@@ -99,6 +100,8 @@ export default function EmbedAssessment() {
   const [completedScores, setCompletedScores] = useState<any>(null);
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes default
   const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
 
@@ -140,6 +143,11 @@ export default function EmbedAssessment() {
       const data = await res.json();
       setSession(data);
       
+      // Pre-fill email if available from session
+      if (data.externalEmail) {
+        setCandidateEmail(data.externalEmail);
+      }
+      
       // Load questions
       const loadedQuestions = getQuestions(data.assessmentType, data.questionLocale || 'default');
       setQuestions(loadedQuestions);
@@ -176,11 +184,29 @@ export default function EmbedAssessment() {
     }
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const startAssessment = async () => {
+    // Validate email - required for B2B widget
+    const trimmedEmail = candidateEmail.trim();
+    if (!trimmedEmail) {
+      setEmailError("Email is required to receive your results");
+      return;
+    }
+    if (!validateEmail(trimmedEmail)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setEmailError("");
+
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateEmail: trimmedEmail }),
       });
 
       if (!res.ok) {
@@ -559,6 +585,31 @@ export default function EmbedAssessment() {
                 <li>You have 20 minutes to complete the assessment</li>
               </ul>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="candidate-email" className={textPrimary}>
+                Your Email Address <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="candidate-email"
+                type="email"
+                placeholder="Enter your email to receive your results"
+                value={candidateEmail}
+                onChange={(e) => {
+                  setCandidateEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
+                className={`${inputBg} ${emailError ? 'border-red-500' : ''}`}
+                data-testid="input-candidate-email"
+              />
+              {emailError && (
+                <p className="text-sm text-red-500" data-testid="text-email-error">{emailError}</p>
+              )}
+              <p className={`text-xs ${textMuted}`}>
+                We'll send you a payment link to view your results immediately, or you can wait 30 days for free access.
+              </p>
+            </div>
+
             <Button
               onClick={startAssessment}
               className="w-full"

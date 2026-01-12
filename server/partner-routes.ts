@@ -2,8 +2,8 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
-import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount } from "@shared/schema";
+import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, formatPriceGBP } from "@shared/schema";
 import { getQuestionLocale } from "@shared/currencies";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -544,6 +544,7 @@ export function registerPartnerRoutes(app: Express) {
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
+        const { candidateEmail } = req.body || {};
         
         const session = await storage.getAssessmentSession(sessionId);
         
@@ -573,10 +574,16 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        await storage.updateAssessmentSession(sessionId, {
+        // Update session with email if provided (overrides any existing email)
+        const updateData: any = {
           status: "started",
           startedAt: new Date(),
-        } as any);
+        };
+        if (candidateEmail && typeof candidateEmail === 'string') {
+          updateData.externalEmail = candidateEmail.trim();
+        }
+        
+        await storage.updateAssessmentSession(sessionId, updateData);
         
         await trackUsage(
           session.partnerId,
@@ -815,6 +822,83 @@ export function registerPartnerRoutes(app: Express) {
             totalScore,
             completedAt: new Date().toISOString(),
           }).catch((err) => console.error("Webhook failed:", err));
+        }
+        
+        // Send B2B congratulatory email with payment link if email is available
+        // Refresh session to get the email that was saved during start
+        const updatedSession = await storage.getAssessmentSession(sessionId);
+        const candidateEmail = updatedSession?.externalEmail;
+        
+        if (candidateEmail && partner) {
+          try {
+            // Generate payment URL for immediate access
+            const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+              : 'https://humanmetrix.co.uk';
+            
+            // Use centralized B2C retail price for consistent email pricing
+            const originalPrice = B2C_RETAIL_PRICE_PER_ASSESSMENT;
+            const discountedPrice = Math.round(originalPrice * 0.75); // 25% off = £15.00
+            
+            // Calculate 30-day free unlock date
+            const freeUnlockDate = new Date();
+            freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
+            
+            // Create payment URL - points to a results purchase page
+            const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}`;
+            
+            await sendB2BCongratulatoryEmail({
+              email: candidateEmail,
+              candidateName: session.externalUserId || undefined,
+              assessmentType: session.assessmentType,
+              partnerCompanyName: partner.companyName || partner.name,
+              paymentUrl,
+              paymentAmount: formatPriceGBP(discountedPrice),
+              originalPaymentAmount: formatPriceGBP(originalPrice),
+              freeUnlockDate,
+            });
+            
+            console.log(`[B2B Email] Sent congratulatory email to ${candidateEmail} for session ${sessionId}`);
+            
+            // Check if all 4 assessments are now complete for this email
+            const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+            const completedSessions = await storage.getCompletedB2BSessionsByEmail(
+              candidateEmail, 
+              session.partnerId
+            );
+            
+            const completedTypes = new Set(completedSessions.map(s => s.assessmentType));
+            // Ensure ALL 4 distinct assessment types are present
+            const allComplete = allAssessmentTypes.every(type => completedTypes.has(type));
+            
+            if (allComplete) {
+              console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
+              
+              // Use centralized B2C retail price for bundle calculations
+              const bundleOriginalTotal = B2C_RETAIL_PRICE_PER_ASSESSMENT * 4; // £80.00 total
+              const bundleDiscountedPrice = Math.round(bundleOriginalTotal * 0.60); // 40% off = £48.00
+              
+              // Create bundle payment URL
+              const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}`;
+              
+              await sendB2BAllCompleteEmail({
+                email: candidateEmail,
+                candidateName: session.externalUserId || undefined,
+                partnerCompanyName: partner.companyName || partner.name,
+                completedAssessments: allAssessmentTypes,
+                paymentUrl: bundlePaymentUrl,
+                bundlePrice: formatPriceGBP(bundleDiscountedPrice),
+                originalTotalPrice: formatPriceGBP(bundleOriginalTotal),
+                discountPercentage: 40,
+                freeUnlockDate,
+              });
+              
+              console.log(`[B2B Email] Sent bundle offer email to ${candidateEmail}`);
+            }
+          } catch (emailError) {
+            console.error('[B2B Email] Failed to send congratulatory email:', emailError);
+            // Don't fail the whole request just because email failed
+          }
         }
         
         res.json({
