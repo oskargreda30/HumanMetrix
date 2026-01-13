@@ -137,19 +137,29 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
     );
   }, [stateSearch]);
   
-  // Click outside handlers
+  // Click outside handlers for country dropdown
   useEffect(() => {
+    if (!countryDropdownOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
         setCountryDropdownOpen(false);
       }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [countryDropdownOpen]);
+  
+  // Click outside handlers for state dropdown
+  useEffect(() => {
+    if (!stateDropdownOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
       if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
         setStateDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [stateDropdownOpen]);
   
   // Determine if this is a subscription billing type
   const isSubscription = billingType === 'subscription';
