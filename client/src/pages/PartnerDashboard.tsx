@@ -2771,7 +2771,7 @@ export default function PartnerDashboard() {
                       <div className="grid gap-4 md:grid-cols-3">
                         {/* PAYG Option */}
                         <div 
-                          className={`border rounded-lg p-4 transition-colors ${
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
                             account?.partner?.billingType === 'payg' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
@@ -2787,20 +2787,20 @@ export default function PartnerDashboard() {
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-4">
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
                             No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               No recurring charges
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Bulk discounts available
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Control your spend
                             </li>
                           </ul>
@@ -2808,7 +2808,7 @@ export default function PartnerDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full"
+                              className="w-full mt-auto"
                               onClick={() => {
                                 setSelectedBillingType('payg');
                                 setShowBillingChangeDialog(true);
@@ -2822,7 +2822,7 @@ export default function PartnerDashboard() {
 
                         {/* Subscription Option */}
                         <div 
-                          className={`border rounded-lg p-4 transition-colors ${
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
                             account?.partner?.billingType === 'subscription' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
@@ -2838,20 +2838,20 @@ export default function PartnerDashboard() {
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-4">
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
                             Card on file. Min monthly charge + auto-bill for additional usage at base rates.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Predictable monthly base
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Pay as you grow
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Automatic billing
                             </li>
                           </ul>
@@ -2859,7 +2859,7 @@ export default function PartnerDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full"
+                              className="w-full mt-auto"
                               onClick={() => {
                                 setSelectedBillingType('subscription');
                                 setShowBillingChangeDialog(true);
@@ -2873,7 +2873,7 @@ export default function PartnerDashboard() {
 
                         {/* Enterprise Option */}
                         <div 
-                          className={`border rounded-lg p-4 transition-colors ${
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
                             account?.partner?.billingType === 'enterprise' 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:border-muted-foreground/50'
@@ -2889,20 +2889,20 @@ export default function PartnerDashboard() {
                               <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-4">
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
                             For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
                           </p>
                           <ul className="text-sm space-y-1 mb-4">
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Bulk credit blocks
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Pro-forma invoicing
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                               Custom contracts
                             </li>
                           </ul>
@@ -2910,7 +2910,7 @@ export default function PartnerDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full"
+                              className="w-full mt-auto"
                               onClick={() => {
                                 setSelectedBillingType('enterprise');
                                 setShowBillingChangeDialog(true);
