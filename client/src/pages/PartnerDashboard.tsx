@@ -2508,10 +2508,10 @@ export default function PartnerDashboard() {
                     <Building2 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold" data-testid="home-org-count">
-                      {organizations?.organizations?.length ?? 0}
+                    <div className="text-lg font-semibold text-muted-foreground" data-testid="home-org-count">
+                      Coming Soon
                     </div>
-                    <p className="text-xs text-muted-foreground">active organizations</p>
+                    <p className="text-xs text-muted-foreground">manage client workspaces</p>
                   </CardContent>
                 </Card>
                 <Card>
