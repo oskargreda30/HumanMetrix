@@ -3,7 +3,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, AddressElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { COUNTRIES, US_STATES } from "@shared/countries";
+import { useRef, useMemo } from "react";
 
 // Initialize Stripe with public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
@@ -89,10 +91,90 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
-  const [addressComplete, setAddressComplete] = useState(false);
+  
+  // Billing details state
+  const [billingName, setBillingName] = useState("");
+  const [billingLine1, setBillingLine1] = useState("");
+  const [billingLine2, setBillingLine2] = useState("");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingState, setBillingState] = useState("");
+  const [billingPostalCode, setBillingPostalCode] = useState("");
+  const [billingCountry, setBillingCountry] = useState("");
+  
+  // Country dropdown state
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countryHighlightIndex, setCountryHighlightIndex] = useState(0);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const countryListRef = useRef<HTMLDivElement>(null);
+  const countryInputRef = useRef<HTMLInputElement>(null);
+  
+  // State dropdown for US
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [stateSearch, setStateSearch] = useState("");
+  const [stateHighlightIndex, setStateHighlightIndex] = useState(0);
+  const stateDropdownRef = useRef<HTMLDivElement>(null);
+  const stateListRef = useRef<HTMLDivElement>(null);
+  const stateInputRef = useRef<HTMLInputElement>(null);
+  
+  // Filtered countries based on search
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return COUNTRIES;
+    const search = countrySearch.toLowerCase();
+    return COUNTRIES.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.code.toLowerCase().includes(search)
+    );
+  }, [countrySearch]);
+  
+  // Filtered states based on search
+  const filteredStates = useMemo(() => {
+    if (!stateSearch.trim()) return US_STATES;
+    const search = stateSearch.toLowerCase();
+    return US_STATES.filter(s => 
+      s.name.toLowerCase().includes(search) || 
+      s.code.toLowerCase().includes(search)
+    );
+  }, [stateSearch]);
+  
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+        setStateDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   // Determine if this is a subscription billing type
   const isSubscription = billingType === 'subscription';
+  
+  // Check if billing details are complete
+  const isBillingComplete = billingName.trim() && billingLine1.trim() && billingCity.trim() && 
+    billingPostalCode.trim() && billingCountry && (billingCountry !== 'US' || billingState);
+  
+  const handleCountrySelect = (countryCode: string) => {
+    setBillingCountry(countryCode);
+    setCountryDropdownOpen(false);
+    setCountrySearch("");
+    setCountryHighlightIndex(0);
+    // Clear state if changing from US
+    if (countryCode !== 'US') {
+      setBillingState("");
+    }
+  };
+  
+  const handleStateSelect = (stateCode: string) => {
+    setBillingState(stateCode);
+    setStateDropdownOpen(false);
+    setStateSearch("");
+    setStateHighlightIndex(0);
+  };
 
   const { data: cardStatus, isLoading, refetch } = useQuery<CardStatus>({
     queryKey: ["/api/partner/card/status"],
@@ -109,22 +191,25 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
     setCardError(null);
 
     try {
-      // Get billing details from address element
-      const addressElement = elements.getElement(AddressElement);
-      let billingDetails: any = {};
-      
-      if (addressElement) {
-        const addressResult = await addressElement.getValue();
-        if (!addressResult.complete) {
-          setCardError("Please complete your billing details");
-          setIsSettingUp(false);
-          return;
-        }
-        billingDetails = {
-          name: addressResult.value.name,
-          address: addressResult.value.address,
-        };
+      // Validate billing details
+      if (!isBillingComplete) {
+        setCardError("Please complete all required billing details");
+        setIsSettingUp(false);
+        return;
       }
+      
+      // Build billing details from form
+      const billingDetails = {
+        name: billingName.trim(),
+        address: {
+          line1: billingLine1.trim(),
+          line2: billingLine2.trim() || undefined,
+          city: billingCity.trim(),
+          state: billingCountry === 'US' ? billingState : (billingState || undefined),
+          postal_code: billingPostalCode.trim(),
+          country: billingCountry,
+        },
+      };
       
       const response = await apiRequest("POST", "/api/partner/card/setup-intent");
       const { clientSecret } = await response.json();
@@ -323,21 +408,260 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium mb-2 block">Billing Details</Label>
-                <div className="p-4 border rounded-lg bg-background">
-                  <AddressElement
-                    options={{
-                      mode: 'billing',
-                      fields: {
-                        phone: 'never',
-                      },
-                      display: {
-                        name: 'full',
-                      },
-                    }}
-                    onChange={(event) => {
-                      setAddressComplete(event.complete);
-                    }}
-                  />
+                <div className="p-4 border rounded-lg bg-background space-y-4">
+                  <div>
+                    <Label htmlFor="billing-name" className="text-sm text-muted-foreground">Full Name *</Label>
+                    <Input
+                      id="billing-name"
+                      value={billingName}
+                      onChange={(e) => setBillingName(e.target.value)}
+                      placeholder="John Smith"
+                      className="mt-1"
+                      data-testid="input-billing-name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="billing-line1" className="text-sm text-muted-foreground">Address Line 1 *</Label>
+                    <Input
+                      id="billing-line1"
+                      value={billingLine1}
+                      onChange={(e) => setBillingLine1(e.target.value)}
+                      placeholder="123 Main Street"
+                      className="mt-1"
+                      data-testid="input-billing-line1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="billing-line2" className="text-sm text-muted-foreground">Address Line 2</Label>
+                    <Input
+                      id="billing-line2"
+                      value={billingLine2}
+                      onChange={(e) => setBillingLine2(e.target.value)}
+                      placeholder="Apartment, suite, unit, etc. (optional)"
+                      className="mt-1"
+                      data-testid="input-billing-line2"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="billing-city" className="text-sm text-muted-foreground">City *</Label>
+                      <Input
+                        id="billing-city"
+                        value={billingCity}
+                        onChange={(e) => setBillingCity(e.target.value)}
+                        placeholder="London"
+                        className="mt-1"
+                        data-testid="input-billing-city"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billing-postal" className="text-sm text-muted-foreground">
+                        {billingCountry === 'US' ? 'ZIP Code' : 'Postal Code'} *
+                      </Label>
+                      <Input
+                        id="billing-postal"
+                        value={billingPostalCode}
+                        onChange={(e) => setBillingPostalCode(e.target.value)}
+                        placeholder={billingCountry === 'US' ? '10001' : 'SW1A 1AA'}
+                        className="mt-1"
+                        data-testid="input-billing-postal"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div ref={countryDropdownRef} className="relative">
+                      <Label className="text-sm text-muted-foreground">Country *</Label>
+                      <div className="relative mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCountryDropdownOpen(!countryDropdownOpen);
+                            setCountrySearch("");
+                            setCountryHighlightIndex(0);
+                            setTimeout(() => countryInputRef.current?.focus(), 0);
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-background hover:bg-muted/50 transition-colors text-left"
+                          aria-haspopup="listbox"
+                          aria-expanded={countryDropdownOpen}
+                          data-testid="button-billing-country"
+                        >
+                          <span className={billingCountry ? '' : 'text-muted-foreground'}>
+                            {billingCountry 
+                              ? `${COUNTRIES.find(c => c.code === billingCountry)?.flag} ${COUNTRIES.find(c => c.code === billingCountry)?.name}`
+                              : 'Select country'}
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                        {countryDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-lg">
+                            <div className="p-2 border-b">
+                              <Input
+                                ref={countryInputRef}
+                                value={countrySearch}
+                                onChange={(e) => {
+                                  setCountrySearch(e.target.value);
+                                  setCountryHighlightIndex(0);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (filteredCountries.length > 0 && countryHighlightIndex >= 0) {
+                                      handleCountrySelect(filteredCountries[countryHighlightIndex].code);
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    setCountryDropdownOpen(false);
+                                  } else if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setCountryHighlightIndex(prev => Math.min(prev + 1, filteredCountries.length - 1));
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setCountryHighlightIndex(prev => Math.max(prev - 1, 0));
+                                  }
+                                }}
+                                placeholder="Search countries..."
+                                className="h-8"
+                                data-testid="input-country-search"
+                              />
+                            </div>
+                            <div ref={countryListRef} className="max-h-[200px] overflow-y-auto" role="listbox">
+                              {filteredCountries.length === 0 ? (
+                                <div className="p-2 text-center text-muted-foreground text-sm">No country found</div>
+                              ) : (
+                                filteredCountries.map((country, index) => (
+                                  <div
+                                    key={country.code}
+                                    ref={(el) => {
+                                      if (index === countryHighlightIndex && el) {
+                                        el.scrollIntoView({ block: 'nearest' });
+                                      }
+                                    }}
+                                    onClick={() => handleCountrySelect(country.code)}
+                                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                                      index === countryHighlightIndex ? 'bg-muted' : 'hover:bg-muted/50'
+                                    }`}
+                                    role="option"
+                                    aria-selected={billingCountry === country.code}
+                                    data-testid={`country-option-${country.code}`}
+                                  >
+                                    <span>{country.flag}</span>
+                                    <span>{country.name}</span>
+                                    {billingCountry === country.code && (
+                                      <Check className="h-4 w-4 ml-auto text-primary" />
+                                    )}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {billingCountry === 'US' ? (
+                      <div ref={stateDropdownRef} className="relative">
+                        <Label className="text-sm text-muted-foreground">State *</Label>
+                        <div className="relative mt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStateDropdownOpen(!stateDropdownOpen);
+                              setStateSearch("");
+                              setStateHighlightIndex(0);
+                              setTimeout(() => stateInputRef.current?.focus(), 0);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-background hover:bg-muted/50 transition-colors text-left"
+                            aria-haspopup="listbox"
+                            aria-expanded={stateDropdownOpen}
+                            data-testid="button-billing-state"
+                          >
+                            <span className={billingState ? '' : 'text-muted-foreground'}>
+                              {billingState 
+                                ? US_STATES.find(s => s.code === billingState)?.name
+                                : 'Select state'}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          {stateDropdownOpen && (
+                            <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-lg">
+                              <div className="p-2 border-b">
+                                <Input
+                                  ref={stateInputRef}
+                                  value={stateSearch}
+                                  onChange={(e) => {
+                                    setStateSearch(e.target.value);
+                                    setStateHighlightIndex(0);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      if (filteredStates.length > 0 && stateHighlightIndex >= 0) {
+                                        handleStateSelect(filteredStates[stateHighlightIndex].code);
+                                      }
+                                    } else if (e.key === 'Escape') {
+                                      setStateDropdownOpen(false);
+                                    } else if (e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      setStateHighlightIndex(prev => Math.min(prev + 1, filteredStates.length - 1));
+                                    } else if (e.key === 'ArrowUp') {
+                                      e.preventDefault();
+                                      setStateHighlightIndex(prev => Math.max(prev - 1, 0));
+                                    }
+                                  }}
+                                  placeholder="Search states..."
+                                  className="h-8"
+                                  data-testid="input-state-search"
+                                />
+                              </div>
+                              <div ref={stateListRef} className="max-h-[200px] overflow-y-auto" role="listbox">
+                                {filteredStates.length === 0 ? (
+                                  <div className="p-2 text-center text-muted-foreground text-sm">No state found</div>
+                                ) : (
+                                  filteredStates.map((state, index) => (
+                                    <div
+                                      key={state.code}
+                                      ref={(el) => {
+                                        if (index === stateHighlightIndex && el) {
+                                          el.scrollIntoView({ block: 'nearest' });
+                                        }
+                                      }}
+                                      onClick={() => handleStateSelect(state.code)}
+                                      className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                                        index === stateHighlightIndex ? 'bg-muted' : 'hover:bg-muted/50'
+                                      }`}
+                                      role="option"
+                                      aria-selected={billingState === state.code}
+                                      data-testid={`state-option-${state.code}`}
+                                    >
+                                      <span>{state.name}</span>
+                                      {billingState === state.code && (
+                                        <Check className="h-4 w-4 ml-auto text-primary" />
+                                      )}
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="billing-state" className="text-sm text-muted-foreground">State / Province</Label>
+                        <Input
+                          id="billing-state"
+                          value={billingState}
+                          onChange={(e) => setBillingState(e.target.value)}
+                          placeholder="Optional"
+                          className="mt-1"
+                          data-testid="input-billing-state"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div>
@@ -374,7 +698,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
             <div className="flex gap-2">
               <Button
                 onClick={handleSaveCard}
-                disabled={!cardComplete || isSettingUp || !stripe}
+                disabled={!cardComplete || !isBillingComplete || isSettingUp || !stripe}
                 data-testid="button-confirm-save-card"
               >
                 {isSettingUp && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
@@ -385,6 +709,14 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                 onClick={() => {
                   setShowAddCard(false);
                   setCardError(null);
+                  // Reset billing form
+                  setBillingName("");
+                  setBillingLine1("");
+                  setBillingLine2("");
+                  setBillingCity("");
+                  setBillingState("");
+                  setBillingPostalCode("");
+                  setBillingCountry("");
                 }}
                 disabled={isSettingUp}
                 data-testid="button-cancel-save-card"
