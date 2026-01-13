@@ -174,11 +174,11 @@ const faqs = [
   },
   {
     question: "What integrations do you support?",
-    answer: "We integrate with major ATS platforms including Greenhouse, Lever, Workday, SAP SuccessFactors, and Oracle HCM. We also offer a REST API and embeddable JavaScript widget for custom integrations.",
+    answer: "We integrate with major ATS platforms including Greenhouse, Lever, Workday, SAP SuccessFactors, and Oracle HCM. We also offer a REST API, custom API connectors, and an embeddable JavaScript widget for any other integrations.",
   },
   {
     question: "Is our candidate data secure?",
-    answer: "Absolutely. We're GDPR compliant with bank-level encryption, role-based access control, and data hosted in UK data centres. Candidates can request data deletion at any time.",
+    answer: "Absolutely. We use SOC 2 Type II certified infrastructure with bank-level encryption (AES-256), role-based access control, and secure cloud hosting. Candidates can request data deletion at any time.",
   },
   {
     question: "What's included in enterprise pricing?",
