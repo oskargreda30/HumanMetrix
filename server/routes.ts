@@ -9025,8 +9025,14 @@ Format your response as JSON with this structure:
       let newUserId: string;
       
       if (existingUser) {
-        // User already has an account, just link them
+        // User already has an account, link them and update role if needed
         newUserId = existingUser.id;
+        
+        // Update user role to partner_team_member if they're a regular user
+        // (preserves admin roles like super_admin, organization_admin)
+        if (existingUser.role === 'user') {
+          await storage.updateUser(existingUser.id, { role: 'partner_team_member' });
+        }
       } else {
         // Create new user account with temporary password
         temporaryPassword = generateTemporaryPassword();

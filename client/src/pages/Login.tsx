@@ -46,7 +46,25 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      setLocation(redirectTo);
+      // Check user role to determine correct redirect
+      if (redirectTo === "/dashboard") {
+        fetch("/api/auth/user", { credentials: "include" })
+          .then(res => res.ok ? res.json() : null)
+          .then(userData => {
+            if (userData && (
+              userData.role === 'partner_team_member' || 
+              userData.role === 'partner_admin' || 
+              userData.role === 'organization_admin'
+            )) {
+              setLocation("/partner");
+            } else {
+              setLocation(redirectTo);
+            }
+          })
+          .catch(() => setLocation(redirectTo));
+      } else {
+        setLocation(redirectTo);
+      }
     }
   }, [isAuthenticated, authLoading, setLocation, redirectTo]);
 
