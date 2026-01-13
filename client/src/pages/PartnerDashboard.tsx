@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, AddressElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 // Initialize Stripe with public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
@@ -72,7 +72,7 @@ interface OverageHistoryItem {
   createdAt: string;
 }
 
-function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId: string; currency?: string }) {
+function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType = 'payg' }: { partnerId: string; currency?: string; billingType?: string }) {
   const currencySymbols: Record<string, string> = {
     gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$', jpy: '¥',
     inr: '₹', myr: 'RM', thb: '฿', php: '₱', idr: 'Rp', vnd: '₫', bdt: '৳', pkr: '₨',
@@ -89,6 +89,10 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
+  const [addressComplete, setAddressComplete] = useState(false);
+  
+  // Determine if this is a subscription billing type
+  const isSubscription = billingType === 'subscription';
 
   const { data: cardStatus, isLoading, refetch } = useQuery<CardStatus>({
     queryKey: ["/api/partner/card/status"],
@@ -105,6 +109,23 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
     setCardError(null);
 
     try {
+      // Get billing details from address element
+      const addressElement = elements.getElement(AddressElement);
+      let billingDetails: any = {};
+      
+      if (addressElement) {
+        const addressResult = await addressElement.getValue();
+        if (!addressResult.complete) {
+          setCardError("Please complete your billing details");
+          setIsSettingUp(false);
+          return;
+        }
+        billingDetails = {
+          name: addressResult.value.name,
+          address: addressResult.value.address,
+        };
+      }
+      
       const response = await apiRequest("POST", "/api/partner/card/setup-intent");
       const { clientSecret } = await response.json();
 
@@ -116,6 +137,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
       const { setupIntent, error } = await stripe.confirmCardSetup(clientSecret, {
         payment_method: {
           card: cardElement,
+          billing_details: billingDetails,
         },
       });
 
@@ -130,11 +152,14 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
 
         toast({
           title: "Card saved",
-          description: "Your card has been saved for overage billing.",
+          description: isSubscription 
+            ? "Your payment method has been saved and verified."
+            : "Your card has been saved for overage billing.",
         });
         setShowAddCard(false);
         refetch();
-        // Also refresh overage history
+        // Also refresh dashboard card status for live API key check
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/card/status"] });
         queryClient.invalidateQueries({ queryKey: ["/api/partner/overage-history"] });
       }
     } catch (error: any) {
@@ -192,10 +217,13 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
         <div>
           <CardTitle className="text-lg flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Card on File
+            {isSubscription ? 'Payment Method' : 'Card on File'}
           </CardTitle>
           <CardDescription>
-            Save a card for automatic overage billing when your prepaid credits run out
+            {isSubscription 
+              ? 'Add a payment method to enable live API access and subscription billing'
+              : 'Save a card for automatic billing when usage exceeds your purchased credits'
+            }
           </CardDescription>
         </div>
         {cardStatus?.hasCard && (
@@ -217,9 +245,11 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
                   <p className="font-medium">
                     {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
-                  </p>
+                  {!isSubscription && (
+                    <p className="text-sm text-muted-foreground">
+                      Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
+                    </p>
+                  )}
                 </div>
               </div>
               <Button
@@ -240,7 +270,10 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
             <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 <Info className="h-4 w-4 inline mr-1" />
-                With a card on file, your API access stays active even when prepaid credits run out. Overages are billed automatically on the 1st of each month.
+                {isSubscription 
+                  ? 'Your payment method is on file for subscription billing. You can now create live API keys.'
+                  : 'With a card on file, your API access stays active even when purchased credits run out. Usage is billed automatically on the 1st of each month.'
+                }
               </p>
             </div>
 
@@ -287,30 +320,55 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
           </>
         ) : showAddCard ? (
           <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <CardElement
-                options={{
-                  style: {
-                    base: {
-                      fontSize: "16px",
-                      color: "#424770",
-                      "::placeholder": { color: "#aab7c4" },
-                    },
-                    invalid: { color: "#9e2146" },
-                  },
-                }}
-                onChange={(event) => {
-                  setCardComplete(event.complete);
-                  setCardError(event.error ? event.error.message : null);
-                }}
-              />
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Billing Details</Label>
+                <div className="p-4 border rounded-lg bg-background">
+                  <AddressElement
+                    options={{
+                      mode: 'billing',
+                      fields: {
+                        phone: 'never',
+                      },
+                      display: {
+                        name: 'full',
+                      },
+                    }}
+                    onChange={(event) => {
+                      setAddressComplete(event.complete);
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Card Details</Label>
+                <div className="p-4 border rounded-lg bg-background">
+                  <CardElement
+                    options={{
+                      style: {
+                        base: {
+                          fontSize: "16px",
+                          color: "#424770",
+                          "::placeholder": { color: "#aab7c4" },
+                        },
+                        invalid: { color: "#9e2146" },
+                      },
+                    }}
+                    onChange={(event) => {
+                      setCardComplete(event.complete);
+                      setCardError(event.error ? event.error.message : null);
+                    }}
+                  />
+                </div>
+              </div>
               {cardError && (
-                <p className="text-sm text-destructive mt-2">{cardError}</p>
+                <p className="text-sm text-destructive">{cardError}</p>
               )}
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-xs text-muted-foreground">
-                Your card details are securely processed by Stripe. We never store your full card number.
+                Your card details are securely processed by Stripe. We never store your full card number. 
+                {isSubscription && ' Your card will be authorized to verify it can be charged.'}
               </p>
             </div>
             <div className="flex gap-2">
@@ -320,7 +378,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
                 data-testid="button-confirm-save-card"
               >
                 {isSettingUp && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Save Card
+                {isSubscription ? 'Save & Verify Card' : 'Save Card'}
               </Button>
               <Button
                 variant="outline"
@@ -340,19 +398,31 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
             <div className="p-4 border-2 border-dashed rounded-lg text-center">
               <CreditCard className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground mb-4">
-                No card saved. Add a card to keep API access active when credits run out.
+                {isSubscription 
+                  ? 'No payment method on file. Add a card to create live API keys and enable billing.'
+                  : 'No card saved. Add a card to keep API access active when purchased credits run out.'
+                }
               </p>
               <Button onClick={() => setShowAddCard(true)} data-testid="button-add-card">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Card
               </Button>
             </div>
-            <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                <AlertTriangle className="h-4 w-4 inline mr-1" />
-                Without a card on file, your API access will be suspended when prepaid credits are exhausted.
-              </p>
-            </div>
+            {isSubscription ? (
+              <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  A payment method is required to create live API keys and use the platform in production.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  Without a card on file, your API access will be suspended when purchased credits are exhausted.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -360,10 +430,10 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP' }: { partnerId
   );
 }
 
-function PrepaidCardManagement({ partnerId, currency }: { partnerId: string; currency?: string }) {
+function PrepaidCardManagement({ partnerId, currency, billingType }: { partnerId: string; currency?: string; billingType?: string }) {
   return (
     <Elements stripe={stripePromise}>
-      <PrepaidCardManagementInner partnerId={partnerId} currency={currency} />
+      <PrepaidCardManagementInner partnerId={partnerId} currency={currency} billingType={billingType} />
     </Elements>
   );
 }
@@ -1701,18 +1771,35 @@ export default function PartnerDashboard() {
             <TabsContent value="home" className="space-y-6" data-testid="panel-home">
               {/* Getting Started Guide */}
               {(() => {
+                const isSubscriptionBilling = account?.partner?.billingType === 'subscription';
+                const hasPaymentMethod = dashboardCardStatus?.hasCard === true;
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
                 const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
                 
-                // Organization step hidden for now
-                const completedSteps = [hasApiKey, hasAssessment, hasTeamMember].filter(Boolean).length;
-                const totalSteps = 3;
+                // For subscription billing, include payment method as a required step
+                const steps = isSubscriptionBilling 
+                  ? [hasPaymentMethod, hasApiKey, hasAssessment, hasTeamMember]
+                  : [hasApiKey, hasAssessment, hasTeamMember];
+                
+                const completedSteps = steps.filter(Boolean).length;
+                const totalSteps = steps.length;
                 const allComplete = completedSteps === totalSteps;
                 
                 // Hide if all steps are complete
                 if (allComplete) return null;
+                
+                // Helper function to navigate to billing tab and scroll to payment methods
+                const handleAddPaymentMethod = () => {
+                  setActiveTab('billing');
+                  setTimeout(() => {
+                    const paymentSection = document.querySelector('[data-testid="section-payment-methods"]');
+                    if (paymentSection) {
+                      paymentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }, 100);
+                };
                 
                 return (
                   <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
@@ -1735,6 +1822,34 @@ export default function PartnerDashboard() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="grid gap-3 md:grid-cols-2">
+                        {/* Step 0: Add Payment Method (Subscription billing only) */}
+                        {isSubscriptionBilling && (
+                          <button
+                            onClick={handleAddPaymentMethod}
+                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                              hasPaymentMethod ? 'bg-green-500/5 border-green-500/20' : 'bg-amber-500/5 border-amber-500/20'
+                            }`}
+                            data-testid="setup-step-payment-method"
+                          >
+                            <div className={`p-1.5 rounded-full ${hasPaymentMethod ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                              {hasPaymentMethod ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <CreditCard className="h-4 w-4 text-amber-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className={`font-medium text-sm ${hasPaymentMethod ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                                Add payment method
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {hasPaymentMethod ? 'Payment method on file' : 'Required for live API access'}
+                              </div>
+                            </div>
+                            {!hasPaymentMethod && <ExternalLink className="h-4 w-4 text-amber-600" />}
+                          </button>
+                        )}
+                        
                         {/* Step 1: Create API Key */}
                         <button
                           onClick={() => setActiveTab('api-keys')}
@@ -2754,9 +2869,9 @@ export default function PartnerDashboard() {
                     </CardHeader>
                   </Card>
 
-                  {/* Card on File for Prepaid Partners */}
+                  {/* Card on File for PAYG Partners */}
                   {account?.partner?.billingType === 'payg' && (
-                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} />
+                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} billingType="payg" />
                   )}
 
                   {/* Pending Billing Change Request Alert */}
@@ -3163,6 +3278,7 @@ export default function PartnerDashboard() {
                       <PrepaidCardManagement 
                         partnerId={account?.partner?.id || ''} 
                         currency={account?.partner?.currency}
+                        billingType={account?.partner?.billingType}
                       />
                     </div>
                   )}

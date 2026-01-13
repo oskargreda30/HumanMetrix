@@ -1851,9 +1851,9 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(403).json({ error: "Not a partner account" });
       }
       
-      // Only prepaid partners can save cards for overage billing
-      if (partner.billingType !== 'prepaid') {
-        return res.status(400).json({ error: "Card-on-file is only available for prepaid partners" });
+      // Only prepaid, payg, and subscription partners can save cards
+      if (!['prepaid', 'payg', 'subscription'].includes(partner.billingType)) {
+        return res.status(400).json({ error: "Card-on-file is not available for this billing type" });
       }
       
       // Create or retrieve Stripe customer
