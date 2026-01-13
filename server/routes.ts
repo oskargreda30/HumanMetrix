@@ -9428,9 +9428,9 @@ Format your response as JSON with this structure:
       // Get sessions for this partner
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       
-      // Filter by organization if specified
+      // Filter by organization if specified (ignore "all" filter - it means show all)
       let filteredSessions = sessions;
-      if (organizationId) {
+      if (organizationId && organizationId !== 'all') {
         filteredSessions = sessions.filter(s => s.partnerOrganisationId === organizationId);
       }
       
