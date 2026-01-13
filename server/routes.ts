@@ -14465,6 +14465,18 @@ async function runScheduledBillingCheck() {
       await processAutoBillPartner(partner);
     }
     
+    // Get enterprise partners whose billing cycle anchor matches today
+    const enterprisePartners = partners.filter(
+      (p: PartnerAccount) => p.billingType === 'enterprise' && 
+           (p.billingCycleAnchor || 1) === dayOfMonth
+    );
+    
+    console.log(`[Billing Scheduler] Found ${enterprisePartners.length} enterprise partners for day ${dayOfMonth}`);
+    
+    for (const partner of enterprisePartners) {
+      await processEnterpriseInvoice(partner);
+    }
+    
     // Archive monthly usage for all billable partners (subscription and enterprise)
     const billablePartners = partners.filter(
       (p: PartnerAccount) => (p.billingType === 'subscription' || p.billingType === 'enterprise') &&
@@ -14555,6 +14567,123 @@ async function archiveMonthlyUsage(partner: PartnerAccount) {
     await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
     
     console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+async function processEnterpriseInvoice(partner: PartnerAccount) {
+  const prevMonthKey = storage.getPreviousMonthKey();
+  const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
+  
+  if (!usageRecord) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No usage record for ${prevMonthKey}, skipping invoice`);
+    return;
+  }
+  
+  if (usageRecord.invoiceId) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Already invoiced for ${prevMonthKey}, skipping`);
+    return;
+  }
+  
+  const usage = usageRecord.testsUsed;
+  const amountPence = usageRecord.totalAmountPence;
+  
+  if (usage === 0 || amountPence === 0) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No billable usage for ${prevMonthKey}, skipping invoice`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed');
+    return;
+  }
+  
+  // Calculate billing period dates
+  const [year, month] = prevMonthKey.split('-').map(Number);
+  const periodStart = new Date(year, month - 1, 1);
+  const periodEnd = new Date(year, month, 0); // Last day of the month
+  
+  // Calculate VAT (20% standard UK VAT rate)
+  const vatRate = 20;
+  const subtotal = amountPence;
+  const vatAmount = Math.round(subtotal * (vatRate / 100));
+  const totalAmount = subtotal + vatAmount;
+  
+  // Calculate due date based on payment terms
+  const paymentTermsDays = partner.paymentTermsDays || 30;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+  
+  // Get next invoice number
+  const invoiceNumber = await storage.getNextInvoiceNumber();
+  
+  // Calculate price per test from the usage record
+  const pricePerTest = usage > 0 ? Math.round(amountPence / usage) : 0;
+  
+  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for £${(totalAmount / 100).toFixed(2)} (${usage} tests)`);
+  
+  try {
+    // Create the invoice record
+    const invoice = await storage.createPartnerInvoice({
+      partnerId: partner.id,
+      invoiceNumber,
+      periodStart,
+      periodEnd,
+      testsUsed: usage,
+      pricePerTest,
+      subtotal,
+      vatRate,
+      vatAmount,
+      totalAmount,
+      dueDate,
+      status: 'sent',
+      notes: partner.invoiceNotes || undefined,
+    });
+    
+    // Link the invoice to the usage record
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', undefined, invoice.id);
+    
+    // Get the partner owner's email for sending invoice
+    const partnerUser = await storage.getUser(partner.userId);
+    const partnerEmail = partnerUser?.email || partner.invoiceContact;
+    
+    if (partnerEmail) {
+      // Send invoice email
+      const { sendPartnerInvoiceEmail } = await import('./email');
+      await sendPartnerInvoiceEmail({
+        invoiceNumber,
+        companyName: partner.companyName,
+        partnerEmail,
+        periodStart,
+        periodEnd,
+        testsUsed: usage,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        dueDate,
+        paymentTermsDays,
+        invoiceNotes: partner.invoiceNotes || undefined,
+      });
+      
+      console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
+    }
+    
+    // Dispatch in-app notification
+    await storage.dispatchPartnerNotification({
+      partnerId: partner.id,
+      type: 'invoice_generated',
+      title: 'New Invoice Available',
+      message: `Invoice ${invoiceNumber} for £${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
+      metadata: { 
+        invoiceId: invoice.id, 
+        invoiceNumber,
+        amount: totalAmount,
+        testsUsed: usage,
+        dueDate: dueDate.toISOString(),
+      },
+      minRole: 'admin',
+    });
+    
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} created successfully`);
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Enterprise Partner ${partner.id}: Failed to generate invoice - ${error.message}`);
   }
 }
 
