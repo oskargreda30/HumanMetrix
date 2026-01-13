@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,10 @@ export default function B2BResults() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
 
+  // Support both URL path parameter and query parameter for session ID
+  const [, routeParams] = useRoute("/b2b-results/:sessionId");
   const params = new URLSearchParams(window.location.search);
-  const sessionId = params.get("session");
+  const sessionId = routeParams?.sessionId || params.get("session");
   const countryCode = params.get("country") || "GB";
 
   const { data, isLoading, error } = useQuery<B2BResultsData>({

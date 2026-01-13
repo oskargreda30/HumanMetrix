@@ -2147,7 +2147,7 @@ export default function PartnerDashboard() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => window.open(`/b2b-results/${result.sessionId}`, '_blank')}
+                              onClick={() => window.open(`/partner/results/${result.sessionId}`, '_blank')}
                               data-testid={`button-view-result-${result.sessionId}`}
                             >
                               <Eye className="h-4 w-4 mr-1.5" />

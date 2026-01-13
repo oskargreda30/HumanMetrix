@@ -2583,11 +2583,20 @@ async function calculateScores(
     }
     
     totalScore = promptCount > 0 ? Math.round(qualityScore / promptCount) : 50;
+    // Deterministic variation based on totalScore to ensure consistent results
+    // Each dimension gets slight variation based on score bands (matching B2C canonical)
+    const clarityBonus = totalScore >= 70 ? 3 : totalScore >= 50 ? 0 : -2;
+    const structureBonus = totalScore >= 75 ? 5 : totalScore >= 55 ? 2 : 0;
+    const contextBonus = totalScore >= 60 ? 2 : totalScore >= 40 ? -1 : -3;
+    const creativityBonus = totalScore >= 80 ? 4 : totalScore >= 65 ? 1 : -1;
+    const iterativeBonus = totalScore >= 65 ? 2 : totalScore >= 45 ? -1 : -4;
+    
     scores = {
-      'Clarity': Math.min(100, totalScore + Math.floor(Math.random() * 10) - 5),
-      'Structure': Math.min(100, totalScore + Math.floor(Math.random() * 10) - 5),
-      'Context Relevance': Math.min(100, totalScore + Math.floor(Math.random() * 10) - 5),
-      'Creativity': Math.min(100, totalScore + Math.floor(Math.random() * 10) - 5),
+      'Clarity': Math.max(0, Math.min(100, totalScore + clarityBonus)),
+      'Structure': Math.max(0, Math.min(100, totalScore + structureBonus)),
+      'Context Relevance': Math.max(0, Math.min(100, totalScore + contextBonus)),
+      'Creativity': Math.max(0, Math.min(100, totalScore + creativityBonus)),
+      'Iterative Improvement': Math.max(0, Math.min(100, totalScore + iterativeBonus)),
     };
   } else {
     // Fallback for unknown assessment types

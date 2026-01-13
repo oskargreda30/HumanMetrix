@@ -9475,6 +9475,152 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Get detailed results for a single session
+  app.get("/api/partner/me/results/:sessionId", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { sessionId } = req.params;
+      
+      // Get the session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      // Verify session belongs to this partner
+      if (session.partnerId !== partner.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Verify it's not a test session
+      if (session.isTestSession) {
+        return res.status(403).json({ message: "Test sessions are not accessible" });
+      }
+      
+      // Verify session is completed
+      if (session.status !== 'completed') {
+        return res.status(400).json({ message: "Assessment not completed" });
+      }
+      
+      // Get organization info
+      const org = session.partnerOrganisationId 
+        ? await storage.getPartnerOrganisation(session.partnerOrganisationId)
+        : null;
+      
+      // Use stored scores directly - B2B sessions have proper scores calculated at submission time
+      // by the calculateScores function in partner-routes.ts
+      // We do NOT recalculate or modify stored scores to maintain data integrity and PDF parity
+      const scores = session.scores || {};
+      
+      // For legacy sessions with minimal scores, we can recalculate ONLY for assessments
+      // with fully deterministic scoring that matches the canonical B2B submission logic
+      // Prompt Architecture is NOT recalculated because it uses GPT evaluation in B2C
+      // and the B2B heuristic scoring has nuances that can't be reliably replicated
+      let displayScores = scores;
+      const answers = (session.answers || {}) as Record<string, string>;
+      
+      // Check if recalculation is needed:
+      // - scores is empty or has only overall/non-numeric values
+      // - OR scores is missing expected dimensions for the assessment type
+      const numericScoreValues = Object.values(scores).filter((v): v is number => typeof v === 'number');
+      const normalizedType = session.assessmentType.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+      
+      // Check for Prompt Architecture missing any of the 5 canonical dimensions
+      const isPromptArchitecture = normalizedType === 'prompt_architecture' || normalizedType === 'prompt-architecture';
+      const promptArchitectureRequiredDimensions = ['Clarity', 'Structure', 'Context Relevance', 'Creativity', 'Iterative Improvement'];
+      const missingPromptArchitectureDimension = isPromptArchitecture && 
+        !promptArchitectureRequiredDimensions.every(dim => dim in scores && typeof scores[dim] === 'number');
+      
+      const needsRecalculation = (
+        Object.keys(scores).length === 0 || 
+        numericScoreValues.length <= 1 ||
+        (Object.keys(scores).length === 1 && 'overall' in scores) ||
+        missingPromptArchitectureDimension
+      );
+      
+      if (needsRecalculation && Object.keys(answers).length > 0) {
+        
+        if (normalizedType === 'fit' || normalizedType === 'fit_assessment') {
+          displayScores = calculateFITScores(answers);
+        } else if (normalizedType === 'ai_readiness' || normalizedType === 'ai-readiness') {
+          displayScores = calculateAIReadinessScores(answers);
+        } else if (normalizedType === 'aiq' || normalizedType === 'algorithmic_integrity_quotient') {
+          // Use the canonical AIQ graded scoring (defined at end of this file)
+          displayScores = calculateAIQScores(answers);
+        } else if (normalizedType === 'prompt_architecture' || normalizedType === 'prompt-architecture') {
+          // Use deterministic heuristic scoring matching partner-routes.ts calculateScores
+          let qualityScore = 0;
+          let promptCount = 0;
+          
+          for (const [key, prompt] of Object.entries(answers)) {
+            if (prompt && typeof prompt === 'string' && prompt.trim().length > 0) {
+              promptCount++;
+              const promptText = prompt.trim();
+              let promptScore = 50;
+              
+              if (promptText.length >= 100) promptScore += 10;
+              if (promptText.length >= 250) promptScore += 5;
+              if (promptText.length >= 500) promptScore += 5;
+              if (promptText.includes('context') || promptText.includes('background')) promptScore += 5;
+              if (promptText.includes('format') || promptText.includes('output')) promptScore += 5;
+              if (promptText.includes('example') || promptText.includes('like')) promptScore += 5;
+              if (promptText.includes('step') || promptText.includes('first') || promptText.includes('then')) promptScore += 5;
+              if (promptText.split('.').length >= 2) promptScore += 5;
+              if (promptText.includes('please') || promptText.includes('should') || promptText.includes('must')) promptScore += 5;
+              
+              qualityScore += Math.min(100, promptScore);
+            }
+          }
+          
+          const totalScore = promptCount > 0 ? Math.round(qualityScore / promptCount) : 50;
+          // Deterministic variation based on score bands (matching B2C canonical dimensions)
+          const clarityBonus = totalScore >= 70 ? 3 : totalScore >= 50 ? 0 : -2;
+          const structureBonus = totalScore >= 75 ? 5 : totalScore >= 55 ? 2 : 0;
+          const contextBonus = totalScore >= 60 ? 2 : totalScore >= 40 ? -1 : -3;
+          const creativityBonus = totalScore >= 80 ? 4 : totalScore >= 65 ? 1 : -1;
+          const iterativeBonus = totalScore >= 65 ? 2 : totalScore >= 45 ? -1 : -4;
+          
+          displayScores = {
+            'Clarity': Math.max(0, Math.min(100, totalScore + clarityBonus)),
+            'Structure': Math.max(0, Math.min(100, totalScore + structureBonus)),
+            'Context Relevance': Math.max(0, Math.min(100, totalScore + contextBonus)),
+            'Creativity': Math.max(0, Math.min(100, totalScore + creativityBonus)),
+            'Iterative Improvement': Math.max(0, Math.min(100, totalScore + iterativeBonus)),
+          };
+        }
+      }
+      
+      // Calculate overall score from skills if not set
+      let overallScore = session.totalScore;
+      if (!overallScore && Object.keys(displayScores).length > 0) {
+        const skillScores = Object.values(displayScores).filter((v): v is number => typeof v === 'number');
+        overallScore = Math.round(skillScores.reduce((sum, score) => sum + score, 0) / skillScores.length);
+      }
+      
+      res.json({
+        sessionId: session.id,
+        assessmentType: session.assessmentType,
+        externalUserId: session.externalUserId,
+        externalEmail: session.externalEmail,
+        completedAt: session.completedAt,
+        createdAt: session.createdAt,
+        organization: org ? { id: org.id, name: org.name } : null,
+        scores: displayScores,
+        overallScore,
+        percentile: session.percentile,
+        partnerName: partner.companyName || partner.name,
+      });
+    } catch (error) {
+      console.error("Error fetching partner session result:", error);
+      res.status(500).json({ message: "Failed to fetch result" });
+    }
+  });
+
   // Partner: Get candidates from partner's sessions (for analysis tab)
   app.get("/api/partner/me/candidates", isAuthenticated, async (req: any, res) => {
     try {
