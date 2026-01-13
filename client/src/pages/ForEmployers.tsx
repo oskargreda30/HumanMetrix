@@ -168,7 +168,7 @@ export default function ForEmployers() {
               Make better hiring decisions with objective, AI-powered assessments that measure both 
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Button 
                 size="lg" 
                 onClick={() => openDialog('demo')}
@@ -187,6 +187,13 @@ export default function ForEmployers() {
                 <a>
                   <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
                     View Sample Reports
+                  </Button>
+                </a>
+              </Link>
+              <Link href="/">
+                <a>
+                  <Button size="lg" variant="ghost" data-testid="button-for-job-seekers">
+                    For Job Seekers
                   </Button>
                 </a>
               </Link>
