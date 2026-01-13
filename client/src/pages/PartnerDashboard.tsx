@@ -559,6 +559,14 @@ interface PartnerNotification {
   message: string;
   isRead: boolean;
   createdAt: string;
+  metadata?: {
+    sessionId?: string;
+    assessmentType?: string;
+    externalUserId?: string;
+    externalEmail?: string;
+    totalScore?: number;
+    percentile?: number;
+  };
 }
 
 interface NotificationsData {
@@ -3940,6 +3948,22 @@ export default function PartnerDashboard() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {formatDate(notif.createdAt)}
                                 </p>
+                                {notif.type === 'assessment_completed' && notif.metadata?.sessionId && (
+                                  <Button 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      // Navigate to Results tab and filter by this session
+                                      setActiveTab('results');
+                                      // Store sessionId for filtering - will be picked up by results tab
+                                      sessionStorage.setItem('filterSessionId', notif.metadata!.sessionId!);
+                                    }}
+                                    data-testid={`button-view-results-${notif.id}`}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1.5" />
+                                    View Results
+                                  </Button>
+                                )}
                                 {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical')) && (
                                   <Button 
                                     size="sm" 
