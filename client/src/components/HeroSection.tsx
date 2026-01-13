@@ -343,56 +343,32 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Why use HumanMetrix - Below the main hero */}
+        {/* Feature highlights - Below the main hero */}
         <div 
           ref={cardsRef}
-          className="mt-16 max-w-6xl mx-auto"
+          className="mt-16 max-w-4xl mx-auto"
         >
-          <p className={getAnimationClass(
-            'text-base md:text-xl text-cyan-300 font-semibold mb-6 text-center',
+          {/* Simple horizontal feature list */}
+          <div className={getAnimationClass(
+            'flex flex-wrap justify-center items-center gap-6 md:gap-10',
             `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
           )}>
-            Why use HumanMetrix:
-          </p>
-          
-          {/* Three cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              {
-                title: "Stop Competing Against Fake CV Claims",
-                description: "As AI writes more resumes, our verified report provides the trust and accountability hiring managers want to see.",
-                delay: 0
-              },
-              {
-                title: "AI is the New Digital Literacy",
-                description: "Whether you're in marketing, finance, or operations, AI Readiness is non-negotiable.",
-                delay: 200
-              },
-              {
-                title: "Up to 75% of qualified applicants are rejected by ATS",
-                description: "Our report will provide a comprehensive report to increase your chances of your CV being reviewed by a human.",
-                delay: 400
-              }
+              "Instant PDF Results",
+              "CV-Ready Reports", 
+              "Secure Data Storage"
             ].map((item, idx) => (
               <div 
                 key={idx}
-                className={getAnimationClass(
-                  'flex flex-col items-start gap-2 p-4 rounded-md bg-cyan-500/5 border border-cyan-400/20 backdrop-blur-sm',
-                  `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`
-                )}
+                className="flex items-center gap-2"
                 style={prefersReducedMotion ? {} : { 
-                  transitionDelay: cardsVisible ? `${item.delay}ms` : '0ms' 
+                  transitionDelay: cardsVisible ? `${idx * 150}ms` : '0ms' 
                 }}
               >
                 <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
-                <div className="text-left space-y-1.5">
-                  <p className="text-xs md:text-sm font-semibold text-blue-100">
-                    {item.title}
-                  </p>
-                  <p className="text-[10px] md:text-xs text-blue-100/70 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
+                <span className="text-sm md:text-base text-blue-100/90 font-medium">
+                  {item}
+                </span>
               </div>
             ))}
           </div>
