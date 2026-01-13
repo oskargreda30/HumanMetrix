@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, ChevronDown, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail } from "lucide-react";
+import { Loader2, Plus, Key, Trash2, Copy, Eye, EyeOff, Building2, Zap, AlertTriangle, Search, ArrowUpDown, Activity, CreditCard, BarChart3, Calendar, ChevronLeft, ChevronDown, Package, AlertCircle, RefreshCw, History, FileText, Send, CheckCircle, Mail, Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,8 @@ interface Partner {
   name: string;
   companyName: string | null;
   email: string;
+  country: string | null;
+  phone: string | null;
   monthlyQuota: number | null;
   pricePerAssessment: number;
   stripeCustomerId: string | null;
@@ -45,6 +47,7 @@ interface Partner {
   invoiceNotes: string | null;
   invoiceContact: string | null;
   currency: string;
+  organizationId: string | null;
 }
 
 interface ApiKey {
@@ -242,6 +245,79 @@ export default function PartnersTab() {
   const [invoiceTestsUsed, setInvoiceTestsUsed] = useState("");
   const [invoiceVatRate, setInvoiceVatRate] = useState("20");
   const [invoiceNotes, setInvoiceNotes] = useState("");
+
+  // Edit partner state
+  const [isEditPartnerOpen, setIsEditPartnerOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editCompanyName, setEditCompanyName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editCountry, setEditCountry] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editCurrency, setEditCurrency] = useState("GBP");
+  const [editPricePerAssessment, setEditPricePerAssessment] = useState(500);
+  const [editFreeTests, setEditFreeTests] = useState(0);
+  const [editBillingType, setEditBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
+  const [editBillingCycleAnchor, setEditBillingCycleAnchor] = useState(1);
+  const [editPaymentTerms, setEditPaymentTerms] = useState(30);
+  const [editInvoiceContact, setEditInvoiceContact] = useState("");
+  const [editInvoiceNotes, setEditInvoiceNotes] = useState("");
+  const [editOrganizationId, setEditOrganizationId] = useState("none");
+  const [editIsActive, setEditIsActive] = useState(true);
+
+  const openEditPartnerDialog = (partner: Partner) => {
+    setEditName(partner.name || "");
+    setEditCompanyName(partner.companyName || "");
+    setEditEmail(partner.email || "");
+    setEditCountry(partner.country || "");
+    setEditPhone(partner.phone || "");
+    setEditCurrency(partner.currency || "GBP");
+    setEditPricePerAssessment(partner.pricePerAssessment || 500);
+    setEditFreeTests(partner.freeTestsAllocated || 0);
+    setEditBillingType((partner.billingType as "payg" | "subscription" | "enterprise") || "payg");
+    setEditBillingCycleAnchor(partner.billingCycleAnchor || 1);
+    setEditPaymentTerms(partner.paymentTermsDays || 30);
+    setEditInvoiceContact(partner.invoiceContact || "");
+    setEditInvoiceNotes(partner.invoiceNotes || "");
+    setEditOrganizationId(partner.organizationId || "none");
+    setEditIsActive(partner.isActive !== false);
+    setIsEditPartnerOpen(true);
+  };
+
+  const updatePartnerMutation = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const response = await apiRequest("PUT", `/api/admin/partners/${detailPartner?.id}`, data);
+      return response.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+      setDetailPartner(updated);
+      setIsEditPartnerOpen(false);
+      toast({ title: "Partner Updated", description: "Partner account has been updated successfully." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Update Failed", description: error.message || "Failed to update partner", variant: "destructive" });
+    },
+  });
+
+  const handleUpdatePartner = () => {
+    updatePartnerMutation.mutate({
+      name: editName,
+      companyName: editCompanyName,
+      email: editEmail,
+      country: editCountry,
+      phone: editPhone,
+      currency: editCurrency,
+      pricePerAssessment: editPricePerAssessment,
+      freeTestsAllocated: editFreeTests,
+      billingType: editBillingType,
+      billingCycleAnchor: editBillingCycleAnchor,
+      paymentTermsDays: editPaymentTerms,
+      invoiceContact: editInvoiceContact,
+      invoiceNotes: editInvoiceNotes,
+      organizationId: editOrganizationId === "none" ? null : editOrganizationId,
+      isActive: editIsActive,
+    });
+  };
 
   const sendInvoiceMutation = useMutation({
     mutationFn: async (data: { periodStart: string; periodEnd: string; testsUsed: number; vatRate: number; notes: string }) => {
@@ -740,6 +816,10 @@ export default function PartnersTab() {
                 <Badge className={detailPartner.isActive ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"}>
                   {detailPartner.isActive ? "Active" : "Inactive"}
                 </Badge>
+                <Button variant="outline" size="sm" onClick={() => openEditPartnerDialog(detailPartner)} className="bg-white/10 border-white/30 text-white hover:bg-white/20" data-testid="button-edit-partner">
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedPartner(detailPartner)} className="bg-white/10 border-white/30 text-white hover:bg-white/20" data-testid="button-manage-api-keys">
                   <Key className="h-4 w-4 mr-1" />
                   Manage API Keys
@@ -2577,6 +2657,276 @@ export default function PartnersTab() {
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Partner
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Partner Dialog */}
+      <Dialog open={isEditPartnerOpen} onOpenChange={setIsEditPartnerOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-cyan-400" />
+              Edit Partner Account
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Update partner information and billing settings
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Contact Name</Label>
+                <Input 
+                  id="edit-name" 
+                  value={editName} 
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="bg-slate-800 border-slate-600" 
+                  data-testid="input-edit-partner-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-company">Company Name</Label>
+                <Input 
+                  id="edit-company" 
+                  value={editCompanyName} 
+                  onChange={(e) => setEditCompanyName(e.target.value)}
+                  className="bg-slate-800 border-slate-600" 
+                  data-testid="input-edit-partner-company"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email"
+                  value={editEmail} 
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="bg-slate-800 border-slate-600" 
+                  data-testid="input-edit-partner-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input 
+                  id="edit-phone" 
+                  value={editPhone} 
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="bg-slate-800 border-slate-600" 
+                  data-testid="input-edit-partner-phone"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-country">Country</Label>
+                <Input 
+                  id="edit-country" 
+                  value={editCountry} 
+                  onChange={(e) => setEditCountry(e.target.value)}
+                  className="bg-slate-800 border-slate-600" 
+                  data-testid="input-edit-partner-country"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select value={editCurrency} onValueChange={setEditCurrency}>
+                  <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-partner-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
+                    {Object.values(CURRENCIES)
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((curr) => (
+                        <SelectItem key={curr.code} value={curr.code} className="text-white focus:bg-slate-700 focus:text-white">
+                          {curr.code} ({curr.symbol}) - {curr.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-cyan-400 mb-3">Pricing & Billing</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Price Per Assessment (minor units)</Label>
+                  <Input 
+                    id="edit-price" 
+                    type="number"
+                    value={editPricePerAssessment} 
+                    onChange={(e) => setEditPricePerAssessment(parseInt(e.target.value) || 0)}
+                    className="bg-slate-800 border-slate-600" 
+                    data-testid="input-edit-partner-price"
+                  />
+                  <p className="text-xs text-slate-400">
+                    {editCurrency && CURRENCIES[editCurrency] 
+                      ? `${editPricePerAssessment} = ${CURRENCIES[editCurrency].symbol}${(editPricePerAssessment / 100).toFixed(2)}`
+                      : `${editPricePerAssessment / 100} in major units`}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-free-tests">Free Tests Allocated</Label>
+                  <Input 
+                    id="edit-free-tests" 
+                    type="number"
+                    min={0}
+                    value={editFreeTests} 
+                    onChange={(e) => setEditFreeTests(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="bg-slate-800 border-slate-600" 
+                    data-testid="input-edit-partner-free-tests"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Billing Model</Label>
+                <Select value={editBillingType} onValueChange={(v) => setEditBillingType(v as "payg" | "subscription" | "enterprise")}>
+                  <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-billing-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="payg" className="text-white">Pay As You Go (PAYG)</SelectItem>
+                    <SelectItem value="subscription" className="text-white">Subscription + Auto-Bill</SelectItem>
+                    <SelectItem value="enterprise" className="text-white">Enterprise Prepayment</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-400">
+                  {editBillingType === "payg" 
+                    ? "No card on file. Bulk discounts via upfront purchase. API suspended at zero credits." 
+                    : editBillingType === "subscription"
+                    ? "Card on file. Min monthly charge + auto-bill for additional usage."
+                    : "For high-volume BPOs. Pro-forma invoicing for bulk credit blocks."}
+                </p>
+              </div>
+
+              {editBillingType === "subscription" && (
+                <div className="space-y-2 mt-4">
+                  <Label>Billing Cycle Day</Label>
+                  <Select value={String(editBillingCycleAnchor)} onValueChange={(v) => setEditBillingCycleAnchor(parseInt(v))}>
+                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-billing-cycle">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectItem value="1" className="text-white">1st of month</SelectItem>
+                      <SelectItem value="15" className="text-white">15th of month</SelectItem>
+                      <SelectItem value="28" className="text-white">28th of month (last day)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {editBillingType === "enterprise" && (
+                <>
+                  <div className="space-y-2 mt-4">
+                    <Label>Payment Terms</Label>
+                    <Select value={String(editPaymentTerms)} onValueChange={(v) => setEditPaymentTerms(parseInt(v))}>
+                      <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-payment-terms">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectItem value="15" className="text-white">Net 15</SelectItem>
+                        <SelectItem value="30" className="text-white">Net 30</SelectItem>
+                        <SelectItem value="45" className="text-white">Net 45</SelectItem>
+                        <SelectItem value="60" className="text-white">Net 60</SelectItem>
+                        <SelectItem value="90" className="text-white">Net 90</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="edit-invoice-contact">Invoice Contact Email</Label>
+                    <Input 
+                      id="edit-invoice-contact" 
+                      type="email"
+                      value={editInvoiceContact} 
+                      onChange={(e) => setEditInvoiceContact(e.target.value)}
+                      placeholder="accounts@company.com"
+                      className="bg-slate-800 border-slate-600" 
+                      data-testid="input-edit-invoice-contact"
+                    />
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="edit-invoice-notes">Invoice Notes</Label>
+                    <Input 
+                      id="edit-invoice-notes" 
+                      value={editInvoiceNotes} 
+                      onChange={(e) => setEditInvoiceNotes(e.target.value)}
+                      placeholder="Special terms or notes..."
+                      className="bg-slate-800 border-slate-600" 
+                      data-testid="input-edit-invoice-notes"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="border-t border-slate-700 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-cyan-400 mb-3">Account Settings</h4>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Link to Organisation</Label>
+                  <Select value={editOrganizationId} onValueChange={setEditOrganizationId}>
+                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-partner-org">
+                      <SelectValue placeholder="Select an organisation..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectItem value="none" className="text-slate-400">None</SelectItem>
+                      {organizations?.filter((org, index, arr) => 
+                        arr.findIndex(o => o.id === org.id) === index
+                      ).map((org) => (
+                        <SelectItem key={org.id} value={org.id} className="text-white">
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Account Status</Label>
+                    <p className="text-xs text-slate-400">Enable or disable this partner account</p>
+                  </div>
+                  <Switch 
+                    checked={editIsActive} 
+                    onCheckedChange={setEditIsActive}
+                    data-testid="switch-edit-partner-active"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsEditPartnerOpen(false)} className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdatePartner}
+              disabled={updatePartnerMutation.isPending}
+              className="bg-cyan-600 hover:bg-cyan-700"
+              data-testid="button-save-partner"
+            >
+              {updatePartnerMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Save Changes
                 </>
               )}
             </Button>

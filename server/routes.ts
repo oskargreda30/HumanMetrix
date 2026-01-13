@@ -10926,7 +10926,8 @@ Format your response as JSON with this structure:
       const { 
         name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
         billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
-        billingCycleAnchor, prepaidBalance, stripePaymentMethodId
+        billingCycleAnchor, prepaidBalance, stripePaymentMethodId,
+        country, phone, currency
       } = req.body;
       
       // If organizationId is being changed, verify it's valid and not already linked
@@ -10956,6 +10957,10 @@ Format your response as JSON with this structure:
         isActive: isActive !== undefined ? isActive : partner.isActive,
         stripeCustomerId: stripeCustomerId ?? partner.stripeCustomerId,
         organizationId: organizationId !== undefined ? organizationId : partner.organizationId,
+        // Contact fields
+        country: country !== undefined ? country : partner.country,
+        phone: phone !== undefined ? phone : partner.phone,
+        currency: currency !== undefined ? currency : partner.currency,
         // Billing type and related fields
         billingType: selectedBillingType,
         freeTestsAllocated: freeTestsAllocated !== undefined ? freeTestsAllocated : partner.freeTestsAllocated,
