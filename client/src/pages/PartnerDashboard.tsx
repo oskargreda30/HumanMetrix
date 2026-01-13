@@ -3796,12 +3796,12 @@ export default function PartnerDashboard() {
                         <div className="h-80">
                           {analytics.testsOverTime.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={analytics.testsOverTime}>
+                              <BarChart data={analytics.testsOverTime} barCategoryGap={analytics.testsOverTime.length === 1 ? "80%" : "20%"}>
                                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                 <XAxis dataKey="date" className="text-xs" />
-                                <YAxis className="text-xs" />
+                                <YAxis className="text-xs" allowDecimals={false} />
                                 <RechartsTooltip />
-                                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={80} />
                               </BarChart>
                             </ResponsiveContainer>
                           ) : (
