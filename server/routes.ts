@@ -9441,11 +9441,11 @@ Format your response as JSON with this structure:
       
       const results = await Promise.all(
         completedSessions.map(async (session) => {
-          const result = await storage.getAssessmentResultBySessionId(session.id);
           const org = session.partnerOrganisationId 
             ? await storage.getPartnerOrganisation(session.partnerOrganisationId)
             : null;
           
+          // B2B scores are stored directly on the session (not in separate results table like B2C)
           return {
             sessionId: session.id,
             assessmentType: session.assessmentType,
@@ -9454,8 +9454,8 @@ Format your response as JSON with this structure:
             completedAt: session.completedAt,
             createdAt: session.createdAt,
             organization: org ? { id: org.id, name: org.name } : null,
-            scores: result?.scores || null,
-            overallScore: result?.overallScore || null,
+            scores: session.scores || null,
+            overallScore: session.totalScore || null,
           };
         })
       );

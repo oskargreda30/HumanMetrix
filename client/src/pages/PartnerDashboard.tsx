@@ -2135,13 +2135,24 @@ export default function PartnerDashboard() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {result.overallScore !== null && (
-                              <div className="text-lg font-bold text-primary">{result.overallScore}%</div>
-                            )}
-                            <div className="text-xs text-muted-foreground">
-                              {result.completedAt ? formatDate(result.completedAt) : 'Pending'}
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              {result.overallScore !== null && (
+                                <div className="text-lg font-bold text-primary">{result.overallScore}%</div>
+                              )}
+                              <div className="text-xs text-muted-foreground">
+                                {result.completedAt ? formatDate(result.completedAt) : 'Pending'}
+                              </div>
                             </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => window.open(`/b2b-results/${result.sessionId}`, '_blank')}
+                              data-testid={`button-view-result-${result.sessionId}`}
+                            >
+                              <Eye className="h-4 w-4 mr-1.5" />
+                              View
+                            </Button>
                           </div>
                         </div>
                       ))}
