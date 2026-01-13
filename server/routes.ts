@@ -9514,35 +9514,28 @@ Format your response as JSON with this structure:
         candidateMap.get(email)!.sessions.push(session);
       }
       
-      // Build candidate list with results
-      const candidates = await Promise.all(
-        Array.from(candidateMap.values()).map(async (candidate) => {
-          const results = await Promise.all(
-            candidate.sessions.map(async (session) => {
-              const result = await storage.getAssessmentResultBySessionId(session.id);
-              return {
-                id: session.id,
-                assessmentType: session.assessmentType,
-                totalScore: result?.overallScore || 0,
-                scores: result?.scores || {},
-                completedAt: session.completedAt?.toISOString() || '',
-                status: session.status,
-              };
-            })
-          );
-          
-          return {
-            user: {
-              id: candidate.id,
-              email: candidate.email,
-              firstName: candidate.firstName,
-              lastName: candidate.lastName,
-              externalUserId: candidate.externalUserId,
-            },
-            results,
-          };
-        })
-      );
+      // Build candidate list with results (B2B scores are stored directly on session)
+      const candidates = Array.from(candidateMap.values()).map((candidate) => {
+        const results = candidate.sessions.map((session) => ({
+          id: session.id,
+          assessmentType: session.assessmentType,
+          totalScore: session.totalScore || 0,
+          scores: session.scores || {},
+          completedAt: session.completedAt?.toISOString() || '',
+          status: session.status,
+        }));
+        
+        return {
+          user: {
+            id: candidate.id,
+            email: candidate.email,
+            firstName: candidate.firstName,
+            lastName: candidate.lastName,
+            externalUserId: candidate.externalUserId,
+          },
+          results,
+        };
+      });
       
       res.json(candidates);
     } catch (error) {
@@ -9572,29 +9565,20 @@ Format your response as JSON with this structure:
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
       const completedSessions = allSessions.filter(s => s.status === 'completed');
       
-      // Filter to only the selected candidates (by email/ID)
-      const candidatesResults = await Promise.all(
-        candidateIds.map(async (candidateId) => {
-          const sessions = completedSessions.filter(
-            s => (s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId)
-          );
-          
-          const results = await Promise.all(
-            sessions.map(async (session) => {
-              const result = await storage.getAssessmentResultBySessionId(session.id);
-              return {
-                assessmentType: session.assessmentType,
-                scores: result?.scores || {},
-                totalScore: result?.overallScore || 0,
-                completedAt: session.completedAt,
-                status: session.status,
-              };
-            })
-          );
-          
-          return results;
-        })
-      );
+      // Filter to only the selected candidates (by email/ID) - B2B scores are stored directly on session
+      const candidatesResults = candidateIds.map((candidateId) => {
+        const sessions = completedSessions.filter(
+          s => (s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId)
+        );
+        
+        return sessions.map((session) => ({
+          assessmentType: session.assessmentType,
+          scores: session.scores || {},
+          totalScore: session.totalScore || 0,
+          completedAt: session.completedAt,
+          status: session.status,
+        }));
+      });
 
       // Normalize assessment type for comparison
       const normalizeAssessmentType = (type: string) => 

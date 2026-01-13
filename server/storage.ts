@@ -3082,21 +3082,22 @@ export class DatabaseStorage implements IStorage {
     // Determine the date truncation based on period
     const dateTrunc = period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month';
 
-    // Tests over time
+    // Tests over time (exclude test API key sessions)
     const testsOverTimeResult = await db.select({
-      date: sql<string>`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})::date`,
+      date: sql<string>`date_trunc('${sql.raw(dateTrunc)}', ${assessmentSessions.completedAt})::date`,
       count: sql<number>`count(*)`,
     })
       .from(assessmentSessions)
       .where(and(
         eq(assessmentSessions.partnerId, partnerId),
         eq(assessmentSessions.status, 'completed'),
+        eq(assessmentSessions.isTestSession, false),
         gte(assessmentSessions.completedAt, startDate)
       ))
-      .groupBy(sql`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})`)
-      .orderBy(sql`date_trunc(${dateTrunc}, ${assessmentSessions.completedAt})`);
+      .groupBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${assessmentSessions.completedAt})`)
+      .orderBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${assessmentSessions.completedAt})`);
 
-    // Breakdown by assessment type
+    // Breakdown by assessment type (exclude test API key sessions)
     const byTypeResult = await db.select({
       type: assessmentSessions.assessmentType,
       count: sql<number>`count(*)`,
@@ -3106,12 +3107,13 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(assessmentSessions.partnerId, partnerId),
         eq(assessmentSessions.status, 'completed'),
+        eq(assessmentSessions.isTestSession, false),
         gte(assessmentSessions.completedAt, startDate)
       ))
       .groupBy(assessmentSessions.assessmentType)
       .orderBy(sql`count(*) desc`);
 
-    // Breakdown by organization
+    // Breakdown by organization (exclude test API key sessions)
     const byOrgResult = await db.select({
       orgId: partnerOrganisations.id,
       orgName: partnerOrganisations.name,
@@ -3122,12 +3124,13 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(assessmentSessions.partnerId, partnerId),
         eq(assessmentSessions.status, 'completed'),
+        eq(assessmentSessions.isTestSession, false),
         gte(assessmentSessions.completedAt, startDate)
       ))
       .groupBy(partnerOrganisations.id, partnerOrganisations.name)
       .orderBy(sql`count(${assessmentSessions.id}) desc`);
 
-    // Score distribution by assessment type (buckets: 0-20, 21-40, 41-60, 61-80, 81-100)
+    // Score distribution by assessment type (buckets: 0-20, 21-40, 41-60, 61-80, 81-100) - exclude test API key sessions
     const scoreDistributionResult = await db.select({
       type: assessmentSessions.assessmentType,
       score: assessmentSessions.totalScore,
@@ -3136,6 +3139,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(assessmentSessions.partnerId, partnerId),
         eq(assessmentSessions.status, 'completed'),
+        eq(assessmentSessions.isTestSession, false),
         gte(assessmentSessions.completedAt, startDate),
         sql`${assessmentSessions.totalScore} IS NOT NULL`
       ));
