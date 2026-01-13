@@ -212,6 +212,22 @@ export default function HeroSection() {
                   <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                 </span>
               </Button>
+              <Link href="/employers" data-testid="link-hero-for-employers">
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className={getAnimationClass(
+                    'group border-cyan-400/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-400/60 text-sm md:text-base px-3 md:px-4',
+                    'transition-all duration-300'
+                  )}
+                  data-testid="button-hero-for-employers"
+                >
+                  <span className="relative flex items-center">
+                    For Employers
+                    <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                  </span>
+                </Button>
+              </Link>
             </div>
             
             {/* Desktop only: Pricing disclosure */}
