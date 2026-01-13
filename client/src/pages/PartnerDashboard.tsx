@@ -4175,66 +4175,31 @@ export default function PartnerDashboard() {
                         <SelectTrigger data-testid="select-invite-role">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="viewer">Viewer - View only access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Viewer Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>View assessment results</li>
-                                <li>View candidate data</li>
-                                <li>View analysis reports</li>
-                                <li>Receive notifications</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="member">Member - Can manage assessments</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Member Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Viewer permissions</li>
-                                <li>Send candidate invitations</li>
-                                <li>View usage statistics</li>
-                                <li>Access analytics dashboard</li>
-                                <li>View activity logs</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="developer">Developer - Integration access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Developer Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Member permissions</li>
-                                <li>Manage API keys</li>
-                                <li>Configure webhooks</li>
-                                <li>Set up ATS integrations</li>
-                                <li>Manage scheduled exports</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="admin">Admin - Full access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Admin Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Developer permissions</li>
-                                <li>Manage billing & payments</li>
-                                <li>Account settings</li>
-                                <li>Invite & manage team members</li>
-                                <li>Full administrative control</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
+                        <SelectContent className="max-w-md">
+                          <SelectItem value="viewer" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Viewer</span>
+                              <span className="text-xs text-muted-foreground">View results, candidates & reports</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="member" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Member</span>
+                              <span className="text-xs text-muted-foreground">Send invitations, view analytics & usage stats</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="developer" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Developer</span>
+                              <span className="text-xs text-muted-foreground">API keys, webhooks, ATS & scheduled exports</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="admin" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Admin</span>
+                              <span className="text-xs text-muted-foreground">Billing, account settings & team management</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -4287,66 +4252,31 @@ export default function PartnerDashboard() {
                         <SelectTrigger data-testid="select-edit-member-role">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="viewer">Viewer - View only access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Viewer Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>View assessment results</li>
-                                <li>View candidate data</li>
-                                <li>View analysis reports</li>
-                                <li>Receive notifications</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="member">Member - Can manage assessments</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Member Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Viewer permissions</li>
-                                <li>Send candidate invitations</li>
-                                <li>View usage statistics</li>
-                                <li>Access analytics dashboard</li>
-                                <li>View activity logs</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="developer">Developer - Integration access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Developer Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Member permissions</li>
-                                <li>Manage API keys</li>
-                                <li>Configure webhooks</li>
-                                <li>Set up ATS integrations</li>
-                                <li>Manage scheduled exports</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SelectItem value="admin">Admin - Full access</SelectItem>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              <p className="font-medium mb-1">Admin Access</p>
-                              <ul className="text-xs space-y-0.5 list-disc pl-3">
-                                <li>All Developer permissions</li>
-                                <li>Manage billing & payments</li>
-                                <li>Account settings</li>
-                                <li>Invite & manage team members</li>
-                                <li>Full administrative control</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
+                        <SelectContent className="max-w-md">
+                          <SelectItem value="viewer" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Viewer</span>
+                              <span className="text-xs text-muted-foreground">View results, candidates & reports</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="member" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Member</span>
+                              <span className="text-xs text-muted-foreground">Send invitations, view analytics & usage stats</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="developer" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Developer</span>
+                              <span className="text-xs text-muted-foreground">API keys, webhooks, ATS & scheduled exports</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="admin" className="py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium">Admin</span>
+                              <span className="text-xs text-muted-foreground">Billing, account settings & team management</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
