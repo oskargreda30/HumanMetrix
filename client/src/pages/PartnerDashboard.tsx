@@ -647,6 +647,7 @@ export default function PartnerDashboard() {
   const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<string | null>(null);
   const [editMemberId, setEditMemberId] = useState<string | null>(null);
   const [editMemberName, setEditMemberName] = useState("");
+  const [editMemberRole, setEditMemberRole] = useState("");
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
@@ -1285,15 +1286,16 @@ export default function PartnerDashboard() {
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string }) => {
-      const response = await apiRequest("PATCH", `/api/partner/me/team/${data.id}`, { name: data.name });
+    mutationFn: async (data: { id: string; name: string; role: string }) => {
+      const response = await apiRequest("PATCH", `/api/partner/me/team/${data.id}`, { name: data.name, role: data.role });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
       setEditMemberId(null);
       setEditMemberName("");
-      toast({ title: "Member updated", description: "Team member name has been updated." });
+      setEditMemberRole("");
+      toast({ title: "Member updated", description: "Team member has been updated." });
     },
     onError: (error: Error) => {
       toast({ title: "Failed to update", description: error.message, variant: "destructive" });
@@ -4097,6 +4099,7 @@ export default function PartnerDashboard() {
                                 onClick={() => {
                                   setEditMemberId(member.id);
                                   setEditMemberName(member.name || "");
+                                  setEditMemberRole(member.role || "member");
                                 }}
                                 data-testid={`button-edit-member-${member.id}`}
                               >
@@ -4257,13 +4260,14 @@ export default function PartnerDashboard() {
                 if (!open) {
                   setEditMemberId(null);
                   setEditMemberName("");
+                  setEditMemberRole("");
                 }
               }}>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Edit Team Member</DialogTitle>
                     <DialogDescription>
-                      Update the team member's display name
+                      Update the team member's name and role
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -4277,18 +4281,88 @@ export default function PartnerDashboard() {
                         data-testid="input-edit-member-name"
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="edit-member-role">Role</Label>
+                      <Select value={editMemberRole} onValueChange={setEditMemberRole}>
+                        <SelectTrigger data-testid="select-edit-member-role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="viewer">Viewer - View only access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Viewer Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>View assessment results</li>
+                                <li>View candidate data</li>
+                                <li>View analysis reports</li>
+                                <li>Receive notifications</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="member">Member - Can manage assessments</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Member Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Viewer permissions</li>
+                                <li>Send candidate invitations</li>
+                                <li>View usage statistics</li>
+                                <li>Access analytics dashboard</li>
+                                <li>View activity logs</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="developer">Developer - Integration access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Developer Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Member permissions</li>
+                                <li>Manage API keys</li>
+                                <li>Configure webhooks</li>
+                                <li>Set up ATS integrations</li>
+                                <li>Manage scheduled exports</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="admin">Admin - Full access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Admin Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Developer permissions</li>
+                                <li>Manage billing & payments</li>
+                                <li>Account settings</li>
+                                <li>Invite & manage team members</li>
+                                <li>Full administrative control</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => {
                       setEditMemberId(null);
                       setEditMemberName("");
+                      setEditMemberRole("");
                     }}>
                       Cancel
                     </Button>
                     <Button 
                       onClick={() => {
                         if (editMemberId) {
-                          updateMemberMutation.mutate({ id: editMemberId, name: editMemberName });
+                          updateMemberMutation.mutate({ id: editMemberId, name: editMemberName, role: editMemberRole });
                         }
                       }}
                       disabled={updateMemberMutation.isPending}
