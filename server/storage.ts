@@ -2164,11 +2164,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }> {
-    // Get current balance and partner details
-    const balance = await this.getPartnerQuotaBalance(partnerId);
+    // Get partner details directly (not via getPartnerQuotaBalance which adds freeTestsAllocated)
     const partner = await this.getPartnerAccount(partnerId);
-    const newPurchased = balance.testsPurchased + amount;
-    const newRemaining = newPurchased - balance.testsConsumed;
+    if (!partner) {
+      return { success: false, newBalance: 0 };
+    }
+    
+    // Use RAW testsPurchased from database, not the computed balance which includes freeTestsAllocated
+    // This prevents double-counting when crediting free tests
+    const rawTestsPurchased = partner.testsPurchased || 0;
+    const testsConsumed = partner.testsConsumed || 0;
+    const freeTestsAllocated = partner.freeTestsAllocated || 0;
+    
+    const newPurchased = rawTestsPurchased + amount;
+    // Total available = purchased + free, then subtract consumed
+    const newRemaining = (newPurchased + freeTestsAllocated) - testsConsumed;
     
     // Calculate expiry per pricing policy: extend from existing expiry (if future) or from now
     // Uses CREDIT_EXPIRATION_MONTHS from schema (6 months per pricing document)
