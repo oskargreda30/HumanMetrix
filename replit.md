@@ -43,7 +43,12 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.
-  - **In-App Notifications**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), and mark-all-read functionality.
+  - **In-App Notifications**: Per-user role-based notification system with smart routing and exclusion logic.
+    - **Role Hierarchy**: viewer (1) < member (2) < developer (3) < admin (4) < owner (5). Notifications cascade down from minimum required role.
+    - **Per-User Delivery**: `partner_notification_recipients` table tracks read/unread state per team member via `dispatchPartnerNotification` helper.
+    - **Smart Exclusion**: Actors who trigger actions and subjects who actions are about are excluded from receiving their own notifications.
+    - **Notification Types by Role**: Viewer (assessment_completed, results_ready); Member adds (new_candidate, invitation_sent, usage_alert); Developer adds (api_key_*, webhook_*, integration_*); Admin adds (billing, quota, team management, security alerts).
+    - **UI Features**: Read/unread tracking with badge counter, color-coded notifications (amber for warnings, green for success), mark individual or all as read.
   - **Team Member Management**: Email invitations with 7-day expiry, role-based access (viewer/member/admin/owner), member removal, and automatic credential emails. When team members accept invitations, the system creates user accounts with secure temporary passwords and sends login credentials via email. Role-based access control restricts sensitive features (API keys, webhooks, ATS integrations, scheduled exports, team management) to admin/owner roles only. Non-admin team members can view results and basic dashboard info but cannot access developer or administrative features.
   - **Bulk Candidate Invitations**: Partners can import candidates via CSV upload, drag-and-drop, or manual entry. Features include multi-assessment selection, client & server-side validation (duplicates, email formats), token usage preview for Prepaid partners, branded email invitations, and downloadable error reports.
 - **Partner Integration Features**: 
