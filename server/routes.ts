@@ -8948,7 +8948,7 @@ Format your response as JSON with this structure:
         await sendPartnerTeamInvitationEmail({
           email: email.toLowerCase(),
           inviteeName: name || undefined,
-          inviterName: req.user.name || req.user.email,
+          inviterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
           companyName: partner.companyName || 'HumanMetrix Partner',
           inviteToken,
           role: role || 'member',
