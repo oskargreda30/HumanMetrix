@@ -261,9 +261,13 @@ export default function ForEmployers() {
                   </Button>
                 </a>
               </Link>
+            </div>
+            
+            <div className="mt-8 pt-6 border-t border-muted">
+              <p className="text-sm text-muted-foreground mb-3">Looking to take an assessment yourself?</p>
               <Link href="/">
                 <a>
-                  <Button size="lg" variant="ghost" data-testid="button-for-job-seekers">
+                  <Button variant="ghost" data-testid="button-for-job-seekers">
                     For Job Seekers
                   </Button>
                 </a>
