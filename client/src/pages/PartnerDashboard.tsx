@@ -4167,17 +4167,7 @@ export default function PartnerDashboard() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="invite-role" className="flex items-center gap-1">
-                        Role
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-xs">
-                            <p className="text-xs">Choose the appropriate access level for this team member based on their responsibilities.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
+                      <Label htmlFor="invite-role">Role</Label>
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger data-testid="select-invite-role">
                           <SelectValue />
