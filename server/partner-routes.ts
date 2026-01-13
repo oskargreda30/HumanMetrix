@@ -1076,23 +1076,25 @@ export function registerPartnerRoutes(app: Express) {
           }
         } // End of else block for non-test sessions
         
-        // Create notification for assessment completion
-        // Include email prominently in the message for easy identification
-        const candidateIdentifier = session.externalEmail || session.externalUserId || 'Unknown';
-        await storage.createPartnerNotification({
-          partnerId: session.partnerId,
-          type: 'assessment_completed',
-          title: 'Assessment Completed',
-          message: `A ${session.assessmentType.toUpperCase()} assessment has been completed by ${candidateIdentifier}.`,
-          metadata: { 
-            sessionId: session.id, 
-            assessmentType: session.assessmentType,
-            externalUserId: session.externalUserId,
-            externalEmail: session.externalEmail,
-            totalScore,
-            percentile,
-          },
-        });
+        // Create notification for assessment completion (skip for test API key sessions)
+        if (!isTestSession) {
+          // Include email prominently in the message for easy identification
+          const candidateIdentifier = session.externalEmail || session.externalUserId || 'Unknown';
+          await storage.createPartnerNotification({
+            partnerId: session.partnerId,
+            type: 'assessment_completed',
+            title: 'Assessment Completed',
+            message: `A ${session.assessmentType.toUpperCase()} assessment has been completed by ${candidateIdentifier}.`,
+            metadata: { 
+              sessionId: session.id, 
+              assessmentType: session.assessmentType,
+              externalUserId: session.externalUserId,
+              externalEmail: session.externalEmail,
+              totalScore,
+              percentile,
+            },
+          });
+        }
         
         if (session.webhookUrl) {
           sendWebhook(session.webhookUrl, {

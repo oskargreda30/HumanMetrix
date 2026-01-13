@@ -9369,13 +9369,15 @@ Format your response as JSON with this structure:
       }
       
       const limit = parseInt(req.query.limit as string) || 50;
-      const offset = parseInt(req.query.offset as string) || 0;
       
-      // Get partner usage logs as activity
-      const usageLogs = await storage.getPartnerUsageLogs(partner.id, limit, offset);
+      // Get partner usage events with test mode flag (exclude test API key events from dashboard)
+      const usageLogs = await storage.getRecentUsageEventsEnriched(partner.id, limit * 2);
+      
+      // Filter out test mode events and take the limit
+      const productionLogs = usageLogs.filter(log => !log.isTestMode).slice(0, limit);
       
       // Transform into activity log format
-      const activities = usageLogs.map(log => ({
+      const activities = productionLogs.map(log => ({
         id: log.id,
         type: log.eventType,
         description: formatActivityDescription(log.eventType, log.metadata),
@@ -9384,7 +9386,7 @@ Format your response as JSON with this structure:
         organizationId: log.partnerOrganisationId,
       }));
       
-      res.json({ activities, total: usageLogs.length });
+      res.json({ activities, total: productionLogs.length });
     } catch (error) {
       console.error("Error fetching activity log:", error);
       res.status(500).json({ message: "Failed to fetch activity log" });
@@ -9434,9 +9436,9 @@ Format your response as JSON with this structure:
         filteredSessions = sessions.filter(s => s.partnerOrganisationId === organizationId);
       }
       
-      // Get completed sessions with results
+      // Get completed sessions with results (exclude test API key sessions)
       const completedSessions = filteredSessions
-        .filter(s => s.status === 'completed')
+        .filter(s => s.status === 'completed' && !s.isTestSession)
         .slice(0, limit);
       
       const results = await Promise.all(
@@ -9479,9 +9481,9 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      // Get all completed sessions for this partner
+      // Get all completed sessions for this partner (exclude test API key sessions)
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const completedSessions = sessions.filter(s => s.status === 'completed');
+      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
       
       // Group sessions by external email to get unique candidates
       const candidateMap = new Map<string, {
