@@ -1465,15 +1465,19 @@ export default function PartnerDashboard() {
   // Role-based access control for tabs
   // Viewer: Read-only access to Overview, Results, Analysis, Notifications
   // Member: Above + Invitations, Usage, Analytics
+  // Developer: Member access + API Keys, Webhooks, ATS Integrations, Scheduled Exports
   // Admin/Owner: Full access to all features
   const isViewer = teamMemberRole === 'viewer';
-  const isMemberOrAbove = !isViewer; // member, admin, owner, or direct partner
+  const isDeveloper = teamMemberRole === 'developer';
+  const isMemberOrAbove = !isViewer; // member, developer, admin, owner, or direct partner
+  const isDeveloperOrAbove = isDeveloper || isAdmin; // developer, admin, owner have dev access
   const canAccessBilling = isAdmin; // Only admin/owner can access billing
   const canAccessUsage = isMemberOrAbove; // member+ can see usage
   const canAccessInvitations = isMemberOrAbove; // member+ can send invitations
   const canAccessAnalytics = isMemberOrAbove; // member+ can see analytics
   const canAccessSettings = isAdmin; // Only admin/owner can access account settings
   const canAccessActivityLog = isMemberOrAbove; // member+ can see activity log
+  const canAccessDeveloperTools = isDeveloperOrAbove; // developer+ can access API keys, webhooks, integrations
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -1612,7 +1616,7 @@ export default function PartnerDashboard() {
                       Billing
                     </DropdownMenuItem>
                   )}
-                  {isAdmin && (
+                  {canAccessDeveloperTools && (
                     <DropdownMenuItem 
                       onClick={() => setActiveTab('developer')}
                       className={activeTab === 'developer' ? 'bg-accent' : ''}
@@ -4159,15 +4163,81 @@ export default function PartnerDashboard() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="invite-role">Role</Label>
+                      <Label htmlFor="invite-role" className="flex items-center gap-1">
+                        Role
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-xs">
+                            <p className="text-xs">Choose the appropriate access level for this team member based on their responsibilities.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger data-testid="select-invite-role">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="viewer">Viewer - View only access</SelectItem>
-                          <SelectItem value="member">Member - Can manage assessments</SelectItem>
-                          <SelectItem value="admin">Admin - Full access</SelectItem>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="viewer">Viewer - View only access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Viewer Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>View assessment results</li>
+                                <li>View candidate data</li>
+                                <li>View analysis reports</li>
+                                <li>Receive notifications</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="member">Member - Can manage assessments</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Member Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Viewer permissions</li>
+                                <li>Send candidate invitations</li>
+                                <li>View usage statistics</li>
+                                <li>Access analytics dashboard</li>
+                                <li>View activity logs</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="developer">Developer - Integration access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Developer Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Member permissions</li>
+                                <li>Manage API keys</li>
+                                <li>Configure webhooks</li>
+                                <li>Set up ATS integrations</li>
+                                <li>Manage scheduled exports</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SelectItem value="admin">Admin - Full access</SelectItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-medium mb-1">Admin Access</p>
+                              <ul className="text-xs space-y-0.5 list-disc pl-3">
+                                <li>All Developer permissions</li>
+                                <li>Manage billing & payments</li>
+                                <li>Account settings</li>
+                                <li>Invite & manage team members</li>
+                                <li>Full administrative control</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
                         </SelectContent>
                       </Select>
                     </div>

@@ -9162,9 +9162,9 @@ Format your response as JSON with this structure:
       
       if (role) {
         // Validate role is one of allowed values
-        const validRoles = ['viewer', 'member', 'admin', 'owner'];
+        const validRoles = ['viewer', 'member', 'developer', 'admin', 'owner'];
         if (!validRoles.includes(role)) {
-          return res.status(400).json({ message: "Invalid role. Must be one of: viewer, member, admin, owner" });
+          return res.status(400).json({ message: "Invalid role. Must be one of: viewer, member, developer, admin, owner" });
         }
         updates.role = role;
       }
