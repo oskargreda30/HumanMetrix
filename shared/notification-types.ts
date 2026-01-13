@@ -38,6 +38,8 @@ export type NotificationType =
   | 'card_on_file_added'
   | 'card_on_file_removed'
   | 'overage_billing_processed'
+  | 'invoice_generated'
+  | 'billing_change_requested'
   // Team management (admin+)
   | 'team_member_invited'
   | 'team_member_joined'
@@ -92,6 +94,8 @@ export const NOTIFICATION_MIN_ROLE: Record<NotificationType, NotificationRole> =
   card_on_file_added: 'admin',
   card_on_file_removed: 'admin',
   overage_billing_processed: 'admin',
+  invoice_generated: 'admin',
+  billing_change_requested: 'admin',
   team_member_invited: 'admin',
   team_member_joined: 'admin',
   team_member_removed: 'admin',

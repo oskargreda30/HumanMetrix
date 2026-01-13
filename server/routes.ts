@@ -14665,7 +14665,7 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
       console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
     }
     
-    // Dispatch in-app notification
+    // Dispatch in-app notification (only sent to admin+ roles per notification-types.ts)
     await storage.dispatchPartnerNotification({
       partnerId: partner.id,
       type: 'invoice_generated',
@@ -14678,7 +14678,6 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
         testsUsed: usage,
         dueDate: dueDate.toISOString(),
       },
-      minRole: 'admin',
     });
     
     console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} created successfully`);
