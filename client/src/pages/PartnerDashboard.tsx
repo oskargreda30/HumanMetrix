@@ -4176,28 +4176,28 @@ export default function PartnerDashboard() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-w-md">
-                          <SelectItem value="viewer" className="py-3">
+                          <SelectItem value="viewer" textValue="Viewer" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Viewer</span>
                               <span className="text-xs text-muted-foreground">View results, candidates & reports</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="member" className="py-3">
+                          <SelectItem value="member" textValue="Member" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Member</span>
                               <span className="text-xs text-muted-foreground">Send invitations, view analytics & usage stats</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="developer" className="py-3">
+                          <SelectItem value="developer" textValue="Developer" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Developer</span>
                               <span className="text-xs text-muted-foreground">API keys, webhooks, ATS & scheduled exports</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="admin" className="py-3">
+                          <SelectItem value="admin" textValue="Admin" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Admin</span>
-                              <span className="text-xs text-muted-foreground">Billing, account settings & team management</span>
+                              <span className="text-xs text-muted-foreground">Full access, billing, account settings & team management</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -4253,28 +4253,28 @@ export default function PartnerDashboard() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-w-md">
-                          <SelectItem value="viewer" className="py-3">
+                          <SelectItem value="viewer" textValue="Viewer" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Viewer</span>
                               <span className="text-xs text-muted-foreground">View results, candidates & reports</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="member" className="py-3">
+                          <SelectItem value="member" textValue="Member" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Member</span>
                               <span className="text-xs text-muted-foreground">Send invitations, view analytics & usage stats</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="developer" className="py-3">
+                          <SelectItem value="developer" textValue="Developer" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Developer</span>
                               <span className="text-xs text-muted-foreground">API keys, webhooks, ATS & scheduled exports</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="admin" className="py-3">
+                          <SelectItem value="admin" textValue="Admin" className="py-3">
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium">Admin</span>
-                              <span className="text-xs text-muted-foreground">Billing, account settings & team management</span>
+                              <span className="text-xs text-muted-foreground">Full access, billing, account settings & team management</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
