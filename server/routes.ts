@@ -10927,7 +10927,7 @@ Format your response as JSON with this structure:
         name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
         billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
         billingCycleAnchor, prepaidBalance, stripePaymentMethodId,
-        country, phone, currency
+        country, phone, currency, notifyPartner
       } = req.body;
       
       // If organizationId is being changed, verify it's valid and not already linked
@@ -10976,6 +10976,80 @@ Format your response as JSON with this structure:
       });
       
       const updated = await storage.getPartnerAccount(req.params.id);
+      
+      // Send notification email if billing/pricing/account settings changed
+      if (notifyPartner && updated) {
+        try {
+          const { CURRENCIES } = await import("../shared/currencies");
+          const currencyData = CURRENCIES[updated.currency || 'GBP'];
+          const priceDisplay = currencyData 
+            ? `${currencyData.symbol}${((updated.pricePerAssessment || 0) / 100).toFixed(2)}`
+            : `${((updated.pricePerAssessment || 0) / 100).toFixed(2)}`;
+          
+          const billingTypeNames: Record<string, string> = {
+            'payg': 'Pay As You Go',
+            'subscription': 'Subscription',
+            'enterprise': 'Enterprise'
+          };
+          
+          await sendEmail({
+            to: updated.email,
+            subject: 'Your HumanMetrix Partner Account Has Been Updated',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #0891b2, #22d3ee); padding: 30px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">Account Update Notification</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                  <p>Dear ${updated.name || 'Partner'},</p>
+                  <p>Your HumanMetrix partner account has been updated by our admin team. Here are your current account details:</p>
+                  
+                  <div style="background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #e2e8f0;">
+                    <h3 style="color: #0891b2; margin-top: 0;">Account Summary</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Billing Model</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${billingTypeNames[updated.billingType || 'payg'] || 'Pay As You Go'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Price Per Assessment</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${priceDisplay}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Currency</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${updated.currency || 'GBP'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Free Tests Remaining</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${updated.freeTestsAllocated || 0}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Account Status</td>
+                        <td style="padding: 8px 0; font-weight: bold; color: ${updated.isActive ? '#22c55e' : '#ef4444'};">${updated.isActive ? 'Active' : 'Inactive'}</td>
+                      </tr>
+                    </table>
+                  </div>
+                  
+                  <p>If you have any questions about these changes, please contact our support team.</p>
+                  
+                  <p style="margin-top: 30px;">
+                    Best regards,<br>
+                    <strong>The HumanMetrix Team</strong>
+                  </p>
+                </div>
+                <div style="background: #1e293b; padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;">
+                  <p style="margin: 0;">HumanMetrix - AI Assessment Platform</p>
+                </div>
+              </div>
+            `,
+          });
+          console.log(`Sent account update notification to partner ${updated.email}`);
+        } catch (emailError) {
+          console.error("Failed to send partner account update notification:", emailError);
+          // Don't fail the request if email fails
+        }
+      }
+      
       res.json(updated);
     } catch (error) {
       console.error("Error updating partner:", error);
