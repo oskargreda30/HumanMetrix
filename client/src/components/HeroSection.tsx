@@ -219,26 +219,6 @@ export default function HeroSection() {
               Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
             </p>
 
-            {/* Desktop only: Feature highlights - horizontal */}
-            <div className="hidden lg:flex flex-wrap gap-4 pt-2">
-              {[
-                "Instant PDF Results",
-                "CV-Ready Reports",
-                "Secure Data Storage"
-              ].map((item, i) => (
-                <div 
-                  key={i} 
-                  className={getAnimationClass(
-                    'flex items-center gap-2',
-                    `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
-                  )}
-                >
-                  <CheckCircle2 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                  <span className="text-xs md:text-sm text-blue-100/80">{item}</span>
-                </div>
-              ))}
-            </div>
-
             {/* Mobile Report Images - shown only on mobile, FIRST */}
             <div 
               className={getAnimationClass(
@@ -279,26 +259,6 @@ export default function HeroSection() {
             <p className="lg:hidden text-xs text-blue-100/60 italic text-center mt-12">
               Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
             </p>
-
-            {/* Mobile only: Feature highlights - after pricing */}
-            <div className="lg:hidden flex flex-wrap justify-center gap-2 pt-1">
-              {[
-                "Instant PDF Results",
-                "CV-Ready Reports",
-                "Secure Data Storage"
-              ].map((item, i) => (
-                <div 
-                  key={i} 
-                  className={getAnimationClass(
-                    'flex items-center gap-2',
-                    `transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
-                  )}
-                >
-                  <CheckCircle2 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                  <span className="text-xs text-blue-100/80">{item}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right Column - Report Images (hidden on mobile, shown on desktop) */}
