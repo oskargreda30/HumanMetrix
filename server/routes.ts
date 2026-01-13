@@ -9157,14 +9157,28 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Team member not found" });
       }
       
-      const { role } = req.body;
+      const { role, name } = req.body;
+      const updates: any = {};
+      
       if (role) {
         // Validate role is one of allowed values
         const validRoles = ['viewer', 'member', 'admin', 'owner'];
         if (!validRoles.includes(role)) {
           return res.status(400).json({ message: "Invalid role. Must be one of: viewer, member, admin, owner" });
         }
-        await storage.updatePartnerTeamMember(req.params.id, { role });
+        updates.role = role;
+      }
+      
+      if (name !== undefined) {
+        // Allow clearing name with empty string or updating it
+        if (name && !isValidName(name)) {
+          return res.status(400).json({ message: "Invalid name format" });
+        }
+        updates.name = name || null;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await storage.updatePartnerTeamMember(req.params.id, updates);
       }
       
       const updated = await storage.getPartnerTeamMember(req.params.id);

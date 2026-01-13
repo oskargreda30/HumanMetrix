@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -645,6 +645,8 @@ export default function PartnerDashboard() {
   const [confirmRotateKeyId, setConfirmRotateKeyId] = useState<string | null>(null);
   const [confirmRevokeKeyId, setConfirmRevokeKeyId] = useState<string | null>(null);
   const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<string | null>(null);
+  const [editMemberId, setEditMemberId] = useState<string | null>(null);
+  const [editMemberName, setEditMemberName] = useState("");
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState(false);
@@ -1279,6 +1281,22 @@ export default function PartnerDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
       toast({ title: "Member removed" });
+    },
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string }) => {
+      const response = await apiRequest("PATCH", `/api/partner/me/team/${data.id}`, { name: data.name });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
+      setEditMemberId(null);
+      setEditMemberName("");
+      toast({ title: "Member updated", description: "Team member name has been updated." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
     },
   });
 
@@ -4064,15 +4082,28 @@ export default function PartnerDashboard() {
                                 <Badge variant="outline" className="capitalize">{member.role}</Badge>
                               </div>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => setConfirmRemoveMemberId(member.id)}
-                              disabled={removeMemberMutation.isPending}
-                              data-testid={`button-remove-member-${member.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                  setEditMemberId(member.id);
+                                  setEditMemberName(member.name || "");
+                                }}
+                                data-testid={`button-edit-member-${member.id}`}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => setConfirmRemoveMemberId(member.id)}
+                                disabled={removeMemberMutation.isPending}
+                                data-testid={`button-remove-member-${member.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -4152,6 +4183,55 @@ export default function PartnerDashboard() {
                     >
                       {inviteMemberMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Mail className="h-4 w-4 mr-1.5" />}
                       Send Invitation
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Member Dialog */}
+              <Dialog open={!!editMemberId} onOpenChange={(open) => {
+                if (!open) {
+                  setEditMemberId(null);
+                  setEditMemberName("");
+                }
+              }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Team Member</DialogTitle>
+                    <DialogDescription>
+                      Update the team member's display name
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="edit-member-name">Name</Label>
+                      <Input 
+                        id="edit-member-name" 
+                        value={editMemberName} 
+                        onChange={(e) => setEditMemberName(e.target.value)}
+                        placeholder="Enter name"
+                        data-testid="input-edit-member-name"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setEditMemberId(null);
+                      setEditMemberName("");
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        if (editMemberId) {
+                          updateMemberMutation.mutate({ id: editMemberId, name: editMemberName });
+                        }
+                      }}
+                      disabled={updateMemberMutation.isPending}
+                      data-testid="button-save-member"
+                    >
+                      {updateMemberMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}
+                      Save Changes
                     </Button>
                   </DialogFooter>
                 </DialogContent>
