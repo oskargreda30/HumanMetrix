@@ -675,6 +675,11 @@ export default function PartnerDashboard() {
     queryKey: ["/api/partner/account"],
   });
 
+  const { data: dashboardCardStatus } = useQuery<CardStatus>({
+    queryKey: ["/api/partner/card/status"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
   const { data: usage, isLoading: usageLoading } = useQuery<UsageStats>({
     queryKey: ["/api/partner/me/usage"],
     enabled: !!account?.hasPartnerAccount,
@@ -1200,6 +1205,18 @@ export default function PartnerDashboard() {
   };
 
   const handleCreateLiveKey = () => {
+    const isSubscriptionBilling = account?.partner?.billingType === 'subscription';
+    const hasCard = dashboardCardStatus?.hasCard === true;
+    
+    if (isSubscriptionBilling && !hasCard) {
+      toast({
+        title: "Payment method required",
+        description: "Add a payment method before creating live API keys.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setCreatingKeyType('live');
     createKeyMutation.mutate({ name: `Live Key - ${new Date().toLocaleDateString()}`, environment: 'live' });
   };
@@ -3140,60 +3157,14 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* Buy More Tests - Only for PAYG and Subscription billing types */}
-                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription') && (
-                    <Card data-testid="section-purchase-credits">
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Package className="h-5 w-5" />
-                          Buy More Tests
-                        </CardTitle>
-                        <CardDescription>
-                          Purchase additional assessment credits for your team
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {pricingLoading ? (
-                          <div className="flex justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                          </div>
-                        ) : !pricing?.packages ? (
-                          <div className="py-8 text-center text-muted-foreground">
-                            <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p className="font-medium">Unable to load pricing</p>
-                            <p className="text-sm mt-1">Please refresh the page or contact support if this persists.</p>
-                          </div>
-                        ) : (
-                          <div className="grid gap-4 md:grid-cols-3">
-                            {/* Volume-based pricing tiers converted to partner's currency */}
-                            {pricing.packages.map((pkg) => (
-                              <div 
-                                key={pkg.size} 
-                                className="border rounded-lg p-4 hover:border-primary transition-colors"
-                              >
-                                <div className="text-2xl font-bold text-primary">
-                                  {pkg.size.toLocaleString()} Tests
-                                </div>
-                                <div className="text-sm text-muted-foreground mb-3">
-                                  {formatCurrency(pkg.price, pricing.currency)} ({formatCurrency(pkg.pricePerTest, pricing.currency)}/test)
-                                </div>
-                                <Button 
-                                  className="w-full" 
-                                  onClick={() => handlePurchase(pkg.size)}
-                                  disabled={purchasingPackageSize !== null}
-                                  data-testid={`button-buy-${pkg.size}`}
-                                >
-                                  {purchasingPackageSize === pkg.size ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  ) : null}
-                                  Purchase
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                  {/* Payment Methods Section - for Subscription and PAYG billing types */}
+                  {(account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'payg') && (
+                    <div data-testid="section-payment-methods">
+                      <PrepaidCardManagement 
+                        partnerId={account?.partner?.id || ''} 
+                        currency={account?.partner?.currency}
+                      />
+                    </div>
                   )}
 
                   <Card>
@@ -3762,9 +3733,20 @@ export default function PartnerDashboard() {
                 onReactivateKey={() => {
                   setActiveTab('billing');
                   setTimeout(() => {
-                    const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
-                    if (purchaseSection) {
-                      purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const paymentSection = document.querySelector('[data-testid="section-payment-methods"]');
+                    if (paymentSection) {
+                      paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                }}
+                billingType={account?.partner?.billingType}
+                hasCardOnFile={dashboardCardStatus?.hasCard}
+                onAddPaymentMethod={() => {
+                  setActiveTab('billing');
+                  setTimeout(() => {
+                    const paymentMethodsSection = document.querySelector('[data-testid="section-payment-methods"]');
+                    if (paymentMethodsSection) {
+                      paymentMethodsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                   }, 100);
                 }}
@@ -4025,16 +4007,16 @@ export default function PartnerDashboard() {
                                     onClick={() => {
                                       setActiveTab('billing');
                                       setTimeout(() => {
-                                        const purchaseSection = document.querySelector('[data-testid="section-purchase-credits"]');
-                                        if (purchaseSection) {
-                                          purchaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        const paymentSection = document.querySelector('[data-testid="section-payment-methods"]');
+                                        if (paymentSection) {
+                                          paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }
                                       }, 100);
                                     }}
-                                    data-testid={`button-buy-credits-${notif.id}`}
+                                    data-testid={`button-manage-billing-${notif.id}`}
                                   >
                                     <CreditCard className="h-4 w-4 mr-1.5" />
-                                    Buy More Credits
+                                    Manage Billing
                                   </Button>
                                 )}
                               </div>

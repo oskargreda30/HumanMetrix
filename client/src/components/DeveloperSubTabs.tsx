@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info } from "lucide-react";
+import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Lock, CreditCard } from "lucide-react";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -58,6 +58,9 @@ interface DeveloperSubTabsProps {
   newKeyData: { fullKey: string; environment: string } | null;
   onClearNewKey: () => void;
   onReactivateKey: () => void;
+  billingType?: string;
+  hasCardOnFile?: boolean;
+  onAddPaymentMethod?: () => void;
 }
 
 function formatDate(dateString: string): string {
@@ -81,8 +84,14 @@ export function DeveloperSubTabs({
   newKeyData,
   onClearNewKey,
   onReactivateKey,
+  billingType,
+  hasCardOnFile,
+  onAddPaymentMethod,
 }: DeveloperSubTabsProps) {
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
+
+  const isSubscriptionBilling = billingType === 'subscription';
+  const canCreateLiveKey = !isSubscriptionBilling || hasCardOnFile === true;
 
   return (
     <div className="space-y-4">
@@ -132,18 +141,63 @@ export function DeveloperSubTabs({
                   {creatingKeyType === 'test' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TestTube className="h-4 w-4 mr-2" />}
                   Create Test Key
                 </Button>
-                <Button 
-                  onClick={onCreateLiveKey}
-                  className="bg-cyan-600 hover:bg-cyan-700"
-                  disabled={creatingKeyType !== null}
-                  data-testid="button-create-live-key"
-                >
-                  {creatingKeyType === 'live' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-                  Create Live Key
-                </Button>
+                {canCreateLiveKey ? (
+                  <Button 
+                    onClick={onCreateLiveKey}
+                    className="bg-cyan-600 hover:bg-cyan-700"
+                    disabled={creatingKeyType !== null}
+                    data-testid="button-create-live-key"
+                  >
+                    {creatingKeyType === 'live' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                    Create Live Key
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button 
+                          className="bg-slate-600 cursor-not-allowed"
+                          disabled
+                          data-testid="button-create-live-key-disabled"
+                        >
+                          <Lock className="h-4 w-4 mr-2" />
+                          Create Live Key
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">Add a payment method to create live API keys. Subscription accounts require a card on file for production access.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </CardHeader>
             <CardContent>
+              {isSubscriptionBilling && !hasCardOnFile && (
+                <div className="mb-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      Payment method required for live keys
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Subscription accounts must have a payment method on file before creating live API keys.
+                    </p>
+                    {onAddPaymentMethod && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-2"
+                        onClick={onAddPaymentMethod}
+                        data-testid="button-add-payment-method-cta"
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Add Payment Method
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
               {apiKeysLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -225,14 +279,34 @@ export function DeveloperSubTabs({
                     >
                       Create Test Key
                     </Button>
-                    <Button 
-                      size="sm"
-                      className="bg-cyan-600 hover:bg-cyan-700"
-                      onClick={onCreateLiveKey}
-                      disabled={creatingKeyType !== null}
-                    >
-                      Create Live Key
-                    </Button>
+                    {canCreateLiveKey ? (
+                      <Button 
+                        size="sm"
+                        className="bg-cyan-600 hover:bg-cyan-700"
+                        onClick={onCreateLiveKey}
+                        disabled={creatingKeyType !== null}
+                      >
+                        Create Live Key
+                      </Button>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button 
+                              size="sm"
+                              className="bg-slate-600 cursor-not-allowed"
+                              disabled
+                            >
+                              <Lock className="h-4 w-4 mr-1" />
+                              Create Live Key
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">Add a payment method to create live API keys.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               )}
