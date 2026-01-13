@@ -30,6 +30,8 @@ interface Transaction {
     id: string;
     userId: string;
     totalAmount: number;
+    currency: string;
+    amountGBP: number;
     status: string;
     resultsAccessPaid: boolean;
     stripeSessionId: string | null;
@@ -273,6 +275,7 @@ export default function BillingTab() {
         <div>
           <h2 className="text-2xl font-bold text-white" data-testid="heading-billing">Payment & Billing Oversight</h2>
           <p className="text-white/70">Monitor revenue, manage transactions, and configure promo codes</p>
+          <p className="text-xs text-cyan-400/70 mt-1">All amounts are converted to GBP for reporting consistency</p>
         </div>
         <Button 
           variant="outline" 
@@ -450,7 +453,7 @@ export default function BillingTab() {
                       <TableHead className="text-white/70">Date</TableHead>
                       <TableHead className="text-white/70">Customer</TableHead>
                       <TableHead className="text-white/70">Assessments</TableHead>
-                      <TableHead className="text-white/70">Amount</TableHead>
+                      <TableHead className="text-white/70">Amount (GBP)</TableHead>
                       <TableHead className="text-white/70">Discount</TableHead>
                       <TableHead className="text-white/70">Status</TableHead>
                       <TableHead className="text-white/70">Actions</TableHead>
@@ -476,7 +479,12 @@ export default function BillingTab() {
                           </div>
                         </TableCell>
                         <TableCell className="text-white font-medium">
-                          {formatCurrency(tx.purchase.totalAmount)}
+                          {formatCurrency(tx.purchase.amountGBP || tx.purchase.totalAmount)}
+                          {tx.purchase.currency && tx.purchase.currency !== 'GBP' && (
+                            <div className="text-xs text-white/50">
+                              Original: {tx.purchase.currency} {(tx.purchase.totalAmount / 100).toFixed(2)}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-white/70">
                           {tx.purchase.discountCode || '-'}

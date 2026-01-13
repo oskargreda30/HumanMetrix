@@ -398,7 +398,7 @@ export interface IStorage {
     user: { id: string; email: string; firstName: string | null; lastName: string | null };
     items: PurchaseItem[];
   }>>;
-  getBillingStats(startDate?: Date, endDate?: Date): Promise<{
+  getBillingStats(startDate?: Date, endDate?: Date, exchangeRates?: Record<string, number>): Promise<{
     totalRevenue: number;
     totalTransactions: number;
     completedTransactions: number;
@@ -2730,7 +2730,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getBillingStats(startDate?: Date, endDate?: Date): Promise<{
+  async getBillingStats(startDate?: Date, endDate?: Date, exchangeRates?: Record<string, number>): Promise<{
     totalRevenue: number;
     totalTransactions: number;
     completedTransactions: number;
@@ -2746,19 +2746,34 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lte(purchases.createdAt, endDate));
     }
 
-    // Get completed transactions (paid and NOT refunded)
+    // Helper to convert amount to GBP
+    const toGBP = (amount: number, currency: string): number => {
+      if (!exchangeRates || currency === 'GBP') return amount;
+      const rate = exchangeRates[currency];
+      if (!rate || rate === 0) return amount;
+      return Math.round(amount / rate);
+    };
+
+    // Get completed transactions with currency for proper conversion
     const completedConditions = [
       ...conditions, 
       eq(purchases.resultsAccessPaid, true),
       sql`${purchases.status} != 'refunded'`
     ];
-    const [completedStats] = await db
+    const completedPurchases = await db
       .select({
-        totalRevenue: sql<number>`COALESCE(SUM(${purchases.totalAmount}), 0)::integer`,
-        count: count(),
+        totalAmount: purchases.totalAmount,
+        currency: purchases.currency,
       })
       .from(purchases)
       .where(and(...completedConditions));
+
+    // Sum up revenue with GBP conversion
+    let totalRevenue = 0;
+    for (const p of completedPurchases) {
+      totalRevenue += toGBP(p.totalAmount, p.currency || 'GBP');
+    }
+    const completedCount = completedPurchases.length;
 
     // Get all transactions count
     const [totalStats] = await db
@@ -2777,15 +2792,15 @@ export class DatabaseStorage implements IStorage {
       .from(purchases)
       .where(and(...pendingConditions));
 
-    // Get revenue by month (last 12 months, excluding refunded)
+    // Get revenue by month (last 12 months, excluding refunded) with currency conversion
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     
-    const monthlyData = await db
+    const monthlyPurchases = await db
       .select({
         month: sql<string>`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`,
-        revenue: sql<number>`COALESCE(SUM(${purchases.totalAmount}), 0)::integer`,
-        count: count(),
+        totalAmount: purchases.totalAmount,
+        currency: purchases.currency,
       })
       .from(purchases)
       .where(and(
@@ -2793,11 +2808,19 @@ export class DatabaseStorage implements IStorage {
         eq(purchases.resultsAccessPaid, true),
         sql`${purchases.status} != 'refunded'`
       ))
-      .groupBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`)
       .orderBy(sql`TO_CHAR(${purchases.createdAt}, 'YYYY-MM')`);
 
-    const totalRevenue = completedStats?.totalRevenue || 0;
-    const completedCount = completedStats?.count || 0;
+    // Aggregate by month with GBP conversion
+    const monthlyMap = new Map<string, { revenue: number; count: number }>();
+    for (const p of monthlyPurchases) {
+      const existing = monthlyMap.get(p.month) || { revenue: 0, count: 0 };
+      existing.revenue += toGBP(p.totalAmount, p.currency || 'GBP');
+      existing.count += 1;
+      monthlyMap.set(p.month, existing);
+    }
+    const monthlyData = Array.from(monthlyMap.entries())
+      .map(([month, data]) => ({ month, revenue: data.revenue, count: data.count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
 
     return {
       totalRevenue,
@@ -2805,11 +2828,7 @@ export class DatabaseStorage implements IStorage {
       completedTransactions: completedCount,
       pendingTransactions: pendingStats?.count || 0,
       averageOrderValue: completedCount > 0 ? Math.round(totalRevenue / completedCount) : 0,
-      revenueByMonth: monthlyData.map(m => ({
-        month: m.month,
-        revenue: m.revenue,
-        count: m.count,
-      })),
+      revenueByMonth: monthlyData,
     };
   }
 

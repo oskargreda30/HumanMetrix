@@ -13106,9 +13106,15 @@ Format your response as JSON with this structure:
       }
       
       const { startDate, endDate } = req.query;
+      
+      // Get exchange rates for currency conversion to GBP
+      const { getExchangeRates } = await import("./exchange-rates");
+      const exchangeRatesData = await getExchangeRates();
+      
       const stats = await storage.getBillingStats(
         startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined
+        endDate ? new Date(endDate as string) : undefined,
+        exchangeRatesData.rates
       );
       
       res.json(stats);
@@ -13137,7 +13143,28 @@ Format your response as JSON with this structure:
         offset: offset ? parseInt(offset as string) : 0,
       });
       
-      res.json(transactions);
+      // Get exchange rates for currency conversion to GBP
+      const { getExchangeRates } = await import("./exchange-rates");
+      const exchangeRatesData = await getExchangeRates();
+      
+      // Add GBP-converted amounts for each transaction
+      const transactionsWithGBP = transactions.map(tx => {
+        const currency = tx.purchase.currency || 'GBP';
+        const rate = exchangeRatesData.rates[currency] || 1;
+        const amountGBP = currency === 'GBP' 
+          ? tx.purchase.totalAmount 
+          : Math.round(tx.purchase.totalAmount / rate);
+        
+        return {
+          ...tx,
+          purchase: {
+            ...tx.purchase,
+            amountGBP,
+          },
+        };
+      });
+      
+      res.json(transactionsWithGBP);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });

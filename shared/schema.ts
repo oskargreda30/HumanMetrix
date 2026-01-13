@@ -80,6 +80,7 @@ export const purchases = pgTable("purchases", {
   stripeSessionId: text("stripe_session_id").unique(),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalAmount: integer("total_amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
   baseFee: integer("base_fee").notNull().default(30),
   status: text("status").notNull().default("pending"),
   resultsAccessPaid: boolean("results_access_paid").notNull().default(false),
