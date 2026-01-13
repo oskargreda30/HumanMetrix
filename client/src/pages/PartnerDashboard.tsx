@@ -2804,13 +2804,17 @@ export default function PartnerDashboard() {
                               Control your spend
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'payg' && !billingChangeData?.pendingRequest && (
+                          {!billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full mt-auto"
                               onClick={() => {
-                                setSelectedBillingType('payg');
+                                if (account?.partner?.billingType === 'payg') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('payg');
+                                }
                                 setShowBillingChangeDialog(true);
                               }}
                               data-testid="button-request-payg"
@@ -2855,13 +2859,17 @@ export default function PartnerDashboard() {
                               Automatic billing
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'subscription' && !billingChangeData?.pendingRequest && (
+                          {!billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full mt-auto"
                               onClick={() => {
-                                setSelectedBillingType('subscription');
+                                if (account?.partner?.billingType === 'subscription') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('subscription');
+                                }
                                 setShowBillingChangeDialog(true);
                               }}
                               data-testid="button-request-subscription"
@@ -2906,13 +2914,17 @@ export default function PartnerDashboard() {
                               Custom contracts
                             </li>
                           </ul>
-                          {account?.partner?.billingType !== 'enterprise' && !billingChangeData?.pendingRequest && (
+                          {!billingChangeData?.pendingRequest && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full mt-auto"
                               onClick={() => {
-                                setSelectedBillingType('enterprise');
+                                if (account?.partner?.billingType === 'enterprise') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('enterprise');
+                                }
                                 setShowBillingChangeDialog(true);
                               }}
                               data-testid="button-request-enterprise"
@@ -4403,11 +4415,33 @@ export default function PartnerDashboard() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Requested billing type</p>
-                  <p className="font-medium text-primary">
-                    {selectedBillingType === 'payg' && 'Pay As You Go'}
-                    {selectedBillingType === 'subscription' && 'Subscription'}
-                    {selectedBillingType === 'enterprise' && 'Enterprise'}
-                  </p>
+                  {selectedBillingType ? (
+                    <p className="font-medium text-primary">
+                      {selectedBillingType === 'payg' && 'Pay As You Go'}
+                      {selectedBillingType === 'subscription' && 'Subscription'}
+                      {selectedBillingType === 'enterprise' && 'Enterprise'}
+                    </p>
+                  ) : (
+                    <Select 
+                      value={selectedBillingType || ""} 
+                      onValueChange={(value) => setSelectedBillingType(value as 'payg' | 'subscription' | 'enterprise')}
+                    >
+                      <SelectTrigger className="w-[180px] h-8" data-testid="select-billing-type">
+                        <SelectValue placeholder="Select billing type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {account?.partner?.billingType !== 'payg' && (
+                          <SelectItem value="payg">Pay As You Go</SelectItem>
+                        )}
+                        {account?.partner?.billingType !== 'subscription' && (
+                          <SelectItem value="subscription">Subscription</SelectItem>
+                        )}
+                        {account?.partner?.billingType !== 'enterprise' && (
+                          <SelectItem value="enterprise">Enterprise</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
             </div>
@@ -4478,7 +4512,7 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange || (selectedBillingType === 'subscription' && !cardComplete)}
+              disabled={isSubmittingBillingChange || !selectedBillingType || (selectedBillingType === 'subscription' && !cardComplete)}
               data-testid="button-submit-billing-change"
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
