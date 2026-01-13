@@ -7034,8 +7034,9 @@ Format your response as JSON with this structure:
       const allTimeUsage = await storage.getUsageSummaryByPartner(matchingPartner.id, new Date(2020, 0, 1), endOfMonth);
       const totalTestsCompleted = allTimeUsage.find((u: any) => u.eventType === 'session_completed')?.count || 0;
       
-      // Get recent sessions
-      const recentEvents = await storage.getRecentUsageEvents(matchingPartner.id, 50);
+      // Get recent sessions (exclude test API key sessions)
+      const allRecentEvents = await storage.getRecentUsageEventsEnriched(matchingPartner.id, 100);
+      const recentEvents = allRecentEvents.filter(e => !e.isTestMode);
       
       // Get last 6 months usage
       const monthlyUsage = [];
@@ -9376,14 +9377,15 @@ Format your response as JSON with this structure:
       // Filter out test mode events and take the limit
       const productionLogs = usageLogs.filter(log => !log.isTestMode).slice(0, limit);
       
-      // Transform into activity log format
+      // Transform into activity log format (include candidate email)
       const activities = productionLogs.map(log => ({
         id: log.id,
         type: log.eventType,
-        description: formatActivityDescription(log.eventType, log.metadata),
+        description: formatActivityDescription(log.eventType, log.metadata, log.candidateEmail),
         metadata: log.metadata,
         createdAt: log.createdAt,
         organizationId: log.partnerOrganisationId,
+        candidateEmail: log.candidateEmail,
       }));
       
       res.json({ activities, total: productionLogs.length });
@@ -9394,16 +9396,17 @@ Format your response as JSON with this structure:
   });
 
   // Helper to format activity descriptions
-  function formatActivityDescription(eventType: string, metadata?: any): string {
+  function formatActivityDescription(eventType: string, metadata?: any, candidateEmail?: string | null): string {
+    const emailSuffix = candidateEmail ? ` - ${candidateEmail}` : '';
     switch (eventType) {
       case 'session_created':
-        return `Assessment session created${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+        return `Assessment session created${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}${emailSuffix}`;
       case 'session_started':
-        return `Candidate started assessment${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+        return `Candidate started assessment${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}${emailSuffix}`;
       case 'session_completed':
-        return `Assessment completed${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}`;
+        return `Assessment completed${metadata?.assessmentType ? ` (${metadata.assessmentType})` : ''}${emailSuffix}`;
       case 'credit_consumed':
-        return 'Test credit consumed';
+        return `Test credit consumed${emailSuffix}`;
       case 'api_call':
         return `API call${metadata?.endpoint ? ` to ${metadata.endpoint}` : ''}`;
       case 'webhook_sent':

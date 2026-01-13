@@ -315,7 +315,7 @@ export interface IStorage {
   getUsageEventsByPartner(partnerId: string, startDate?: Date, endDate?: Date): Promise<UsageEvent[]>;
   getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]>;
   getRecentUsageEvents(partnerId: string, limit: number): Promise<UsageEvent[]>;
-  getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean })[]>;
+  getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean; candidateEmail: string | null })[]>;
   getBillableEventsForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<UsageEvent[]>;
   getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]>;
   
@@ -1821,8 +1821,9 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean })[]> {
+  async getRecentUsageEventsEnriched(partnerId: string, limit: number): Promise<(UsageEvent & { isTestMode: boolean; candidateEmail: string | null })[]> {
     // Join with partner_api_keys to determine if the API key was a test key
+    // Also join with assessment_sessions to get candidate email
     const events = await db
       .select({
         id: usageEvents.id,
@@ -1838,9 +1839,11 @@ export class DatabaseStorage implements IStorage {
         metadata: usageEvents.metadata,
         createdAt: usageEvents.createdAt,
         isTestMode: sql<boolean>`COALESCE(${partnerApiKeys.environment} = 'test', false)`.as('is_test_mode'),
+        candidateEmail: assessmentSessions.externalEmail,
       })
       .from(usageEvents)
       .leftJoin(partnerApiKeys, eq(usageEvents.apiKeyId, partnerApiKeys.id))
+      .leftJoin(assessmentSessions, eq(usageEvents.sessionId, assessmentSessions.id))
       .where(eq(usageEvents.partnerId, partnerId))
       .orderBy(desc(usageEvents.createdAt))
       .limit(limit);
@@ -1848,6 +1851,7 @@ export class DatabaseStorage implements IStorage {
     return events.map(e => ({
       ...e,
       isTestMode: Boolean(e.isTestMode),
+      candidateEmail: e.candidateEmail || null,
     }));
   }
 

@@ -2637,7 +2637,7 @@ export default function PartnerDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {usage.recentEvents.map((event) => (
+                          {usage.recentEvents.map((event: any) => (
                             <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-md bg-primary/10">
@@ -2648,6 +2648,9 @@ export default function PartnerDashboard() {
                                     {event.eventType === 'session_completed' ? 'Assessment Completed' : 
                                      event.eventType === 'session_started' ? 'Session Started' :
                                      event.eventType}
+                                    {event.candidateEmail && (
+                                      <span className="text-muted-foreground font-normal"> - {event.candidateEmail}</span>
+                                    )}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {formatDate(event.createdAt)}
