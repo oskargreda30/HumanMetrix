@@ -8818,7 +8818,7 @@ Format your response as JSON with this structure:
 
   // ===== PARTNER NOTIFICATIONS =====
   
-  // Get notifications
+  // Get notifications (per-user based on team member role)
   app.get("/api/partner/me/notifications", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
@@ -8830,17 +8830,42 @@ Format your response as JSON with this structure:
       const limit = parseInt(req.query.limit as string) || 50;
       const unreadOnly = req.query.unreadOnly === 'true';
       
-      const notifications = await storage.getPartnerNotifications(partner.id, limit, unreadOnly);
-      const unreadCount = await storage.getUnreadNotificationCount(partner.id);
+      // Get team member for this user
+      const teamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
       
-      res.json({ notifications, unreadCount });
+      if (teamMember) {
+        // Use per-user notifications for team members
+        const notifications = await storage.getUserNotifications(teamMember.id, limit, unreadOnly);
+        const unreadCount = await storage.getUserUnreadNotificationCount(teamMember.id);
+        
+        // Transform to consistent format
+        const formattedNotifications = notifications.map(n => ({
+          id: n.id,
+          partnerId: n.partnerId,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          metadata: n.metadata,
+          isRead: n.recipientIsRead,
+          readAt: n.recipientReadAt,
+          createdAt: n.createdAt,
+          recipientId: n.recipientId, // Include recipient ID for marking read
+        }));
+        
+        res.json({ notifications: formattedNotifications, unreadCount });
+      } else {
+        // Fallback for direct partner admins (legacy - use partner-wide notifications)
+        const notifications = await storage.getPartnerNotifications(partner.id, limit, unreadOnly);
+        const unreadCount = await storage.getUnreadNotificationCount(partner.id);
+        res.json({ notifications, unreadCount });
+      }
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
     }
   });
   
-  // Mark notification as read
+  // Mark notification as read (by recipient ID for per-user, or notification ID for legacy)
   app.post("/api/partner/me/notifications/:id/read", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
@@ -8849,8 +8874,20 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      // We'd need to verify ownership but for now just mark it
-      await storage.markNotificationRead(req.params.id);
+      const teamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
+      const isRecipientId = req.body.isRecipientId === true;
+      
+      if (teamMember && isRecipientId) {
+        // Mark the recipient record as read (per-user with authorization check)
+        const success = await storage.markRecipientNotificationRead(req.params.id, teamMember.id);
+        if (!success) {
+          return res.status(403).json({ message: "Not authorized to mark this notification as read" });
+        }
+      } else {
+        // Legacy: mark the notification itself as read (partner-wide)
+        await storage.markNotificationRead(req.params.id);
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error marking notification read:", error);
@@ -8867,7 +8904,16 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      await storage.markAllNotificationsRead(partner.id);
+      const teamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
+      
+      if (teamMember) {
+        // Mark all recipient records as read (per-user)
+        await storage.markAllRecipientNotificationsRead(teamMember.id);
+      } else {
+        // Legacy: mark all partner notifications as read
+        await storage.markAllNotificationsRead(partner.id);
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error marking all notifications read:", error);
@@ -9065,13 +9111,14 @@ Format your response as JSON with this structure:
         userId: newUserId,
       } as any);
       
-      // Create notification for team member joining
-      await storage.createPartnerNotification({
+      // Create notification for team member joining (exclude the new member from receiving it)
+      await storage.dispatchPartnerNotification({
         partnerId: member.partnerId,
         type: 'team_member_joined',
         title: 'Team Member Joined',
         message: `${member.name || member.email} has accepted the invitation and joined the team.`,
         metadata: { memberId: member.id, memberEmail: member.email, memberName: member.name, role: member.role },
+        subjectTeamMemberId: member.id, // Exclude the new member from receiving this notification
       });
       
       // Send credentials email if new user was created
@@ -9124,13 +9171,18 @@ Format your response as JSON with this structure:
       
       await storage.deletePartnerTeamMember(req.params.id);
       
-      // Create notification for team member removal
-      await storage.createPartnerNotification({
+      // Get the actor's team member ID for exclusion
+      const actorTeamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
+      
+      // Create notification for team member removal (exclude the actor and the removed member)
+      await storage.dispatchPartnerNotification({
         partnerId: partner.id,
         type: 'team_member_removed',
         title: 'Team Member Removed',
         message: `${member.name || member.email} has been removed from the team.`,
         metadata: { memberId: member.id, memberEmail: member.email, memberName: member.name },
+        actorTeamMemberId: actorTeamMember?.id,
+        actorUserId: req.user.id,
       });
       
       res.json({ success: true });

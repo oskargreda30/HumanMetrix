@@ -1302,8 +1302,12 @@ export default function PartnerDashboard() {
 
   // Notification mutations
   const markReadMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("POST", `/api/partner/me/notifications/${id}/read`);
+    mutationFn: async ({ id, recipientId }: { id: string; recipientId?: string }) => {
+      // If recipientId is provided, use it and flag it as recipient-based
+      const targetId = recipientId || id;
+      await apiRequest("POST", `/api/partner/me/notifications/${targetId}/read`, {
+        isRecipientId: !!recipientId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/notifications"] });
@@ -4034,7 +4038,7 @@ export default function PartnerDashboard() {
                               </div>
                             </div>
                             {!notif.isRead && (
-                              <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate(notif.id)} data-testid={`button-mark-read-${notif.id}`}>
+                              <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate({ id: notif.id, recipientId: (notif as any).recipientId })} data-testid={`button-mark-read-${notif.id}`}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}

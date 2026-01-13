@@ -92,6 +92,7 @@ import {
   partnerAtsIntegrations,
   partnerScheduledExports,
   partnerNotifications,
+  partnerNotificationRecipients,
   partnerTeamMembers,
   billingChangeRequests,
   partnerCandidateImports,
@@ -106,6 +107,8 @@ import {
   type InsertPartnerScheduledExport,
   type PartnerNotification,
   type InsertPartnerNotification,
+  type PartnerNotificationRecipient,
+  type InsertPartnerNotificationRecipient,
   type PartnerTeamMember,
   type InsertPartnerTeamMember,
   type BillingChangeRequest,
@@ -123,6 +126,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
+import { canReceiveNotification, type NotificationType, type NotificationRole } from "@shared/notification-types";
 
 export interface IStorage {
   // User operations
@@ -445,13 +449,29 @@ export interface IStorage {
   updatePartnerScheduledExport(id: string, updates: Partial<InsertPartnerScheduledExport>): Promise<void>;
   deletePartnerScheduledExport(id: string): Promise<void>;
 
-  // Partner notification operations
+  // Partner notification operations (legacy - partner-wide)
   createPartnerNotification(notification: InsertPartnerNotification): Promise<PartnerNotification>;
   getPartnerNotifications(partnerId: string, limit?: number, unreadOnly?: boolean): Promise<PartnerNotification[]>;
   getUnreadNotificationCount(partnerId: string): Promise<number>;
   markNotificationRead(id: string): Promise<void>;
   markAllNotificationsRead(partnerId: string): Promise<void>;
   deletePartnerNotification(id: string): Promise<void>;
+  
+  // Role-based notification operations (per-user)
+  dispatchPartnerNotification(params: {
+    partnerId: string;
+    type: string;
+    title: string;
+    message: string;
+    metadata?: Record<string, any>;
+    actorTeamMemberId?: string;
+    actorUserId?: string;
+    subjectTeamMemberId?: string;
+  }): Promise<PartnerNotification>;
+  getUserNotifications(teamMemberId: string, limit?: number, unreadOnly?: boolean): Promise<Array<PartnerNotification & { recipientId: string; recipientIsRead: boolean; recipientReadAt: Date | null }>>;
+  getUserUnreadNotificationCount(teamMemberId: string): Promise<number>;
+  markRecipientNotificationRead(recipientId: string, teamMemberId: string): Promise<boolean>;
+  markAllRecipientNotificationsRead(teamMemberId: string): Promise<void>;
 
   // Partner team member operations
   createPartnerTeamMember(member: InsertPartnerTeamMember): Promise<PartnerTeamMember>;
@@ -2050,10 +2070,10 @@ export class DatabaseStorage implements IStorage {
     if (newRemaining <= 0) {
       // If partner has card on file, don't suspend - they can continue with overage billing
       if (hasCardOnFile) {
-        // Create notification about entering overage billing
-        await this.createPartnerNotification({
+        // Create notification about entering overage billing (admin-level notification)
+        await this.dispatchPartnerNotification({
           partnerId,
-          type: 'quota_exceeded',
+          type: 'quota_exhausted',
           title: 'Prepaid Credits Exhausted',
           message: 'Your prepaid credits have been exhausted. Future tests will be billed as overages to your saved card.',
           metadata: { remaining: 0, purchased: balance.testsPurchased, consumed: newConsumed, hasCardOnFile: true },
@@ -2070,10 +2090,10 @@ export class DatabaseStorage implements IStorage {
         ? `https://${domain}/developers?tab=billing&action=purchase` 
         : 'http://localhost:5000/developers?tab=billing&action=purchase';
       
-      // Create quota exceeded notification
-      await this.createPartnerNotification({
+      // Create quota exceeded notification (admin-level notification)
+      await this.dispatchPartnerNotification({
         partnerId,
-        type: 'quota_exceeded',
+        type: 'quota_exhausted',
         title: 'Quota Exceeded',
         message: 'Your assessment credits have been exhausted. Purchase more credits to continue using the API.',
         metadata: { 
@@ -2124,7 +2144,7 @@ export class DatabaseStorage implements IStorage {
       // Only send if we haven't sent a 70% notice yet (partner-auth will update the timestamp)
       if (!partner.last70NoticeAt) {
         shouldNotifyFirst = true;
-        await this.createPartnerNotification({
+        await this.dispatchPartnerNotification({
           partnerId,
           type: 'quota_warning',
           title: 'Quota Warning',
@@ -2145,7 +2165,7 @@ export class DatabaseStorage implements IStorage {
       // Only send if we haven't sent a 90% notice yet (partner-auth will update the timestamp)
       if (!partner.last90NoticeAt) {
         shouldNotifyUrgent = true;
-        await this.createPartnerNotification({
+        await this.dispatchPartnerNotification({
           partnerId,
           type: 'quota_critical',
           title: 'Critical: Quota Almost Exhausted',
@@ -3029,6 +3049,126 @@ export class DatabaseStorage implements IStorage {
 
   async deletePartnerNotification(id: string): Promise<void> {
     await db.delete(partnerNotifications).where(eq(partnerNotifications.id, id));
+  }
+
+  // Role-based notification operations (per-user)
+  async dispatchPartnerNotification(params: {
+    partnerId: string;
+    type: string;
+    title: string;
+    message: string;
+    metadata?: Record<string, any>;
+    actorTeamMemberId?: string;
+    actorUserId?: string;
+    subjectTeamMemberId?: string;
+  }): Promise<PartnerNotification> {
+    // 1. Create the notification record
+    const [notification] = await db.insert(partnerNotifications).values({
+      partnerId: params.partnerId,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      metadata: params.metadata,
+      actorTeamMemberId: params.actorTeamMemberId,
+      actorUserId: params.actorUserId,
+      subjectTeamMemberId: params.subjectTeamMemberId,
+      isRead: false,
+    }).returning();
+
+    // 2. Get all active team members for this partner
+    const teamMembers = await db.select().from(partnerTeamMembers)
+      .where(and(
+        eq(partnerTeamMembers.partnerId, params.partnerId),
+        eq(partnerTeamMembers.inviteStatus, 'accepted')
+      ));
+
+    // 3. Filter recipients based on role and exclusions
+    const recipients = teamMembers.filter(member => {
+      // Exclude the actor (person who triggered the notification)
+      if (params.actorTeamMemberId && member.id === params.actorTeamMemberId) {
+        return false;
+      }
+      if (params.actorUserId && member.userId === params.actorUserId) {
+        return false;
+      }
+      // Exclude the subject (person the notification is about)
+      if (params.subjectTeamMemberId && member.id === params.subjectTeamMemberId) {
+        return false;
+      }
+      // Check if member's role can receive this notification type
+      const role = member.role as NotificationRole;
+      return canReceiveNotification(role, params.type as NotificationType);
+    });
+
+    // 4. Create recipient records for each eligible member
+    if (recipients.length > 0) {
+      await db.insert(partnerNotificationRecipients).values(
+        recipients.map(member => ({
+          notificationId: notification.id,
+          teamMemberId: member.id,
+          roleAtDelivery: member.role,
+          isRead: false,
+        }))
+      );
+    }
+
+    return notification;
+  }
+
+  async getUserNotifications(teamMemberId: string, limit = 50, unreadOnly = false): Promise<Array<PartnerNotification & { recipientId: string; recipientIsRead: boolean; recipientReadAt: Date | null }>> {
+    const conditions = [eq(partnerNotificationRecipients.teamMemberId, teamMemberId)];
+    if (unreadOnly) {
+      conditions.push(eq(partnerNotificationRecipients.isRead, false));
+    }
+    
+    const results = await db.select({
+      notification: partnerNotifications,
+      recipient: partnerNotificationRecipients,
+    })
+      .from(partnerNotificationRecipients)
+      .innerJoin(partnerNotifications, eq(partnerNotificationRecipients.notificationId, partnerNotifications.id))
+      .where(and(...conditions))
+      .orderBy(desc(partnerNotifications.createdAt))
+      .limit(limit);
+    
+    return results.map(r => ({
+      ...r.notification,
+      recipientId: r.recipient.id,
+      recipientIsRead: r.recipient.isRead,
+      recipientReadAt: r.recipient.readAt,
+    }));
+  }
+
+  async getUserUnreadNotificationCount(teamMemberId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(partnerNotificationRecipients)
+      .where(and(
+        eq(partnerNotificationRecipients.teamMemberId, teamMemberId),
+        eq(partnerNotificationRecipients.isRead, false)
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  async markRecipientNotificationRead(recipientId: string, teamMemberId: string): Promise<boolean> {
+    // Only mark as read if the recipient belongs to the requesting team member
+    const result = await db.update(partnerNotificationRecipients)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(partnerNotificationRecipients.id, recipientId),
+        eq(partnerNotificationRecipients.teamMemberId, teamMemberId)
+      ))
+      .returning({ id: partnerNotificationRecipients.id });
+    
+    return result.length > 0;
+  }
+
+  async markAllRecipientNotificationsRead(teamMemberId: string): Promise<void> {
+    await db.update(partnerNotificationRecipients)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(partnerNotificationRecipients.teamMemberId, teamMemberId),
+        eq(partnerNotificationRecipients.isRead, false)
+      ));
   }
 
   // Partner team member operations

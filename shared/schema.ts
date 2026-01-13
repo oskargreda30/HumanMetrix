@@ -1290,14 +1290,20 @@ export const insertPartnerScheduledExportSchema = createInsertSchema(partnerSche
 export type InsertPartnerScheduledExport = z.infer<typeof insertPartnerScheduledExportSchema>;
 export type PartnerScheduledExport = typeof partnerScheduledExports.$inferSelect;
 
-// Partner notifications - in-app notifications for partners
+// Partner notifications - event log for partner notifications
 export const partnerNotifications = pgTable("partner_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
-  type: varchar("type").notNull(), // quota_warning, quota_critical, purchase_success, api_key_created, api_key_rotated, api_key_revoked, etc.
+  type: varchar("type").notNull(), // quota_warning, quota_critical, purchase_success, api_key_created, api_key_rotated, api_key_revoked, team_member_joined, etc.
   title: varchar("title").notNull(),
   message: text("message").notNull(),
   metadata: jsonb("metadata").$type<Record<string, any>>(),
+  // Actor tracking - who triggered this notification (excluded from recipients)
+  actorTeamMemberId: varchar("actor_team_member_id").references(() => partnerTeamMembers.id, { onDelete: "set null" }),
+  actorUserId: varchar("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  // Subject tracking - who the notification is about (also excluded, e.g., new member)
+  subjectTeamMemberId: varchar("subject_team_member_id").references(() => partnerTeamMembers.id, { onDelete: "set null" }),
+  // Legacy fields kept for backward compatibility during migration
   isRead: boolean("is_read").notNull().default(false),
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1315,6 +1321,30 @@ export const insertPartnerNotificationSchema = createInsertSchema(partnerNotific
 
 export type InsertPartnerNotification = z.infer<typeof insertPartnerNotificationSchema>;
 export type PartnerNotification = typeof partnerNotifications.$inferSelect;
+
+// Partner notification recipients - per-user delivery tracking
+export const partnerNotificationRecipients = pgTable("partner_notification_recipients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notificationId: varchar("notification_id").notNull().references(() => partnerNotifications.id, { onDelete: "cascade" }),
+  teamMemberId: varchar("team_member_id").notNull().references(() => partnerTeamMembers.id, { onDelete: "cascade" }),
+  roleAtDelivery: varchar("role_at_delivery").notNull(), // Role when notification was delivered
+  isRead: boolean("is_read").notNull().default(false),
+  readAt: timestamp("read_at"),
+  deliveredAt: timestamp("delivered_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_notification_recipients_notification").on(table.notificationId),
+  index("idx_notification_recipients_team_member").on(table.teamMemberId),
+  index("idx_notification_recipients_unread").on(table.teamMemberId, table.isRead),
+]);
+
+export const insertPartnerNotificationRecipientSchema = createInsertSchema(partnerNotificationRecipients).omit({
+  id: true,
+  deliveredAt: true,
+  readAt: true,
+});
+
+export type InsertPartnerNotificationRecipient = z.infer<typeof insertPartnerNotificationRecipientSchema>;
+export type PartnerNotificationRecipient = typeof partnerNotificationRecipients.$inferSelect;
 
 // Partner team members - additional admins for a partner account
 export const partnerTeamMembers = pgTable("partner_team_members", {
