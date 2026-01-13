@@ -19,8 +19,20 @@ import {
   Puzzle,
   Send,
   ClipboardCheck,
-  CheckCircle
+  CheckCircle,
+  X,
+  Check,
+  ChevronDown,
+  Target,
+  Award,
+  Building2
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
 
@@ -115,6 +127,65 @@ const howItWorks = [
   },
 ];
 
+const statistics = [
+  {
+    value: "75%",
+    label: "of CVs contain exaggerated claims",
+    description: "Our verified assessments provide objective data you can trust",
+  },
+  {
+    value: "3x",
+    label: "faster time-to-hire",
+    description: "Streamline candidate screening with instant, standardized results",
+  },
+  {
+    value: "40%",
+    label: "reduction in bad hires",
+    description: "Predict job performance with AI-powered behavioral analysis",
+  },
+  {
+    value: "100%",
+    label: "objective evaluation",
+    description: "Remove unconscious bias with data-driven hiring decisions",
+  },
+];
+
+const comparisonData = [
+  { feature: "CV screening time", traditional: "5-10 min per CV", humanmetrix: "Instant scoring" },
+  { feature: "Objectivity", traditional: "Subjective interpretation", humanmetrix: "AI-standardized evaluation" },
+  { feature: "AI literacy assessment", traditional: "Not available", humanmetrix: "4 comprehensive tests" },
+  { feature: "Candidate comparison", traditional: "Manual spreadsheets", humanmetrix: "Built-in analytics dashboard" },
+  { feature: "Results delivery", traditional: "Days to weeks", humanmetrix: "Immediate PDF reports" },
+  { feature: "Bias reduction", traditional: "Training required", humanmetrix: "Built into methodology" },
+];
+
+const faqs = [
+  {
+    question: "How long do the assessments take to complete?",
+    answer: "Each of our four assessments takes approximately 14-20 minutes to complete. Candidates can complete them in any order and at their own pace, with results available immediately upon completion.",
+  },
+  {
+    question: "Can I customise the assessments for my organisation?",
+    answer: "Yes, enterprise partners can customise the assessment experience with their own branding, logo, and email templates. We also offer role-specific weighting to prioritise skills that matter most for your positions.",
+  },
+  {
+    question: "How do you ensure assessment integrity?",
+    answer: "Our assessments use AI-generated questions with no fixed answer keys, making them resistant to gaming. We also track session timing and provide indicators when responses appear inconsistent.",
+  },
+  {
+    question: "What integrations do you support?",
+    answer: "We integrate with major ATS platforms including Greenhouse, Lever, Workday, SAP SuccessFactors, and Oracle HCM. We also offer a REST API and embeddable JavaScript widget for custom integrations.",
+  },
+  {
+    question: "Is our candidate data secure?",
+    answer: "Absolutely. We're GDPR compliant with bank-level encryption, role-based access control, and data hosted in UK data centres. Candidates can request data deletion at any time.",
+  },
+  {
+    question: "What's included in enterprise pricing?",
+    answer: "Enterprise plans include unlimited team members, API access, ATS integrations, custom branding, dedicated account management, and volume discounts. Contact our sales team for a customised quote.",
+  },
+];
+
 export default function ForEmployers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
@@ -201,6 +272,27 @@ export default function ForEmployers() {
           </div>
         </section>
 
+        {/* Statistics Section */}
+        <section className="py-12 md:py-20 bg-muted/30" data-testid="section-statistics">
+          <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              {statistics.map((stat, index) => (
+                <div key={index} className="text-center" data-testid={`stat-${index}`}>
+                  <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm md:text-base font-semibold mb-1">
+                    {stat.label}
+                  </div>
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    {stat.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Features Grid */}
         <section className="py-12 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
@@ -231,8 +323,55 @@ export default function ForEmployers() {
           </div>
         </section>
 
+        {/* Comparison Table */}
+        <section className="py-12 md:py-24 bg-muted/30" data-testid="section-comparison">
+          <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-8 md:mb-12">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
+                HumanMetrix vs Traditional Hiring
+              </h2>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+                See how AI-powered assessments transform your recruitment process
+              </p>
+            </div>
+
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full" data-testid="comparison-table">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-4 text-sm md:text-base font-semibold">Feature</th>
+                      <th className="text-left p-4 text-sm md:text-base font-semibold text-muted-foreground">Traditional Hiring</th>
+                      <th className="text-left p-4 text-sm md:text-base font-semibold text-primary">HumanMetrix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonData.map((row, index) => (
+                      <tr key={index} className="border-b last:border-0" data-testid={`comparison-row-${index}`}>
+                        <td className="p-4 text-sm font-medium">{row.feature}</td>
+                        <td className="p-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <X className="h-4 w-4 text-destructive flex-shrink-0" />
+                            <span>{row.traditional}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <span className="font-medium">{row.humanmetrix}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </section>
+
         {/* How It Works */}
-        <section className="py-12 md:py-24 bg-muted/30" data-testid="section-how-it-works">
+        <section className="py-12 md:py-24" data-testid="section-how-it-works">
           <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-8 md:mb-16">
               <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4" data-testid="text-how-it-works-heading">
@@ -319,6 +458,38 @@ export default function ForEmployers() {
                 </Card>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-12 md:py-24 bg-muted/30" data-testid="section-faq">
+          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-8 md:mb-12">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+                Everything you need to know about getting started with HumanMetrix
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full space-y-3" data-testid="faq-accordion">
+              {faqs.map((faq, index) => (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`} 
+                  className="bg-background rounded-lg border px-4 md:px-6"
+                  data-testid={`faq-item-${index}`}
+                >
+                  <AccordionTrigger className="text-left text-sm md:text-base font-medium py-4 hover:no-underline">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground pb-4">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </section>
 
