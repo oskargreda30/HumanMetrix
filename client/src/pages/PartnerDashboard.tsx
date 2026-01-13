@@ -86,6 +86,18 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
+  
+  // Detect dark mode for Stripe CardElement styling
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
@@ -678,14 +690,17 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                 <Label className="text-sm font-medium mb-2 block">Card Details</Label>
                 <div className="p-4 border rounded-lg bg-background">
                   <CardElement
+                    key={isDarkMode ? 'dark' : 'light'}
                     options={{
                       style: {
                         base: {
                           fontSize: "16px",
-                          color: "#424770",
-                          "::placeholder": { color: "#aab7c4" },
+                          color: isDarkMode ? "#ffffff" : "#1f2937",
+                          backgroundColor: "transparent",
+                          iconColor: isDarkMode ? "#9ca3af" : "#6b7280",
+                          "::placeholder": { color: isDarkMode ? "#6b7280" : "#9ca3af" },
                         },
-                        invalid: { color: "#9e2146" },
+                        invalid: { color: "#ef4444", iconColor: "#ef4444" },
                       },
                     }}
                     onChange={(event) => {
