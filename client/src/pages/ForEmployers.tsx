@@ -218,6 +218,17 @@ export default function ForEmployers() {
         }} />
       </div>
       <Navigation />
+      
+      {/* For Job Seekers link - top left */}
+      <div className="relative z-20 px-4 md:px-6 lg:px-8 pt-2">
+        <Link href="/" data-testid="link-for-job-seekers">
+          <a className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+            <span>Looking for job seeker assessments?</span>
+            <span className="font-medium underline underline-offset-2">Click here</span>
+          </a>
+        </Link>
+      </div>
+      
       <ContactFormDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
@@ -258,17 +269,6 @@ export default function ForEmployers() {
                 <a>
                   <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
                     View Sample Reports
-                  </Button>
-                </a>
-              </Link>
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-muted">
-              <p className="text-sm text-muted-foreground mb-3">Looking to take an assessment yourself?</p>
-              <Link href="/">
-                <a>
-                  <Button variant="ghost" data-testid="button-for-job-seekers">
-                    For Job Seekers
                   </Button>
                 </a>
               </Link>
