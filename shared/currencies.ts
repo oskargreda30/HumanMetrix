@@ -879,12 +879,15 @@ export function calculateStripeAmountFromTotalPence(
 export function formatPrice(
   priceInPence: number,
   currency: CurrencyConfig,
-  options?: { showCode?: boolean; countryCode?: string; isFullSuite?: boolean }
+  options?: { showCode?: boolean; countryCode?: string; isFullSuite?: boolean; skipPPPAdjustment?: boolean }
 ): string {
   let adjustedPriceInPence: number;
   
-  // Check if this is a SEA launch country with fixed pricing
-  if (options?.countryCode && options?.isFullSuite) {
+  // If skipPPPAdjustment is true, the price already has PPP applied - skip adjustment
+  if (options?.skipPPPAdjustment) {
+    adjustedPriceInPence = priceInPence;
+  } else if (options?.countryCode && options?.isFullSuite) {
+    // Check if this is a SEA launch country with fixed pricing
     const seaPriceInPence = getSEALaunchPriceInPence(options.countryCode);
     if (seaPriceInPence !== null) {
       // SEA launch countries use fixed USD-based pricing
