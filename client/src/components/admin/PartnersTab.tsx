@@ -534,10 +534,20 @@ export default function PartnersTab() {
   const [phoneCodeDropdownOpen, setPhoneCodeDropdownOpen] = useState(false);
   const [countryHighlightIndex, setCountryHighlightIndex] = useState(0);
   const [phoneCodeHighlightIndex, setPhoneCodeHighlightIndex] = useState(0);
+  const [currencySearch, setCurrencySearch] = useState<string>("");
+  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
+  const [currencyHighlightIndex, setCurrencyHighlightIndex] = useState(0);
+  const [editCurrencySearch, setEditCurrencySearch] = useState<string>("");
+  const [editCurrencyDropdownOpen, setEditCurrencyDropdownOpen] = useState(false);
+  const [editCurrencyHighlightIndex, setEditCurrencyHighlightIndex] = useState(0);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const phoneCodeDropdownRef = useRef<HTMLDivElement>(null);
   const countryListRef = useRef<HTMLDivElement>(null);
   const phoneCodeListRef = useRef<HTMLDivElement>(null);
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
+  const currencyListRef = useRef<HTMLDivElement>(null);
+  const editCurrencyDropdownRef = useRef<HTMLDivElement>(null);
+  const editCurrencyListRef = useRef<HTMLDivElement>(null);
   
   const selectedPhoneCountryData = COUNTRIES.find(c => c.code === selectedPhoneCountry);
   
@@ -621,6 +631,29 @@ export default function PartnersTab() {
     );
   }, [phoneCodeSearch]);
 
+  const sortedCurrencies = useMemo(() => 
+    Object.values(CURRENCIES).sort((a, b) => a.name.localeCompare(b.name)),
+    []
+  );
+
+  const filteredCurrencies = useMemo(() => {
+    if (!currencySearch.trim()) return sortedCurrencies;
+    const search = currencySearch.toLowerCase();
+    return sortedCurrencies.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.code.toLowerCase().includes(search)
+    );
+  }, [currencySearch, sortedCurrencies]);
+
+  const filteredEditCurrencies = useMemo(() => {
+    if (!editCurrencySearch.trim()) return sortedCurrencies;
+    const search = editCurrencySearch.toLowerCase();
+    return sortedCurrencies.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.code.toLowerCase().includes(search)
+    );
+  }, [editCurrencySearch, sortedCurrencies]);
+
   // Click outside handlers
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -630,12 +663,18 @@ export default function PartnersTab() {
       if (phoneCodeDropdownRef.current && !phoneCodeDropdownRef.current.contains(event.target as Node)) {
         setPhoneCodeDropdownOpen(false);
       }
+      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(event.target as Node)) {
+        setCurrencyDropdownOpen(false);
+      }
       // Edit dialog dropdowns
       if (editCountryDropdownRef.current && !editCountryDropdownRef.current.contains(event.target as Node)) {
         setEditCountryDropdownOpen(false);
       }
       if (editPhoneCodeDropdownRef.current && !editPhoneCodeDropdownRef.current.contains(event.target as Node)) {
         setEditPhoneCodeDropdownOpen(false);
+      }
+      if (editCurrencyDropdownRef.current && !editCurrencyDropdownRef.current.contains(event.target as Node)) {
+        setEditCurrencyDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -2241,20 +2280,108 @@ export default function PartnersTab() {
 
               <div className="space-y-2">
                 <Label>Currency</Label>
-                <Select value={editCurrency} onValueChange={setEditCurrency}>
-                  <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-edit-partner-currency-detail">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                    {Object.values(CURRENCIES)
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((curr) => (
-                        <SelectItem key={curr.code} value={curr.code} className="text-white focus:bg-slate-700 focus:text-white">
-                          {curr.code} ({curr.symbol}) - {curr.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative" ref={editCurrencyDropdownRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditCurrencyDropdownOpen(!editCurrencyDropdownOpen);
+                      setEditCurrencyHighlightIndex(0);
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={editCurrencyDropdownOpen}
+                    className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                    data-testid="select-edit-partner-currency-detail"
+                  >
+                    {editCurrency ? (
+                      <>
+                        {CURRENCIES[editCurrency]?.code} ({CURRENCIES[editCurrency]?.symbol}) - {CURRENCIES[editCurrency]?.name}
+                      </>
+                    ) : (
+                      <span className="text-slate-400">Select currency...</span>
+                    )}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                  {editCurrencyDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+                      <div className="p-2 border-b border-slate-700">
+                        <Input
+                          role="combobox"
+                          aria-controls="edit-currency-listbox"
+                          aria-expanded={editCurrencyDropdownOpen}
+                          aria-activedescendant={filteredEditCurrencies.length > 0 && editCurrencyHighlightIndex >= 0 ? `edit-currency-option-${filteredEditCurrencies[editCurrencyHighlightIndex]?.code}` : undefined}
+                          aria-autocomplete="list"
+                          placeholder="Search currency..."
+                          value={editCurrencySearch}
+                          onChange={(e) => {
+                            setEditCurrencySearch(e.target.value);
+                            setEditCurrencyHighlightIndex(0);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (filteredEditCurrencies.length > 0 && editCurrencyHighlightIndex >= 0) {
+                                setEditCurrency(filteredEditCurrencies[editCurrencyHighlightIndex].code);
+                                setEditCurrencyDropdownOpen(false);
+                                setEditCurrencySearch("");
+                              }
+                            } else if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setEditCurrencyHighlightIndex(prev => Math.min(prev + 1, filteredEditCurrencies.length - 1));
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setEditCurrencyHighlightIndex(prev => Math.max(prev - 1, 0));
+                            } else if (e.key === 'Escape') {
+                              setEditCurrencyDropdownOpen(false);
+                              setEditCurrencySearch("");
+                            } else if (e.key === 'Tab') {
+                              setEditCurrencyDropdownOpen(false);
+                              setEditCurrencySearch("");
+                            }
+                          }}
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                          autoFocus
+                          data-testid="input-edit-currency-search"
+                        />
+                      </div>
+                      <div ref={editCurrencyListRef} id="edit-currency-listbox" className="max-h-[200px] overflow-y-auto" role="listbox" aria-label="Currencies">
+                        {filteredEditCurrencies.length === 0 ? (
+                          <div className="p-2 text-center text-slate-400 text-sm" role="status">No currency found</div>
+                        ) : (
+                          filteredEditCurrencies.map((currency, index) => (
+                            <div
+                              key={currency.code}
+                              id={`edit-currency-option-${currency.code}`}
+                              ref={(el) => {
+                                if (index === editCurrencyHighlightIndex && el) {
+                                  el.scrollIntoView({ block: 'nearest' });
+                                }
+                              }}
+                              onClick={() => {
+                                setEditCurrency(currency.code);
+                                setEditCurrencyDropdownOpen(false);
+                                setEditCurrencySearch("");
+                              }}
+                              role="option"
+                              aria-selected={editCurrency === currency.code || index === editCurrencyHighlightIndex}
+                              className={`px-3 py-2 cursor-pointer text-white flex items-center gap-2 ${
+                                index === editCurrencyHighlightIndex ? 'bg-slate-600' : 'hover:bg-slate-700'
+                              }`}
+                              data-testid={`edit-currency-option-${currency.code}`}
+                            >
+                              <span className="font-mono text-sm">{currency.code}</span>
+                              <span className="text-slate-400">({currency.symbol})</span>
+                              <span className="flex-1 truncate">{currency.name}</span>
+                              {editCurrency === currency.code && (
+                                <CheckCircle className="h-4 w-4 text-cyan-400" />
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-slate-700 pt-4 mt-4">
@@ -2737,24 +2864,108 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-currency">
-                      <SelectValue placeholder="Select currency..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                      {Object.values(CURRENCIES)
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((currency) => (
-                          <SelectItem 
-                            key={currency.code} 
-                            value={currency.code} 
-                            className="text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white"
-                          >
-                            {currency.code} ({currency.symbol}) - {currency.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative" ref={currencyDropdownRef}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCurrencyDropdownOpen(!currencyDropdownOpen);
+                        setCurrencyHighlightIndex(0);
+                      }}
+                      aria-haspopup="listbox"
+                      aria-expanded={currencyDropdownOpen}
+                      className="w-full justify-between bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
+                      data-testid="select-partner-currency"
+                    >
+                      {selectedCurrency ? (
+                        <>
+                          {CURRENCIES[selectedCurrency]?.code} ({CURRENCIES[selectedCurrency]?.symbol}) - {CURRENCIES[selectedCurrency]?.name}
+                        </>
+                      ) : (
+                        <span className="text-slate-400">Select currency...</span>
+                      )}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                    {currencyDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+                        <div className="p-2 border-b border-slate-700">
+                          <Input
+                            role="combobox"
+                            aria-controls="currency-listbox"
+                            aria-expanded={currencyDropdownOpen}
+                            aria-activedescendant={filteredCurrencies.length > 0 && currencyHighlightIndex >= 0 ? `currency-option-${filteredCurrencies[currencyHighlightIndex]?.code}` : undefined}
+                            aria-autocomplete="list"
+                            placeholder="Search currency..."
+                            value={currencySearch}
+                            onChange={(e) => {
+                              setCurrencySearch(e.target.value);
+                              setCurrencyHighlightIndex(0);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (filteredCurrencies.length > 0 && currencyHighlightIndex >= 0) {
+                                  setSelectedCurrency(filteredCurrencies[currencyHighlightIndex].code);
+                                  setCurrencyDropdownOpen(false);
+                                  setCurrencySearch("");
+                                }
+                              } else if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setCurrencyHighlightIndex(prev => Math.min(prev + 1, filteredCurrencies.length - 1));
+                              } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setCurrencyHighlightIndex(prev => Math.max(prev - 1, 0));
+                              } else if (e.key === 'Escape') {
+                                setCurrencyDropdownOpen(false);
+                                setCurrencySearch("");
+                              } else if (e.key === 'Tab') {
+                                setCurrencyDropdownOpen(false);
+                                setCurrencySearch("");
+                              }
+                            }}
+                            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                            autoFocus
+                            data-testid="input-currency-search"
+                          />
+                        </div>
+                        <div ref={currencyListRef} id="currency-listbox" className="max-h-[200px] overflow-y-auto" role="listbox" aria-label="Currencies">
+                          {filteredCurrencies.length === 0 ? (
+                            <div className="p-2 text-center text-slate-400 text-sm" role="status">No currency found</div>
+                          ) : (
+                            filteredCurrencies.map((currency, index) => (
+                              <div
+                                key={currency.code}
+                                id={`currency-option-${currency.code}`}
+                                ref={(el) => {
+                                  if (index === currencyHighlightIndex && el) {
+                                    el.scrollIntoView({ block: 'nearest' });
+                                  }
+                                }}
+                                onClick={() => {
+                                  setSelectedCurrency(currency.code);
+                                  setCurrencyDropdownOpen(false);
+                                  setCurrencySearch("");
+                                }}
+                                role="option"
+                                aria-selected={selectedCurrency === currency.code || index === currencyHighlightIndex}
+                                className={`px-3 py-2 cursor-pointer text-white flex items-center gap-2 ${
+                                  index === currencyHighlightIndex ? 'bg-slate-600' : 'hover:bg-slate-700'
+                                }`}
+                                data-testid={`currency-option-${currency.code}`}
+                              >
+                                <span className="font-mono text-sm">{currency.code}</span>
+                                <span className="text-slate-400">({currency.symbol})</span>
+                                <span className="flex-1 truncate">{currency.name}</span>
+                                {selectedCurrency === currency.code && (
+                                  <CheckCircle className="h-4 w-4 text-cyan-400" />
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-400">Partner's preferred billing currency</p>
                 </div>
                 <div className="space-y-2">
