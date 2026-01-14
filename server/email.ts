@@ -1282,12 +1282,14 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails & { billin
   try {
     const { generateInvoicePDF } = await import('./generateReceipt');
     const invoiceData = {
-      documentType: 'invoice',
+      documentType: 'invoice' as const,
+      receiptNumber: details.invoiceNumber, // Use invoice number as receipt number for consistency
       invoiceNumber: details.invoiceNumber,
       date: new Date(),
+      dueDate: details.dueDate,
       partnerName: details.companyName,
       companyName: details.companyName,
-      billingType: 'enterprise',
+      billingType: 'enterprise' as const,
       billingAddress: details.billingAddress,
       items: [{
         description: `HumanMetrix Assessment Services (${formatDate(details.periodStart)} - ${formatDate(details.periodEnd)})`,
@@ -1299,10 +1301,9 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails & { billin
       tax: details.vatAmount,
       taxRate: details.vatRate,
       total: details.totalAmount,
-      currency: currency,
-      dueDate: details.dueDate,
-      paymentTermsDays: details.paymentTermsDays,
-      notes: details.invoiceNotes,
+      currency: currency.toUpperCase(), // Ensure uppercase for proper symbol lookup
+      periodStart: details.periodStart,
+      periodEnd: details.periodEnd,
     };
     pdfBuffer = generateInvoicePDF(invoiceData);
     console.log(`✓ Generated PDF invoice for ${details.invoiceNumber}`);

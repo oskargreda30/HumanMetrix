@@ -8,7 +8,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -629,26 +629,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to logged-in user
+        // Send PDF receipt email to logged-in user
         const user = await storage.getUser(userId);
         if (user) {
-          const assessmentDisplayNames = assessmentList.map((id: string) => {
-            const normalized = normalizeAssessmentId(id);
-            return assessmentNames[normalized] || normalized;
-          });
-          
           const userName = user.firstName && user.lastName 
             ? `${user.firstName} ${user.lastName}` 
             : user.firstName || user.email;
           
-          await sendPaymentReceiptEmail(
-            user.email,
-            userName,
-            assessmentDisplayNames,
-            session.amount_total || 0,
-            session.id,
-            session.currency || 'gbp'
-          );
+          const totalAmount = session.amount_total || 0;
+          const currency = (session.currency || 'gbp').toUpperCase();
+          
+          try {
+            // Retrieve actual line items from Stripe to get exact charged amounts
+            const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+            const receiptItems = stripeLineItems.data.map(item => {
+              const qty = item.quantity || 1;
+              const amount = item.amount_total || 0;
+              // Calculate effective unit price from amount/quantity to reflect discounts
+              const effectiveUnitPrice = qty > 0 ? Math.round(amount / qty) : amount;
+              return {
+                description: item.description || 'HumanMetrix Assessment',
+                quantity: qty,
+                unitPrice: effectiveUnitPrice,
+                amount: amount,
+              };
+            });
+            
+            const receiptDetails: PdfReceiptEmailDetails = {
+              email: user.email,
+              name: userName,
+              items: receiptItems,
+              totalAmount,
+              currency,
+              transactionId: session.id,
+              paymentMethod: 'Stripe',
+            };
+            await sendPaymentReceiptWithPdf(receiptDetails);
+          } catch (receiptError: any) {
+            console.error(`Failed to send PDF receipt to ${user.email}:`, receiptError.message);
+          }
         }
         
         return res.json({
@@ -711,24 +730,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Send receipt email to existing user
-        const assessmentDisplayNames = assessmentList.map((id: string) => {
-          const normalized = normalizeAssessmentId(id);
-          return assessmentNames[normalized] || normalized;
-        });
-        
+        // Send PDF receipt email to existing user
         const existingUserName = existingUser.firstName && existingUser.lastName
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.firstName || `${firstName} ${lastName}`;
         
-        await sendPaymentReceiptEmail(
-          existingUser.email,
-          existingUserName,
-          assessmentDisplayNames,
-          session.amount_total || 0,
-          session.id,
-          session.currency || 'gbp'
-        );
+        const totalAmount = session.amount_total || 0;
+        const currency = (session.currency || 'gbp').toUpperCase();
+        
+        try {
+          // Retrieve actual line items from Stripe to get exact charged amounts
+          const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+          const receiptItems = stripeLineItems.data.map(item => {
+            const qty = item.quantity || 1;
+            const amount = item.amount_total || 0;
+            // Calculate effective unit price from amount/quantity to reflect discounts
+            const effectiveUnitPrice = qty > 0 ? Math.round(amount / qty) : amount;
+            return {
+              description: item.description || 'HumanMetrix Assessment',
+              quantity: qty,
+              unitPrice: effectiveUnitPrice,
+              amount: amount,
+            };
+          });
+          
+          const receiptDetails: PdfReceiptEmailDetails = {
+            email: existingUser.email,
+            name: existingUserName,
+            items: receiptItems,
+            totalAmount,
+            currency,
+            transactionId: session.id,
+            paymentMethod: 'Stripe',
+          };
+          await sendPaymentReceiptWithPdf(receiptDetails);
+        } catch (receiptError: any) {
+          console.error(`Failed to send PDF receipt to ${existingUser.email}:`, receiptError.message);
+        }
         
         return res.json({
           success: true,
@@ -804,24 +842,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Send payment receipt email
+      // Send PDF payment receipt email
       try {
-        const assessmentDisplayNames = assessmentList.map((id: string) => {
-          const normalized = normalizeAssessmentId(id);
-          return assessmentNames[normalized] || normalized;
+        const totalAmount = session.amount_total || 0;
+        const currency = (session.currency || 'gbp').toUpperCase();
+        
+        // Retrieve actual line items from Stripe to get exact charged amounts
+        const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+        const receiptItems = stripeLineItems.data.map(item => {
+          const qty = item.quantity || 1;
+          const amount = item.amount_total || 0;
+          // Calculate effective unit price from amount/quantity to reflect discounts
+          const effectiveUnitPrice = qty > 0 ? Math.round(amount / qty) : amount;
+          return {
+            description: item.description || 'HumanMetrix Assessment',
+            quantity: qty,
+            unitPrice: effectiveUnitPrice,
+            amount: amount,
+          };
         });
         
-        await sendPaymentReceiptEmail(
-          customerEmail,
-          `${firstName} ${lastName}`,
-          assessmentDisplayNames,
-          session.amount_total || 0,
-          session.id,
-          session.currency || 'gbp'
-        );
-        console.log(`✓ Payment receipt sent successfully to ${customerEmail}`);
+        const receiptDetails: PdfReceiptEmailDetails = {
+          email: customerEmail,
+          name: `${firstName} ${lastName}`,
+          items: receiptItems,
+          totalAmount,
+          currency,
+          transactionId: session.id,
+          paymentMethod: 'Stripe',
+        };
+        await sendPaymentReceiptWithPdf(receiptDetails);
+        console.log(`✓ PDF receipt sent successfully to ${customerEmail}`);
       } catch (emailError: any) {
-        console.error(`✗ Failed to send payment receipt to ${customerEmail}:`, emailError);
+        console.error(`✗ Failed to send PDF receipt to ${customerEmail}:`, emailError);
       }
       
       // Send welcome email with credentials
