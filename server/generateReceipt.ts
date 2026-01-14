@@ -12,6 +12,38 @@ const pdfAssetsContent = readFileSync(logoPath, 'utf-8');
 const logoMatch = pdfAssetsContent.match(/export const HUMANMETRIX_LOGO_BASE64 = '([^']+)'/);
 const HUMANMETRIX_LOGO_BASE64 = logoMatch ? logoMatch[1] : '';
 
+// Helper to add handwriting-style signature with slight rotation for natural look
+function addHandwrittenSignature(pdf: jsPDF, text: string, x: number, y: number, align: 'left' | 'right' = 'right') {
+  // Save the current state
+  pdf.saveGraphicsState();
+  
+  // Set up handwriting style - Times Italic at larger size with slight slant
+  pdf.setFontSize(26);
+  pdf.setFont('times', 'italic');
+  pdf.setTextColor(20, 30, 50);
+  
+  // Calculate text width for alignment
+  const textWidth = pdf.getTextWidth(text);
+  const adjustedX = align === 'right' ? x - textWidth : x;
+  
+  // Apply slight rotation for handwritten feel (-2 degrees)
+  const angle = -2 * Math.PI / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  
+  // Transform matrix for rotation around text position
+  pdf.internal.write(
+    `q`,
+    `${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${adjustedX.toFixed(2)} ${(pdf.internal.pageSize.height - y).toFixed(2)} cm`,
+    `1 0 0 1 ${(-adjustedX).toFixed(2)} ${(-(pdf.internal.pageSize.height - y)).toFixed(2)} cm`
+  );
+  
+  pdf.text(text, adjustedX, y);
+  
+  // Restore state
+  pdf.restoreGraphicsState();
+}
+
 export interface ReceiptData {
   documentType: 'receipt' | 'invoice';
   receiptNumber: string;
@@ -572,17 +604,14 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.text('TOTAL', totalsLabelX, y);
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
   
-  // Signature section
+  // Signature section with handwritten style
   const signatureY = y + 20;
-  pdf.setFontSize(22);
-  pdf.setFont('times', 'italic');
-  pdf.setTextColor(30, 41, 59);
-  pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
+  addHandwrittenSignature(pdf, 'Oskar Greda', rightMargin - 10, signatureY, 'right');
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 8, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
@@ -827,17 +856,14 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.text('TOTAL', totalsLabelX, y);
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
   
-  // Signature section
+  // Signature section with handwritten style
   const signatureY = y + 20;
-  pdf.setFontSize(22);
-  pdf.setFont('times', 'italic');
-  pdf.setTextColor(30, 41, 59);
-  pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
+  addHandwrittenSignature(pdf, 'Oskar Greda', rightMargin - 10, signatureY, 'right');
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 8, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
