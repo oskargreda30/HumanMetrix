@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -12,36 +12,42 @@ const pdfAssetsContent = readFileSync(logoPath, 'utf-8');
 const logoMatch = pdfAssetsContent.match(/export const HUMANMETRIX_LOGO_BASE64 = '([^']+)'/);
 const HUMANMETRIX_LOGO_BASE64 = logoMatch ? logoMatch[1] : '';
 
-// Helper to add handwriting-style signature with slight rotation for natural look
+// Load Dancing Script font for handwritten signature
+const fontPath = join(__dirname, 'fonts/DancingScript-Bold.txt');
+let DANCING_SCRIPT_BASE64 = '';
+if (existsSync(fontPath)) {
+  DANCING_SCRIPT_BASE64 = readFileSync(fontPath, 'utf-8').trim();
+}
+
+// Helper to add custom signature font to PDF
+function addSignatureFont(pdf: jsPDF): boolean {
+  if (!DANCING_SCRIPT_BASE64) {
+    return false;
+  }
+  try {
+    pdf.addFileToVFS('DancingScript-Bold.ttf', DANCING_SCRIPT_BASE64);
+    pdf.addFont('DancingScript-Bold.ttf', 'DancingScript', 'normal');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Helper to add handwriting-style signature
 function addHandwrittenSignature(pdf: jsPDF, text: string, x: number, y: number, align: 'left' | 'right' = 'right') {
-  // Save the current state
-  pdf.saveGraphicsState();
+  const hasDancingScript = addSignatureFont(pdf);
   
-  // Set up handwriting style - Times Italic at larger size with slight slant
-  pdf.setFontSize(26);
-  pdf.setFont('times', 'italic');
-  pdf.setTextColor(20, 30, 50);
+  if (hasDancingScript) {
+    pdf.setFont('DancingScript', 'normal');
+    pdf.setFontSize(28);
+  } else {
+    // Fallback to Times Italic
+    pdf.setFont('times', 'italic');
+    pdf.setFontSize(24);
+  }
   
-  // Calculate text width for alignment
-  const textWidth = pdf.getTextWidth(text);
-  const adjustedX = align === 'right' ? x - textWidth : x;
-  
-  // Apply slight rotation for handwritten feel (-2 degrees)
-  const angle = -2 * Math.PI / 180;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  
-  // Transform matrix for rotation around text position
-  pdf.internal.write(
-    `q`,
-    `${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${adjustedX.toFixed(2)} ${(pdf.internal.pageSize.height - y).toFixed(2)} cm`,
-    `1 0 0 1 ${(-adjustedX).toFixed(2)} ${(-(pdf.internal.pageSize.height - y)).toFixed(2)} cm`
-  );
-  
-  pdf.text(text, adjustedX, y);
-  
-  // Restore state
-  pdf.restoreGraphicsState();
+  pdf.setTextColor(30, 40, 60);
+  pdf.text(text, x, y, { align });
 }
 
 export interface ReceiptData {
@@ -619,8 +625,14 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.setLineWidth(2);
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
-  pdf.setFontSize(24);
-  pdf.setFont('times', 'bolditalic');
+  // Use script font for "Thank you" like signature
+  addSignatureFont(pdf);
+  try {
+    pdf.setFont('DancingScript', 'normal');
+  } catch (e) {
+    pdf.setFont('times', 'bolditalic');
+  }
+  pdf.setFontSize(28);
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
@@ -871,8 +883,14 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.setLineWidth(2);
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
-  pdf.setFontSize(24);
-  pdf.setFont('times', 'bolditalic');
+  // Use script font for "Thank you" like signature
+  addSignatureFont(pdf);
+  try {
+    pdf.setFont('DancingScript', 'normal');
+  } catch (e) {
+    pdf.setFont('times', 'bolditalic');
+  }
+  pdf.setFontSize(28);
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
