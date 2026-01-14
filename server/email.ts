@@ -1258,8 +1258,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   myr: 'RM', thb: '฿', idr: 'Rp', vnd: '₫', krw: '₩'
 };
 
-// Send invoice email to enterprise partner
-export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
+// Send invoice email to enterprise partner with PDF attachment
+export async function sendPartnerInvoiceEmail(details: InvoiceDetails & { billingAddress?: { line1?: string; line2?: string; city?: string; postcode?: string; country?: string } }) {
   const emailTransporter = getTransporter();
   
   if (!emailTransporter) {
@@ -1276,6 +1276,40 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
     month: 'long',
     year: 'numeric'
   });
+  
+  // Generate PDF invoice
+  let pdfBuffer: Buffer | undefined;
+  try {
+    const { generateInvoicePDF } = await import('./generateReceipt');
+    const invoiceData = {
+      documentType: 'invoice',
+      invoiceNumber: details.invoiceNumber,
+      date: new Date(),
+      partnerName: details.companyName,
+      companyName: details.companyName,
+      billingType: 'enterprise',
+      billingAddress: details.billingAddress,
+      items: [{
+        description: `HumanMetrix Assessment Services (${formatDate(details.periodStart)} - ${formatDate(details.periodEnd)})`,
+        quantity: details.testsUsed,
+        unitPrice: details.pricePerTest,
+        amount: details.subtotal
+      }],
+      subtotal: details.subtotal,
+      tax: details.vatAmount,
+      taxRate: details.vatRate,
+      total: details.totalAmount,
+      currency: currency,
+      dueDate: details.dueDate,
+      paymentTermsDays: details.paymentTermsDays,
+      notes: details.invoiceNotes,
+    };
+    pdfBuffer = generateInvoicePDF(invoiceData);
+    console.log(`✓ Generated PDF invoice for ${details.invoiceNumber}`);
+  } catch (pdfError: any) {
+    console.error(`⚠ Failed to generate PDF invoice:`, pdfError.message);
+    // Continue without attachment
+  }
   
   const mailOptions = {
     from: `"HumanMetrix Finance" <${process.env.GMAIL_USER}>`,
@@ -1459,11 +1493,18 @@ Questions about this invoice? Contact us at hello@humanmetrix.co.uk
 
 © ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.
     `.trim(),
+    attachments: pdfBuffer ? [
+      {
+        filename: `HumanMetrix_Invoice_${details.invoiceNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ] : undefined,
   };
 
   try {
     const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Invoice email sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    console.log(`✅ Invoice email ${pdfBuffer ? 'with PDF' : '(no PDF)'} sent to ${details.partnerEmail} (ID: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error(`❌ Failed to send invoice to ${details.partnerEmail}:`, error.message);

@@ -11878,6 +11878,47 @@ Format your response as JSON with this structure:
         metadata: { packageId, packageSize: parseInt(packageSize), newBalance: result.newBalance },
       });
       
+      // Send PDF receipt email to partner
+      try {
+        const pricePerTest = partner?.pricePerAssessment || 1500; // pence per test
+        const partnerCurrency = (partner?.currency || 'gbp').toLowerCase();
+        const totalAmount = session.amount_total || (parseInt(packageSize) * pricePerTest);
+        
+        const receiptDetails: PdfReceiptEmailDetails = {
+          email: partner?.email || '',
+          name: partner?.name || 'Partner',
+          companyName: partner?.companyName || partner?.name,
+          items: [{
+            description: `${packageSize} Assessment Credits`,
+            quantity: parseInt(packageSize),
+            unitPrice: pricePerTest,
+            amount: totalAmount
+          }],
+          subtotal: totalAmount,
+          total: totalAmount,
+          currency: partnerCurrency,
+          transactionId: session.payment_intent as string || sessionId,
+          paymentMethod: 'Stripe',
+          billingAddress: partner?.billingAddressLine1 ? {
+            line1: partner.billingAddressLine1,
+            line2: partner.billingAddressLine2 || undefined,
+            city: partner.billingCity || undefined,
+            postcode: partner.billingPostcode || undefined,
+            country: partner.billingCountry || undefined,
+          } : undefined,
+        };
+        
+        if (receiptDetails.email) {
+          const receiptResult = await sendPaymentReceiptWithPdf(receiptDetails);
+          if (receiptResult.success) {
+            console.log(`[Partner Package] ✓ PDF receipt sent to ${receiptDetails.email} (Receipt: ${receiptResult.receiptNumber})`);
+          }
+        }
+      } catch (receiptError) {
+        console.error(`[Partner Package] Failed to send receipt email:`, receiptError);
+        // Don't fail the purchase if receipt fails
+      }
+      
       res.json({ 
         success: true, 
         message: `Successfully credited ${packageSize} tests`,
@@ -14772,6 +14813,42 @@ async function processAutoBillPartner(partner: PartnerAccount) {
     if (paymentIntent.status === 'succeeded') {
       console.log(`[Billing Scheduler] Partner ${partner.id}: Payment successful - ${paymentIntent.id}`);
       await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', paymentIntent.id);
+      
+      // Send PDF receipt email to partner
+      try {
+        const receiptDetails: PdfReceiptEmailDetails = {
+          email: partner.email,
+          name: partner.name,
+          companyName: partner.companyName || partner.name,
+          items: [{
+            description: `API Usage - ${usage} Assessments (${prevMonthKey})`,
+            quantity: usage,
+            unitPrice: partner.pricePerAssessment || Math.round(amountPence / usage),
+            amount: amountPence
+          }],
+          subtotal: amountPence,
+          total: amountPence,
+          currency: partnerCurrency,
+          transactionId: paymentIntent.id,
+          paymentMethod: 'Stripe',
+          billingAddress: partner.billingAddressLine1 ? {
+            line1: partner.billingAddressLine1,
+            line2: partner.billingAddressLine2 || undefined,
+            city: partner.billingCity || undefined,
+            postcode: partner.billingPostcode || undefined,
+            country: partner.billingCountry || undefined,
+          } : undefined,
+        };
+        
+        const { sendPaymentReceiptWithPdf: sendReceipt } = await import('./email');
+        const receiptResult = await sendReceipt(receiptDetails);
+        if (receiptResult.success) {
+          console.log(`[Billing Scheduler] Partner ${partner.id}: PDF receipt sent (Receipt: ${receiptResult.receiptNumber})`);
+        }
+      } catch (receiptError) {
+        console.error(`[Billing Scheduler] Partner ${partner.id}: Failed to send receipt email:`, receiptError);
+        // Don't fail the billing if receipt fails
+      }
     } else {
       console.error(`[Billing Scheduler] Partner ${partner.id}: Payment failed - status: ${paymentIntent.status}`);
       await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
@@ -14876,7 +14953,7 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
     const partnerEmail = partnerUser?.email || partner.invoiceContact;
     
     if (partnerEmail) {
-      // Send invoice email with partner's currency
+      // Send invoice email with partner's currency and PDF attachment
       const { sendPartnerInvoiceEmail } = await import('./email');
       await sendPartnerInvoiceEmail({
         invoiceNumber,
@@ -14894,6 +14971,13 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
         dueDate,
         paymentTermsDays,
         invoiceNotes: partner.invoiceNotes || undefined,
+        billingAddress: partner.billingAddressLine1 ? {
+          line1: partner.billingAddressLine1,
+          line2: partner.billingAddressLine2 || undefined,
+          city: partner.billingCity || undefined,
+          postcode: partner.billingPostcode || undefined,
+          country: partner.billingCountry || undefined,
+        } : undefined,
       });
       
       console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
