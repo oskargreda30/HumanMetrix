@@ -8855,6 +8855,7 @@ Format your response as JSON with this structure:
         const receiptNumber = generateInvoiceReceiptNumber('RCP', partner.id, pkg.purchasedAt || pkg.createdAt);
         
         receiptData = {
+          documentType: 'receipt',
           receiptNumber,
           date: pkg.purchasedAt || pkg.createdAt,
           partnerName: partner.name,
@@ -8900,8 +8901,13 @@ Format your response as JSON with this structure:
         }
         
         receiptData = {
-          receiptNumber: `RCP-${invoice.invoiceNumber}`,
-          date: invoice.paidAt || invoice.createdAt,
+          documentType: 'invoice',
+          receiptNumber: invoice.invoiceNumber,
+          invoiceNumber: invoice.invoiceNumber,
+          date: invoice.createdAt,
+          dueDate: invoice.dueDate,
+          periodStart: invoice.periodStart,
+          periodEnd: invoice.periodEnd,
           partnerName: partner.name,
           companyName: partner.companyName || partner.name,
           billingType: partner.billingType as 'enterprise' | 'subscription' | 'payg',
@@ -8914,7 +8920,7 @@ Format your response as JSON with this structure:
           },
           vatNumber: partner.vatNumber || undefined,
           items: [{
-            description: `Assessment Usage (${new Date(invoice.periodStart).toLocaleDateString('en-GB')} - ${new Date(invoice.periodEnd).toLocaleDateString('en-GB')})`,
+            description: `Assessment Usage`,
             quantity: invoice.testsUsed,
             unitPrice: invoice.pricePerTest,
             amount: invoice.subtotal,
@@ -8934,7 +8940,8 @@ Format your response as JSON with this structure:
       // Generate the PDF
       const pdfBuffer = generateReceiptPDF(receiptData);
       
-      const filename = `HumanMetrix_Receipt_${receiptData.receiptNumber}.pdf`;
+      const docLabel = receiptData.documentType === 'invoice' ? 'Invoice' : 'Receipt';
+      const filename = `HumanMetrix_${docLabel}_${receiptData.receiptNumber}.pdf`;
       
       res.setHeader('Content-Type', 'application/pdf');
       if (download === 'true') {

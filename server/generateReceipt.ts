@@ -13,8 +13,11 @@ const logoMatch = pdfAssetsContent.match(/export const HUMANMETRIX_LOGO_BASE64 =
 const HUMANMETRIX_LOGO_BASE64 = logoMatch ? logoMatch[1] : '';
 
 export interface ReceiptData {
+  documentType: 'receipt' | 'invoice';
   receiptNumber: string;
+  invoiceNumber?: string;
   date: Date;
+  dueDate?: Date;
   partnerName: string;
   companyName: string;
   billingType: 'enterprise' | 'subscription' | 'payg';
@@ -40,6 +43,8 @@ export interface ReceiptData {
   paymentMethod?: string;
   paymentDate?: Date;
   transactionId?: string;
+  periodStart?: Date;
+  periodEnd?: Date;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -133,7 +138,11 @@ function addCompanyDetails(pdf: jsPDF, pageWidth: number, yPosition: number): nu
   return yPosition + (companyInfo.length * 4) + 5;
 }
 
-function addReceiptTitle(pdf: jsPDF, receiptNumber: string, yPosition: number): number {
+function addDocumentTitle(pdf: jsPDF, data: ReceiptData, yPosition: number): number {
+  const isInvoice = data.documentType === 'invoice';
+  const title = isInvoice ? 'INVOICE' : 'RECEIPT';
+  const docNumber = isInvoice ? (data.invoiceNumber || data.receiptNumber) : data.receiptNumber;
+  
   pdf.setFillColor(30, 58, 138);
   pdf.setDrawColor(30, 58, 138);
   pdf.roundedRect(20, yPosition, 60, 12, 2, 2, 'F');
@@ -141,12 +150,12 @@ function addReceiptTitle(pdf: jsPDF, receiptNumber: string, yPosition: number): 
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('RECEIPT', 50, yPosition + 8.5, { align: 'center' });
+  pdf.text(title, 50, yPosition + 8.5, { align: 'center' });
   
   pdf.setTextColor(60, 60, 60);
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`#${receiptNumber}`, 85, yPosition + 8);
+  pdf.text(`#${docNumber}`, 85, yPosition + 8);
   
   pdf.setTextColor(0, 0, 0);
   return yPosition + 20;
@@ -198,22 +207,39 @@ function addBillToSection(pdf: jsPDF, data: ReceiptData, yPosition: number): num
 
 function addReceiptDetails(pdf: jsPDF, data: ReceiptData, pageWidth: number, yPosition: number): number {
   const detailsX = pageWidth - 70;
+  const isInvoice = data.documentType === 'invoice';
   
   pdf.setFontSize(9);
   pdf.setTextColor(100, 100, 100);
   pdf.setFont('helvetica', 'normal');
   
-  const details = [
-    { label: 'Receipt Date:', value: formatDate(data.date) },
-    { label: 'Payment Date:', value: data.paymentDate ? formatDate(data.paymentDate) : formatDate(data.date) },
-  ];
+  const details: Array<{ label: string; value: string }> = [];
   
-  if (data.paymentMethod) {
-    details.push({ label: 'Payment Method:', value: data.paymentMethod });
-  }
-  
-  if (data.transactionId) {
-    details.push({ label: 'Transaction ID:', value: data.transactionId });
+  if (isInvoice) {
+    details.push({ label: 'Invoice Date:', value: formatDate(data.date) });
+    if (data.dueDate) {
+      details.push({ label: 'Due Date:', value: formatDate(data.dueDate) });
+    }
+    if (data.periodStart && data.periodEnd) {
+      details.push({ 
+        label: 'Billing Period:', 
+        value: `${formatDate(data.periodStart)} - ${formatDate(data.periodEnd)}` 
+      });
+    }
+    if (data.paymentDate) {
+      details.push({ label: 'Paid Date:', value: formatDate(data.paymentDate) });
+    }
+  } else {
+    details.push({ label: 'Receipt Date:', value: formatDate(data.date) });
+    details.push({ label: 'Payment Date:', value: data.paymentDate ? formatDate(data.paymentDate) : formatDate(data.date) });
+    
+    if (data.paymentMethod) {
+      details.push({ label: 'Payment Method:', value: data.paymentMethod });
+    }
+    
+    if (data.transactionId) {
+      details.push({ label: 'Transaction ID:', value: data.transactionId });
+    }
   }
   
   details.forEach((detail, index) => {
@@ -324,8 +350,9 @@ function addTotals(pdf: jsPDF, data: ReceiptData, pageWidth: number, yPosition: 
   return y + 15;
 }
 
-function addFooter(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
+function addFooter(pdf: jsPDF, pageWidth: number, pageHeight: number, documentType: 'receipt' | 'invoice'): void {
   const footerY = pageHeight - 25;
+  const isInvoice = documentType === 'invoice';
   
   pdf.setDrawColor(220, 220, 220);
   pdf.line(20, footerY, pageWidth - 20, footerY);
@@ -335,7 +362,8 @@ function addFooter(pdf: jsPDF, pageWidth: number, pageHeight: number): void {
   pdf.setFont('helvetica', 'normal');
   
   pdf.text('Thank you for your business!', pageWidth / 2, footerY + 6, { align: 'center' });
-  pdf.text('For questions about this receipt, contact assessments@humanmetrix.co.uk', pageWidth / 2, footerY + 11, { align: 'center' });
+  const docLabel = isInvoice ? 'invoice' : 'receipt';
+  pdf.text(`For questions about this ${docLabel}, contact assessments@humanmetrix.co.uk`, pageWidth / 2, footerY + 11, { align: 'center' });
   
   pdf.setFontSize(7);
   pdf.text(`Generated: ${new Date().toLocaleDateString('en-GB')} | © ${new Date().getFullYear()} HumanMetrix Ltd`, pageWidth / 2, footerY + 17, { align: 'center' });
@@ -362,7 +390,7 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   
   y = Math.max(y, addCompanyDetails(pdf, pageWidth, 50));
   
-  y = addReceiptTitle(pdf, data.receiptNumber, y);
+  y = addDocumentTitle(pdf, data, y);
   
   const billToY = y;
   y = addBillToSection(pdf, data, y);
@@ -375,7 +403,7 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   
   y = addTotals(pdf, data, pageWidth, y);
   
-  addFooter(pdf, pageWidth, pageHeight);
+  addFooter(pdf, pageWidth, pageHeight, data.documentType);
   
   return Buffer.from(pdf.output('arraybuffer'));
 }
