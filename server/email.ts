@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
+import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from './generateReceipt';
 
 // Format assessment type for display (e.g., "fit" -> "FIT Assessment")
 function formatAssessmentName(type: string): string {
@@ -605,6 +606,193 @@ This is an automated receipt for your records.
   } catch (error: any) {
     console.error(`❌ Failed to send payment receipt to ${email}:`, error.message);
     // Don't throw error - payment already succeeded, email failure shouldn't break flow
+  }
+}
+
+// Interface for PDF receipt email details
+export interface PdfReceiptEmailDetails {
+  email: string;
+  name: string;
+  companyName?: string;
+  items: Array<{
+    description: string;
+    quantity?: number;
+    unitPrice?: number;
+    amount: number;
+  }>;
+  subtotal: number;
+  tax?: number;
+  taxRate?: number;
+  total: number;
+  currency: string;
+  transactionId: string;
+  paymentMethod?: string;
+  billingAddress?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    postcode?: string;
+    country?: string;
+  };
+}
+
+// Send payment receipt email with PDF attachment
+export async function sendPaymentReceiptWithPdf(details: PdfReceiptEmailDetails): Promise<{ success: boolean; receiptNumber?: string }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Payment receipt email not sent for ${details.email} - email not configured`);
+    return { success: false };
+  }
+  
+  // Generate receipt number
+  const receiptNumber = generateInvoiceReceiptNumber('RCP', details.transactionId.slice(-8), new Date());
+  
+  // Generate PDF receipt
+  const receiptData: ReceiptData = {
+    documentType: 'receipt',
+    receiptNumber,
+    date: new Date(),
+    partnerName: details.name,
+    companyName: details.companyName || details.name,
+    billingType: 'payg',
+    billingAddress: details.billingAddress,
+    items: details.items,
+    subtotal: details.subtotal,
+    tax: details.tax,
+    taxRate: details.taxRate,
+    total: details.total,
+    currency: details.currency,
+    paymentMethod: details.paymentMethod || 'Card',
+    paymentDate: new Date(),
+    transactionId: details.transactionId,
+  };
+  
+  let pdfBuffer: Buffer;
+  try {
+    pdfBuffer = generateReceiptPDF(receiptData);
+  } catch (pdfError: any) {
+    console.error(`❌ Failed to generate PDF receipt:`, pdfError.message);
+    // Fall back to sending email without attachment
+    return { success: false };
+  }
+  
+  // Format amount for display
+  const currencySymbols: Record<string, string> = {
+    gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$',
+    hkd: 'HK$', nzd: 'NZ$', jpy: '¥', cny: '¥', inr: '₹'
+  };
+  const currency = (details.currency || 'gbp').toLowerCase();
+  const symbol = currencySymbols[currency] || currency.toUpperCase() + ' ';
+  const amountFormatted = `${symbol}${(details.total / 100).toFixed(2)}`;
+  
+  // Format items for email
+  const itemsHtml = details.items.map(item => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${symbol}${(item.amount / 100).toFixed(2)}</td>
+    </tr>
+  `).join('');
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.email,
+    subject: `Payment Receipt ${receiptNumber} - HumanMetrix`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .receipt-box { background: #f9fafb; border: 2px solid #e5e7eb; padding: 20px; border-radius: 6px; margin: 20px 0; }
+            .total { background: #0a1628; color: #06b6d4; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; margin: 15px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+            .pdf-note { background: #eff6ff; border: 1px solid #3b82f6; padding: 15px; border-radius: 6px; margin: 20px 0; color: #1e40af; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Payment Confirmed</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Receipt ${receiptNumber}</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <div class="success-badge">✓ Payment Successful</div>
+              </div>
+              
+              <h2>Hello ${details.name},</h2>
+              <p>Thank you for your payment! Your transaction has been successfully processed.</p>
+              
+              <div class="receipt-box">
+                <h3 style="margin-top: 0; color: #374151;">Payment Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  ${itemsHtml}
+                </table>
+                
+                <div class="total">
+                  Total Paid: ${amountFormatted}
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
+                  Transaction ID: ${details.transactionId}<br>
+                  Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+              
+              <div class="pdf-note">
+                <strong>📎 PDF Receipt Attached</strong><br>
+                A professional PDF receipt is attached to this email for your records.
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                If you have any questions, please contact us at hello@humanmetrix.co.uk
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Payment Confirmed - Receipt ${receiptNumber}
+
+Hello ${details.name},
+
+Thank you for your payment! Your transaction has been successfully processed.
+
+Total Paid: ${amountFormatted}
+Transaction ID: ${details.transactionId}
+Date: ${new Date().toLocaleDateString('en-GB')}
+
+A PDF receipt is attached to this email for your records.
+
+If you have any questions, please contact us at hello@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+    attachments: [
+      {
+        filename: `HumanMetrix_Receipt_${receiptNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Payment receipt with PDF sent to ${details.email} (Receipt: ${receiptNumber}, ID: ${info.messageId})`);
+    return { success: true, receiptNumber };
+  } catch (error: any) {
+    console.error(`❌ Failed to send payment receipt with PDF to ${details.email}:`, error.message);
+    return { success: false };
   }
 }
 
