@@ -395,7 +395,7 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   
   try {
     if (HUMANMETRIX_LOGO_BASE64) {
-      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', rightMargin - 35, 10, 35, 35);
+      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', rightMargin - 45, 8, 45, 45);
     }
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
@@ -572,6 +572,18 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.text('TOTAL', totalsLabelX, y);
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
   
+  // Signature section
+  const signatureY = y + 20;
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setTextColor(30, 41, 59);
+  pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 5, { align: 'right' });
+  
   const footerY = pageHeight - 35;
   
   pdf.setDrawColor(30, 58, 138);
@@ -639,7 +651,7 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   
   try {
     if (HUMANMETRIX_LOGO_BASE64) {
-      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', rightMargin - 35, 10, 35, 35);
+      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', rightMargin - 45, 8, 45, 45);
     }
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
@@ -814,6 +826,18 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.setTextColor(30, 41, 59);
   pdf.text('TOTAL', totalsLabelX, y);
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
+  
+  // Signature section
+  const signatureY = y + 20;
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setTextColor(30, 41, 59);
+  pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 5, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
