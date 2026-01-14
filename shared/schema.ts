@@ -1548,3 +1548,128 @@ export const insertEmailVerificationCodeSchema = createInsertSchema(emailVerific
 
 export type InsertEmailVerificationCode = z.infer<typeof insertEmailVerificationCodeSchema>;
 export type EmailVerificationCode = typeof emailVerificationCodes.$inferSelect;
+
+
+// ============================================
+// ACCOUNTING & XERO INTEGRATION TABLES
+// ============================================
+
+// Xero Integration - stores OAuth tokens for Xero connection
+export const xeroIntegration = pgTable("xero_integration", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  tenantId: varchar("tenant_id"),
+  tenantName: varchar("tenant_name"),
+  connectedAt: timestamp("connected_at"),
+  connectedBy: varchar("connected_by").references(() => users.id, { onDelete: "set null" }),
+  lastSyncAt: timestamp("last_sync_at"),
+  isActive: boolean("is_active").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertXeroIntegrationSchema = createInsertSchema(xeroIntegration).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertXeroIntegration = z.infer<typeof insertXeroIntegrationSchema>;
+export type XeroIntegration = typeof xeroIntegration.$inferSelect;
+
+// Expense categories
+export const EXPENSE_CATEGORIES = {
+  SOFTWARE: "software",
+  MARKETING: "marketing",
+  INFRASTRUCTURE: "infrastructure",
+  PROFESSIONAL_SERVICES: "professional_services",
+  OFFICE: "office",
+  TRAVEL: "travel",
+  OTHER: "other",
+} as const;
+
+export type ExpenseCategory = typeof EXPENSE_CATEGORIES[keyof typeof EXPENSE_CATEGORIES];
+
+// Expenses - for uploaded receipts/invoices
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  description: varchar("description").notNull(),
+  amount: integer("amount").notNull(), // In minor units (cents/pence)
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  category: varchar("category").notNull().default("other"),
+  vendor: varchar("vendor"),
+  invoiceNumber: varchar("invoice_number"),
+  invoiceDate: timestamp("invoice_date"),
+  dueDate: timestamp("due_date"),
+  paidDate: timestamp("paid_date"),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'paid', 'cancelled'
+  receiptUrl: text("receipt_url"), // Object storage URL for uploaded receipt
+  receiptFilename: varchar("receipt_filename"),
+  notes: text("notes"),
+  xeroInvoiceId: varchar("xero_invoice_id"), // Xero invoice/bill ID once synced
+  xeroSyncStatus: varchar("xero_sync_status").default("not_synced"), // 'not_synced', 'synced', 'error'
+  xeroSyncError: text("xero_sync_error"),
+  xeroSyncedAt: timestamp("xero_synced_at"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_expenses_category").on(table.category),
+  index("idx_expenses_status").on(table.status),
+  index("idx_expenses_sync_status").on(table.xeroSyncStatus),
+  index("idx_expenses_created_at").on(table.createdAt),
+]);
+
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  xeroInvoiceId: true,
+  xeroSyncStatus: true,
+  xeroSyncError: true,
+  xeroSyncedAt: true,
+});
+
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+
+// Revenue sync logs - tracks sales synced to Xero
+export const revenueSyncLogs = pgTable("revenue_sync_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  purchaseId: varchar("purchase_id").references(() => purchases.id, { onDelete: "cascade" }),
+  partnerInvoiceId: varchar("partner_invoice_id").references(() => partnerInvoices.id, { onDelete: "cascade" }),
+  sourceType: varchar("source_type").notNull(), // 'b2c_purchase', 'b2b_partner', 'b2b_testtaker'
+  amount: integer("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  description: varchar("description"),
+  customerName: varchar("customer_name"),
+  customerEmail: varchar("customer_email"),
+  xeroInvoiceId: varchar("xero_invoice_id"),
+  xeroContactId: varchar("xero_contact_id"),
+  syncStatus: varchar("sync_status").notNull().default("pending"), // 'pending', 'synced', 'error', 'skipped'
+  syncError: text("sync_error"),
+  syncedAt: timestamp("synced_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_revenue_sync_purchase").on(table.purchaseId),
+  index("idx_revenue_sync_partner_invoice").on(table.partnerInvoiceId),
+  index("idx_revenue_sync_status").on(table.syncStatus),
+  index("idx_revenue_sync_created_at").on(table.createdAt),
+]);
+
+export const insertRevenueSyncLogSchema = createInsertSchema(revenueSyncLogs).omit({
+  id: true,
+  createdAt: true,
+  xeroInvoiceId: true,
+  xeroContactId: true,
+  syncStatus: true,
+  syncError: true,
+  syncedAt: true,
+});
+
+export type InsertRevenueSyncLog = z.infer<typeof insertRevenueSyncLogSchema>;
+export type RevenueSyncLog = typeof revenueSyncLogs.$inferSelect;
+
