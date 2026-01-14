@@ -50,11 +50,11 @@ export const FIT_SCORING_MATRIX: Record<string, Record<string, number>> = {
   "4-A": { "High Agency": 4, "Resilience": 4 },
   "4-B": { "Intellectual Curiosity": 4 },
   "4-C": { "Empathy & Ethics": 4 },
-  "4-D": { "Interpersonal Agility": 4, "Growth Mindset": 4 },
+  "4-D": { "Interpersonal Agility": 4 },
   
   // Q5: Helping elderly at bus stop
-  "5-A": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
-  "5-B": { "Resilience": 4 },
+  "5-A": { "Empathy & Ethics": 4 },
+  "5-B": { "Empathy & Ethics": 4 },
   "5-C": { "High Agency": 4, "Growth Mindset": 4 },
   "5-D": { "Interpersonal Agility": 4 },
   
@@ -80,7 +80,7 @@ export const FIT_SCORING_MATRIX: Record<string, Record<string, number>> = {
   "9-A": { "Resilience": 4 },
   "9-B": { "Intellectual Curiosity": 4, "Empathy & Ethics": 4 },
   "9-C": { "Interpersonal Agility": 4 },
-  "9-D": { "High Agency": 4, "Growth Mindset": 4 },
+  "9-D": { "High Agency": 4 },
   
   // Q10: Sudden roof repair emergency
   "10-A": { "High Agency": 4, "Resilience": 4 },
@@ -101,7 +101,7 @@ export const FIT_SCORING_MATRIX: Record<string, Record<string, number>> = {
   "12-D": { "Interpersonal Agility": 4 },
   
   // Q13: Stuck on difficult personal challenge
-  "13-A": { "High Agency": 4, "Interpersonal Agility": 4 },
+  "13-A": { "High Agency": 4 },
   "13-B": { "Intellectual Curiosity": 4 },
   "13-C": { "Resilience": 4, "Empathy & Ethics": 4 },
   "13-D": { "Growth Mindset": 4 },
@@ -116,7 +116,7 @@ export const FIT_SCORING_MATRIX: Record<string, Record<string, number>> = {
   "15-A": { "High Agency": 4, "Growth Mindset": 4 },
   "15-B": { "Intellectual Curiosity": 4, "Interpersonal Agility": 4 },
   "15-C": { "Empathy & Ethics": 4 },
-  "15-D": { "Resilience": 4 },
+  "15-D": { "Interpersonal Agility": 4 },
 };
 
 // ============================================================================

@@ -13,7 +13,7 @@ export const FIT_QUESTIONS = [
     id: "2",
     text: "A friend tells you they failed their driving test for the third time and are deeply upset.",
     options: [
-      { value: "A", text: "Insist on driving practice right away, identifying their key mistakes and personally coaching them until the flaw is fixed." },
+      { value: "A", text: "Proactively schedule structured driving practice sessions and take responsibility for coaching their weakest areas until measurable improvement occurs." },
       { value: "B", text: "Remind them that failure is normal and encourage them to take a short break before getting back to their routine." },
       { value: "C", text: "Focus entirely on validating their frustration and offer to listen as long as they need, avoiding judgment or practical advice." },
       { value: "D", text: "Suggest setting up practice sessions with several different, patient friends to get varied feedback and make the process more fun." },
@@ -33,18 +33,18 @@ export const FIT_QUESTIONS = [
     id: "4",
     text: "You plan a vacation with three friends, but two of them suddenly refuse to pay the agreed-upon deposit, threatening the whole trip.",
     options: [
-      { value: "A", text: "Pay the full deposit yourself immediately, then deal with the non-paying friends privately to secure their commitment and money later." },
+      { value: "A", text: "Personally secure the required deposit through a short-term arrangement to prevent the trip from collapsing, then address the commitment issue privately." },
       { value: "B", text: "Analyse the detailed cancellation rules and timeline for the trip to understand exactly what options are available if the friends drop out completely." },
       { value: "C", text: "Politely tell the travel agent that the trip might need to be delayed or cancelled, focusing on protecting your own financial stability first." },
-      { value: "D", text: "Tell the travel agent to move forward with the trip for the two paying friends only, focusing on honouring their commitment." },
+      { value: "D", text: "Work with the travel agent to restructure the booking so it proceeds only with the confirmed participants, adapting the plan to the new social reality." },
     ],
   },
   {
     id: "5",
     text: "You see an older person at a bus stop clearly struggling to carry several heavy grocery bags.",
     options: [
-      { value: "A", text: "Step in and ask which bags are heaviest and most awkwardly shaped so you can choose the ones that offer the most relief." },
-      { value: "B", text: "Offer to help carry the bags and stay with the person until the bus arrives, protecting them from the stress of being alone with the load." },
+      { value: "A", text: "Step in and ask which bags are most difficult to carry so you can take on the most physically demanding ones." },
+      { value: "B", text: "Offer to help carry the bags and remain with the person until the bus arrives, ensuring they feel supported and not overwhelmed." },
       { value: "C", text: "Offer to carry the bags all the way to their final destination, as this provides the maximum amount of support." },
       { value: "D", text: "Ask two other people waiting at the stop to help, dividing the load among several individuals to make it lighter for everyone." },
     ],
@@ -86,7 +86,7 @@ export const FIT_QUESTIONS = [
       { value: "A", text: "Remain quiet and adjust your attention to ignore the person, waiting patiently for the event staff to handle the issue." },
       { value: "B", text: "Speak to the heckler in a calm, low voice, expressing concern for their behaviour's impact on everyone else's experience." },
       { value: "C", text: "Discreetly alert the event staff and point out the heckler, allowing the professionals to manage the conflict." },
-      { value: "D", text: "Directly ask the heckler to leave the area, telling them their behaviour is disrupting the entire section." },
+      { value: "D", text: "Firmly but directly tell the heckler that their behaviour is unacceptable and is disrupting the experience for everyone nearby." },
     ],
   },
   {
@@ -123,7 +123,7 @@ export const FIT_QUESTIONS = [
     id: "13",
     text: "You are stuck on a difficult personal challenge and need a solution quickly.",
     options: [
-      { value: "A", text: "Immediately order specialized tools or hire an expert to solve the problem, bypassing the need to learn the detailed subject matter." },
+      { value: "A", text: "Secure an appropriate external solution to resolve the problem quickly, prioritizing a successful outcome over personally mastering the underlying skill." },
       { value: "B", text: "Spend focused time reading technical guides and forums related to the problem until discovering a unique solution." },
       { value: "C", text: "Accept the difficulty for now and deal with the minor inconvenience until a simpler solution or external aid appears later." },
       { value: "D", text: "Enrol in a targeted course to learn the skill needed, ensuring this kind of problem can be solved for good." },
@@ -146,7 +146,7 @@ export const FIT_QUESTIONS = [
       { value: "A", text: "Implement a budget you deem most effective, then proactively track data to show everyone that your method is superior." },
       { value: "B", text: "Talk to all family members, focusing on the reasons behind their opinions to synthesize a completely new, hybrid solution." },
       { value: "C", text: "Focus on designing a routine that equally minimizes the workload and maximizes the personal time for the two most critical people involved." },
-      { value: "D", text: "Talk to all family and lead them through a structured exercise to build consensus on the way forward." },
+      { value: "D", text: "Facilitate a structured discussion that helps all family members align on shared priorities and agree on a budget together." },
     ],
   },
 ];
