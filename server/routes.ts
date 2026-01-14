@@ -8,7 +8,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -1252,23 +1252,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Payment Callback] ✓ Successfully unlocked results for purchase ${purchaseId}, user ${userId}`);
       
-      // Send payment receipt email (including for FREE orders where amount_total is 0)
+      // Send payment receipt email with PDF attachment (including for FREE orders where amount_total is 0)
       try {
         const user = await storage.getUser(userId);
-        const purchaseItems = await storage.getPurchaseItems(purchaseId);
-        const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
+        const purchaseItemsData = await storage.getPurchaseItems(purchaseId);
+        const assessmentTypes = purchaseItemsData.map((item: any) => item.assessmentType);
         
         if (user) {
           const transactionId = intentId || sessionId;
-          await sendPaymentReceiptEmail(
-            user.email,
-            user.firstName || 'Customer',
-            assessmentTypes,
-            paymentAmount,
-            transactionId,
-            paymentCurrency
-          );
-          console.log(`[Payment Callback] ✓ Receipt email sent to ${user.email} (amount: ${paymentCurrency.toUpperCase()} ${(paymentAmount / 100).toFixed(2)})`);
+          
+          // Format assessment names for items
+          const assessmentNames: Record<string, string> = {
+            'fit': 'FIT Assessment',
+            'ai_readiness': 'AI Readiness Assessment',
+            'prompt_architecture': 'Prompt Architecture Assessment',
+            'aiq': 'AIQ Assessment'
+          };
+          
+          // Build items list for receipt
+          const receiptItems = assessmentTypes.map((type: string) => ({
+            description: assessmentNames[type] || type,
+            amount: Math.round(paymentAmount / assessmentTypes.length)
+          }));
+          
+          // Send receipt email with PDF attachment
+          const receiptDetails: PdfReceiptEmailDetails = {
+            email: user.email,
+            name: user.firstName || 'Customer',
+            items: receiptItems,
+            subtotal: paymentAmount,
+            total: paymentAmount,
+            currency: paymentCurrency,
+            transactionId: transactionId,
+            paymentMethod: provider === 'airwallex' ? 'Airwallex' : 'Stripe',
+          };
+          
+          const result = await sendPaymentReceiptWithPdf(receiptDetails);
+          if (result.success) {
+            console.log(`[Payment Callback] ✓ PDF receipt email sent to ${user.email} (Receipt: ${result.receiptNumber}, Amount: ${paymentCurrency.toUpperCase()} ${(paymentAmount / 100).toFixed(2)})`);
+          } else {
+            console.log(`[Payment Callback] ⚠ PDF generation failed, receipt email not sent to ${user.email}`);
+          }
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
