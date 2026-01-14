@@ -309,14 +309,18 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       }
       
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const externalIdIdx = headers.findIndex(h => h.includes('external') || h.includes('id'));
       const emailIdx = headers.findIndex(h => h.includes('email'));
       const nameIdx = headers.findIndex(h => h.includes('name'));
+      // External ID column is optional - look for 'external' or standalone 'id' (not part of 'email')
+      const externalIdIdx = headers.findIndex(h => 
+        h.includes('external') || (h === 'id' && !h.includes('email'))
+      );
       
-      if (externalIdIdx === -1) {
+      // Email column is required
+      if (emailIdx === -1) {
         toast({
           title: "Missing required column",
-          description: "CSV must have an 'externalUserId' or 'id' column.",
+          description: "CSV must have an 'email' column.",
           variant: "destructive",
         });
         return;
@@ -325,11 +329,13 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       const parsedCandidates: CandidateEntry[] = [];
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        if (values[externalIdIdx]) {
+        const email = values[emailIdx] || '';
+        // Accept rows that have email (required) - external ID is optional
+        if (email) {
           parsedCandidates.push({
             id: crypto.randomUUID(),
-            externalUserId: values[externalIdIdx] || '',
-            email: emailIdx !== -1 ? values[emailIdx] || '' : '',
+            externalUserId: externalIdIdx !== -1 ? values[externalIdIdx] || '' : '',
+            email,
             name: nameIdx !== -1 ? values[nameIdx] || '' : '',
           });
         }

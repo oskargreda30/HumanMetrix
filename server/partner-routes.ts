@@ -16,6 +16,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
+import pLimit from "p-limit";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1551,13 +1552,29 @@ export function registerPartnerRoutes(app: Express) {
         })),
       });
       
-      // Send emails in background (one email per candidate with all assessments)
+      // Send emails in background with rate limiting to avoid overwhelming SMTP
+      // Gmail limits: ~500/day regular, 2000/day Workspace
+      // We limit to 5 concurrent emails with 200ms delay between batches
       if (sendEmails && createdInvitations.length > 0) {
+        const emailLimit = pLimit(5); // Max 5 concurrent email sends
+        const BATCH_SIZE = 50;
+        const BATCH_DELAY_MS = 1000; // 1 second delay between batches
+        
         setImmediate(async () => {
-          for (const inv of createdInvitations) {
-            if (inv.email) {
+          const invitationsWithEmail = createdInvitations.filter(inv => inv.email);
+          const totalEmails = invitationsWithEmail.length;
+          let sentCount = 0;
+          let failedCount = 0;
+          
+          console.log(`[Bulk Invitations] Starting email delivery for ${totalEmails} invitations...`);
+          
+          // Process in batches to avoid overwhelming SMTP
+          for (let batchStart = 0; batchStart < invitationsWithEmail.length; batchStart += BATCH_SIZE) {
+            const batch = invitationsWithEmail.slice(batchStart, batchStart + BATCH_SIZE);
+            
+            // Process batch with concurrency limit
+            await Promise.all(batch.map(inv => emailLimit(async () => {
               try {
-                // Get the password info for this candidate
                 const passwordInfo = candidatePasswords.get(inv.email);
                 
                 const emailResult = await sendPartnerBulkInvitationEmail({
@@ -1569,7 +1586,6 @@ export function registerPartnerRoutes(app: Express) {
                   partnerLogoUrl: partnerAccount?.logoUrl,
                   partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
                   expiresAt: inv.expiresAt,
-                  // Include password for new users
                   temporaryPassword: passwordInfo?.isNewUser ? passwordInfo.password : undefined,
                 });
                 
@@ -1578,13 +1594,28 @@ export function registerPartnerRoutes(app: Express) {
                     status: 'sent',
                     emailSentAt: new Date(),
                   });
-                  console.log(`Email sent to ${inv.email}${passwordInfo?.isNewUser ? ' (with credentials)' : ''}`);
+                  sentCount++;
+                } else {
+                  failedCount++;
                 }
               } catch (emailError: any) {
                 console.error(`Failed to send email to ${inv.email}:`, emailError.message);
+                failedCount++;
               }
+            })));
+            
+            // Log progress for large batches
+            if (totalEmails > 100) {
+              console.log(`[Bulk Invitations] Email progress: ${sentCount + failedCount}/${totalEmails} processed (${sentCount} sent, ${failedCount} failed)`);
+            }
+            
+            // Delay between batches to avoid rate limiting
+            if (batchStart + BATCH_SIZE < invitationsWithEmail.length) {
+              await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
             }
           }
+          
+          console.log(`[Bulk Invitations] Email delivery complete: ${sentCount} sent, ${failedCount} failed out of ${totalEmails}`);
         });
       }
     } catch (error: any) {
