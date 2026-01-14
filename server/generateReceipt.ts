@@ -39,11 +39,11 @@ function addHandwrittenSignature(pdf: jsPDF, text: string, x: number, y: number,
   
   if (hasDancingScript) {
     pdf.setFont('DancingScript', 'normal');
-    pdf.setFontSize(28);
+    pdf.setFontSize(22);
   } else {
     // Fallback to Times Italic
     pdf.setFont('times', 'italic');
-    pdf.setFontSize(24);
+    pdf.setFontSize(20);
   }
   
   pdf.setTextColor(30, 40, 60);
@@ -611,13 +611,13 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
   
   // Signature section with handwritten style
-  const signatureY = y + 20;
+  const signatureY = y + 30;
   addHandwrittenSignature(pdf, 'Oskar Greda', rightMargin - 10, signatureY, 'right');
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 8, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
@@ -625,14 +625,8 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.setLineWidth(2);
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
-  // Use script font for "Thank you" like signature
-  addSignatureFont(pdf);
-  try {
-    pdf.setFont('DancingScript', 'normal');
-  } catch (e) {
-    pdf.setFont('times', 'bolditalic');
-  }
-  pdf.setFontSize(28);
+  pdf.setFontSize(24);
+  pdf.setFont('times', 'bolditalic');
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
@@ -869,13 +863,13 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
   
   // Signature section with handwritten style
-  const signatureY = y + 20;
+  const signatureY = y + 30;
   addHandwrittenSignature(pdf, 'Oskar Greda', rightMargin - 10, signatureY, 'right');
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 8, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
@@ -883,14 +877,8 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.setLineWidth(2);
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
-  // Use script font for "Thank you" like signature
-  addSignatureFont(pdf);
-  try {
-    pdf.setFont('DancingScript', 'normal');
-  } catch (e) {
-    pdf.setFont('times', 'bolditalic');
-  }
-  pdf.setFontSize(28);
+  pdf.setFontSize(24);
+  pdf.setFont('times', 'bolditalic');
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
