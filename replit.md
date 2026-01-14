@@ -44,6 +44,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Features include:
   - **Assessment Analytics**: Configurable time periods (daily/weekly/monthly) with bar charts for tests over time, breakdown by assessment type with average scores, and breakdown by organization.
   - **CSV Data Exports**: Direct download buttons for results, usage reports, and billing history.
+  - **PDF Receipts**: Professional PDF receipts for all billing types (enterprise/subscription/PAYG) with HM logo and payment details. Receipts can be viewed inline or downloaded from the Billing History section via `GET /api/partner/me/receipt/:type/:id`. Generated on-demand using jsPDF with proper currency formatting and partner ownership validation.
   - **In-App Notifications**: Per-user role-based notification system with smart routing and exclusion logic.
     - **Role Hierarchy**: viewer (1) < member (2) < developer (3) < admin (4) < owner (5). Notifications cascade down from minimum required role.
     - **Per-User Delivery**: `partner_notification_recipients` table tracks read/unread state per team member via `dispatchPartnerNotification` helper.

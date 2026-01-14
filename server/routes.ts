@@ -10,6 +10,7 @@ import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluati
 import { eq, desc, sql } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
+import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -8814,6 +8815,137 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error exporting billing:", error);
       res.status(500).json({ message: "Failed to export billing history" });
+    }
+  });
+
+  // Generate/download PDF receipt for a billing item (admin only)
+  app.get("/api/partner/me/receipt/:type/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { type, id } = req.params;
+      const { download } = req.query;
+      
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      let receiptData: ReceiptData;
+      
+      if (type === 'receipt') {
+        // Get test package by ID with targeted lookup
+        const pkg = await storage.getPartnerTestPackage(id);
+        
+        if (!pkg) {
+          return res.status(404).json({ message: "Receipt not found" });
+        }
+        
+        // Verify partner ownership
+        if (pkg.partnerId !== partner.id) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        if (pkg.status !== 'completed') {
+          return res.status(400).json({ message: "Receipt not available for unpaid items" });
+        }
+        
+        const receiptNumber = generateInvoiceReceiptNumber('RCP', partner.id, pkg.purchasedAt || pkg.createdAt);
+        
+        receiptData = {
+          receiptNumber,
+          date: pkg.purchasedAt || pkg.createdAt,
+          partnerName: partner.name,
+          companyName: partner.companyName || partner.name,
+          billingType: partner.billingType as 'enterprise' | 'subscription' | 'payg',
+          billingAddress: {
+            line1: partner.billingAddressLine1 || undefined,
+            line2: partner.billingAddressLine2 || undefined,
+            city: partner.billingCity || undefined,
+            postcode: partner.billingPostcode || undefined,
+            country: partner.billingCountry || undefined,
+          },
+          vatNumber: partner.vatNumber || undefined,
+          items: [{
+            description: `${pkg.packageSize} Test Credit Package`,
+            quantity: pkg.packageSize,
+            unitPrice: pkg.pricePerTest,
+            amount: pkg.totalPrice,
+          }],
+          subtotal: pkg.totalPrice,
+          total: pkg.totalPrice,
+          currency: (pkg.currency || 'GBP').toUpperCase(),
+          paymentMethod: 'Credit Card',
+          paymentDate: pkg.purchasedAt || pkg.createdAt,
+          transactionId: pkg.stripePaymentIntentId || undefined,
+        };
+      } else if (type === 'invoice') {
+        // Get invoice by ID with targeted lookup
+        const invoice = await storage.getPartnerInvoice(id);
+        
+        if (!invoice) {
+          return res.status(404).json({ message: "Invoice not found" });
+        }
+        
+        // Verify partner ownership
+        if (invoice.partnerId !== partner.id) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        // For paid invoices, generate a receipt
+        if (invoice.status !== 'paid') {
+          return res.status(400).json({ message: "Receipt only available for paid invoices" });
+        }
+        
+        receiptData = {
+          receiptNumber: `RCP-${invoice.invoiceNumber}`,
+          date: invoice.paidAt || invoice.createdAt,
+          partnerName: partner.name,
+          companyName: partner.companyName || partner.name,
+          billingType: partner.billingType as 'enterprise' | 'subscription' | 'payg',
+          billingAddress: {
+            line1: partner.billingAddressLine1 || undefined,
+            line2: partner.billingAddressLine2 || undefined,
+            city: partner.billingCity || undefined,
+            postcode: partner.billingPostcode || undefined,
+            country: partner.billingCountry || undefined,
+          },
+          vatNumber: partner.vatNumber || undefined,
+          items: [{
+            description: `Assessment Usage (${new Date(invoice.periodStart).toLocaleDateString('en-GB')} - ${new Date(invoice.periodEnd).toLocaleDateString('en-GB')})`,
+            quantity: invoice.testsUsed,
+            unitPrice: invoice.pricePerTest,
+            amount: invoice.subtotal,
+          }],
+          subtotal: invoice.subtotal,
+          tax: invoice.vatAmount,
+          taxRate: invoice.vatRate,
+          total: invoice.totalAmount,
+          currency: (invoice.currency || 'GBP').toUpperCase(),
+          paymentMethod: 'Invoice Payment',
+          paymentDate: invoice.paidAt || undefined,
+        };
+      } else {
+        return res.status(400).json({ message: "Invalid receipt type" });
+      }
+      
+      // Generate the PDF
+      const pdfBuffer = generateReceiptPDF(receiptData);
+      
+      const filename = `HumanMetrix_Receipt_${receiptData.receiptNumber}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      if (download === 'true') {
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      } else {
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      }
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating receipt PDF:", error);
+      res.status(500).json({ message: "Failed to generate receipt" });
     }
   });
 

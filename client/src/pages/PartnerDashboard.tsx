@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -3731,25 +3731,62 @@ export default function PartnerDashboard() {
                                   )}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <div className="font-bold text-lg">
-                                  {formatCurrency(item.amount, item.currency)}
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="font-bold text-lg">
+                                    {formatCurrency(item.amount, item.currency)}
+                                  </div>
+                                  {item.type === 'receipt' ? (
+                                    <Badge variant="secondary" className="bg-green-500/20 text-green-600">
+                                      Paid
+                                    </Badge>
+                                  ) : (
+                                    <Badge 
+                                      variant={item.status === 'paid' ? 'secondary' : item.status === 'overdue' ? 'destructive' : 'outline'}
+                                      className={item.status === 'paid' ? 'bg-green-500/20 text-green-600' : ''}
+                                    >
+                                      {item.status === 'sent' ? 'Pending' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                    </Badge>
+                                  )}
+                                  {item.dueDate && item.status !== 'paid' && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      Due: {formatDate(item.dueDate)}
+                                    </div>
+                                  )}
                                 </div>
-                                {item.type === 'receipt' ? (
-                                  <Badge variant="secondary" className="bg-green-500/20 text-green-600">
-                                    Paid
-                                  </Badge>
-                                ) : (
-                                  <Badge 
-                                    variant={item.status === 'paid' ? 'secondary' : item.status === 'overdue' ? 'destructive' : 'outline'}
-                                    className={item.status === 'paid' ? 'bg-green-500/20 text-green-600' : ''}
-                                  >
-                                    {item.status === 'sent' ? 'Pending' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                  </Badge>
-                                )}
-                                {item.dueDate && item.status !== 'paid' && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Due: {formatDate(item.dueDate)}
+                                {(item.type === 'receipt' || item.status === 'paid') && (
+                                  <div className="flex items-center gap-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => window.open(`/api/partner/me/receipt/${item.type}/${item.id}`, '_blank')}
+                                          data-testid={`button-view-receipt-${item.id}`}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>View Receipt</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = `/api/partner/me/receipt/${item.type}/${item.id}?download=true`;
+                                            link.download = `HumanMetrix_Receipt_${item.id}.pdf`;
+                                            link.click();
+                                          }}
+                                          data-testid={`button-download-receipt-${item.id}`}
+                                        >
+                                          <Download className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Download Receipt</TooltipContent>
+                                    </Tooltip>
                                   </div>
                                 )}
                               </div>
