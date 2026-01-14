@@ -61,6 +61,12 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Health Monitoring System**: Comprehensive super admin dashboard for system health, error tracking with fingerprinting, and status workflow.
 - **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue, managing transactions (including refunds), and promo codes.
 - **Results Retention Consent Dashboard**: Super admin tab for viewing and filtering user consent preferences.
+- **Accounting & Xero Integration**: Super admin accounting dashboard for expense tracking and revenue synchronization with Xero.
+  - **Xero OAuth2 Integration**: Secure OAuth2 flow with state validation (CSRF protection) for connecting to Xero accounting software. Requires XERO_CLIENT_ID and XERO_CLIENT_SECRET environment variables.
+  - **Expense Management**: Record, categorize, and track business expenses. Supports multiple currencies, vendors, invoice numbers, due dates, and payment status (pending/paid/overdue). Categories include software, marketing, infrastructure, professional services, office, travel, and other.
+  - **Revenue Sync**: Sync B2C purchase transactions and B2B partner invoices to Xero as accounts receivable. Tracks sync status (not_synced/synced/error) with detailed logging.
+  - **Database Tables**: `xero_integration` (OAuth tokens and tenant info), `expenses` (expense records with Xero sync status), `revenue_sync_logs` (revenue sync history).
+  - **Bulk Sync**: One-click sync all unsynced revenue transactions to Xero.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of frontend and backend.
@@ -80,3 +86,4 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **OpenAI API**: AI-powered assessment and role alignment.
 - **Gmail (via Nodemailer)**: Transactional email service.
 - **Replit Auth**: User management.
+- **Xero (via xero-node)**: Accounting software integration for expense and revenue synchronization.

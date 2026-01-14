@@ -14135,6 +14135,7 @@ Format your response as JSON with this structure:
   const {
     getXeroStatus,
     getXeroAuthUrl,
+    validateOAuthState,
     handleXeroCallback,
     disconnectXero,
     createExpense,
@@ -14174,12 +14175,12 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
-      const authUrl = await getXeroAuthUrl();
-      if (!authUrl) {
+      const result = await getXeroAuthUrl(req.user.id);
+      if (!result) {
         return res.status(500).json({ message: "Xero not configured. Please add XERO_CLIENT_ID and XERO_CLIENT_SECRET." });
       }
       
-      res.json({ authUrl });
+      res.json({ authUrl: result.url });
     } catch (error) {
       console.error("Error getting Xero auth URL:", error);
       res.status(500).json({ message: "Failed to get Xero auth URL" });
@@ -14196,6 +14197,16 @@ Format your response as JSON with this structure:
       const user = await storage.getUser(req.user.id);
       if (user?.role !== 'super_admin') {
         return res.redirect("/admin?error=forbidden");
+      }
+      
+      const state = req.query.state as string;
+      if (!state) {
+        return res.redirect("/admin?tab=accounting&xero=error&message=Missing%20OAuth%20state");
+      }
+      
+      const stateValidation = validateOAuthState(state);
+      if (!stateValidation.valid) {
+        return res.redirect("/admin?tab=accounting&xero=error&message=Invalid%20or%20expired%20OAuth%20state");
       }
       
       const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;

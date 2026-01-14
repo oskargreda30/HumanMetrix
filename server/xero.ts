@@ -1,4 +1,5 @@
 import { XeroClient } from "xero-node";
+import crypto from "crypto";
 import { db } from "./db";
 import { xeroIntegration, expenses, revenueSyncLogs, purchases, partnerInvoices, users } from "@shared/schema";
 import { eq, desc, and, gte, lte, isNull } from "drizzle-orm";
@@ -19,6 +20,7 @@ const XERO_SCOPES = [
 ];
 
 let xeroClient: XeroClient | null = null;
+let pendingOAuthState: { state: string; userId: string; expiresAt: Date } | null = null;
 
 export function getXeroClient(): XeroClient | null {
   if (!XERO_CLIENT_ID || !XERO_CLIENT_SECRET) {
@@ -38,17 +40,44 @@ export function getXeroClient(): XeroClient | null {
   return xeroClient;
 }
 
-export async function getXeroAuthUrl(): Promise<string | null> {
+export async function getXeroAuthUrl(userId: string): Promise<{ url: string; state: string } | null> {
   const client = getXeroClient();
   if (!client) return null;
   
   try {
+    const state = crypto.randomBytes(32).toString('hex');
+    pendingOAuthState = {
+      state,
+      userId,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    };
+    
     const consentUrl = await client.buildConsentUrl();
-    return consentUrl;
+    const urlWithState = `${consentUrl}&state=${encodeURIComponent(state)}`;
+    return { url: urlWithState, state };
   } catch (error) {
     console.error("[Xero] Failed to build consent URL:", error);
     return null;
   }
+}
+
+export function validateOAuthState(state: string): { valid: boolean; userId?: string } {
+  if (!pendingOAuthState) {
+    return { valid: false };
+  }
+  
+  if (pendingOAuthState.expiresAt < new Date()) {
+    pendingOAuthState = null;
+    return { valid: false };
+  }
+  
+  if (pendingOAuthState.state !== state) {
+    return { valid: false };
+  }
+  
+  const userId = pendingOAuthState.userId;
+  pendingOAuthState = null;
+  return { valid: true, userId };
 }
 
 export async function handleXeroCallback(url: string, userId: string): Promise<{ success: boolean; error?: string }> {
