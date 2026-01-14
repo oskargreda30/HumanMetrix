@@ -10,7 +10,7 @@ import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluati
 import { eq, desc, sql } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPaymentReceiptEmail, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
-import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
+import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
@@ -8937,8 +8937,10 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Invalid receipt type" });
       }
       
-      // Generate the PDF
-      const pdfBuffer = generateReceiptPDF(receiptData);
+      // Generate the PDF using appropriate generator
+      const pdfBuffer = receiptData.documentType === 'invoice' 
+        ? generateInvoicePDF(receiptData)
+        : generateReceiptPDF(receiptData);
       
       const docLabel = receiptData.documentType === 'invoice' ? 'Invoice' : 'Receipt';
       const filename = `HumanMetrix_${docLabel}_${receiptData.receiptNumber}.pdf`;
