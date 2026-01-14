@@ -163,6 +163,115 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // Update partner billing information (enterprise onboarding)
+  app.post("/api/partner/me/billing-info", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      // Only enterprise billing type requires this setup
+      if (partner.billingType !== 'enterprise') {
+        return res.status(400).json({ error: "Billing info setup is only required for enterprise partners" });
+      }
+      
+      const billingSchema = z.object({
+        billingAddressLine1: z.string().min(1, "Address is required").max(200),
+        billingAddressLine2: z.string().max(200).optional().nullable(),
+        billingCity: z.string().min(1, "City is required").max(100),
+        billingPostcode: z.string().min(1, "Postcode is required").max(20),
+        billingCountry: z.string().min(1, "Country is required").max(100),
+        vatNumber: z.string().max(50).optional().nullable(),
+        companyRegistrationNumber: z.string().max(50).optional().nullable(),
+        invoiceContact: z.string().min(1, "Invoice contact name is required").max(200),
+        billingEmail: z.string().email("Valid email required"),
+        purchaseOrderRequired: z.boolean().default(false),
+        defaultPurchaseOrderNumber: z.string().max(100).optional().nullable(),
+      });
+      
+      const parsed = billingSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: parsed.error.errors,
+        });
+      }
+      
+      const data = parsed.data;
+      
+      await storage.updatePartnerAccount(partner.id, {
+        billingAddressLine1: data.billingAddressLine1,
+        billingAddressLine2: data.billingAddressLine2 || null,
+        billingCity: data.billingCity,
+        billingPostcode: data.billingPostcode,
+        billingCountry: data.billingCountry,
+        vatNumber: data.vatNumber || null,
+        companyRegistrationNumber: data.companyRegistrationNumber || null,
+        invoiceContact: data.invoiceContact,
+        billingEmail: data.billingEmail,
+        purchaseOrderRequired: data.purchaseOrderRequired,
+        defaultPurchaseOrderNumber: data.defaultPurchaseOrderNumber || null,
+        billingSetupComplete: true,
+      });
+      
+      res.json({ success: true, message: "Billing information saved successfully" });
+    } catch (error: any) {
+      console.error("Error updating billing info:", error);
+      res.status(500).json({ error: error.message || "Failed to update billing information" });
+    }
+  });
+
+  // Get partner billing info for display
+  app.get("/api/partner/me/billing-info", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      res.json({
+        billingType: partner.billingType,
+        billingSetupComplete: partner.billingSetupComplete,
+        billingEmail: partner.billingEmail,
+        billingAddressLine1: partner.billingAddressLine1,
+        billingAddressLine2: partner.billingAddressLine2,
+        billingCity: partner.billingCity,
+        billingPostcode: partner.billingPostcode,
+        billingCountry: partner.billingCountry,
+        vatNumber: partner.vatNumber,
+        companyRegistrationNumber: partner.companyRegistrationNumber,
+        invoiceContact: partner.invoiceContact,
+        purchaseOrderRequired: partner.purchaseOrderRequired,
+        defaultPurchaseOrderNumber: partner.defaultPurchaseOrderNumber,
+        paymentTermsDays: partner.paymentTermsDays,
+      });
+    } catch (error: any) {
+      console.error("Error fetching billing info:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch billing information" });
+    }
+  });
+
   app.post(
     "/api/partner/sessions",
     partnerAuth(["assessments:write"]),

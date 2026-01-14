@@ -6911,6 +6911,7 @@ Format your response as JSON with this structure:
           name: matchingPartner.name,
           companyName: matchingPartner.companyName,
           billingType: matchingPartner.billingType,
+          billingSetupComplete: matchingPartner.billingSetupComplete ?? false,
           testsPurchased: quota.testsPurchased,
           testsConsumed: quota.testsConsumed,
           remaining: quota.remaining,

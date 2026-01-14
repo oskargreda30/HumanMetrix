@@ -664,6 +664,19 @@ export const partnerAccounts = pgTable("partner_accounts", {
   paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 15/30/45/60/90
   invoiceNotes: varchar("invoice_notes"), // Special terms or notes for invoiced clients
   invoiceContact: varchar("invoice_contact"), // Contact name for invoices
+  // Billing address for enterprise clients (required for VAT invoices)
+  billingAddressLine1: varchar("billing_address_line1"), // Street address
+  billingAddressLine2: varchar("billing_address_line2"), // Suite/unit (optional)
+  billingCity: varchar("billing_city"),
+  billingPostcode: varchar("billing_postcode"),
+  billingCountry: varchar("billing_country"),
+  // Tax/company registration
+  vatNumber: varchar("vat_number"), // VAT registration number (if applicable)
+  companyRegistrationNumber: varchar("company_registration_number"), // Companies House number
+  purchaseOrderRequired: boolean("purchase_order_required").notNull().default(false), // Whether PO number is required on invoices
+  defaultPurchaseOrderNumber: varchar("default_purchase_order_number"), // Default PO number if set
+  // Onboarding tracking
+  billingSetupComplete: boolean("billing_setup_complete").notNull().default(false), // Whether billing info has been submitted
   // Quota tracking fields
   testsPurchased: integer("tests_purchased").notNull().default(0),
   testsConsumed: integer("tests_consumed").notNull().default(0),

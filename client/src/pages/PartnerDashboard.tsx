@@ -805,6 +805,7 @@ interface PartnerAccount {
     name: string;
     companyName: string | null;
     billingType: string;
+    billingSetupComplete: boolean;
     testsPurchased: number;
     testsConsumed: number;
     remaining: number;
@@ -1097,6 +1098,23 @@ export default function PartnerDashboard() {
   const [isCancellingBillingChange, setIsCancellingBillingChange] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
+  
+  // Enterprise billing setup state
+  const [showBillingSetupDialog, setShowBillingSetupDialog] = useState(false);
+  const [billingSetupForm, setBillingSetupForm] = useState({
+    billingAddressLine1: "",
+    billingAddressLine2: "",
+    billingCity: "",
+    billingPostcode: "",
+    billingCountry: "",
+    vatNumber: "",
+    companyRegistrationNumber: "",
+    invoiceContact: "",
+    billingEmail: "",
+    purchaseOrderRequired: false,
+    defaultPurchaseOrderNumber: "",
+  });
+  const [isSubmittingBillingSetup, setIsSubmittingBillingSetup] = useState(false);
 
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
     queryKey: ["/api/partner/account"],
@@ -2129,16 +2147,20 @@ export default function PartnerDashboard() {
               {/* Getting Started Guide */}
               {(() => {
                 const isSubscriptionBilling = account?.partner?.billingType === 'subscription';
+                const isEnterpriseBilling = account?.partner?.billingType === 'enterprise';
                 const hasPaymentMethod = dashboardCardStatus?.hasCard === true;
+                const hasBillingSetup = account?.partner?.billingSetupComplete === true;
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
                 const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
                 
-                // For subscription billing, include payment method as a required step
-                const steps = isSubscriptionBilling 
-                  ? [hasPaymentMethod, hasApiKey, hasAssessment, hasTeamMember]
-                  : [hasApiKey, hasAssessment, hasTeamMember];
+                // Different onboarding steps based on billing type
+                const steps = isEnterpriseBilling
+                  ? [hasBillingSetup, hasApiKey, hasAssessment, hasTeamMember]
+                  : isSubscriptionBilling 
+                    ? [hasPaymentMethod, hasApiKey, hasAssessment, hasTeamMember]
+                    : [hasApiKey, hasAssessment, hasTeamMember];
                 
                 const completedSteps = steps.filter(Boolean).length;
                 const totalSteps = steps.length;
@@ -2179,7 +2201,7 @@ export default function PartnerDashboard() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="grid gap-3 md:grid-cols-2">
-                        {/* Step 0: Add Payment Method (Subscription billing only) */}
+                        {/* Step 0a: Add Payment Method (Subscription billing only) */}
                         {isSubscriptionBilling && (
                           <button
                             onClick={handleAddPaymentMethod}
@@ -2204,6 +2226,34 @@ export default function PartnerDashboard() {
                               </div>
                             </div>
                             {!hasPaymentMethod && <ExternalLink className="h-4 w-4 text-amber-600" />}
+                          </button>
+                        )}
+
+                        {/* Step 0b: Complete Billing Information (Enterprise billing only) */}
+                        {isEnterpriseBilling && (
+                          <button
+                            onClick={() => setShowBillingSetupDialog(true)}
+                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                              hasBillingSetup ? 'bg-green-500/5 border-green-500/20' : 'bg-amber-500/5 border-amber-500/20'
+                            }`}
+                            data-testid="setup-step-billing-info"
+                          >
+                            <div className={`p-1.5 rounded-full ${hasBillingSetup ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                              {hasBillingSetup ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <FileText className="h-4 w-4 text-amber-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className={`font-medium text-sm ${hasBillingSetup ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                                Complete billing information
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {hasBillingSetup ? 'Billing details on file' : 'Required for invoicing'}
+                              </div>
+                            </div>
+                            {!hasBillingSetup && <ExternalLink className="h-4 w-4 text-amber-600" />}
                           </button>
                         )}
                         
@@ -4986,6 +5036,213 @@ export default function PartnerDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Enterprise Billing Setup Dialog */}
+      <Dialog open={showBillingSetupDialog} onOpenChange={(open) => {
+        setShowBillingSetupDialog(open);
+        if (!open) {
+          setBillingSetupForm({
+            billingAddressLine1: "",
+            billingAddressLine2: "",
+            billingCity: "",
+            billingPostcode: "",
+            billingCountry: "",
+            vatNumber: "",
+            companyRegistrationNumber: "",
+            invoiceContact: "",
+            billingEmail: "",
+            purchaseOrderRequired: false,
+            defaultPurchaseOrderNumber: "",
+          });
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Billing Information</DialogTitle>
+            <DialogDescription>
+              Enter your company's billing details for invoicing purposes. This information will appear on your invoices.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setIsSubmittingBillingSetup(true);
+            try {
+              const response = await apiRequest("POST", "/api/partner/me/billing-info", billingSetupForm);
+              if (response.ok) {
+                toast({
+                  title: "Billing information saved",
+                  description: "Your billing details have been saved successfully.",
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+                setShowBillingSetupDialog(false);
+              } else {
+                const error = await response.json();
+                toast({
+                  title: "Error",
+                  description: error.error || "Failed to save billing information",
+                  variant: "destructive",
+                });
+              }
+            } catch (error: any) {
+              toast({
+                title: "Error",
+                description: error.message || "Failed to save billing information",
+                variant: "destructive",
+              });
+            } finally {
+              setIsSubmittingBillingSetup(false);
+            }
+          }}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="invoiceContact">Invoice Contact Name *</Label>
+                <Input
+                  id="invoiceContact"
+                  placeholder="Accounts Payable / Finance Manager"
+                  value={billingSetupForm.invoiceContact}
+                  onChange={(e) => setBillingSetupForm(f => ({ ...f, invoiceContact: e.target.value }))}
+                  required
+                  data-testid="input-invoice-contact"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingEmail">Billing Email *</Label>
+                <Input
+                  id="billingEmail"
+                  type="email"
+                  placeholder="accounts@company.com"
+                  value={billingSetupForm.billingEmail}
+                  onChange={(e) => setBillingSetupForm(f => ({ ...f, billingEmail: e.target.value }))}
+                  required
+                  data-testid="input-billing-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingAddressLine1">Address Line 1 *</Label>
+                <Input
+                  id="billingAddressLine1"
+                  placeholder="123 Business Street"
+                  value={billingSetupForm.billingAddressLine1}
+                  onChange={(e) => setBillingSetupForm(f => ({ ...f, billingAddressLine1: e.target.value }))}
+                  required
+                  data-testid="input-billing-address1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingAddressLine2">Address Line 2</Label>
+                <Input
+                  id="billingAddressLine2"
+                  placeholder="Suite 100"
+                  value={billingSetupForm.billingAddressLine2}
+                  onChange={(e) => setBillingSetupForm(f => ({ ...f, billingAddressLine2: e.target.value }))}
+                  data-testid="input-billing-address2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="billingCity">City *</Label>
+                  <Input
+                    id="billingCity"
+                    placeholder="London"
+                    value={billingSetupForm.billingCity}
+                    onChange={(e) => setBillingSetupForm(f => ({ ...f, billingCity: e.target.value }))}
+                    required
+                    data-testid="input-billing-city"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="billingPostcode">Postcode *</Label>
+                  <Input
+                    id="billingPostcode"
+                    placeholder="SW1A 1AA"
+                    value={billingSetupForm.billingPostcode}
+                    onChange={(e) => setBillingSetupForm(f => ({ ...f, billingPostcode: e.target.value }))}
+                    required
+                    data-testid="input-billing-postcode"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingCountry">Country *</Label>
+                <Input
+                  id="billingCountry"
+                  placeholder="United Kingdom"
+                  value={billingSetupForm.billingCountry}
+                  onChange={(e) => setBillingSetupForm(f => ({ ...f, billingCountry: e.target.value }))}
+                  required
+                  data-testid="input-billing-country"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="vatNumber">VAT Number</Label>
+                  <Input
+                    id="vatNumber"
+                    placeholder="GB123456789"
+                    value={billingSetupForm.vatNumber}
+                    onChange={(e) => setBillingSetupForm(f => ({ ...f, vatNumber: e.target.value }))}
+                    data-testid="input-vat-number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companyRegistrationNumber">Company Reg Number</Label>
+                  <Input
+                    id="companyRegistrationNumber"
+                    placeholder="12345678"
+                    value={billingSetupForm.companyRegistrationNumber}
+                    onChange={(e) => setBillingSetupForm(f => ({ ...f, companyRegistrationNumber: e.target.value }))}
+                    data-testid="input-company-reg"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <Switch
+                  id="purchaseOrderRequired"
+                  checked={billingSetupForm.purchaseOrderRequired}
+                  onCheckedChange={(checked) => setBillingSetupForm(f => ({ ...f, purchaseOrderRequired: checked }))}
+                  data-testid="switch-po-required"
+                />
+                <Label htmlFor="purchaseOrderRequired" className="font-normal">
+                  Require Purchase Order number on invoices
+                </Label>
+              </div>
+              {billingSetupForm.purchaseOrderRequired && (
+                <div className="space-y-2">
+                  <Label htmlFor="defaultPurchaseOrderNumber">Default PO Number</Label>
+                  <Input
+                    id="defaultPurchaseOrderNumber"
+                    placeholder="PO-2024-001"
+                    value={billingSetupForm.defaultPurchaseOrderNumber}
+                    onChange={(e) => setBillingSetupForm(f => ({ ...f, defaultPurchaseOrderNumber: e.target.value }))}
+                    data-testid="input-default-po"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This PO number will be used for all invoices unless specified otherwise.
+                  </p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBillingSetupDialog(false)}
+                data-testid="button-cancel-billing-setup"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmittingBillingSetup}
+                data-testid="button-save-billing-info"
+              >
+                {isSubmittingBillingSetup && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Billing Information
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Billing Change Request Dialog */}
       <Dialog open={showBillingChangeDialog} onOpenChange={(open) => {
