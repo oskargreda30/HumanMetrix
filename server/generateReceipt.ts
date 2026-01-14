@@ -380,30 +380,227 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
+  const leftMargin = 20;
+  const rightMargin = pageWidth - 20;
   
   pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
-  addHeader(pdf, pageWidth);
+  let y = 25;
   
-  let y = 50;
+  pdf.setTextColor(30, 41, 59);
+  pdf.setFontSize(36);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('RECEIPT', leftMargin, y);
   
-  y = Math.max(y, addCompanyDetails(pdf, pageWidth, 50));
+  try {
+    if (HUMANMETRIX_LOGO_BASE64) {
+      pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', rightMargin - 35, 10, 35, 35);
+    }
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+  }
   
-  y = addDocumentTitle(pdf, data, y);
+  y += 8;
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 41, 59);
+  pdf.text('HumanMetrix Ltd', leftMargin, y);
   
-  const billToY = y;
-  y = addBillToSection(pdf, data, y);
+  y += 5;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('8 Cygnet Way', leftMargin, y);
+  y += 4;
+  pdf.text('Northampton, NN4 9BS', leftMargin, y);
+  y += 4;
+  pdf.text('United Kingdom', leftMargin, y);
   
-  addReceiptDetails(pdf, data, pageWidth, billToY);
+  y += 15;
   
-  y = Math.max(y, billToY + 30);
+  const billToX = leftMargin;
+  const receiptDetailsX = pageWidth - 80;
+  const receiptValuesX = rightMargin;
   
-  y = addItemsTable(pdf, data, pageWidth, y);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('BILL TO', billToX, y);
   
-  y = addTotals(pdf, data, pageWidth, y);
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('RECEIPT #', receiptDetailsX, y);
+  pdf.setTextColor(30, 41, 59);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(data.receiptNumber, receiptValuesX, y, { align: 'right' });
   
-  addFooter(pdf, pageWidth, pageHeight, data.documentType);
+  y += 6;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 41, 59);
+  pdf.text(data.companyName || data.partnerName, billToX, y);
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('RECEIPT DATE', receiptDetailsX, y);
+  pdf.setTextColor(30, 41, 59);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(formatDate(data.date), receiptValuesX, y, { align: 'right' });
+  
+  let billToY = y + 5;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  
+  if (data.billingAddress?.line1) {
+    pdf.text(data.billingAddress.line1, billToX, billToY);
+    billToY += 4;
+  }
+  if (data.billingAddress?.line2) {
+    pdf.text(data.billingAddress.line2, billToX, billToY);
+    billToY += 4;
+  }
+  const cityPostcode = [data.billingAddress?.city, data.billingAddress?.postcode].filter(Boolean).join(', ');
+  if (cityPostcode) {
+    pdf.text(cityPostcode, billToX, billToY);
+    billToY += 4;
+  }
+  if (data.billingAddress?.country) {
+    pdf.text(data.billingAddress.country, billToX, billToY);
+    billToY += 4;
+  }
+  
+  y += 6;
+  if (data.paymentMethod) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('PAYMENT METHOD', receiptDetailsX, y);
+    pdf.setTextColor(30, 41, 59);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(data.paymentMethod, receiptValuesX, y, { align: 'right' });
+    y += 6;
+  }
+  
+  if (data.paymentDate) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('PAYMENT DATE', receiptDetailsX, y);
+    pdf.setTextColor(30, 41, 59);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(formatDate(data.paymentDate), receiptValuesX, y, { align: 'right' });
+    y += 6;
+  }
+  
+  if (data.transactionId) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('TRANSACTION ID', receiptDetailsX, y);
+    pdf.setTextColor(30, 41, 59);
+    pdf.setFont('helvetica', 'normal');
+    const shortTxId = data.transactionId.length > 20 ? data.transactionId.slice(0, 20) + '...' : data.transactionId;
+    pdf.text(shortTxId, receiptValuesX, y, { align: 'right' });
+  }
+  
+  y = Math.max(billToY + 8, y + 15);
+  
+  pdf.setDrawColor(30, 41, 59);
+  pdf.setLineWidth(0.8);
+  pdf.line(leftMargin, y, rightMargin, y);
+  
+  y += 8;
+  
+  const colQty = leftMargin;
+  const colDesc = leftMargin + 20;
+  const colUnitPrice = pageWidth - 65;
+  const colAmount = rightMargin;
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 41, 59);
+  pdf.text('QTY', colQty, y);
+  pdf.text('DESCRIPTION', colDesc, y);
+  pdf.text('UNIT PRICE', colUnitPrice, y, { align: 'right' });
+  pdf.text('AMOUNT', colAmount, y, { align: 'right' });
+  
+  y += 3;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.setLineWidth(0.3);
+  pdf.line(leftMargin, y, rightMargin, y);
+  
+  y += 8;
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(60, 60, 60);
+  
+  for (const item of data.items) {
+    const qty = item.quantity !== undefined ? item.quantity.toString() : '';
+    pdf.text(qty, colQty, y);
+    pdf.text(item.description, colDesc, y);
+    
+    if (item.unitPrice !== undefined) {
+      pdf.text(formatCurrency(item.unitPrice, data.currency), colUnitPrice, y, { align: 'right' });
+    }
+    pdf.text(formatCurrency(item.amount, data.currency), colAmount, y, { align: 'right' });
+    
+    y += 8;
+  }
+  
+  y += 10;
+  
+  const totalsLabelX = pageWidth - 70;
+  const totalsValueX = rightMargin;
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('Subtotal', totalsLabelX, y);
+  pdf.setTextColor(30, 41, 59);
+  pdf.text(formatCurrency(data.subtotal, data.currency), totalsValueX, y, { align: 'right' });
+  
+  y += 6;
+  
+  if (data.tax !== undefined && data.tax > 0) {
+    pdf.setTextColor(100, 100, 100);
+    const taxLabel = data.taxRate ? `VAT (${data.taxRate}%)` : 'VAT';
+    pdf.text(taxLabel, totalsLabelX, y);
+    pdf.setTextColor(30, 41, 59);
+    pdf.text(formatCurrency(data.tax, data.currency), totalsValueX, y, { align: 'right' });
+    y += 6;
+  }
+  
+  y += 2;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(12);
+  pdf.setTextColor(30, 41, 59);
+  pdf.text('TOTAL', totalsLabelX, y);
+  pdf.text(formatCurrency(data.total, data.currency), totalsValueX, y, { align: 'right' });
+  
+  const footerY = pageHeight - 35;
+  
+  pdf.setDrawColor(30, 58, 138);
+  pdf.setLineWidth(2);
+  pdf.line(leftMargin, footerY, rightMargin, footerY);
+  
+  pdf.setFontSize(24);
+  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setTextColor(30, 58, 138);
+  pdf.text('Thank you', leftMargin, footerY + 12);
+  
+  const termsX = leftMargin + 55;
+  pdf.setDrawColor(30, 58, 138);
+  pdf.setLineWidth(0.5);
+  pdf.line(termsX, footerY + 3, termsX, footerY + 20);
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 58, 138);
+  pdf.text('PAYMENT CONFIRMED', termsX + 5, footerY + 7);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('This receipt confirms payment has been received.', termsX + 5, footerY + 13);
+  pdf.text('Thank you for your business.', termsX + 5, footerY + 18);
+  
+  pdf.setFontSize(7);
+  pdf.setTextColor(150, 150, 150);
+  pdf.text('assessments@humanmetrix.co.uk | www.humanmetrix.co.uk', pageWidth / 2, pageHeight - 10, { align: 'center' });
   
   return Buffer.from(pdf.output('arraybuffer'));
 }
