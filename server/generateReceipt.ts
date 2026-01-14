@@ -574,15 +574,15 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   
   // Signature section
   const signatureY = y + 20;
-  pdf.setFontSize(18);
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFontSize(22);
+  pdf.setFont('times', 'italic');
   pdf.setTextColor(30, 41, 59);
   pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 5, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
@@ -591,7 +591,7 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
   pdf.setFontSize(24);
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFont('times', 'bolditalic');
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
@@ -829,15 +829,15 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   
   // Signature section
   const signatureY = y + 20;
-  pdf.setFontSize(18);
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFontSize(22);
+  pdf.setFont('times', 'italic');
   pdf.setTextColor(30, 41, 59);
   pdf.text('Oskar Greda', rightMargin - 10, signatureY, { align: 'right' });
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 5, { align: 'right' });
+  pdf.text('Founder & CEO', rightMargin - 10, signatureY + 6, { align: 'right' });
   
   const footerY = pageHeight - 35;
   
@@ -846,7 +846,7 @@ export function generateInvoicePDF(data: ReceiptData): Buffer {
   pdf.line(leftMargin, footerY, rightMargin, footerY);
   
   pdf.setFontSize(24);
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFont('times', 'bolditalic');
   pdf.setTextColor(30, 58, 138);
   pdf.text('Thank you', leftMargin, footerY + 12);
   
