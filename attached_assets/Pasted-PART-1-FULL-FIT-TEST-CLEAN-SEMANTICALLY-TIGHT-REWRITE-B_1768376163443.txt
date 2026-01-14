@@ -1,0 +1,110 @@
+PART 1 — FULL FIT TEST (CLEAN, SEMANTICALLY TIGHT REWRITE)
+
+Below, I list only the questions/options that change.
+Anything not listed is assumed unchanged and already valid.
+
+I also show the final skill mapping so you can drop this straight into your system.
+
+Question 2 — Option A (HA clarification)
+
+Original
+
+Insist on driving practice right away, identifying their key mistakes and personally coaching them until the flaw is fixed.
+
+Rewritten
+
+Proactively schedule structured driving practice sessions and take responsibility for coaching their weakest areas until measurable improvement occurs.
+
+Skills Awarded:
+HA: 4
+
+Question 4 — Option A (remove wealth bias)
+
+Original
+
+Pay the full deposit yourself immediately, then deal with the non-paying friends privately to secure their commitment and money later.
+
+Rewritten
+
+Personally secure the required deposit through a short-term arrangement to prevent the trip from collapsing, then address the commitment issue privately.
+
+Skills Awarded:
+HA: 4, RA: 4
+
+Question 4 — Option D (remove GM)
+
+Original
+
+Tell the travel agent to move forward with the trip for the two paying friends only, focusing on honouring their commitment.
+
+Rewritten
+
+Work with the travel agent to restructure the booking so it proceeds only with the confirmed participants, adapting the plan to the new social reality.
+
+Skills Awarded:
+IA: 4
+
+Question 5 — Option A (remove IC)
+
+Original
+
+Step in and ask which bags are heaviest and most awkwardly shaped so you can choose the ones that offer the most relief.
+
+Rewritten
+
+Step in and ask which bags are most difficult to carry so you can take on the most physically demanding ones.
+
+Skills Awarded:
+EE: 4
+
+Question 5 — Option B (remove RA → EE)
+
+Original
+
+Offer to help carry the bags and stay with the person until the bus arrives, protecting them from the stress of being alone with the load.
+
+Rewritten
+
+Offer to help carry the bags and remain with the person until the bus arrives, ensuring they feel supported and not overwhelmed.
+
+Skills Awarded:
+EE: 4
+
+Question 9 — Option D (remove GM)
+
+Original
+
+Directly ask the heckler to leave the area, telling them their behaviour is disrupting the entire section.
+
+Rewritten
+
+Firmly but directly tell the heckler that their behaviour is unacceptable and is disrupting the experience for everyone nearby.
+
+Skills Awarded:
+HA: 4
+
+Question 13 — Option A (remove IA + wealth signal)
+
+Original
+
+Immediately order specialized tools or hire an expert to solve the problem, bypassing the need to learn the detailed subject matter.
+
+Rewritten
+
+Secure an appropriate external solution to resolve the problem quickly, prioritizing a successful outcome over personally mastering the underlying skill.
+
+Skills Awarded:
+HA: 4
+
+Question 15 — Option D (remove RA → IA)
+
+Original
+
+Talk to all family and lead them through a structured exercise to build consensus on the way forward.
+
+Rewritten
+
+Facilitate a structured discussion that helps all family members align on shared priorities and agree on a budget together.
+
+Skills Awarded:
+IA: 4

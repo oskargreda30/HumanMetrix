@@ -14127,6 +14127,390 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============================================
+  // ACCOUNTING & XERO INTEGRATION ROUTES
+  // ============================================
+  
+  // Import Xero functions
+  const {
+    getXeroStatus,
+    getXeroAuthUrl,
+    handleXeroCallback,
+    disconnectXero,
+    createExpense,
+    getExpenses,
+    getExpense,
+    updateExpense,
+    deleteExpense,
+    syncExpenseToXero,
+    getExpenseStats,
+    getUnsyncedRevenue,
+    syncRevenueToXero,
+    getRevenueSyncLogs,
+    getRevenueStats,
+  } = await import("./xero");
+
+  // Super Admin: Get Xero connection status
+  app.get("/api/admin/accounting/xero/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const status = await getXeroStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting Xero status:", error);
+      res.status(500).json({ message: "Failed to get Xero status" });
+    }
+  });
+
+  // Super Admin: Get Xero OAuth URL
+  app.get("/api/admin/accounting/xero/connect", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const authUrl = await getXeroAuthUrl();
+      if (!authUrl) {
+        return res.status(500).json({ message: "Xero not configured. Please add XERO_CLIENT_ID and XERO_CLIENT_SECRET." });
+      }
+      
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error getting Xero auth URL:", error);
+      res.status(500).json({ message: "Failed to get Xero auth URL" });
+    }
+  });
+
+  // Xero OAuth callback
+  app.get("/api/admin/xero/callback", async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.redirect("/admin?error=not_authenticated");
+      }
+      
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.redirect("/admin?error=forbidden");
+      }
+      
+      const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+      const result = await handleXeroCallback(fullUrl, req.user.id);
+      
+      if (result.success) {
+        res.redirect("/admin?tab=accounting&xero=connected");
+      } else {
+        res.redirect(`/admin?tab=accounting&xero=error&message=${encodeURIComponent(result.error || 'Unknown error')}`);
+      }
+    } catch (error: any) {
+      console.error("Xero callback error:", error);
+      res.redirect(`/admin?tab=accounting&xero=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+    }
+  });
+
+  // Super Admin: Disconnect Xero
+  app.post("/api/admin/accounting/xero/disconnect", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const success = await disconnectXero();
+      if (success) {
+        res.json({ message: "Xero disconnected successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to disconnect Xero" });
+      }
+    } catch (error) {
+      console.error("Error disconnecting Xero:", error);
+      res.status(500).json({ message: "Failed to disconnect Xero" });
+    }
+  });
+
+  // Super Admin: Get expense statistics
+  app.get("/api/admin/accounting/expenses/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const stats = await getExpenseStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting expense stats:", error);
+      res.status(500).json({ message: "Failed to get expense stats" });
+    }
+  });
+
+  // Super Admin: List expenses
+  app.get("/api/admin/accounting/expenses", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { category, status, syncStatus, limit, offset } = req.query;
+      const expenses = await getExpenses({
+        category: category as string | undefined,
+        status: status as string | undefined,
+        syncStatus: syncStatus as string | undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined,
+      });
+      
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error listing expenses:", error);
+      res.status(500).json({ message: "Failed to list expenses" });
+    }
+  });
+
+  // Super Admin: Create expense
+  app.post("/api/admin/accounting/expenses", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { description, amount, currency, category, vendor, invoiceNumber, invoiceDate, dueDate, paidDate, status, receiptUrl, receiptFilename, notes } = req.body;
+      
+      if (!description || amount === undefined) {
+        return res.status(400).json({ message: "Description and amount are required" });
+      }
+      
+      const expense = await createExpense({
+        description,
+        amount: Math.round(amount * 100), // Convert to minor units
+        currency: currency?.toUpperCase() || 'GBP',
+        category: category || 'other',
+        vendor,
+        invoiceNumber,
+        invoiceDate: invoiceDate ? new Date(invoiceDate) : null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        paidDate: paidDate ? new Date(paidDate) : null,
+        status: status || 'pending',
+        receiptUrl,
+        receiptFilename,
+        notes,
+        createdBy: req.user.id,
+      });
+      
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error("Error creating expense:", error);
+      res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  // Super Admin: Get single expense
+  app.get("/api/admin/accounting/expenses/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const expense = await getExpense(req.params.id);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      res.json(expense);
+    } catch (error) {
+      console.error("Error getting expense:", error);
+      res.status(500).json({ message: "Failed to get expense" });
+    }
+  });
+
+  // Super Admin: Update expense
+  app.patch("/api/admin/accounting/expenses/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const updates: any = { ...req.body };
+      
+      // Convert amount to minor units if provided
+      if (updates.amount !== undefined) {
+        updates.amount = Math.round(updates.amount * 100);
+      }
+      
+      // Convert date strings to Date objects
+      if (updates.invoiceDate) updates.invoiceDate = new Date(updates.invoiceDate);
+      if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
+      if (updates.paidDate) updates.paidDate = new Date(updates.paidDate);
+      if (updates.currency) updates.currency = updates.currency.toUpperCase();
+      
+      const expense = await updateExpense(req.params.id, updates);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      res.json(expense);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      res.status(500).json({ message: "Failed to update expense" });
+    }
+  });
+
+  // Super Admin: Delete expense
+  app.delete("/api/admin/accounting/expenses/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      await deleteExpense(req.params.id);
+      res.json({ message: "Expense deleted" });
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Super Admin: Sync expense to Xero
+  app.post("/api/admin/accounting/expenses/:id/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const result = await syncExpenseToXero(req.params.id);
+      if (result.success) {
+        res.json({ message: "Expense synced to Xero", xeroInvoiceId: result.xeroInvoiceId });
+      } else {
+        res.status(500).json({ message: result.error || "Failed to sync expense" });
+      }
+    } catch (error) {
+      console.error("Error syncing expense to Xero:", error);
+      res.status(500).json({ message: "Failed to sync expense to Xero" });
+    }
+  });
+
+  // Super Admin: Get revenue statistics
+  app.get("/api/admin/accounting/revenue/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const stats = await getRevenueStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting revenue stats:", error);
+      res.status(500).json({ message: "Failed to get revenue stats" });
+    }
+  });
+
+  // Super Admin: Get unsynced revenue (sales)
+  app.get("/api/admin/accounting/revenue/unsynced", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const unsynced = await getUnsyncedRevenue();
+      res.json(unsynced);
+    } catch (error) {
+      console.error("Error getting unsynced revenue:", error);
+      res.status(500).json({ message: "Failed to get unsynced revenue" });
+    }
+  });
+
+  // Super Admin: Get revenue sync logs
+  app.get("/api/admin/accounting/revenue/logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { status, limit } = req.query;
+      const logs = await getRevenueSyncLogs({
+        status: status as string | undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+      });
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Error getting revenue sync logs:", error);
+      res.status(500).json({ message: "Failed to get revenue sync logs" });
+    }
+  });
+
+  // Super Admin: Sync revenue to Xero
+  app.post("/api/admin/accounting/revenue/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { purchaseId, partnerInvoiceId } = req.body;
+      
+      if (!purchaseId && !partnerInvoiceId) {
+        return res.status(400).json({ message: "Either purchaseId or partnerInvoiceId is required" });
+      }
+      
+      const result = await syncRevenueToXero(purchaseId, partnerInvoiceId);
+      if (result.success) {
+        res.json({ message: "Revenue synced to Xero", xeroInvoiceId: result.xeroInvoiceId });
+      } else {
+        res.status(500).json({ message: result.error || "Failed to sync revenue" });
+      }
+    } catch (error) {
+      console.error("Error syncing revenue to Xero:", error);
+      res.status(500).json({ message: "Failed to sync revenue to Xero" });
+    }
+  });
+
+  // Super Admin: Bulk sync revenue to Xero
+  app.post("/api/admin/accounting/revenue/sync-all", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const unsynced = await getUnsyncedRevenue();
+      const results = {
+        total: unsynced.length,
+        synced: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+      
+      for (const item of unsynced) {
+        const result = await syncRevenueToXero(item.id);
+        if (result.success) {
+          results.synced++;
+        } else {
+          results.failed++;
+          results.errors.push(`${item.id}: ${result.error}`);
+        }
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error bulk syncing revenue to Xero:", error);
+      res.status(500).json({ message: "Failed to bulk sync revenue to Xero" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
