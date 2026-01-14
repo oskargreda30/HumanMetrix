@@ -517,6 +517,7 @@ export interface IStorage {
   getPartnerCandidateInvitationsByEmails(emails: string[]): Promise<PartnerCandidateInvitation[]>;
   updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
   countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
+  countTodayPartnerInvitationEmails(): Promise<number>;
 
   // System settings operations
   getSystemSetting(key: string): Promise<SystemSetting | undefined>;
@@ -3532,6 +3533,19 @@ export class DatabaseStorage implements IStorage {
 
     const [result] = await db.select({ count: count() }).from(partnerCandidateInvitations)
       .where(and(...conditions));
+    return result?.count || 0;
+  }
+
+  async countTodayPartnerInvitationEmails(): Promise<number> {
+    // Count all invitation emails sent today (UTC midnight to now)
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    
+    const [result] = await db.select({ count: count() }).from(partnerCandidateInvitations)
+      .where(and(
+        isNotNull(partnerCandidateInvitations.emailSentAt),
+        gte(partnerCandidateInvitations.emailSentAt, todayStart)
+      ));
     return result?.count || 0;
   }
 

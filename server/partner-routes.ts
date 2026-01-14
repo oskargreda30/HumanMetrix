@@ -1290,6 +1290,11 @@ export function registerPartnerRoutes(app: Express) {
       }
       console.log('[Bulk Invitations] Partner authenticated:', partner.id);
       
+      // Google Workspace daily limit: 2000 emails/day
+      // We limit to 500 per batch to allow multiple batches per day
+      const DAILY_EMAIL_LIMIT = 2000;
+      const MAX_BATCH_SIZE = 500;
+      
       const bodySchema = z.object({
         candidates: z.array(z.object({
           externalUserId: z.string().transform(s => s.trim()).optional().nullable(),
@@ -1298,7 +1303,7 @@ export function registerPartnerRoutes(app: Express) {
           ).optional().nullable(),
           name: z.string().optional().nullable(),
           metadata: z.record(z.any()).optional().nullable(),
-        })).min(1, "At least one candidate required").max(500, "Maximum 500 candidates per batch"),
+        })).min(1, "At least one candidate required").max(MAX_BATCH_SIZE, `Maximum ${MAX_BATCH_SIZE} candidates per batch`),
         assessmentTypes: z.array(z.string()).min(1, "At least one assessment type required"),
         sendEmails: z.boolean().default(true),
         expiresInDays: z.number().min(1).max(30).default(7), // 7-day default expiry
@@ -1385,6 +1390,32 @@ export function registerPartnerRoutes(app: Express) {
             tokensUsed: 0,
           },
         });
+      }
+      
+      // Check daily email limit (Google Workspace: 2000/day)
+      if (sendEmails) {
+        const todayEmailCount = await storage.countTodayPartnerInvitationEmails();
+        const emailsToSend = candidates.filter(c => c.email?.trim()).length;
+        const remainingDaily = DAILY_EMAIL_LIMIT - todayEmailCount;
+        
+        if (emailsToSend > remainingDaily) {
+          return res.status(400).json({
+            error: `Daily email limit exceeded`,
+            errors: [{
+              row: 0,
+              externalUserId: '',
+              field: 'sendEmails',
+              error: `Daily limit is ${DAILY_EMAIL_LIMIT} emails. ${todayEmailCount} sent today, ${remainingDaily} remaining. Reduce batch size or disable email sending.`
+            }],
+            summary: {
+              totalCandidates: candidates.length,
+              successCount: 0,
+              failedCount: candidates.length,
+              tokensUsed: 0,
+              dailyEmailsRemaining: remainingDaily,
+            },
+          });
+        }
       }
       
       // Calculate tokens required (only after validation passes)
