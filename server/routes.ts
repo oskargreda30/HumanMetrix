@@ -1413,25 +1413,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[Airwallex Webhook] ✓ Unlocked results for purchase ${purchaseId}`);
           
-          // Send receipt email
+          // Send receipt email with PDF attachment
           if (userId) {
             try {
               const user = await storage.getUser(userId);
-              const purchaseItems = await storage.getPurchaseItems(purchaseId);
-              const assessmentTypes = purchaseItems.map((item: any) => item.assessmentType);
+              const purchaseItemsData = await storage.getPurchaseItems(purchaseId);
+              const assessmentTypes = purchaseItemsData.map((item: any) => item.assessmentType);
               
               if (user) {
                 const amount = Math.round((paymentIntent.amount || 0) * 100);
                 const currency = (paymentIntent.currency || 'gbp').toLowerCase();
-                await sendPaymentReceiptEmail(
-                  user.email,
-                  user.firstName || 'Customer',
-                  assessmentTypes,
-                  amount,
-                  paymentIntent.id,
-                  currency
-                );
-                console.log(`[Airwallex Webhook] ✓ Receipt email sent to ${user.email}`);
+                
+                // Format assessment names for items
+                const assessmentNames: Record<string, string> = {
+                  'fit': 'FIT Assessment',
+                  'ai_readiness': 'AI Readiness Assessment',
+                  'prompt_architecture': 'Prompt Architecture Assessment',
+                  'aiq': 'AIQ Assessment'
+                };
+                
+                const receiptItems = assessmentTypes.map((type: string) => ({
+                  description: assessmentNames[type] || type,
+                  amount: Math.round(amount / assessmentTypes.length)
+                }));
+                
+                const receiptDetails: PdfReceiptEmailDetails = {
+                  email: user.email,
+                  name: user.firstName || 'Customer',
+                  items: receiptItems,
+                  subtotal: amount,
+                  total: amount,
+                  currency: currency,
+                  transactionId: paymentIntent.id,
+                  paymentMethod: 'Airwallex',
+                };
+                
+                const result = await sendPaymentReceiptWithPdf(receiptDetails);
+                if (result.success) {
+                  console.log(`[Airwallex Webhook] ✓ PDF receipt email sent to ${user.email} (Receipt: ${result.receiptNumber})`);
+                }
               }
             } catch (emailError) {
               console.error(`[Airwallex Webhook] Failed to send receipt email:`, emailError);
@@ -1466,13 +1486,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[Airwallex Webhook] ✓ B2B session ${sessionId} marked as paid`);
           
-          // Send results email if email is available
+          // Send results email and payment receipt if email is available
           if (session.externalEmail) {
+            const partner = await storage.getPartnerAccount(session.partnerId);
+            const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+            const paymentAmount = Math.round((paymentIntent.amount || 0) * 100);
+            const paymentCurrency = (paymentIntent.currency || 'gbp').toLowerCase();
+            
+            // 1. Send payment receipt email with PDF
             try {
-              const partner = await storage.getPartnerAccount(session.partnerId);
-              const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+              const assessmentNames: Record<string, string> = {
+                'fit': 'FIT Assessment',
+                'ai_readiness': 'AI Readiness Assessment',
+                'prompt_architecture': 'Prompt Architecture Assessment',
+                'aiq': 'AIQ Assessment'
+              };
               
-              const pdfBuffer = generateB2BResultsPDF({
+              const receiptDetails: PdfReceiptEmailDetails = {
+                email: session.externalEmail,
+                name: session.externalUserId || 'Candidate',
+                items: [{
+                  description: assessmentNames[session.assessmentType] || assessmentName,
+                  amount: paymentAmount
+                }],
+                subtotal: paymentAmount,
+                total: paymentAmount,
+                currency: paymentCurrency,
+                transactionId: paymentIntent.id,
+                paymentMethod: 'Airwallex',
+              };
+              
+              const receiptResult = await sendPaymentReceiptWithPdf(receiptDetails);
+              if (receiptResult.success) {
+                console.log(`[Airwallex Webhook] ✓ B2B payment receipt sent to ${session.externalEmail} (Receipt: ${receiptResult.receiptNumber})`);
+              }
+            } catch (receiptError) {
+              console.error(`[Airwallex Webhook] Failed to send B2B payment receipt:`, receiptError);
+            }
+            
+            // 2. Send results email with PDF
+            try {
+              const resultsPdfBuffer = generateB2BResultsPDF({
                 candidateName: session.externalUserId || undefined,
                 candidateEmail: session.externalEmail,
                 assessmentType: session.assessmentType,
@@ -1489,7 +1543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 candidateName: session.externalUserId || undefined,
                 assessmentType: session.assessmentType,
                 partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-                pdfBuffer,
+                pdfBuffer: resultsPdfBuffer,
                 pdfFilename: `${assessmentName.replace(/\s/g, '_')}_Results.pdf`,
               });
               
