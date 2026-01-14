@@ -74,13 +74,13 @@ export const AI_READINESS_QUESTIONS_DEFAULT: AIReadinessQuestion[] = [
   { id: "11", text: "A team member is struggling to understand the technical constraints of a new project they are leading.", options: [
     { value: "A", text: "Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply." },
     { value: "B", text: "Research best practices for project scoping and risk identification to help them define the constraints." },
-    { value: "C", text: "Use an AI to generate a simplified technical overview of the project's components and limitations." },
+    { value: "C", text: "Use an AI-generated overview to clearly explain the project's technical components and constraints." },
     { value: "D", text: "Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually." },
     { value: "E", text: "Review the project plan and use your domain knowledge to pre-emptively identify and flag major technical risks." },
   ]},
   { id: "12", text: "You need to design an experiment but have limited resources for data collection.", options: [
     { value: "A", text: "Use creative experimental design techniques (e.g., fractional factorial designs) to maximize insights from minimal data." },
-    { value: "B", text: "Analyze the current resource allocation to identify potential efficiency gains or cost savings for the experiment." },
+    { value: "B", text: "Analyze resource allocation trade-offs to determine where experimental constraints can be optimized." },
     { value: "C", text: "Research existing public data sources that might serve as a proxy or baseline for your experiment." },
     { value: "D", text: "Collaborate with other teams to pool resources or leverage their existing data collection infrastructure." },
     { value: "E", text: "Use an AI to design the statistical model and recommend the minimum sample size needed." },
@@ -114,7 +114,7 @@ export const AI_READINESS_QUESTIONS_DEFAULT: AIReadinessQuestion[] = [
     { value: "E", text: "Redefine the problem to generate entirely new ideas that inherently operate outside the scope of the limiting policy." },
   ]},
   { id: "17", text: "You are asked to review a technical specification for a new product, and the deadline is tomorrow.", options: [
-    { value: "A", text: "Focus the review entirely on the product's alignment with high-level strategic goals and market needs." },
+    { value: "A", text: "Focus the review on whether the specification supports the product's strategic intent and positioning." },
     { value: "B", text: "Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues." },
     { value: "C", text: "Use an AI to perform an automated code or specification review to catch obvious errors." },
     { value: "D", text: "Proactively communicate any concerns and potential risks discovered during the hurried review to the relevant stakeholders." },

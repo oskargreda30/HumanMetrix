@@ -380,7 +380,7 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply. | CC: 4, AL/PE: 4 |
 | B | Research best practices for project scoping and risk identification to help them define the constraints. | ACL: 4, DE: 4 |
-| C | Use an AI to generate a simplified technical overview of the project's components and limitations. | AL/PE: 4, TF: 4 |
+| C | Use an AI-generated overview to clearly explain the project's technical components and constraints. | TF: 4 |
 | D | Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually. | CI: 4, CT/PS: 4 |
 | E | Review the project plan and use your domain knowledge to pre-emptively identify and flag major technical risks. | DE: 4, RAI: 4 |
 
@@ -392,7 +392,7 @@ This document contains all original questions, answer options, and scoring logic
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
 | A | Use creative experimental design techniques (e.g., fractional factorial designs) to maximize insights from minimal data. | CI: 4, CT/PS: 4 |
-| B | Analyze the current resource allocation to identify potential efficiency gains or cost savings for the experiment. | DF: 4, DE: 4 |
+| B | Analyze resource allocation trade-offs to determine where experimental constraints can be optimized. | DF: 4, CT/PS: 4 |
 | C | Research existing public data sources that might serve as a proxy or baseline for your experiment. | ACL: 4, DF: 4 |
 | D | Collaborate with other teams to pool resources or leverage their existing data collection infrastructure. | CC: 4, ACL: 4 |
 | E | Use an AI to design the statistical model and recommend the minimum sample size needed. | AL/PE: 4, DF: 4 |
@@ -456,9 +456,9 @@ This document contains all original questions, answer options, and scoring logic
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Focus the review entirely on the product's alignment with high-level strategic goals and market needs. | DE: 4, DF: 4 |
+| A | Focus the review on whether the specification supports the product's strategic intent and positioning. | DE: 4 |
 | B | Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues. | TF: 4, RAI: 4 |
-| C | Use an AI to perform an automated code or specification review to catch obvious errors. | AL/PE: 4, TF: 4 |
+| C | Use an AI to perform an automated code or specification review to catch obvious errors. | TF: 4 |
 | D | Proactively communicate any concerns and potential risks discovered during the hurried review to the relevant stakeholders. | CC: 4, RAI: 4 |
 | E | Research industry standards for similar products to benchmark the technical specifications' quality and completeness. | ACL: 4, DE: 4 |
 
@@ -471,7 +471,7 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Research the fundamental principles of visual design and data storytelling to create clearer charts. | ACL: 4, DF: 4 |
 | B | Propose an innovative new chart type or visualization approach that simplifies the complex data. | CI: 4, DF: 4 |
-| C | Facilitate a collaborative session to gather feedback on which charts are confusing and why. | CC: 4, CT/PS: 4 |
+| C | Facilitate a collaborative session to gather feedback on which charts are confusing and why. | CC: 4 |
 | D | Use an AI to generate alternative text descriptions for the charts to explain the findings simply. | AL/PE: 4, TF: 4 |
 | E | Create a standardized style guide for all charts, ensuring consistency and ease of interpretation. | TF: 4, DE: 4 |
 
@@ -497,7 +497,7 @@ This document contains all original questions, answer options, and scoring logic
 |--------|--------|----------------|
 | A | Use your domain knowledge to explain the contemporary risks (e.g., security, maintenance) associated with the obsolete technology. | DE: 4, RAI: 4 |
 | B | Analyze the project's data requirements to show how the obsolete technology cannot meet modern throughput needs. | DF: 4, TF: 4 |
-| C | Propose a modern, innovative alternative that fulfills the same goals without the technical debt. | CI: 4, AL/PE: 4 |
+| C | Propose a modern, innovative alternative that fulfills the same goals without the technical debt. | CI: 4 |
 | D | Research the lifecycle and End-of-Life date of the obsolete technology to provide factual backing for your objection. | ACL: 4, RAI: 4 |
 | E | Facilitate a discussion to respectfully challenge the proposal and collaboratively find a forward-looking technical solution. | CC: 4, CI: 4 |
 

@@ -115,7 +115,7 @@ export const AI_READINESS_QUESTIONS = [
     options: [
       { value: "A", text: "Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply." },
       { value: "B", text: "Research best practices for project scoping and risk identification to help them define the constraints." },
-      { value: "C", text: "Use an AI to generate a simplified technical overview of the project's components and limitations." },
+      { value: "C", text: "Use an AI-generated overview to clearly explain the project's technical components and constraints." },
       { value: "D", text: "Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually." },
       { value: "E", text: "Review the project plan and use your domain knowledge to pre-emptively identify and flag major technical risks." },
     ],
@@ -125,7 +125,7 @@ export const AI_READINESS_QUESTIONS = [
     text: "You need to design an experiment but have limited resources for data collection.",
     options: [
       { value: "A", text: "Use creative experimental design techniques (e.g., fractional factorial designs) to maximize insights from minimal data." },
-      { value: "B", text: "Analyze the current resource allocation to identify potential efficiency gains or cost savings for the experiment." },
+      { value: "B", text: "Analyze resource allocation trade-offs to determine where experimental constraints can be optimized." },
       { value: "C", text: "Research existing public data sources that might serve as a proxy or baseline for your experiment." },
       { value: "D", text: "Collaborate with other teams to pool resources or leverage their existing data collection infrastructure." },
       { value: "E", text: "Use an AI to design the statistical model and recommend the minimum sample size needed." },
@@ -179,7 +179,7 @@ export const AI_READINESS_QUESTIONS = [
     id: "17",
     text: "You are asked to review a technical specification for a new product, and the deadline is tomorrow.",
     options: [
-      { value: "A", text: "Focus the review entirely on the product's alignment with high-level strategic goals and market needs." },
+      { value: "A", text: "Focus the review on whether the specification supports the product's strategic intent and positioning." },
       { value: "B", text: "Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues." },
       { value: "C", text: "Use an AI to perform an automated code or specification review to catch obvious errors." },
       { value: "D", text: "Proactively communicate any concerns and potential risks discovered during the hurried review to the relevant stakeholders." },
@@ -365,23 +365,23 @@ export const AI_READINESS_SCORING = {
   // Q11: Team member struggling with technical constraints
   // A: Knowledge-sharing with AI-generated visuals → CC (knowledge transfer) + AL/PE (AI visual generation)
   // B: Researches scoping best practices → ACL (learning) + DE (scope expertise)
-  // C: Uses AI for simplified overview → AL/PE (AI tool usage) + DE (domain simplification)
+  // C: Uses AI-generated overview to explain technical components → TF (technical explanation)
   // D: Encourages smaller milestones → CI (creative breakdown) + CT/PS (milestone planning)
   // E: Reviews plan, flags risks using expertise → DE (domain expertise) + RAI (risk identification)
   "11-A": { "CC": 4, "AL/PE": 4 },
   "11-B": { "ACL": 4, "DE": 4 },
-  "11-C": { "AL/PE": 4, "DE": 4 },
+  "11-C": { "TF": 4 },
   "11-D": { "CI": 4, "CT/PS": 4 },
   "11-E": { "DE": 4, "RAI": 4 },
   
   // Q12: Design experiment with limited resources
   // A: Uses creative experimental design → CI (creative methods) + CT/PS (experimental logic)
-  // B: Analyzes resource allocation → DF (data analysis) + DE (resource understanding)
+  // B: Analyzes resource allocation trade-offs → DF (data analysis) + CT/PS (optimization logic)
   // C: Researches public data sources → ACL (resourceful research) + DF (data sourcing)
-  // D: Pools resources with other teams → CC (collaboration) + CT/PS (coordination logic)
+  // D: Pools resources with other teams → CC (collaboration) + ACL (adaptive planning)
   // E: Uses AI to design model → AL/PE (AI tool usage) + DF (statistical modeling)
   "12-A": { "CI": 4, "CT/PS": 4 },
-  "12-B": { "DF": 4, "DE": 4 },
+  "12-B": { "DF": 4, "CT/PS": 4 },
   "12-C": { "ACL": 4, "DF": 4 },
   "12-D": { "CC": 4, "ACL": 4 },
   "12-E": { "AL/PE": 4, "DF": 4 },
@@ -435,27 +435,27 @@ export const AI_READINESS_SCORING = {
   "16-E": { "CI": 4, "CT/PS": 4 },
   
   // Q17: Review technical spec with tight deadline
-  // A: Focuses on strategic alignment → DE (strategic context) + DF (metrics alignment)
-  // B: Analyzes for architectural flaws → TF (technical analysis) + CT/PS (flaw detection)
-  // C: Uses AI for automated review → AL/PE (AI tool usage) + TF (technical review)
+  // A: Focuses on strategic intent and positioning → DE (domain strategy)
+  // B: Analyzes for architectural flaws → TF (technical analysis) + RAI (risk identification)
+  // C: Uses AI for automated review → TF (technical review)
   // D: Communicates risks to stakeholders → CC (stakeholder communication) + RAI (risk disclosure)
   // E: Researches industry standards → ACL (research learning) + DE (industry context)
-  "17-A": { "DE": 4 },  // DF removed for perfect balance
+  "17-A": { "DE": 4 },
   "17-B": { "TF": 4, "RAI": 4 },
-  "17-C": { "AL/PE": 4, "TF": 4 },
+  "17-C": { "TF": 4 },
   "17-D": { "CC": 4, "RAI": 4 },
   "17-E": { "ACL": 4, "DE": 4 },
   
   // Q18: Team struggling with data visualization
   // A: Researches visual design principles → ACL (learning) + DF (visualization techniques)
   // B: Proposes innovative chart type → CI (innovation) + DF (visualization approach)
-  // C: Facilitates feedback session → CC (collaboration) + CT/PS (diagnosing confusion)
+  // C: Facilitates feedback session → CC (collaboration)
   // D: Uses AI for text descriptions → AL/PE (AI tool usage) + TF (technical accessibility)
   // E: Creates standardized style guide → TF (technical standards) + DE (organizational knowledge)
   "18-A": { "ACL": 4, "DF": 4 },
   "18-B": { "CI": 4, "DF": 4 },
-  "18-C": { "CC": 4, "CT/PS": 4 },
-  "18-D": { "AL/PE": 4 },  // TF removed for perfect balance
+  "18-C": { "CC": 4 },
+  "18-D": { "AL/PE": 4, "TF": 4 },
   "18-E": { "TF": 4, "DE": 4 },
   
   // Q19: Automate task with many exceptions
@@ -473,12 +473,12 @@ export const AI_READINESS_SCORING = {
   // Q20: Colleague proposes obsolete technology
   // A: Explains risks using domain knowledge → DE (domain expertise) + RAI (risk communication)
   // B: Analyzes throughput requirements → DF (data analysis) + TF (technical analysis)
-  // C: Proposes modern alternative → CI (innovation) + AL/PE (modern tech awareness)
+  // C: Proposes modern alternative → CI (innovation)
   // D: Researches lifecycle dates → ACL (research) + RAI (risk awareness)
   // E: Facilitates collaborative discussion → CC (facilitation) + CI (collaborative innovation)
   "20-A": { "DE": 4, "RAI": 4 },
   "20-B": { "DF": 4, "TF": 4 },
-  "20-C": { "CI": 4, "AL/PE": 4 },
+  "20-C": { "CI": 4 },
   "20-D": { "ACL": 4, "RAI": 4 },
   "20-E": { "CC": 4, "CI": 4 },
   
