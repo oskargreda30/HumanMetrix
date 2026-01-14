@@ -1052,15 +1052,23 @@ interface InvoiceDetails {
   periodStart: Date;
   periodEnd: Date;
   testsUsed: number;
-  pricePerTest: number; // In pence
-  subtotal: number; // In pence
+  pricePerTest: number; // In smallest currency unit (pence/cents)
+  subtotal: number; // In smallest currency unit
   vatRate: number; // Percentage (e.g., 20)
-  vatAmount: number; // In pence
-  totalAmount: number; // In pence
+  vatAmount: number; // In smallest currency unit
+  totalAmount: number; // In smallest currency unit
+  currency?: string; // Currency code (e.g., 'gbp', 'usd', 'eur') - defaults to 'gbp'
   dueDate: Date;
   paymentTermsDays: number;
   invoiceNotes?: string;
 }
+
+// Currency symbols map
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', 
+  hkd: 'HK$', nzd: 'NZ$', jpy: '¥', cny: '¥', inr: '₹', php: '₱',
+  myr: 'RM', thb: '฿', idr: 'Rp', vnd: '₫', krw: '₩'
+};
 
 // Send invoice email to enterprise partner
 export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
@@ -1071,7 +1079,10 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails) {
     return;
   }
   
-  const formatCurrency = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+  // Get currency symbol based on partner's currency
+  const currency = (details.currency || 'gbp').toLowerCase();
+  const currencySymbol = CURRENCY_SYMBOLS[currency] || currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
   const formatDate = (date: Date) => date.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',

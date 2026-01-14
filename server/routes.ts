@@ -14666,13 +14666,18 @@ async function processAutoBillPartner(partner: PartnerAccount) {
     return;
   }
   
-  console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Charging £${(amountPence / 100).toFixed(2)} for ${usage} tests (${prevMonthKey})`);
+  // Use the partner's configured currency (normalized to lowercase for Stripe)
+  const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
+  const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+  const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+  
+  console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Charging ${currencySymbol}${(amountPence / 100).toFixed(2)} for ${usage} tests (${prevMonthKey})`);
   
   try {
-    // Create a payment intent and charge immediately
+    // Create a payment intent and charge immediately using partner's currency
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,
-      currency: 'gbp',
+      currency: partnerCurrency,
       customer: partner.stripeCustomerId,
       payment_method: partner.stripePaymentMethodId,
       off_session: true,
@@ -14754,13 +14759,19 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
   // Get next invoice number
   const invoiceNumber = await storage.getNextInvoiceNumber();
   
-  // Calculate price per test from the usage record
-  const pricePerTest = usage > 0 ? Math.round(amountPence / usage) : 0;
+  // Use the partner's price per assessment (stored in smallest currency unit)
+  const pricePerTest = partner.pricePerAssessment || (usage > 0 ? Math.round(amountPence / usage) : 0);
   
-  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for £${(totalAmount / 100).toFixed(2)} (${usage} tests)`);
+  // Use the partner's configured currency (normalized to lowercase for consistency)
+  const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
+  
+  // Get the partner's billing email for invoice
+  const billingEmail = partner.billingEmail || partner.invoiceContact || partner.email;
+  
+  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for ${partnerCurrency.toUpperCase()} ${(totalAmount / 100).toFixed(2)} (${usage} tests @ ${(pricePerTest / 100).toFixed(2)} each)`);
   
   try {
-    // Create the invoice record
+    // Create the invoice record with partner's currency
     const invoice = await storage.createPartnerInvoice({
       partnerId: partner.id,
       invoiceNumber,
@@ -14772,9 +14783,11 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
       vatRate,
       vatAmount,
       totalAmount,
+      currency: partnerCurrency,
       dueDate,
       status: 'sent',
       notes: partner.invoiceNotes || undefined,
+      sentToEmail: billingEmail,
     });
     
     // Link the invoice to the usage record
@@ -14785,7 +14798,7 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
     const partnerEmail = partnerUser?.email || partner.invoiceContact;
     
     if (partnerEmail) {
-      // Send invoice email
+      // Send invoice email with partner's currency
       const { sendPartnerInvoiceEmail } = await import('./email');
       await sendPartnerInvoiceEmail({
         invoiceNumber,
@@ -14799,6 +14812,7 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
         vatRate,
         vatAmount,
         totalAmount,
+        currency: partnerCurrency,
         dueDate,
         paymentTermsDays,
         invoiceNotes: partner.invoiceNotes || undefined,
@@ -14807,16 +14821,21 @@ async function processEnterpriseInvoice(partner: PartnerAccount) {
       console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
     }
     
+    // Format currency symbol for notification
+    const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+    const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+    
     // Dispatch in-app notification (only sent to admin+ roles per notification-types.ts)
     await storage.dispatchPartnerNotification({
       partnerId: partner.id,
       type: 'invoice_generated',
       title: 'New Invoice Available',
-      message: `Invoice ${invoiceNumber} for £${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
+      message: `Invoice ${invoiceNumber} for ${currencySymbol}${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
       metadata: { 
         invoiceId: invoice.id, 
         invoiceNumber,
         amount: totalAmount,
+        currency: partnerCurrency,
         testsUsed: usage,
         dueDate: dueDate.toISOString(),
       },
