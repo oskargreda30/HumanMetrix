@@ -33,6 +33,7 @@ The frontend uses React + TypeScript, Shadcn UI, and Tailwind CSS, with Wouter f
 - **Enhanced PDF Export System**: Generates multi-page, dynamic PDF reports.
 - **Results Access Gating & Retention**: Requires completion of all four distinct assessments to view results, with explicit user consent for sharing results.
 - **Product Roadmap**: Visual timeline of future assessment releases.
+- **The Ecosystem Index**: Visual-only marketing page for team capability diagnostic product. Showcases 6 core capabilities (HA, IC, RA, EE, GM, IA), 4-step workflow with mock forms, sample report preview with capability distribution bars and risk alerts, and differentiators from traditional personality tests. Accessible at `/ecosystem-index` with navigation links from ForEmployers page and homepage ForEmployersSection. No backend functionality - purely front-end design.
 - **Marketing Email Opt-in**: Subscribe page for job seeker emails.
 - **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts and daily runs.
 - **Multi-Currency & PPP Pricing**: Automatic location detection with `ipapi.co` for local currency display and 3-tier regional pricing (PPP) via Stripe.

@@ -221,11 +221,9 @@ export default function ForEmployers() {
       
       {/* For Job Seekers link - top left */}
       <div className="relative z-20 px-4 md:px-6 lg:px-8 pt-2">
-        <Link href="/" data-testid="link-for-job-seekers">
-          <a className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-            <span>Looking for job seeker assessments?</span>
-            <span className="font-medium underline underline-offset-2">Click here</span>
-          </a>
+        <Link href="/" data-testid="link-for-job-seekers" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+          <span>Looking for job seeker assessments?</span>
+          <span className="font-medium underline underline-offset-2">Click here</span>
         </Link>
       </div>
       
@@ -258,19 +256,21 @@ export default function ForEmployers() {
               >
                 Request Demo
               </Button>
+              <Link href="/ecosystem-index">
+                <Button size="lg" variant="outline" data-testid="button-ecosystem-index">
+                  <Target className="mr-2 h-4 w-4" />
+                  The Ecosystem Index
+                </Button>
+              </Link>
               <Link href="/assessments">
-                <a>
-                  <Button size="lg" variant="outline" data-testid="button-view-assessments">
-                    View Assessments
-                  </Button>
-                </a>
+                <Button size="lg" variant="outline" data-testid="button-view-assessments">
+                  View Assessments
+                </Button>
               </Link>
               <Link href="/#sample-reports">
-                <a>
-                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
-                    View Sample Reports
-                  </Button>
-                </a>
+                <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                  View Sample Reports
+                </Button>
               </Link>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Users, TrendingUp, Shield, Zap } from "lucide-react";
+import { Users, TrendingUp, Shield, Zap, Target } from "lucide-react";
 
 const features = [
   {
@@ -65,7 +65,7 @@ export default function ForEmployersSection() {
               ))}
             </div>
 
-            <div className="pt-4 text-center">
+            <div className="pt-4 text-center flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/for-employers">
                 <Button 
                   size="sm"
@@ -73,6 +73,17 @@ export default function ForEmployersSection() {
                   data-testid="button-employer-learn-more"
                 >
                   Learn More About Enterprise Solutions
+                </Button>
+              </Link>
+              <Link href="/ecosystem-index">
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10 text-xs md:text-sm"
+                  data-testid="button-ecosystem-index-home"
+                >
+                  <Target className="mr-1.5 h-3.5 w-3.5" />
+                  The Ecosystem Index
                 </Button>
               </Link>
             </div>

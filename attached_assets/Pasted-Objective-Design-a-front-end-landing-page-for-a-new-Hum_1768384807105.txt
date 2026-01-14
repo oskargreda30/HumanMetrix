@@ -1,0 +1,188 @@
+Objective
+Design a front-end landing page for a new HumanMetrix service called “Team-Fit Diagnostic.”
+The page should explain the concept clearly to employers (HR leaders, founders, executives), guide them through how the service works, and make the value of team-level capability analysis immediately understandable.
+
+This is not a personality test. The page must emphasize capability balance at the team level and practical hiring and team-design outcomes.
+
+Target Audience
+
+Employers
+
+HR / People teams
+
+Founders and leadership teams
+
+Organizations struggling with talented teams that still fail
+
+Core Message
+
+Teams don’t fail because of the wrong personalities.
+They fail because critical human capabilities are unevenly distributed.
+
+HumanMetrix Team-Fit diagnoses how human capabilities are distributed across a team, identifies gaps and overload risks, and recommends how to rebalance teams through hiring or internal changes.
+
+Capabilities to Highlight
+
+Show clearly and consistently throughout the page:
+
+HA — High Agency
+
+IC — Intellectual Curiosity
+
+RA — Resilience
+
+EE — Empathy & Ethics
+
+GM — Growth Mindset
+
+IA — Interpersonal Agility
+
+Frame these as complementary capabilities, not traits or roles.
+
+Page Structure & Content Requirements
+1. Hero Section
+
+Headline focused on designing teams that actually work
+
+Sub-headline explaining team systems, not personality tests
+
+Primary CTA: Start Team Diagnostic
+
+Secondary CTA: View Sample Report
+
+Short credibility line (scenario-based, team-level, modern work)
+
+2. Problem → Solution
+
+Problem
+
+Talented teams still struggle
+
+Hiring “more of the same” doesn’t fix team gaps
+
+Personality/role tests don’t diagnose system-level issues
+
+Solution
+
+HumanMetrix analyzes team capability distribution
+
+Reveals gaps, overload risks, and imbalance patterns
+
+Enables targeted hiring and team design decisions
+
+3. How It Works (4-Step Flow)
+
+Step 1: Define Organization Context
+
+Company size
+
+Industry & sub-industry
+
+Team type
+
+Work mode (remote / hybrid / on-site)
+
+Optional mission or ethos text
+
+Step 2: Add Team Members
+
+Upload existing HumanMetrix reports (PDFs)
+
+Or send assessment links to team members
+
+Step 3: Generate Team Report
+
+System analyzes team-level capability patterns
+
+Client waits for report generation
+
+Step 4: Take Action
+
+Use insights to hire, rebalance, or develop the team
+
+4. What the Analysis Does (Behind the Scenes)
+
+Clearly explain that the system:
+
+Maps capability coverage across the team
+
+Identifies concentration & overload risks
+
+Detects imbalance patterns (e.g. high execution, low ethics)
+
+Compares the team against goal-specific profiles (innovation, stability, ethics, speed)
+
+Simulates ideal complement hires based on missing capabilities
+
+Avoid technical jargon; keep it outcome-focused.
+
+5. What the Client Receives
+
+Present as a clean list or grid:
+
+Team Capability Map (distribution, not averages)
+
+Overload & bottleneck alerts
+
+Risk & imbalance analysis
+
+Goal alignment assessment
+
+Ideal complement hire profiles
+
+Downloadable team report
+
+6. Differentiation Section
+
+Contrast HumanMetrix with:
+
+Personality tests
+
+Role-based models
+
+Key differentiators:
+
+Scenario-based, behavioral measurement
+
+Team-system diagnostics (not individual labels)
+
+Designed for modern, AI-era work
+
+Actionable hiring and team design recommendations
+
+Privacy-first (team-level by default)
+
+7. Sample Report Preview
+
+Include a visible or revealable mock preview that shows:
+
+Capability distribution across the six skills
+
+Highlighted risks or gaps
+
+Example hiring recommendation (“Ideal complement profile”)
+
+This helps employers visualize the outcome.
+
+8. Final Call to Action
+
+Clear closing message about seeing hidden team gaps
+
+CTA: Start Team Diagnostic
+
+Small note that this is an early / front-end experience if relevant
+
+Tone & Style Guidelines
+
+Professional, calm, and credible
+
+Evidence-informed (but not academic on the page)
+
+Avoid absolute claims or guarantees
+
+Emphasize insight, risk signals, and better decision-making
+
+Position HumanMetrix as a team diagnostic system, not HR fluff
+
+Output Expectation
+Design the page content, structure, and flow so it can later be implemented in front-end code. Focus on clarity, narrative, and employer relevance — not technical implementation.
