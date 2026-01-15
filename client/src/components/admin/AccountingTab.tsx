@@ -399,8 +399,8 @@ export default function AccountingTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Accounting</h2>
-          <p className="text-muted-foreground dark:text-slate-300">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Accounting</h2>
+          <p className="text-slate-300">
             Manage expenses, revenue tracking, and Xero integration
           </p>
         </div>
@@ -409,7 +409,7 @@ export default function AccountingTab() {
           size="sm"
           onClick={refetchAll}
           data-testid="button-refresh-accounting"
-          className="border-border text-foreground"
+          className="border-white/30 text-white hover:bg-white/10"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
