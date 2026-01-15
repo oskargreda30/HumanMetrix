@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -6,27 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
+import { SEO } from "@/lib/seo";
 
 export default function Privacy() {
-  useEffect(() => {
-    document.title = "Privacy Policy | HumanMetrix - AI Assessment Platform";
-    
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read HumanMetrix Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with GDPR and UK data protection laws."
-      );
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = "description";
-      meta.content = "Read HumanMetrix Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with GDPR and UK data protection laws.";
-      document.head.appendChild(meta);
-    }
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO 
+        title="Privacy Policy - Data Protection & GDPR"
+        description="Read HumanMetrix Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with GDPR and UK data protection laws."
+        canonical="/privacy"
+        keywords="privacy policy, GDPR compliance, data protection UK, personal data, HumanMetrix privacy"
+      />
       <Navigation />
       
       <main className="flex-grow py-8 md:py-16">

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useRoute, useLocation } from "wouter";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { SEO } from "@/lib/seo";
 
 export default function ResetPassword() {
   const [, params] = useRoute("/reset-password/:token");
@@ -76,6 +77,11 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <div className="min-h-screen flex flex-col bg-[#0a1628]">
+        <SEO 
+          title="Invalid Reset Link"
+          description="The password reset link is invalid or has expired. Request a new password reset link."
+          noindex={true}
+        />
         <Navigation />
         <main className="flex-grow flex items-center justify-center py-16">
           <div className="w-full max-w-md px-4">
@@ -96,6 +102,12 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
+      <SEO 
+        title="Reset Password - Create New Password"
+        description="Create a new password for your HumanMetrix account. Enter your new password to complete the reset process."
+        canonical="/reset-password"
+        noindex={true}
+      />
       <Navigation />
       <main className="flex-grow flex items-center justify-center py-16">
         <div className="w-full max-w-md px-4">

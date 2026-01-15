@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { isValidEmail } from "@/lib/validation";
 import { ArrowLeft, Mail } from "lucide-react";
+import { SEO } from "@/lib/seo";
 
 export default function ForgotPassword() {
   const { toast } = useToast();
@@ -55,6 +56,12 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
+      <SEO 
+        title="Forgot Password - Reset Your Account"
+        description="Reset your HumanMetrix account password. Enter your email to receive a password reset link."
+        canonical="/forgot-password"
+        noindex={true}
+      />
       <Navigation />
       <main className="flex-grow flex items-center justify-center py-16">
         <div className="w-full max-w-md px-4">

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
+import { SEO } from "@/lib/seo";
 
 import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
@@ -120,10 +120,12 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
 export default function Team() {
   return (
     <div className="min-h-screen flex flex-col relative">
-      <Helmet>
-        <title>Our Team | HumanMetrix</title>
-        <meta name="description" content="Meet the team behind HumanMetrix - experts in AI, HR, technology, and business development building the future of talent assessment." />
-      </Helmet>
+      <SEO 
+        title="Our Team - Meet the HumanMetrix Leadership"
+        description="Meet the team behind HumanMetrix - experts in AI, HR, technology, and business development building the future of talent assessment."
+        canonical="/team"
+        keywords="HumanMetrix team, leadership team, AI assessment experts, HR technology founders, startup team UK"
+      />
 
       {/* Background image with light grey overlay */}
       <div className="fixed inset-0 z-0">

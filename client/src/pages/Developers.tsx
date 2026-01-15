@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from "react";
-import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { SEO } from "@/lib/seo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,10 +64,12 @@ export default function Developers() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Helmet>
-        <title>Developer Documentation | HumanMetrix</title>
-        <meta name="description" content="Integrate HumanMetrix assessments into your platform with our embeddable widget, JavaScript SDK, and REST API." />
-      </Helmet>
+      <SEO 
+        title="Developer Documentation - API & SDK Integration"
+        description="Integrate HumanMetrix assessments into your platform with our embeddable widget, JavaScript SDK, and REST API. Developer documentation and code examples."
+        canonical="/developers"
+        keywords="HumanMetrix API, assessment integration, JavaScript SDK, REST API, developer documentation, embed assessments"
+      />
 
       <Navigation />
 

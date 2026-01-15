@@ -7,7 +7,7 @@ import ResultsPreview from "@/components/ResultsPreview";
 import PricingSection from "@/components/PricingSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
-import { SEO, FAQSchema } from "@/lib/seo";
+import { SEO, FAQSchema, WebSiteSchema, SoftwareApplicationSchema } from "@/lib/seo";
 
 const homeFAQs = [
   {
@@ -31,7 +31,13 @@ const homeFAQs = [
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
-      <SEO canonical="/" />
+      <SEO 
+        canonical="/" 
+        description="HumanMetrix (Human Metrix) is the UK's leading AI-powered psychometric testing platform. Measure candidate potential with FIT, AI Readiness, Prompt Architecture & AIQ assessments. Pre-employment testing trusted by recruiters."
+        keywords="HumanMetrix, Human Metrix, human metrics, psychometric tests UK, pre-employment testing, candidate assessment, AI assessment platform, recruitment testing, behavioural assessment, AI skills test, AI readiness assessment"
+      />
+      <WebSiteSchema />
+      <SoftwareApplicationSchema />
       <FAQSchema faqs={homeFAQs} />
       <Navigation />
       <main className="flex-grow">

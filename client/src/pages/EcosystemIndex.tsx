@@ -40,7 +40,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
-import { SEO } from "@/lib/seo";
+import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
 
 const capabilities = [
   { code: "HA", name: "High Agency", color: "bg-blue-500", description: "Drive and self-direction" },
@@ -105,9 +105,25 @@ export default function EcosystemIndex() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
-        title="The Ecosystem Index - Team Capability Diagnostic | HumanMetrix"
-        description="Diagnose how human capabilities are distributed across your team. Identify gaps, overload risks, and get actionable hiring recommendations."
+        title="The Ecosystem Index - Team Capability Diagnostic"
+        description="Diagnose how human capabilities are distributed across your team. Identify capability gaps, overload risks, and get actionable hiring recommendations. Team diagnostic tool for modern HR."
         canonical="/ecosystem-index"
+        keywords="team diagnostic, capability assessment, team analysis, HR analytics, workforce planning, team composition, hiring recommendations, team capability mapping"
+      />
+      <ServiceSchema 
+        name="The Ecosystem Index - Team Capability Diagnostic"
+        description="Team-level diagnostic tool that maps capability distribution, identifies gaps and risks, and provides actionable recommendations for hiring and team design."
+        url="/ecosystem-index"
+      />
+      <HowToSchema 
+        name="How to Diagnose Your Team's Capability Distribution"
+        description="Use The Ecosystem Index to analyze your team's capability distribution and get actionable insights"
+        steps={[
+          { name: "Define Organization Context", text: "Enter your company details, industry, and team information" },
+          { name: "Add Team Members", text: "Upload existing HumanMetrix reports or send assessment invitations" },
+          { name: "Generate Report", text: "Our AI analyzes team-level capability patterns" },
+          { name: "Take Action", text: "Use insights to hire, rebalance, or develop your team" }
+        ]}
       />
       
       <div className="fixed inset-0 z-0">

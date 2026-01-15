@@ -34,7 +34,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import dashboardBg from "@assets/image_1763608498774.png";
-import { SEO } from "@/lib/seo";
+import { SEO, FAQSchema } from "@/lib/seo";
 
 const features = [
   {
@@ -198,10 +198,12 @@ export default function ForEmployers() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
-        title="For Employers - Pre-Employment Testing UK | HumanMetrix"
-        description="HumanMetrix for employers: AI candidate assessments, compare human metrics analytics & make data-driven hiring decisions. UK trusted."
+        title="For Employers - Pre-Employment Testing UK"
+        description="HumanMetrix for employers: AI-powered candidate assessments, compare human metrics analytics & make data-driven hiring decisions. Pre-employment psychometric testing trusted by UK recruiters."
         canonical="/for-employers"
+        keywords="pre-employment testing, candidate assessment, recruitment testing UK, AI hiring tools, psychometric testing employers, HR assessment platform, talent acquisition, hiring analytics"
       />
+      <FAQSchema faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
       {/* Background image with light grey overlay */}
       <div className="fixed inset-0 z-0">
         <div 

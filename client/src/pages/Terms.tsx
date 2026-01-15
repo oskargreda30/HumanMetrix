@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -6,27 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight, ArrowLeft } from "lucide-react";
+import { SEO } from "@/lib/seo";
 
 export default function Terms() {
-  useEffect(() => {
-    document.title = "Terms & Conditions | HumanMetrix - AI Assessment Platform";
-    
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read the complete Terms & Conditions for HumanMetrix AI Assessment Platform. Understand your rights, usage guidelines, and our commitments to data protection and privacy."
-      );
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = "description";
-      meta.content = "Read the complete Terms & Conditions for HumanMetrix AI Assessment Platform. Understand your rights, usage guidelines, and our commitments to data protection and privacy.";
-      document.head.appendChild(meta);
-    }
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO 
+        title="Terms & Conditions - Usage Agreement"
+        description="Read the complete Terms & Conditions for HumanMetrix AI Assessment Platform. Understand your rights, usage guidelines, and our commitments to data protection."
+        canonical="/terms"
+        keywords="terms and conditions, terms of service, usage agreement, HumanMetrix terms, legal agreement"
+      />
       <Navigation />
       
       {/* Back button header */}

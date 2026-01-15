@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 import { isValidEmail } from "@/lib/validation";
+import { SEO } from "@/lib/seo";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -160,6 +161,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
+      <SEO 
+        title="Login - Access Your Assessments"
+        description="Sign in to HumanMetrix to access your psychometric assessments and results. View your FIT, AI Readiness, Prompt Architecture and AIQ scores."
+        canonical="/login"
+        noindex={true}
+      />
       <Navigation />
       <main className="flex-grow flex items-center justify-center py-16">
         <div className="w-full max-w-md px-4">

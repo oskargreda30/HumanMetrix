@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
 import { isValidEmail, isValidName } from "@/lib/validation";
+import { SEO } from "@/lib/seo";
 
 type Assessment = {
   id: string;
@@ -245,6 +246,12 @@ export default function Purchase() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO 
+        title="Buy Psychometric Tests - Start Assessment"
+        description="Start your HumanMetrix psychometric assessments. Select FIT, AI Readiness, Prompt Architecture or AIQ tests. Complete free, pay only to unlock results."
+        canonical="/purchase"
+        keywords="buy psychometric tests, online assessments, pre-employment testing purchase, AI readiness test, FIT assessment"
+      />
       <Navigation />
       
       <main className="flex-grow py-16">
