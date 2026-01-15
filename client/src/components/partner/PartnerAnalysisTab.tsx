@@ -377,6 +377,7 @@ export default function PartnerAnalysisTab() {
                   >
                     <Checkbox
                       checked={selectedCandidates.includes(candidate.user.id)}
+                      onClick={(e) => e.stopPropagation()}
                       onCheckedChange={() => toggleCandidate(candidate.user.id)}
                     />
                     <div className="flex-1 min-w-0">
