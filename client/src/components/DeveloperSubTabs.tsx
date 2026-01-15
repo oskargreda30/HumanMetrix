@@ -94,6 +94,7 @@ export function DeveloperSubTabs({
   const [widgetAssessment, setWidgetAssessment] = useState('fit');
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [showWidgetPreview, setShowWidgetPreview] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(false);
 
   const isSubscriptionBilling = billingType === 'subscription';
   const canCreateLiveKey = !isSubscriptionBilling || hasCardOnFile === true;
@@ -534,7 +535,12 @@ export function DeveloperSubTabs({
               {/* Preview Button */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={() => setShowWidgetPreview(!showWidgetPreview)}
+                  onClick={() => {
+                    if (!showWidgetPreview) {
+                      setIframeLoading(true);
+                    }
+                    setShowWidgetPreview(!showWidgetPreview);
+                  }}
                   disabled={!testApiKey}
                   className="bg-cyan-600 hover:bg-cyan-700"
                   data-testid="button-toggle-widget-preview"
@@ -560,15 +566,24 @@ export function DeveloperSubTabs({
                     <Badge variant="outline" className="text-xs">Test Mode - No credits consumed</Badge>
                   </div>
                   <div 
-                    className={`rounded-lg border-2 overflow-hidden ${widgetTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}
-                    style={{ height: '500px' }}
+                    className={`relative rounded-lg border-2 overflow-hidden ${widgetTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}
+                    style={{ height: '650px' }}
                     data-testid="widget-preview-container"
                   >
+                    {iframeLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-800/90 z-10">
+                        <div className="text-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-cyan-500 mx-auto mb-2" />
+                          <p className="text-slate-400 text-sm">Loading assessment...</p>
+                        </div>
+                      </div>
+                    )}
                     <iframe
                       src={`/embed/assessment?demo=true&type=${widgetAssessment}&theme=${widgetTheme}`}
                       className="w-full h-full border-0"
                       title="Widget Preview"
                       data-testid="widget-preview-iframe"
+                      onLoad={() => setIframeLoading(false)}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
