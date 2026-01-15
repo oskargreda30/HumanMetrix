@@ -139,9 +139,15 @@ export default function ErrorsTab() {
   };
 
   const handleRefresh = () => {
+    // Invalidate all error-related queries to clear cache
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0] as string;
+      return key?.includes('/api/admin/errors');
+    }});
+    // Also explicitly refetch all data
     refetchStats();
     refetchErrors();
-    toast({ title: "Refreshed error logs" });
+    toast({ title: "Data refreshed", description: "All error data has been reloaded" });
   };
 
   if (detailError) {

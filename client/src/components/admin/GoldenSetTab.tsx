@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, CheckCircle2, XCircle, Play, RefreshCw, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -106,6 +107,7 @@ interface HistoryResponse {
 }
 
 export default function GoldenSetTab() {
+  const { toast } = useToast();
   const [lastRunResult, setLastRunResult] = useState<RunEvaluationResponse | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentPrompt, setCurrentPrompt] = useState("");
@@ -115,6 +117,15 @@ export default function GoldenSetTab() {
   const { data, isLoading, refetch } = useQuery<GoldenSetResultsResponse>({
     queryKey: ["/api/admin/golden-set/results"],
   });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0] as string;
+      return key?.includes('/api/admin/golden-set');
+    }});
+    refetch();
+    toast({ title: "Data refreshed", description: "Golden set results have been reloaded" });
+  };
 
   const { data: historyData } = useQuery<HistoryResponse>({
     queryKey: ["/api/admin/golden-set/history"],
@@ -217,7 +228,7 @@ export default function GoldenSetTab() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refetch()}
+              onClick={handleRefresh}
               disabled={isEvaluating || runMutation.isPending || resetMutation.isPending}
               data-testid="button-refresh-results"
             >

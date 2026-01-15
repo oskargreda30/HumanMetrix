@@ -100,7 +100,11 @@ export default function SystemSettingsTab() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => refetch()}
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/admin/system-settings"] });
+            refetch();
+            toast({ title: "Data refreshed", description: "Settings have been reloaded" });
+          }}
           className="gap-2"
           data-testid="button-refresh-settings"
         >

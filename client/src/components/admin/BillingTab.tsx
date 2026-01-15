@@ -263,10 +263,17 @@ export default function BillingTab() {
   };
 
   const handleRefresh = () => {
+    // Invalidate all billing-related queries to clear cache
     queryClient.invalidateQueries({ predicate: (query) => {
       const key = query.queryKey[0] as string;
       return key?.startsWith('/api/admin/billing');
     }});
+    // Also explicitly refetch all data
+    refetchStats();
+    refetchTransactions();
+    refetchPromoCodes();
+    refetchRequests();
+    toast({ title: "Data refreshed", description: "All billing data has been reloaded" });
   };
 
   return (

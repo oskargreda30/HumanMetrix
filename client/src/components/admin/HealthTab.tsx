@@ -182,11 +182,17 @@ export default function HealthTab() {
   };
 
   const handleRefresh = () => {
+    // Invalidate all health-related queries to clear cache
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0] as string;
+      return key?.includes('/api/admin/health') || key?.includes('/api/admin/errors') || key?.includes('/api/admin/latency');
+    }});
+    // Also explicitly refetch all data
     refetchStats();
     refetchErrors();
     refetchHealth();
     refetchLatency();
-    toast({ title: "Refreshed health data" });
+    toast({ title: "Data refreshed", description: "All health data has been reloaded" });
   };
 
   const getOverallHealthStatus = () => {

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,6 +115,7 @@ const ASSESSMENT_NAMES: Record<string, string> = {
 };
 
 export default function AnalyticsTab() {
+  const { toast } = useToast();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [subTab, setSubTab] = useState("overview");
 
@@ -120,6 +123,13 @@ export default function AnalyticsTab() {
     queryKey: ["/api/admin/analytics"],
     refetchInterval: autoRefresh ? 30000 : false,
   });
+
+  const handleRefresh = () => {
+    // Invalidate analytics query to clear cache
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics"] });
+    refetch();
+    toast({ title: "Data refreshed", description: "Analytics data has been reloaded" });
+  };
 
   if (isLoading) {
     return (
@@ -168,7 +178,7 @@ export default function AnalyticsTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={handleRefresh}
             disabled={isFetching}
             data-testid="button-refresh-analytics"
           >

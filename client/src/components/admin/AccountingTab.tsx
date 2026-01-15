@@ -387,12 +387,19 @@ export default function AccountingTab() {
   };
 
   const refetchAll = () => {
+    // Invalidate all accounting-related queries to clear cache
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0] as string;
+      return key?.includes('/api/admin/xero') || key?.includes('/api/admin/expenses') || key?.includes('/api/admin/revenue');
+    }});
+    // Also explicitly refetch all data
     refetchXero();
     refetchExpenseStats();
     refetchRevenueStats();
     refetchExpenses();
     refetchUnsynced();
     refetchLogs();
+    toast({ title: "Data refreshed", description: "All accounting data has been reloaded" });
   };
 
   return (
