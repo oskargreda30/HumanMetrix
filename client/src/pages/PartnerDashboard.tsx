@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -3286,11 +3286,6 @@ export default function PartnerDashboard() {
                     </CardHeader>
                   </Card>
 
-                  {/* Card on File for PAYG Partners */}
-                  {account?.partner?.billingType === 'payg' && (
-                    <PrepaidCardManagement partnerId={account.partner.id} currency={account.partner.currency} billingType="payg" />
-                  )}
-
                   {/* Pending Billing Change Request Alert */}
                   {billingChangeData?.pendingRequest && (
                     <Card className="border-2 border-orange-500 bg-orange-500/20 dark:bg-orange-600/25">
@@ -3587,6 +3582,89 @@ export default function PartnerDashboard() {
                         </CardContent>
                       </Card>
                     </div>
+                  )}
+
+                  {/* PAYG Credit Packages for Purchase */}
+                  {account?.partner?.billingType === 'payg' && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Package className="h-5 w-5" />
+                          Purchase Test Packages
+                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates." />
+                        </CardTitle>
+                        <CardDescription>
+                          Buy test credits with bulk discounts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {pricingLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
+                        ) : pricing?.packages && pricing.packages.length > 0 ? (
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {pricing.packages.map((pkg) => {
+                              const isZeroDecimal = pricing.isZeroDecimal;
+                              const displayPrice = isZeroDecimal ? pkg.price : pkg.price / 100;
+                              const displayPerTest = isZeroDecimal ? pkg.pricePerTest : pkg.pricePerTest / 100;
+                              const currencySymbol = pricing.currency === 'GBP' ? '£' : 
+                                pricing.currency === 'USD' ? '$' : 
+                                pricing.currency === 'EUR' ? '€' : 
+                                pricing.currency === 'AUD' ? 'A$' : 
+                                pricing.currency === 'SGD' ? 'S$' : 
+                                pricing.currency === 'HKD' ? 'HK$' : '£';
+                              
+                              return (
+                                <div 
+                                  key={pkg.size} 
+                                  className="border rounded-lg p-4 flex flex-col"
+                                  data-testid={`package-${pkg.size}`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-semibold text-lg">{pkg.name}</span>
+                                    {pkg.size >= 100 && (
+                                      <Badge variant="secondary" className="bg-green-500/20 text-green-600">
+                                        Best Value
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-2xl font-bold mb-1">
+                                    {currencySymbol}{displayPrice.toFixed(2)}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground mb-4">
+                                    {currencySymbol}{displayPerTest.toFixed(2)} per test
+                                  </div>
+                                  <Button
+                                    className="mt-auto w-full"
+                                    onClick={() => handlePurchase(pkg.size)}
+                                    disabled={purchasingPackageSize === pkg.size}
+                                    data-testid={`button-purchase-${pkg.size}`}
+                                  >
+                                    {purchasingPackageSize === pkg.size ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Processing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        Buy {pkg.size} Tests
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="py-8 text-center text-muted-foreground">
+                            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No packages available</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Auto-Bill Billing Stats */}
