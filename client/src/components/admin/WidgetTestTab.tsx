@@ -48,6 +48,7 @@ export default function WidgetTestTab() {
   const [currentSession, setCurrentSession] = useState<TestSession | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [widgetTheme, setWidgetTheme] = useState<string>("light");
+  const [iframeLoading, setIframeLoading] = useState(false);
 
   const { data: partners, isLoading: partnersLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
@@ -80,6 +81,7 @@ export default function WidgetTestTab() {
       return response.json();
     },
     onSuccess: (data) => {
+      setIframeLoading(true); // Start showing loading indicator for iframe
       setCurrentSession(data);
       toast({
         title: "Test Session Created",
@@ -433,12 +435,23 @@ export default function WidgetTestTab() {
             </CardHeader>
             <CardContent>
               {currentSession ? (
-                <iframe
-                  src={getEmbedUrl()}
-                  className="w-full min-h-[500px] bg-white rounded-lg border border-slate-700"
-                  data-testid="widget-preview-iframe"
-                  title="Assessment Widget Preview"
-                />
+                <div className="relative">
+                  {iframeLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white rounded-lg border border-slate-700 z-10">
+                      <div className="text-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-cyan-500 mx-auto mb-2" />
+                        <p className="text-slate-500 text-sm">Loading assessment...</p>
+                      </div>
+                    </div>
+                  )}
+                  <iframe
+                    src={getEmbedUrl()}
+                    className="w-full min-h-[500px] bg-white rounded-lg border border-slate-700"
+                    data-testid="widget-preview-iframe"
+                    title="Assessment Widget Preview"
+                    onLoad={() => setIframeLoading(false)}
+                  />
+                </div>
               ) : (
                 <div
                   className="min-h-[400px] bg-slate-900/50 rounded-lg border border-slate-700 flex items-center justify-center"

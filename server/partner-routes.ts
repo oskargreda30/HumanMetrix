@@ -615,11 +615,14 @@ export function registerPartnerRoutes(app: Express) {
           return res.status(400).json({ error: "Session has expired" });
         }
         
-        const partner = await storage.getPartnerAccount(session.partnerId);
+        // Parallelize partner and API key lookups for faster response
+        const [partner, apiKey] = await Promise.all([
+          storage.getPartnerAccount(session.partnerId),
+          session.apiKeyId ? storage.getPartnerApiKey(session.apiKeyId) : Promise.resolve(null),
+        ]);
         
         // Check if this session was created with a test API key
         // First check the persisted flag, then fallback to checking the API key environment
-        const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
         const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
         const response: any = {
