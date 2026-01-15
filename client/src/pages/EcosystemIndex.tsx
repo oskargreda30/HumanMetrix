@@ -106,14 +106,14 @@ export default function EcosystemIndex() {
       />
       <HowToSchema 
         name="How to Diagnose Your Team's Capability Distribution"
-        description="Use The Ecosystem Index to analyze your team's capability distribution and get actionable insights"
+        description="Use The Ecosystem Index consulting service to analyze your team's capability distribution and get actionable insights"
         steps={[
           { name: "Login or Create Account", text: "Sign in to your account or create a new one to get started" },
           { name: "Define Mission & Ethos", text: "Share your company mission statement for AI-powered analysis" },
           { name: "Define Organization Context", text: "Enter your company details, industry, and team information" },
           { name: "Add Team Members", text: "Upload existing HumanMetrix reports or send assessment invitations" },
-          { name: "Select Assessments", text: "Choose which assessments team members should complete" },
-          { name: "Generate Report & Pay", text: "Submit payment and download your comprehensive team report" }
+          { name: "Team FIT Assessment", text: "Team members complete the FIT behavioral assessment" },
+          { name: "Schedule Consultation & Generate Report", text: "Book your pre-consultation to begin the team diagnostic process and receive your comprehensive report" }
         ]}
       />
       
@@ -433,69 +433,64 @@ export default function EcosystemIndex() {
               </Card>
             </div>
 
-            {/* Step 5: Select Assessments */}
+            {/* Step 5: FIT Assessment */}
             <div className="mb-12" data-testid="step-5-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                   5
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-5-title">Select Assessments</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-5-description">Choose which assessments team members should complete</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-5-title">Team FIT Assessment</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-5-description">Team members complete the FIT behavioral assessment</p>
                 </div>
               </div>
               
               <Card className="p-6 md:p-8" data-testid="step-5-form">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-fit">
-                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Heart className="h-5 w-5 text-blue-500" />
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Heart className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-semibold mb-1">FIT Assessment</h4>
-                      <p className="text-xs text-muted-foreground">Measures 6 core behavioral skills including High Agency and Empathy</p>
+                      <h4 className="text-lg font-semibold mb-2">FIT Assessment</h4>
+                      <p className="text-muted-foreground mb-4">
+                        The FIT Assessment measures 6 core behavioral capabilities that drive team performance 
+                        and collaboration effectiveness.
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {[
+                          { code: "HA", name: "High Agency", color: "bg-blue-500" },
+                          { code: "IC", name: "Intellectual Curiosity", color: "bg-purple-500" },
+                          { code: "RA", name: "Resilience", color: "bg-green-500" },
+                          { code: "EE", name: "Empathy & Ethics", color: "bg-rose-500" },
+                          { code: "GM", name: "Growth Mindset", color: "bg-amber-500" },
+                          { code: "IA", name: "Interpersonal Agility", color: "bg-cyan-500" },
+                        ].map((cap, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm">
+                            <div className={`h-3 w-3 rounded ${cap.color}`} />
+                            <span className="text-muted-foreground">{cap.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-ai-readiness">
-                    <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                      <Brain className="h-5 w-5 text-purple-500" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-1">AI Readiness</h4>
-                      <p className="text-xs text-muted-foreground">Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration</p>
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-prompt">
-                    <div className="h-10 w-10 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                      <Zap className="h-5 w-5 text-cyan-500" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-1">Prompt Architecture</h4>
-                      <p className="text-xs text-muted-foreground">7 progressive levels testing prompt design skills</p>
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-aiq">
-                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <Shield className="h-5 w-5 text-amber-500" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-1">AIQ Assessment</h4>
-                      <p className="text-xs text-muted-foreground">Tests understanding of AI ethics, bias, and responsible deployment</p>
-                    </div>
+                  <div className="flex flex-col items-center p-4 bg-muted/50 rounded-lg md:w-40">
+                    <span className="text-2xl font-bold text-primary">~15</span>
+                    <span className="text-xs text-muted-foreground text-center">minutes per team member</span>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* Step 6: Generate Team Report and Submit Payment */}
+            {/* Step 6: Schedule Consultation & Generate Report */}
             <div data-testid="step-6-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                   6
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Generate Team Report and Submit Payment</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Complete payment to generate and download your comprehensive report</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Schedule Consultation & Generate Report</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Book your pre-consultation to begin the team diagnostic process</p>
                 </div>
               </div>
               
@@ -505,24 +500,36 @@ export default function EcosystemIndex() {
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Order Summary
+                      Consulting Package
                     </h4>
                     <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Team Diagnostic Report</span>
-                        <span className="font-medium">£199</span>
+                        <span className="text-muted-foreground">Pre-Consultation Session</span>
+                        <span className="font-medium text-green-600">Included</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Team Members (8)</span>
-                        <span className="font-medium">Included</span>
+                        <span className="text-muted-foreground">Team FIT Assessments</span>
+                        <span className="font-medium text-green-600">Included</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">AI-Powered Team Analysis</span>
+                        <span className="font-medium text-green-600">Included</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Post-Consultation Debrief</span>
+                        <span className="font-medium text-green-600">Included</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Team Members</span>
+                        <span className="font-medium">Up to 20</span>
                       </div>
                       <div className="border-t pt-3 flex justify-between">
                         <span className="font-semibold">Total</span>
-                        <span className="font-bold text-lg">£199</span>
+                        <span className="font-bold text-lg">Contact for Pricing</span>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      You'll receive instant access to download your team diagnostic report after payment.
+                      Pricing varies based on team size and requirements. Our consultants will provide a custom quote.
                     </p>
                   </div>
                   
@@ -530,19 +537,19 @@ export default function EcosystemIndex() {
                   <div className="flex flex-col justify-center items-center text-center space-y-4">
                     <Sparkles className="h-12 w-12 text-primary" />
                     <div>
-                      <h4 className="text-lg font-semibold mb-2" data-testid="text-step-6-card-title">Ready to Analyze</h4>
+                      <h4 className="text-lg font-semibold mb-2" data-testid="text-step-6-card-title">Full-Service Team Diagnostic</h4>
                       <p className="text-muted-foreground text-sm max-w-sm" data-testid="text-step-6-card-description">
-                        Once all team members have completed their assessments, 
-                        submit payment to generate your comprehensive team report.
+                        Your package includes expert consultation before and after your team analysis 
+                        to ensure maximum value from your insights.
                       </p>
                     </div>
                     <Button size="lg" className="w-full max-w-xs" data-testid="button-submit-payment">
-                      Submit Payment & Generate Report
+                      Request Consultation
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Shield className="h-3 w-3" />
-                      <span>Secure payment via Stripe</span>
+                      <span>Custom pricing for your team</span>
                     </div>
                   </div>
                 </div>

@@ -251,31 +251,22 @@ export default function ForEmployers() {
               Make better hiring decisions with objective, AI-powered assessments that measure both 
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
             </p>
-            <div className="flex flex-col gap-4 justify-center items-center">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-                <Button 
-                  size="lg" 
-                  onClick={() => openDialog('demo')}
-                  data-testid="button-request-demo"
-                >
-                  Request Demo
+            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+              <Button 
+                size="lg" 
+                onClick={() => openDialog('demo')}
+                data-testid="button-request-demo"
+              >
+                Request Demo
+              </Button>
+              <Link href="/assessments">
+                <Button size="lg" variant="outline" data-testid="button-view-assessments">
+                  View Assessments
                 </Button>
-                <Link href="/assessments">
-                  <Button size="lg" variant="outline" data-testid="button-view-assessments">
-                    View Assessments
-                  </Button>
-                </Link>
-                <Link href="/#sample-reports">
-                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
-                    View Sample Reports
-                  </Button>
-                </Link>
-              </div>
-              <Link href="/ecosystem-index">
-                <Button size="lg" variant="outline" className="border-primary/40 bg-primary/5" data-testid="button-ecosystem-index">
-                  <Target className="mr-2 h-4 w-4" />
-                  The Ecosystem Index
-                  <Badge variant="outline" className="ml-2 text-xs">New</Badge>
+              </Link>
+              <Link href="/#sample-reports">
+                <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                  View Sample Reports
                 </Button>
               </Link>
             </div>
@@ -468,6 +459,111 @@ export default function ForEmployers() {
                 </Card>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Consulting Services Section */}
+        <section className="py-12 md:py-24" data-testid="section-consulting">
+          <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-8 md:mb-12">
+              <div className="inline-block mb-4">
+                <Badge variant="outline" className="px-3 py-1 text-sm border-primary/40 bg-primary/5">
+                  Consulting Services
+                </Badge>
+              </div>
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
+                Strategic Team Consulting
+              </h2>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+                Go beyond individual assessments with our expert-led team diagnostic services
+              </p>
+            </div>
+
+            <Card className="p-6 md:p-8 lg:p-10 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Target className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg md:text-xl font-semibold">The Ecosystem Index</h3>
+                      <Badge variant="outline" className="text-xs">New Service</Badge>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    A comprehensive team capability diagnostic that maps how skills are distributed across your team, 
+                    identifies gaps and concentration risks, and provides actionable recommendations for hiring and development.
+                  </p>
+                  
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Pre-Consultation Session</span>
+                        <p className="text-sm text-muted-foreground">Define goals, scope, and team context with our consultants</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Team FIT Assessment</span>
+                        <p className="text-sm text-muted-foreground">All team members complete the FIT behavioral assessment</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">AI-Powered Team Analysis</span>
+                        <p className="text-sm text-muted-foreground">Comprehensive capability mapping and risk identification</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Post-Consultation Debrief</span>
+                        <p className="text-sm text-muted-foreground">Review findings and develop an actionable implementation plan</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Link href="/ecosystem-index">
+                    <Button size="lg" data-testid="button-ecosystem-index">
+                      Learn More About The Ecosystem Index
+                      <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="hidden md:flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl">
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    {[
+                      { label: "HA", color: "bg-blue-500" },
+                      { label: "IC", color: "bg-purple-500" },
+                      { label: "RA", color: "bg-green-500" },
+                      { label: "EE", color: "bg-rose-500" },
+                      { label: "GM", color: "bg-amber-500" },
+                      { label: "IA", color: "bg-cyan-500" },
+                    ].map((cap, idx) => (
+                      <div key={idx} className={`h-12 w-12 rounded-lg ${cap.color} flex items-center justify-center text-white text-xs font-bold shadow-md`}>
+                        {cap.label}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Map your team's 6 core capabilities
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         </section>
 
