@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,10 @@ import {
   Brain,
   Heart,
   Zap,
-  RefreshCw
+  RefreshCw,
+  Calendar,
+  Clock,
+  Info
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
@@ -91,6 +95,20 @@ const differentiators = [
 ];
 
 export default function EcosystemIndex() {
+  // State to track if consultation has been scheduled
+  // TODO: Replace with actual Calendly scheduling detection when link is provided
+  const [isConsultationScheduled, setIsConsultationScheduled] = useState(false);
+  
+  // Placeholder Calendly URL - to be updated with actual link
+  const CALENDLY_URL = ""; // Will be provided by user
+  
+  const handleScheduleClick = () => {
+    if (CALENDLY_URL) {
+      window.open(CALENDLY_URL, '_blank');
+      // Note: In production, use Calendly's embed or webhook to detect scheduling
+    }
+  };
+  
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
@@ -496,7 +514,7 @@ export default function EcosystemIndex() {
               
               <Card className="p-6 md:p-8" data-testid="step-6-payment">
                 <div className="grid md:grid-cols-2 gap-8">
-                  {/* Payment Summary */}
+                  {/* Package Summary */}
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <FileText className="h-4 w-4" />
@@ -533,23 +551,66 @@ export default function EcosystemIndex() {
                     </p>
                   </div>
                   
-                  {/* Payment Action */}
-                  <div className="flex flex-col justify-center items-center text-center space-y-4">
-                    <Sparkles className="h-12 w-12 text-primary" />
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2" data-testid="text-step-6-card-title">Full-Service Team Diagnostic</h4>
-                      <p className="text-muted-foreground text-sm max-w-sm" data-testid="text-step-6-card-description">
-                        Your package includes expert consultation before and after your team analysis 
-                        to ensure maximum value from your insights.
-                      </p>
+                  {/* Schedule & Submit */}
+                  <div className="flex flex-col justify-center space-y-6">
+                    {/* Calendly Scheduling Section */}
+                    <div className="p-4 border rounded-lg bg-background" data-testid="calendly-section">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isConsultationScheduled ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'}`}>
+                          {isConsultationScheduled ? <CheckCircle className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <h5 className="font-semibold text-sm">Schedule Pre-Consultation</h5>
+                          <p className="text-xs text-muted-foreground">
+                            {isConsultationScheduled ? 'Meeting scheduled successfully' : 'Book a 30-minute discovery call'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant={isConsultationScheduled ? "outline" : "default"}
+                        className="w-full"
+                        onClick={handleScheduleClick}
+                        disabled={!CALENDLY_URL}
+                        data-testid="button-schedule-calendly"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {isConsultationScheduled ? 'Reschedule Meeting' : 'Schedule Meeting'}
+                      </Button>
+                      {!CALENDLY_URL && (
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          Scheduling link coming soon
+                        </p>
+                      )}
                     </div>
-                    <Button size="lg" className="w-full max-w-xs" data-testid="button-submit-payment">
-                      Request Consultation
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Shield className="h-3 w-3" />
-                      <span>Custom pricing for your team</span>
+                    
+                    {/* Request Consultation Button */}
+                    <div className="text-center space-y-3">
+                      <Button 
+                        size="lg" 
+                        className="w-full" 
+                        disabled={!isConsultationScheduled}
+                        data-testid="button-submit-payment"
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Request Consultation
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                      
+                      {/* Explanatory Note */}
+                      {!isConsultationScheduled && (
+                        <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-left" data-testid="scheduling-note">
+                          <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground">
+                            Please schedule a pre-consultation meeting above before requesting the full consultation package. 
+                            This initial call helps us understand your team's needs and provide accurate pricing.
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Shield className="h-3 w-3" />
+                        <span>Custom pricing for your team</span>
+                      </div>
                     </div>
                   </div>
                 </div>
