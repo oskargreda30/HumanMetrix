@@ -4474,12 +4474,21 @@ export default function PartnerDashboard() {
                         <div className="h-80">
                           {analytics.testsOverTime.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={analytics.testsOverTime} barCategoryGap={analytics.testsOverTime.length === 1 ? "80%" : "20%"}>
+                              <BarChart 
+                                data={analytics.testsOverTime} 
+                                barCategoryGap={analytics.testsOverTime.length === 1 ? "90%" : analytics.testsOverTime.length <= 3 ? "40%" : "20%"}
+                                margin={analytics.testsOverTime.length === 1 ? { left: 40, right: 40 } : undefined}
+                              >
                                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                 <XAxis dataKey="date" className="text-xs" />
                                 <YAxis className="text-xs" allowDecimals={false} />
                                 <RechartsTooltip />
-                                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={80} />
+                                <Bar 
+                                  dataKey="count" 
+                                  fill="hsl(var(--primary))" 
+                                  radius={[4, 4, 0, 0]} 
+                                  maxBarSize={analytics.testsOverTime.length === 1 ? 60 : 80} 
+                                />
                               </BarChart>
                             </ResponsiveContainer>
                           ) : (
