@@ -535,6 +535,7 @@ export default function PartnersTab() {
   const [countryHighlightIndex, setCountryHighlightIndex] = useState(0);
   const [phoneCodeHighlightIndex, setPhoneCodeHighlightIndex] = useState(0);
   const [currencySearch, setCurrencySearch] = useState<string>("");
+  const [createPricePerAssessment, setCreatePricePerAssessment] = useState<number>(500);
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
   const [currencyHighlightIndex, setCurrencyHighlightIndex] = useState(0);
   const [editCurrencySearch, setEditCurrencySearch] = useState<string>("");
@@ -2993,11 +2994,19 @@ export default function PartnersTab() {
                       ? `${CURRENCIES[selectedCurrency].code} minor units` 
                       : 'minor units'})
                   </Label>
-                  <Input id="pricePerAssessment" name="pricePerAssessment" type="number" defaultValue={500} className="bg-slate-800 border-slate-600" data-testid="input-partner-price" />
+                  <Input 
+                    id="pricePerAssessment" 
+                    name="pricePerAssessment" 
+                    type="number" 
+                    value={createPricePerAssessment}
+                    onChange={(e) => setCreatePricePerAssessment(parseInt(e.target.value) || 0)}
+                    className="bg-slate-800 border-slate-600" 
+                    data-testid="input-partner-price" 
+                  />
                   <p className="text-xs text-slate-400">
                     {selectedCurrency && CURRENCIES[selectedCurrency] 
-                      ? `500 = ${CURRENCIES[selectedCurrency].symbol}${CURRENCIES[selectedCurrency].decimalPlaces === 0 ? '500' : '5.00'}`
-                      : '500 = 5.00 in major units'}
+                      ? `${createPricePerAssessment} = ${CURRENCIES[selectedCurrency].symbol}${CURRENCIES[selectedCurrency].decimalPlaces === 0 ? createPricePerAssessment.toLocaleString() : (createPricePerAssessment / 100).toFixed(2)}`
+                      : `${createPricePerAssessment} = ${(createPricePerAssessment / 100).toFixed(2)} in major units`}
                   </p>
                 </div>
                 

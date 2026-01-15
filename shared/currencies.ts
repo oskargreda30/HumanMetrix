@@ -234,7 +234,7 @@ export const CURRENCIES: Record<string, CurrencyConfig> = {
     symbolPosition: 'before',
     decimalSeparator: '.',
     thousandsSeparator: ',',
-    decimalPlaces: 0,
+    decimalPlaces: 2, // PHP has centavos (100 centavos = 1 peso)
   },
   INR: {
     code: 'INR',
