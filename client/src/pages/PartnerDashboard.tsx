@@ -4656,23 +4656,58 @@ export default function PartnerDashboard() {
                                     View Results
                                   </Button>
                                 )}
-                                {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical')) && (
+                                {notif.type === 'credits_purchased' && account?.partner?.billingType === 'payg' && (
                                   <Button 
                                     size="sm" 
                                     className="mt-2"
                                     onClick={() => {
                                       setActiveTab('billing');
                                       setTimeout(() => {
-                                        const paymentSection = document.querySelector('[data-testid="section-payment-methods"]');
-                                        if (paymentSection) {
-                                          paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        const packagesSection = document.querySelector('[data-testid="package-10"]');
+                                        if (packagesSection) {
+                                          packagesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                      }, 100);
+                                    }}
+                                    data-testid={`button-purchase-more-${notif.id}`}
+                                  >
+                                    <ShoppingCart className="h-4 w-4 mr-1.5" />
+                                    Purchase More Credits
+                                  </Button>
+                                )}
+                                {(notif.type.includes('quota') || notif.type.includes('warning') || notif.type.includes('critical') || notif.type.includes('low_balance')) && (
+                                  <Button 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      setActiveTab('billing');
+                                      setTimeout(() => {
+                                        if (account?.partner?.billingType === 'payg') {
+                                          const packagesSection = document.querySelector('[data-testid="package-10"]');
+                                          if (packagesSection) {
+                                            packagesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          }
+                                        } else {
+                                          const paymentSection = document.querySelector('[data-testid="section-payment-methods"]');
+                                          if (paymentSection) {
+                                            paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                          }
                                         }
                                       }, 100);
                                     }}
                                     data-testid={`button-manage-billing-${notif.id}`}
                                   >
-                                    <CreditCard className="h-4 w-4 mr-1.5" />
-                                    Manage Billing
+                                    {account?.partner?.billingType === 'payg' ? (
+                                      <>
+                                        <ShoppingCart className="h-4 w-4 mr-1.5" />
+                                        Purchase Credits
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CreditCard className="h-4 w-4 mr-1.5" />
+                                        Manage Billing
+                                      </>
+                                    )}
                                   </Button>
                                 )}
                               </div>
