@@ -96,13 +96,13 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   NZD: 'NZ$',
   JPY: '¥',
   CNY: '¥',
-  INR: '₹',
-  PHP: '₱',
+  INR: 'Rs',
+  PHP: 'P',
   MYR: 'RM',
-  THB: '฿',
+  THB: 'B',
   IDR: 'Rp',
-  VND: '₫',
-  KRW: '₩',
+  VND: 'VND ',
+  KRW: 'W',
 };
 
 const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR'];
