@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar, TrendingUp, Target, Lightbulb } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
 import { isValidEmail } from "@/lib/validation";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
 interface PartnerBranding {
   enabled: boolean;
@@ -92,6 +93,130 @@ function getAssessmentDisplayName(type: string): string {
     aiq: "AIQ Assessment",
   };
   return names[type.replace(/-/g, "_")] || type;
+}
+
+function generateAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number) {
+  const sortedSkills = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+  const strengths = sortedSkills.filter(([_, score]) => (score as number) >= 70);
+  const improvements = sortedSkills.filter(([_, score]) => (score as number) < 70);
+  
+  const analysis = {
+    strengths: [] as string[],
+    improvements: [] as string[],
+    overall: "",
+  };
+
+  const normalizedType = assessmentType.replace(/-/g, "_");
+
+  switch (normalizedType) {
+    case "fit":
+      analysis.overall = "This FIT assessment evaluates core behavioral competencies essential for workplace success and team collaboration.";
+      
+      if (strengths.length > 0) {
+        strengths.forEach(([skill, score]) => {
+          if (skill === "High Agency") {
+            analysis.strengths.push(`Strong **High Agency** (${score}%): Takes initiative, drives outcomes independently, and shows proactive problem-solving abilities.`);
+          } else if (skill === "Intellectual Curiosity") {
+            analysis.strengths.push(`Excellent **Intellectual Curiosity** (${score}%): Shows eagerness to learn, asks thoughtful questions, and seeks to understand complex concepts.`);
+          } else if (skill === "Resilience") {
+            analysis.strengths.push(`Robust **Resilience** (${score}%): Bounces back from setbacks, maintains composure under pressure, and adapts to changing circumstances.`);
+          } else if (skill === "Empathy & Ethics") {
+            analysis.strengths.push(`Strong **Empathy & Ethics** (${score}%): Considers others' perspectives, makes ethical decisions, and demonstrates social awareness.`);
+          } else if (skill === "Growth Mindset") {
+            analysis.strengths.push(`Strong **Growth Mindset** (${score}%): Views challenges as opportunities, embraces feedback, and believes in continuous improvement.`);
+          } else if (skill === "Interpersonal Agility") {
+            analysis.strengths.push(`Excellent **Interpersonal Agility** (${score}%): Builds relationships effectively, adapts communication style, and collaborates seamlessly across diverse teams.`);
+          }
+        });
+      }
+      
+      if (improvements.length > 0) {
+        improvements.forEach(([skill, score]) => {
+          if (skill === "High Agency") {
+            analysis.improvements.push(`**High Agency** (${score}%): Consider taking more initiative on projects and seeking opportunities to lead rather than follow.`);
+          } else if (skill === "Intellectual Curiosity") {
+            analysis.improvements.push(`**Intellectual Curiosity** (${score}%): Try exploring topics beyond your immediate role and asking more probing questions.`);
+          } else if (skill === "Resilience") {
+            analysis.improvements.push(`**Resilience** (${score}%): Focus on developing coping strategies for stress and building your capacity to bounce back from challenges.`);
+          } else if (skill === "Empathy & Ethics") {
+            analysis.improvements.push(`**Empathy & Ethics** (${score}%): Practice active listening and considering multiple perspectives before making decisions.`);
+          } else if (skill === "Growth Mindset") {
+            analysis.improvements.push(`**Growth Mindset** (${score}%): Try reframing challenges as learning opportunities and seek constructive feedback.`);
+          } else if (skill === "Interpersonal Agility") {
+            analysis.improvements.push(`**Interpersonal Agility** (${score}%): Work on adapting your communication style for different audiences and building cross-functional relationships.`);
+          }
+        });
+      }
+      break;
+
+    case "ai_readiness":
+      analysis.overall = "This AI Readiness assessment measures your preparedness to work effectively in AI-enhanced environments.";
+      
+      if (strengths.length > 0) {
+        strengths.forEach(([skill, score]) => {
+          const skillLower = skill.toLowerCase();
+          if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
+            analysis.strengths.push(`Strong **AI Literacy & Prompting** (${score}%): Demonstrates understanding of AI capabilities and can craft effective prompts.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.strengths.push(`Excellent **Technical Fluency** (${score}%): Comfortable with technical concepts and AI tools.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.strengths.push(`Outstanding **Critical Thinking** (${score}%): Evaluates AI outputs critically and identifies limitations.`);
+          } else if (skillLower.includes("adaptive") || skillLower.includes("collaborative")) {
+            analysis.strengths.push(`Proficient **Adaptive Learning** (${score}%): Quickly adapts to new AI tools and learns collaboratively.`);
+          } else if (skillLower.includes("responsible")) {
+            analysis.strengths.push(`Strong **Responsible AI** (${score}%): Uses AI ethically and understands implications.`);
+          } else {
+            analysis.strengths.push(`Strong **${skill}** (${score}%): Shows proficiency in this AI readiness dimension.`);
+          }
+        });
+      }
+      
+      if (improvements.length > 0) {
+        improvements.forEach(([skill, score]) => {
+          const skillLower = skill.toLowerCase();
+          if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
+            analysis.improvements.push(`**AI Literacy** (${score}%): Recommend focused training on prompt engineering and AI fundamentals.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.improvements.push(`**Technical Fluency** (${score}%): Suggest building technical foundation through hands-on practice with AI tools.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.improvements.push(`**Critical Thinking** (${score}%): Develop skills in evaluating AI outputs and recognizing biases.`);
+          } else {
+            analysis.improvements.push(`**${skill}** (${score}%): Consider additional learning in this area.`);
+          }
+        });
+      }
+      break;
+
+    case "prompt_architecture":
+      analysis.overall = "This Prompt Architecture assessment evaluates your ability to craft effective prompts for AI systems.";
+      analysis.improvements.push(`Prompts are scored across five dimensions (20 points each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.`);
+      break;
+
+    case "aiq":
+      const aiqScore = totalScore || Object.values(scores)[0] as number || 0;
+      const bandInterpretation = getAIQBandInterpretation(aiqScore);
+      
+      analysis.overall = `This Algorithmic Integrity Quotient (AIQ) assessment evaluates ethical reasoning in AI scenarios. Score: **${aiqScore}%** - **${bandInterpretation.title}** (${bandInterpretation.range}). ${bandInterpretation.description}`;
+      
+      if (aiqScore >= 80) {
+        analysis.strengths.push(`**Exceptional ethical alignment**: Consistently prioritizes optimal ethical outcomes with sophisticated reasoning.`);
+        analysis.strengths.push(`**Strategic ethical leadership**: Demonstrates ability to navigate gray areas while maintaining strong principles.`);
+        analysis.strengths.push(`**AI governance ready**: Well-prepared for roles requiring ethical oversight of AI systems.`);
+      } else if (aiqScore >= 60) {
+        analysis.strengths.push(`**Solid ethical foundation**: Shows consistent ethical judgment in AI scenarios.`);
+        analysis.strengths.push(`**Balanced decision-making**: Weighs multiple factors appropriately.`);
+        analysis.improvements.push(`Consider deeper exploration of edge cases and complex ethical dilemmas.`);
+      } else if (aiqScore >= 40) {
+        analysis.improvements.push(`**Developing ethical awareness**: Recommend further study of AI ethics frameworks.`);
+        analysis.improvements.push(`Focus on understanding the implications of AI decisions on different stakeholders.`);
+      } else {
+        analysis.improvements.push(`**Foundation building needed**: Suggest starting with AI ethics fundamentals and case studies.`);
+        analysis.improvements.push(`Practice evaluating AI scenarios from multiple stakeholder perspectives.`);
+      }
+      break;
+  }
+
+  return analysis;
 }
 
 export default function EmbedAssessment() {
@@ -607,10 +732,26 @@ export default function EmbedAssessment() {
       const results = session.results;
       const assessmentType = session.assessmentType;
       const assessmentName = getAssessmentDisplayName(assessmentType);
+      const normalizedType = assessmentType.replace(/-/g, "_");
+      
+      // Generate comprehensive analysis
+      const analysis = generateAnalysis(assessmentType, results.scores || {}, results.totalScore);
+      
+      // Get AIQ band interpretation if applicable
+      const isAIQ = normalizedType === "aiq";
+      const aiqBand = isAIQ ? getAIQBandInterpretation(results.totalScore) : null;
+      
+      // Helper to render markdown-like bold text
+      const renderText = (text: string) => {
+        const parts = text.split(/\*\*(.*?)\*\*/g);
+        return parts.map((part, i) => 
+          i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part
+        );
+      };
       
       return (
         <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-results">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
             <Card className={bgCard}>
               <CardHeader className="text-center border-b border-slate-700/30 pb-6">
                 {branding?.logoUrl && (
@@ -629,12 +770,26 @@ export default function EmbedAssessment() {
                 </p>
               </CardHeader>
               <CardContent className="pt-6">
+                {/* Score Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
                     <p className={`text-sm ${textMuted} mb-2`}>Overall Score</p>
                     <p className="text-4xl font-bold" style={{ color: accentColor }}>
                       {results.totalScore}%
                     </p>
+                    {isAIQ && aiqBand && (
+                      <Badge 
+                        className={`mt-3 ${
+                          results.totalScore >= 80 ? 'bg-green-600' :
+                          results.totalScore >= 60 ? 'bg-blue-600' :
+                          results.totalScore >= 40 ? 'bg-amber-500' :
+                          'bg-red-500'
+                        } text-white border-0`}
+                        data-testid="badge-aiq-band"
+                      >
+                        {aiqBand.title}
+                      </Badge>
+                    )}
                   </div>
                   <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
                     <p className={`text-sm ${textMuted} mb-2`}>Percentile</p>
@@ -647,12 +802,38 @@ export default function EmbedAssessment() {
                   </div>
                 </div>
                 
-                {results.scores && Object.keys(results.scores).length > 0 && (
-                  <div className="mb-8">
+                {/* AIQ Band Description */}
+                {isAIQ && aiqBand && (
+                  <div className={`flex gap-4 mb-8`} data-testid="container-aiq-band-description">
+                    <div className="w-1 flex-shrink-0 rounded-full" style={{ backgroundColor: accentColor }} />
+                    <div className={`${bgCardAlt} rounded-lg p-6 flex-1`}>
+                      <h3 className={`text-lg font-semibold ${textPrimary} mb-2`}>{aiqBand.title}</h3>
+                      <p className={`text-sm ${textMuted} mb-2`}>{aiqBand.range}</p>
+                      <p className={`${textSecondary}`}>{aiqBand.description}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Overall Analysis */}
+                {analysis.overall && (
+                  <div className={`${bgCardAlt} rounded-lg p-6 mb-8`} data-testid="container-assessment-overview">
+                    <div className="flex items-start gap-3">
+                      <Target className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: accentColor }} />
+                      <div>
+                        <h3 className={`text-lg font-semibold ${textPrimary} mb-2`}>Assessment Overview</h3>
+                        <p className={`${textSecondary}`}>{renderText(analysis.overall)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Score Breakdown */}
+                {results.scores && Object.keys(results.scores).length > 0 && Object.keys(results.scores).length > 1 && (
+                  <div className="mb-8" data-testid="container-score-breakdown">
                     <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Score Breakdown</h3>
                     <div className="space-y-4">
                       {Object.entries(results.scores).map(([category, score]) => (
-                        <div key={category} className={`${bgCardAlt} rounded-lg p-4`}>
+                        <div key={category} className={`${bgCardAlt} rounded-lg p-4`} data-testid={`text-score-${category.replace(/\s/g, '-').toLowerCase()}`}>
                           <div className="flex justify-between items-center mb-2">
                             <span className={`font-medium ${textPrimary} capitalize`}>
                               {category.replace(/_/g, ' ')}
@@ -670,12 +851,53 @@ export default function EmbedAssessment() {
                   </div>
                 )}
                 
+                {/* Strengths Section */}
+                {analysis.strengths.length > 0 && (
+                  <div className="mb-8" data-testid="container-strengths">
+                    <div className="flex items-center gap-2 mb-4">
+                      <TrendingUp className="h-5 w-5 text-green-500" />
+                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Key Strengths</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {analysis.strengths.map((strength, idx) => (
+                        <div key={idx} className="flex gap-3" data-testid={`text-strength-${idx}`}>
+                          <div className="w-1 flex-shrink-0 rounded-full bg-green-500" />
+                          <div className={`${bgCardAlt} rounded-lg p-4 flex-1`}>
+                            <p className={`${textSecondary} text-sm`}>{renderText(strength)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Areas for Development Section */}
+                {analysis.improvements.length > 0 && (
+                  <div className="mb-8" data-testid="container-improvements">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Lightbulb className="h-5 w-5 text-amber-500" />
+                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Areas for Development</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {analysis.improvements.map((improvement, idx) => (
+                        <div key={idx} className="flex gap-3" data-testid={`text-improvement-${idx}`}>
+                          <div className="w-1 flex-shrink-0 rounded-full bg-amber-500" />
+                          <div className={`${bgCardAlt} rounded-lg p-4 flex-1`}>
+                            <p className={`${textSecondary} text-sm`}>{renderText(improvement)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Detailed Evaluations (for Prompt Architecture) */}
                 {results.evaluations && Object.keys(results.evaluations).length > 0 && (
-                  <div>
+                  <div className="mb-8" data-testid="container-evaluations">
                     <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Detailed Evaluations</h3>
                     <div className="space-y-4">
                       {Object.entries(results.evaluations).map(([key, evaluation]: [string, any]) => (
-                        <div key={key} className={`${bgCardAlt} rounded-lg p-4`}>
+                        <div key={key} className={`${bgCardAlt} rounded-lg p-4`} data-testid={`text-evaluation-${key.replace(/\s/g, '-').toLowerCase()}`}>
                           <h4 className={`font-medium ${textPrimary} mb-2 capitalize`}>
                             {key.replace(/_/g, ' ')}
                           </h4>
