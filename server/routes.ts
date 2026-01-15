@@ -11896,6 +11896,10 @@ Format your response as JSON with this structure:
         stripePaymentIntentId: session.payment_intent as string,
       } as any);
       
+      // Get the current balance BEFORE crediting (for animation)
+      const partnerBeforeCredit = await storage.getPartnerAccount(partnerId);
+      const previousBalance = (partnerBeforeCredit?.testsPurchased || 0) - (partnerBeforeCredit?.testsConsumed || 0) + (partnerBeforeCredit?.freeTestsAllocated || 0);
+      
       // Credit the tests
       const result = await storage.creditPartnerTests(
         partnerId,
@@ -11966,7 +11970,9 @@ Format your response as JSON with this structure:
       res.json({ 
         success: true, 
         message: `Successfully credited ${packageSize} tests`,
-        newBalance: result.newBalance
+        newBalance: result.newBalance,
+        previousBalance,
+        creditsAdded: parseInt(packageSize)
       });
     } catch (error) {
       console.error("Error processing partner package callback:", error);

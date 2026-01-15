@@ -1,17 +1,69 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, AlertCircle, Package } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Package, TrendingUp } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import dashboardBg from "@assets/image_1763608498774.png";
+
+function useCountUp(end: number, start: number, duration: number = 1500, enabled: boolean = true) {
+  const [count, setCount] = useState(start);
+  const frameRef = useRef<number>();
+  const startTimeRef = useRef<number>();
+
+  useEffect(() => {
+    if (!enabled || start === end) {
+      setCount(end);
+      return;
+    }
+
+    setCount(start);
+    startTimeRef.current = undefined;
+
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) {
+        startTimeRef.current = timestamp;
+      }
+
+      const progress = Math.min((timestamp - startTimeRef.current) / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const current = Math.round(start + (end - start) * easeOutQuart);
+
+      setCount(current);
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [start, end, duration, enabled]);
+
+  return count;
+}
 
 export default function PartnerPackageSuccess() {
   const [, setLocation] = useLocation();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [message, setMessage] = useState<string>("");
   const [newBalance, setNewBalance] = useState<number | null>(null);
+  const [previousBalance, setPreviousBalance] = useState<number | null>(null);
+  const [creditsAdded, setCreditsAdded] = useState<number | null>(null);
+  const [animationStarted, setAnimationStarted] = useState(false);
+
+  const displayCount = useCountUp(
+    newBalance || 0, 
+    previousBalance || 0, 
+    1500, 
+    animationStarted && previousBalance !== null && newBalance !== null
+  );
 
   useEffect(() => {
     const processPayment = async () => {
@@ -38,9 +90,16 @@ export default function PartnerPackageSuccess() {
         if (data.success) {
           setStatus("success");
           setMessage(data.message || "Test credits have been added to your account.");
-          if (data.newBalance) {
+          if (data.newBalance !== undefined) {
             setNewBalance(data.newBalance);
           }
+          if (data.previousBalance !== undefined) {
+            setPreviousBalance(data.previousBalance);
+          }
+          if (data.creditsAdded !== undefined) {
+            setCreditsAdded(data.creditsAdded);
+          }
+          setTimeout(() => setAnimationStarted(true), 300);
         } else {
           setStatus("error");
           setMessage(data.message || "Failed to process payment.");
@@ -111,19 +170,36 @@ export default function PartnerPackageSuccess() {
           </CardHeader>
           <CardContent className="space-y-4">
             {status === "success" && newBalance !== null && (
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="p-4 rounded-lg bg-muted/50 text-center space-y-3">
+                {creditsAdded && (
+                  <div className="flex items-center justify-center gap-2 text-green-500">
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="text-sm font-medium">+{creditsAdded} tests added</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">New Balance</span>
                 </div>
-                <div className="text-3xl font-bold text-primary" data-testid="text-new-balance">
-                  {newBalance} tests
+                <div 
+                  className="text-4xl font-bold text-primary transition-all" 
+                  data-testid="text-new-balance"
+                  style={{
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {animationStarted && previousBalance !== null ? displayCount : newBalance} tests
                 </div>
+                {previousBalance !== null && previousBalance !== newBalance && (
+                  <div className="text-xs text-muted-foreground">
+                    Previous balance: {previousBalance} tests
+                  </div>
+                )}
               </div>
             )}
             <Button
               className="w-full"
-              onClick={() => setLocation("/admin?tab=partners&subtab=usage")}
+              onClick={() => setLocation("/partner?tab=billing")}
               data-testid="button-return-dashboard"
             >
               Return to Dashboard
