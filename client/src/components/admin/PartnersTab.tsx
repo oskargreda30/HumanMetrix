@@ -1122,11 +1122,26 @@ export default function PartnersTab() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white/5 rounded-lg p-4">
                         <div className="text-white/60 text-sm mb-1">
-                          {detailPartner?.billingType === 'enterprise' ? 'Test Quota' : 'Tests Purchased'}
+                          {(() => {
+                            const freeTests = partnerQuota?.freeTestsAllocated || 0;
+                            const totalTests = partnerQuota?.testsPurchased || 0;
+                            const actualPurchased = totalTests - freeTests;
+                            if (detailPartner?.billingType === 'enterprise') return 'Test Quota';
+                            if (actualPurchased === 0 && freeTests > 0) return 'Free Tests';
+                            return 'Total Credits';
+                          })()}
                         </div>
                         <div className="text-2xl font-bold text-white">{partnerQuota?.testsPurchased || 0}</div>
                         <div className="text-white/50 text-xs">
-                          {detailPartner?.billingType === 'enterprise' ? 'allocated credits' : 'total credits'}
+                          {(() => {
+                            const freeTests = partnerQuota?.freeTestsAllocated || 0;
+                            const totalTests = partnerQuota?.testsPurchased || 0;
+                            const actualPurchased = totalTests - freeTests;
+                            if (detailPartner?.billingType === 'enterprise') return 'allocated credits';
+                            if (actualPurchased === 0 && freeTests > 0) return 'complimentary';
+                            if (freeTests > 0) return `${actualPurchased} purchased + ${freeTests} free`;
+                            return 'total credits';
+                          })()}
                         </div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-4">
