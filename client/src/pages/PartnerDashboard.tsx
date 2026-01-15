@@ -2459,16 +2459,26 @@ export default function PartnerDashboard() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                     <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
-                      <InfoTooltip content="Total assessment credits purchased for your account. Each completed assessment consumes one credit." />
+                      <CardTitle className="text-sm font-medium">
+                        {account?.partner?.billingType === 'enterprise' ? 'Test Quota' : 'Tests Purchased'}
+                      </CardTitle>
+                      <InfoTooltip content={account?.partner?.billingType === 'enterprise' 
+                        ? "Total assessment credits allocated to your account. Each completed assessment consumes one credit."
+                        : "Total assessment credits purchased for your account. Each completed assessment consumes one credit."
+                      } />
                     </div>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                      {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
+                      {account?.partner?.billingType === 'enterprise' 
+                        ? partner.testsPurchased.toLocaleString()
+                        : Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()
+                      }
                     </div>
-                    <p className="text-xs text-muted-foreground">Total credits</p>
+                    <p className="text-xs text-muted-foreground">
+                      {account?.partner?.billingType === 'enterprise' ? 'Allocated credits' : 'Total credits'}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>

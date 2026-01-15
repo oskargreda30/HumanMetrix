@@ -1121,9 +1121,13 @@ export default function PartnersTab() {
                     {/* Quota Overview Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white/5 rounded-lg p-4">
-                        <div className="text-white/60 text-sm mb-1">Tests Purchased</div>
+                        <div className="text-white/60 text-sm mb-1">
+                          {detailPartner?.billingType === 'enterprise' ? 'Test Quota' : 'Tests Purchased'}
+                        </div>
                         <div className="text-2xl font-bold text-white">{partnerQuota?.testsPurchased || 0}</div>
-                        <div className="text-white/50 text-xs">total credits</div>
+                        <div className="text-white/50 text-xs">
+                          {detailPartner?.billingType === 'enterprise' ? 'allocated credits' : 'total credits'}
+                        </div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-4">
                         <div className="text-white/60 text-sm mb-1">Tests Consumed</div>
