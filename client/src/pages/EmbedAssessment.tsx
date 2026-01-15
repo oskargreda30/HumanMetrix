@@ -431,6 +431,12 @@ export default function EmbedAssessment() {
   };
 
   const startAssessment = async () => {
+    // Demo mode - just start without API call
+    if (isDemo) {
+      setStatus("started");
+      return;
+    }
+    
     // For test sessions, skip email verification requirement
     // For production sessions, ensure email is verified before starting
     if (!session?.isTestSession && verificationStep !== "verified") {
