@@ -225,6 +225,8 @@ export default function EmbedAssessment() {
   const sessionId = params.get("session");
   const theme = params.get("theme") || "dark";
   const showResultsParam = params.get("showResults") === "true";
+  const isDemo = params.get("demo") === "true";
+  const demoType = params.get("type") || "fit";
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
@@ -259,6 +261,23 @@ export default function EmbedAssessment() {
   const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
 
   useEffect(() => {
+    // Demo mode - show sample assessment without real session
+    if (isDemo) {
+      const demoSession: SessionData = {
+        sessionId: "demo-preview",
+        assessmentType: demoType,
+        status: "ready",
+        partnerName: "Demo Partner",
+        isTestSession: true,
+      };
+      setSession(demoSession);
+      const loadedQuestions = getQuestions(demoType, 'default');
+      setQuestions(loadedQuestions);
+      setVerificationStep("verified"); // Skip verification for demo
+      setStatus("ready");
+      return;
+    }
+
     if (!sessionId) {
       setStatus("error");
       setErrorMessage("No session ID provided");
@@ -266,7 +285,7 @@ export default function EmbedAssessment() {
     }
 
     fetchSession();
-  }, [sessionId]);
+  }, [sessionId, isDemo, demoType]);
 
   const fetchSession = async () => {
     try {
@@ -465,6 +484,8 @@ export default function EmbedAssessment() {
   
   // Save progress to server (called on navigation)
   const saveProgressImmediately = useCallback(async (index: number) => {
+    // Skip API call in demo mode
+    if (isDemo) return;
     if (!sessionId || status !== "started") return;
     
     // Clear any pending debounced save
@@ -485,10 +506,12 @@ export default function EmbedAssessment() {
     } catch (err) {
       console.error("Failed to save progress:", err);
     }
-  }, [sessionId, status]);
+  }, [sessionId, status, isDemo]);
   
   // Debounced save - only fires 2 seconds after last change
   const debouncedSave = useCallback(() => {
+    // Skip API call in demo mode
+    if (isDemo) return;
     if (!sessionId || status !== "started") return;
     
     if (saveTimeoutRef.current) {
@@ -629,6 +652,20 @@ export default function EmbedAssessment() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    
+    // Demo mode - show mock completion
+    if (isDemo) {
+      const demoScores = {
+        scores: { "Demo Score": 75 },
+        totalScore: 75,
+        percentile: 65,
+      };
+      setCompletedScores(demoScores);
+      setStatus("completed");
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
       const res = await fetch(`/api/embed/session/${sessionId}/submit`, {
         method: "POST",
