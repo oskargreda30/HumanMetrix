@@ -3,6 +3,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import ContactFormDialog from "@/components/ContactFormDialog";
 import { 
@@ -250,28 +251,31 @@ export default function ForEmployers() {
               Make better hiring decisions with objective, AI-powered assessments that measure both 
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-              <Button 
-                size="lg" 
-                onClick={() => openDialog('demo')}
-                data-testid="button-request-demo"
-              >
-                Request Demo
-              </Button>
+            <div className="flex flex-col gap-4 justify-center items-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+                <Button 
+                  size="lg" 
+                  onClick={() => openDialog('demo')}
+                  data-testid="button-request-demo"
+                >
+                  Request Demo
+                </Button>
+                <Link href="/assessments">
+                  <Button size="lg" variant="outline" data-testid="button-view-assessments">
+                    View Assessments
+                  </Button>
+                </Link>
+                <Link href="/#sample-reports">
+                  <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
+                    View Sample Reports
+                  </Button>
+                </Link>
+              </div>
               <Link href="/ecosystem-index">
-                <Button size="lg" variant="outline" data-testid="button-ecosystem-index">
+                <Button size="lg" variant="outline" className="border-primary/40 bg-primary/5" data-testid="button-ecosystem-index">
                   <Target className="mr-2 h-4 w-4" />
                   The Ecosystem Index
-                </Button>
-              </Link>
-              <Link href="/assessments">
-                <Button size="lg" variant="outline" data-testid="button-view-assessments">
-                  View Assessments
-                </Button>
-              </Link>
-              <Link href="/#sample-reports">
-                <Button size="lg" variant="outline" data-testid="button-view-sample-reports">
-                  View Sample Reports
+                  <Badge variant="outline" className="ml-2 text-xs">New</Badge>
                 </Button>
               </Link>
             </div>

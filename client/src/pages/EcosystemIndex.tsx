@@ -51,17 +51,6 @@ const capabilities = [
   { code: "IA", name: "Interpersonal Agility", color: "bg-cyan-500", description: "Social navigation" },
 ];
 
-const problems = [
-  "Talented teams still struggle and underperform",
-  "Hiring \"more of the same\" doesn't fix team gaps",
-  "Personality and role tests don't diagnose system-level issues",
-];
-
-const solutions = [
-  "Analyze team capability distribution across 6 core dimensions",
-  "Reveal gaps, overload risks, and imbalance patterns",
-  "Enable targeted hiring and team design decisions",
-];
 
 const analysisFeatures = [
   { icon: Network, title: "Capability Coverage Mapping", description: "Visualize how capabilities are distributed across your team members" },
@@ -119,10 +108,12 @@ export default function EcosystemIndex() {
         name="How to Diagnose Your Team's Capability Distribution"
         description="Use The Ecosystem Index to analyze your team's capability distribution and get actionable insights"
         steps={[
+          { name: "Login or Create Account", text: "Sign in to your account or create a new one to get started" },
+          { name: "Define Mission & Ethos", text: "Share your company mission statement for AI-powered analysis" },
           { name: "Define Organization Context", text: "Enter your company details, industry, and team information" },
           { name: "Add Team Members", text: "Upload existing HumanMetrix reports or send assessment invitations" },
-          { name: "Generate Report", text: "Our AI analyzes team-level capability patterns" },
-          { name: "Take Action", text: "Use insights to hire, rebalance, or develop your team" }
+          { name: "Select Assessments", text: "Choose which assessments team members should complete" },
+          { name: "Generate Report & Pay", text: "Submit payment and download your comprehensive team report" }
         ]}
       />
       
@@ -198,71 +189,128 @@ export default function EcosystemIndex() {
           </div>
         </section>
 
-        {/* Problem → Solution */}
-        <section className="py-12 md:py-20" data-testid="section-problem-solution">
-          <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                  </div>
-                  <h2 className="text-xl md:text-2xl font-semibold">The Problem</h2>
-                </div>
-                <ul className="space-y-3">
-                  {problems.map((problem, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-destructive text-sm font-medium">{index + 1}</span>
-                      </div>
-                      <span className="text-muted-foreground">{problem}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Lightbulb className="h-5 w-5 text-green-600" />
-                  </div>
-                  <h2 className="text-xl md:text-2xl font-semibold">The Solution</h2>
-                </div>
-                <ul className="space-y-3">
-                  {solutions.map((solution, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <span className="text-foreground">{solution}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        
         {/* How It Works - Step by Step */}
         <section className="py-12 md:py-20 bg-muted/30" data-testid="section-how-it-works">
           <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-how-it-works-title">How It Works</h2>
-              <p className="text-muted-foreground" data-testid="text-how-it-works-description">Four simple steps to team clarity</p>
+              <p className="text-muted-foreground" data-testid="text-how-it-works-description">Six simple steps to team clarity</p>
             </div>
 
-            {/* Step 1: Define Organization Context */}
+            {/* Step 1: Login or Create Account */}
             <div className="mb-12" data-testid="step-1-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                   1
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-1-title">Define Organization Context</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-1-description">Tell us about your company and team</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-1-title">Login or Create Account</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-1-description">Sign in to get started or create a new account</p>
                 </div>
               </div>
               
               <Card className="p-6 md:p-8" data-testid="step-1-form">
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Existing Account Login */}
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold">Already have an account?</h4>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">Email</Label>
+                        <Input id="login-email" type="email" placeholder="your@company.com" data-testid="input-login-email" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="login-password">Password</Label>
+                        <Input id="login-password" type="password" placeholder="••••••••" data-testid="input-login-password" />
+                      </div>
+                      <Button className="w-full" data-testid="button-login">
+                        Sign In
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Partner accounts will have organization details pre-filled
+                    </p>
+                  </div>
+                  
+                  {/* Divider */}
+                  <div className="hidden md:block w-px bg-border" />
+                  <div className="md:hidden border-t" />
+                  
+                  {/* Create New Account */}
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold">New to HumanMetrix?</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Create a free account to start your team diagnostic. You'll only pay when you're ready to generate your report.
+                    </p>
+                    <Button variant="outline" className="w-full" data-testid="button-create-account">
+                      Create Account
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Step 2: Mission Statement / Company Ethos */}
+            <div className="mb-12" data-testid="step-2-container">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                  2
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-2-title">Define Your Mission & Ethos</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-2-description">Help our AI understand your organizational culture</p>
+                </div>
+              </div>
+              
+              <Card className="p-6 md:p-8" data-testid="step-2-form">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4">
+                    <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">AI-Powered Analysis</p>
+                      <p className="text-sm text-muted-foreground">
+                        Our AI model will evaluate your mission statement and company ethos to extract insights about 
+                        how your organization works, what capabilities you prioritize, and what your team may need to succeed.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mission">Mission Statement or Company Ethos</Label>
+                    <Textarea 
+                      id="mission" 
+                      placeholder="Paste your company's mission statement, core values, cultural manifesto, or guiding principles here. The more context you provide, the better our AI can tailor recommendations to your organization..."
+                      className="min-h-[150px]"
+                      data-testid="textarea-mission"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Examples: Company mission, vision statement, core values, employee handbook excerpts, or team charter
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Step 3: Define Organization Context */}
+            <div className="mb-12" data-testid="step-3-container">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                  3
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-3-title">Define Organization Context</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-3-description">Tell us about your company and team</p>
+                </div>
+              </div>
+              
+              <Card className="p-6 md:p-8" data-testid="step-3-form">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="company-name">Company Name</Label>
@@ -337,35 +385,23 @@ export default function EcosystemIndex() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="mission">Mission Statement or Company Ethos (Optional)</Label>
-                    <Textarea 
-                      id="mission" 
-                      placeholder="Paste your company's mission statement, values, or cultural ethos here..."
-                      className="min-h-[100px]"
-                      data-testid="textarea-mission"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      This helps us understand your organizational priorities and tailor recommendations
-                    </p>
-                  </div>
                 </div>
               </Card>
             </div>
 
-            {/* Step 2: Add Team Members */}
-            <div className="mb-12" data-testid="step-2-container">
+            {/* Step 4: Add Team Members */}
+            <div className="mb-12" data-testid="step-4-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  2
+                  4
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-2-title">Add Team Members</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-2-description">Upload reports or invite team members</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-4-title">Add Team Members</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-4-description">Upload reports or invite team members</p>
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-2-form">
+              <Card className="p-6 md:p-8" data-testid="step-4-form">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover-elevate cursor-pointer" data-testid="upload-reports-area">
                     <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -397,66 +433,117 @@ export default function EcosystemIndex() {
               </Card>
             </div>
 
-            {/* Step 3: Generate Report */}
-            <div className="mb-12" data-testid="step-3-container">
+            {/* Step 5: Select Assessments */}
+            <div className="mb-12" data-testid="step-5-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  3
+                  5
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-3-title">Generate Team Report</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-3-description">Our AI analyzes team-level patterns</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-5-title">Select Assessments</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-5-description">Choose which assessments team members should complete</p>
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8 text-center" data-testid="step-3-generate">
-                <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h4 className="text-lg font-semibold mb-2" data-testid="text-step-3-card-title">Ready to Analyze</h4>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto" data-testid="text-step-3-card-description">
-                  Once you've added your team members, our system will analyze capability patterns 
-                  and generate your comprehensive team report.
-                </p>
-                <Button size="lg" data-testid="button-generate-report">
-                  Generate Team Report
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              <Card className="p-6 md:p-8" data-testid="step-5-form">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-fit">
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                      <Heart className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">FIT Assessment</h4>
+                      <p className="text-xs text-muted-foreground">Measures 6 core behavioral skills including High Agency and Empathy</p>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-ai-readiness">
+                    <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                      <Brain className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Readiness</h4>
+                      <p className="text-xs text-muted-foreground">Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration</p>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-prompt">
+                    <div className="h-10 w-10 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                      <Zap className="h-5 w-5 text-cyan-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Prompt Architecture</h4>
+                      <p className="text-xs text-muted-foreground">7 progressive levels testing prompt design skills</p>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg hover-elevate cursor-pointer flex items-start gap-3" data-testid="assessment-aiq">
+                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AIQ Assessment</h4>
+                      <p className="text-xs text-muted-foreground">Tests understanding of AI ethics, bias, and responsible deployment</p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             </div>
 
-            {/* Step 4: Take Action */}
-            <div data-testid="step-4-container">
+            {/* Step 6: Generate Team Report and Submit Payment */}
+            <div data-testid="step-6-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  4
+                  6
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-4-title">Take Action</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-4-description">Use insights to hire, rebalance, or develop</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Generate Team Report and Submit Payment</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Complete payment to generate and download your comprehensive report</p>
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-4-action">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center p-4" data-testid="action-hire">
-                    <UserPlus className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <h4 className="font-semibold mb-1" data-testid="text-action-hire-title">Hire Strategically</h4>
-                    <p className="text-sm text-muted-foreground" data-testid="text-action-hire-description">
-                      Use complement profiles to find the right new team members
+              <Card className="p-6 md:p-8" data-testid="step-6-payment">
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Payment Summary */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Order Summary
+                    </h4>
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Team Diagnostic Report</span>
+                        <span className="font-medium">£199</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Team Members (8)</span>
+                        <span className="font-medium">Included</span>
+                      </div>
+                      <div className="border-t pt-3 flex justify-between">
+                        <span className="font-semibold">Total</span>
+                        <span className="font-bold text-lg">£199</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      You'll receive instant access to download your team diagnostic report after payment.
                     </p>
                   </div>
-                  <div className="text-center p-4" data-testid="action-rebalance">
-                    <RefreshCw className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <h4 className="font-semibold mb-1" data-testid="text-action-rebalance-title">Rebalance Teams</h4>
-                    <p className="text-sm text-muted-foreground" data-testid="text-action-rebalance-description">
-                      Redistribute capabilities across existing teams
-                    </p>
-                  </div>
-                  <div className="text-center p-4" data-testid="action-develop">
-                    <TrendingUp className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <h4 className="font-semibold mb-1" data-testid="text-action-develop-title">Develop Talent</h4>
-                    <p className="text-sm text-muted-foreground" data-testid="text-action-develop-description">
-                      Target training to address capability gaps
-                    </p>
+                  
+                  {/* Payment Action */}
+                  <div className="flex flex-col justify-center items-center text-center space-y-4">
+                    <Sparkles className="h-12 w-12 text-primary" />
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2" data-testid="text-step-6-card-title">Ready to Analyze</h4>
+                      <p className="text-muted-foreground text-sm max-w-sm" data-testid="text-step-6-card-description">
+                        Once all team members have completed their assessments, 
+                        submit payment to generate your comprehensive team report.
+                      </p>
+                    </div>
+                    <Button size="lg" className="w-full max-w-xs" data-testid="button-submit-payment">
+                      Submit Payment & Generate Report
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      <span>Secure payment via Stripe</span>
+                    </div>
                   </div>
                 </div>
               </Card>
