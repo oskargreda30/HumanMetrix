@@ -1231,9 +1231,9 @@ export async function exportEnhancedCandidatePDF(
     const aiqBand = getAIQBandInterpretation(aiqScore);
     const aiqBandColor = getAIQBandColor(aiqScore);
     
-    // Score display - compact centered box with band color
-    const boxWidth = 80;
-    const boxHeight = 28;
+    // Score display - compact centered box with band color (70% size)
+    const boxWidth = 56;
+    const boxHeight = 18;
     const boxX = (pageWidth - boxWidth) / 2;
     
     // Create proper light background tint (10% of band color mixed with white)
@@ -1245,26 +1245,20 @@ export async function exportEnhancedCandidatePDF(
     pdf.setFillColor(bgTint[0], bgTint[1], bgTint[2]);
     pdf.setDrawColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
     pdf.setLineWidth(0.5);
-    pdf.roundedRect(boxX, yPos, boxWidth, boxHeight, 3, 3, 'FD');
+    pdf.roundedRect(boxX, yPos, boxWidth, boxHeight, 2, 2, 'FD');
     
     // Score number
-    pdf.setFontSize(16);
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(aiqBandColor[0], aiqBandColor[1], aiqBandColor[2]);
-    pdf.text(`${aiqScore}%`, pageWidth / 2, yPos + 10, { align: 'center' });
+    pdf.text(`${aiqScore}%`, pageWidth / 2, yPos + 7, { align: 'center' });
     
-    // Band title
-    pdf.setFontSize(10);
+    // Band title (no range shown)
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(aiqBand.title, pageWidth / 2, yPos + 18, { align: 'center' });
+    pdf.text(aiqBand.title, pageWidth / 2, yPos + 14, { align: 'center' });
     
-    // Band range
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
-    pdf.text(`(${aiqBand.range})`, pageWidth / 2, yPos + 24, { align: 'center' });
-    
-    yPos += boxHeight + 8;
+    yPos += boxHeight + 6;
     
     // Add band description below the box
     pdf.setFontSize(8);

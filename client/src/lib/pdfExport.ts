@@ -4223,53 +4223,58 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   pdf.setTextColor(0, 0, 0);
   
-  // Candidate Profile Card
-  yPos = 105;
+  // All info boxes on same row - Candidate Profile + 3 Key Metrics (all same height, aligned)
+  yPos = 108;
+  const rowBoxHeight = 22; // Same height for all boxes
+  const totalWidth = pageWidth - 40; // 20px margin each side
+  const gap = 5;
+  const profileWidth = totalWidth * 0.4; // Profile takes 40% width
+  const metricsWidth = (totalWidth - profileWidth - gap * 3) / 3; // Remaining 60% split into 3
+  
+  const completedCount = [data.fitData, data.aiData, data.promptData, data.aiqData].filter(Boolean).length;
+  
+  // Candidate Profile Box (left)
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(30, yPos, pageWidth - 60, 35, 3, 3, 'FD');
+  pdf.roundedRect(20, yPos, profileWidth, rowBoxHeight, 2, 2, 'FD');
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(55, 65, 81);
-  pdf.text('CANDIDATE PROFILE', pageWidth / 2, yPos + 9, { align: 'center' });
+  pdf.text('CANDIDATE PROFILE', 20 + profileWidth / 2, yPos + 7, { align: 'center' });
   
-  pdf.setFontSize(9);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
-  pdf.text(`Name: ${data.candidateName}`, pageWidth / 2, yPos + 17, { align: 'center' });
-  pdf.text(`Email: ${data.candidate.user.email}`, pageWidth / 2, yPos + 24, { align: 'center' });
-  const completedCount = [data.fitData, data.aiData, data.promptData, data.aiqData].filter(Boolean).length;
-  pdf.text(`Assessments Completed: ${completedCount}`, pageWidth / 2, yPos + 31, { align: 'center' });
+  const displayEmail = data.candidate.user.email.length > 25 ? data.candidate.user.email.substring(0, 22) + '...' : data.candidate.user.email;
+  pdf.text(`${data.candidateName} | ${displayEmail} | ${completedCount} Assessments`, 20 + profileWidth / 2, yPos + 15, { align: 'center' });
   
-  // Key Metrics Boxes
-  yPos = 150;
-  const boxWidth = (pageWidth - 60) / 3;
+  // Key Metrics Boxes (right side - 3 boxes)
   const metricsData = [
-    { label: 'Skills Assessed', value: String(skillsAssessed) },
-    { label: 'Average Score', value: `${avgScore}/100` },
-    { label: 'Top Skill', value: topSkill.length > 25 ? topSkill.substring(0, 23) + '...' : topSkill },
+    { label: 'Skills Assessed', value: String(skillsAssessed), smallFont: false },
+    { label: 'Average Score', value: `${avgScore}/100`, smallFont: false },
+    { label: 'Top Skill', value: topSkill.length > 18 ? topSkill.substring(0, 16) + '...' : topSkill, smallFont: true },
   ];
   
   metricsData.forEach((metric, index) => {
-    const xPos = 30 + (index * boxWidth);
+    const xPos = 20 + profileWidth + gap + (index * (metricsWidth + gap));
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(xPos, yPos, boxWidth - 5, 22, 2, 2, 'FD');
+    pdf.roundedRect(xPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
     
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(metric.label, xPos + (boxWidth - 5) / 2, yPos + 7, { align: 'center' });
+    pdf.text(metric.label, xPos + metricsWidth / 2, yPos + 7, { align: 'center' });
     
-    pdf.setFontSize(index === 2 ? 9 : 14);
+    pdf.setFontSize(metric.smallFont ? 8 : 11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(metric.value, xPos + (boxWidth - 5) / 2, yPos + 16, { align: 'center' });
+    pdf.text(metric.value, xPos + metricsWidth / 2, yPos + 16, { align: 'center' });
   });
   
   // ASSESSMENT SUMMARY Section
-  yPos = 182;
+  yPos = 138;
   yPos = addSectionHeader(pdf, 'ASSESSMENT SUMMARY', yPos, pageWidth);
   yPos += 5;
   
