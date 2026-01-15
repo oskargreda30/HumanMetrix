@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Lock, CreditCard } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Lock, CreditCard, Code, Copy, Check, Play, ExternalLink } from "lucide-react";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -89,9 +90,54 @@ export function DeveloperSubTabs({
   onAddPaymentMethod,
 }: DeveloperSubTabsProps) {
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
+  const [widgetTheme, setWidgetTheme] = useState<'dark' | 'light'>('dark');
+  const [widgetAssessment, setWidgetAssessment] = useState('fit');
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [showWidgetPreview, setShowWidgetPreview] = useState(false);
 
   const isSubscriptionBilling = billingType === 'subscription';
   const canCreateLiveKey = !isSubscriptionBilling || hasCardOnFile === true;
+
+  // Get a test API key for the widget sandbox
+  const testApiKey = useMemo(() => {
+    if (!apiKeys?.apiKeys) return null;
+    const testKey = apiKeys.apiKeys.find(k => k.environment === 'test');
+    return testKey?.displayKey || null;
+  }, [apiKeys]);
+
+  // Generate widget code snippet
+  const widgetCodeSnippet = useMemo(() => {
+    const apiKeyPlaceholder = testApiKey || 'hm_test_YOUR_API_KEY';
+    return `<!-- Add this script to your page -->
+<script src="${window.location.origin}/embed/widget.js"></script>
+
+<!-- Initialize the widget -->
+<script>
+  HumanMetrixWidget.init({
+    apiKey: '${apiKeyPlaceholder}',
+    assessmentType: '${widgetAssessment}',
+    theme: '${widgetTheme}',
+    candidateEmail: 'candidate@example.com', // optional
+    onComplete: function(results) {
+      console.log('Assessment completed:', results);
+      // Handle completion - results include scores
+    },
+    onError: function(error) {
+      console.error('Error:', error);
+    }
+  });
+</script>`;
+  }, [testApiKey, widgetAssessment, widgetTheme]);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSnippet(true);
+      setTimeout(() => setCopiedSnippet(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -369,6 +415,171 @@ export function DeveloperSubTabs({
         </TabsContent>
 
         <TabsContent value="sandbox" className="space-y-6" data-testid="subpanel-sandbox">
+          {/* Widget Test Sandbox */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10">
+                  <Code className="h-5 w-5 text-cyan-500" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Widget Sandbox</CardTitle>
+                    <InfoTooltip content="Test the embeddable widget with your API key before deploying to your website. Uses test mode - no credits consumed." />
+                  </div>
+                  <CardDescription>
+                    Preview and test the embeddable assessment widget
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Configuration Section */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Assessment Type</label>
+                  <Select value={widgetAssessment} onValueChange={setWidgetAssessment}>
+                    <SelectTrigger data-testid="select-widget-assessment">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fit">FIT - Behavioural Assessment</SelectItem>
+                      <SelectItem value="ai_readiness">AI Readiness</SelectItem>
+                      <SelectItem value="prompt">Prompt Architecture</SelectItem>
+                      <SelectItem value="aiq">AIQ - Ethics & Integrity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Theme</label>
+                  <Select value={widgetTheme} onValueChange={(v) => setWidgetTheme(v as 'dark' | 'light')}>
+                    <SelectTrigger data-testid="select-widget-theme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* API Key Status */}
+              {!testApiKey ? (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      Test API key required
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Create a test API key to use the widget sandbox. Test keys don't consume credits.
+                    </p>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => {
+                        setActiveSubTab('api-keys');
+                        onCreateTestKey();
+                      }}
+                      disabled={creatingKeyType !== null}
+                      data-testid="button-create-test-key-widget"
+                    >
+                      {creatingKeyType === 'test' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TestTube className="h-4 w-4 mr-2" />}
+                      Create Test Key
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                      Test API key ready
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono mt-1">{testApiKey}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Code Snippet */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Integration Code</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(widgetCodeSnippet)}
+                    data-testid="button-copy-widget-code"
+                  >
+                    {copiedSnippet ? (
+                      <>
+                        <Check className="h-4 w-4 mr-1.5 text-green-500" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-1.5" />
+                        Copy Code
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <pre className="p-4 rounded-lg bg-slate-900 text-slate-100 text-xs overflow-x-auto font-mono">
+                  <code data-testid="code-widget-snippet">{widgetCodeSnippet}</code>
+                </pre>
+              </div>
+
+              {/* Preview Button */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => setShowWidgetPreview(!showWidgetPreview)}
+                  disabled={!testApiKey}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                  data-testid="button-toggle-widget-preview"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  {showWidgetPreview ? 'Hide Preview' : 'Launch Widget Preview'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(`/embed/assessment?demo=true&type=${widgetAssessment}&theme=${widgetTheme}`, '_blank')}
+                  data-testid="button-open-fullscreen-preview"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open in New Tab
+                </Button>
+              </div>
+
+              {/* Live Preview */}
+              {showWidgetPreview && testApiKey && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Live Preview</label>
+                    <Badge variant="outline" className="text-xs">Test Mode - No credits consumed</Badge>
+                  </div>
+                  <div 
+                    className={`rounded-lg border-2 overflow-hidden ${widgetTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}
+                    style={{ height: '500px' }}
+                    data-testid="widget-preview-container"
+                  >
+                    <iframe
+                      src={`/embed/assessment?demo=true&type=${widgetAssessment}&theme=${widgetTheme}`}
+                      className="w-full h-full border-0"
+                      title="Widget Preview"
+                      data-testid="widget-preview-iframe"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    This is a demo preview. In production, the widget will create real assessment sessions.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Assessment Preview Cards */}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -377,11 +588,11 @@ export function DeveloperSubTabs({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <CardTitle>Assessment Sandbox</CardTitle>
-                    <InfoTooltip content="Test the assessment experience yourself before sending to real candidates. Sandbox tests don't consume credits and results are for preview only." />
+                    <CardTitle>Assessment Preview</CardTitle>
+                    <InfoTooltip content="Preview each assessment type to understand the candidate experience. These are samples only - no scores recorded." />
                   </div>
                   <CardDescription>
-                    Preview our assessment experience before deploying to candidates
+                    See sample questions from each assessment type
                   </CardDescription>
                 </div>
               </div>
