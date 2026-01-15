@@ -11043,7 +11043,8 @@ Format your response as JSON with this structure:
         freeTestsAllocated: freeTestsAllocated || 0,
         freeTestsExpiresAt: freeTestsExpiryDate,
         // PAYG and Enterprise use prepaid balance
-        prepaidBalance: (selectedBillingType === 'payg' || selectedBillingType === 'enterprise') ? (prepaidBalance || freeTestsAllocated || 0) : 0,
+        // Note: Don't include freeTestsAllocated here - it will be credited separately via creditPartnerTests
+        prepaidBalance: (selectedBillingType === 'payg' || selectedBillingType === 'enterprise') ? (prepaidBalance || 0) : 0,
         // Subscription uses billing cycle
         billingCycleAnchor: selectedBillingType === 'subscription' ? (billingCycleAnchor || 1) : null,
         currentMonthUsage: 0,
@@ -11053,10 +11054,12 @@ Format your response as JSON with this structure:
         invoiceContact: selectedBillingType === 'enterprise' ? invoiceContact : null,
       });
       
-      // Auto-credit free tests if allocated
+      // Log free tests allocation in quota ledger (without double-counting)
+      // Note: Free tests are tracked in freeTestsAllocated field and included in balance via getPartnerQuotaBalance
+      // We only create a ledger entry for audit trail - we do NOT call creditPartnerTests as that would double-count
       if (freeTestsAllocated && freeTestsAllocated > 0) {
         try {
-          // Create a complimentary package record
+          // Create a complimentary package record for tracking
           const pkg = await storage.createPartnerTestPackage({
             partnerId: partner.id,
             packageSize: freeTestsAllocated,
@@ -11066,17 +11069,19 @@ Format your response as JSON with this structure:
             status: 'completed',
           });
           
-          // Credit the free tests to the partner's quota
-          await storage.creditPartnerTests(
-            partner.id,
-            pkg.id,
-            freeTestsAllocated,
-            `Welcome package: ${freeTestsAllocated} complimentary tests`
-          );
+          // Create ledger entry for audit trail only (balance is freeTestsAllocated since no consumed tests yet)
+          await storage.createQuotaLedgerEntry({
+            partnerId: partner.id,
+            packageId: pkg.id,
+            entryType: 'credit',
+            amount: freeTestsAllocated,
+            balanceAfter: freeTestsAllocated,
+            description: `Welcome package: ${freeTestsAllocated} complimentary tests`,
+          });
           
-          console.log(`Credited ${freeTestsAllocated} free tests to partner ${partner.id}`);
+          console.log(`Allocated ${freeTestsAllocated} free tests to partner ${partner.id}`);
         } catch (creditError) {
-          console.error("Error crediting free tests:", creditError);
+          console.error("Error logging free tests allocation:", creditError);
           // Don't fail partner creation, just log the error
         }
       }
