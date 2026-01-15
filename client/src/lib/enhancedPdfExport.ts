@@ -591,26 +591,32 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
+  // Define consistent margins and box widths for alignment
+  const leftMargin = 20;
+  const rightMargin = 20;
+  const totalBoxWidth = pageWidth - leftMargin - rightMargin;
+  const boxGap = 5;
+  
   // Candidate Information Card with light blue border
   yPos = 110;
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(191, 219, 254); // Light blue border (#BFDBFE)
   pdf.setLineWidth(0.5);
-  pdf.roundedRect(30, yPos, pageWidth - 60, 32, 3, 3, 'FD');
+  pdf.roundedRect(leftMargin, yPos, totalBoxWidth, 32, 3, 3, 'FD');
   
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(55, 65, 81);
-  pdf.text('CANDIDATE PROFILE', pageWidth / 2, yPos + 8, { align: 'center' });
+  pdf.text('CANDIDATE PROFILE', leftMargin + totalBoxWidth / 2, yPos + 8, { align: 'center' });
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(75, 85, 99);
-  pdf.text(`Name: ${candidateName}`, pageWidth / 2, yPos + 16, { align: 'center' });
+  pdf.text(`Name: ${candidateName}`, leftMargin + totalBoxWidth / 2, yPos + 16, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`Email: ${candidate.user.email}`, pageWidth / 2, yPos + 22, { align: 'center' });
+  pdf.text(`Email: ${candidate.user.email}`, leftMargin + totalBoxWidth / 2, yPos + 22, { align: 'center' });
   const uniqueCompletedTypes = new Set(candidate.results?.filter((r: any) => r.status === 'completed').map((r: any) => r.assessmentType) || []);
-  pdf.text(`Assessments Completed: ${uniqueCompletedTypes.size}`, pageWidth / 2, yPos + 28, { align: 'center' });
+  pdf.text(`Assessments Completed: ${uniqueCompletedTypes.size}`, leftMargin + totalBoxWidth / 2, yPos + 28, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
   
@@ -642,7 +648,8 @@ export async function exportEnhancedCandidatePDF(
   
   // Key Metrics (moved up since Executive Summary removed)
   yPos = 150;
-  const boxWidth = (pageWidth - 60) / 3;
+  // Calculate box widths to fit 3 boxes with gaps within totalBoxWidth
+  const metricBoxWidth = (totalBoxWidth - boxGap * 2) / 3; // 3 boxes with 2 gaps
   
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [
@@ -652,8 +659,8 @@ export async function exportEnhancedCandidatePDF(
   ];
   
   metricsData.forEach((metric, index) => {
-    const xPos = 30 + (index * boxWidth);
-    const boxInnerWidth = boxWidth - 5;
+    const xPos = leftMargin + (index * (metricBoxWidth + boxGap));
+    const boxInnerWidth = metricBoxWidth;
     
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(191, 219, 254); // Light blue border (#BFDBFE)
