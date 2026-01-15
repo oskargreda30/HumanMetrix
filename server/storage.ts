@@ -1814,6 +1814,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsageSummaryByPartner(partnerId: string, startDate: Date, endDate: Date): Promise<{ eventType: string; count: number; totalAmount: number }[]> {
+    // Exclude test mode sessions from the summary by joining with API keys
+    // and filtering out events where environment = 'test'
     const result = await db
       .select({
         eventType: usageEvents.eventType,
@@ -1821,11 +1823,14 @@ export class DatabaseStorage implements IStorage {
         totalAmount: sql<number>`coalesce(sum(${usageEvents.billedAmount}), 0)::int`,
       })
       .from(usageEvents)
+      .leftJoin(partnerApiKeys, eq(usageEvents.apiKeyId, partnerApiKeys.id))
       .where(
         and(
           eq(usageEvents.partnerId, partnerId),
           sql`${usageEvents.createdAt} >= ${startDate}`,
-          sql`${usageEvents.createdAt} <= ${endDate}`
+          sql`${usageEvents.createdAt} <= ${endDate}`,
+          // Exclude test mode sessions (environment = 'test' or null for legacy)
+          sql`COALESCE(${partnerApiKeys.environment}, 'live') != 'test'`
         )
       )
       .groupBy(usageEvents.eventType);
@@ -1896,6 +1901,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTestModeUsageStats(startDate: Date, endDate: Date): Promise<{ partnerId: string; partnerName: string; companyName: string | null; testSessions: number; testCompletions: number; lastTestUsage: Date | null }[]> {
+    // Join with API keys to determine test mode by environment = 'test'
     const result = await db
       .select({
         partnerId: usageEvents.partnerId,
@@ -1907,9 +1913,10 @@ export class DatabaseStorage implements IStorage {
       })
       .from(usageEvents)
       .innerJoin(partnerAccounts, eq(usageEvents.partnerId, partnerAccounts.id))
+      .innerJoin(partnerApiKeys, eq(usageEvents.apiKeyId, partnerApiKeys.id))
       .where(
         and(
-          eq(usageEvents.isTestMode, true),
+          eq(partnerApiKeys.environment, 'test'),
           sql`${usageEvents.createdAt} >= ${startDate}`,
           sql`${usageEvents.createdAt} <= ${endDate}`
         )
