@@ -3591,10 +3591,10 @@ export default function PartnerDashboard() {
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Purchase Test Packages
-                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates." />
+                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates. You can also apply promo codes at checkout." />
                         </CardTitle>
                         <CardDescription>
-                          Buy test credits with bulk discounts
+                          Buy test credits with bulk discounts • Promo codes available at checkout
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -3603,38 +3603,46 @@ export default function PartnerDashboard() {
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                           </div>
                         ) : pricing?.packages && pricing.packages.length > 0 ? (
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            {pricing.packages.map((pkg) => {
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {pricing.packages.map((pkg: any) => {
                               const isZeroDecimal = pricing.isZeroDecimal;
                               const displayPrice = isZeroDecimal ? pkg.price : pkg.price / 100;
                               const displayPerTest = isZeroDecimal ? pkg.pricePerTest : pkg.pricePerTest / 100;
-                              const currencySymbol = pricing.currency === 'GBP' ? '£' : 
-                                pricing.currency === 'USD' ? '$' : 
-                                pricing.currency === 'EUR' ? '€' : 
-                                pricing.currency === 'AUD' ? 'A$' : 
-                                pricing.currency === 'SGD' ? 'S$' : 
-                                pricing.currency === 'HKD' ? 'HK$' : '£';
+                              const currencySymbols: Record<string, string> = {
+                                GBP: '£', USD: '$', EUR: '€', AUD: 'A$', CAD: 'C$', SGD: 'S$', HKD: 'HK$',
+                                INR: '₹', MYR: 'RM', THB: '฿', PHP: '₱', JPY: '¥', KRW: '₩', VND: '₫',
+                              };
+                              const currencySymbol = currencySymbols[pricing.currency] || pricing.currency + ' ';
+                              const hasDiscount = pkg.discountPercent && pkg.discountPercent > 0;
                               
                               return (
                                 <div 
                                   key={pkg.size} 
-                                  className="border rounded-lg p-4 flex flex-col"
+                                  className={`border rounded-lg p-4 flex flex-col relative ${hasDiscount ? 'border-primary/50' : ''}`}
                                   data-testid={`package-${pkg.size}`}
                                 >
+                                  {hasDiscount && (
+                                    <div className="absolute -top-2 -right-2">
+                                      <Badge className="bg-green-500 text-white border-0">
+                                        {pkg.discountPercent}% OFF
+                                      </Badge>
+                                    </div>
+                                  )}
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold text-lg">{pkg.name}</span>
-                                    {pkg.size >= 100 && (
-                                      <Badge variant="secondary" className="bg-green-500/20 text-green-600">
-                                        Best Value
-                                      </Badge>
-                                    )}
+                                    <Badge variant="secondary">{pkg.size} tests</Badge>
                                   </div>
                                   <div className="text-2xl font-bold mb-1">
-                                    {currencySymbol}{displayPrice.toFixed(2)}
+                                    {currencySymbol}{isZeroDecimal ? displayPrice.toLocaleString() : displayPrice.toFixed(2)}
                                   </div>
-                                  <div className="text-sm text-muted-foreground mb-4">
-                                    {currencySymbol}{displayPerTest.toFixed(2)} per test
+                                  <div className="text-sm text-muted-foreground mb-2">
+                                    {currencySymbol}{isZeroDecimal ? displayPerTest.toLocaleString() : displayPerTest.toFixed(2)} per test
                                   </div>
+                                  {pkg.savings > 0 && (
+                                    <div className="text-xs text-green-600 dark:text-green-400 mb-3">
+                                      Save {currencySymbol}{isZeroDecimal ? pkg.savings.toLocaleString() : (pkg.savings / 100).toFixed(2)}
+                                    </div>
+                                  )}
                                   <Button
                                     className="mt-auto w-full"
                                     onClick={() => handlePurchase(pkg.size)}
@@ -3649,7 +3657,7 @@ export default function PartnerDashboard() {
                                     ) : (
                                       <>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                        Buy {pkg.size} Tests
+                                        Buy Now
                                       </>
                                     )}
                                   </Button>

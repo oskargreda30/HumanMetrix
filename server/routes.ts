@@ -7284,6 +7284,7 @@ Format your response as JSON with this structure:
   });
 
   // Partner self-service: Get credit package pricing (admin only)
+  // Uses partner's assigned pricePerAssessment with volume discounts for larger packages
   app.get("/api/partner/me/pricing", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
@@ -7296,88 +7297,46 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // Get exchange rates
-      const rates = await getExchangeRates();
       const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
-      
-      // Check if this is a zero-decimal currency (using shared constant)
       const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency as any);
       
-      // Rates are GBP-based (how many units of currency per 1 GBP)
-      // Example: USD = 1.27 means 1 GBP = 1.27 USD
-      // Example: PHP = 71.5 means 1 GBP = 71.5 PHP
-      const targetRate = rates.rates[partnerCurrency];
-      const usdRate = rates.rates['USD'] ?? 1.27;            // USD per GBP
+      // Use partner's assigned pricePerAssessment (in smallest currency units, e.g. pence/cents)
+      // Default to 500 (£5.00 / $5.00) if not set
+      const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
-      // Check if we have a valid rate for this currency
-      if (targetRate === undefined) {
-        console.warn(`[Partner Pricing] No exchange rate found for ${partnerCurrency}, falling back to GBP`);
-        // Fall back to GBP pricing using the same roundPriceUp framework
-        // Base prices in USD: $20, $10, $5, $2.50, $1 per test
-        const usdToGbpRate = 1 / usdRate;
-        const gbpPackages = [
-          { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
-          { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
-          { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
-          { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
-          { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
-        ].map(pkg => ({
-          size: pkg.size,
-          name: pkg.name,
-          price: roundPriceUp(pkg.priceUsd * usdToGbpRate) * 100, // Convert to pence after rounding
-          pricePerTest: roundPriceUp(pkg.pricePerTestUsd * usdToGbpRate) * 100,
-        }));
-        return res.json({
-          currency: 'GBP',
-          packages: gbpPackages,
-          exchangeRate: usdToGbpRate,
-          lastUpdated: rates.date,
-          isZeroDecimal: false,
-        });
-      }
-      
-      // To convert USD to target currency:
-      // 1. Convert USD to GBP: usd_amount / usdRate = gbp_amount
-      // 2. Convert GBP to target: gbp_amount * targetRate = target_amount
-      // Combined: usd_amount * (targetRate / usdRate) = target_amount
-      const usdToTargetRate = targetRate / usdRate;
-      
-      // Base prices in USD (documentation prices: $20, $10, $5, $2.50, $1 per test)
-      const basePackages = [
-        { size: 50, name: 'Boutique', priceUsd: 1000, pricePerTestUsd: 20 },
-        { size: 250, name: 'Growth', priceUsd: 2500, pricePerTestUsd: 10 },
-        { size: 1000, name: 'Small Enterprise', priceUsd: 5000, pricePerTestUsd: 5 },
-        { size: 5000, name: 'Enterprise', priceUsd: 12500, pricePerTestUsd: 2.5 },
-        { size: 10000, name: 'Pro', priceUsd: 10000, pricePerTestUsd: 1 },
+      // Volume discount tiers - larger packages get better rates
+      // Discount percentages applied to the partner's base price
+      const packageTiers = [
+        { size: 10, name: 'Starter', discountPercent: 0 },       // No discount
+        { size: 25, name: 'Growth', discountPercent: 5 },        // 5% off
+        { size: 50, name: 'Professional', discountPercent: 10 }, // 10% off
+        { size: 100, name: 'Business', discountPercent: 15 },    // 15% off
+        { size: 250, name: 'Enterprise', discountPercent: 20 },  // 20% off
+        { size: 500, name: 'Enterprise+', discountPercent: 25 }, // 25% off
       ];
       
-      // Convert prices using roundPriceUp (same as home page pricing)
-      const convertedPackages = basePackages.map(pkg => {
-        // Convert USD to target currency (in main units, e.g. PHP not PHP cents)
-        const priceInTargetUnits = pkg.priceUsd * usdToTargetRate;
-        const pricePerTestInTargetUnits = pkg.pricePerTestUsd * usdToTargetRate;
+      // Calculate prices for each package tier
+      const packages = packageTiers.map(tier => {
+        const discountMultiplier = 1 - (tier.discountPercent / 100);
+        const discountedPricePerTest = Math.round(basePricePerTest * discountMultiplier);
+        const totalPrice = discountedPricePerTest * tier.size;
         
-        // Apply roundPriceUp for clean display prices
-        const roundedPrice = roundPriceUp(priceInTargetUnits);
-        const roundedPricePerTest = roundPriceUp(pricePerTestInTargetUnits);
-        
-        // For zero-decimal currencies, return the rounded amount directly
-        // For regular currencies, multiply by 100 to get cents/smallest units
         return {
-          size: pkg.size,
-          name: pkg.name,
-          price: isZeroDecimal ? roundedPrice : roundedPrice * 100,
-          pricePerTest: isZeroDecimal ? roundedPricePerTest : roundedPricePerTest * 100,
+          size: tier.size,
+          name: tier.name,
+          price: totalPrice,
+          pricePerTest: discountedPricePerTest,
+          discountPercent: tier.discountPercent,
+          savings: tier.discountPercent > 0 ? (basePricePerTest * tier.size) - totalPrice : 0,
         };
       });
       
-      console.log(`[Partner Pricing] Currency: ${partnerCurrency}, USD rate: ${usdRate}, Target rate: ${targetRate}, Conversion: ${usdToTargetRate.toFixed(4)}, Zero-decimal: ${isZeroDecimal}`);
+      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, Currency: ${partnerCurrency}, Base price/test: ${basePricePerTest}, Zero-decimal: ${isZeroDecimal}`);
       
       res.json({
         currency: partnerCurrency,
-        packages: convertedPackages,
-        exchangeRate: usdToTargetRate,
-        lastUpdated: rates.date,
+        packages,
+        basePricePerTest,
         isZeroDecimal,
       });
     } catch (error) {
@@ -8030,10 +7989,26 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
       
-      // Find matching tier or use custom pricing
-      const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
-      const pricePerTest = tier?.pricePerTest || 500;
-      const totalPrice = packageSize * pricePerTest;
+      // Use partner's assigned currency and pricePerAssessment
+      const partnerCurrency = (matchingPartner.currency || 'GBP').toLowerCase();
+      const basePricePerTest = matchingPartner.pricePerAssessment || 500;
+      
+      // Volume discount tiers - must match the pricing API
+      const packageTiers = [
+        { size: 10, name: 'Starter', discountPercent: 0 },
+        { size: 25, name: 'Growth', discountPercent: 5 },
+        { size: 50, name: 'Professional', discountPercent: 10 },
+        { size: 100, name: 'Business', discountPercent: 15 },
+        { size: 250, name: 'Enterprise', discountPercent: 20 },
+        { size: 500, name: 'Enterprise+', discountPercent: 25 },
+      ];
+      
+      // Find matching tier or use no discount for custom sizes
+      const tier = packageTiers.find(t => t.size === packageSize);
+      const discountPercent = tier?.discountPercent || 0;
+      const discountMultiplier = 1 - (discountPercent / 100);
+      const pricePerTest = Math.round(basePricePerTest * discountMultiplier);
+      const totalPrice = pricePerTest * packageSize;
       
       // Create package record (pending)
       const pkg = await storage.createPartnerTestPackage({
@@ -8041,7 +8016,7 @@ Format your response as JSON with this structure:
         packageSize,
         pricePerTest,
         totalPrice,
-        currency: 'gbp',
+        currency: partnerCurrency,
         status: 'pending',
       });
       
@@ -8072,15 +8047,25 @@ Format your response as JSON with this structure:
           ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
           : 'http://localhost:5000';
       
+      // Get currency symbol for description
+      const currencySymbols: Record<string, string> = {
+        gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$',
+        inr: '₹', myr: 'RM', thb: '฿', php: '₱', jpy: '¥',
+      };
+      const currSymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+      const isZeroDecimal = ['jpy', 'krw', 'vnd', 'idr', 'clp', 'pyg', 'ugx', 'gnf', 'kmf', 'rwf', 'xof', 'xaf', 'xpf', 'djf', 'bif', 'mga', 'vuv'].includes(partnerCurrency);
+      const displayPrice = isZeroDecimal ? pricePerTest : (pricePerTest / 100);
+      
       const session = await stripeClient.checkout.sessions.create({
         mode: 'payment',
         customer: customerId,
+        allow_promotion_codes: true, // Enable promo codes on Stripe checkout page
         line_items: [{
           price_data: {
-            currency: 'gbp',
+            currency: partnerCurrency,
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at £${(pricePerTest / 100).toFixed(2)} per test`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
             },
             unit_amount: totalPrice,
           },
@@ -8092,9 +8077,10 @@ Format your response as JSON with this structure:
           packageId: pkg.id,
           packageSize: packageSize.toString(),
           selfService: 'true',
+          discountPercent: discountPercent.toString(),
         },
         success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/admin?tab=partners&subtab=usage&purchase_cancelled=true`,
+        cancel_url: `${baseUrl}/partner?tab=billing&purchase_cancelled=true`,
       });
       
       // Update package with Stripe session ID
