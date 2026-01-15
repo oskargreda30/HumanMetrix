@@ -1,19 +1,91 @@
-# Allow all search engines to crawl the site
+# HumanMetrix Robots.txt
+# https://humanmetrix.co.uk
+# Last updated: 2026-01-15
+
 User-agent: *
 Allow: /
 
-# Disallow indexing of admin pages (requires authentication anyway)
-Disallow: /admin/
+# Public pages - explicitly allow
+Allow: /about
+Allow: /assessments
+Allow: /for-employers
+Allow: /for-job-seekers
+Allow: /ecosystem-index
+Allow: /purchase
+Allow: /pricing
+Allow: /articles
+Allow: /articles/
+Allow: /team
+Allow: /developers
+Allow: /terms
+Allow: /privacy
+Allow: /eula
+Allow: /login
+Allow: /subscribe
 
-# Disallow indexing of user dashboard pages (requires authentication)
+# Block private/authenticated pages
 Disallow: /dashboard
+Disallow: /admin
+Disallow: /admin/
+Disallow: /partner/
+Disallow: /results
 Disallow: /my-results
-Disallow: /results/
 Disallow: /assessment/
-
-# Disallow payment/purchase intermediate pages
+Disallow: /start-assessment
+Disallow: /checkout
+Disallow: /checkout-success
+Disallow: /purchase-success
 Disallow: /payment-callback
-Disallow: /purchase/success
+Disallow: /payment-cancel-callback
+Disallow: /b2b-payment-callback
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /accept-partner-invite
+Disallow: /embed/
+Disallow: /widget-test
+Disallow: /b2b-results
+Disallow: /generate-sample-pdfs
+Disallow: /partner-package-success
+Disallow: /partner-result
+
+# Block API endpoints
+Disallow: /api/
+Disallow: /api/*
+
+# Block query strings for cleaner indexing
+Disallow: /*?*
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
 
 # Sitemap location
 Sitemap: https://humanmetrix.co.uk/sitemap.xml
+
+# Googlebot - no crawl delay for better indexing
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# AI crawlers - allow for visibility
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: CCBot
+Allow: /
