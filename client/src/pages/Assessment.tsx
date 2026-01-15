@@ -169,7 +169,32 @@ export default function Assessment() {
         if (statusData.status === 'completed') {
           console.log('[Assessment] Evaluation completed successfully');
           setIsEvaluating(false);
-          setEvaluationProgress(100); // Complete immediately
+          // Smoothly animate to 100% over 1 second before returning
+          const animateToComplete = () => {
+            return new Promise<void>((resolve) => {
+              const targetProgress = 100;
+              const animationDuration = 1000; // 1 second
+              const intervalMs = 50; // Update every 50ms
+              const steps = animationDuration / intervalMs;
+              let currentStep = 0;
+              
+              const interval = setInterval(() => {
+                currentStep++;
+                setEvaluationProgress(prev => {
+                  const remaining = targetProgress - prev;
+                  const increment = remaining / (steps - currentStep + 1);
+                  return Math.min(targetProgress, prev + increment);
+                });
+                
+                if (currentStep >= steps) {
+                  clearInterval(interval);
+                  setEvaluationProgress(100);
+                  resolve();
+                }
+              }, intervalMs);
+            });
+          };
+          await animateToComplete();
           return statusData;
         }
         
@@ -343,8 +368,8 @@ export default function Assessment() {
     // Don't auto-start - wait for user to click "Begin" in instructions dialog
   }, [isAuthenticated]);
 
-  // Time-based progress animation - slowly progress from 5% to 95% over average evaluation time
-  // Average AI evaluation takes ~70 seconds, so we progress accordingly and stop at 95% if it takes longer
+  // Time-based progress animation - slowly progress from 5% to 95% over 2 minutes
+  // This provides smooth visual feedback while evaluation runs in background
   useEffect(() => {
     if (!isEvaluating) {
       // Clear animation when not evaluating
@@ -355,17 +380,17 @@ export default function Assessment() {
       return;
     }
     
-    // Average evaluation time is ~70 seconds (increased from 50s based on real usage)
+    // Target 2 minutes (120 seconds) for full animation
     // Progress from 5% to 95% (90% range) over this time
-    const averageEvaluationMs = 70000; // 70 seconds
+    const targetDurationMs = 120000; // 2 minutes
     const startProgress = 5;
     const maxProgress = 95; // Stop at 95% until actually complete
     const progressRange = maxProgress - startProgress; // 90%
     
-    // Update every 200ms for smoother animation
-    const intervalMs = 200;
-    const totalIntervals = averageEvaluationMs / intervalMs; // 350 intervals
-    const incrementPerInterval = progressRange / totalIntervals; // ~0.26% per interval
+    // Update every 100ms for very smooth animation
+    const intervalMs = 100;
+    const totalIntervals = targetDurationMs / intervalMs; // 1200 intervals
+    const incrementPerInterval = progressRange / totalIntervals; // 0.075% per interval
     
     progressAnimationRef.current = setInterval(() => {
       setEvaluationProgress(prev => {
@@ -373,8 +398,9 @@ export default function Assessment() {
         if (prev >= maxProgress) {
           return maxProgress;
         }
+        // Use decimal precision for smooth animation (no rounding)
         const next = prev + incrementPerInterval;
-        return Math.min(maxProgress, Math.round(next));
+        return Math.min(maxProgress, next);
       });
     }, intervalMs);
     
