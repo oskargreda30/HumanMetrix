@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, Plus, TrendingUp, CreditCard, Receipt, Tag, RotateCcw, AlertCircle, CheckCircle, Clock, Ban, ArrowRight, Building2, Check, X } from "lucide-react";
+import { Loader2, RefreshCw, Plus, TrendingUp, CreditCard, Receipt, Tag, RotateCcw, AlertCircle, CheckCircle, Clock, Ban, ArrowRight, Building2, Check, X, FileText, Mail, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -88,6 +88,31 @@ interface BillingChangeRequest {
   reviewedAt: string | null;
 }
 
+interface B2BInvoice {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  partnerEmail: string;
+  billingEmail: string | null;
+  invoiceNumber: string;
+  periodStart: string;
+  periodEnd: string;
+  testsUsed: number;
+  pricePerTest: number;
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  currency: string;
+  status: 'sent' | 'paid' | 'overdue' | 'cancelled';
+  dueDate: string;
+  paidAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+type InvoiceStatusFilter = 'all' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
 export default function BillingTab() {
   const { toast } = useToast();
   const [subTab, setSubTab] = useState("overview");
@@ -145,6 +170,80 @@ export default function BillingTab() {
       const response = await apiRequest("GET", `/api/admin/billing/change-requests${params.toString() ? '?' + params.toString() : ''}`);
       if (!response.ok) throw new Error("Failed to fetch billing change requests");
       return response.json();
+    },
+  });
+
+  // B2B Invoices
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<InvoiceStatusFilter>('all');
+  const [markPaidDialogOpen, setMarkPaidDialogOpen] = useState(false);
+  const [cancelInvoiceDialogOpen, setCancelInvoiceDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<B2BInvoice | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+
+  const { data: b2bInvoices, isLoading: invoicesLoading, refetch: refetchInvoices } = useQuery<B2BInvoice[]>({
+    queryKey: ["/api/admin/billing/invoices", invoiceStatusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (invoiceStatusFilter !== 'all') params.set('status', invoiceStatusFilter);
+      params.set('limit', '100');
+      const response = await fetch(`/api/admin/billing/invoices?${params.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch invoices");
+      return response.json();
+    },
+  });
+
+  const markInvoicePaidMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      return apiRequest("PATCH", `/api/admin/invoices/${invoiceId}`, { status: 'paid' });
+    },
+    onSuccess: () => {
+      toast({ title: "Invoice marked as paid" });
+      refetchInvoices();
+      setMarkPaidDialogOpen(false);
+      setSelectedInvoice(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to update invoice", 
+        description: error.message || "An error occurred",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const cancelInvoiceMutation = useMutation({
+    mutationFn: async ({ invoiceId, reason }: { invoiceId: string; reason: string }) => {
+      return apiRequest("POST", `/api/admin/invoices/${invoiceId}/cancel`, { reason });
+    },
+    onSuccess: () => {
+      toast({ title: "Invoice cancelled" });
+      refetchInvoices();
+      setCancelInvoiceDialogOpen(false);
+      setSelectedInvoice(null);
+      setCancelReason("");
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to cancel invoice", 
+        description: error.message || "An error occurred",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const sendReminderMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      return apiRequest("POST", `/api/admin/invoices/${invoiceId}/reminder`);
+    },
+    onSuccess: () => {
+      toast({ title: "Reminder email sent" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to send reminder", 
+        description: error.message || "An error occurred",
+        variant: "destructive" 
+      });
     },
   });
 
@@ -266,14 +365,30 @@ export default function BillingTab() {
     // Invalidate all billing-related queries to clear cache
     queryClient.invalidateQueries({ predicate: (query) => {
       const key = query.queryKey[0] as string;
-      return key?.startsWith('/api/admin/billing');
+      return key?.startsWith('/api/admin/billing') || key?.startsWith('/api/admin/invoices');
     }});
     // Also explicitly refetch all data
     refetchStats();
     refetchTransactions();
     refetchPromoCodes();
     refetchRequests();
+    refetchInvoices();
     toast({ title: "Data refreshed", description: "All billing data has been reloaded" });
+  };
+
+  const getInvoiceStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
+      case 'sent':
+        return <Badge className="bg-blue-500/20 text-blue-400 border-0">Sent</Badge>;
+      case 'overdue':
+        return <Badge className="bg-red-500/20 text-red-400 border-0">Overdue</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-500/20 text-gray-400 border-0">Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
   return (
@@ -314,6 +429,9 @@ export default function BillingTab() {
                 {billingRequests.filter(r => r.status === 'pending').length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="b2b-invoices" data-testid="tab-b2b-invoices" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+            B2B Invoices
           </TabsTrigger>
         </TabsList>
 
@@ -829,7 +947,277 @@ export default function BillingTab() {
             </Card>
           )}
         </TabsContent>
+
+        {/* B2B Invoices Tab */}
+        <TabsContent value="b2b-invoices" className="space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-white/70">View and manage B2B partner invoices</p>
+            <Select value={invoiceStatusFilter} onValueChange={(v) => setInvoiceStatusFilter(v as InvoiceStatusFilter)}>
+              <SelectTrigger className="w-[150px] bg-white/10 border-white/20 text-white" data-testid="select-invoice-status">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Invoices</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {invoicesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-cyan-400" data-testid="loader-invoices" />
+            </div>
+          ) : b2bInvoices && b2bInvoices.length > 0 ? (
+            <Card className="bg-white/5 border-white/10">
+              <ScrollArea className="h-[500px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="text-white/70">Invoice #</TableHead>
+                      <TableHead className="text-white/70">Partner</TableHead>
+                      <TableHead className="text-white/70">Period</TableHead>
+                      <TableHead className="text-white/70">Amount</TableHead>
+                      <TableHead className="text-white/70">Due Date</TableHead>
+                      <TableHead className="text-white/70">Status</TableHead>
+                      <TableHead className="text-white/70">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {b2bInvoices.map((invoice) => {
+                      const dueDate = new Date(invoice.dueDate);
+                      const isOverdue = invoice.status !== 'paid' && invoice.status !== 'cancelled' && dueDate < new Date();
+                      return (
+                        <TableRow key={invoice.id} className="border-white/10">
+                          <TableCell className="text-white font-medium" data-testid={`text-invoice-${invoice.id}`}>
+                            {invoice.invoiceNumber}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-full bg-white/10">
+                                <Building2 className="h-4 w-4 text-cyan-400" />
+                              </div>
+                              <div>
+                                <div className="text-white">{invoice.partnerName}</div>
+                                <div className="text-xs text-white/50">{invoice.billingEmail || invoice.partnerEmail}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-white/70">
+                            {format(new Date(invoice.periodStart), "MMM yyyy")}
+                          </TableCell>
+                          <TableCell className="text-white">
+                            {formatCurrency(invoice.totalAmount)}
+                            <div className="text-xs text-white/50">{invoice.testsUsed} tests</div>
+                          </TableCell>
+                          <TableCell className={isOverdue ? "text-red-400" : "text-white/70"}>
+                            {format(dueDate, "dd MMM yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {getInvoiceStatusBadge(isOverdue && invoice.status === 'sent' ? 'overdue' : invoice.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {(invoice.status === 'sent' || invoice.status === 'overdue') && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                                    onClick={() => {
+                                      setSelectedInvoice(invoice);
+                                      setMarkPaidDialogOpen(true);
+                                    }}
+                                    data-testid={`button-mark-paid-${invoice.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Paid
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                    onClick={() => sendReminderMutation.mutate(invoice.id)}
+                                    disabled={sendReminderMutation.isPending}
+                                    data-testid={`button-reminder-${invoice.id}`}
+                                  >
+                                    <Mail className="h-4 w-4 mr-1" />
+                                    Remind
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    onClick={() => {
+                                      setSelectedInvoice(invoice);
+                                      setCancelInvoiceDialogOpen(true);
+                                    }}
+                                    data-testid={`button-cancel-invoice-${invoice.id}`}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Cancel
+                                  </Button>
+                                </>
+                              )}
+                              {invoice.status === 'paid' && invoice.paidAt && (
+                                <span className="text-xs text-white/50">
+                                  Paid {format(new Date(invoice.paidAt), "dd MMM yyyy")}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </Card>
+          ) : (
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="py-8 text-center">
+                <FileText className="h-12 w-12 text-white/30 mx-auto mb-4" />
+                <p className="text-white/70">No invoices found</p>
+                <p className="text-sm text-white/50 mt-2">
+                  {invoiceStatusFilter !== 'all' 
+                    ? 'Try adjusting the status filter' 
+                    : 'No B2B invoices have been created yet'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Mark Invoice as Paid Dialog */}
+      <Dialog open={markPaidDialogOpen} onOpenChange={setMarkPaidDialogOpen}>
+        <DialogContent className="bg-slate-900 border-white/20">
+          <DialogHeader>
+            <DialogTitle className="text-white">Mark Invoice as Paid</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Confirm payment receipt for this invoice.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedInvoice && (
+            <div className="space-y-4 py-4">
+              <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Invoice:</span>
+                  <span className="text-white font-medium">{selectedInvoice.invoiceNumber}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Partner:</span>
+                  <span className="text-white">{selectedInvoice.partnerName}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Amount:</span>
+                  <span className="text-white font-medium">{formatCurrency(selectedInvoice.totalAmount)}</span>
+                </div>
+              </div>
+              <p className="text-white/70 text-sm">
+                This will mark the invoice as paid and, if the partner was suspended due to overdue invoices, 
+                may restore their API access (if no other overdue invoices remain).
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMarkPaidDialogOpen(false);
+                setSelectedInvoice(null);
+              }}
+              className="text-white/70 border-white/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedInvoice) {
+                  markInvoicePaidMutation.mutate(selectedInvoice.id);
+                }
+              }}
+              disabled={markInvoicePaidMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              data-testid="button-confirm-mark-paid"
+            >
+              {markInvoicePaidMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirm Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Invoice Dialog */}
+      <Dialog open={cancelInvoiceDialogOpen} onOpenChange={setCancelInvoiceDialogOpen}>
+        <DialogContent className="bg-slate-900 border-white/20">
+          <DialogHeader>
+            <DialogTitle className="text-white">Cancel Invoice</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Cancel this invoice. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedInvoice && (
+            <div className="space-y-4 py-4">
+              <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Invoice:</span>
+                  <span className="text-white font-medium">{selectedInvoice.invoiceNumber}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Partner:</span>
+                  <span className="text-white">{selectedInvoice.partnerName}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/70">Amount:</span>
+                  <span className="text-white font-medium">{formatCurrency(selectedInvoice.totalAmount)}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70">Cancellation Reason</Label>
+                <Input
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="e.g., Duplicate invoice, terms renegotiated"
+                  className="bg-white/10 border-white/20 text-white"
+                  data-testid="input-cancel-reason"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelInvoiceDialogOpen(false);
+                setSelectedInvoice(null);
+                setCancelReason("");
+              }}
+              className="text-white/70 border-white/20"
+            >
+              Keep Invoice
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedInvoice) {
+                  cancelInvoiceMutation.mutate({ 
+                    invoiceId: selectedInvoice.id, 
+                    reason: cancelReason 
+                  });
+                }
+              }}
+              disabled={cancelInvoiceMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="button-confirm-cancel-invoice"
+            >
+              {cancelInvoiceMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Cancel Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Review Billing Change Request Dialog */}
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
