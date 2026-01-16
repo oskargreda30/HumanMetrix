@@ -363,6 +363,11 @@ export interface IStorage {
   updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void>;
   getNextInvoiceNumber(): Promise<string>;
   
+  // Invoice enforcement operations
+  getOverdueInvoicesForEnforcement(): Promise<Array<{ invoice: PartnerInvoice; partner: PartnerAccount }>>;
+  suspendPartnerForOverdueInvoice(partnerId: string): Promise<void>;
+  restorePartnerFromOverdueInvoice(partnerId: string): Promise<void>;
+  
   // Error log operations
   createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog>;
   getErrorLog(id: string): Promise<ErrorLog | undefined>;
@@ -2443,6 +2448,79 @@ export class DatabaseStorage implements IStorage {
     }
     
     return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+  }
+
+  // Invoice enforcement operations
+  async getOverdueInvoicesForEnforcement(): Promise<Array<{ invoice: PartnerInvoice; partner: PartnerAccount }>> {
+    const today = new Date();
+    
+    // Get all invoices that are overdue (status sent or overdue, past due date)
+    // Join with partner accounts to get partner details
+    const results = await db.select({
+      invoice: partnerInvoices,
+      partner: partnerAccounts,
+    })
+      .from(partnerInvoices)
+      .innerJoin(partnerAccounts, eq(partnerInvoices.partnerId, partnerAccounts.id))
+      .where(
+        and(
+          or(
+            eq(partnerInvoices.status, 'sent'),
+            eq(partnerInvoices.status, 'overdue')
+          ),
+          sql`${partnerInvoices.dueDate} < ${today}`,
+          eq(partnerAccounts.billingType, 'enterprise')
+        )
+      )
+      .orderBy(partnerInvoices.dueDate);
+    
+    return results;
+  }
+
+  async suspendPartnerForOverdueInvoice(partnerId: string): Promise<void> {
+    const now = new Date();
+    
+    // Update partner account with invoice suspension
+    await db.update(partnerAccounts).set({
+      invoiceOverdueSuspendedAt: now,
+      billingStatusOverride: 'suspended_invoice_overdue',
+      apiAccessSuspendedAt: now,
+      updatedAt: now,
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Deactivate LIVE API keys only - test keys remain active for developer testing
+    await db.update(partnerApiKeys).set({
+      isActive: false,
+    }).where(
+      and(
+        eq(partnerApiKeys.partnerId, partnerId),
+        eq(partnerApiKeys.environment, 'live')
+      )
+    );
+  }
+
+  async restorePartnerFromOverdueInvoice(partnerId: string): Promise<void> {
+    // Clear invoice suspension status
+    await db.update(partnerAccounts).set({
+      invoiceOverdueSuspendedAt: null,
+      billingStatusOverride: null,
+      apiAccessSuspendedAt: null,
+      invoiceOverdueNotificationsSent: 0,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+    
+    // Reactivate API keys (only those that haven't expired)
+    await db.update(partnerApiKeys).set({
+      isActive: true,
+    }).where(
+      and(
+        eq(partnerApiKeys.partnerId, partnerId),
+        or(
+          sql`${partnerApiKeys.expiresAt} IS NULL`,
+          sql`${partnerApiKeys.expiresAt} > NOW()`
+        )
+      )
+    );
   }
 
   // Partner monthly usage operations
