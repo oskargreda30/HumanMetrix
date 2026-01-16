@@ -34,6 +34,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
+import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 
 // Helper component for info tooltips - accessible with keyboard
@@ -2024,6 +2025,9 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
+              </TabsTrigger>
+              <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Pipeline
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}
               {false && (
@@ -4606,6 +4610,11 @@ export default function PartnerDashboard() {
             {/* Analysis Tab */}
             <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
               <PartnerAnalysisTab />
+            </TabsContent>
+
+            {/* Pipeline Tab */}
+            <TabsContent value="pipeline" className="space-y-6" data-testid="panel-pipeline">
+              <HiringPipelineTab />
             </TabsContent>
 
             {/* Notifications Tab */}
