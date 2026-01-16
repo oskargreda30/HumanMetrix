@@ -280,6 +280,19 @@ export function registerPartnerRoutes(app: Express) {
         const partner = req.partner!;
         const apiKey = req.apiKey!;
         
+        // Check if API access is suspended due to billing failure
+        if (partner.billingStatusOverride === 'suspended_billing_failure') {
+          return res.status(402).json({
+            error: "API Access Suspended",
+            message: "Your API access has been suspended due to payment failure. Please update your payment method in the partner portal to restore access.",
+            billingStatus: {
+              reason: partner.billingFailureReason || 'payment_failed',
+              failedAttempts: partner.failedBillingAttempts || 0,
+              lastFailureAt: partner.lastBillingFailureAt,
+            },
+          });
+        }
+        
         // Check if partner has remaining quota before creating a session
         // Partners MUST have purchased test credits to use the API
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);

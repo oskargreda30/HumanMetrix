@@ -693,6 +693,15 @@ export const partnerAccounts = pgTable("partner_accounts", {
   lastOverageBilledAt: timestamp("last_overage_billed_at"), // Last overage billing date
   currentMonthUsage: integer("current_month_usage").notNull().default(0), // Tests used this billing cycle
   pendingOverageAmount: integer("pending_overage_amount").notNull().default(0), // Accumulated overage charges pending billing (in pence)
+  // Billing failure tracking
+  failedBillingAttempts: integer("failed_billing_attempts").notNull().default(0), // Count of consecutive failed billing attempts
+  lastBillingFailureAt: timestamp("last_billing_failure_at"), // When the last billing failure occurred
+  billingFailureReason: varchar("billing_failure_reason"), // Last error reason (e.g., 'card_declined', 'no_payment_method', 'insufficient_funds')
+  nextBillingRetryAt: timestamp("next_billing_retry_at"), // When to retry failed billing (3, 5, 7 day schedule)
+  cardExpiryMonth: integer("card_expiry_month"), // Card expiration month (1-12)
+  cardExpiryYear: integer("card_expiry_year"), // Card expiration year (e.g., 2026)
+  cardExpiryWarningsSent: integer("card_expiry_warnings_sent").notNull().default(0), // Count of expiry warnings sent (0, 1=14d, 2=7d, 3=1d)
+  billingStatusOverride: varchar("billing_status_override"), // 'suspended_billing_failure' - API suspended due to billing issues
   // Invoice fields
   paymentTermsDays: integer("payment_terms_days").default(30), // For invoice clients: Net 15/30/45/60/90
   invoiceNotes: varchar("invoice_notes"), // Special terms or notes for invoiced clients

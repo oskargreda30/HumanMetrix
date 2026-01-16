@@ -2842,3 +2842,328 @@ If you didn't request this code, you can safely ignore this email.
     return { success: false, error: error.message };
   }
 }
+
+// ============================================================================
+// BILLING FAILURE & CARD EXPIRY NOTIFICATIONS
+// ============================================================================
+
+export interface BillingFailureDetails {
+  partnerEmail: string;
+  companyName: string;
+  failureReason: string;
+  failedAttempts: number;
+  amountDue: number;
+  currency: string;
+  nextRetryDate?: Date;
+  updatePaymentUrl: string;
+}
+
+export async function sendBillingFailureNotification(details: BillingFailureDetails): Promise<{ success: boolean }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Billing failure email not sent to ${details.partnerEmail} - email not configured`);
+    return { success: false };
+  }
+  
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  
+  const isLastAttempt = details.failedAttempts >= 3;
+  const urgencyColor = isLastAttempt ? '#dc2626' : '#f59e0b';
+  const urgencyText = isLastAttempt 
+    ? 'URGENT: Your API access has been suspended due to payment failure.'
+    : `Warning: We were unable to process your payment. Attempt ${details.failedAttempts} of 3.`;
+  
+  const reasonDisplay = {
+    'card_declined': 'Your card was declined',
+    'insufficient_funds': 'Insufficient funds',
+    'expired_card': 'Your card has expired',
+    'no_payment_method': 'No payment method on file',
+    'processing_error': 'Payment processing error',
+  }[details.failureReason] || details.failureReason;
+  
+  const mailOptions = {
+    from: `"HumanMetrix Billing" <${process.env.GMAIL_USER}>`,
+    to: details.partnerEmail,
+    subject: isLastAttempt 
+      ? `URGENT: API Access Suspended - Payment Required`
+      : `Payment Failed - Action Required`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .alert-box { background: #fef2f2; border: 2px solid ${urgencyColor}; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .amount-box { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+            .amount { font-size: 28px; font-weight: bold; color: #0a1628; }
+            .cta-button { display: inline-block; background: #06b6d4; color: white !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <h2 style="text-align: center; color: ${urgencyColor};">Payment Failed</h2>
+              
+              <div class="alert-box">
+                <p style="margin: 0; font-weight: 600; color: ${urgencyColor};">${urgencyText}</p>
+              </div>
+              
+              <p>Dear ${details.companyName},</p>
+              
+              <p><strong>Reason:</strong> ${reasonDisplay}</p>
+              
+              <div class="amount-box">
+                <p style="margin: 0 0 10px 0; color: #6b7280;">Amount Due</p>
+                <p class="amount">${formatCurrency(details.amountDue)}</p>
+              </div>
+              
+              ${details.nextRetryDate && !isLastAttempt ? `
+              <p><strong>Next retry:</strong> ${details.nextRetryDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              ` : ''}
+              
+              ${isLastAttempt ? `
+              <p style="color: #dc2626; font-weight: 600;">Your API access has been suspended. Assessment sessions cannot be created until payment is resolved.</p>
+              ` : ''}
+              
+              <div style="text-align: center;">
+                <a href="${details.updatePaymentUrl}" class="cta-button">Update Payment Method</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px;">
+                If you've already updated your payment method, we'll automatically retry on the next scheduled date.
+                For immediate assistance, please contact our support team.
+              </p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Billing failure notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    return { success: true };
+  } catch (error: any) {
+    console.error(`❌ Failed to send billing failure notification to ${details.partnerEmail}:`, error.message);
+    return { success: false };
+  }
+}
+
+export interface CardExpiryWarningDetails {
+  partnerEmail: string;
+  companyName: string;
+  cardLast4: string;
+  cardBrand: string;
+  expiryMonth: number;
+  expiryYear: number;
+  daysUntilExpiry: number;
+  updatePaymentUrl: string;
+}
+
+export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): Promise<{ success: boolean }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Card expiry warning not sent to ${details.partnerEmail} - email not configured`);
+    return { success: false };
+  }
+  
+  const urgencyText = details.daysUntilExpiry <= 1 
+    ? 'Your card expires tomorrow!'
+    : details.daysUntilExpiry <= 7 
+      ? `Your card expires in ${details.daysUntilExpiry} days`
+      : `Your card will expire in ${details.daysUntilExpiry} days`;
+  
+  const urgencyColor = details.daysUntilExpiry <= 1 ? '#dc2626' : details.daysUntilExpiry <= 7 ? '#f59e0b' : '#3b82f6';
+  
+  const mailOptions = {
+    from: `"HumanMetrix Billing" <${process.env.GMAIL_USER}>`,
+    to: details.partnerEmail,
+    subject: details.daysUntilExpiry <= 1 
+      ? `URGENT: Card Expires Tomorrow - Update Required`
+      : `Card Expiring Soon - Update Your Payment Method`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .alert-box { background: #fffbeb; border: 2px solid ${urgencyColor}; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+            .card-box { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 15px; }
+            .card-icon { font-size: 24px; }
+            .cta-button { display: inline-block; background: #06b6d4; color: white !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div class="alert-box">
+                <p style="margin: 0; font-weight: 600; color: ${urgencyColor}; font-size: 18px;">${urgencyText}</p>
+              </div>
+              
+              <p>Dear ${details.companyName},</p>
+              
+              <p>Your payment card on file is about to expire:</p>
+              
+              <div class="card-box">
+                <div>
+                  <p style="margin: 0; font-weight: 600;">${details.cardBrand.charAt(0).toUpperCase() + details.cardBrand.slice(1)} ending in ${details.cardLast4}</p>
+                  <p style="margin: 5px 0 0 0; color: #6b7280;">Expires: ${details.expiryMonth.toString().padStart(2, '0')}/${details.expiryYear}</p>
+                </div>
+              </div>
+              
+              <p>To avoid any interruption to your API access, please update your payment method before the expiry date.</p>
+              
+              <div style="text-align: center;">
+                <a href="${details.updatePaymentUrl}" class="cta-button">Update Payment Method</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px;">
+                If your card expires without a replacement, we won't be able to process your billing and your API access may be suspended.
+              </p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Card expiry warning sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    return { success: true };
+  } catch (error: any) {
+    console.error(`❌ Failed to send card expiry warning to ${details.partnerEmail}:`, error.message);
+    return { success: false };
+  }
+}
+
+export interface BillingFailureAdminDetails {
+  partnerId: string;
+  companyName: string;
+  partnerEmail: string;
+  failureReason: string;
+  failedAttempts: number;
+  amountDue: number;
+  currency: string;
+  billingType: string;
+}
+
+export async function sendBillingFailureAdminNotification(details: BillingFailureAdminDetails): Promise<{ success: boolean }> {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Admin billing failure email not sent - email not configured`);
+    return { success: false };
+  }
+  
+  const adminEmail = process.env.GMAIL_USER; // Send to system admin
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  
+  const isSuspended = details.failedAttempts >= 3;
+  
+  const mailOptions = {
+    from: `"HumanMetrix System" <${process.env.GMAIL_USER}>`,
+    to: adminEmail,
+    subject: isSuspended 
+      ? `[ALERT] Partner API Suspended: ${details.companyName} - Billing Failure`
+      : `[ALERT] Partner Billing Failed: ${details.companyName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+            .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+            .label { color: #6b7280; }
+            .value { font-weight: 600; }
+            .suspended-badge { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+            .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2 style="margin: 0;">Partner Billing Alert</h2>
+            </div>
+            <div class="content">
+              <div class="info-row">
+                <span class="label">Partner</span>
+                <span class="value">${details.companyName}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Partner ID</span>
+                <span class="value">${details.partnerId}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Email</span>
+                <span class="value">${details.partnerEmail}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Billing Type</span>
+                <span class="value">${details.billingType}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Failure Reason</span>
+                <span class="value">${details.failureReason}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Failed Attempts</span>
+                <span class="value">${details.failedAttempts}/3</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Amount Due</span>
+                <span class="value">${formatCurrency(details.amountDue)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Status</span>
+                <span class="value">${isSuspended ? '<span class="suspended-badge">API SUSPENDED</span>' : 'Will retry'}</span>
+              </div>
+            </div>
+            <div class="footer">
+              <p>Automated notification from HumanMetrix billing system</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Admin billing failure notification sent (ID: ${info.messageId})`);
+    return { success: true };
+  } catch (error: any) {
+    console.error(`❌ Failed to send admin billing failure notification:`, error.message);
+    return { success: false };
+  }
+}

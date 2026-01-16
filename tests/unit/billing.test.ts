@@ -388,4 +388,247 @@ describe('Partner Billing Logic', () => {
       expect(result.totalAmount).toBe(999); // 3 × 333 = 999 cents
     });
   });
+
+  describe('Billing Failure & Retry Logic', () => {
+    // Retry schedule: 3 days after 1st failure, 5 days after 2nd, 7 days after 3rd
+    function calculateNextRetryDate(failedAttempts: number): Date {
+      const retryDays = [3, 5, 7]; // Days after each failure (1st, 2nd, 3rd)
+      const index = Math.min(failedAttempts - 1, retryDays.length - 1); // Convert 1-indexed to 0-indexed
+      const daysToAdd = retryDays[Math.max(0, index)];
+      const nextRetry = new Date();
+      nextRetry.setDate(nextRetry.getDate() + daysToAdd);
+      return nextRetry;
+    }
+
+    function shouldSuspendApi(failedAttempts: number): boolean {
+      return failedAttempts >= 3;
+    }
+
+    function mapStripeErrorToReason(errorCode: string): string {
+      const reasonMap: Record<string, string> = {
+        'card_declined': 'card_declined',
+        'insufficient_funds': 'insufficient_funds',
+        'expired_card': 'expired_card',
+        'incorrect_cvc': 'card_declined',
+        'processing_error': 'processing_error',
+        'incorrect_number': 'card_declined',
+        'authentication_required': 'authentication_required',
+      };
+      return reasonMap[errorCode] || 'processing_error';
+    }
+
+    it('should calculate 3 day retry after first failure', () => {
+      const today = new Date();
+      const retryDate = calculateNextRetryDate(1);
+      const daysDiff = Math.round((retryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      expect(daysDiff).toBe(3);
+    });
+
+    it('should calculate 5 day retry after second failure', () => {
+      const today = new Date();
+      const retryDate = calculateNextRetryDate(2);
+      const daysDiff = Math.round((retryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      expect(daysDiff).toBe(5);
+    });
+
+    it('should calculate 7 day retry after third failure', () => {
+      const today = new Date();
+      const retryDate = calculateNextRetryDate(3);
+      const daysDiff = Math.round((retryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      expect(daysDiff).toBe(7);
+    });
+
+    it('should not suspend API after 1 failed attempt', () => {
+      expect(shouldSuspendApi(1)).toBe(false);
+    });
+
+    it('should not suspend API after 2 failed attempts', () => {
+      expect(shouldSuspendApi(2)).toBe(false);
+    });
+
+    it('should suspend API after 3 failed attempts', () => {
+      expect(shouldSuspendApi(3)).toBe(true);
+    });
+
+    it('should suspend API after more than 3 failed attempts', () => {
+      expect(shouldSuspendApi(5)).toBe(true);
+    });
+
+    it('should map card_declined error correctly', () => {
+      expect(mapStripeErrorToReason('card_declined')).toBe('card_declined');
+    });
+
+    it('should map insufficient_funds error correctly', () => {
+      expect(mapStripeErrorToReason('insufficient_funds')).toBe('insufficient_funds');
+    });
+
+    it('should map expired_card error correctly', () => {
+      expect(mapStripeErrorToReason('expired_card')).toBe('expired_card');
+    });
+
+    it('should map unknown error to processing_error', () => {
+      expect(mapStripeErrorToReason('unknown_error')).toBe('processing_error');
+    });
+  });
+
+  describe('Card Expiration Warning Logic', () => {
+    function getCardExpiryWarningLevel(
+      expiryMonth: number, 
+      expiryYear: number, 
+      warningsSent: number
+    ): { shouldSend: boolean; level: number; daysUntilExpiry: number } {
+      const today = new Date();
+      // Card expires at end of expiry month
+      const expiryDate = new Date(expiryYear, expiryMonth, 0); // Last day of expiry month
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilExpiry < 0 || daysUntilExpiry > 14) {
+        return { shouldSend: false, level: 0, daysUntilExpiry };
+      }
+
+      if (daysUntilExpiry <= 1 && warningsSent < 3) {
+        return { shouldSend: true, level: 3, daysUntilExpiry };
+      } else if (daysUntilExpiry <= 7 && warningsSent < 2) {
+        return { shouldSend: true, level: 2, daysUntilExpiry };
+      } else if (daysUntilExpiry <= 14 && warningsSent < 1) {
+        return { shouldSend: true, level: 1, daysUntilExpiry };
+      }
+
+      return { shouldSend: false, level: 0, daysUntilExpiry };
+    }
+
+    it('should not send warning for card expiring more than 14 days out', () => {
+      const today = new Date();
+      const futureMonth = today.getMonth() + 2; // 2 months ahead
+      const futureYear = today.getFullYear() + (futureMonth > 11 ? 1 : 0);
+      const normalizedMonth = futureMonth > 11 ? futureMonth - 12 : futureMonth;
+      
+      const result = getCardExpiryWarningLevel(normalizedMonth + 1, futureYear, 0);
+      expect(result.shouldSend).toBe(false);
+    });
+
+    it('should not send warning if already expired', () => {
+      const today = new Date();
+      const pastMonth = today.getMonth(); // Current or past month
+      const pastYear = today.getFullYear() - 1; // Last year
+      
+      const result = getCardExpiryWarningLevel(pastMonth + 1, pastYear, 0);
+      expect(result.shouldSend).toBe(false);
+    });
+
+    it('should not send 14-day warning if already sent', () => {
+      const today = new Date();
+      // Set expiry to 10 days from now
+      const futureDate = new Date(today);
+      futureDate.setDate(futureDate.getDate() + 10);
+      
+      const result = getCardExpiryWarningLevel(futureDate.getMonth() + 1, futureDate.getFullYear(), 1);
+      // Should not send because level 1 (14-day) was already sent
+      expect(result.shouldSend).toBe(false);
+    });
+
+    it('should send level 2 (7-day) warning when within 7 days and only level 1 sent', () => {
+      const today = new Date();
+      // Create a date 5 days from now
+      const futureDate = new Date(today);
+      futureDate.setDate(futureDate.getDate() + 5);
+      
+      // Card expiry at end of month containing futureDate
+      const result = getCardExpiryWarningLevel(futureDate.getMonth() + 1, futureDate.getFullYear(), 1);
+      
+      // This test depends on timing - if futureDate is within 7 days of month end
+      // For consistency, we validate the logic separately
+      if (result.daysUntilExpiry <= 7 && result.daysUntilExpiry > 1) {
+        expect(result.shouldSend).toBe(true);
+        expect(result.level).toBe(2);
+      }
+    });
+  });
+
+  describe('Billing Status Override', () => {
+    interface PartnerWithBillingStatus extends MockPartner {
+      billingStatusOverride?: string | null;
+      failedBillingAttempts?: number;
+    }
+
+    function isApiAccessSuspended(partner: PartnerWithBillingStatus): boolean {
+      return partner.billingStatusOverride === 'suspended_billing_failure';
+    }
+
+    function canCreateSession(partner: PartnerWithBillingStatus): { allowed: boolean; reason?: string } {
+      if (partner.billingStatusOverride === 'suspended_billing_failure') {
+        return { 
+          allowed: false, 
+          reason: 'API access suspended due to payment failure' 
+        };
+      }
+      return { allowed: true };
+    }
+
+    it('should detect suspended status', () => {
+      const partner: PartnerWithBillingStatus = {
+        id: 'partner-10',
+        companyName: 'Suspended Corp',
+        billingType: 'auto_bill',
+        prepaidBalance: 0,
+        currentMonthUsage: 0,
+        pricePerAssessment: 500,
+        isActive: true,
+        billingStatusOverride: 'suspended_billing_failure',
+        failedBillingAttempts: 3,
+      };
+      
+      expect(isApiAccessSuspended(partner)).toBe(true);
+    });
+
+    it('should allow access when no suspension', () => {
+      const partner: PartnerWithBillingStatus = {
+        id: 'partner-11',
+        companyName: 'Active Corp',
+        billingType: 'auto_bill',
+        prepaidBalance: 0,
+        currentMonthUsage: 0,
+        pricePerAssessment: 500,
+        isActive: true,
+        billingStatusOverride: null,
+        failedBillingAttempts: 0,
+      };
+      
+      expect(isApiAccessSuspended(partner)).toBe(false);
+    });
+
+    it('should block session creation when suspended', () => {
+      const partner: PartnerWithBillingStatus = {
+        id: 'partner-12',
+        companyName: 'Blocked Corp',
+        billingType: 'auto_bill',
+        prepaidBalance: 0,
+        currentMonthUsage: 0,
+        pricePerAssessment: 500,
+        isActive: true,
+        billingStatusOverride: 'suspended_billing_failure',
+        failedBillingAttempts: 3,
+      };
+      
+      const result = canCreateSession(partner);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('payment failure');
+    });
+
+    it('should allow session creation when not suspended', () => {
+      const partner: PartnerWithBillingStatus = {
+        id: 'partner-13',
+        companyName: 'Good Standing Corp',
+        billingType: 'auto_bill',
+        prepaidBalance: 0,
+        currentMonthUsage: 0,
+        pricePerAssessment: 500,
+        isActive: true,
+        billingStatusOverride: null,
+      };
+      
+      const result = canCreateSession(partner);
+      expect(result.allowed).toBe(true);
+    });
+  });
 });

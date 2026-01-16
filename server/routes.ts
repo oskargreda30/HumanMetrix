@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
@@ -1624,6 +1625,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ received: true });
     } catch (error: any) {
       console.error('[Airwallex Webhook ERROR]', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Stripe webhook handler for payment events (B2B billing)
+  app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req: any, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    let event;
+    
+    try {
+      if (webhookSecret && sig) {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } else {
+        // For development without signature verification
+        event = JSON.parse(req.body.toString());
+        console.warn('[Stripe Webhook] No webhook secret configured - signature verification skipped');
+      }
+    } catch (err: any) {
+      console.error('[Stripe Webhook] Signature verification failed:', err.message);
+      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+    
+    console.log(`[Stripe Webhook] Received event: ${event.type}, id: ${event.id}`);
+    
+    try {
+      switch (event.type) {
+        case 'payment_intent.payment_failed': {
+          const paymentIntent = event.data.object;
+          const partnerId = paymentIntent.metadata?.partner_id;
+          
+          if (partnerId) {
+            console.log(`[Stripe Webhook] Payment failed for partner ${partnerId}: ${paymentIntent.last_payment_error?.message || 'Unknown error'}`);
+            
+            const partner = await storage.getPartnerAccount(partnerId);
+            if (partner) {
+              const failureReason = paymentIntent.last_payment_error?.code || 'card_declined';
+              const amountDue = paymentIntent.amount || 0;
+              
+              // Track failure (if not already tracked by scheduler)
+              if (!partner.lastBillingFailureAt || 
+                  (new Date().getTime() - new Date(partner.lastBillingFailureAt).getTime()) > 60000) { // Only if not within last minute
+                const newAttempts = (partner.failedBillingAttempts || 0) + 1;
+                const nextRetry = newAttempts < 3 ? calculateNextRetryDate(newAttempts) : null;
+                const isSuspended = newAttempts >= 3;
+                
+                await storage.updatePartnerAccount(partnerId, {
+                  failedBillingAttempts: newAttempts,
+                  lastBillingFailureAt: new Date(),
+                  billingFailureReason: failureReason,
+                  nextBillingRetryAt: nextRetry,
+                  billingStatusOverride: isSuspended ? 'suspended_billing_failure' : null,
+                });
+                
+                // Send notification
+                const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+                  ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+                  : 'https://humanmetrix.ai';
+                
+                const { sendBillingFailureNotification, sendBillingFailureAdminNotification } = await import('./email');
+                
+                await sendBillingFailureNotification({
+                  partnerEmail: partner.billingEmail || partner.email,
+                  companyName: partner.companyName,
+                  failureReason,
+                  failedAttempts: newAttempts,
+                  amountDue,
+                  currency: partner.currency || 'GBP',
+                  nextRetryDate: nextRetry || undefined,
+                  updatePaymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+                });
+                
+                await sendBillingFailureAdminNotification({
+                  partnerId: partner.id,
+                  companyName: partner.companyName,
+                  partnerEmail: partner.email,
+                  failureReason,
+                  failedAttempts: newAttempts,
+                  amountDue,
+                  currency: partner.currency || 'GBP',
+                  billingType: partner.billingType,
+                });
+                
+                console.log(`[Stripe Webhook] Recorded payment failure for partner ${partnerId} (attempt ${newAttempts}/3)`);
+              }
+            }
+          }
+          break;
+        }
+        
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object;
+          const partnerId = paymentIntent.metadata?.partner_id;
+          
+          if (partnerId) {
+            console.log(`[Stripe Webhook] Payment succeeded for partner ${partnerId}`);
+            
+            const partner = await storage.getPartnerAccount(partnerId);
+            if (partner && partner.failedBillingAttempts && partner.failedBillingAttempts > 0) {
+              // Clear failure tracking on successful payment
+              await storage.updatePartnerAccount(partnerId, {
+                failedBillingAttempts: 0,
+                lastBillingFailureAt: null,
+                billingFailureReason: null,
+                nextBillingRetryAt: null,
+                billingStatusOverride: null,
+                lastBilledAt: new Date(),
+              });
+              console.log(`[Stripe Webhook] Cleared billing failures for partner ${partnerId}`);
+            }
+          }
+          break;
+        }
+        
+        case 'payment_method.updated': {
+          const paymentMethod = event.data.object;
+          const customerId = paymentMethod.customer;
+          
+          if (customerId && paymentMethod.card) {
+            // Find partner by Stripe customer ID and update card info
+            const partners = await storage.getAllPartnerAccounts();
+            const partner = partners.find((p: PartnerAccount) => p.stripeCustomerId === customerId);
+            
+            if (partner) {
+              await storage.updatePartnerAccount(partner.id, {
+                cardLast4: paymentMethod.card.last4,
+                cardBrand: paymentMethod.card.brand,
+                cardExpiryMonth: paymentMethod.card.exp_month,
+                cardExpiryYear: paymentMethod.card.exp_year,
+                cardExpiryWarningsSent: 0, // Reset warnings for new card
+              });
+              console.log(`[Stripe Webhook] Updated card info for partner ${partner.id}`);
+            }
+          }
+          break;
+        }
+        
+        case 'customer.source.expiring': {
+          // Card about to expire - Stripe sends this 30 days before
+          const source = event.data.object;
+          const customerId = source.customer;
+          
+          if (customerId) {
+            const partners = await storage.getAllPartnerAccounts();
+            const partner = partners.find((p: PartnerAccount) => p.stripeCustomerId === customerId);
+            
+            if (partner) {
+              console.log(`[Stripe Webhook] Card expiring soon for partner ${partner.id}`);
+              // Note: We also have our own expiration check in the billing scheduler
+            }
+          }
+          break;
+        }
+        
+        default:
+          // Unhandled event type
+          console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+      }
+      
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[Stripe Webhook ERROR]', error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -15158,8 +15322,10 @@ async function runScheduledBillingCheck() {
   console.log(`[Billing Scheduler] Running billing check for day ${dayOfMonth} at ${today.toISOString()}`);
   
   try {
-    // Get all subscription partners whose billing cycle anchor matches today
+    // Get all partner accounts
     const partners = await storage.getAllPartnerAccounts();
+    
+    // 1. Process regular billing for subscription partners whose billing cycle anchor matches today
     const subscriptionPartners = partners.filter(
       (p: PartnerAccount) => p.billingType === 'subscription' && 
            (p.billingCycleAnchor || 1) === dayOfMonth
@@ -15171,7 +15337,7 @@ async function runScheduledBillingCheck() {
       await processAutoBillPartner(partner);
     }
     
-    // Get enterprise partners whose billing cycle anchor matches today
+    // 2. Process enterprise invoicing for partners whose billing cycle anchor matches today
     const enterprisePartners = partners.filter(
       (p: PartnerAccount) => p.billingType === 'enterprise' && 
            (p.billingCycleAnchor || 1) === dayOfMonth
@@ -15183,7 +15349,25 @@ async function runScheduledBillingCheck() {
       await processEnterpriseInvoice(partner);
     }
     
-    // Archive monthly usage for all billable partners (subscription and enterprise)
+    // 3. Process billing retries for partners with scheduled retry date
+    const retryPartners = partners.filter(
+      (p: PartnerAccount) => p.billingType === 'subscription' && 
+           p.nextBillingRetryAt && 
+           new Date(p.nextBillingRetryAt) <= today &&
+           (p.failedBillingAttempts || 0) < 3 // Don't retry if already suspended
+    );
+    
+    console.log(`[Billing Scheduler] Found ${retryPartners.length} partners due for billing retry`);
+    
+    for (const partner of retryPartners) {
+      console.log(`[Billing Scheduler] Retrying billing for partner ${partner.id} (${partner.companyName}), attempt ${(partner.failedBillingAttempts || 0) + 1}`);
+      await processAutoBillPartner(partner);
+    }
+    
+    // 4. Check for card expiration warnings (14 days, 7 days, 1 day before)
+    await processCardExpirationWarnings(partners);
+    
+    // 5. Archive monthly usage for all billable partners (subscription and enterprise)
     const billablePartners = partners.filter(
       (p: PartnerAccount) => (p.billingType === 'subscription' || p.billingType === 'enterprise') &&
            (p.billingCycleAnchor || 1) === dayOfMonth
@@ -15196,6 +15380,193 @@ async function runScheduledBillingCheck() {
     console.log(`[Billing Scheduler] Completed billing check for day ${dayOfMonth}`);
   } catch (error: any) {
     console.error('[Billing Scheduler] Failed:', error.message);
+  }
+}
+
+// Process card expiration warnings for partners with cards about to expire
+async function processCardExpirationWarnings(partners: PartnerAccount[]) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // 1-indexed
+  const currentDay = today.getDate();
+  
+  for (const partner of partners) {
+    // Skip if no card info or not subscription billing
+    if (!partner.cardExpiryMonth || !partner.cardExpiryYear || partner.billingType !== 'subscription') {
+      continue;
+    }
+    
+    // Calculate days until expiration (card expires at end of expiry month)
+    const expiryDate = new Date(partner.cardExpiryYear, partner.cardExpiryMonth, 0); // Last day of expiry month
+    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Skip if already expired or too far out
+    if (daysUntilExpiry < 0 || daysUntilExpiry > 14) {
+      continue;
+    }
+    
+    // Determine which warning to send based on warnings already sent
+    const warningsSent = partner.cardExpiryWarningsSent || 0;
+    let shouldSendWarning = false;
+    let warningLevel = 0;
+    
+    if (daysUntilExpiry <= 1 && warningsSent < 3) {
+      shouldSendWarning = true;
+      warningLevel = 3; // 1 day warning
+    } else if (daysUntilExpiry <= 7 && warningsSent < 2) {
+      shouldSendWarning = true;
+      warningLevel = 2; // 7 day warning
+    } else if (daysUntilExpiry <= 14 && warningsSent < 1) {
+      shouldSendWarning = true;
+      warningLevel = 1; // 14 day warning
+    }
+    
+    if (shouldSendWarning && partner.cardLast4 && partner.cardBrand) {
+      console.log(`[Billing Scheduler] Sending card expiry warning to partner ${partner.id} (${daysUntilExpiry} days until expiry, warning level ${warningLevel})`);
+      
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://humanmetrix.ai';
+      
+      const { sendCardExpiryWarning } = await import('./email');
+      await sendCardExpiryWarning({
+        partnerEmail: partner.billingEmail || partner.email,
+        companyName: partner.companyName,
+        cardLast4: partner.cardLast4,
+        cardBrand: partner.cardBrand,
+        expiryMonth: partner.cardExpiryMonth,
+        expiryYear: partner.cardExpiryYear,
+        daysUntilExpiry,
+        updatePaymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+      });
+      
+      // Update warnings sent count
+      await storage.updatePartnerAccount(partner.id, {
+        cardExpiryWarningsSent: warningLevel,
+      });
+      
+      // Dispatch in-app notification
+      await storage.dispatchPartnerNotification({
+        partnerId: partner.id,
+        type: 'card_expiring',
+        title: daysUntilExpiry <= 1 ? 'Card Expires Tomorrow!' : 'Card Expiring Soon',
+        message: `Your ${partner.cardBrand} card ending in ${partner.cardLast4} expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Please update your payment method.`,
+        metadata: { daysUntilExpiry, cardLast4: partner.cardLast4, cardBrand: partner.cardBrand },
+      });
+    }
+  }
+}
+
+// Calculate next retry date based on failed attempts (3, 5, 7 day schedule)
+function calculateNextRetryDate(failedAttempts: number): Date {
+  const retryDays = [3, 5, 7]; // Days after each failure
+  const daysToAdd = retryDays[Math.min(failedAttempts, retryDays.length - 1)];
+  const nextRetry = new Date();
+  nextRetry.setDate(nextRetry.getDate() + daysToAdd);
+  return nextRetry;
+}
+
+// Map Stripe error codes to readable failure reasons
+function mapStripeErrorToReason(error: any): string {
+  const code = error.code || error.decline_code || '';
+  const reasonMap: Record<string, string> = {
+    'card_declined': 'card_declined',
+    'insufficient_funds': 'insufficient_funds',
+    'expired_card': 'expired_card',
+    'incorrect_cvc': 'card_declined',
+    'processing_error': 'processing_error',
+    'incorrect_number': 'card_declined',
+    'authentication_required': 'authentication_required',
+    'payment_intent_authentication_failure': 'authentication_required',
+  };
+  return reasonMap[code] || 'processing_error';
+}
+
+async function handleBillingFailure(
+  partner: PartnerAccount,
+  usageRecordId: string,
+  amountPence: number,
+  failureReason: string
+) {
+  const newAttempts = (partner.failedBillingAttempts || 0) + 1;
+  const nextRetry = newAttempts < 3 ? calculateNextRetryDate(newAttempts) : null;
+  const isSuspended = newAttempts >= 3;
+  
+  // Update partner with failure tracking
+  await storage.updatePartnerAccount(partner.id, {
+    failedBillingAttempts: newAttempts,
+    lastBillingFailureAt: new Date(),
+    billingFailureReason: failureReason,
+    nextBillingRetryAt: nextRetry,
+    billingStatusOverride: isSuspended ? 'suspended_billing_failure' : null,
+  });
+  
+  // Update usage record status
+  await storage.updateMonthlyUsageBillingStatus(usageRecordId, 'failed');
+  
+  // Get partner's dashboard URL for payment update
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : 'https://humanmetrix.ai';
+  const updatePaymentUrl = `${baseUrl}/partner-dashboard?tab=billing`;
+  
+  // Send notifications
+  const { sendBillingFailureNotification, sendBillingFailureAdminNotification } = await import('./email');
+  
+  // Notify partner
+  await sendBillingFailureNotification({
+    partnerEmail: partner.billingEmail || partner.email,
+    companyName: partner.companyName,
+    failureReason,
+    failedAttempts: newAttempts,
+    amountDue: amountPence,
+    currency: partner.currency || 'GBP',
+    nextRetryDate: nextRetry || undefined,
+    updatePaymentUrl,
+  });
+  
+  // Notify admin
+  await sendBillingFailureAdminNotification({
+    partnerId: partner.id,
+    companyName: partner.companyName,
+    partnerEmail: partner.email,
+    failureReason,
+    failedAttempts: newAttempts,
+    amountDue: amountPence,
+    currency: partner.currency || 'GBP',
+    billingType: partner.billingType,
+  });
+  
+  // Dispatch in-app notification to partner
+  await storage.dispatchPartnerNotification({
+    partnerId: partner.id,
+    type: 'payment_failed',
+    title: isSuspended ? 'API Access Suspended' : 'Payment Failed',
+    message: isSuspended 
+      ? 'Your API access has been suspended due to repeated payment failures. Please update your payment method.'
+      : `Payment attempt ${newAttempts}/3 failed. We will retry on ${nextRetry?.toLocaleDateString('en-GB')}.`,
+    metadata: { failureReason, failedAttempts: newAttempts, amountDue: amountPence },
+  });
+  
+  console.log(`[Billing Scheduler] Partner ${partner.id}: Billing failure recorded (attempt ${newAttempts}/3, reason: ${failureReason}${isSuspended ? ', API SUSPENDED' : ''})`);
+}
+
+async function handleBillingSuccess(partner: PartnerAccount) {
+  // Clear failure tracking on successful payment
+  if (partner.failedBillingAttempts && partner.failedBillingAttempts > 0) {
+    await storage.updatePartnerAccount(partner.id, {
+      failedBillingAttempts: 0,
+      lastBillingFailureAt: null,
+      billingFailureReason: null,
+      nextBillingRetryAt: null,
+      billingStatusOverride: null,
+      lastBilledAt: new Date(),
+    });
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Cleared previous billing failures after successful payment`);
+  } else {
+    await storage.updatePartnerAccount(partner.id, {
+      lastBilledAt: new Date(),
+    });
   }
 }
 
@@ -15223,10 +15594,10 @@ async function processAutoBillPartner(partner: PartnerAccount) {
     return;
   }
   
+  // Check for missing payment method
   if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
     console.error(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Missing Stripe payment method, cannot charge`);
-    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
-    // TODO: Send notification email to admin about failed billing
+    await handleBillingFailure(partner, usageRecord.id, amountPence, 'no_payment_method');
     return;
   }
   
@@ -15258,6 +15629,7 @@ async function processAutoBillPartner(partner: PartnerAccount) {
     if (paymentIntent.status === 'succeeded') {
       console.log(`[Billing Scheduler] Partner ${partner.id}: Payment successful - ${paymentIntent.id}`);
       await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', paymentIntent.id);
+      await handleBillingSuccess(partner);
       
       // Send PDF receipt email to partner
       try {
@@ -15296,13 +15668,12 @@ async function processAutoBillPartner(partner: PartnerAccount) {
       }
     } else {
       console.error(`[Billing Scheduler] Partner ${partner.id}: Payment failed - status: ${paymentIntent.status}`);
-      await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
-      // TODO: Send notification about failed payment
+      await handleBillingFailure(partner, usageRecord.id, amountPence, 'processing_error');
     }
   } catch (error: any) {
     console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
-    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'failed');
-    // TODO: Send notification about failed payment, handle card_declined etc.
+    const failureReason = mapStripeErrorToReason(error);
+    await handleBillingFailure(partner, usageRecord.id, amountPence, failureReason);
   }
 }
 
