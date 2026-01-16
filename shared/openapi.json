@@ -306,6 +306,12 @@
             "maximum": 10080,
             "default": 1440,
             "description": "Session validity in minutes (default: 24 hours)"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO 3166-1 alpha-2 country code for locale-specific question wording (e.g., 'SG', 'MY', 'PH')"
           }
         }
       },
