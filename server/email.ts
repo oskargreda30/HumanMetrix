@@ -56,8 +56,34 @@ function getTransporter() {
 
 // Initialize email system on startup
 export function initializeEmailSystem() {
-  console.log('🔧 Initializing email system...');
+  console.log('Initializing email system...');
   getTransporter();
+}
+
+// Generic partner email function for simple notifications
+export async function sendPartnerEmail(options: { to: string; subject: string; html: string; text?: string }): Promise<{ success: boolean; messageId?: string }> {
+  const emailTransporter = getTransporter();
+  if (!emailTransporter) {
+    console.log('[Email] Transporter not configured - skipping email');
+    return { success: false };
+  }
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    text: options.text || undefined,
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`[Email] Partner email sent to ${options.to} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`[Email] Failed to send partner email:`, error.message);
+    return { success: false };
+  }
 }
 
 export async function sendInvitationEmail(invitation: Invitation, inviterName: string) {
