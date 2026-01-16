@@ -12741,6 +12741,159 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Get all B2B invoices across all partners
+  app.get("/api/admin/billing/invoices", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const status = req.query.status as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      const invoicesWithPartners = await storage.getAllInvoicesForAdmin({ status, limit });
+      
+      // Transform to a flatter structure for frontend
+      const invoices = invoicesWithPartners.map(({ invoice, partner }) => ({
+        ...invoice,
+        partnerName: partner.companyName,
+        partnerEmail: partner.email,
+        billingEmail: partner.billingEmail,
+        partnerId: partner.id,
+      }));
+      
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  // Super Admin: Send invoice reminder email
+  app.post("/api/admin/invoices/:invoiceId/reminder", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+        return res.status(400).json({ message: `Cannot send reminder for ${invoice.status} invoice` });
+      }
+      
+      const partner = await storage.getPartnerAccount(invoice.partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      const dueDate = new Date(invoice.dueDate);
+      const today = new Date();
+      const daysOverdue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      // Send reminder email
+      const { notifyB2BInvoiceOverdue } = await import('./email');
+      await notifyB2BInvoiceOverdue({
+        partnerId: partner.id,
+        partnerName: partner.companyName,
+        partnerEmail: partner.billingEmail || partner.email,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        amountDue: invoice.totalAmount,
+        currency: invoice.currency || partner.currency || 'GBP',
+        dueDate,
+        daysOverdue,
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Reminder email sent to ${partner.billingEmail || partner.email}`,
+      });
+    } catch (error) {
+      console.error("Error sending invoice reminder:", error);
+      res.status(500).json({ message: "Failed to send reminder" });
+    }
+  });
+
+  // Super Admin: Cancel invoice
+  app.post("/api/admin/invoices/:invoiceId/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (invoice.status === 'paid') {
+        return res.status(400).json({ message: "Cannot cancel a paid invoice" });
+      }
+      
+      if (invoice.status === 'cancelled') {
+        return res.status(400).json({ message: "Invoice is already cancelled" });
+      }
+      
+      const { reason } = req.body;
+      
+      await storage.updatePartnerInvoice(invoice.id, {
+        status: 'cancelled',
+        notes: invoice.notes ? `${invoice.notes}\n\n[Cancelled: ${reason || 'No reason provided'}]` : `[Cancelled: ${reason || 'No reason provided'}]`,
+      });
+      
+      // If partner was suspended and this was the invoice causing it, check for other overdue invoices
+      const partner = await storage.getPartnerAccount(invoice.partnerId);
+      if (partner?.invoiceOverdueSuspendedAt) {
+        const allInvoices = await storage.getPartnerInvoices(partner.id) as any[];
+        const remainingOverdueInvoices = allInvoices.filter((inv: any) => {
+          if (inv.id === invoice.id) return false;
+          if (inv.status !== 'overdue' && inv.status !== 'sent') return false;
+          const invDueDate = new Date(inv.dueDate);
+          return invDueDate < new Date();
+        });
+        
+        if (remainingOverdueInvoices.length === 0) {
+          console.log(`[Invoice Cancel] Restoring API access for partner ${partner.id} - no remaining overdue invoices`);
+          await storage.restorePartnerFromOverdueInvoice(partner.id);
+          
+          await storage.dispatchPartnerNotification({
+            partnerId: partner.id,
+            type: 'api_restored',
+            title: 'API Access Restored',
+            message: `Your production API keys have been reactivated. Invoice ${invoice.invoiceNumber} has been cancelled.`,
+            metadata: { 
+              invoiceNumber: invoice.invoiceNumber, 
+              restoredAt: new Date().toISOString(),
+            },
+          });
+        }
+      }
+      
+      const updatedInvoice = await storage.getPartnerInvoice(invoice.id);
+      res.json({ 
+        success: true, 
+        invoice: updatedInvoice,
+        message: `Invoice ${invoice.invoiceNumber} cancelled`,
+      });
+    } catch (error) {
+      console.error("Error cancelling invoice:", error);
+      res.status(500).json({ message: "Failed to cancel invoice" });
+    }
+  });
+
   // ==================== WIDGET TEST LAB (Super Admin Only) ====================
   
   // Admin: Create test session for widget/SDK testing

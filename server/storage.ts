@@ -360,6 +360,7 @@ export interface IStorage {
   createPartnerInvoice(invoice: InsertPartnerInvoice): Promise<PartnerInvoice>;
   getPartnerInvoice(id: string): Promise<PartnerInvoice | undefined>;
   getPartnerInvoices(partnerId: string): Promise<PartnerInvoice[]>;
+  getAllInvoicesForAdmin(filters?: { status?: string; limit?: number }): Promise<Array<{ invoice: PartnerInvoice; partner: PartnerAccount }>>;
   updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void>;
   getNextInvoiceNumber(): Promise<string>;
   
@@ -2424,6 +2425,25 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(partnerInvoices)
       .where(eq(partnerInvoices.partnerId, partnerId))
       .orderBy(desc(partnerInvoices.createdAt));
+  }
+
+  async getAllInvoicesForAdmin(filters?: { status?: string; limit?: number }): Promise<Array<{ invoice: PartnerInvoice; partner: PartnerAccount }>> {
+    let query = db.select({
+      invoice: partnerInvoices,
+      partner: partnerAccounts,
+    })
+      .from(partnerInvoices)
+      .innerJoin(partnerAccounts, eq(partnerInvoices.partnerId, partnerAccounts.id));
+    
+    if (filters?.status && filters.status !== 'all') {
+      query = query.where(eq(partnerInvoices.status, filters.status)) as any;
+    }
+    
+    const results = await query
+      .orderBy(desc(partnerInvoices.createdAt))
+      .limit(filters?.limit || 100);
+    
+    return results;
   }
 
   async updatePartnerInvoice(id: string, updates: Partial<InsertPartnerInvoice>): Promise<void> {
