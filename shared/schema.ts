@@ -25,6 +25,39 @@ export const USER_ROLES = {
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 
+// Hiring pipeline stages
+export const PIPELINE_STAGES = {
+  NEW: "new",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  REVIEWING: "reviewing",
+  SHORTLISTED: "shortlisted",
+  HIRED: "hired",
+  REJECTED: "rejected",
+} as const;
+
+export type PipelineStage = typeof PIPELINE_STAGES[keyof typeof PIPELINE_STAGES];
+
+export const PIPELINE_STAGE_ORDER: PipelineStage[] = [
+  "new",
+  "in_progress",
+  "completed",
+  "reviewing",
+  "shortlisted",
+  "hired",
+  "rejected",
+];
+
+export const PIPELINE_STAGE_LABELS: Record<PipelineStage, string> = {
+  new: "New",
+  in_progress: "In Progress",
+  completed: "Completed",
+  reviewing: "Under Review",
+  shortlisted: "Shortlisted",
+  hired: "Hired",
+  rejected: "Rejected",
+};
+
 // Organizations table - for multi-tenant employer support
 export const organizations = pgTable("organizations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -845,12 +878,18 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   resultsPaidAt: timestamp("results_paid_at"), // When payment was received
   resultsPaymentAmount: integer("results_payment_amount"), // Amount paid in pence
   resultsPaymentCurrency: varchar("results_payment_currency"), // Currency of payment (e.g., 'gbp', 'usd')
+  // Hiring pipeline fields
+  pipelineStage: varchar("pipeline_stage").default("new"), // new, in_progress, completed, reviewing, shortlisted, hired, rejected
+  pipelineStageUpdatedAt: timestamp("pipeline_stage_updated_at"),
+  pipelineStageUpdatedBy: varchar("pipeline_stage_updated_by"), // User ID who updated the stage
+  pipelineNotes: text("pipeline_notes"), // Notes about the candidate
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
   index("idx_assessment_sessions_external").on(table.partnerId, table.externalUserId),
   index("idx_assessment_sessions_release").on(table.resultsReleaseStatus, table.resultsReleaseScheduledAt),
   index("idx_assessment_sessions_unlock").on(table.resultsPaymentStatus, table.resultsUnlockAt),
+  index("idx_assessment_sessions_pipeline").on(table.partnerId, table.pipelineStage),
 ]);
 
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions).omit({

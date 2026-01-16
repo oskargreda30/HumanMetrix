@@ -478,6 +478,220 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
+  // Get sessions grouped by pipeline stage for Kanban view
+  app.get(
+    "/api/partner/pipeline",
+    isAuthenticated,
+    async (req: any, res: Response) => {
+      try {
+        const partnerId = req.user?.partnerId;
+        if (!partnerId) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+        
+        const organisationId = req.query.organisationId as string | undefined;
+        
+        // Get all non-expired sessions for this partner
+        const sessions = await storage.getPipelineSessions(partnerId, organisationId);
+        
+        // Group by pipeline stage
+        const stages = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
+        const pipeline: Record<string, any[]> = {};
+        
+        for (const stage of stages) {
+          pipeline[stage] = [];
+        }
+        
+        for (const session of sessions) {
+          // Auto-derive stage from session status if pipeline stage not set
+          let stage = session.pipelineStage || "new";
+          if (!session.pipelineStage) {
+            if (session.status === "started") stage = "in_progress";
+            else if (session.status === "completed") stage = "completed";
+            else if (session.status === "expired") continue; // Skip expired
+          }
+          
+          if (pipeline[stage]) {
+            pipeline[stage].push({
+              sessionId: session.id,
+              externalUserId: session.externalUserId,
+              externalEmail: session.externalEmail,
+              assessmentType: session.assessmentType,
+              status: session.status,
+              pipelineStage: stage,
+              pipelineNotes: session.pipelineNotes,
+              totalScore: session.totalScore,
+              percentile: session.percentile,
+              createdAt: session.createdAt,
+              completedAt: session.completedAt,
+              pipelineStageUpdatedAt: session.pipelineStageUpdatedAt,
+              metadata: session.metadata,
+            });
+          }
+        }
+        
+        // Count totals
+        const totalCount = Object.values(pipeline).reduce((sum, arr) => sum + arr.length, 0);
+        
+        res.json({
+          pipeline,
+          totalCount,
+          stages: stages.map(s => ({
+            id: s,
+            label: {
+              new: "New",
+              in_progress: "In Progress", 
+              completed: "Completed",
+              reviewing: "Under Review",
+              shortlisted: "Shortlisted",
+              hired: "Hired",
+              rejected: "Rejected",
+            }[s],
+            count: pipeline[s].length,
+          })),
+        });
+      } catch (error) {
+        console.error("Error fetching pipeline:", error);
+        res.status(500).json({ error: "Failed to fetch pipeline data" });
+      }
+    }
+  );
+
+  // Update session pipeline stage
+  app.patch(
+    "/api/partner/sessions/:sessionId/pipeline",
+    isAuthenticated,
+    async (req: any, res: Response) => {
+      try {
+        const partnerId = req.user?.partnerId;
+        if (!partnerId) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+        
+        const { sessionId } = req.params;
+        const { pipelineStage, pipelineNotes } = req.body;
+        
+        // Validate stage
+        const validStages = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
+        if (pipelineStage && !validStages.includes(pipelineStage)) {
+          return res.status(400).json({ error: "Invalid pipeline stage" });
+        }
+        
+        // Get session and verify ownership
+        const session = await storage.getAssessmentSession(sessionId);
+        if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+        
+        if (session.partnerId !== partnerId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+        
+        // Build update object
+        const updates: any = {
+          pipelineStageUpdatedAt: new Date(),
+          pipelineStageUpdatedBy: req.user?.id,
+        };
+        
+        if (pipelineStage !== undefined) {
+          updates.pipelineStage = pipelineStage;
+        }
+        
+        if (pipelineNotes !== undefined) {
+          updates.pipelineNotes = pipelineNotes;
+        }
+        
+        await storage.updateAssessmentSession(sessionId, updates);
+        
+        // Create notification for stage change
+        if (pipelineStage) {
+          const stageLabels: Record<string, string> = {
+            new: "New",
+            in_progress: "In Progress",
+            completed: "Completed", 
+            reviewing: "Under Review",
+            shortlisted: "Shortlisted",
+            hired: "Hired",
+            rejected: "Rejected",
+          };
+          
+          await storage.createPartnerNotification({
+            partnerId,
+            type: "pipeline_updated",
+            title: "Pipeline Stage Updated",
+            message: `${session.externalEmail || session.externalUserId || "Candidate"} moved to ${stageLabels[pipelineStage]}`,
+            metadata: {
+              sessionId,
+              previousStage: session.pipelineStage,
+              newStage: pipelineStage,
+            },
+          });
+        }
+        
+        res.json({ 
+          success: true,
+          sessionId,
+          pipelineStage: pipelineStage || session.pipelineStage,
+          pipelineNotes: pipelineNotes !== undefined ? pipelineNotes : session.pipelineNotes,
+        });
+      } catch (error) {
+        console.error("Error updating pipeline:", error);
+        res.status(500).json({ error: "Failed to update pipeline" });
+      }
+    }
+  );
+
+  // Bulk update pipeline stages
+  app.post(
+    "/api/partner/pipeline/bulk-update",
+    isAuthenticated,
+    async (req: any, res: Response) => {
+      try {
+        const partnerId = req.user?.partnerId;
+        if (!partnerId) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+        
+        const { updates } = req.body;
+        
+        if (!Array.isArray(updates) || updates.length === 0) {
+          return res.status(400).json({ error: "Updates array is required" });
+        }
+        
+        const validStages = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
+        const results = [];
+        
+        for (const update of updates) {
+          const { sessionId, pipelineStage } = update;
+          
+          if (!sessionId || !pipelineStage || !validStages.includes(pipelineStage)) {
+            results.push({ sessionId, success: false, error: "Invalid data" });
+            continue;
+          }
+          
+          const session = await storage.getAssessmentSession(sessionId);
+          if (!session || session.partnerId !== partnerId) {
+            results.push({ sessionId, success: false, error: "Not found or access denied" });
+            continue;
+          }
+          
+          await storage.updateAssessmentSession(sessionId, {
+            pipelineStage,
+            pipelineStageUpdatedAt: new Date(),
+            pipelineStageUpdatedBy: req.user?.id,
+          } as any);
+          
+          results.push({ sessionId, success: true, pipelineStage });
+        }
+        
+        res.json({ results });
+      } catch (error) {
+        console.error("Error bulk updating pipeline:", error);
+        res.status(500).json({ error: "Failed to bulk update pipeline" });
+      }
+    }
+  );
+
   app.get(
     "/api/partner/usage",
     partnerAuth(),

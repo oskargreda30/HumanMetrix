@@ -310,6 +310,7 @@ export interface IStorage {
   createAssessmentSession(session: InsertAssessmentSession): Promise<AssessmentSession>;
   getAssessmentSession(id: string): Promise<AssessmentSession | undefined>;
   getSessionsByPartner(partnerId: string, limit?: number): Promise<AssessmentSession[]>;
+  getPipelineSessions(partnerId: string, organisationId?: string): Promise<AssessmentSession[]>;
   updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void>;
   getSessionsDueForFreeUnlock(): Promise<AssessmentSession[]>;
   getCompletedB2BSessionsByEmail(email: string, partnerId: string): Promise<AssessmentSession[]>;
@@ -1741,6 +1742,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(assessmentSessions.partnerId, partnerId))
       .orderBy(desc(assessmentSessions.createdAt))
       .limit(limit);
+  }
+
+  async getPipelineSessions(partnerId: string, organisationId?: string): Promise<AssessmentSession[]> {
+    const conditions = [
+      eq(assessmentSessions.partnerId, partnerId),
+      sql`${assessmentSessions.status} != 'expired'`,
+    ];
+    
+    if (organisationId) {
+      conditions.push(eq(assessmentSessions.partnerOrganisationId, organisationId));
+    }
+    
+    return await db.select().from(assessmentSessions)
+      .where(and(...conditions))
+      .orderBy(desc(assessmentSessions.createdAt));
   }
 
   async updateAssessmentSession(id: string, updates: Partial<InsertAssessmentSession>): Promise<void> {
