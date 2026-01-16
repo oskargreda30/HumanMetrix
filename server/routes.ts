@@ -15672,7 +15672,7 @@ async function processCardExpirationWarnings(partners: PartnerAccount[]) {
   }
 }
 
-// Check for overdue invoices, notify super admins, and enforce payment
+// Check for overdue invoices and notify super admins (no automatic suspension)
 async function checkOverdueInvoices() {
   const today = new Date();
   
@@ -15684,91 +15684,16 @@ async function checkOverdueInvoices() {
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Check if partner is already suspended for this invoice
-      const alreadySuspended = partner.invoiceOverdueSuspendedAt !== null;
-      
-      // Notification milestones: 1 day (grace period warning), 7 days (final warning), then suspension
-      const GRACE_PERIOD_DAYS = 7;
       const lastNotifiedDays = invoice.lastOverdueNotificationDays || 0;
       
-      // If invoice is overdue beyond grace period and not already suspended, suspend API access
-      if (daysOverdue >= GRACE_PERIOD_DAYS && !alreadySuspended) {
-        console.log(`[Billing Scheduler] SUSPENDING partner ${partner.id} (${partner.companyName}) - invoice ${invoice.invoiceNumber} is ${daysOverdue} days overdue`);
-        
-        // Suspend the partner's live API keys
-        await storage.suspendPartnerForOverdueInvoice(partner.id);
-        
-        // Update invoice status
-        await storage.updatePartnerInvoice(invoice.id, {
-          status: 'overdue',
-          lastOverdueNotificationDays: GRACE_PERIOD_DAYS,
-        });
-        
-        // Update partner notification count
-        await storage.updatePartnerAccount(partner.id, {
-          invoiceOverdueNotificationsSent: 3, // 3 = suspended
-        });
-        
-        // Send suspension notification to partner
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-          : 'https://humanmetrix.ai';
-        
-        const { notifyInvoiceSuspension } = await import('./email');
-        await notifyInvoiceSuspension({
-          partnerId: partner.id,
-          partnerName: partner.companyName,
-          partnerEmail: partner.billingEmail || partner.email,
-          invoiceNumber: invoice.invoiceNumber,
-          amountDue: invoice.totalAmount,
-          currency: invoice.currency || partner.currency || 'GBP',
-          dueDate,
-          daysOverdue,
-          paymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
-        });
-        
-        // Dispatch in-app notification to partner admins
-        await storage.dispatchPartnerNotification({
-          partnerId: partner.id,
-          type: 'api_suspended',
-          title: 'API Access Suspended - Overdue Invoice',
-          message: `Your production API keys have been suspended due to unpaid invoice ${invoice.invoiceNumber}. Please pay the outstanding amount of ${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)} to restore access.`,
-          metadata: { 
-            invoiceNumber: invoice.invoiceNumber, 
-            amountDue: invoice.totalAmount, 
-            daysOverdue,
-            currency: invoice.currency || 'GBP',
-          },
-        });
-        
-        // Notify super admins about the suspension
-        const { notifyCriticalError } = await import('./email');
-        await notifyCriticalError({
-          errorType: 'Enterprise Invoice Suspension',
-          errorMessage: `Partner ${partner.companyName} has been suspended due to overdue invoice ${invoice.invoiceNumber} (${daysOverdue} days overdue, ${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)})`,
-          context: {
-            partnerId: partner.id,
-            partnerName: partner.companyName,
-            invoiceNumber: invoice.invoiceNumber,
-            amountDue: `${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)}`,
-            daysOverdue: daysOverdue.toString(),
-            dueDate: dueDate.toISOString(),
-          },
-        });
-        
-        continue; // Move to next invoice
-      }
-      
-      // Send warning notifications before suspension
-      // Day 1: First warning
-      // Day 3: Second warning
-      // Day 5: Final warning before suspension
-      const notificationMilestones = [1, 3, 5];
+      // Notification milestones: 1 day, 7 days, 14 days, 30 days
+      const notificationMilestones = [1, 7, 14, 30];
       const nextMilestone = notificationMilestones.find(m => m > lastNotifiedDays && daysOverdue >= m);
       
-      if (nextMilestone && !alreadySuspended) {
-        console.log(`[Billing Scheduler] Sending overdue invoice warning for partner ${partner.id}, invoice ${invoice.invoiceNumber}, ${daysOverdue} days overdue (milestone: ${nextMilestone})`);
+      if (nextMilestone) {
+        console.log(`[Billing Scheduler] Sending overdue invoice notification for partner ${partner.id}, invoice ${invoice.invoiceNumber}, ${daysOverdue} days overdue (milestone: ${nextMilestone})`);
         
+        // Send notification to super admins about the overdue invoice
         const { notifyB2BInvoiceOverdue } = await import('./email');
         await notifyB2BInvoiceOverdue({
           partnerId: partner.id,
@@ -15780,7 +15705,6 @@ async function checkOverdueInvoices() {
           currency: invoice.currency || partner.currency || 'GBP',
           dueDate,
           daysOverdue,
-          suspensionWarning: daysOverdue >= 5 ? `Your API access will be suspended in ${GRACE_PERIOD_DAYS - daysOverdue} day(s) if payment is not received.` : undefined,
         });
         
         // Update invoice status to overdue and track notification
@@ -15791,21 +15715,39 @@ async function checkOverdueInvoices() {
         
         // Update partner notification count
         await storage.updatePartnerAccount(partner.id, {
-          invoiceOverdueNotificationsSent: nextMilestone === 1 ? 1 : nextMilestone === 3 ? 2 : 2,
+          invoiceOverdueNotificationsSent: (partner.invoiceOverdueNotificationsSent || 0) + 1,
         });
         
-        // Dispatch in-app notification for warning
+        // Dispatch in-app notification for warning (to partner)
         await storage.dispatchPartnerNotification({
           partnerId: partner.id,
           type: 'payment_failed',
-          title: daysOverdue >= 5 ? 'URGENT: Invoice Overdue - Suspension Imminent' : 'Invoice Overdue - Payment Required',
-          message: `Invoice ${invoice.invoiceNumber} is ${daysOverdue} day(s) overdue. ${daysOverdue >= 5 ? `API access will be suspended in ${GRACE_PERIOD_DAYS - daysOverdue} day(s).` : 'Please make payment to avoid service interruption.'}`,
+          title: 'Invoice Overdue - Payment Required',
+          message: `Invoice ${invoice.invoiceNumber} is ${daysOverdue} day(s) overdue. Please make payment to avoid service interruption.`,
           metadata: { 
             invoiceNumber: invoice.invoiceNumber, 
             amountDue: invoice.totalAmount, 
             daysOverdue,
           },
         });
+        
+        // For critical overdue invoices (7+ days), also alert super admins with ability to suspend
+        if (daysOverdue >= 7) {
+          const { notifyCriticalError } = await import('./email');
+          await notifyCriticalError({
+            errorType: 'Enterprise Invoice Critically Overdue',
+            errorMessage: `Partner ${partner.companyName} has invoice ${invoice.invoiceNumber} that is ${daysOverdue} days overdue (${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)}). Consider suspending API access from the admin dashboard.`,
+            context: {
+              partnerId: partner.id,
+              partnerName: partner.companyName,
+              invoiceNumber: invoice.invoiceNumber,
+              amountDue: `${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)}`,
+              daysOverdue: daysOverdue.toString(),
+              dueDate: dueDate.toISOString(),
+              action: 'Super admin can manually suspend API access from the partner management dashboard',
+            },
+          });
+        }
       }
     }
     
