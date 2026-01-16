@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "HumanMetrix Partner API",
-    "description": "REST API for integrating HumanMetrix assessments into your recruitment platform. Use these endpoints to create assessment sessions, track progress, and retrieve results - whether using our embedded widget or building your own custom UI.",
+    "description": "REST API for integrating HumanMetrix assessments into your recruitment platform. Use these endpoints to create assessment sessions, track progress, and retrieve results - whether using our embedded widget or building your own custom UI.\n\n## Integration Options\n\n**Option 1: Widget Embed (Recommended)**\nCreate a session, then redirect candidates to the `widgetUrl` or embed it in an iframe. The widget handles email verification, questions, and submission.\n\n**Option 2: Custom UI**\nBuild your own assessment interface using the Widget Integration endpoints. Fetch session data, handle email verification, display questions, and submit answers directly.",
     "version": "1.0.0",
     "contact": {
       "name": "HumanMetrix Support",
@@ -18,19 +18,23 @@
   "tags": [
     {
       "name": "Sessions",
-      "description": "Create and manage assessment sessions"
+      "description": "Create and manage assessment sessions (requires API key)"
     },
     {
       "name": "Results",
-      "description": "Retrieve assessment results and scores"
+      "description": "Retrieve assessment results and scores (requires API key)"
     },
     {
       "name": "Billing",
-      "description": "Check quota and usage"
+      "description": "Check quota and usage (requires API key)"
     },
     {
       "name": "Reference",
-      "description": "Available assessment types"
+      "description": "Available assessment types (public)"
+    },
+    {
+      "name": "Widget Integration",
+      "description": "Endpoints for building custom assessment UIs. These are the same endpoints used by our embedded widget. No API key required - sessions are authenticated by session ID."
     }
   ],
   "paths": {
@@ -38,7 +42,7 @@
       "post": {
         "tags": ["Sessions"],
         "summary": "Create assessment session",
-        "description": "Create a new assessment session for a candidate. Returns a session ID and widget URL. Use the widget URL to embed our assessment UI, or use the session ID to build your own custom assessment interface.",
+        "description": "Create a new assessment session for a candidate. Returns a session ID and widget URL. Use the widget URL to embed our assessment UI, or use the session ID with Widget Integration endpoints to build your own custom interface.",
         "operationId": "createSession",
         "security": [{ "apiKey": [] }],
         "requestBody": {
@@ -194,6 +198,307 @@
           }
         }
       }
+    },
+    "/api/embed/session/{sessionId}": {
+      "get": {
+        "tags": ["Widget Integration"],
+        "summary": "Get session for widget",
+        "description": "Retrieve full session details including saved progress, branding configuration, and results (if available). This is the primary endpoint for initializing a custom assessment UI. No API key required - session ID acts as authentication.",
+        "operationId": "getEmbedSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "description": "The session ID from session creation",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full session details for widget rendering",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmbedSessionResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Session expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/embed/session/{sessionId}/send-verification-code": {
+      "post": {
+        "tags": ["Widget Integration"],
+        "summary": "Send email verification code",
+        "description": "Send a 6-digit verification code to the candidate's email. Required before starting the assessment for live sessions. Test sessions (created with test API key) can skip this step. Rate limited to 1 request per minute per email.",
+        "operationId": "sendVerificationCode",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SendVerificationCodeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                },
+                "example": { "success": true, "message": "Verification code sent" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email format",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": {
+            "description": "Rate limited - wait before requesting another code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" },
+                    "retryAfter": { "type": "integer", "description": "Seconds to wait before retrying" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embed/session/{sessionId}/verify-email": {
+      "post": {
+        "tags": ["Widget Integration"],
+        "summary": "Verify email code",
+        "description": "Verify the 6-digit code sent to the candidate's email. After successful verification, the session can be started. Maximum 5 attempts per code before a new code must be requested.",
+        "operationId": "verifyEmail",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyEmailRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "verified": { "type": "boolean" }
+                  }
+                },
+                "example": { "success": true, "verified": true }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired verification code",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": {
+            "description": "Too many failed attempts - request a new code",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embed/session/{sessionId}/start": {
+      "post": {
+        "tags": ["Widget Integration"],
+        "summary": "Start assessment",
+        "description": "Mark the session as started and record the candidate's email. Call this after email verification (for live sessions) or immediately (for test sessions). The session status changes from 'created' to 'started'.",
+        "operationId": "startSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/StartSessionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessionId": { "type": "string" },
+                    "assessmentType": { "type": "string" },
+                    "status": { "type": "string", "enum": ["started"] }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Session already completed or expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/embed/session/{sessionId}/progress": {
+      "post": {
+        "tags": ["Widget Integration"],
+        "summary": "Save progress",
+        "description": "Save the candidate's answers incrementally. This enables resume functionality if the candidate leaves and returns. Answers are merged with existing saved answers. Call this periodically as the candidate progresses through questions.",
+        "operationId": "saveProgress",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SaveProgressRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Progress saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "savedAnswerCount": { "type": "integer", "description": "Total number of answers saved" },
+                    "lastAnsweredIndex": { "type": "integer", "description": "Index of last answered question" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Session not in progress or expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/embed/session/{sessionId}/submit": {
+      "post": {
+        "tags": ["Widget Integration"],
+        "summary": "Submit assessment",
+        "description": "Submit all answers and complete the assessment. This triggers AI scoring, sends a congratulatory email with payment link to the candidate, fires any configured webhooks, and (for live sessions) consumes a credit from your quota. The session status changes to 'completed'.",
+        "operationId": "submitAssessment",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmitAssessmentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assessment submitted and scored",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SubmitResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Session not in progress or expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     }
   },
   "components": {
@@ -202,7 +507,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "API key for partner authentication. Test keys (hm_test_xxx) don't consume credits. Live keys (hm_live_xxx) deduct from your quota."
+        "description": "API key for partner authentication. Test keys (hm_test_xxx) don't consume credits and skip email verification. Live keys (hm_live_xxx) deduct from your quota and require email verification."
       }
     },
     "schemas": {
@@ -361,6 +666,165 @@
                 "estimatedMinutes": { "type": "integer", "description": "Typical completion time" }
               }
             }
+          }
+        }
+      },
+      "EmbedSessionResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": { "type": "string" },
+          "assessmentType": { "type": "string" },
+          "status": { 
+            "type": "string", 
+            "enum": ["created", "started", "completed", "expired"]
+          },
+          "externalUserId": { "type": "string" },
+          "externalEmail": { "type": "string" },
+          "partnerName": { "type": "string", "description": "Partner company name to display in UI" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "questionLocale": { 
+            "type": "string", 
+            "description": "Locale for question wording (e.g., 'default', 'SG', 'MY')" 
+          },
+          "savedAnswers": { 
+            "type": "object", 
+            "additionalProperties": true,
+            "description": "Previously saved answers for resume functionality. Keys are question indices."
+          },
+          "lastAnsweredIndex": { 
+            "type": "integer", 
+            "nullable": true,
+            "description": "Index of last answered question for resume positioning"
+          },
+          "lastActivityAt": { 
+            "type": "string", 
+            "format": "date-time",
+            "nullable": true
+          },
+          "isTestSession": { 
+            "type": "boolean", 
+            "description": "If true, skip email verification (developer testing mode)" 
+          },
+          "resultsPaymentStatus": { 
+            "type": "string",
+            "enum": ["unpaid", "paid"],
+            "description": "Whether candidate has paid to unlock results"
+          },
+          "resultsReleaseStatus": {
+            "type": "string",
+            "enum": ["pending", "released"],
+            "description": "Whether results have been released (after 30-day free period)"
+          },
+          "results": {
+            "type": "object",
+            "description": "Results data (only included if payment completed or results released)",
+            "properties": {
+              "scores": { "type": "object", "additionalProperties": { "type": "number" } },
+              "totalScore": { "type": "number" },
+              "percentile": { "type": "number" },
+              "evaluations": { "type": "object" }
+            }
+          },
+          "branding": {
+            "type": "object",
+            "description": "Partner branding configuration (if enabled)",
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "primaryColor": { "type": "string", "description": "Hex color code" },
+              "accentColor": { "type": "string", "description": "Hex color code" },
+              "logoUrl": { "type": "string", "nullable": true },
+              "welcomeTitle": { "type": "string", "nullable": true },
+              "welcomeMessage": { "type": "string", "nullable": true },
+              "companyDisplayName": { "type": "string" }
+            }
+          }
+        }
+      },
+      "SendVerificationCodeRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Candidate's email address to send verification code"
+          }
+        }
+      },
+      "VerifyEmailRequest": {
+        "type": "object",
+        "required": ["email", "code"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address that received the code"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "description": "6-digit verification code"
+          }
+        }
+      },
+      "StartSessionRequest": {
+        "type": "object",
+        "properties": {
+          "candidateEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Candidate's email (recorded with the session)"
+          }
+        }
+      },
+      "SaveProgressRequest": {
+        "type": "object",
+        "required": ["answers"],
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Map of question index to answer value. Merged with existing saved answers."
+          },
+          "lastAnsweredIndex": {
+            "type": "integer",
+            "description": "Index of the last question answered (for resume positioning)"
+          }
+        }
+      },
+      "SubmitAssessmentRequest": {
+        "type": "object",
+        "required": ["answers"],
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Complete answers object. Merged with any previously saved answers."
+          }
+        }
+      },
+      "SubmitResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "sessionId": { "type": "string" },
+          "status": { "type": "string", "enum": ["completed"] },
+          "scores": {
+            "type": "object",
+            "additionalProperties": { "type": "number" },
+            "description": "Score breakdown by category"
+          },
+          "totalScore": { 
+            "type": "number", 
+            "description": "Overall score (0-100)" 
+          },
+          "percentile": { 
+            "type": "number", 
+            "description": "Candidate's percentile ranking" 
+          },
+          "isTestSession": { 
+            "type": "boolean", 
+            "description": "True if no credits were consumed" 
           }
         }
       },
