@@ -8081,14 +8081,10 @@ Format your response as JSON with this structure:
         keyHint: newKeyHint,
       });
       
-      // Create notification for API key rotation
-      await storage.createPartnerNotification({
-        partnerId: matchingPartner.id,
-        type: 'api_key_rotated',
-        title: 'API Key Rotated',
-        message: `API key "${existingKey.name}" has been rotated. The old key is no longer valid.`,
-        metadata: { keyId: existingKey.id, keyName: existingKey.name },
-      });
+      // Notify all partner admins about API key regeneration
+      const { notifyApiKeyRegenerated } = await import('./partner-notifications');
+      const actorTeamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
+      await notifyApiKeyRegenerated(matchingPartner.id, actorTeamMember?.id, req.user.id);
       
       // Return the new key (only time it's visible in full)
       res.json({
@@ -9776,7 +9772,23 @@ Format your response as JSON with this structure:
       }
       
       if (Object.keys(updates).length > 0) {
+        const oldRole = member.role;
         await storage.updatePartnerTeamMember(req.params.id, updates);
+        
+        if (role && role !== oldRole) {
+          const { notifyTeamMemberRoleChanged } = await import('./partner-notifications');
+          const actorTeamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
+          await notifyTeamMemberRoleChanged(
+            partner.id,
+            member.id,
+            member.email,
+            member.name,
+            oldRole,
+            role,
+            actorTeamMember?.id,
+            req.user.id
+          );
+        }
       }
       
       const updated = await storage.getPartnerTeamMember(req.params.id);
@@ -15504,6 +15516,20 @@ async function runScheduledBillingCheck() {
     
     for (const partner of billablePartners) {
       await archiveMonthlyUsage(partner);
+    }
+    
+    // 8. Send monthly usage summaries on the 1st of each month to all active partners
+    if (dayOfMonth === 1) {
+      console.log(`[Billing Scheduler] Sending monthly usage summaries to all active partners`);
+      const { sendMonthlyUsageSummary } = await import('./partner-notifications');
+      const activePartners = partners.filter((p: PartnerAccount) => p.isActive);
+      for (const partner of activePartners) {
+        try {
+          await sendMonthlyUsageSummary(partner.id);
+        } catch (summaryError) {
+          console.error(`[Billing Scheduler] Failed to send monthly summary to partner ${partner.id}:`, summaryError);
+        }
+      }
     }
     
     console.log(`[Billing Scheduler] Completed billing check for day ${dayOfMonth}`);

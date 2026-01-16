@@ -484,6 +484,7 @@ export interface IStorage {
   getPartnerTeamMemberByEmail(partnerId: string, email: string): Promise<PartnerTeamMember | undefined>;
   getPartnerTeamMemberByUserId(userId: string): Promise<PartnerTeamMember | undefined>;
   getPartnerTeamMembers(partnerId: string): Promise<PartnerTeamMember[]>;
+  getPartnerTeamMembersByRole(partnerId: string, roles: string[]): Promise<PartnerTeamMember[]>;
   updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void>;
   deletePartnerTeamMember(id: string): Promise<void>;
   deleteAllPartnerTeamMembers(partnerId: string): Promise<void>;
@@ -494,6 +495,7 @@ export interface IStorage {
     byAssessmentType: Array<{ type: string; count: number; avgScore: number | null }>;
     byOrganization: Array<{ orgId: string; orgName: string; count: number }>;
   }>;
+  getPartnerUsageForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<{ testsUsed: number; remaining: number }>;
 
   // Billing change request operations
   createBillingChangeRequest(request: InsertBillingChangeRequest): Promise<BillingChangeRequest>;
@@ -3295,6 +3297,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(partnerTeamMembers.createdAt));
   }
 
+  async getPartnerTeamMembersByRole(partnerId: string, roles: string[]): Promise<PartnerTeamMember[]> {
+    return await db.select().from(partnerTeamMembers)
+      .where(and(
+        eq(partnerTeamMembers.partnerId, partnerId),
+        eq(partnerTeamMembers.inviteStatus, 'accepted'),
+        inArray(partnerTeamMembers.role, roles)
+      ))
+      .orderBy(desc(partnerTeamMembers.createdAt));
+  }
+
   async updatePartnerTeamMember(id: string, updates: Partial<InsertPartnerTeamMember>): Promise<void> {
     await db.update(partnerTeamMembers).set(updates).where(eq(partnerTeamMembers.id, id));
   }
@@ -3423,6 +3435,27 @@ export class DatabaseStorage implements IStorage {
       })),
       scoreDistribution,
     };
+  }
+
+  async getPartnerUsageForPeriod(partnerId: string, startDate: Date, endDate: Date): Promise<{ testsUsed: number; remaining: number }> {
+    const result = await db.select({
+      count: sql<number>`count(*)`,
+    })
+      .from(assessmentSessions)
+      .where(and(
+        eq(assessmentSessions.partnerId, partnerId),
+        eq(assessmentSessions.status, 'completed'),
+        eq(assessmentSessions.isTestSession, false),
+        gte(assessmentSessions.completedAt, startDate),
+        lte(assessmentSessions.completedAt, endDate)
+      ));
+
+    const testsUsed = Number(result[0]?.count || 0);
+
+    const balance = await this.getPartnerBalance(partnerId);
+    const remaining = balance ? Math.max(0, balance.testsPurchased - balance.testsConsumed) : 0;
+
+    return { testsUsed, remaining };
   }
 
   // Billing change request operations

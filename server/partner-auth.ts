@@ -117,6 +117,18 @@ export function partnerAuth(requiredPermissions: string[] = []) {
       const result = await validateApiKey(apiKey);
       
       if (!result.valid) {
+        const prefix = apiKey.slice(0, 8);
+        const keyRecord = await storage.getPartnerApiKeyByPrefix(prefix);
+        if (keyRecord) {
+          try {
+            const { trackApiAuthFailure } = await import('./partner-notifications');
+            const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+                             req.socket?.remoteAddress || 'unknown';
+            await trackApiAuthFailure(keyRecord.partnerId, apiKey.slice(0, 12), ipAddress);
+          } catch (trackError) {
+            console.error('Failed to track auth failure:', trackError);
+          }
+        }
         return res.status(401).json({
           error: "Unauthorized",
           message: result.error,
@@ -148,10 +160,16 @@ export function partnerAuth(requiredPermissions: string[] = []) {
       req.partner = result.partner;
       req.apiKey = result.keyRecord;
       
-      // Track API call for suspicious activity detection
+      // Track API call for suspicious activity detection and new IP access
       try {
         const { trackApiCall } = await import('./security-monitor');
-        await trackApiCall(result.partner!.id, req.path);
+        const { trackNewIpAccess } = await import('./partner-notifications');
+        const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+                         req.socket?.remoteAddress || 'unknown';
+        await Promise.all([
+          trackApiCall(result.partner!.id, req.path),
+          trackNewIpAccess(result.partner!.id, ipAddress),
+        ]);
       } catch (trackError) {
         // Don't block request if tracking fails
         console.error('Failed to track API call:', trackError);

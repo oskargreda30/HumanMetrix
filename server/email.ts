@@ -1122,6 +1122,219 @@ Need immediate assistance? Contact us at hello@humanmetrix.co.uk
   }
 }
 
+// Send partner security alert email
+export async function sendPartnerSecurityAlert(
+  partnerEmail: string,
+  companyName: string,
+  alertType: string,
+  alertMessage: string
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Security alert email not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const dashboardUrl = domain 
+    ? `https://${domain}/developers?tab=security` 
+    : 'http://localhost:5000/developers?tab=security';
+  
+  const mailOptions = {
+    from: `"HumanMetrix Security" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `[Security Alert] ${alertType} - ${companyName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .alert-box { background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Security Alert</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">${alertType}</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              
+              <div class="alert-box">
+                <p style="margin: 0; color: #991b1b;">${alertMessage}</p>
+              </div>
+              
+              <p>If you did not initiate this action or believe this is unauthorized activity, please take immediate action:</p>
+              
+              <ol>
+                <li>Review your API key and regenerate if necessary</li>
+                <li>Check your integration configurations</li>
+                <li>Review recent API activity in your dashboard</li>
+              </ol>
+              
+              <div style="text-align: center;">
+                <a href="${dashboardUrl}" class="button">Review Security Settings</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                If you have any concerns, contact us immediately at hello@humanmetrix.co.uk
+              </p>
+            </div>
+            <div class="footer">
+              <p>This is an automated security notification from HumanMetrix.</p>
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Security Alert - ${alertType}
+
+Hello ${companyName},
+
+${alertMessage}
+
+If you did not initiate this action or believe this is unauthorized activity, please take immediate action:
+
+1. Review your API key and regenerate if necessary
+2. Check your integration configurations
+3. Review recent API activity in your dashboard
+
+Visit ${dashboardUrl} to review your security settings.
+
+If you have any concerns, contact us immediately at hello@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`Security alert email sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`Failed to send security alert to ${partnerEmail}:`, error.message);
+  }
+}
+
+// Send monthly usage summary email
+export async function sendPartnerMonthlySummary(
+  partnerEmail: string,
+  companyName: string,
+  monthName: string,
+  testsUsed: number,
+  testsRemaining: number
+) {
+  const emailTransporter = getTransporter();
+  
+  if (!emailTransporter) {
+    console.warn(`Monthly summary email not sent to ${partnerEmail} - email not configured`);
+    return;
+  }
+  
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  const dashboardUrl = domain 
+    ? `https://${domain}/developers?tab=analytics` 
+    : 'http://localhost:5000/developers?tab=analytics';
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: partnerEmail,
+    subject: `Monthly Usage Summary - ${monthName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #06b6d4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .stats { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .stat-item { text-align: center; padding: 15px; }
+            .stat-number { font-size: 32px; font-weight: bold; color: #0369a1; }
+            .stat-label { color: #6b7280; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Monthly Summary</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">${monthName}</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${companyName},</h2>
+              
+              <p>Here's a summary of your HumanMetrix usage for ${monthName}:</p>
+              
+              <div class="stats">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td class="stat-item" width="50%">
+                      <div class="stat-number">${testsUsed}</div>
+                      <div class="stat-label">Assessments Completed</div>
+                    </td>
+                    <td class="stat-item" width="50%">
+                      <div class="stat-number">${testsRemaining}</div>
+                      <div class="stat-label">Credits Remaining</div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <p>View detailed analytics and insights in your dashboard:</p>
+              
+              <div style="text-align: center;">
+                <a href="${dashboardUrl}" class="button">View Full Report</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Questions? Contact us at hello@humanmetrix.co.uk
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Monthly Summary - ${monthName}
+
+Hello ${companyName},
+
+Here's a summary of your HumanMetrix usage for ${monthName}:
+
+Assessments Completed: ${testsUsed}
+Credits Remaining: ${testsRemaining}
+
+View detailed analytics and insights at ${dashboardUrl}
+
+Questions? Contact us at hello@humanmetrix.co.uk
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`Monthly summary email sent to ${partnerEmail} (ID: ${info.messageId})`);
+  } catch (error: any) {
+    console.error(`Failed to send monthly summary to ${partnerEmail}:`, error.message);
+  }
+}
+
 // Send auto top-up confirmation email
 export async function sendPartnerAutoTopUpConfirmation(
   partnerEmail: string,

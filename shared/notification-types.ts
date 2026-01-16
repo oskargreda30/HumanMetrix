@@ -8,17 +8,23 @@ export type NotificationType =
   | 'assessment_completed'
   | 'results_ready'
   | 'assessment_started'
+  | 'assessment_all_completed'
   // Candidate & Invitation (member+)
   | 'new_candidate'
   | 'invitation_sent'
   | 'invitation_accepted'
   | 'invitation_expired'
+  | 'assessment_link_expired'
   | 'bulk_invitation_completed'
   | 'usage_alert'
+  | 'high_incomplete_rate'
   // Developer tools (developer+)
   | 'api_key_created'
   | 'api_key_rotated'
   | 'api_key_revoked'
+  | 'api_key_regenerated'
+  | 'api_auth_failed'
+  | 'new_ip_access'
   | 'webhook_created'
   | 'webhook_updated'
   | 'webhook_deleted'
@@ -37,9 +43,12 @@ export type NotificationType =
   | 'billing_type_changed'
   | 'card_on_file_added'
   | 'card_on_file_removed'
+  | 'card_expiring'
+  | 'low_balance'
   | 'overage_billing_processed'
   | 'invoice_generated'
   | 'billing_change_requested'
+  | 'monthly_summary'
   // Team management (admin+)
   | 'team_member_invited'
   | 'team_member_joined'
@@ -64,17 +73,23 @@ export const NOTIFICATION_MIN_ROLE: Record<NotificationType, NotificationRole> =
   assessment_completed: 'viewer',
   results_ready: 'viewer',
   assessment_started: 'viewer',
+  assessment_all_completed: 'viewer',
   // Member level
   new_candidate: 'member',
   invitation_sent: 'member',
   invitation_accepted: 'member',
   invitation_expired: 'member',
+  assessment_link_expired: 'member',
   bulk_invitation_completed: 'member',
   usage_alert: 'member',
+  high_incomplete_rate: 'member',
   // Developer level
   api_key_created: 'developer',
   api_key_rotated: 'developer',
   api_key_revoked: 'developer',
+  api_key_regenerated: 'developer',
+  api_auth_failed: 'developer',
+  new_ip_access: 'developer',
   webhook_created: 'developer',
   webhook_updated: 'developer',
   webhook_deleted: 'developer',
@@ -93,9 +108,12 @@ export const NOTIFICATION_MIN_ROLE: Record<NotificationType, NotificationRole> =
   billing_type_changed: 'admin',
   card_on_file_added: 'admin',
   card_on_file_removed: 'admin',
+  card_expiring: 'admin',
+  low_balance: 'admin',
   overage_billing_processed: 'admin',
   invoice_generated: 'admin',
   billing_change_requested: 'admin',
+  monthly_summary: 'admin',
   team_member_invited: 'admin',
   team_member_joined: 'admin',
   team_member_removed: 'admin',

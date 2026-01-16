@@ -1491,20 +1491,23 @@ export function registerPartnerRoutes(app: Express) {
             // Create payment URL with country code for consistent pricing on payment page
             const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}&country=${userCountryCode}`;
             
-            await sendB2BCongratulatoryEmail({
-              email: candidateEmail,
-              candidateName: session.externalUserId || undefined,
-              assessmentType: session.assessmentType,
-              partnerCompanyName: partner.companyName || partner.name,
-              paymentUrl,
-              paymentAmount: discountedPriceDisplay,
-              originalPaymentAmount: originalPriceDisplay,
-              freeUnlockDate,
-            });
+            try {
+                await sendB2BCongratulatoryEmail({
+                  email: candidateEmail,
+                  candidateName: session.externalUserId || undefined,
+                  assessmentType: session.assessmentType,
+                  partnerCompanyName: partner.companyName || partner.name,
+                  paymentUrl,
+                  paymentAmount: discountedPriceDisplay,
+                  originalPaymentAmount: originalPriceDisplay,
+                  freeUnlockDate,
+                });
+                console.log(`[B2B Email] Sent congratulatory email to ${candidateEmail} for session ${sessionId}`);
+              } catch (emailError) {
+                console.error('[B2B Email] Failed to send congratulatory email:', emailError);
+              }
             
-            console.log(`[B2B Email] Sent congratulatory email to ${candidateEmail} for session ${sessionId}`);
-            
-            // Check if all 4 assessments are now complete for this email
+            // Check if all 4 assessments are now complete for this email (outside email try/catch)
             const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
             const completedSessions = await storage.getCompletedB2BSessionsByEmail(
               candidateEmail, 
@@ -1512,46 +1515,57 @@ export function registerPartnerRoutes(app: Express) {
             );
             
             const completedTypes = new Set(completedSessions.map(s => s.assessmentType));
-            // Ensure ALL 4 distinct assessment types are present
             const allComplete = allAssessmentTypes.every(type => completedTypes.has(type));
             
             if (allComplete) {
               console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
               
-              // Calculate B2C bundle price: BASE_FEE + all 4 assessment prices (exactly matches B2C)
-              const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
-              const bundleB2CPricePence = BASE_FEE + allAssessmentPrices; // £15 + £4 + £5 + £5 + £4 = £33
+              // Notify partner that all assessments are complete (always runs, even if emails failed)
+              try {
+                const { notifyAssessmentCompleted } = await import('./partner-notifications');
+                await notifyAssessmentCompleted(
+                  session.partnerId,
+                  candidateEmail,
+                  session.externalUserId,
+                  session.assessmentType,
+                  true
+                );
+                console.log(`[B2B Notification] Sent assessment_all_completed notification for ${candidateEmail}`);
+              } catch (notifyError) {
+                console.error('[B2B Notification] Failed to notify assessment completion:', notifyError);
+              }
               
-              // Apply PPP adjustment, then 40% B2B bundle discount
-              const bundlePppAdjustedTotalPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, userCountryCode);
-              const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * 0.60); // 40% off PPP-adjusted total
-              
-              // Format bundle prices in user's local currency
-              const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
-              const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
-              
-              console.log(`[B2B Bundle Pricing] Base: ${BASE_FEE}p + Assessments: ${allAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), Discounted: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
-              
-              // Create bundle payment URL with country code
-              const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}`;
-              
-              await sendB2BAllCompleteEmail({
-                email: candidateEmail,
-                candidateName: session.externalUserId || undefined,
-                partnerCompanyName: partner.companyName || partner.name,
-                completedAssessments: allAssessmentTypes,
-                paymentUrl: bundlePaymentUrl,
-                bundlePrice: bundleDiscountedDisplay,
-                originalTotalPrice: bundleOriginalDisplay,
-                discountPercentage: 40,
-                freeUnlockDate,
-              });
-              
-              console.log(`[B2B Email] Sent bundle offer email to ${candidateEmail}`);
+              // Calculate B2C bundle price and send bundle offer email (separate try/catch)
+              try {
+                const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
+                const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
+                const bundlePppAdjustedTotalPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, userCountryCode);
+                const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * 0.60);
+                const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
+                const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
+                
+                console.log(`[B2B Bundle Pricing] Base: ${BASE_FEE}p + Assessments: ${allAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), Discounted: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
+                
+                const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}`;
+                
+                await sendB2BAllCompleteEmail({
+                  email: candidateEmail,
+                  candidateName: session.externalUserId || undefined,
+                  partnerCompanyName: partner.companyName || partner.name,
+                  completedAssessments: allAssessmentTypes,
+                  paymentUrl: bundlePaymentUrl,
+                  bundlePrice: bundleDiscountedDisplay,
+                  originalTotalPrice: bundleOriginalDisplay,
+                  discountPercentage: 40,
+                  freeUnlockDate,
+                });
+                console.log(`[B2B Email] Sent bundle offer email to ${candidateEmail}`);
+              } catch (bundleEmailError) {
+                console.error('[B2B Email] Failed to send bundle offer email:', bundleEmailError);
+              }
             }
-          } catch (emailError) {
-            console.error('[B2B Email] Failed to send congratulatory email:', emailError);
-            // Don't fail the whole request just because email failed
+          } catch (pricingError) {
+            console.error('[B2B Pricing] Failed to calculate pricing:', pricingError);
           }
         }
         
