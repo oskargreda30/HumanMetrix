@@ -12546,48 +12546,62 @@ Format your response as JSON with this structure:
       
       await storage.updatePartnerInvoice(invoice.id, updates);
       
-      // If invoice was overdue and is now marked as paid, restore partner API access
+      // If invoice was overdue and is now marked as paid, check if we should restore partner API access
       if (status === 'paid' && (previousStatus === 'overdue' || previousStatus === 'sent')) {
         const partner = await storage.getPartnerAccount(invoice.partnerId);
         
-        // Only restore if partner was suspended due to this invoice
+        // Only restore if partner was suspended
         if (partner?.invoiceOverdueSuspendedAt) {
-          console.log(`[Invoice Payment] Restoring API access for partner ${partner.id} (${partner.companyName}) - invoice ${invoice.invoiceNumber} marked as paid`);
-          
-          await storage.restorePartnerFromOverdueInvoice(partner.id);
-          
-          // Send restoration notification to partner
-          await storage.dispatchPartnerNotification({
-            partnerId: partner.id,
-            type: 'api_restored',
-            title: 'API Access Restored',
-            message: `Your production API keys have been reactivated following payment of invoice ${invoice.invoiceNumber}. Thank you for your payment.`,
-            metadata: { 
-              invoiceNumber: invoice.invoiceNumber, 
-              restoredAt: new Date().toISOString(),
-            },
+          // Check if there are any OTHER overdue invoices remaining for this partner
+          const allInvoices = await storage.getPartnerInvoices(partner.id) as any[];
+          const remainingOverdueInvoices = allInvoices.filter((inv: any) => {
+            if (inv.id === invoice.id) return false; // Skip the invoice we just paid
+            if (inv.status !== 'overdue' && inv.status !== 'sent') return false;
+            const dueDate = new Date(inv.dueDate);
+            return dueDate < new Date();
           });
           
-          // Send confirmation email to partner
-          const { sendPartnerEmail } = await import('./email');
-          await sendPartnerEmail({
-            to: partner.billingEmail || partner.email,
-            subject: `API Access Restored - Invoice ${invoice.invoiceNumber} Paid`,
-            html: `
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                  <h2 style="margin: 0;">API Access Restored</h2>
+          // Only restore if no other overdue invoices remain
+          if (remainingOverdueInvoices.length === 0) {
+            console.log(`[Invoice Payment] Restoring API access for partner ${partner.id} (${partner.companyName}) - invoice ${invoice.invoiceNumber} marked as paid, no remaining overdue invoices`);
+            
+            await storage.restorePartnerFromOverdueInvoice(partner.id);
+            
+            // Send restoration notification to partner
+            await storage.dispatchPartnerNotification({
+              partnerId: partner.id,
+              type: 'api_restored',
+              title: 'API Access Restored',
+              message: `Your production API keys have been reactivated following payment of invoice ${invoice.invoiceNumber}. Thank you for your payment.`,
+              metadata: { 
+                invoiceNumber: invoice.invoiceNumber, 
+                restoredAt: new Date().toISOString(),
+              },
+            });
+            
+            // Send confirmation email to partner
+            const { sendPartnerEmail } = await import('./email');
+            await sendPartnerEmail({
+              to: partner.billingEmail || partner.email,
+              subject: `API Access Restored - Invoice ${invoice.invoiceNumber} Paid`,
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0;">API Access Restored</h2>
+                  </div>
+                  <div style="background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                    <p>Dear ${partner.companyName},</p>
+                    <p>Thank you for your payment. We've confirmed receipt of payment for invoice <strong>${invoice.invoiceNumber}</strong>.</p>
+                    <p>Your production API keys have been <strong>reactivated</strong> and you can resume normal operations immediately.</p>
+                    <p>If you have any questions, please don't hesitate to contact us.</p>
+                    <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Best regards,<br>The HumanMetrix Team</p>
+                  </div>
                 </div>
-                <div style="background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-                  <p>Dear ${partner.companyName},</p>
-                  <p>Thank you for your payment. We've confirmed receipt of payment for invoice <strong>${invoice.invoiceNumber}</strong>.</p>
-                  <p>Your production API keys have been <strong>reactivated</strong> and you can resume normal operations immediately.</p>
-                  <p>If you have any questions, please don't hesitate to contact us.</p>
-                  <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Best regards,<br>The HumanMetrix Team</p>
-                </div>
-              </div>
-            `,
-          });
+              `,
+            });
+          } else {
+            console.log(`[Invoice Payment] Partner ${partner.id} (${partner.companyName}) still has ${remainingOverdueInvoices.length} overdue invoice(s) - API access remains suspended`);
+          }
         }
       }
       

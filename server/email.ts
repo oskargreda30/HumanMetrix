@@ -3859,7 +3859,7 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
                 </ul>
               </div>
               
-              <p style="margin-top: 20px;"><strong>To restore API access:</strong> Please pay the outstanding invoice. Once payment is confirmed, your production API keys will be reactivated within 24 hours.</p>
+              <p style="margin-top: 20px;"><strong>To restore API access:</strong> Please pay the outstanding invoice. Once payment is confirmed and marked as received, your production API keys will be reactivated immediately.</p>
               
               <div style="text-align: center;">
                 <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
@@ -3894,7 +3894,7 @@ SERVICE IMPACT:
 TO RESTORE ACCESS:
 Please pay the outstanding invoice at: ${details.paymentUrl}
 
-Once payment is confirmed, your production API keys will be reactivated within 24 hours.
+Once payment is confirmed and marked as received, your production API keys will be reactivated immediately.
 
 If you have already made payment or believe this is an error, please contact us at hello@humanmetrix.co.uk
 
