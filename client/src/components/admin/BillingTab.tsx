@@ -419,6 +419,9 @@ export default function BillingTab() {
           <TabsTrigger value="transactions" data-testid="tab-billing-transactions" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
             Transactions
           </TabsTrigger>
+          <TabsTrigger value="b2b-invoices" data-testid="tab-b2b-invoices" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+            B2B Invoices
+          </TabsTrigger>
           <TabsTrigger value="promo-codes" data-testid="tab-billing-promo" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
             Promo Codes
           </TabsTrigger>
@@ -429,9 +432,6 @@ export default function BillingTab() {
                 {billingRequests.filter(r => r.status === 'pending').length}
               </Badge>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="b2b-invoices" data-testid="tab-b2b-invoices" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
-            B2B Invoices
           </TabsTrigger>
         </TabsList>
 
