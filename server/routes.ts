@@ -12358,6 +12358,134 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Manually suspend partner API keys (for overdue invoices)
+  app.post("/api/admin/partners/:id/suspend-api", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Check if already suspended
+      if (partner.invoiceOverdueSuspendedAt) {
+        return res.status(400).json({ message: "Partner API access is already suspended" });
+      }
+      
+      const { reason } = req.body;
+      
+      // Suspend the partner's live API keys
+      await storage.suspendPartnerForOverdueInvoice(partner.id);
+      
+      // Send suspension notification to partner
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://humanmetrix.ai';
+      
+      const { notifyInvoiceSuspension } = await import('./email');
+      await notifyInvoiceSuspension({
+        partnerId: partner.id,
+        partnerName: partner.companyName,
+        partnerEmail: partner.billingEmail || partner.email,
+        invoiceNumber: 'N/A',
+        amountDue: 0,
+        currency: partner.currency || 'GBP',
+        dueDate: new Date(),
+        daysOverdue: 0,
+        paymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+        customReason: reason || 'Your API access has been suspended due to overdue payments. Please contact support or make payment to restore access.',
+      });
+      
+      // Dispatch in-app notification to partner admins
+      await storage.dispatchPartnerNotification({
+        partnerId: partner.id,
+        type: 'api_suspended',
+        title: 'API Access Suspended',
+        message: reason || 'Your production API keys have been suspended. Please contact support or pay outstanding invoices to restore access.',
+        metadata: { 
+          suspendedBy: user.email,
+          suspendedAt: new Date().toISOString(),
+        },
+      });
+      
+      console.log(`[Admin] Super admin ${user.email} manually suspended API access for partner ${partner.companyName}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully suspended API access for ${partner.companyName}. Test API keys remain active.`,
+      });
+    } catch (error) {
+      console.error("Error suspending partner API:", error);
+      res.status(500).json({ message: "Failed to suspend partner API access" });
+    }
+  });
+
+  // Super Admin: Manually restore partner API keys
+  app.post("/api/admin/partners/:id/restore-api", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const partner = await storage.getPartnerAccount(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Check if suspended
+      if (!partner.invoiceOverdueSuspendedAt) {
+        return res.status(400).json({ message: "Partner API access is not currently suspended" });
+      }
+      
+      // Restore the partner's API keys
+      await storage.restorePartnerFromOverdueInvoice(partner.id);
+      
+      // Send restoration notification to partner
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://humanmetrix.ai';
+      
+      const { notifyInvoiceRestoration } = await import('./email');
+      await notifyInvoiceRestoration({
+        partnerId: partner.id,
+        partnerName: partner.companyName,
+        partnerEmail: partner.billingEmail || partner.email,
+        dashboardUrl: `${baseUrl}/partner-dashboard`,
+      });
+      
+      // Dispatch in-app notification to partner admins
+      await storage.dispatchPartnerNotification({
+        partnerId: partner.id,
+        type: 'api_restored',
+        title: 'API Access Restored',
+        message: 'Your production API keys have been reactivated. Thank you for resolving the outstanding payment.',
+        metadata: { 
+          restoredBy: user.email,
+          restoredAt: new Date().toISOString(),
+        },
+      });
+      
+      console.log(`[Admin] Super admin ${user.email} manually restored API access for partner ${partner.companyName}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully restored API access for ${partner.companyName}`,
+      });
+    } catch (error) {
+      console.error("Error restoring partner API:", error);
+      res.status(500).json({ message: "Failed to restore partner API access" });
+    }
+  });
+
   // ==================== PARTNER MONTHLY USAGE API ====================
 
   // Super Admin: Get partner monthly usage history

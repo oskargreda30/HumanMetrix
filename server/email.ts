@@ -3774,6 +3774,7 @@ export interface InvoiceSuspensionDetails {
   dueDate: Date;
   daysOverdue: number;
   paymentUrl: string;
+  customReason?: string; // Optional custom reason for manual suspension
 }
 
 export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails): Promise<{ success: boolean; messageId?: string }> {
@@ -3787,10 +3788,16 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
   const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
   const formatDate = (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   
+  // Use custom subject if manual suspension
+  const isManualSuspension = details.customReason || details.invoiceNumber === 'N/A';
+  const subject = isManualSuspension 
+    ? 'URGENT: API Access Suspended' 
+    : `URGENT: API Access Suspended - Invoice ${details.invoiceNumber} Overdue`;
+  
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: details.partnerEmail,
-    subject: `URGENT: API Access Suspended - Invoice ${details.invoiceNumber} Overdue`,
+    subject,
     html: `
       <!DOCTYPE html>
       <html>
@@ -3908,6 +3915,108 @@ HumanMetrix Ltd | AI Assessment Platform
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error(`[Email] Failed to send invoice suspension notification:`, error.message);
+    return { success: false };
+  }
+}
+
+// Invoice Restoration Notification - sent to partner when API is restored
+export interface InvoiceRestorationDetails {
+  partnerId: string;
+  partnerName: string;
+  partnerEmail: string;
+  dashboardUrl: string;
+}
+
+export async function notifyInvoiceRestoration(details: InvoiceRestorationDetails): Promise<{ success: boolean; messageId?: string }> {
+  const emailTransporter = getTransporter();
+  if (!emailTransporter) {
+    console.log('[Email] Transporter not configured - skipping invoice restoration notification');
+    return { success: false };
+  }
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.partnerEmail,
+    subject: 'API Access Restored - HumanMetrix',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9fafb; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .success-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+            .success-title { color: #16a34a; font-weight: 600; margin: 0 0 10px 0; }
+            .cta-button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>API Access Restored</h1>
+            </div>
+            <div class="content">
+              <div class="success-box">
+                <p class="success-title">Your production API keys are now active</p>
+                <p style="margin: 0; color: #166534;">Thank you for resolving the outstanding payment. Your full API access has been restored.</p>
+              </div>
+              
+              <p>Hi ${details.partnerName},</p>
+              
+              <p>We're pleased to confirm that your HumanMetrix API access has been fully restored. Your production API keys are now active and you can resume using the assessment platform.</p>
+              
+              <p><strong>What's restored:</strong></p>
+              <ul>
+                <li>Production (live) API keys are now active</li>
+                <li>New assessment sessions can be created</li>
+                <li>Full platform functionality is available</li>
+              </ul>
+              
+              <div style="text-align: center;">
+                <a href="${details.dashboardUrl}" class="cta-button">Go to Dashboard</a>
+              </div>
+              
+              <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">If you have any questions, please contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a></p>
+            </div>
+            <div class="footer">
+              <p>HumanMetrix Ltd | AI Assessment Platform</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+API Access Restored
+
+Hi ${details.partnerName},
+
+We're pleased to confirm that your HumanMetrix API access has been fully restored.
+
+Your production API keys are now active and you can resume using the assessment platform.
+
+What's restored:
+- Production (live) API keys are now active
+- New assessment sessions can be created
+- Full platform functionality is available
+
+Go to your dashboard: ${details.dashboardUrl}
+
+If you have any questions, please contact us at hello@humanmetrix.co.uk
+
+HumanMetrix Ltd | AI Assessment Platform
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`[Email] Invoice restoration notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`[Email] Failed to send invoice restoration notification:`, error.message);
     return { success: false };
   }
 }
