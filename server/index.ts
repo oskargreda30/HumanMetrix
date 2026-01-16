@@ -154,12 +154,34 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handler - catches all unhandled errors and notifies super admins
+  app.use(async (err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    
+    // Notify super admins of all errors (critical notification system)
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Global Error Handler',
+        error: err,
+        requestPath: req.path,
+        requestMethod: req.method,
+        userId: (req as any).user?.id,
+        additionalContext: {
+          statusCode: status,
+          query: JSON.stringify(req.query || {}),
+          userAgent: req.get('user-agent'),
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Global Error Handler] Failed to send critical error notification:', notifyError.message);
+    }
 
     res.status(status).json({ message });
-    throw err;
+    
+    // Log the error for debugging
+    console.error('[Global Error Handler]', err);
   });
 
   // importantly only setup vite in development and after

@@ -100,6 +100,9 @@ class JobQueue {
       pendingJob.error = `No handler registered for type: ${pendingJob.type}`;
       this.stats.pending--;
       this.stats.failed++;
+      
+      // Notify super admins of missing handler (critical configuration error)
+      this.notifyJobFailure(pendingJob, new Error(`No handler registered for type: ${pendingJob.type}`));
       return;
     }
 
@@ -139,6 +142,9 @@ class JobQueue {
         this.stats.processing--;
         this.stats.failed++;
         this.stats.totalProcessed++;
+        
+        // Notify super admins of permanent job failure
+        this.notifyJobFailure(pendingJob, error);
       }
     } finally {
       this.processing.delete(pendingJob.id);
@@ -156,6 +162,26 @@ class JobQueue {
     }
 
     console.log('✅ Job queue shutdown complete');
+  }
+
+  private async notifyJobFailure(job: Job, error: any): Promise<void> {
+    try {
+      const { notifyCriticalError } = await import('../email');
+      await notifyCriticalError({
+        source: `Job Queue (${job.type})`,
+        error: error,
+        additionalContext: {
+          jobId: job.id,
+          jobType: job.type,
+          attempts: job.attempts,
+          maxAttempts: job.maxAttempts,
+          createdAt: job.createdAt.toISOString(),
+          failedAt: new Date().toISOString(),
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Job Queue] Failed to send error notification:', notifyError.message);
+    }
   }
 
   cleanup(maxAge = 3600000): void {

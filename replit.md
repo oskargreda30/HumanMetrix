@@ -38,6 +38,7 @@ The frontend utilizes React + TypeScript, Shadcn UI, and Tailwind CSS for a resp
 - **Partner Integration Features**: Webhook notifications for key assessment events (HMAC-SHA256 verification, retry logic), ATS integrations (Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, custom APIs), and scheduled automated CSV exports.
 - **CI/CD Testing Pipeline**: Pre-deployment test runner with an admin-controlled toggle for production environments.
 - **Health Monitoring System**: Super admin dashboard for system health, error tracking, and status workflow.
+- **Critical Error Notification System**: Comprehensive error escalation to super admins via email and in-app notifications. Covers global API errors, database pool errors, job queue failures, AI scoring failures (aggregated), Xero integration failures (OAuth, token refresh, sync operations), and payment failures (B2C and B2B). Uses `notifyCriticalError()` function in `server/email.ts` for consistent error reporting with full context (stack traces, user IDs, request info).
 - **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue, managing transactions, and promo codes.
 - **Results Retention Consent Dashboard**: Super admin tab for viewing and filtering user consent.
 - **Accounting & Xero Integration**: Super admin accounting dashboard for expense tracking and revenue synchronization with Xero via OAuth2, supporting expense management and revenue sync with bulk sync functionality.

@@ -30,6 +30,7 @@ export async function handleScoringJob(data: ScoringJobData): Promise<any> {
 async function processPromptScoring(payload: ScoringJobData['payload']): Promise<any> {
   const { resultId, responses } = payload;
   const scores: Array<{ questionId: number; score: number; feedback: string }> = [];
+  const failedQuestions: number[] = [];
   
   console.log(`🤖 Starting prompt scoring for result ${resultId} with ${responses.length} responses`);
   
@@ -53,9 +54,29 @@ async function processPromptScoring(payload: ScoringJobData['payload']): Promise
         score: 0,
         feedback: 'Scoring failed - please contact support',
       });
+      failedQuestions.push(response.questionId);
     }
     
     await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  // Send aggregated notification if any questions failed scoring
+  if (failedQuestions.length > 0) {
+    try {
+      const { notifyCriticalError } = await import('../email');
+      await notifyCriticalError({
+        source: 'Scoring Worker',
+        error: new Error(`Failed to score ${failedQuestions.length} of ${responses.length} questions`),
+        additionalContext: {
+          resultId,
+          failedQuestionIds: failedQuestions.join(', '),
+          totalQuestions: responses.length,
+          failedCount: failedQuestions.length,
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Scoring Worker] Failed to send error notification:', notifyError.message);
+    }
   }
   
   console.log(`✅ Completed prompt scoring for result ${resultId}`);

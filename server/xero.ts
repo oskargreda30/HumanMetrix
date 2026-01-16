@@ -55,8 +55,23 @@ export async function getXeroAuthUrl(userId: string): Promise<{ url: string; sta
     const consentUrl = await client.buildConsentUrl();
     const urlWithState = `${consentUrl}&state=${encodeURIComponent(state)}`;
     return { url: urlWithState, state };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Xero] Failed to build consent URL:", error);
+    
+    // Notify super admins of Xero consent URL build failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Consent URL',
+        error: error,
+        additionalContext: {
+          operation: 'getXeroAuthUrl',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return null;
   }
 }
@@ -120,6 +135,22 @@ export async function handleXeroCallback(url: string, userId: string): Promise<{
     return { success: true };
   } catch (error: any) {
     console.error("[Xero] OAuth callback error:", error);
+    
+    // Notify super admins of Xero OAuth failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero OAuth',
+        error: error,
+        userId,
+        additionalContext: {
+          operation: 'handleXeroCallback',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return { success: false, error: error.message || "Failed to connect to Xero" };
   }
 }
@@ -155,8 +186,23 @@ export async function refreshXeroToken(): Promise<boolean> {
       .where(eq(xeroIntegration.id, integration.id));
     
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Xero] Token refresh error:", error);
+    
+    // Notify super admins of Xero token refresh failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Token Refresh',
+        error: error,
+        additionalContext: {
+          operation: 'refreshXeroToken',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return false;
   }
 }
@@ -202,8 +248,23 @@ export async function disconnectXero(): Promise<boolean> {
       .where(eq(xeroIntegration.isActive, true));
     
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Xero] Disconnect error:", error);
+    
+    // Notify super admins of Xero disconnect failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Disconnect',
+        error: error,
+        additionalContext: {
+          operation: 'disconnectXero',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return false;
   }
 }
@@ -242,8 +303,23 @@ async function ensureXeroAuth(): Promise<{ client: XeroClient; tenantId: string 
     }
     
     return { client, tenantId: integration.tenantId };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Xero] Auth check error:", error);
+    
+    // Notify super admins of Xero auth check failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Auth Check',
+        error: error,
+        additionalContext: {
+          operation: 'ensureXeroAuth',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return null;
   }
 }
@@ -330,6 +406,21 @@ export async function syncExpenseToXero(expenseId: string): Promise<{ success: b
         updatedAt: new Date(),
       })
       .where(eq(expenses.id, expenseId));
+    
+    // Notify super admins of Xero sync failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Expense Sync',
+        error: error,
+        additionalContext: {
+          expenseId,
+          operation: 'syncExpenseToXero',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
     
     return { success: false, error: error.message || "Failed to sync to Xero" };
   }
@@ -467,6 +558,22 @@ export async function syncRevenueToXero(purchaseId?: string, partnerInvoiceId?: 
       syncError: error.message || "Unknown error",
     });
     
+    // Notify super admins of Xero revenue sync failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Revenue Sync',
+        error: error,
+        additionalContext: {
+          purchaseId,
+          partnerInvoiceId,
+          operation: 'syncRevenueToXero',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return { success: false, error: error.message || "Failed to sync to Xero" };
   }
 }
@@ -509,8 +616,23 @@ export async function getUnsyncedRevenue(): Promise<Array<{
         customerName: [p.user?.firstName, p.user?.lastName].filter(Boolean).join(' ') || 'Unknown',
         date: p.purchase.createdAt,
       }));
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Xero] Get unsynced revenue error:", error);
+    
+    // Notify super admins of Xero query failure
+    try {
+      const { notifyCriticalError } = await import('./email');
+      await notifyCriticalError({
+        source: 'Xero Revenue Query',
+        error: error,
+        additionalContext: {
+          operation: 'getUnsyncedRevenue',
+        },
+      });
+    } catch (notifyError: any) {
+      console.error('[Xero] Failed to send error notification:', notifyError.message);
+    }
+    
     return [];
   }
 }

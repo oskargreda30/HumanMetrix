@@ -3594,3 +3594,156 @@ export async function notifyPrepaidLowBalance(details: PrepaidLowBalanceDetails)
     emailHtml,
   }).then(result => ({ success: result.emailSent || result.notificationCreated }));
 }
+
+// ==========================================
+// CRITICAL ERROR NOTIFICATION SYSTEM
+// ==========================================
+// Use this function to notify super admins whenever ANY error is caught in the app
+
+export interface CriticalErrorDetails {
+  source: string;           // Where the error occurred (e.g., "API /users", "Scoring Worker", "Email Service")
+  error: Error | string;    // The actual error
+  userId?: string;          // Associated user if applicable
+  partnerId?: string;       // Associated partner if applicable
+  sessionId?: string;       // Associated session if applicable
+  requestPath?: string;     // API request path if applicable
+  requestMethod?: string;   // HTTP method if applicable
+  additionalContext?: Record<string, any>; // Any extra context
+}
+
+/**
+ * Notify all super admins of a critical error via email and in-app notification.
+ * Call this function whenever an error is caught that should be escalated to administrators.
+ * 
+ * @example
+ * try {
+ *   await someRiskyOperation();
+ * } catch (error) {
+ *   await notifyCriticalError({
+ *     source: 'Payment Processing',
+ *     error: error,
+ *     userId: user.id,
+ *     additionalContext: { orderId: order.id }
+ *   });
+ * }
+ */
+export async function notifyCriticalError(details: CriticalErrorDetails): Promise<{ success: boolean }> {
+  const errorMessage = details.error instanceof Error ? details.error.message : String(details.error);
+  const errorStack = details.error instanceof Error ? details.error.stack : undefined;
+  const timestamp = new Date().toISOString();
+  
+  // Build context items for display
+  const contextItems: { label: string; value: string }[] = [
+    { label: 'Timestamp', value: timestamp },
+    { label: 'Source', value: details.source },
+  ];
+  
+  if (details.requestMethod && details.requestPath) {
+    contextItems.push({ label: 'Request', value: `${details.requestMethod} ${details.requestPath}` });
+  }
+  if (details.userId) {
+    contextItems.push({ label: 'User ID', value: details.userId });
+  }
+  if (details.partnerId) {
+    contextItems.push({ label: 'Partner ID', value: details.partnerId });
+  }
+  if (details.sessionId) {
+    contextItems.push({ label: 'Session ID', value: details.sessionId });
+  }
+  
+  // Add any additional context
+  if (details.additionalContext) {
+    for (const [key, value] of Object.entries(details.additionalContext)) {
+      if (value !== undefined && value !== null) {
+        contextItems.push({ label: key, value: String(value) });
+      }
+    }
+  }
+  
+  const contextHtml = contextItems.map(item => `
+    <div class="info-row">
+      <span class="label">${item.label}</span>
+      <span class="value">${item.value}</span>
+    </div>
+  `).join('');
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .label { color: #6b7280; min-width: 120px; }
+          .value { font-weight: 500; word-break: break-word; text-align: right; }
+          .error-message { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; margin: 15px 0; }
+          .error-message pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 13px; color: #991b1b; }
+          .stack-trace { background: #1f2937; color: #f3f4f6; border-radius: 6px; padding: 15px; margin: 15px 0; font-size: 12px; overflow-x: auto; }
+          .stack-trace pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+          .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+          .critical-badge { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;"><span class="critical-badge">CRITICAL</span> System Error Alert</h2>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">An error occurred in ${details.source}</p>
+          </div>
+          <div class="content">
+            ${contextHtml}
+            
+            <div class="error-message">
+              <strong>Error Message:</strong>
+              <pre>${errorMessage}</pre>
+            </div>
+            
+            ${errorStack ? `
+            <div class="stack-trace">
+              <strong style="color: #9ca3af;">Stack Trace:</strong>
+              <pre>${errorStack}</pre>
+            </div>
+            ` : ''}
+          </div>
+          <div class="footer">
+            <p>Automated critical error notification from HumanMetrix</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  try {
+    const result = await notifySuperAdmins({
+      type: 'system_error',
+      severity: 'critical',
+      title: `Error in ${details.source}`,
+      message: errorMessage,
+      metadata: {
+        source: details.source,
+        errorMessage,
+        errorStack,
+        userId: details.userId,
+        partnerId: details.partnerId,
+        sessionId: details.sessionId,
+        requestPath: details.requestPath,
+        requestMethod: details.requestMethod,
+        ...details.additionalContext,
+        timestamp,
+      },
+      emailSubject: `[CRITICAL] System Error: ${details.source}`,
+      emailHtml,
+    });
+    
+    console.log(`[Critical Error] Notification sent for error in ${details.source}`);
+    return { success: result.emailSent || result.notificationCreated };
+  } catch (notifyError: any) {
+    // Last resort: log to console if notification system itself fails
+    console.error(`[Critical Error] Failed to send notification:`, notifyError.message);
+    console.error(`[Critical Error] Original error in ${details.source}:`, errorMessage);
+    return { success: false };
+  }
+}

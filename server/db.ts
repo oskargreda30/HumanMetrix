@@ -22,8 +22,26 @@ export const pool = new Pool({
 
 console.log(`✅ Database pool configured (max: ${isProduction ? 50 : 20} connections)`);
 
-pool.on('error', (err) => {
+pool.on('error', async (err) => {
   console.error('❌ Database pool error:', err.message);
+  
+  // Notify super admins of database connection errors
+  try {
+    const { notifyCriticalError } = await import('./email');
+    await notifyCriticalError({
+      source: 'Database Pool',
+      error: err,
+      additionalContext: {
+        poolStats: {
+          totalConnections: pool.totalCount,
+          idleConnections: pool.idleCount,
+          waitingClients: pool.waitingCount,
+        },
+      },
+    });
+  } catch (notifyError: any) {
+    console.error('[Database] Failed to send error notification:', notifyError.message);
+  }
 });
 
 pool.on('connect', () => {
