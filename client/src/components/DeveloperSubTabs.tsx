@@ -427,22 +427,25 @@ export function DeveloperSubTabs({
               <TabsTrigger 
                 value="widget" 
                 data-testid="sandbox-subtab-widget" 
-                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
+                <Code className="h-4 w-4" />
                 Widget
               </TabsTrigger>
               <TabsTrigger 
                 value="api" 
                 data-testid="sandbox-subtab-api" 
-                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
+                <FileJson className="h-4 w-4" />
                 API
               </TabsTrigger>
               <TabsTrigger 
                 value="preview" 
                 data-testid="sandbox-subtab-preview" 
-                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
+                <Eye className="h-4 w-4" />
                 Preview
               </TabsTrigger>
             </TabsList>
