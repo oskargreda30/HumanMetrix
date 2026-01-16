@@ -430,7 +430,7 @@ export function DeveloperSubTabs({
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Code className="h-4 w-4" />
-                Widget
+                Widget Sandbox
               </TabsTrigger>
               <TabsTrigger 
                 value="api" 
@@ -438,7 +438,7 @@ export function DeveloperSubTabs({
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <FileJson className="h-4 w-4" />
-                API
+                API Sandbox
               </TabsTrigger>
               <TabsTrigger 
                 value="preview" 
@@ -446,7 +446,7 @@ export function DeveloperSubTabs({
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Eye className="h-4 w-4" />
-                Preview
+                Assessment Preview
               </TabsTrigger>
             </TabsList>
 
