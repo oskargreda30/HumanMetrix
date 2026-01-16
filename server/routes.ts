@@ -15612,64 +15612,159 @@ async function processCardExpirationWarnings(partners: PartnerAccount[]) {
   }
 }
 
-// Check for overdue invoices and notify super admins
+// Check for overdue invoices, notify super admins, and enforce payment
 async function checkOverdueInvoices() {
   const today = new Date();
   
   try {
-    // Get all enterprise partners with pending invoices
-    const partners = await storage.getAllPartnerAccounts();
-    const enterprisePartners = partners.filter((p: PartnerAccount) => p.billingType === 'enterprise');
+    // Get all overdue invoices with partner details using optimized query
+    const overdueItems = await storage.getOverdueInvoicesForEnforcement();
     
-    for (const partner of enterprisePartners) {
-      // Get pending invoices for this partner
-      const invoices = await storage.getPartnerInvoices(partner.id) as any[];
-      const overdueInvoices = invoices.filter((inv: any) => {
-        if (inv.status !== 'pending' && inv.status !== 'overdue') return false;
-        const dueDate = new Date(inv.dueDate);
-        return dueDate < today;
-      });
+    for (const { invoice, partner } of overdueItems) {
+      const dueDate = new Date(invoice.dueDate);
+      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      for (const invoice of overdueInvoices) {
-        const dueDate = new Date(invoice.dueDate);
-        const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Check if partner is already suspended for this invoice
+      const alreadySuspended = partner.invoiceOverdueSuspendedAt !== null;
+      
+      // Notification milestones: 1 day (grace period warning), 7 days (final warning), then suspension
+      const GRACE_PERIOD_DAYS = 7;
+      const lastNotifiedDays = invoice.lastOverdueNotificationDays || 0;
+      
+      // If invoice is overdue beyond grace period and not already suspended, suspend API access
+      if (daysOverdue >= GRACE_PERIOD_DAYS && !alreadySuspended) {
+        console.log(`[Billing Scheduler] SUSPENDING partner ${partner.id} (${partner.companyName}) - invoice ${invoice.invoiceNumber} is ${daysOverdue} days overdue`);
         
-        // Only notify at specific intervals: 7, 14, 30 days
-        const notificationMilestones = [7, 14, 30];
-        const lastNotifiedDays = invoice.lastOverdueNotificationDays || 0;
+        // Suspend the partner's live API keys
+        await storage.suspendPartnerForOverdueInvoice(partner.id);
         
-        // Find the next milestone we should notify at
-        const nextMilestone = notificationMilestones.find(m => m > lastNotifiedDays && daysOverdue >= m);
+        // Update invoice status
+        await storage.updatePartnerInvoice(invoice.id, {
+          status: 'overdue',
+          lastOverdueNotificationDays: GRACE_PERIOD_DAYS,
+        });
         
-        if (nextMilestone) {
-          console.log(`[Billing Scheduler] Sending overdue invoice notification for partner ${partner.id}, invoice ${invoice.id}, ${daysOverdue} days overdue`);
-          
-          const { notifyB2BInvoiceOverdue } = await import('./email');
-          await notifyB2BInvoiceOverdue({
+        // Update partner notification count
+        await storage.updatePartnerAccount(partner.id, {
+          invoiceOverdueNotificationsSent: 3, // 3 = suspended
+        });
+        
+        // Send suspension notification to partner
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+          : 'https://humanmetrix.ai';
+        
+        const { notifyInvoiceSuspension } = await import('./email');
+        await notifyInvoiceSuspension({
+          partnerId: partner.id,
+          partnerName: partner.companyName,
+          partnerEmail: partner.billingEmail || partner.email,
+          invoiceNumber: invoice.invoiceNumber,
+          amountDue: invoice.totalAmount,
+          currency: invoice.currency || partner.currency || 'GBP',
+          dueDate,
+          daysOverdue,
+          paymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+        });
+        
+        // Dispatch in-app notification to partner admins
+        await storage.dispatchPartnerNotification({
+          partnerId: partner.id,
+          type: 'api_suspended',
+          title: 'API Access Suspended - Overdue Invoice',
+          message: `Your production API keys have been suspended due to unpaid invoice ${invoice.invoiceNumber}. Please pay the outstanding amount of ${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)} to restore access.`,
+          metadata: { 
+            invoiceNumber: invoice.invoiceNumber, 
+            amountDue: invoice.totalAmount, 
+            daysOverdue,
+            currency: invoice.currency || 'GBP',
+          },
+        });
+        
+        // Notify super admins about the suspension
+        const { notifyCriticalError } = await import('./email');
+        await notifyCriticalError({
+          errorType: 'Enterprise Invoice Suspension',
+          errorMessage: `Partner ${partner.companyName} has been suspended due to overdue invoice ${invoice.invoiceNumber} (${daysOverdue} days overdue, ${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)})`,
+          context: {
             partnerId: partner.id,
             partnerName: partner.companyName,
-            partnerEmail: partner.billingEmail || partner.email,
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber || `INV-${invoice.id}`,
-            amountDue: invoice.amount,
-            currency: invoice.currency || partner.currency || 'GBP',
-            dueDate,
+            invoiceNumber: invoice.invoiceNumber,
+            amountDue: `${getCurrencySymbol(invoice.currency || 'GBP')}${(invoice.totalAmount / 100).toFixed(2)}`,
+            daysOverdue: daysOverdue.toString(),
+            dueDate: dueDate.toISOString(),
+          },
+        });
+        
+        continue; // Move to next invoice
+      }
+      
+      // Send warning notifications before suspension
+      // Day 1: First warning
+      // Day 3: Second warning
+      // Day 5: Final warning before suspension
+      const notificationMilestones = [1, 3, 5];
+      const nextMilestone = notificationMilestones.find(m => m > lastNotifiedDays && daysOverdue >= m);
+      
+      if (nextMilestone && !alreadySuspended) {
+        console.log(`[Billing Scheduler] Sending overdue invoice warning for partner ${partner.id}, invoice ${invoice.invoiceNumber}, ${daysOverdue} days overdue (milestone: ${nextMilestone})`);
+        
+        const { notifyB2BInvoiceOverdue } = await import('./email');
+        await notifyB2BInvoiceOverdue({
+          partnerId: partner.id,
+          partnerName: partner.companyName,
+          partnerEmail: partner.billingEmail || partner.email,
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          amountDue: invoice.totalAmount,
+          currency: invoice.currency || partner.currency || 'GBP',
+          dueDate,
+          daysOverdue,
+          suspensionWarning: daysOverdue >= 5 ? `Your API access will be suspended in ${GRACE_PERIOD_DAYS - daysOverdue} day(s) if payment is not received.` : undefined,
+        });
+        
+        // Update invoice status to overdue and track notification
+        await storage.updatePartnerInvoice(invoice.id, {
+          status: 'overdue',
+          lastOverdueNotificationDays: nextMilestone,
+        });
+        
+        // Update partner notification count
+        await storage.updatePartnerAccount(partner.id, {
+          invoiceOverdueNotificationsSent: nextMilestone === 1 ? 1 : nextMilestone === 3 ? 2 : 2,
+        });
+        
+        // Dispatch in-app notification for warning
+        await storage.dispatchPartnerNotification({
+          partnerId: partner.id,
+          type: 'payment_failed',
+          title: daysOverdue >= 5 ? 'URGENT: Invoice Overdue - Suspension Imminent' : 'Invoice Overdue - Payment Required',
+          message: `Invoice ${invoice.invoiceNumber} is ${daysOverdue} day(s) overdue. ${daysOverdue >= 5 ? `API access will be suspended in ${GRACE_PERIOD_DAYS - daysOverdue} day(s).` : 'Please make payment to avoid service interruption.'}`,
+          metadata: { 
+            invoiceNumber: invoice.invoiceNumber, 
+            amountDue: invoice.totalAmount, 
             daysOverdue,
-          });
-          
-          // Update invoice status to overdue and track notification
-          await storage.updatePartnerInvoice(invoice.id, {
-            status: 'overdue',
-            lastOverdueNotificationDays: nextMilestone,
-          });
-        }
+          },
+        });
       }
     }
     
-    console.log(`[Billing Scheduler] Completed overdue invoice check`);
+    console.log(`[Billing Scheduler] Completed overdue invoice check (${overdueItems.length} overdue invoices processed)`);
   } catch (error: any) {
     console.error('[Billing Scheduler] Failed to check overdue invoices:', error.message);
   }
+}
+
+// Helper function to get currency symbol
+function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = {
+    'GBP': '£', 'gbp': '£',
+    'USD': '$', 'usd': '$',
+    'EUR': '€', 'eur': '€',
+    'SGD': 'S$', 'sgd': 'S$',
+    'AUD': 'A$', 'aud': 'A$',
+  };
+  return symbols[currency] || currency + ' ';
 }
 
 // Check for low prepaid balances and notify super admins

@@ -3665,6 +3665,7 @@ export interface B2BInvoiceOverdueDetails {
   currency: string;
   dueDate: Date;
   daysOverdue: number;
+  suspensionWarning?: string; // Optional warning about upcoming suspension
 }
 
 export async function notifyB2BInvoiceOverdue(details: B2BInvoiceOverdueDetails): Promise<{ success: boolean }> {
@@ -3734,6 +3735,155 @@ export async function notifyB2BInvoiceOverdue(details: B2BInvoiceOverdueDetails)
     emailSubject: `[ALERT] Invoice Overdue: ${details.partnerName} - ${details.invoiceNumber}`,
     emailHtml,
   }).then(result => ({ success: result.emailSent || result.notificationCreated }));
+}
+
+// Invoice Suspension Notification - sent to partner when API is suspended due to overdue invoice
+export interface InvoiceSuspensionDetails {
+  partnerId: string;
+  partnerName: string;
+  partnerEmail: string;
+  invoiceNumber: string;
+  amountDue: number;
+  currency: string;
+  dueDate: Date;
+  daysOverdue: number;
+  paymentUrl: string;
+}
+
+export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails): Promise<{ success: boolean; messageId?: string }> {
+  const emailTransporter = getTransporter();
+  if (!emailTransporter) {
+    console.log('[Email] Transporter not configured - skipping invoice suspension notification');
+    return { success: false };
+  }
+  
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  const formatDate = (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  
+  const mailOptions = {
+    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+    to: details.partnerEmail,
+    subject: `URGENT: API Access Suspended - Invoice ${details.invoiceNumber} Overdue`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9fafb; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .alert-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+            .alert-title { color: #dc2626; font-weight: 600; margin: 0 0 10px 0; }
+            .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+            .info-row:last-child { border-bottom: none; }
+            .label { color: #6b7280; }
+            .value { font-weight: 600; color: #111827; }
+            .overdue-badge { background: #dc2626; color: white; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+            .cta-button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+            .cta-button:hover { background: #0e7490; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+            .impact-list { background: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .impact-list h4 { margin: 0 0 12px 0; color: #374151; }
+            .impact-list ul { margin: 0; padding-left: 20px; }
+            .impact-list li { margin-bottom: 8px; color: #4b5563; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>API Access Suspended</h1>
+            </div>
+            <div class="content">
+              <div class="alert-box">
+                <p class="alert-title">Action Required: Your production API keys have been deactivated</p>
+                <p style="margin: 0; color: #7f1d1d;">Due to the outstanding invoice below, your live API access has been suspended. Test API keys remain active for development purposes.</p>
+              </div>
+              
+              <div class="info-row">
+                <span class="label">Company</span>
+                <span class="value">${details.partnerName}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Invoice Number</span>
+                <span class="value">${details.invoiceNumber}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Amount Due</span>
+                <span class="value">${formatCurrency(details.amountDue)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Original Due Date</span>
+                <span class="value">${formatDate(details.dueDate)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Days Overdue</span>
+                <span class="value"><span class="overdue-badge">${details.daysOverdue} days</span></span>
+              </div>
+              
+              <div class="impact-list">
+                <h4>Service Impact:</h4>
+                <ul>
+                  <li>Production (live) API keys are now inactive</li>
+                  <li>New assessment sessions cannot be created via production API</li>
+                  <li>Existing completed assessments and data remain accessible</li>
+                  <li>Test API keys continue to work for development</li>
+                </ul>
+              </div>
+              
+              <p style="margin-top: 20px;"><strong>To restore API access:</strong> Please pay the outstanding invoice. Once payment is confirmed, your production API keys will be reactivated within 24 hours.</p>
+              
+              <div style="text-align: center;">
+                <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
+              </div>
+              
+              <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">If you have already made payment or believe this is an error, please contact us immediately at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a></p>
+            </div>
+            <div class="footer">
+              <p>HumanMetrix Ltd | AI Assessment Platform</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+URGENT: API Access Suspended
+
+Your production API keys have been suspended due to an overdue invoice.
+
+Company: ${details.partnerName}
+Invoice Number: ${details.invoiceNumber}
+Amount Due: ${formatCurrency(details.amountDue)}
+Due Date: ${formatDate(details.dueDate)}
+Days Overdue: ${details.daysOverdue}
+
+SERVICE IMPACT:
+- Production (live) API keys are now inactive
+- New assessment sessions cannot be created via production API
+- Existing completed assessments and data remain accessible
+- Test API keys continue to work for development
+
+TO RESTORE ACCESS:
+Please pay the outstanding invoice at: ${details.paymentUrl}
+
+Once payment is confirmed, your production API keys will be reactivated within 24 hours.
+
+If you have already made payment or believe this is an error, please contact us at hello@humanmetrix.co.uk
+
+HumanMetrix Ltd | AI Assessment Platform
+    `.trim(),
+  };
+  
+  try {
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`[Email] Invoice suspension notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`[Email] Failed to send invoice suspension notification:`, error.message);
+    return { success: false };
+  }
 }
 
 // Low Prepaid Balance Warning
