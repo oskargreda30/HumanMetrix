@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import { registerRoutes, startGoldenSetScheduler, startBillingScheduler } from "./routes";
+import { registerRoutes, startGoldenSetScheduler, startBillingScheduler, startDatabaseSizeScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
@@ -218,6 +218,9 @@ app.use((req, res, next) => {
     
     // Start billing scheduler for auto-bill partner charges
     startBillingScheduler();
+    
+    // Start database size monitoring scheduler
+    startDatabaseSizeScheduler();
     
     // Preload heavy modules in production
     preloadModules();

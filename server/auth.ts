@@ -67,13 +67,25 @@ export async function setupAuth(app: Express) {
 
       const user = await storage.getUserByEmail(normalizeEmail(email));
       if (!user) {
+        // Track failed login attempt even for non-existent users
+        const { trackFailedLogin } = await import('./security-monitor');
+        const ipAddress = req.ip || req.socket.remoteAddress;
+        await trackFailedLogin(email, ipAddress);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       const validPassword = await bcrypt.compare(password, user.passwordHash);
       if (!validPassword) {
+        // Track failed login attempt
+        const { trackFailedLogin } = await import('./security-monitor');
+        const ipAddress = req.ip || req.socket.remoteAddress;
+        await trackFailedLogin(email, ipAddress);
         return res.status(401).json({ message: "Invalid email or password" });
       }
+      
+      // Clear failed login attempts on successful login
+      const { clearFailedLoginAttempts } = await import('./security-monitor');
+      clearFailedLoginAttempts(email);
 
       // Regenerate session to prevent session fixation attacks
       await new Promise<void>((resolve, reject) => {

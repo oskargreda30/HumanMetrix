@@ -15713,6 +15713,37 @@ async function checkLowPrepaidBalances(partners: PartnerAccount[]) {
   }
 }
 
+// ============================================================================
+// DATABASE SIZE MONITORING SCHEDULER
+// ============================================================================
+let dbSizeSchedulerStarted = false;
+
+export function startDatabaseSizeScheduler() {
+  if (dbSizeSchedulerStarted) {
+    console.log('[Database Size Scheduler] Already started, skipping');
+    return;
+  }
+  
+  dbSizeSchedulerStarted = true;
+  
+  // Run database size check every 6 hours
+  const interval = 6 * 60 * 60 * 1000;
+  
+  console.log(`[Database Size Scheduler] Will run checks every 6 hours`);
+  
+  // Run first check after 5 minutes (let app stabilize)
+  setTimeout(async () => {
+    const { checkDatabaseSize } = await import('./security-monitor');
+    await checkDatabaseSize();
+    
+    // Then run every 6 hours
+    setInterval(async () => {
+      const { checkDatabaseSize } = await import('./security-monitor');
+      await checkDatabaseSize();
+    }, interval);
+  }, 5 * 60 * 1000);
+}
+
 // Calculate next retry date based on failed attempts (3, 5, 7 day schedule)
 function calculateNextRetryDate(failedAttempts: number): Date {
   const retryDays = [3, 5, 7]; // Days after each failure

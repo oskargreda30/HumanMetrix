@@ -148,6 +148,15 @@ export function partnerAuth(requiredPermissions: string[] = []) {
       req.partner = result.partner;
       req.apiKey = result.keyRecord;
       
+      // Track API call for suspicious activity detection
+      try {
+        const { trackApiCall } = await import('./security-monitor');
+        await trackApiCall(result.partner!.id, req.path);
+      } catch (trackError) {
+        // Don't block request if tracking fails
+        console.error('Failed to track API call:', trackError);
+      }
+      
       next();
     } catch (error) {
       console.error("Partner auth error:", error);
@@ -227,12 +236,28 @@ export async function consumeTestCredit(
       if (usagePercentage >= firstThreshold && usagePercentage < urgentThreshold && !partner.last70NoticeAt) {
         shouldNotifyFirst = true;
         await storage.updatePartnerQuotaNotification(partnerId, '70'); // Reuse existing field
+        
+        // Also notify super admins about high API usage
+        try {
+          const { notifyHighApiUsage } = await import('./security-monitor');
+          await notifyHighApiUsage(partnerId, partner.companyName, usagePercentage, balance.remaining, balance.testsPurchased);
+        } catch (notifyError) {
+          console.error('Failed to notify super admins about high API usage:', notifyError);
+        }
       }
       
       // Check urgent threshold (first + 15%, max 95%)
       if (usagePercentage >= urgentThreshold && usagePercentage < 100 && !partner.last90NoticeAt) {
         shouldNotifyUrgent = true;
         await storage.updatePartnerQuotaNotification(partnerId, '90'); // Reuse existing field
+        
+        // Also notify super admins about critical API usage
+        try {
+          const { notifyHighApiUsage } = await import('./security-monitor');
+          await notifyHighApiUsage(partnerId, partner.companyName, usagePercentage, balance.remaining, balance.testsPurchased);
+        } catch (notifyError) {
+          console.error('Failed to notify super admins about critical API usage:', notifyError);
+        }
       }
     }
     

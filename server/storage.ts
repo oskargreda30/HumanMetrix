@@ -269,7 +269,7 @@ export interface IStorage {
   deleteOrganization(id: string): Promise<void>;
   
   // User role/organization operations
-  updateUserRole(userId: string, role: UserRole): Promise<void>;
+  updateUserRole(userId: string, role: UserRole, updatedByUserId?: string): Promise<void>;
   updateUserOrganization(userId: string, organizationId: string | null): Promise<void>;
   updateUserPassword(userId: string, passwordHash: string): Promise<void>;
   getUsersByOrganization(organizationId: string): Promise<User[]>;
@@ -287,7 +287,7 @@ export interface IStorage {
   getPartnerAccountByEmail(email: string): Promise<PartnerAccount | undefined>;
   getPartnerAccountByOrganizationId(organizationId: string): Promise<PartnerAccount | undefined>;
   getAllPartnerAccounts(): Promise<PartnerAccount[]>;
-  updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void>;
+  updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>, updatedByUserId?: string): Promise<void>;
   deletePartnerAccount(id: string): Promise<void>;
   
   // Partner organisation operations (sub-accounts for B2B partners)
@@ -1474,11 +1474,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User role/organization operations
-  async updateUserRole(userId: string, role: UserRole): Promise<void> {
+  async updateUserRole(userId: string, role: UserRole, updatedByUserId?: string): Promise<void> {
+    // Get user info before update
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    const previousRole = user?.role;
+    
     await db
       .update(users)
       .set({ role, updatedAt: new Date() })
       .where(eq(users.id, userId));
+    
+    // Notify if user is being promoted to admin or super_admin
+    if (user && (role === 'super_admin' || role === 'organization_admin') && previousRole !== role) {
+      try {
+        const { notifyNewAdminCreated } = await import('./security-monitor');
+        let createdByEmail: string | undefined;
+        if (updatedByUserId) {
+          const [updater] = await db.select().from(users).where(eq(users.id, updatedByUserId));
+          createdByEmail = updater?.email;
+        }
+        await notifyNewAdminCreated(userId, user.email, role, updatedByUserId, createdByEmail);
+      } catch (error: any) {
+        console.error('[Storage] Failed to notify about admin role change:', error.message);
+      }
+    }
   }
 
   async updateUserOrganization(userId: string, organizationId: string | null): Promise<void> {
@@ -1631,7 +1650,26 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(partnerAccounts).orderBy(desc(partnerAccounts.createdAt));
   }
 
-  async updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>): Promise<void> {
+  async updatePartnerAccount(id: string, updates: Partial<InsertPartnerAccount>, updatedByUserId?: string): Promise<void> {
+    // Check if partner is being deactivated
+    if (updates.isActive === false) {
+      try {
+        const [partner] = await db.select().from(partnerAccounts).where(eq(partnerAccounts.id, id));
+        if (partner && partner.isActive !== false) {
+          // Partner is being deactivated
+          const { notifyPartnerDeactivation } = await import('./security-monitor');
+          let deactivatedByEmail: string | undefined;
+          if (updatedByUserId) {
+            const [updater] = await db.select().from(users).where(eq(users.id, updatedByUserId));
+            deactivatedByEmail = updater?.email;
+          }
+          await notifyPartnerDeactivation(id, partner.companyName, 'Account deactivated by administrator', updatedByUserId, deactivatedByEmail);
+        }
+      } catch (error: any) {
+        console.error('[Storage] Failed to notify about partner deactivation:', error.message);
+      }
+    }
+    
     await db.update(partnerAccounts)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(partnerAccounts.id, id));
