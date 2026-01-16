@@ -182,23 +182,23 @@ export function HiringPipelineTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Hiring Pipeline</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-2xl font-bold text-white">Hiring Pipeline</h2>
+          <p className="text-sm text-white/70 mt-1">
             Track candidates through your hiring process with drag-and-drop
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
             <Input
               placeholder="Search candidates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-[250px]"
+              className="pl-9 w-[250px] bg-white/10 border-white/20 text-white placeholder:text-white/50"
               data-testid="input-pipeline-search"
             />
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh-pipeline">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-white/30 text-white hover:bg-white/10" data-testid="button-refresh-pipeline">
             Refresh
           </Button>
         </div>
