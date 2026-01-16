@@ -3788,11 +3788,54 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
   const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
   const formatDate = (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   
-  // Use custom subject if manual suspension
-  const isManualSuspension = details.customReason || details.invoiceNumber === 'N/A';
+  // Determine if this is a manual suspension (customReason provided or no real invoice)
+  const isManualSuspension = !!details.customReason || details.invoiceNumber === 'N/A';
   const subject = isManualSuspension 
     ? 'URGENT: API Access Suspended' 
     : `URGENT: API Access Suspended - Invoice ${details.invoiceNumber} Overdue`;
+  
+  // Generate different email content for manual vs invoice-based suspension
+  const alertMessage = isManualSuspension
+    ? details.customReason || 'Your API access has been suspended due to outstanding payments. Please contact support or make payment to restore access.'
+    : 'Due to the outstanding invoice below, your live API access has been suspended. Test API keys remain active for development purposes.';
+  
+  const restoreMessage = isManualSuspension
+    ? 'Please contact us or resolve any outstanding payments to restore your API access.'
+    : 'Please pay the outstanding invoice. Once payment is confirmed and marked as received, your production API keys will be reactivated immediately.';
+  
+  // Invoice details section - only shown for invoice-based suspension
+  const invoiceDetailsHtml = isManualSuspension ? '' : `
+              <div class="info-row">
+                <span class="label">Invoice Number</span>
+                <span class="value">${details.invoiceNumber}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Amount Due</span>
+                <span class="value">${formatCurrency(details.amountDue)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Original Due Date</span>
+                <span class="value">${formatDate(details.dueDate)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Days Overdue</span>
+                <span class="value"><span class="overdue-badge">${details.daysOverdue} days</span></span>
+              </div>`;
+  
+  const invoiceDetailsText = isManualSuspension ? '' : `
+Invoice Number: ${details.invoiceNumber}
+Amount Due: ${formatCurrency(details.amountDue)}
+Due Date: ${formatDate(details.dueDate)}
+Days Overdue: ${details.daysOverdue}
+`;
+  
+  const ctaButtonHtml = isManualSuspension ? `
+              <div style="text-align: center;">
+                <a href="${details.paymentUrl}" class="cta-button">Go to Billing Dashboard</a>
+              </div>` : `
+              <div style="text-align: center;">
+                <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
+              </div>`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -3832,29 +3875,14 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
             <div class="content">
               <div class="alert-box">
                 <p class="alert-title">Action Required: Your production API keys have been deactivated</p>
-                <p style="margin: 0; color: #7f1d1d;">Due to the outstanding invoice below, your live API access has been suspended. Test API keys remain active for development purposes.</p>
+                <p style="margin: 0; color: #7f1d1d;">${alertMessage}</p>
               </div>
               
               <div class="info-row">
                 <span class="label">Company</span>
                 <span class="value">${details.partnerName}</span>
               </div>
-              <div class="info-row">
-                <span class="label">Invoice Number</span>
-                <span class="value">${details.invoiceNumber}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Amount Due</span>
-                <span class="value">${formatCurrency(details.amountDue)}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Original Due Date</span>
-                <span class="value">${formatDate(details.dueDate)}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Days Overdue</span>
-                <span class="value"><span class="overdue-badge">${details.daysOverdue} days</span></span>
-              </div>
+              ${invoiceDetailsHtml}
               
               <div class="impact-list">
                 <h4>Service Impact:</h4>
@@ -3866,11 +3894,9 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
                 </ul>
               </div>
               
-              <p style="margin-top: 20px;"><strong>To restore API access:</strong> Please pay the outstanding invoice. Once payment is confirmed and marked as received, your production API keys will be reactivated immediately.</p>
+              <p style="margin-top: 20px;"><strong>To restore API access:</strong> ${restoreMessage}</p>
               
-              <div style="text-align: center;">
-                <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
-              </div>
+              ${ctaButtonHtml}
               
               <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">If you have already made payment or believe this is an error, please contact us immediately at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a></p>
             </div>
@@ -3884,13 +3910,12 @@ export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails)
     text: `
 URGENT: API Access Suspended
 
-Your production API keys have been suspended due to an overdue invoice.
+Your production API keys have been suspended.
 
 Company: ${details.partnerName}
-Invoice Number: ${details.invoiceNumber}
-Amount Due: ${formatCurrency(details.amountDue)}
-Due Date: ${formatDate(details.dueDate)}
-Days Overdue: ${details.daysOverdue}
+${invoiceDetailsText}
+REASON:
+${alertMessage}
 
 SERVICE IMPACT:
 - Production (live) API keys are now inactive
@@ -3899,9 +3924,9 @@ SERVICE IMPACT:
 - Test API keys continue to work for development
 
 TO RESTORE ACCESS:
-Please pay the outstanding invoice at: ${details.paymentUrl}
+${restoreMessage}
 
-Once payment is confirmed and marked as received, your production API keys will be reactivated immediately.
+${isManualSuspension ? 'Go to your billing dashboard: ' : 'Pay the outstanding invoice at: '}${details.paymentUrl}
 
 If you have already made payment or believe this is an error, please contact us at hello@humanmetrix.co.uk
 
