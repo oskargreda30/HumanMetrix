@@ -2770,9 +2770,54 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       // Verify Stripe payment
-      const checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      let checkoutSession;
+      try {
+        checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      } catch (stripeError: any) {
+        console.error('[B2B Payment] Stripe session retrieval failed:', stripeError.message);
+        // Notify super admins of Stripe API error
+        try {
+          const session = await storage.getAssessmentSession(b2bSessionId);
+          const partner = session ? await storage.getPartnerAccount(session.partnerId) : null;
+          
+          const { notifyB2BTestTakerPaymentFailure } = await import('./email');
+          await notifyB2BTestTakerPaymentFailure({
+            candidateEmail: session?.externalEmail || 'Unknown',
+            sessionId: b2bSessionId,
+            assessmentType: session?.assessmentType || 'Unknown',
+            partnerId: session?.partnerId || 'Unknown',
+            partnerName: partner?.companyName || partner?.name || 'Unknown Partner',
+            amountDue: 0,
+            currency: 'GBP',
+            failureReason: `Stripe API error: ${stripeError.message}`,
+          });
+        } catch (notifyError: any) {
+          console.error('[B2B Payment] Failed to notify super admin:', notifyError.message);
+        }
+        return res.status(400).json({ error: "Failed to verify payment" });
+      }
       
       if (checkoutSession.payment_status !== 'paid') {
+        // Notify super admins of B2B test taker payment failure
+        try {
+          const session = await storage.getAssessmentSession(b2bSessionId);
+          const partner = session ? await storage.getPartnerAccount(session.partnerId) : null;
+          
+          const { notifyB2BTestTakerPaymentFailure } = await import('./email');
+          await notifyB2BTestTakerPaymentFailure({
+            candidateEmail: session?.externalEmail || checkoutSession.customer_email || 'Unknown',
+            candidateName: session?.externalUserId || undefined,
+            sessionId: b2bSessionId,
+            assessmentType: session?.assessmentType || 'Unknown',
+            partnerId: session?.partnerId || checkoutSession.metadata?.partner_id || 'Unknown',
+            partnerName: partner?.companyName || partner?.name || 'Unknown Partner',
+            amountDue: checkoutSession.amount_total || 0,
+            currency: checkoutSession.currency?.toUpperCase() || 'GBP',
+            failureReason: checkoutSession.payment_status === 'unpaid' ? 'Payment not completed' : 'Checkout expired or cancelled',
+          });
+        } catch (notifyError: any) {
+          console.error('[B2B Payment] Failed to notify super admin:', notifyError.message);
+        }
         return res.status(400).json({ error: "Payment not completed" });
       }
       

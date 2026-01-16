@@ -733,6 +733,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   autoTopUpEnabled: boolean("auto_top_up_enabled").notNull().default(false),
   autoTopUpThreshold: integer("auto_top_up_threshold").default(10), // Top up when balance falls below this
   autoTopUpPackage: varchar("auto_top_up_package"), // Package tier to purchase (e.g., "starter", "growth")
+  lastLowBalanceNotificationLevel: integer("last_low_balance_notification_level").default(100), // Track low balance notification thresholds (10, 5, 2)
   // White-label branding settings
   brandingEnabled: boolean("branding_enabled").notNull().default(false),
   brandingPrimaryColor: varchar("branding_primary_color"), // Hex color e.g. "#0891b2"
@@ -1013,6 +1014,7 @@ export const partnerInvoices = pgTable("partner_invoices", {
   notes: text("notes"),
   sentToEmail: varchar("sent_to_email").notNull(),
   sentByUserId: varchar("sent_by_user_id").references(() => users.id),
+  lastOverdueNotificationDays: integer("last_overdue_notification_days").default(0), // Track overdue notification milestones (7, 14, 30)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_partner_invoices_partner").on(table.partnerId),
@@ -1720,4 +1722,33 @@ export const insertRevenueSyncLogSchema = createInsertSchema(revenueSyncLogs).om
 
 export type InsertRevenueSyncLog = z.infer<typeof insertRevenueSyncLogSchema>;
 export type RevenueSyncLog = typeof revenueSyncLogs.$inferSelect;
+
+// Admin notifications - for super admin alerts about system events
+export const adminNotifications = pgTable("admin_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }), // NULL = broadcast to all super admins
+  type: varchar("type").notNull(), // payment_failure, system_error, security_alert, billing_issue, etc.
+  severity: varchar("severity").notNull().default("info"), // info, warning, critical
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  isRead: boolean("is_read").notNull().default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_admin_notifications_user").on(table.userId),
+  index("idx_admin_notifications_type").on(table.type),
+  index("idx_admin_notifications_severity").on(table.severity),
+  index("idx_admin_notifications_read").on(table.userId, table.isRead),
+  index("idx_admin_notifications_created").on(table.createdAt),
+]);
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({
+  id: true,
+  createdAt: true,
+  readAt: true,
+});
+
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;
 

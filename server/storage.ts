@@ -97,6 +97,9 @@ import {
   billingChangeRequests,
   partnerCandidateImports,
   partnerCandidateInvitations,
+  adminNotifications,
+  type AdminNotification,
+  type InsertAdminNotification,
   type PartnerWebhook,
   type InsertPartnerWebhook,
   type WebhookDeliveryLog,
@@ -3659,6 +3662,66 @@ export class DatabaseStorage implements IStorage {
     await db.delete(emailVerificationCodes).where(
       lte(emailVerificationCodes.expiresAt, new Date())
     );
+  }
+
+  // Admin notification operations
+  async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
+    const [result] = await db.insert(adminNotifications).values(notification).returning();
+    return result;
+  }
+
+  async getAdminNotifications(userId?: string, limit = 50): Promise<AdminNotification[]> {
+    if (userId) {
+      // Get notifications for this user OR broadcast notifications
+      return await db.select().from(adminNotifications)
+        .where(or(eq(adminNotifications.userId, userId), isNull(adminNotifications.userId)))
+        .orderBy(desc(adminNotifications.createdAt))
+        .limit(limit);
+    }
+    // Get all broadcast notifications
+    return await db.select().from(adminNotifications)
+      .where(isNull(adminNotifications.userId))
+      .orderBy(desc(adminNotifications.createdAt))
+      .limit(limit);
+  }
+
+  async getUnreadAdminNotificationCount(userId?: string): Promise<number> {
+    const conditions = [eq(adminNotifications.isRead, false)];
+    if (userId) {
+      conditions.push(or(eq(adminNotifications.userId, userId), isNull(adminNotifications.userId))!);
+    } else {
+      conditions.push(isNull(adminNotifications.userId));
+    }
+    
+    const [result] = await db.select({ count: count() }).from(adminNotifications)
+      .where(and(...conditions));
+    return result?.count || 0;
+  }
+
+  async markAdminNotificationRead(id: string): Promise<void> {
+    await db.update(adminNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(eq(adminNotifications.id, id));
+  }
+
+  async markAllAdminNotificationsRead(userId?: string): Promise<void> {
+    const conditions = [eq(adminNotifications.isRead, false)];
+    if (userId) {
+      conditions.push(or(eq(adminNotifications.userId, userId), isNull(adminNotifications.userId))!);
+    }
+    
+    await db.update(adminNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(...conditions));
+  }
+
+  async getSuperAdminUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, 'super_admin'));
+  }
+
+  async broadcastAdminNotification(notification: Omit<InsertAdminNotification, 'userId'>): Promise<AdminNotification> {
+    // Create a single broadcast notification (userId = null means all super admins)
+    return this.createAdminNotification({ ...notification, userId: null });
   }
 }
 

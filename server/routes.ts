@@ -571,9 +571,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Retrieve the checkout session from Stripe
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      let session;
+      try {
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+      } catch (stripeError: any) {
+        console.error('[B2C Payment] Stripe session retrieval failed:', stripeError.message);
+        // Notify super admins of Stripe API error
+        try {
+          const { notifyB2CPaymentFailure } = await import('./email');
+          await notifyB2CPaymentFailure({
+            userEmail: 'Unknown',
+            amountDue: 0,
+            currency: 'GBP',
+            failureReason: `Stripe API error: ${stripeError.message}`,
+            stripeSessionId: sessionId,
+          });
+        } catch (notifyError: any) {
+          console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+        }
+        return res.status(400).json({ message: "Failed to verify payment" });
+      }
       
       if (!session || session.payment_status !== "paid") {
+        // Notify super admins of payment failure
+        try {
+          const { notifyB2CPaymentFailure } = await import('./email');
+          await notifyB2CPaymentFailure({
+            userEmail: session?.customer_email || session?.metadata?.email || 'Unknown',
+            userName: session?.metadata?.firstName ? `${session.metadata.firstName} ${session.metadata.lastName || ''}` : undefined,
+            userId: session?.metadata?.userId,
+            amountDue: session?.amount_total || 0,
+            currency: session?.currency?.toUpperCase() || 'GBP',
+            failureReason: !session ? 'Session not found' : (session.payment_status === 'unpaid' ? 'Payment not completed' : 'Checkout expired or cancelled'),
+            stripeSessionId: sessionId,
+          });
+        } catch (notifyError: any) {
+          console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+        }
         return res.status(400).json({ message: "Payment not completed" });
       }
 
@@ -7739,6 +7773,95 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error processing billing change request:", error);
       res.status(500).json({ message: "Failed to process billing change request" });
+    }
+  });
+
+  // ============================================================================
+  // SUPER ADMIN NOTIFICATIONS API
+  // ============================================================================
+
+  // Get all admin notifications for super admins
+  app.get("/api/admin/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      
+      const notifications = await storage.getAdminNotifications(userId, limit, offset, unreadOnly);
+      
+      res.json({ notifications });
+    } catch (error) {
+      console.error("Error fetching admin notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Get unread count for super admins
+  app.get("/api/admin/notifications/unread-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const notifications = await storage.getAdminNotifications(userId, 100, 0, true);
+      
+      res.json({ count: notifications.length });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/admin/notifications/:notificationId/read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const { notificationId } = req.params;
+      await storage.markAdminNotificationRead(notificationId, userId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post("/api/admin/notifications/mark-all-read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get all unread notifications and mark them read
+      const unreadNotifications = await storage.getAdminNotifications(userId, 100, 0, true);
+      for (const notif of unreadNotifications) {
+        await storage.markAdminNotificationRead(notif.id, userId);
+      }
+      
+      res.json({ success: true, count: unreadNotifications.length });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark notifications as read" });
     }
   });
 
@@ -15367,7 +15490,13 @@ async function runScheduledBillingCheck() {
     // 4. Check for card expiration warnings (14 days, 7 days, 1 day before)
     await processCardExpirationWarnings(partners);
     
-    // 5. Archive monthly usage for all billable partners (subscription and enterprise)
+    // 5. Check for overdue invoices (notify at 7, 14, 30 days overdue)
+    await checkOverdueInvoices();
+    
+    // 6. Check for low prepaid balances (notify when tests remaining < 10)
+    await checkLowPrepaidBalances(partners);
+    
+    // 7. Archive monthly usage for all billable partners (subscription and enterprise)
     const billablePartners = partners.filter(
       (p: PartnerAccount) => (p.billingType === 'subscription' || p.billingType === 'enterprise') &&
            (p.billingCycleAnchor || 1) === dayOfMonth
@@ -15452,6 +15581,133 @@ async function processCardExpirationWarnings(partners: PartnerAccount[]) {
         title: daysUntilExpiry <= 1 ? 'Card Expires Tomorrow!' : 'Card Expiring Soon',
         message: `Your ${partner.cardBrand} card ending in ${partner.cardLast4} expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Please update your payment method.`,
         metadata: { daysUntilExpiry, cardLast4: partner.cardLast4, cardBrand: partner.cardBrand },
+      });
+    }
+  }
+}
+
+// Check for overdue invoices and notify super admins
+async function checkOverdueInvoices() {
+  const today = new Date();
+  
+  try {
+    // Get all enterprise partners with pending invoices
+    const partners = await storage.getAllPartnerAccounts();
+    const enterprisePartners = partners.filter((p: PartnerAccount) => p.billingType === 'enterprise');
+    
+    for (const partner of enterprisePartners) {
+      // Get pending invoices for this partner
+      const invoices = await storage.getPartnerInvoices(partner.id) as any[];
+      const overdueInvoices = invoices.filter((inv: any) => {
+        if (inv.status !== 'pending' && inv.status !== 'overdue') return false;
+        const dueDate = new Date(inv.dueDate);
+        return dueDate < today;
+      });
+      
+      for (const invoice of overdueInvoices) {
+        const dueDate = new Date(invoice.dueDate);
+        const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Only notify at specific intervals: 7, 14, 30 days
+        const notificationMilestones = [7, 14, 30];
+        const lastNotifiedDays = invoice.lastOverdueNotificationDays || 0;
+        
+        // Find the next milestone we should notify at
+        const nextMilestone = notificationMilestones.find(m => m > lastNotifiedDays && daysOverdue >= m);
+        
+        if (nextMilestone) {
+          console.log(`[Billing Scheduler] Sending overdue invoice notification for partner ${partner.id}, invoice ${invoice.id}, ${daysOverdue} days overdue`);
+          
+          const { notifyB2BInvoiceOverdue } = await import('./email');
+          await notifyB2BInvoiceOverdue({
+            partnerId: partner.id,
+            partnerName: partner.companyName,
+            partnerEmail: partner.billingEmail || partner.email,
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber || `INV-${invoice.id}`,
+            amountDue: invoice.amount,
+            currency: invoice.currency || partner.currency || 'GBP',
+            dueDate,
+            daysOverdue,
+          });
+          
+          // Update invoice status to overdue and track notification
+          await storage.updatePartnerInvoice(invoice.id, {
+            status: 'overdue',
+            lastOverdueNotificationDays: nextMilestone,
+          });
+        }
+      }
+    }
+    
+    console.log(`[Billing Scheduler] Completed overdue invoice check`);
+  } catch (error: any) {
+    console.error('[Billing Scheduler] Failed to check overdue invoices:', error.message);
+  }
+}
+
+// Check for low prepaid balances and notify super admins
+async function checkLowPrepaidBalances(partners: PartnerAccount[]) {
+  const prepaidPartners = partners.filter((p: PartnerAccount) => p.billingType === 'prepaid');
+  
+  // Get average assessment cost for estimation (default to 1500 pence = 15 GBP)
+  const avgAssessmentCost = 1500;
+  
+  for (const partner of prepaidPartners) {
+    const balance = partner.prepaidBalance || 0;
+    const testsRemaining = Math.floor(balance / avgAssessmentCost);
+    
+    // Notify when less than 10 tests remaining
+    if (testsRemaining >= 10) continue;
+    
+    // Check if we've already notified at this level
+    const lastNotifiedLevel = partner.lastLowBalanceNotificationLevel || 100;
+    
+    // Notification thresholds: 10, 5, 2 tests
+    let shouldNotify = false;
+    let notificationLevel = 100;
+    
+    if (testsRemaining <= 2 && lastNotifiedLevel > 2) {
+      shouldNotify = true;
+      notificationLevel = 2;
+    } else if (testsRemaining <= 5 && lastNotifiedLevel > 5) {
+      shouldNotify = true;
+      notificationLevel = 5;
+    } else if (testsRemaining < 10 && lastNotifiedLevel > 10) {
+      shouldNotify = true;
+      notificationLevel = 10;
+    }
+    
+    if (shouldNotify) {
+      console.log(`[Billing Scheduler] Sending low balance warning for partner ${partner.id}, ${testsRemaining} tests remaining`);
+      
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://humanmetrix.ai';
+      
+      const { notifyPrepaidLowBalance } = await import('./email');
+      await notifyPrepaidLowBalance({
+        partnerId: partner.id,
+        partnerName: partner.companyName,
+        partnerEmail: partner.billingEmail || partner.email,
+        currentBalance: balance,
+        currency: partner.currency || 'GBP',
+        testsRemaining,
+        rechargeUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+      });
+      
+      // Update partner with notification level
+      await storage.updatePartnerAccount(partner.id, {
+        lastLowBalanceNotificationLevel: notificationLevel,
+      });
+      
+      // Also send in-app notification to partner
+      await storage.dispatchPartnerNotification({
+        partnerId: partner.id,
+        type: 'low_balance',
+        title: testsRemaining <= 2 ? 'Critical: Low Balance' : 'Low Balance Warning',
+        message: `Your prepaid balance is running low. Only ${testsRemaining} assessments remaining. Please top up soon.`,
+        metadata: { balance, testsRemaining },
       });
     }
   }

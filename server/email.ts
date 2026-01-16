@@ -3074,6 +3074,81 @@ export interface BillingFailureAdminDetails {
   billingType: string;
 }
 
+// Helper to get all super admin emails and send notifications
+export async function notifySuperAdmins(details: {
+  type: string;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+  emailSubject: string;
+  emailHtml: string;
+}): Promise<{ emailSent: boolean; notificationCreated: boolean }> {
+  let emailSent = false;
+  let notificationCreated = false;
+  
+  // Create in-app notification first
+  try {
+    const { storage } = await import('./storage');
+    await storage.broadcastAdminNotification({
+      type: details.type,
+      severity: details.severity,
+      title: details.title,
+      message: details.message,
+      metadata: details.metadata,
+      isRead: false,
+    });
+    notificationCreated = true;
+    console.log(`[Admin Notification] Created in-app notification: ${details.title}`);
+  } catch (error: any) {
+    console.error(`[Admin Notification] Failed to create in-app notification:`, error.message);
+  }
+  
+  // Send email to all super admins
+  const emailTransporter = getTransporter();
+  if (emailTransporter) {
+    try {
+      const { storage } = await import('./storage');
+      const superAdmins = await storage.getSuperAdminUsers();
+      const fromEmail = process.env.GMAIL_USER;
+      
+      if (fromEmail && superAdmins.length > 0) {
+        // Get unique email addresses (some users might have same email)
+        const adminEmails = [...new Set(superAdmins.map(u => u.email).filter(Boolean))];
+        
+        for (const adminEmail of adminEmails) {
+          try {
+            await emailTransporter.sendMail({
+              from: `"HumanMetrix System" <${fromEmail}>`,
+              to: adminEmail,
+              subject: details.emailSubject,
+              html: details.emailHtml,
+            });
+            console.log(`[Admin Notification] Email sent to ${adminEmail}: ${details.emailSubject}`);
+          } catch (sendError: any) {
+            console.error(`[Admin Notification] Failed to send email to ${adminEmail}:`, sendError.message);
+          }
+        }
+        emailSent = true;
+      } else if (fromEmail) {
+        // Fallback: send to system email if no super admins found
+        await emailTransporter.sendMail({
+          from: `"HumanMetrix System" <${fromEmail}>`,
+          to: fromEmail,
+          subject: details.emailSubject,
+          html: details.emailHtml,
+        });
+        emailSent = true;
+        console.log(`[Admin Notification] Email sent to fallback (no super admins): ${details.emailSubject}`);
+      }
+    } catch (error: any) {
+      console.error(`[Admin Notification] Failed to send emails:`, error.message);
+    }
+  }
+  
+  return { emailSent, notificationCreated };
+}
+
 export async function sendBillingFailureAdminNotification(details: BillingFailureAdminDetails): Promise<{ success: boolean }> {
   const emailTransporter = getTransporter();
   
@@ -3161,9 +3236,361 @@ export async function sendBillingFailureAdminNotification(details: BillingFailur
   try {
     const info = await emailTransporter.sendMail(mailOptions);
     console.log(`✅ Admin billing failure notification sent (ID: ${info.messageId})`);
+    
+    // Also create in-app notification
+    try {
+      const { storage } = await import('./storage');
+      await storage.broadcastAdminNotification({
+        type: 'b2b_billing_failure',
+        severity: isSuspended ? 'critical' : 'warning',
+        title: isSuspended ? `API Suspended: ${details.companyName}` : `Billing Failed: ${details.companyName}`,
+        message: `Partner billing failed (${details.failedAttempts}/3 attempts). Reason: ${details.failureReason}. Amount: ${formatCurrency(details.amountDue)}`,
+        metadata: {
+          partnerId: details.partnerId,
+          companyName: details.companyName,
+          partnerEmail: details.partnerEmail,
+          billingType: details.billingType,
+          failureReason: details.failureReason,
+          failedAttempts: details.failedAttempts,
+          amountDue: details.amountDue,
+          currency: details.currency,
+          isSuspended,
+        },
+        isRead: false,
+      });
+    } catch (notifError: any) {
+      console.error(`Failed to create admin in-app notification:`, notifError.message);
+    }
+    
     return { success: true };
   } catch (error: any) {
     console.error(`❌ Failed to send admin billing failure notification:`, error.message);
     return { success: false };
   }
+}
+
+// B2C Payment Failure Notification
+export interface B2CPaymentFailureDetails {
+  userEmail: string;
+  userName?: string;
+  userId?: string;
+  purchaseId?: string;
+  assessmentType?: string;
+  amountDue: number;
+  currency: string;
+  failureReason: string;
+  stripeSessionId?: string;
+}
+
+export async function notifyB2CPaymentFailure(details: B2CPaymentFailureDetails): Promise<{ success: boolean }> {
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .label { color: #6b7280; }
+          .value { font-weight: 600; }
+          .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">B2C Payment Failed</h2>
+          </div>
+          <div class="content">
+            <div class="info-row">
+              <span class="label">Customer</span>
+              <span class="value">${details.userName || 'Unknown'}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Email</span>
+              <span class="value">${details.userEmail}</span>
+            </div>
+            ${details.assessmentType ? `
+            <div class="info-row">
+              <span class="label">Assessment</span>
+              <span class="value">${details.assessmentType}</span>
+            </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="label">Amount</span>
+              <span class="value">${formatCurrency(details.amountDue)}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Failure Reason</span>
+              <span class="value">${details.failureReason}</span>
+            </div>
+            ${details.stripeSessionId ? `
+            <div class="info-row">
+              <span class="label">Stripe Session</span>
+              <span class="value">${details.stripeSessionId.substring(0, 20)}...</span>
+            </div>
+            ` : ''}
+          </div>
+          <div class="footer">
+            <p>Automated notification from HumanMetrix payment system</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  return notifySuperAdmins({
+    type: 'b2c_payment_failure',
+    severity: 'warning',
+    title: `B2C Payment Failed: ${details.userEmail}`,
+    message: `Payment of ${formatCurrency(details.amountDue)} failed for ${details.userEmail}. Reason: ${details.failureReason}`,
+    metadata: details,
+    emailSubject: `[ALERT] B2C Payment Failed: ${details.userEmail}`,
+    emailHtml,
+  }).then(result => ({ success: result.emailSent || result.notificationCreated }));
+}
+
+// B2B Test Taker Payment Failure Notification
+export interface B2BTestTakerPaymentFailureDetails {
+  candidateEmail: string;
+  candidateName?: string;
+  sessionId: string;
+  assessmentType: string;
+  partnerId: string;
+  partnerName: string;
+  amountDue: number;
+  currency: string;
+  failureReason: string;
+}
+
+export async function notifyB2BTestTakerPaymentFailure(details: B2BTestTakerPaymentFailureDetails): Promise<{ success: boolean }> {
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .label { color: #6b7280; }
+          .value { font-weight: 600; }
+          .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">B2B Test Taker Payment Failed</h2>
+          </div>
+          <div class="content">
+            <div class="info-row">
+              <span class="label">Candidate</span>
+              <span class="value">${details.candidateName || details.candidateEmail}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Email</span>
+              <span class="value">${details.candidateEmail}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Assessment</span>
+              <span class="value">${details.assessmentType}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Partner</span>
+              <span class="value">${details.partnerName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Amount</span>
+              <span class="value">${formatCurrency(details.amountDue)}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Failure Reason</span>
+              <span class="value">${details.failureReason}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Session ID</span>
+              <span class="value">${details.sessionId.substring(0, 20)}...</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Automated notification from HumanMetrix payment system</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  return notifySuperAdmins({
+    type: 'b2b_testtaker_payment_failure',
+    severity: 'warning',
+    title: `B2B Results Payment Failed: ${details.candidateEmail}`,
+    message: `Results payment of ${formatCurrency(details.amountDue)} failed for ${details.candidateEmail} (${details.partnerName}). Reason: ${details.failureReason}`,
+    metadata: details,
+    emailSubject: `[ALERT] B2B Test Taker Payment Failed: ${details.candidateEmail}`,
+    emailHtml,
+  }).then(result => ({ success: result.emailSent || result.notificationCreated }));
+}
+
+// B2B Invoice Overdue Notification
+export interface B2BInvoiceOverdueDetails {
+  partnerId: string;
+  partnerName: string;
+  partnerEmail: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  amountDue: number;
+  currency: string;
+  dueDate: Date;
+  daysOverdue: number;
+}
+
+export async function notifyB2BInvoiceOverdue(details: B2BInvoiceOverdueDetails): Promise<{ success: boolean }> {
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  const formatDate = (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  
+  const severity = details.daysOverdue >= 30 ? 'critical' : details.daysOverdue >= 14 ? 'warning' : 'info';
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .label { color: #6b7280; }
+          .value { font-weight: 600; }
+          .overdue-badge { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+          .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">Invoice Overdue</h2>
+          </div>
+          <div class="content">
+            <div class="info-row">
+              <span class="label">Partner</span>
+              <span class="value">${details.partnerName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Invoice Number</span>
+              <span class="value">${details.invoiceNumber}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Amount Due</span>
+              <span class="value">${formatCurrency(details.amountDue)}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Due Date</span>
+              <span class="value">${formatDate(details.dueDate)}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Days Overdue</span>
+              <span class="value"><span class="overdue-badge">${details.daysOverdue} days</span></span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Automated notification from HumanMetrix billing system</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  return notifySuperAdmins({
+    type: 'b2b_invoice_overdue',
+    severity,
+    title: `Invoice Overdue: ${details.partnerName} (${details.daysOverdue} days)`,
+    message: `Invoice ${details.invoiceNumber} for ${formatCurrency(details.amountDue)} is ${details.daysOverdue} days overdue.`,
+    metadata: details,
+    emailSubject: `[ALERT] Invoice Overdue: ${details.partnerName} - ${details.invoiceNumber}`,
+    emailHtml,
+  }).then(result => ({ success: result.emailSent || result.notificationCreated }));
+}
+
+// Low Prepaid Balance Warning
+export interface PrepaidLowBalanceDetails {
+  partnerId: string;
+  partnerName: string;
+  partnerEmail: string;
+  currentBalance: number;
+  currency: string;
+  testsRemaining: number;
+  rechargeUrl: string;
+}
+
+export async function notifyPrepaidLowBalance(details: PrepaidLowBalanceDetails): Promise<{ success: boolean }> {
+  const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
+  const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
+  
+  const isCritical = details.testsRemaining <= 5;
+  const severity = isCritical ? 'critical' : 'warning';
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .label { color: #6b7280; }
+          .value { font-weight: 600; }
+          .low-badge { background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+          .footer { text-align: center; padding: 15px; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">Low Prepaid Balance</h2>
+          </div>
+          <div class="content">
+            <div class="info-row">
+              <span class="label">Partner</span>
+              <span class="value">${details.partnerName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Current Balance</span>
+              <span class="value">${formatCurrency(details.currentBalance)}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Tests Remaining</span>
+              <span class="value"><span class="low-badge">${details.testsRemaining} tests</span></span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Automated notification from HumanMetrix billing system</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  return notifySuperAdmins({
+    type: 'prepaid_low_balance',
+    severity,
+    title: `Low Balance: ${details.partnerName} (${details.testsRemaining} tests)`,
+    message: `Partner ${details.partnerName} has only ${details.testsRemaining} tests remaining. Balance: ${formatCurrency(details.currentBalance)}`,
+    metadata: details,
+    emailSubject: `[ALERT] Low Prepaid Balance: ${details.partnerName}`,
+    emailHtml,
+  }).then(result => ({ success: result.emailSent || result.notificationCreated }));
 }
