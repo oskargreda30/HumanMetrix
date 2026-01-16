@@ -423,18 +423,27 @@ export function DeveloperSubTabs({
         <TabsContent value="sandbox" className="space-y-4" data-testid="subpanel-sandbox">
           {/* Nested Sandbox Tabs */}
           <Tabs value={sandboxSubTab} onValueChange={setSandboxSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="widget" data-testid="sandbox-subtab-widget" className="flex items-center gap-2">
-                <Code className="h-4 w-4" />
-                Widget Sandbox
+            <TabsList className="inline-flex h-11 items-center justify-center rounded-lg bg-muted/50 p-1 mb-4">
+              <TabsTrigger 
+                value="widget" 
+                data-testid="sandbox-subtab-widget" 
+                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                Widget
               </TabsTrigger>
-              <TabsTrigger value="api" data-testid="sandbox-subtab-api" className="flex items-center gap-2">
-                <FileJson className="h-4 w-4" />
-                API Sandbox
+              <TabsTrigger 
+                value="api" 
+                data-testid="sandbox-subtab-api" 
+                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                API
               </TabsTrigger>
-              <TabsTrigger value="preview" data-testid="sandbox-subtab-preview" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Assessment Preview
+              <TabsTrigger 
+                value="preview" 
+                data-testid="sandbox-subtab-preview" 
+                className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                Preview
               </TabsTrigger>
             </TabsList>
 
