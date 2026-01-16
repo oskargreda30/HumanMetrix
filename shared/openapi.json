@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "HumanMetrix Partner API",
-    "description": "REST API for integrating HumanMetrix assessments into your recruitment platform. Create assessment sessions, retrieve results, and manage usage.",
+    "description": "REST API for integrating HumanMetrix assessments into your recruitment platform. Use these endpoints to create assessment sessions, track progress, and retrieve results - whether using our embedded widget or building your own custom UI.",
     "version": "1.0.0",
     "contact": {
       "name": "HumanMetrix Support",
@@ -18,78 +18,58 @@
   "tags": [
     {
       "name": "Sessions",
-      "description": "Assessment session management"
+      "description": "Create and manage assessment sessions"
     },
     {
       "name": "Results",
-      "description": "Assessment results retrieval"
+      "description": "Retrieve assessment results and scores"
     },
     {
-      "name": "Usage",
-      "description": "Usage and billing information"
+      "name": "Billing",
+      "description": "Check quota and usage"
     },
     {
       "name": "Reference",
-      "description": "Reference data and metadata"
+      "description": "Available assessment types"
     }
   ],
   "paths": {
-    "/api/partner/health": {
-      "get": {
-        "tags": ["Reference"],
-        "summary": "Health check",
-        "description": "Check API availability and status",
-        "operationId": "healthCheck",
-        "responses": {
-          "200": {
-            "description": "API is healthy",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "timestamp": { "type": "string", "format": "date-time" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/partner/me": {
-      "get": {
-        "tags": ["Reference"],
-        "summary": "Get partner info",
-        "description": "Retrieve authenticated partner account information",
-        "operationId": "getPartnerInfo",
-        "security": [{ "apiKey": [] }],
-        "responses": {
-          "200": {
-            "description": "Partner information",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/PartnerInfo" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
-      }
-    },
     "/api/partner/sessions": {
       "post": {
         "tags": ["Sessions"],
         "summary": "Create assessment session",
-        "description": "Create a new assessment session for a candidate. Returns a session ID and widget URL for embedding.",
+        "description": "Create a new assessment session for a candidate. Returns a session ID and widget URL. Use the widget URL to embed our assessment UI, or use the session ID to build your own custom assessment interface.",
         "operationId": "createSession",
         "security": [{ "apiKey": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateSessionRequest" }
+              "schema": { "$ref": "#/components/schemas/CreateSessionRequest" },
+              "examples": {
+                "basic": {
+                  "summary": "Basic session",
+                  "value": {
+                    "assessmentType": "fit",
+                    "externalEmail": "candidate@example.com"
+                  }
+                },
+                "full": {
+                  "summary": "Full session with webhook",
+                  "value": {
+                    "assessmentType": "ai_readiness",
+                    "externalUserId": "user-123",
+                    "externalEmail": "candidate@example.com",
+                    "webhookUrl": "https://your-app.com/webhooks/assessment",
+                    "expiresInMinutes": 2880,
+                    "country": "SG",
+                    "metadata": {
+                      "jobRole": "Software Engineer",
+                      "department": "Engineering"
+                    }
+                  }
+                }
+              }
             }
           }
         },
@@ -107,39 +87,13 @@
           "402": { "$ref": "#/components/responses/QuotaExhausted" },
           "429": { "$ref": "#/components/responses/RateLimited" }
         }
-      },
-      "get": {
-        "tags": ["Sessions"],
-        "summary": "List sessions",
-        "description": "List all assessment sessions for your partner account",
-        "operationId": "listSessions",
-        "security": [{ "apiKey": [] }],
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Maximum number of sessions to return (max 200)",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of sessions",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SessionListResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
       }
     },
     "/api/partner/sessions/{sessionId}": {
       "get": {
         "tags": ["Sessions"],
         "summary": "Get session status",
-        "description": "Retrieve the current status and metadata for a specific session",
+        "description": "Check the current status of an assessment session. Use this to track progress and determine when results are available.",
         "operationId": "getSession",
         "security": [{ "apiKey": [] }],
         "parameters": [
@@ -147,7 +101,7 @@
             "name": "sessionId",
             "in": "path",
             "required": true,
-            "description": "The session ID",
+            "description": "The session ID returned from session creation",
             "schema": { "type": "string" }
           }
         ],
@@ -168,8 +122,8 @@
     "/api/partner/sessions/{sessionId}/results": {
       "get": {
         "tags": ["Results"],
-        "summary": "Get session results",
-        "description": "Retrieve assessment results for a completed session. Only available after the candidate completes the assessment.",
+        "summary": "Get assessment results",
+        "description": "Retrieve detailed assessment results including scores, percentiles, and AI-generated evaluations. Only available after the candidate completes the assessment (status = 'completed').",
         "operationId": "getSessionResults",
         "security": [{ "apiKey": [] }],
         "parameters": [
@@ -203,31 +157,11 @@
         }
       }
     },
-    "/api/partner/usage": {
-      "get": {
-        "tags": ["Usage"],
-        "summary": "Get usage statistics",
-        "description": "Retrieve usage statistics and billing information for the current month",
-        "operationId": "getUsage",
-        "security": [{ "apiKey": [] }],
-        "responses": {
-          "200": {
-            "description": "Usage statistics",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UsageResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
-      }
-    },
     "/api/partner/quota": {
       "get": {
-        "tags": ["Usage"],
+        "tags": ["Billing"],
         "summary": "Get quota balance",
-        "description": "Retrieve your current prepaid test quota balance",
+        "description": "Check your current prepaid test quota balance. Monitor this to ensure you have sufficient credits before creating new sessions.",
         "operationId": "getQuota",
         "security": [{ "apiKey": [] }],
         "responses": {
@@ -247,7 +181,7 @@
       "get": {
         "tags": ["Reference"],
         "summary": "List assessment types",
-        "description": "Get all available assessment types with descriptions and metadata",
+        "description": "Get all available assessment types with descriptions, question counts, and estimated completion times. Use this to populate your UI with assessment options.",
         "operationId": "listAssessmentTypes",
         "responses": {
           "200": {
@@ -268,7 +202,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "API key for partner authentication. Format: hm_live_xxxx or hm_test_xxxx"
+        "description": "API key for partner authentication. Test keys (hm_test_xxx) don't consume credits. Live keys (hm_live_xxx) deduct from your quota."
       }
     },
     "schemas": {
@@ -279,50 +213,65 @@
           "assessmentType": {
             "type": "string",
             "enum": ["fit", "ai_readiness", "prompt_architecture", "aiq"],
-            "description": "Type of assessment to create"
+            "description": "Type of assessment to create. Use /api/partner/assessment-types to get details about each type."
           },
           "externalUserId": {
             "type": "string",
-            "description": "Your internal candidate identifier"
+            "description": "Your internal candidate identifier for tracking"
           },
           "externalEmail": {
             "type": "string",
             "format": "email",
-            "description": "Candidate's email address"
+            "description": "Candidate's email address. Required for live sessions (email verification)."
           },
           "metadata": {
             "type": "object",
             "additionalProperties": true,
-            "description": "Custom metadata to attach to the session"
+            "description": "Custom metadata to attach to the session (e.g., job role, department)"
           },
           "webhookUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL to receive webhook notifications on session completion"
+            "description": "URL to receive webhook notification when assessment is completed. Webhook payload includes sessionId and status."
           },
           "expiresInMinutes": {
             "type": "integer",
             "minimum": 30,
             "maximum": 10080,
             "default": 1440,
-            "description": "Session validity in minutes (default: 24 hours)"
+            "description": "Session validity in minutes. Default: 1440 (24 hours). Max: 10080 (7 days)."
           },
           "country": {
             "type": "string",
             "minLength": 2,
             "maxLength": 2,
-            "description": "ISO 3166-1 alpha-2 country code for locale-specific question wording (e.g., 'SG', 'MY', 'PH')"
+            "description": "ISO 3166-1 alpha-2 country code for locale-specific question wording (e.g., 'SG', 'MY', 'PH', 'ID')"
           }
         }
       },
       "SessionResponse": {
         "type": "object",
         "properties": {
-          "sessionId": { "type": "string", "description": "Unique session identifier" },
+          "sessionId": { 
+            "type": "string", 
+            "description": "Unique session identifier. Use this to check status and retrieve results." 
+          },
           "assessmentType": { "type": "string" },
-          "status": { "type": "string", "enum": ["created", "started", "completed", "expired"] },
-          "expiresAt": { "type": "string", "format": "date-time" },
-          "widgetUrl": { "type": "string", "format": "uri", "description": "URL for embedding the assessment" },
+          "status": { 
+            "type": "string", 
+            "enum": ["created", "started", "completed", "expired"],
+            "description": "Current session status"
+          },
+          "expiresAt": { 
+            "type": "string", 
+            "format": "date-time",
+            "description": "When the session expires"
+          },
+          "widgetUrl": { 
+            "type": "string", 
+            "format": "uri", 
+            "description": "URL to embed the HumanMetrix assessment widget. Open this in an iframe or redirect the candidate here." 
+          },
           "metadata": { "type": "object" }
         }
       },
@@ -331,34 +280,18 @@
         "properties": {
           "sessionId": { "type": "string" },
           "assessmentType": { "type": "string" },
-          "status": { "type": "string", "enum": ["created", "started", "completed", "expired"] },
+          "status": { 
+            "type": "string", 
+            "enum": ["created", "started", "completed", "expired"],
+            "description": "created = waiting for candidate, started = in progress, completed = results available"
+          },
           "externalUserId": { "type": "string" },
           "externalEmail": { "type": "string" },
           "metadata": { "type": "object" },
           "createdAt": { "type": "string", "format": "date-time" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "completedAt": { "type": "string", "format": "date-time" },
+          "startedAt": { "type": "string", "format": "date-time", "description": "When candidate began the assessment" },
+          "completedAt": { "type": "string", "format": "date-time", "description": "When candidate finished (results now available)" },
           "expiresAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "SessionListResponse": {
-        "type": "object",
-        "properties": {
-          "sessions": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "sessionId": { "type": "string" },
-                "assessmentType": { "type": "string" },
-                "status": { "type": "string" },
-                "externalUserId": { "type": "string" },
-                "createdAt": { "type": "string", "format": "date-time" },
-                "completedAt": { "type": "string", "format": "date-time" }
-              }
-            }
-          },
-          "count": { "type": "integer" }
         }
       },
       "ResultsResponse": {
@@ -370,48 +303,47 @@
           "scores": {
             "type": "object",
             "additionalProperties": { "type": "number" },
-            "description": "Breakdown of scores by category"
+            "description": "Breakdown of scores by category/dimension"
           },
-          "totalScore": { "type": "number", "description": "Overall score (0-100)" },
-          "percentile": { "type": "number", "description": "Candidate's percentile ranking" },
+          "totalScore": { 
+            "type": "number", 
+            "description": "Overall score (0-100)" 
+          },
+          "percentile": { 
+            "type": "number", 
+            "description": "Candidate's percentile ranking compared to the benchmark population" 
+          },
           "evaluations": {
             "type": "object",
-            "description": "Detailed AI-generated evaluations (for applicable assessments)"
+            "description": "AI-generated evaluations and insights (for Prompt Architecture and AIQ assessments)"
           },
           "completedAt": { "type": "string", "format": "date-time" },
-          "metadata": { "type": "object" }
-        }
-      },
-      "UsageResponse": {
-        "type": "object",
-        "properties": {
-          "period": {
-            "type": "object",
-            "properties": {
-              "start": { "type": "string", "format": "date-time" },
-              "end": { "type": "string", "format": "date-time" }
-            }
-          },
-          "summary": {
-            "type": "object",
-            "properties": {
-              "completedAssessments": { "type": "integer" },
-              "totalBilledPence": { "type": "integer" },
-              "totalBilledGBP": { "type": "string" },
-              "quota": { "type": "integer" },
-              "quotaUsedPercent": { "type": "string" }
-            }
-          },
-          "breakdown": { "type": "array", "items": { "type": "object" } }
+          "metadata": { "type": "object" },
+          "isTestSession": { 
+            "type": "boolean", 
+            "description": "True if created with a test API key (no credits consumed)" 
+          }
         }
       },
       "QuotaResponse": {
         "type": "object",
         "properties": {
-          "testsPurchased": { "type": "integer", "description": "Total tests purchased" },
-          "testsConsumed": { "type": "integer", "description": "Tests used" },
-          "remaining": { "type": "integer", "description": "Tests remaining" },
-          "percentageUsed": { "type": "number", "description": "Percentage of quota used" }
+          "testsPurchased": { 
+            "type": "integer", 
+            "description": "Total assessment credits purchased" 
+          },
+          "testsConsumed": { 
+            "type": "integer", 
+            "description": "Credits used (completed assessments)" 
+          },
+          "remaining": { 
+            "type": "integer", 
+            "description": "Credits remaining. Ensure this is > 0 before creating sessions." 
+          },
+          "percentageUsed": { 
+            "type": "number", 
+            "description": "Percentage of quota used (0-100)" 
+          }
         }
       },
       "AssessmentTypesResponse": {
@@ -422,34 +354,22 @@
             "items": {
               "type": "object",
               "properties": {
-                "id": { "type": "string" },
-                "name": { "type": "string" },
-                "description": { "type": "string" },
-                "questionCount": { "type": "integer" },
-                "estimatedMinutes": { "type": "integer" }
+                "id": { "type": "string", "description": "Use this value for assessmentType when creating sessions" },
+                "name": { "type": "string", "description": "Display name" },
+                "description": { "type": "string", "description": "What the assessment measures" },
+                "questionCount": { "type": "integer", "description": "Number of questions" },
+                "estimatedMinutes": { "type": "integer", "description": "Typical completion time" }
               }
             }
           }
-        }
-      },
-      "PartnerInfo": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "companyName": { "type": "string" },
-          "email": { "type": "string" },
-          "monthlyQuota": { "type": "integer" },
-          "pricePerAssessment": { "type": "integer" },
-          "isActive": { "type": "boolean" }
         }
       },
       "Error": {
         "type": "object",
         "properties": {
           "error": { "type": "string", "description": "Error message" },
-          "code": { "type": "string", "description": "Error code" },
-          "details": { "type": "array", "items": { "type": "object" } }
+          "message": { "type": "string", "description": "Detailed error description" },
+          "code": { "type": "string", "description": "Error code for programmatic handling" }
         }
       }
     },
@@ -458,13 +378,8 @@
         "description": "Invalid or missing API key",
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": { "type": "string", "example": "Invalid or expired API key" },
-                "code": { "type": "string", "example": "INVALID_API_KEY" }
-              }
-            }
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Unauthorized", "message": "Invalid API key" }
           }
         }
       },
@@ -472,12 +387,8 @@
         "description": "Resource not found",
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": { "type": "string", "example": "Session not found" }
-              }
-            }
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Not Found", "message": "Session not found" }
           }
         }
       },
@@ -485,24 +396,19 @@
         "description": "Invalid request parameters",
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": { "type": "string", "example": "Validation Error" },
-                "details": { "type": "array", "items": { "type": "object" } }
-              }
-            }
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Validation Error", "message": "assessmentType is required" }
           }
         }
       },
       "QuotaExhausted": {
-        "description": "Test quota exhausted",
+        "description": "No remaining assessment credits",
         "content": {
           "application/json": {
-            "schema": {
+            "schema": { 
               "type": "object",
               "properties": {
-                "error": { "type": "string", "example": "Quota Exhausted" },
+                "error": { "type": "string" },
                 "message": { "type": "string" },
                 "quotaStatus": {
                   "type": "object",
@@ -513,22 +419,21 @@
                   }
                 }
               }
+            },
+            "example": { 
+              "error": "Quota Exhausted", 
+              "message": "Your test quota has been exhausted. Please purchase additional credits.",
+              "quotaStatus": { "testsPurchased": 100, "testsConsumed": 100, "remaining": 0 }
             }
           }
         }
       },
       "RateLimited": {
-        "description": "Rate limit exceeded",
+        "description": "Too many requests",
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": { "type": "string", "example": "Rate limit exceeded" },
-                "code": { "type": "string", "example": "RATE_LIMITED" },
-                "retryAfter": { "type": "integer", "description": "Seconds to wait before retrying" }
-              }
-            }
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Rate Limited", "message": "Too many requests. Please try again later." }
           }
         }
       }
