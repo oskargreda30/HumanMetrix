@@ -1,16 +1,18 @@
-import { FileText, Users, Target, UsersRound, Download } from "lucide-react";
+import { FileText, Users, Target, UsersRound, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 const reports = [
   {
     icon: FileText,
     title: "Individual Report",
     description: "Comprehensive analysis of all 4 assessments with detailed skill breakdowns, performance levels, and personalized recommendations",
-    link: "/sample-reports/individual-sample.pdf",
-    downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
+    link: "/sample-report/individual",
+    downloadName: "",
     testId: "individual",
     comingSoon: false,
     category: "individual" as const,
+    isViewOnline: true,
   },
   {
     icon: Users,
@@ -172,22 +174,34 @@ export default function SampleReportsSection() {
               <div className="w-full mt-3 md:mt-4">
                 {report.comingSoon ? (
                   <Button 
-                    size="sm"
+                    size="default"
                     disabled
-                    className="w-full bg-gray-500/50 text-gray-300 border-0 text-xs cursor-not-allowed"
+                    variant="secondary"
+                    className="w-full cursor-not-allowed"
                     data-testid={`button-download-${report.testId}`}
                   >
-                    <Download className="mr-1.5 h-3 w-3" />
+                    <Download className="mr-1.5 h-4 w-4" />
                     Coming Soon
                   </Button>
+                ) : (report as any).isViewOnline ? (
+                  <Link href={report.link} data-testid={`link-view-${report.testId}`} className="w-full">
+                    <Button 
+                      size="default"
+                      className="w-full bg-cyan-500 text-white border-cyan-600"
+                      data-testid={`button-view-${report.testId}`}
+                    >
+                      <Eye className="mr-1.5 h-4 w-4" />
+                      View Sample
+                    </Button>
+                  </Link>
                 ) : (
                   <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
                     <Button 
-                      size="sm"
-                      className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0 text-xs"
+                      size="default"
+                      className="w-full bg-cyan-500 text-white border-cyan-600"
                       data-testid={`button-download-${report.testId}`}
                     >
-                      <Download className="mr-1.5 h-3 w-3" />
+                      <Download className="mr-1.5 h-4 w-4" />
                       Download Sample
                     </Button>
                   </a>
