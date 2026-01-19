@@ -569,22 +569,21 @@ export default function EcosystemIndex() {
                     </p>
                   </div>
                   
-                  {/* Request Pricing Button */}
+                  {/* Generate Report Button */}
                   <div className="flex flex-col justify-center space-y-6">
                     <div className="text-center space-y-3">
                       <Button 
                         size="lg" 
                         className="w-full" 
-                        data-testid="button-submit-payment"
+                        data-testid="button-generate-report"
                       >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Request Pricing
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <FileText className="mr-2 h-4 w-4" />
+                        Generate Report
                       </Button>
                       
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                         <Shield className="h-3 w-3" />
-                        <span>Custom pricing for your team</span>
+                        <span>Comprehensive team analysis</span>
                       </div>
                     </div>
                   </div>
