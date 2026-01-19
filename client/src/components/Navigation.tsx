@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Mail, Calendar, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,9 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useBasket } from "@/contexts/BasketContext";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 interface NavigationProps {
@@ -17,12 +20,17 @@ interface NavigationProps {
 export default function Navigation({ assessmentMode = false }: NavigationProps) {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const { clearBasket } = useBasket();
 
   // Check if user is invitation-only (from backend auth response)
   const isInvitationOnly = (user as any)?.isInvitationOnly;
+  
+  // Calendly URL and pre-filled enquiry message
+  const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about HumanMetrix assessments and how they can help my organization. Please send me more information.");
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -188,14 +196,13 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
                         Login
                       </Button>
                     </Link>
-                    <Link href="/assessments">
-                      <Button 
+                    <Button 
                         className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
-                        data-testid="button-get-started"
+                        onClick={() => setShowContactDialog(true)}
+                        data-testid="button-contact-us"
                       >
-                        Get Started
+                        Contact Us
                       </Button>
-                    </Link>
                   </>
                 )
               )}
@@ -281,15 +288,13 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
                         Login
                       </Button>
                     </Link>
-                    <Link href="/assessments">
-                      <Button 
+                    <Button 
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
-                        onClick={() => setMobileMenuOpen(false)} 
-                        data-testid="button-mobile-get-started"
+                        onClick={() => { setMobileMenuOpen(false); setShowContactDialog(true); }} 
+                        data-testid="button-mobile-contact-us"
                       >
-                        Get Started
+                        Contact Us
                       </Button>
-                    </Link>
                   </>
                 )
               )}
@@ -297,6 +302,68 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
           </nav>
         </div>
       )}
+      
+      {/* Contact Options Dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>How would you like to connect?</DialogTitle>
+            <DialogDescription>
+              Choose the option that works best for you
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {/* Option 1: Email Enquiry */}
+            <a 
+              href={`mailto:hello@humanmetrix.co.uk?subject=General%20Enquiry&body=${contactEnquiryMessage}`}
+              className="block"
+              onClick={() => setShowContactDialog(false)}
+            >
+              <Card className="p-4 hover-elevate cursor-pointer transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-1">Send an Enquiry</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Email us with your questions and we'll get back to you promptly.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground mt-2" />
+                </div>
+              </Card>
+            </a>
+            
+            {/* Option 2: Book Consultation */}
+            <a 
+              href={CALENDLY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+              onClick={() => setShowContactDialog(false)}
+            >
+              <Card className="p-4 hover-elevate cursor-pointer transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold">Book a Call</h4>
+                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-0">Recommended</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Schedule a 30-minute call to discuss your needs with our team.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground mt-2" />
+                </div>
+              </Card>
+            </a>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
