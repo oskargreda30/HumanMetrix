@@ -67,6 +67,7 @@ const organizationContextSchema = z.object({
 
 const addTeamMemberSchema = z.object({
   name: z.string().optional(),
+  email: z.string().email().optional(),
   role: z.string().optional(),
   fitScores: z.object({
     HA: z.number().min(0).max(100).optional(),
