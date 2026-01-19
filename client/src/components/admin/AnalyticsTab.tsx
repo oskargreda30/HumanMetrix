@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import GeographicAnalyticsTab from "./GeographicAnalyticsTab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,9 @@ export default function AnalyticsTab() {
           </TabsTrigger>
           <TabsTrigger value="activity" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
             Activity Feed
+          </TabsTrigger>
+          <TabsTrigger value="geographic" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+            Geographic
           </TabsTrigger>
         </TabsList>
 
@@ -710,6 +714,10 @@ export default function AnalyticsTab() {
               </ScrollArea>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="geographic" className="space-y-6">
+          <GeographicAnalyticsTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SLAMonitoringTab from "./SLAMonitoringTab";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -437,6 +438,9 @@ export default function HealthTab() {
           </TabsTrigger>
           <TabsTrigger value="errors" data-testid="subtab-errors" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
             Errors
+          </TabsTrigger>
+          <TabsTrigger value="sla" data-testid="subtab-sla" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
+            SLA Monitoring
           </TabsTrigger>
         </TabsList>
 
@@ -912,6 +916,10 @@ export default function HealthTab() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="sla" className="space-y-6 mt-6">
+          <SLAMonitoringTab />
         </TabsContent>
       </Tabs>
 

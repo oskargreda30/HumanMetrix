@@ -29,6 +29,7 @@ import UserActivityAnalyticsTab from "@/components/admin/UserActivityAnalyticsTa
 import AssessmentFunnelTab from "@/components/admin/AssessmentFunnelTab";
 import PartnerHealthTab from "@/components/admin/PartnerHealthTab";
 import AuditLogTab from "@/components/admin/AuditLogTab";
+import SecurityTab from "@/components/admin/SecurityTab";
 import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
@@ -196,6 +197,9 @@ export default function AdminDashboard() {
               {isSuperAdmin && (
                 <TabsTrigger value="audit" data-testid="tab-audit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Audit Log
+                </TabsTrigger>
+                <TabsTrigger value="security" data-testid="tab-security" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Security
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
@@ -370,6 +374,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="audit" className="space-y-4">
                 <AuditLogTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="security" className="space-y-4">
+                <SecurityTab />
               </TabsContent>
             )}
           </Tabs>

@@ -4270,3 +4270,49 @@ export async function notifyCriticalError(details: CriticalErrorDetails): Promis
     return { success: false };
   }
 }
+
+// Broadcast email function for mass messaging
+export async function sendBroadcastEmail(recipientEmail: string, title: string, content: string): Promise<{ success: boolean }> {
+  try {
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 24px;">${title}</h1>
+            </div>
+            <div class="content">
+              ${content.replace(/\n/g, '<br>')}
+            </div>
+            <div class="footer">
+              <p>This is an announcement from HumanMetrix</p>
+              <p style="margin-top: 10px;">&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    await sendEmail({
+      to: recipientEmail,
+      subject: title,
+      html: emailHtml,
+      text: `${title}\n\n${content}\n\n---\nThis is an announcement from HumanMetrix.`,
+    });
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error(`Failed to send broadcast email to ${recipientEmail}:`, error.message);
+    return { success: false };
+  }
+}

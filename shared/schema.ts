@@ -1573,7 +1573,42 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export const SYSTEM_SETTING_KEYS = {
   RUN_TESTS_BEFORE_DEPLOY: "run_tests_before_deploy",
   MAINTENANCE_MODE: "maintenance_mode",
+  ANNOUNCEMENT_BANNER: "announcement_banner",
+  BLOCKED_IPS: "blocked_ips",
 } as const;
+
+// Broadcast messages - for mass notifications/emails to users
+export const broadcastMessages = pgTable("broadcast_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  type: varchar("type").notNull(), // 'email', 'notification', 'both'
+  targetAudience: varchar("target_audience").notNull(), // 'all_users', 'all_partners', 'all_admins', 'b2c_users'
+  status: varchar("status").notNull().default("draft"), // 'draft', 'scheduled', 'sending', 'sent', 'failed'
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  recipientCount: integer("recipient_count").default(0),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_broadcast_messages_status").on(table.status),
+  index("idx_broadcast_messages_created").on(table.createdAt),
+]);
+
+export const insertBroadcastMessageSchema = createInsertSchema(broadcastMessages).omit({
+  id: true,
+  recipientCount: true,
+  successCount: true,
+  failureCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBroadcastMessage = z.infer<typeof insertBroadcastMessageSchema>;
+export type BroadcastMessage = typeof broadcastMessages.$inferSelect;
 
 // Email verification codes - for B2B widget email verification
 export const emailVerificationCodes = pgTable("email_verification_codes", {
