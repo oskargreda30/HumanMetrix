@@ -891,7 +891,11 @@ export function EcosystemWorkflow({
                 </Button>
               </div>
 
-              <TeamAnalysisResults analysis={teamAnalysis} companyName={project.companyName || "Your Team"} />
+              <TeamAnalysisResults 
+                analysis={teamAnalysis} 
+                companyName={project.companyName || "Your Team"}
+                project={project}
+              />
             </div>
           )}
         </Card>
@@ -1098,11 +1102,15 @@ export function EcosystemWorkflow({
 // Team Analysis Results Component - Strategic Advisor Report
 function TeamAnalysisResults({ 
   analysis, 
-  companyName 
+  companyName,
+  project
 }: { 
   analysis: EcosystemTeamAnalysis; 
   companyName: string;
+  project: any;
 }) {
+  const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
+  
   return (
     <div className="space-y-8">
       {/* Header with Scores */}
@@ -1122,6 +1130,102 @@ function TeamAnalysisResults({
           </Badge>
         </div>
       </div>
+
+      {/* Your Context - What you told us */}
+      <div className="bg-muted/30 rounded-lg p-6 border">
+        <h4 className="font-semibold mb-4 flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Your Context
+        </h4>
+        <div className="grid gap-4 md:grid-cols-2">
+          {project.missionStatement && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mission Statement</p>
+              <p className="text-sm">{project.missionStatement}</p>
+            </div>
+          )}
+          {project.teamStage && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Team Stage</p>
+              <p className="text-sm capitalize">{project.teamStage.replace(/_/g, ' ')}</p>
+            </div>
+          )}
+          {project.currentChallenges && (
+            <div className="space-y-1 md:col-span-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Current Challenges</p>
+              <p className="text-sm">{project.currentChallenges}</p>
+            </div>
+          )}
+          {project.hiringPlans && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Planned Hires</p>
+              <p className="text-sm">{project.hiringPlans} new team members</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mission Score Explanation */}
+      {missionAnalysis && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+          <h4 className="font-semibold mb-3 flex items-center gap-2">
+            <Target className="h-4 w-4 text-blue-600" />
+            Mission Alignment Score Explained
+          </h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Your Mission Fit score of <span className="font-semibold text-foreground">{analysis.missionAlignmentScore}%</span> measures 
+            how well your team's capabilities align with what your mission requires. Based on your mission statement, 
+            we've identified which behavioral skills are most critical for your success.
+          </p>
+          
+          {missionAnalysis.summary && (
+            <div className="mb-4 p-3 bg-white/50 dark:bg-black/20 rounded-md">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Mission Analysis</p>
+              <p className="text-sm">{missionAnalysis.summary}</p>
+            </div>
+          )}
+
+          {missionAnalysis.capabilityPriorities && missionAnalysis.capabilityPriorities.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                Why These Capabilities Matter for Your Mission
+              </p>
+              <div className="grid gap-2">
+                {missionAnalysis.capabilityPriorities
+                  .sort((a, b) => {
+                    const order = { critical: 0, high: 1, medium: 2, low: 3 };
+                    return order[a.priority] - order[b.priority];
+                  })
+                  .map((cap, i) => {
+                    const capInfo = FIT_CAPABILITIES.find(c => c.code === cap.code);
+                    const priorityColors = {
+                      critical: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200",
+                      high: "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200",
+                      medium: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200",
+                      low: "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200",
+                    };
+                    return (
+                      <div key={i} className="flex items-start gap-3 p-2 rounded-md bg-white/30 dark:bg-black/10">
+                        <div className={`h-6 w-6 rounded flex-shrink-0 flex items-center justify-center ${capInfo?.color || "bg-gray-500"}`}>
+                          <span className="text-white text-xs font-bold">{cap.code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm">{cap.name}</span>
+                            <Badge className={`text-xs ${priorityColors[cap.priority]}`} variant="outline">
+                              {cap.priority} priority
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{cap.reasoning}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Executive Summary - AI-Generated Strategic Narrative */}
       {analysis.executiveSummary && (
