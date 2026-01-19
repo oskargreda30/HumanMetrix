@@ -195,12 +195,14 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="audit" data-testid="tab-audit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Audit Log
-                </TabsTrigger>
-                <TabsTrigger value="security" data-testid="tab-security" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Security
-                </TabsTrigger>
+                <>
+                  <TabsTrigger value="audit" data-testid="tab-audit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                    Audit Log
+                  </TabsTrigger>
+                  <TabsTrigger value="security" data-testid="tab-security" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                    Security
+                  </TabsTrigger>
+                </>
               )}
               {isSuperAdmin && (
                 <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
