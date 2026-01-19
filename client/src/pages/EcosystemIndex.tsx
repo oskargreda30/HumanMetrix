@@ -1,8 +1,10 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +42,9 @@ import {
   RefreshCw,
   Calendar,
   Clock,
-  Info
+  Info,
+  Mail,
+  MessageSquare
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
@@ -96,6 +100,12 @@ const differentiators = [
 export default function EcosystemIndex() {
   // Calendly URL for booking consultations
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  
+  // State for contact options dialog
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  
+  // Pre-filled enquiry message for email option
+  const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about The Ecosystem Index team diagnostic service. Please send me pricing information and details about how the assessment works for my team.");
   
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -261,17 +271,22 @@ export default function EcosystemIndex() {
                   <div className="hidden md:block w-px bg-border" />
                   <div className="md:hidden border-t" />
                   
-                  {/* Create New Account */}
+                  {/* Contact the Team */}
                   <div className="flex-1 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <UserPlus className="h-5 w-5 text-primary" />
+                      <MessageSquare className="h-5 w-5 text-primary" />
                       <h4 className="font-semibold">New to HumanMetrix?</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Create a free account to start your team diagnostic. You'll only pay when you're ready to generate your report.
+                      Get in touch with our team to learn more about the Ecosystem Index and how it can help your organization.
                     </p>
-                    <Button variant="outline" className="w-full" data-testid="button-create-account">
-                      Create Account
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => setShowContactDialog(true)}
+                      data-testid="button-contact-team"
+                    >
+                      Contact the Team
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
@@ -780,6 +795,68 @@ export default function EcosystemIndex() {
       </main>
 
       <Footer />
+      
+      {/* Contact Options Dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>How would you like to connect?</DialogTitle>
+            <DialogDescription>
+              Choose the option that works best for you
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {/* Option 1: Email/Contact Form */}
+            <a 
+              href={`mailto:hello@humanmetrix.co.uk?subject=Ecosystem%20Index%20Enquiry&body=${contactEnquiryMessage}`}
+              className="block"
+              onClick={() => setShowContactDialog(false)}
+            >
+              <Card className="p-4 hover-elevate cursor-pointer transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-1">Get Pricing & Info by Email</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Send us an email and we'll reply with detailed pricing and information about The Ecosystem Index.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground mt-2" />
+                </div>
+              </Card>
+            </a>
+            
+            {/* Option 2: Book Consultation */}
+            <a 
+              href={CALENDLY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+              onClick={() => setShowContactDialog(false)}
+            >
+              <Card className="p-4 hover-elevate cursor-pointer transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold">Book a Consultation</h4>
+                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-0">Recommended</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Schedule a 30-minute call with our team to discuss your needs and get personalized guidance.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground mt-2" />
+                </div>
+              </Card>
+            </a>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
