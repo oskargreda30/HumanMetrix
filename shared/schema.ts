@@ -1820,3 +1820,170 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 
+// ============================================
+// Ecosystem Index - Team Diagnostic Tool
+// ============================================
+
+// Ecosystem Index capability priorities (returned by AI analysis)
+export type EcosystemCapabilityPriority = {
+  code: string; // HA, IC, RA, EE, GM, IA
+  name: string;
+  priority: "critical" | "high" | "medium" | "low";
+  reasoning: string;
+};
+
+// Ecosystem Index AI analysis result
+export type EcosystemMissionAnalysis = {
+  summary: string;
+  capabilityPriorities: EcosystemCapabilityPriority[];
+  keyThemes: string[];
+  analyzedAt: string;
+};
+
+// Team capability gap analysis
+export type EcosystemGapAnalysis = {
+  capability: string;
+  code: string;
+  currentAverage: number;
+  teamCoverage: number; // percentage of team with score >= 7
+  requiredPriority: "critical" | "high" | "medium" | "low";
+  gapSeverity: "critical" | "warning" | "healthy";
+  reasoning: string;
+};
+
+// Next hire recommendation
+export type EcosystemHireRecommendation = {
+  priorityRank: number;
+  capability: string;
+  code: string;
+  targetScore: number;
+  reasoning: string;
+  alignsWithMission: boolean;
+};
+
+// Risk alert
+export type EcosystemRiskAlert = {
+  type: "concentration" | "imbalance" | "gap" | "single_point_of_failure";
+  severity: "critical" | "warning" | "info";
+  title: string;
+  description: string;
+  affectedCapabilities: string[];
+  recommendation: string;
+};
+
+// Full team analysis result
+export type EcosystemTeamAnalysis = {
+  generatedAt: string;
+  teamSize: number;
+  capabilityDistribution: Record<string, { average: number; min: number; max: number; coverage: number }>;
+  missionAlignmentScore: number; // 0-100
+  gapAnalysis: EcosystemGapAnalysis[];
+  hireRecommendations: EcosystemHireRecommendation[];
+  riskAlerts: EcosystemRiskAlert[];
+  overallHealthScore: number; // 0-100
+};
+
+// Ecosystem project status
+export const ECOSYSTEM_PROJECT_STATUS = {
+  DRAFT: "draft",
+  IN_PROGRESS: "in_progress",
+  ANALYSIS_READY: "analysis_ready",
+  COMPLETED: "completed",
+} as const;
+
+export type EcosystemProjectStatus = typeof ECOSYSTEM_PROJECT_STATUS[keyof typeof ECOSYSTEM_PROJECT_STATUS];
+
+// Ecosystem Projects - main table for team diagnostic projects
+export const ecosystemProjects = pgTable("ecosystem_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  partnerId: varchar("partner_id").references(() => partnerAccounts.id, { onDelete: "set null" }),
+  
+  // Project name/title
+  name: varchar("name").notNull().default("My Team Analysis"),
+  
+  // Status tracking
+  status: varchar("status").notNull().default("draft"),
+  currentStep: integer("current_step").notNull().default(1),
+  
+  // Step 2: Mission/Ethos
+  missionStatement: text("mission_statement"),
+  companyEthos: text("company_ethos"),
+  missionAnalysis: jsonb("mission_analysis").$type<EcosystemMissionAnalysis | null>(),
+  
+  // Step 3: Organization context
+  companyName: varchar("company_name"),
+  companySize: varchar("company_size"), // 1-10, 11-50, 51-200, 201-500, 500+
+  industry: varchar("industry"),
+  teamFunction: varchar("team_function"), // Engineering, Sales, HR, etc.
+  teamSize: integer("team_size"),
+  workMode: varchar("work_mode"), // remote, hybrid, onsite
+  
+  // Step 6: Team analysis results
+  teamAnalysis: jsonb("team_analysis").$type<EcosystemTeamAnalysis | null>(),
+  
+  // Payment
+  isPaid: boolean("is_paid").notNull().default(true), // Default true since price is £0 for now
+  paidAmount: integer("paid_amount").default(0), // In pence, 0 for free tier
+  paidAt: timestamp("paid_at"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ecosystem_projects_user").on(table.userId),
+  index("idx_ecosystem_projects_partner").on(table.partnerId),
+  index("idx_ecosystem_projects_status").on(table.status),
+]);
+
+export const insertEcosystemProjectSchema = createInsertSchema(ecosystemProjects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertEcosystemProject = z.infer<typeof insertEcosystemProjectSchema>;
+export type EcosystemProject = typeof ecosystemProjects.$inferSelect;
+
+// Ecosystem Team Members - team members added to a project (either via PDF upload or linked assessments)
+export const ecosystemTeamMembers = pgTable("ecosystem_team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => ecosystemProjects.id, { onDelete: "cascade" }),
+  
+  // Member identification
+  name: varchar("name"),
+  email: varchar("email"),
+  role: varchar("role"), // Job title/role in team
+  
+  // Source of data
+  sourceType: varchar("source_type").notNull(), // "pdf_upload", "linked_result", "invitation"
+  sourceId: varchar("source_id"), // assessmentResults.id if linked, or null for PDF
+  
+  // FIT Scores (extracted from PDF or linked result)
+  fitScores: jsonb("fit_scores").$type<{
+    HA?: number; // High Agency
+    IC?: number; // Intellectual Curiosity
+    RA?: number; // Resilience
+    EE?: number; // Empathy & Ethics
+    GM?: number; // Growth Mindset
+    IA?: number; // Interpersonal Agility
+  } | null>(),
+  
+  // Assessment status
+  assessmentCompleted: boolean("assessment_completed").notNull().default(false),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ecosystem_team_project").on(table.projectId),
+  index("idx_ecosystem_team_email").on(table.email),
+  index("idx_ecosystem_team_source").on(table.sourceType, table.sourceId),
+]);
+
+export const insertEcosystemTeamMemberSchema = createInsertSchema(ecosystemTeamMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEcosystemTeamMember = z.infer<typeof insertEcosystemTeamMemberSchema>;
+export type EcosystemTeamMember = typeof ecosystemTeamMembers.$inferSelect;
+
