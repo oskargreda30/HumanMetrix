@@ -19,14 +19,14 @@ export function useEcosystemProjects(partnerId?: string) {
 
 export function useEcosystemProject(projectId: string | null) {
   return useQuery<EcosystemProject>({
-    queryKey: ["/api/ecosystem/projects", projectId],
+    queryKey: [`/api/ecosystem/projects/${projectId}`],
     enabled: !!projectId,
   });
 }
 
 export function useEcosystemTeamMembers(projectId: string | null) {
   return useQuery<EcosystemTeamMember[]>({
-    queryKey: ["/api/ecosystem/projects", projectId, "team-members"],
+    queryKey: [`/api/ecosystem/projects/${projectId}/team-members`],
     enabled: !!projectId,
   });
 }
