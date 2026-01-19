@@ -535,12 +535,20 @@ export default function ForEmployers() {
                     </div>
                   </div>
                   
-                  <Link href="/ecosystem-index">
-                    <Button size="lg" data-testid="button-ecosystem-index">
-                      Learn More About The Ecosystem Index
-                      <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
-                    </Button>
-                  </Link>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link href="/ecosystem-index">
+                      <Button size="lg" data-testid="button-ecosystem-index">
+                        Learn More About The Ecosystem Index
+                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                      </Button>
+                    </Link>
+                    <a href="https://calendly.com/hello-humanmetrix/30min" target="_blank" rel="noopener noreferrer">
+                      <Button size="lg" variant="outline" data-testid="button-book-consultation">
+                        Book a Consultation
+                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                      </Button>
+                    </a>
+                  </div>
                 </div>
                 
                 <div className="hidden md:flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl">

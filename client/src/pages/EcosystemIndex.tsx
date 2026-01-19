@@ -99,8 +99,8 @@ export default function EcosystemIndex() {
   // TODO: Replace with actual Calendly scheduling detection when link is provided
   const [isConsultationScheduled, setIsConsultationScheduled] = useState(false);
   
-  // Placeholder Calendly URL - to be updated with actual link
-  const CALENDLY_URL = ""; // Will be provided by user
+  // Calendly URL for booking consultations
+  const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
   
   const handleScheduleClick = () => {
     if (CALENDLY_URL) {
