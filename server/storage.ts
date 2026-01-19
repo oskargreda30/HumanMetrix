@@ -129,6 +129,12 @@ import {
   auditLogs,
   type AuditLog,
   type InsertAuditLog,
+  ecosystemProjects,
+  ecosystemTeamMembers,
+  type EcosystemProject,
+  type InsertEcosystemProject,
+  type EcosystemTeamMember,
+  type InsertEcosystemTeamMember,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -3944,6 +3950,72 @@ export class DatabaseStorage implements IStorage {
   async getAuditLogResourceTypes(): Promise<string[]> {
     const result = await db.selectDistinct({ resourceType: auditLogs.resourceType }).from(auditLogs);
     return result.map(r => r.resourceType);
+  }
+
+  // ============================================
+  // Ecosystem Index Operations
+  // ============================================
+
+  async createEcosystemProject(project: InsertEcosystemProject): Promise<EcosystemProject> {
+    const [result] = await db.insert(ecosystemProjects).values(project).returning();
+    return result;
+  }
+
+  async getEcosystemProject(id: string): Promise<EcosystemProject | undefined> {
+    const [result] = await db.select().from(ecosystemProjects).where(eq(ecosystemProjects.id, id));
+    return result;
+  }
+
+  async getEcosystemProjectsByUser(userId: string): Promise<EcosystemProject[]> {
+    return await db.select().from(ecosystemProjects)
+      .where(eq(ecosystemProjects.userId, userId))
+      .orderBy(desc(ecosystemProjects.updatedAt));
+  }
+
+  async getEcosystemProjectsByPartner(partnerId: string): Promise<EcosystemProject[]> {
+    return await db.select().from(ecosystemProjects)
+      .where(eq(ecosystemProjects.partnerId, partnerId))
+      .orderBy(desc(ecosystemProjects.updatedAt));
+  }
+
+  async updateEcosystemProject(id: string, updates: Partial<InsertEcosystemProject>): Promise<EcosystemProject | undefined> {
+    const [result] = await db.update(ecosystemProjects)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(ecosystemProjects.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteEcosystemProject(id: string): Promise<void> {
+    await db.delete(ecosystemProjects).where(eq(ecosystemProjects.id, id));
+  }
+
+  // Ecosystem Team Members
+  async addEcosystemTeamMember(member: InsertEcosystemTeamMember): Promise<EcosystemTeamMember> {
+    const [result] = await db.insert(ecosystemTeamMembers).values(member).returning();
+    return result;
+  }
+
+  async getEcosystemTeamMembers(projectId: string): Promise<EcosystemTeamMember[]> {
+    return await db.select().from(ecosystemTeamMembers)
+      .where(eq(ecosystemTeamMembers.projectId, projectId))
+      .orderBy(ecosystemTeamMembers.createdAt);
+  }
+
+  async updateEcosystemTeamMember(id: string, updates: Partial<InsertEcosystemTeamMember>): Promise<EcosystemTeamMember | undefined> {
+    const [result] = await db.update(ecosystemTeamMembers)
+      .set(updates)
+      .where(eq(ecosystemTeamMembers.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteEcosystemTeamMember(id: string): Promise<void> {
+    await db.delete(ecosystemTeamMembers).where(eq(ecosystemTeamMembers.id, id));
+  }
+
+  async deleteEcosystemTeamMembersByProject(projectId: string): Promise<void> {
+    await db.delete(ecosystemTeamMembers).where(eq(ecosystemTeamMembers.projectId, projectId));
   }
 }
 

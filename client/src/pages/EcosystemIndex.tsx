@@ -51,6 +51,8 @@ import {
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
+import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
+import { EcosystemWorkflow } from "@/components/ecosystem/EcosystemWorkflow";
 
 const capabilities = [
   { code: "HA", name: "High Agency", color: "bg-blue-500", description: "Drive and self-direction" },
@@ -109,6 +111,9 @@ export default function EcosystemIndex() {
   
   // State for contact options dialog
   const [showContactDialog, setShowContactDialog] = useState(false);
+  
+  // State for ecosystem project workflow
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
   // Pre-filled enquiry message for email option
   const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about The Ecosystem Index team diagnostic service. Please send me pricing information and details about how the assessment works for my team.");
@@ -246,8 +251,79 @@ export default function EcosystemIndex() {
           </div>
         </section>
 
+        {/* Ecosystem Tool Section - For Authenticated Users */}
+        <section className="py-12 md:py-20" data-testid="section-ecosystem-tool">
+          <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-tool-title">
+                Start Your Team Diagnostic
+              </h2>
+              <p className="text-muted-foreground" data-testid="text-tool-description">
+                {isAuthenticated 
+                  ? "Create a project and follow our guided workflow to analyze your team"
+                  : "Sign in to access the full team diagnostic tool"
+                }
+              </p>
+            </div>
+
+            {authLoading ? (
+              <Card className="p-8 text-center" data-testid="card-loading">
+                <RefreshCw className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+                <h3 className="text-lg font-semibold mb-2">Loading...</h3>
+                <p className="text-muted-foreground">Checking authentication status</p>
+              </Card>
+            ) : !isAuthenticated ? (
+              <Card className="p-8 text-center" data-testid="card-login-required">
+                <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Sign In Required</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Create a free account or sign in to access the Ecosystem Index team diagnostic tool.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/login">
+                    <Button data-testid="button-login-tool">
+                      Sign In
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button variant="outline" data-testid="button-register-tool">
+                      Create Account
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-6 md:p-8" data-testid="card-ecosystem-tool">
+                {selectedProjectId ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedProjectId(null)}
+                        data-testid="button-back-to-projects"
+                      >
+                        ← Back to Projects
+                      </Button>
+                    </div>
+                    <EcosystemWorkflow 
+                      projectId={selectedProjectId}
+                      isPartnerDashboard={false}
+                    />
+                  </div>
+                ) : (
+                  <EcosystemProjectSelector
+                    onSelectProject={setSelectedProjectId}
+                    isPartnerDashboard={false}
+                  />
+                )}
+              </Card>
+            )}
+          </div>
+        </section>
+
         
-        {/* How It Works - Step by Step */}
+        {/* How It Works - Step by Step (Informational) */}
         <section className="py-12 md:py-20 bg-muted/30" data-testid="section-how-it-works">
           <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-12">

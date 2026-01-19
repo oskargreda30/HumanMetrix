@@ -36,6 +36,8 @@ import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
+import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
+import { EcosystemWorkflow } from "@/components/ecosystem/EcosystemWorkflow";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -1030,6 +1032,9 @@ export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("home");
   const { toast } = useToast();
+  
+  // Ecosystem Index state
+  const [selectedEcosystemProjectId, setSelectedEcosystemProjectId] = useState<string | null>(null);
   
   // Tour state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -2028,6 +2033,10 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Pipeline
+              </TabsTrigger>
+              <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Ecosystem Index
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-cyan-500 text-white border-0">New</Badge>
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}
               {false && (
@@ -4615,6 +4624,48 @@ export default function PartnerDashboard() {
             {/* Pipeline Tab */}
             <TabsContent value="pipeline" className="space-y-6" data-testid="panel-pipeline">
               <HiringPipelineTab />
+            </TabsContent>
+
+            {/* Ecosystem Index Tab */}
+            <TabsContent value="ecosystem" className="space-y-6" data-testid="panel-ecosystem">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        The Ecosystem Index
+                        <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
+                      </CardTitle>
+                      <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
+                    </div>
+                    {selectedEcosystemProjectId && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedEcosystemProjectId(null)}
+                        data-testid="button-back-to-projects"
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Projects
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {selectedEcosystemProjectId ? (
+                    <EcosystemWorkflow 
+                      projectId={selectedEcosystemProjectId}
+                      isPartnerDashboard={true}
+                      partnerId={partner?.id}
+                    />
+                  ) : (
+                    <EcosystemProjectSelector
+                      onSelectProject={setSelectedEcosystemProjectId}
+                      isPartnerDashboard={true}
+                      partnerId={partner?.id}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Notifications Tab */}
