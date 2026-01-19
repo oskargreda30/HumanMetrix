@@ -573,6 +573,8 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      console.log("[Ecosystem] Creating project for user:", { userId: user.id, email: user.email, body: req.body });
+
       const data = createProjectSchema.parse(req.body);
       
       const project = await storage.createEcosystemProject({
@@ -585,13 +587,15 @@ export function registerEcosystemRoutes(app: Express): void {
         paidAmount: 0,
       });
 
+      console.log("[Ecosystem] Project created successfully:", project.id);
       res.status(201).json(project);
     } catch (error: any) {
-      console.error("[Ecosystem] Error creating project:", error);
+      console.error("[Ecosystem] Error creating project:", error.message || error);
+      console.error("[Ecosystem] Error details:", error.code, error.detail, error.constraint);
       if (error.name === "ZodError") {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create project" });
+      res.status(500).json({ error: "Failed to create project", details: error.message });
     }
   });
 
