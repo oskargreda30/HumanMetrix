@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -95,19 +94,8 @@ const differentiators = [
 ];
 
 export default function EcosystemIndex() {
-  // State to track if consultation has been scheduled
-  // TODO: Replace with actual Calendly scheduling detection when link is provided
-  const [isConsultationScheduled, setIsConsultationScheduled] = useState(false);
-  
   // Calendly URL for booking consultations
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
-  
-  const handleScheduleClick = () => {
-    if (CALENDLY_URL) {
-      window.open(CALENDLY_URL, '_blank');
-      // Note: In production, use Calendly's embed or webhook to detect scheduling
-    }
-  };
   
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -183,6 +171,21 @@ export default function EcosystemIndex() {
             <p className="text-sm text-muted-foreground mt-6" data-testid="text-hero-features">
               Scenario-based assessment • Team-level insights • Modern work ready
             </p>
+            
+            {/* Book Consultation with Recommended Banner */}
+            <div className="mt-8 inline-flex flex-col items-center">
+              <div className="relative">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-amber-500 text-white text-xs font-semibold rounded-full whitespace-nowrap">
+                  Recommended
+                </span>
+                <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" variant="default" className="mt-2 bg-primary hover:bg-primary/90" data-testid="button-book-consultation-hero">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Book a Consultation
+                  </Button>
+                </a>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -551,61 +554,18 @@ export default function EcosystemIndex() {
                     </p>
                   </div>
                   
-                  {/* Schedule & Submit */}
+                  {/* Request Pricing Button */}
                   <div className="flex flex-col justify-center space-y-6">
-                    {/* Calendly Scheduling Section */}
-                    <div className="p-4 border rounded-lg bg-background" data-testid="calendly-section">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isConsultationScheduled ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'}`}>
-                          {isConsultationScheduled ? <CheckCircle className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
-                        </div>
-                        <div>
-                          <h5 className="font-semibold text-sm">Schedule Pre-Consultation</h5>
-                          <p className="text-xs text-muted-foreground">
-                            {isConsultationScheduled ? 'Meeting scheduled successfully' : 'Book a 30-minute discovery call'}
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant={isConsultationScheduled ? "outline" : "default"}
-                        className="w-full"
-                        onClick={handleScheduleClick}
-                        disabled={!CALENDLY_URL}
-                        data-testid="button-schedule-calendly"
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {isConsultationScheduled ? 'Reschedule Meeting' : 'Schedule Meeting'}
-                      </Button>
-                      {!CALENDLY_URL && (
-                        <p className="text-xs text-muted-foreground mt-2 text-center">
-                          Scheduling link coming soon
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* Request Consultation Button */}
                     <div className="text-center space-y-3">
                       <Button 
                         size="lg" 
                         className="w-full" 
-                        disabled={!isConsultationScheduled}
                         data-testid="button-submit-payment"
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Request Consultation
+                        Request Pricing
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
-                      
-                      {/* Explanatory Note */}
-                      {!isConsultationScheduled && (
-                        <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-left" data-testid="scheduling-note">
-                          <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-muted-foreground">
-                            Please schedule a pre-consultation meeting above before requesting the full consultation package. 
-                            This initial call helps us understand your team's needs and provide accurate pricing.
-                          </p>
-                        </div>
-                      )}
                       
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                         <Shield className="h-3 w-3" />
