@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +101,9 @@ const differentiators = [
 ];
 
 export default function EcosystemIndex() {
+  // Auth state for gating sections 2-6
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   // Calendly URL for booking consultations
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
   
@@ -106,6 +112,26 @@ export default function EcosystemIndex() {
   
   // Pre-filled enquiry message for email option
   const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about The Ecosystem Index team diagnostic service. Please send me pricing information and details about how the assessment works for my team.");
+  
+  // Login prompt overlay for locked sections
+  const LoginOverlay = () => (
+    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+      <div className="text-center p-6 max-w-sm">
+        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+          <Lock className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h4 className="font-semibold mb-2">Login Required</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sign in to access the team diagnostic workflow
+        </p>
+        <Link href="/login">
+          <Button data-testid="button-login-to-continue">
+            Login to Continue
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
   
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -306,7 +332,9 @@ export default function EcosystemIndex() {
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-2-form">
+              <div className="relative">
+                {!authLoading && !isAuthenticated && <LoginOverlay />}
+                <Card className="p-6 md:p-8" data-testid="step-2-form">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4">
                     <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -332,6 +360,7 @@ export default function EcosystemIndex() {
                   </div>
                 </div>
               </Card>
+              </div>
             </div>
 
             {/* Step 3: Define Organization Context */}
@@ -346,7 +375,9 @@ export default function EcosystemIndex() {
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-3-form">
+              <div className="relative">
+                {!authLoading && !isAuthenticated && <LoginOverlay />}
+                <Card className="p-6 md:p-8" data-testid="step-3-form">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="company-name">Company Name</Label>
@@ -423,6 +454,7 @@ export default function EcosystemIndex() {
                   </div>
                 </div>
               </Card>
+              </div>
             </div>
 
             {/* Step 4: Add Team Members */}
@@ -437,7 +469,9 @@ export default function EcosystemIndex() {
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-4-form">
+              <div className="relative">
+                {!authLoading && !isAuthenticated && <LoginOverlay />}
+                <Card className="p-6 md:p-8" data-testid="step-4-form">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover-elevate cursor-pointer" data-testid="upload-reports-area">
                     <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -467,6 +501,7 @@ export default function EcosystemIndex() {
                   </div>
                 </div>
               </Card>
+              </div>
             </div>
 
             {/* Step 5: FIT Assessment */}
@@ -481,7 +516,9 @@ export default function EcosystemIndex() {
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-5-form">
+              <div className="relative">
+                {!authLoading && !isAuthenticated && <LoginOverlay />}
+                <Card className="p-6 md:p-8" data-testid="step-5-form">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -516,9 +553,10 @@ export default function EcosystemIndex() {
                   </div>
                 </div>
               </Card>
+              </div>
             </div>
 
-            {/* Step 6: Schedule Consultation & Generate Report */}
+            {/* Step 6: Export Results */}
             <div data-testid="step-6-container">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -530,7 +568,9 @@ export default function EcosystemIndex() {
                 </div>
               </div>
               
-              <Card className="p-6 md:p-8" data-testid="step-6-payment">
+              <div className="relative">
+                {!authLoading && !isAuthenticated && <LoginOverlay />}
+                <Card className="p-6 md:p-8" data-testid="step-6-payment">
                 <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
                   <Button 
                     size="lg" 
@@ -547,6 +587,7 @@ export default function EcosystemIndex() {
                   </div>
                 </div>
               </Card>
+              </div>
             </div>
           </div>
         </section>
