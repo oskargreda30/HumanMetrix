@@ -122,13 +122,28 @@ export function useUpdateOrganizationContext() {
       ...data 
     }: { 
       projectId: string; 
-      industry: string;
-      teamFunction: string;
-      teamSize: number;
-      workMode: string;
-      teamStage: string;
-      hiringPlans: string;
+      // Basic context - all optional
+      industry?: string;
+      teamFunction?: string;
+      teamSize?: number;
+      workMode?: string;
+      teamStage?: string;
+      hiringPlans?: string;
       currentChallenges?: string;
+      // Deep dive - Team Dynamics
+      delayedTasks?: string;
+      conflictTopics?: string;
+      avoidedWork?: string;
+      // Deep dive - Workload & Capacity
+      overloadedMember?: string;
+      wishedSkills?: string;
+      // Deep dive - Culture & Collaboration
+      idealInteractionStyle?: string;
+      personalityGap?: string;
+      // Deep dive - Strategic Context
+      upcomingInitiative?: string;
+      cloneableSkills?: string;
+      transformativeFix?: string;
     }) => {
       const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/organization-context`, data);
       return response.json();

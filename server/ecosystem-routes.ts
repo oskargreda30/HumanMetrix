@@ -71,13 +71,32 @@ const missionAnalysisSchema = z.object({
 });
 
 const organizationContextSchema = z.object({
-  industry: z.string().min(1, "Industry is required"),
-  teamFunction: z.string().min(1, "Team function is required"),
-  teamSize: z.number().min(1, "Team size must be at least 1"),
-  workMode: z.enum(["remote", "hybrid", "onsite"]),
-  teamStage: z.enum(["new", "growing", "mature", "restructuring"]),
-  hiringPlans: z.enum(["0", "1-3", "4-10", "10+"]),
+  // Basic context - all optional now
+  industry: z.string().optional(),
+  teamFunction: z.string().optional(),
+  teamSize: z.number().min(1).optional(),
+  workMode: z.enum(["remote", "hybrid", "onsite"]).optional(),
+  teamStage: z.enum(["new", "growing", "mature", "restructuring"]).optional(),
+  hiringPlans: z.enum(["0", "1-3", "4-10", "10+"]).optional(),
   currentChallenges: z.string().optional(),
+  
+  // Deep dive - Team Dynamics & Pain Points
+  delayedTasks: z.string().optional(),
+  conflictTopics: z.string().optional(),
+  avoidedWork: z.string().optional(),
+  
+  // Deep dive - Workload & Capacity
+  overloadedMember: z.string().optional(),
+  wishedSkills: z.string().optional(),
+  
+  // Deep dive - Culture & Collaboration
+  idealInteractionStyle: z.string().optional(),
+  personalityGap: z.string().optional(),
+  
+  // Deep dive - Strategic Context
+  upcomingInitiative: z.string().optional(),
+  cloneableSkills: z.string().optional(),
+  transformativeFix: z.string().optional(),
 });
 
 const addTeamMemberSchema = z.object({
@@ -218,6 +237,27 @@ async function generateStrategicAdvisorAnalysis(
     currentChallenges: project.currentChallenges || "",
     workMode: project.workMode || "Unknown",
   };
+  
+  // Deep dive context for richer analysis
+  const deepDiveContext = {
+    // Team Dynamics & Pain Points
+    delayedTasks: project.delayedTasks || "",
+    conflictTopics: project.conflictTopics || "",
+    avoidedWork: project.avoidedWork || "",
+    // Workload & Capacity
+    overloadedMember: project.overloadedMember || "",
+    wishedSkills: project.wishedSkills || "",
+    // Culture & Collaboration
+    idealInteractionStyle: project.idealInteractionStyle || "",
+    personalityGap: project.personalityGap || "",
+    // Strategic Context
+    upcomingInitiative: project.upcomingInitiative || "",
+    cloneableSkills: project.cloneableSkills || "",
+    transformativeFix: project.transformativeFix || "",
+  };
+  
+  // Check if any deep dive data is provided
+  const hasDeepDiveData = Object.values(deepDiveContext).some(v => v.length > 0);
 
   const systemPrompt = `You are an elite hiring consultant and organizational psychologist with 20+ years of experience advising Fortune 500 companies on talent strategy. Your role is to provide deep, strategic analysis that goes beyond surface-level metrics.
 
@@ -255,6 +295,23 @@ TEAM CONTEXT:
 - Hiring Plans: ${teamContext.hiringPlans} hires planned
 - Current Challenges: ${teamContext.currentChallenges || "Not specified"}
 
+${hasDeepDiveData ? `DEEP DIVE INSIGHTS (Important - use these to inform your recommendations):
+${deepDiveContext.delayedTasks ? `- Tasks frequently delayed/deprioritized: ${deepDiveContext.delayedTasks}` : ""}
+${deepDiveContext.conflictTopics ? `- Common conflict topics: ${deepDiveContext.conflictTopics}` : ""}
+${deepDiveContext.avoidedWork ? `- Work the team avoids/struggles with: ${deepDiveContext.avoidedWork}` : ""}
+${deepDiveContext.overloadedMember ? `- Overloaded team members: ${deepDiveContext.overloadedMember}` : ""}
+${deepDiveContext.wishedSkills ? `- Skills wished for in-house: ${deepDiveContext.wishedSkills}` : ""}
+${deepDiveContext.idealInteractionStyle ? `- Desired interaction style: ${deepDiveContext.idealInteractionStyle}` : ""}
+${deepDiveContext.personalityGap ? `- Biggest personality gap: ${deepDiveContext.personalityGap}` : ""}
+${deepDiveContext.upcomingInitiative ? `- Upcoming initiative and needed capability: ${deepDiveContext.upcomingInitiative}` : ""}
+${deepDiveContext.cloneableSkills ? `- Skills they'd clone if they could: ${deepDiveContext.cloneableSkills}` : ""}
+${deepDiveContext.transformativeFix ? `- Transformative fix needed: ${deepDiveContext.transformativeFix}` : ""}
+
+IMPORTANT: The deep dive insights above reveal the team's real pain points and needs. Use them to:
+1. Identify which FIT capabilities would address each specific challenge
+2. Weight your recommendations heavily based on these stated needs
+3. Reference specific insights in your rationale for hire recommendations
+` : ""}
 MISSION ANALYSIS:
 ${missionAnalysis ? `
 Summary: ${missionAnalysis.summary}
@@ -768,13 +825,33 @@ export function registerEcosystemRoutes(app: Express): void {
       const data = organizationContextSchema.parse(req.body);
       
       const updated = await storage.updateEcosystemProject(req.params.id, {
-        industry: data.industry,
-        teamFunction: data.teamFunction,
-        teamSize: data.teamSize,
-        workMode: data.workMode,
-        teamStage: data.teamStage,
-        hiringPlans: data.hiringPlans,
+        // Basic context
+        industry: data.industry || null,
+        teamFunction: data.teamFunction || null,
+        teamSize: data.teamSize || null,
+        workMode: data.workMode || null,
+        teamStage: data.teamStage || null,
+        hiringPlans: data.hiringPlans || null,
         currentChallenges: data.currentChallenges || null,
+        
+        // Deep dive - Team Dynamics
+        delayedTasks: data.delayedTasks || null,
+        conflictTopics: data.conflictTopics || null,
+        avoidedWork: data.avoidedWork || null,
+        
+        // Deep dive - Workload & Capacity
+        overloadedMember: data.overloadedMember || null,
+        wishedSkills: data.wishedSkills || null,
+        
+        // Deep dive - Culture & Collaboration
+        idealInteractionStyle: data.idealInteractionStyle || null,
+        personalityGap: data.personalityGap || null,
+        
+        // Deep dive - Strategic Context
+        upcomingInitiative: data.upcomingInitiative || null,
+        cloneableSkills: data.cloneableSkills || null,
+        transformativeFix: data.transformativeFix || null,
+        
         currentStep: Math.max(project.currentStep, 3),
         status: "in_progress",
       } as any);

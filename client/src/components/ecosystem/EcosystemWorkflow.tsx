@@ -114,6 +114,21 @@ export function EcosystemWorkflow({
   const [teamStage, setTeamStage] = useState("");
   const [hiringPlans, setHiringPlans] = useState("");
   const [currentChallenges, setCurrentChallenges] = useState("");
+  
+  // Deep dive questions states
+  const [delayedTasks, setDelayedTasks] = useState("");
+  const [conflictTopics, setConflictTopics] = useState("");
+  const [avoidedWork, setAvoidedWork] = useState("");
+  const [overloadedMember, setOverloadedMember] = useState("");
+  const [wishedSkills, setWishedSkills] = useState("");
+  const [idealInteractionStyle, setIdealInteractionStyle] = useState("");
+  const [personalityGap, setPersonalityGap] = useState("");
+  const [upcomingInitiative, setUpcomingInitiative] = useState("");
+  const [cloneableSkills, setCloneableSkills] = useState("");
+  const [transformativeFix, setTransformativeFix] = useState("");
+  
+  // Deep dive section visibility
+  const [showDeepDive, setShowDeepDive] = useState(false);
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -142,6 +157,25 @@ export function EcosystemWorkflow({
       setTeamStage(project.teamStage || "");
       setHiringPlans(project.hiringPlans || "");
       setCurrentChallenges(project.currentChallenges || "");
+      
+      // Deep dive fields
+      setDelayedTasks(project.delayedTasks || "");
+      setConflictTopics(project.conflictTopics || "");
+      setAvoidedWork(project.avoidedWork || "");
+      setOverloadedMember(project.overloadedMember || "");
+      setWishedSkills(project.wishedSkills || "");
+      setIdealInteractionStyle(project.idealInteractionStyle || "");
+      setPersonalityGap(project.personalityGap || "");
+      setUpcomingInitiative(project.upcomingInitiative || "");
+      setCloneableSkills(project.cloneableSkills || "");
+      setTransformativeFix(project.transformativeFix || "");
+      
+      // Check if any deep dive fields have data
+      const hasDeepDiveData = project.delayedTasks || project.conflictTopics || project.avoidedWork ||
+        project.overloadedMember || project.wishedSkills || project.idealInteractionStyle ||
+        project.personalityGap || project.upcomingInitiative || project.cloneableSkills || project.transformativeFix;
+      setShowDeepDive(!!hasDeepDiveData);
+      
       setExpandedStep(project.currentStep || 1);
     }
   }, [project]);
@@ -177,35 +211,46 @@ export function EcosystemWorkflow({
   };
 
   const handleSaveOrgContext = async () => {
-    if (!industry || !teamFunction || !teamSize || !workMode || !teamStage || !hiringPlans) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all team context details.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // All fields are now optional - no validation required
     try {
       await updateOrgContext.mutateAsync({
         projectId,
-        industry,
-        teamFunction,
-        teamSize: parseInt(teamSize, 10),
-        workMode,
-        teamStage,
-        hiringPlans,
-        currentChallenges,
+        // Basic context
+        industry: industry || undefined,
+        teamFunction: teamFunction || undefined,
+        teamSize: teamSize ? parseInt(teamSize, 10) : undefined,
+        workMode: workMode || undefined,
+        teamStage: teamStage || undefined,
+        hiringPlans: hiringPlans || undefined,
+        currentChallenges: currentChallenges || undefined,
+        
+        // Deep dive - Team Dynamics
+        delayedTasks: delayedTasks || undefined,
+        conflictTopics: conflictTopics || undefined,
+        avoidedWork: avoidedWork || undefined,
+        
+        // Deep dive - Workload & Capacity
+        overloadedMember: overloadedMember || undefined,
+        wishedSkills: wishedSkills || undefined,
+        
+        // Deep dive - Culture & Collaboration
+        idealInteractionStyle: idealInteractionStyle || undefined,
+        personalityGap: personalityGap || undefined,
+        
+        // Deep dive - Strategic Context
+        upcomingInitiative: upcomingInitiative || undefined,
+        cloneableSkills: cloneableSkills || undefined,
+        transformativeFix: transformativeFix || undefined,
       });
       toast({
-        title: "Organization context saved",
-        description: "Your company details have been saved.",
+        title: "Team context saved",
+        description: "Your team details have been saved.",
       });
       setExpandedStep(3);
     } catch (error: any) {
       toast({
         title: "Failed to save",
-        description: error.message || "Could not save organization context.",
+        description: error.message || "Could not save team context.",
         variant: "destructive",
       });
     }
@@ -569,7 +614,7 @@ export function EcosystemWorkflow({
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry *</Label>
+                <Label htmlFor="industry">Industry</Label>
                 <Select value={industry} onValueChange={setIndustry}>
                   <SelectTrigger data-testid="select-industry">
                     <SelectValue placeholder="Select industry" />
@@ -587,7 +632,7 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="team-stage">Team Stage *</Label>
+                <Label htmlFor="team-stage">Team Stage</Label>
                 <Select value={teamStage} onValueChange={setTeamStage}>
                   <SelectTrigger data-testid="select-team-stage">
                     <SelectValue placeholder="Select stage" />
@@ -601,7 +646,7 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="team-function">Team Function *</Label>
+                <Label htmlFor="team-function">Team Function</Label>
                 <Select value={teamFunction} onValueChange={setTeamFunction}>
                   <SelectTrigger data-testid="select-team-function">
                     <SelectValue placeholder="Select function" />
@@ -619,7 +664,7 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="team-size">Current Team Size *</Label>
+                <Label htmlFor="team-size">Current Team Size</Label>
                 <Input
                   id="team-size"
                   type="number"
@@ -631,7 +676,7 @@ export function EcosystemWorkflow({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="work-mode">Work Mode *</Label>
+                <Label htmlFor="work-mode">Work Mode</Label>
                 <Select value={workMode} onValueChange={setWorkMode}>
                   <SelectTrigger data-testid="select-work-mode">
                     <SelectValue placeholder="Select mode" />
@@ -644,7 +689,7 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="hiring-plans">Hiring Plans (next 12 months) *</Label>
+                <Label htmlFor="hiring-plans">Hiring Plans (next 12 months)</Label>
                 <Select value={hiringPlans} onValueChange={setHiringPlans}>
                   <SelectTrigger data-testid="select-hiring-plans">
                     <SelectValue placeholder="Select hiring plans" />
@@ -660,7 +705,7 @@ export function EcosystemWorkflow({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="current-challenges">Current Challenges (Optional)</Label>
+              <Label htmlFor="current-challenges">Current Challenges</Label>
               <Textarea
                 id="current-challenges"
                 value={currentChallenges}
@@ -672,6 +717,187 @@ export function EcosystemWorkflow({
               <p className="text-xs text-muted-foreground">
                 This helps us provide more targeted and relevant recommendations
               </p>
+            </div>
+
+            {/* Deep Dive Section */}
+            <div className="border rounded-lg">
+              <button
+                type="button"
+                onClick={() => setShowDeepDive(!showDeepDive)}
+                className="w-full flex items-center justify-between p-4 hover-elevate rounded-lg"
+                data-testid="button-toggle-deep-dive"
+              >
+                <div className="flex items-center gap-3">
+                  <Brain className="h-5 w-5 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium">Deep Dive Questions</p>
+                    <p className="text-sm text-muted-foreground">
+                      Answer more questions for better hiring recommendations
+                    </p>
+                  </div>
+                </div>
+                {showDeepDive ? (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
+
+              {showDeepDive && (
+                <div className="p-4 pt-0 space-y-6 border-t">
+                  {/* Team Dynamics & Pain Points */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Team Dynamics & Pain Points
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="delayed-tasks">What tasks or responsibilities frequently get delayed or deprioritized?</Label>
+                      <Textarea
+                        id="delayed-tasks"
+                        value={delayedTasks}
+                        onChange={(e) => setDelayedTasks(e.target.value)}
+                        placeholder="e.g., 'Documentation often falls behind', 'Testing gets rushed at the end of sprints'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-delayed-tasks"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="conflict-topics">When conflicts arise, what are they usually about?</Label>
+                      <Textarea
+                        id="conflict-topics"
+                        value={conflictTopics}
+                        onChange={(e) => setConflictTopics(e.target.value)}
+                        placeholder="e.g., 'Disagreements on priorities', 'Communication gaps between teams'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-conflict-topics"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="avoided-work">What type of work does your team avoid or struggle with?</Label>
+                      <Textarea
+                        id="avoided-work"
+                        value={avoidedWork}
+                        onChange={(e) => setAvoidedWork(e.target.value)}
+                        placeholder="e.g., 'Cold calling clients', 'Deep technical research', 'Presenting to executives'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-avoided-work"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Workload & Capacity */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Workload & Capacity
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="overloaded-member">Who on your team is overloaded? What are they handling that others can't?</Label>
+                      <Textarea
+                        id="overloaded-member"
+                        value={overloadedMember}
+                        onChange={(e) => setOverloadedMember(e.target.value)}
+                        placeholder="e.g., 'Our lead developer handles all architecture decisions and code reviews'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-overloaded-member"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="wished-skills">What skills do you constantly wish you had in-house?</Label>
+                      <Textarea
+                        id="wished-skills"
+                        value={wishedSkills}
+                        onChange={(e) => setWishedSkills(e.target.value)}
+                        placeholder="e.g., 'Data analysis', 'UX design', 'Strategic planning'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-wished-skills"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Culture & Collaboration */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Heart className="h-4 w-4" />
+                      Culture & Collaboration
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="ideal-interaction">Describe your ideal team interaction style - do you need someone who leads, supports, or challenges?</Label>
+                      <Textarea
+                        id="ideal-interaction"
+                        value={idealInteractionStyle}
+                        onChange={(e) => setIdealInteractionStyle(e.target.value)}
+                        placeholder="e.g., 'We need someone who can challenge our assumptions constructively'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-ideal-interaction"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="personality-gap">What's the biggest personality gap on your team right now?</Label>
+                      <Textarea
+                        id="personality-gap"
+                        value={personalityGap}
+                        onChange={(e) => setPersonalityGap(e.target.value)}
+                        placeholder="e.g., 'We lack someone who can drive accountability', 'We need more creative thinkers'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-personality-gap"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Strategic Context */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Strategic Context
+                    </h4>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="upcoming-initiative">What's your biggest upcoming initiative, and what capability would make it easier?</Label>
+                      <Textarea
+                        id="upcoming-initiative"
+                        value={upcomingInitiative}
+                        onChange={(e) => setUpcomingInitiative(e.target.value)}
+                        placeholder="e.g., 'Launching a new product - we need someone who can manage stakeholders effectively'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-upcoming-initiative"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="cloneable-skills">If you could clone one team member's skills, whose would it be and why?</Label>
+                      <Textarea
+                        id="cloneable-skills"
+                        value={cloneableSkills}
+                        onChange={(e) => setCloneableSkills(e.target.value)}
+                        placeholder="e.g., 'Our product manager - they're exceptional at translating business needs into technical requirements'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-cloneable-skills"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="transformative-fix">What's the one thing that, if fixed, would transform your team's performance?</Label>
+                      <Textarea
+                        id="transformative-fix"
+                        value={transformativeFix}
+                        onChange={(e) => setTransformativeFix(e.target.value)}
+                        placeholder="e.g., 'Better project planning', 'More proactive communication', 'Stronger technical leadership'"
+                        className="min-h-[80px]"
+                        data-testid="textarea-transformative-fix"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button 
@@ -1217,6 +1443,80 @@ function TeamAnalysisResults({
             </div>
           )}
         </div>
+        
+        {/* Deep Dive Insights - if any were provided */}
+        {(project.delayedTasks || project.conflictTopics || project.avoidedWork || 
+          project.overloadedMember || project.wishedSkills || project.idealInteractionStyle ||
+          project.personalityGap || project.upcomingInitiative || project.cloneableSkills || project.transformativeFix) && (
+          <div className="mt-6 pt-6 border-t">
+            <h5 className="text-sm font-medium mb-4 flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Deep Dive Insights
+            </h5>
+            <div className="grid gap-3 md:grid-cols-2">
+              {project.delayedTasks && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Delayed Tasks</p>
+                  <p className="text-sm">{project.delayedTasks}</p>
+                </div>
+              )}
+              {project.conflictTopics && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conflict Topics</p>
+                  <p className="text-sm">{project.conflictTopics}</p>
+                </div>
+              )}
+              {project.avoidedWork && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Work Team Avoids</p>
+                  <p className="text-sm">{project.avoidedWork}</p>
+                </div>
+              )}
+              {project.overloadedMember && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Overloaded Team Members</p>
+                  <p className="text-sm">{project.overloadedMember}</p>
+                </div>
+              )}
+              {project.wishedSkills && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Skills Wished For</p>
+                  <p className="text-sm">{project.wishedSkills}</p>
+                </div>
+              )}
+              {project.idealInteractionStyle && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ideal Interaction Style</p>
+                  <p className="text-sm">{project.idealInteractionStyle}</p>
+                </div>
+              )}
+              {project.personalityGap && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Personality Gap</p>
+                  <p className="text-sm">{project.personalityGap}</p>
+                </div>
+              )}
+              {project.upcomingInitiative && (
+                <div className="space-y-1 md:col-span-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Upcoming Initiative</p>
+                  <p className="text-sm">{project.upcomingInitiative}</p>
+                </div>
+              )}
+              {project.cloneableSkills && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Skills to Clone</p>
+                  <p className="text-sm">{project.cloneableSkills}</p>
+                </div>
+              )}
+              {project.transformativeFix && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Transformative Fix</p>
+                  <p className="text-sm">{project.transformativeFix}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mission Score Explanation */}

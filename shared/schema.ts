@@ -1968,6 +1968,24 @@ export const ecosystemProjects = pgTable("ecosystem_projects", {
   hiringPlans: varchar("hiring_plans"), // 0, 1-3, 4-10, 10+
   currentChallenges: text("current_challenges"), // free text describing team challenges
   
+  // Deep dive questions - Team Dynamics & Pain Points
+  delayedTasks: text("delayed_tasks"), // What tasks frequently get delayed or deprioritized?
+  conflictTopics: text("conflict_topics"), // When conflicts arise, what are they usually about?
+  avoidedWork: text("avoided_work"), // What type of work does your team avoid or struggle with?
+  
+  // Deep dive questions - Workload & Capacity
+  overloadedMember: text("overloaded_member"), // Who is overloaded and what are they handling?
+  wishedSkills: text("wished_skills"), // What skills do you constantly wish you had in-house?
+  
+  // Deep dive questions - Culture & Collaboration
+  idealInteractionStyle: text("ideal_interaction_style"), // Describe your ideal team interaction style
+  personalityGap: text("personality_gap"), // What's the biggest personality gap on your team?
+  
+  // Deep dive questions - Strategic Context
+  upcomingInitiative: text("upcoming_initiative"), // What's your biggest upcoming initiative?
+  cloneableSkills: text("cloneable_skills"), // If you could clone one team member's skills, whose would it be?
+  transformativeFix: text("transformative_fix"), // What's the one thing that would transform your team's performance?
+  
   // Step 6: Team analysis results
   teamAnalysis: jsonb("team_analysis").$type<EcosystemTeamAnalysis | null>(),
   
