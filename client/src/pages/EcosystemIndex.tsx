@@ -525,67 +525,25 @@ export default function EcosystemIndex() {
                   6
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Schedule Consultation & Generate Report</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Book your pre-consultation to begin the team diagnostic process</p>
+                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Export Results</h3>
+                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Generate a comprehensive team diagnostic report</p>
                 </div>
               </div>
               
               <Card className="p-6 md:p-8" data-testid="step-6-payment">
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Package Summary */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Consulting Package
-                    </h4>
-                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Pre-Consultation Session</span>
-                        <span className="font-medium text-green-600">Included</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Team FIT Assessments</span>
-                        <span className="font-medium text-green-600">Included</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">AI-Powered Team Analysis</span>
-                        <span className="font-medium text-green-600">Included</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Post-Consultation Debrief</span>
-                        <span className="font-medium text-green-600">Included</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Team Members</span>
-                        <span className="font-medium">Up to 20</span>
-                      </div>
-                      <div className="border-t pt-3 flex justify-between">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-bold text-lg">Contact for Pricing</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Pricing varies based on team size and requirements. Our consultants will provide a custom quote.
-                    </p>
-                  </div>
+                <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
+                  <Button 
+                    size="lg" 
+                    className="w-full" 
+                    data-testid="button-generate-report"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate Report
+                  </Button>
                   
-                  {/* Generate Report Button */}
-                  <div className="flex flex-col justify-center space-y-6">
-                    <div className="text-center space-y-3">
-                      <Button 
-                        size="lg" 
-                        className="w-full" 
-                        data-testid="button-generate-report"
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Generate Report
-                      </Button>
-                      
-                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Shield className="h-3 w-3" />
-                        <span>Comprehensive team analysis</span>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Shield className="h-3 w-3" />
+                    <span>Comprehensive team analysis</span>
                   </div>
                 </div>
               </Card>
