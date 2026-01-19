@@ -25,6 +25,11 @@ import BillingTab from "@/components/admin/BillingTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
 import SystemSettingsTab from "@/components/admin/SystemSettingsTab";
 import AccountingTab from "@/components/admin/AccountingTab";
+import UserActivityAnalyticsTab from "@/components/admin/UserActivityAnalyticsTab";
+import AssessmentFunnelTab from "@/components/admin/AssessmentFunnelTab";
+import PartnerHealthTab from "@/components/admin/PartnerHealthTab";
+import AuditLogTab from "@/components/admin/AuditLogTab";
+import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -33,6 +38,7 @@ export default function AdminDashboard() {
   const [analyticsSubTab, setAnalyticsSubTab] = useState("platform");
   const [partnersSubTab, setPartnersSubTab] = useState("accounts"); // Default to accounts for super admins
   const [analysisSubTab, setAnalysisSubTab] = useState("individual");
+  const [billingSubTab, setBillingSubTab] = useState("overview");
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
     queryKey: ["/api/admin/my-organization"],
@@ -188,6 +194,11 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
+                <TabsTrigger value="audit" data-testid="tab-audit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Audit Log
+                </TabsTrigger>
+              )}
+              {isSuperAdmin && (
                 <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Widget Test
                 </TabsTrigger>
@@ -252,6 +263,11 @@ export default function AdminDashboard() {
                   <TabsTrigger value="usage" data-testid="subtab-usage" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                     Usage
                   </TabsTrigger>
+                  {isSuperAdmin && (
+                    <TabsTrigger value="health" data-testid="subtab-partner-health" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Health Scores
+                    </TabsTrigger>
+                  )}
                 </TabsList>
                 {isSuperAdmin && (
                   <TabsContent value="accounts" className="mt-4">
@@ -264,6 +280,11 @@ export default function AdminDashboard() {
                 <TabsContent value="usage" className="mt-4">
                   <UsageTab />
                 </TabsContent>
+                {isSuperAdmin && (
+                  <TabsContent value="health" className="mt-4">
+                    <PartnerHealthTab />
+                  </TabsContent>
+                )}
               </Tabs>
             </TabsContent>
 
@@ -278,12 +299,24 @@ export default function AdminDashboard() {
                     <TabsTrigger value="trends" data-testid="subtab-trends" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                       Trends
                     </TabsTrigger>
+                    <TabsTrigger value="user-activity" data-testid="subtab-user-activity" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      User Activity
+                    </TabsTrigger>
+                    <TabsTrigger value="funnel" data-testid="subtab-funnel" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Funnel
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="platform" className="mt-4">
                     <PlatformStatsTab currentUser={user} />
                   </TabsContent>
                   <TabsContent value="trends" className="mt-4">
                     <AnalyticsTab />
+                  </TabsContent>
+                  <TabsContent value="user-activity" className="mt-4">
+                    <UserActivityAnalyticsTab />
+                  </TabsContent>
+                  <TabsContent value="funnel" className="mt-4">
+                    <AssessmentFunnelTab />
                   </TabsContent>
                 </Tabs>
               </TabsContent>
@@ -297,7 +330,22 @@ export default function AdminDashboard() {
 
             {isSuperAdmin && (
               <TabsContent value="billing" className="space-y-4">
-                <BillingTab />
+                <Tabs value={billingSubTab} onValueChange={setBillingSubTab}>
+                  <TabsList className="bg-white/5 border border-white/10">
+                    <TabsTrigger value="overview" data-testid="subtab-billing-overview" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Overview
+                    </TabsTrigger>
+                    <TabsTrigger value="revenue" data-testid="subtab-revenue" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Revenue Dashboard
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="overview" className="mt-4">
+                    <BillingTab />
+                  </TabsContent>
+                  <TabsContent value="revenue" className="mt-4">
+                    <RevenueDashboardTab />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             )}
 
@@ -316,6 +364,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="settings" className="space-y-4">
                 <SystemSettingsTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="audit" className="space-y-4">
+                <AuditLogTab />
               </TabsContent>
             )}
           </Tabs>

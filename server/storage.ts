@@ -126,6 +126,9 @@ import {
   emailVerificationCodes,
   type EmailVerificationCode,
   type InsertEmailVerificationCode,
+  auditLogs,
+  type AuditLog,
+  type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -3891,6 +3894,56 @@ export class DatabaseStorage implements IStorage {
   async broadcastAdminNotification(notification: Omit<InsertAdminNotification, 'userId'>): Promise<AdminNotification> {
     // Create a single broadcast notification (userId = null means all super admins)
     return this.createAdminNotification({ ...notification, userId: null });
+  }
+
+  // Audit log operations
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [result] = await db.insert(auditLogs).values(log).returning();
+    return result;
+  }
+
+  async getAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    action?: string;
+    resourceType?: string;
+    userId?: string;
+    severity?: string;
+    startDate?: Date;
+    endDate?: Date;
+  } = {}): Promise<{ logs: AuditLog[]; total: number }> {
+    const { limit = 50, offset = 0, action, resourceType, userId, severity, startDate, endDate } = options;
+    
+    const conditions: any[] = [];
+    if (action) conditions.push(eq(auditLogs.action, action));
+    if (resourceType) conditions.push(eq(auditLogs.resourceType, resourceType));
+    if (userId) conditions.push(eq(auditLogs.userId, userId));
+    if (severity) conditions.push(eq(auditLogs.severity, severity));
+    if (startDate) conditions.push(gte(auditLogs.createdAt, startDate));
+    if (endDate) conditions.push(lte(auditLogs.createdAt, endDate));
+    
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const [logs, [countResult]] = await Promise.all([
+      db.select().from(auditLogs)
+        .where(whereClause)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(auditLogs).where(whereClause),
+    ]);
+    
+    return { logs, total: countResult?.count || 0 };
+  }
+
+  async getAuditLogActions(): Promise<string[]> {
+    const result = await db.selectDistinct({ action: auditLogs.action }).from(auditLogs);
+    return result.map(r => r.action);
+  }
+
+  async getAuditLogResourceTypes(): Promise<string[]> {
+    const result = await db.selectDistinct({ resourceType: auditLogs.resourceType }).from(auditLogs);
+    return result.map(r => r.resourceType);
   }
 }
 

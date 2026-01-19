@@ -14044,6 +14044,625 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Super Admin: Get user activity analytics
+  app.get("/api/admin/analytics/user-activity", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // Get all users and their activity
+      const [allUsers, allResults, allSessions, allPurchases] = await Promise.all([
+        db.select().from(users),
+        db.select().from(assessmentResults),
+        db.select().from(assessmentSessions),
+        storage.getAllPurchasesWithDetails({ limit: 10000 })
+      ]);
+      
+      // Calculate daily active users (users who completed an assessment or made a purchase)
+      const dailyStats = [];
+      for (let i = 29; i >= 0; i--) {
+        const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const activeB2CUsers = new Set<string>();
+        const activeB2BUsers = new Set<string>();
+        
+        // B2C activity (assessments completed)
+        allResults.filter(r => {
+          if (!r.completedAt) return false;
+          const date = new Date(r.completedAt);
+          return date >= dayStart && date <= dayEnd;
+        }).forEach(r => activeB2CUsers.add(r.userId));
+        
+        // B2B activity (sessions)
+        allSessions.filter(s => {
+          if (!s.createdAt) return false;
+          const date = new Date(s.createdAt);
+          return date >= dayStart && date <= dayEnd;
+        }).forEach(s => {
+          if (s.externalEmail) activeB2BUsers.add(s.externalEmail);
+        });
+        
+        // New user registrations
+        const newUsers = allUsers.filter(u => {
+          if (!u.createdAt) return false;
+          const date = new Date(u.createdAt);
+          return date >= dayStart && date <= dayEnd;
+        });
+        
+        dailyStats.push({
+          date: dayStart.toISOString().split('T')[0],
+          activeB2CUsers: activeB2CUsers.size,
+          activeB2BUsers: activeB2BUsers.size,
+          totalActiveUsers: activeB2CUsers.size + activeB2BUsers.size,
+          newRegistrations: newUsers.length,
+        });
+      }
+      
+      // Calculate hourly distribution (peak usage times)
+      const hourlyDistribution = Array(24).fill(0);
+      allResults.forEach(r => {
+        if (r.completedAt) {
+          const hour = new Date(r.completedAt).getHours();
+          hourlyDistribution[hour]++;
+        }
+      });
+      allSessions.forEach(s => {
+        if (s.completedAt) {
+          const hour = new Date(s.completedAt).getHours();
+          hourlyDistribution[hour]++;
+        }
+      });
+      
+      // User role breakdown
+      const roleBreakdown = allUsers.reduce((acc: Record<string, number>, u) => {
+        const role = u.role || 'candidate';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Calculate retention (users who returned within 30 days)
+      const usersWithActivity = new Map<string, Date[]>();
+      allResults.forEach(r => {
+        if (r.completedAt) {
+          const dates = usersWithActivity.get(r.userId) || [];
+          dates.push(new Date(r.completedAt));
+          usersWithActivity.set(r.userId, dates);
+        }
+      });
+      
+      let returningUsers = 0;
+      usersWithActivity.forEach((dates) => {
+        if (dates.length > 1) {
+          dates.sort((a, b) => a.getTime() - b.getTime());
+          for (let i = 1; i < dates.length; i++) {
+            const daysBetween = (dates[i].getTime() - dates[i-1].getTime()) / (1000 * 60 * 60 * 24);
+            if (daysBetween >= 1) {
+              returningUsers++;
+              break;
+            }
+          }
+        }
+      });
+      
+      res.json({
+        overview: {
+          totalUsers: allUsers.length,
+          activeUsersLast7Days: dailyStats.slice(-7).reduce((sum, d) => sum + d.totalActiveUsers, 0) / 7,
+          activeUsersLast30Days: dailyStats.reduce((sum, d) => sum + d.totalActiveUsers, 0) / 30,
+          newUsersLast7Days: dailyStats.slice(-7).reduce((sum, d) => sum + d.newRegistrations, 0),
+          newUsersLast30Days: dailyStats.reduce((sum, d) => sum + d.newRegistrations, 0),
+          returningUserRate: usersWithActivity.size > 0 ? (returningUsers / usersWithActivity.size * 100).toFixed(1) : 0,
+        },
+        dailyStats,
+        hourlyDistribution: hourlyDistribution.map((count, hour) => ({ hour, count })),
+        roleBreakdown,
+      });
+    } catch (error) {
+      console.error("Error fetching user activity analytics:", error);
+      res.status(500).json({ message: "Failed to fetch user activity analytics" });
+    }
+  });
+
+  // Super Admin: Get assessment funnel analytics
+  app.get("/api/admin/analytics/funnel", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      const [allResults, allPurchases, allSessions, allInvitations] = await Promise.all([
+        db.select().from(assessmentResults),
+        storage.getAllPurchasesWithDetails({ limit: 10000 }),
+        db.select().from(assessmentSessions),
+        db.select().from(invitations),
+      ]);
+      
+      // B2C Funnel
+      const b2cStarted = allResults.length;
+      const b2cCompleted = allResults.filter(r => r.status === 'completed').length;
+      const b2cPaid = allPurchases.filter((p: any) => p.purchase.resultsAccessPaid).length;
+      
+      // B2C Funnel - last 30 days
+      const b2cStarted30d = allResults.filter(r => r.createdAt && new Date(r.createdAt) >= last30Days).length;
+      const b2cCompleted30d = allResults.filter(r => r.completedAt && new Date(r.completedAt) >= last30Days && r.status === 'completed').length;
+      const b2cPaid30d = allPurchases.filter((p: any) => 
+        p.purchase.completedAt && new Date(p.purchase.completedAt) >= last30Days && p.purchase.resultsAccessPaid
+      ).length;
+      
+      // B2B Funnel
+      const b2bInvited = allSessions.length;
+      const b2bStarted = allSessions.filter(s => s.status !== 'created').length;
+      const b2bCompleted = allSessions.filter(s => s.status === 'completed').length;
+      const b2bResultsViewed = allSessions.filter(s => s.resultsReleaseStatus === 'released' || s.resultsPaymentStatus === 'paid').length;
+      
+      // B2B Funnel - last 30 days
+      const b2bInvited30d = allSessions.filter(s => s.createdAt && new Date(s.createdAt) >= last30Days).length;
+      const b2bStarted30d = allSessions.filter(s => s.createdAt && new Date(s.createdAt) >= last30Days && s.status !== 'created').length;
+      const b2bCompleted30d = allSessions.filter(s => s.completedAt && new Date(s.completedAt) >= last30Days && s.status === 'completed').length;
+      
+      // Assessment type breakdown
+      const assessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+      const typeBreakdown = assessmentTypes.map(type => {
+        const started = allResults.filter(r => r.assessmentType === type).length;
+        const completed = allResults.filter(r => r.assessmentType === type && r.status === 'completed').length;
+        const b2bStartedType = allSessions.filter(s => s.assessmentType === type).length;
+        const b2bCompletedType = allSessions.filter(s => s.assessmentType === type && s.status === 'completed').length;
+        
+        return {
+          type,
+          b2cStarted: started,
+          b2cCompleted: completed,
+          b2cCompletionRate: started > 0 ? ((completed / started) * 100).toFixed(1) : 0,
+          b2bStarted: b2bStartedType,
+          b2bCompleted: b2bCompletedType,
+          b2bCompletionRate: b2bStartedType > 0 ? ((b2bCompletedType / b2bStartedType) * 100).toFixed(1) : 0,
+        };
+      });
+      
+      // Calculate daily funnel for trends
+      const dailyFunnel = [];
+      for (let i = 29; i >= 0; i--) {
+        const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const dayStarted = allResults.filter(r => {
+          if (!r.createdAt) return false;
+          const date = new Date(r.createdAt);
+          return date >= dayStart && date <= dayEnd;
+        }).length;
+        
+        const dayCompleted = allResults.filter(r => {
+          if (!r.completedAt) return false;
+          const date = new Date(r.completedAt);
+          return date >= dayStart && date <= dayEnd && r.status === 'completed';
+        }).length;
+        
+        const dayPaid = allPurchases.filter((p: any) => {
+          if (!p.purchase.completedAt) return false;
+          const date = new Date(p.purchase.completedAt);
+          return date >= dayStart && date <= dayEnd && p.purchase.resultsAccessPaid;
+        }).length;
+        
+        dailyFunnel.push({
+          date: dayStart.toISOString().split('T')[0],
+          started: dayStarted,
+          completed: dayCompleted,
+          paid: dayPaid,
+        });
+      }
+      
+      res.json({
+        b2c: {
+          allTime: {
+            started: b2cStarted,
+            completed: b2cCompleted,
+            paid: b2cPaid,
+            startToCompleteRate: b2cStarted > 0 ? ((b2cCompleted / b2cStarted) * 100).toFixed(1) : 0,
+            completeToPaidRate: b2cCompleted > 0 ? ((b2cPaid / b2cCompleted) * 100).toFixed(1) : 0,
+          },
+          last30Days: {
+            started: b2cStarted30d,
+            completed: b2cCompleted30d,
+            paid: b2cPaid30d,
+            startToCompleteRate: b2cStarted30d > 0 ? ((b2cCompleted30d / b2cStarted30d) * 100).toFixed(1) : 0,
+            completeToPaidRate: b2cCompleted30d > 0 ? ((b2cPaid30d / b2cCompleted30d) * 100).toFixed(1) : 0,
+          },
+        },
+        b2b: {
+          allTime: {
+            invited: b2bInvited,
+            started: b2bStarted,
+            completed: b2bCompleted,
+            resultsViewed: b2bResultsViewed,
+            inviteToStartRate: b2bInvited > 0 ? ((b2bStarted / b2bInvited) * 100).toFixed(1) : 0,
+            startToCompleteRate: b2bStarted > 0 ? ((b2bCompleted / b2bStarted) * 100).toFixed(1) : 0,
+          },
+          last30Days: {
+            invited: b2bInvited30d,
+            started: b2bStarted30d,
+            completed: b2bCompleted30d,
+          },
+        },
+        typeBreakdown,
+        dailyFunnel,
+      });
+    } catch (error) {
+      console.error("Error fetching funnel analytics:", error);
+      res.status(500).json({ message: "Failed to fetch funnel analytics" });
+    }
+  });
+
+  // Super Admin: Get partner health scores
+  app.get("/api/admin/partners/health-scores", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      const [allPartners, allSessions, allInvoices] = await Promise.all([
+        storage.getAllPartnerAccounts(),
+        db.select().from(assessmentSessions),
+        db.select().from(partnerInvoices),
+      ]);
+      
+      const healthScores = allPartners.map((partner: any) => {
+        const partnerSessions = allSessions.filter(s => s.partnerId === partner.id);
+        const recentSessions = partnerSessions.filter(s => s.createdAt && new Date(s.createdAt) >= last30Days);
+        const completedSessions = partnerSessions.filter(s => s.status === 'completed');
+        const partnerInvoicesList = allInvoices.filter(i => i.partnerId === partner.id);
+        const overdueInvoices = partnerInvoicesList.filter(i => i.status === 'overdue');
+        const paidInvoices = partnerInvoicesList.filter(i => i.status === 'paid');
+        
+        // Calculate component scores (0-100)
+        
+        // Usage score (based on recent activity)
+        let usageScore = 0;
+        if (recentSessions.length >= 20) usageScore = 100;
+        else if (recentSessions.length >= 10) usageScore = 80;
+        else if (recentSessions.length >= 5) usageScore = 60;
+        else if (recentSessions.length >= 1) usageScore = 40;
+        else usageScore = 20;
+        
+        // Payment score (based on invoice history)
+        let paymentScore = 100;
+        if (overdueInvoices.length > 0) paymentScore = 20;
+        else if (partner.failedBillingAttempts > 0) paymentScore = 50;
+        else if (paidInvoices.length > 0) paymentScore = 100;
+        else paymentScore = 80; // No invoices yet
+        
+        // Engagement score (based on completion rate)
+        const completionRate = partnerSessions.length > 0 
+          ? (completedSessions.length / partnerSessions.length) * 100 
+          : 0;
+        let engagementScore = Math.min(100, completionRate * 1.2);
+        
+        // API health score
+        let apiScore = 100;
+        if (partner.isSuspended) apiScore = 0;
+        else if (partner.apiAccessSuspendedAt) apiScore = 20;
+        
+        // Calculate overall health score (weighted average)
+        const overallScore = Math.round(
+          (usageScore * 0.3) + 
+          (paymentScore * 0.3) + 
+          (engagementScore * 0.2) + 
+          (apiScore * 0.2)
+        );
+        
+        // Determine health status
+        let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+        if (overallScore < 40) status = 'critical';
+        else if (overallScore < 70) status = 'warning';
+        
+        // Generate recommendations
+        const recommendations: string[] = [];
+        if (usageScore < 40) recommendations.push('Low usage - consider reaching out to check on integration');
+        if (paymentScore < 50) recommendations.push('Payment issues detected - review billing status');
+        if (engagementScore < 50) recommendations.push('Low completion rate - may need support');
+        if (apiScore < 50) recommendations.push('API access issues - check suspension status');
+        
+        return {
+          partnerId: partner.id,
+          partnerName: partner.companyName || partner.name,
+          billingType: partner.billingType,
+          overallScore,
+          status,
+          components: {
+            usage: { score: usageScore, sessionsLast30Days: recentSessions.length },
+            payment: { score: paymentScore, overdueInvoices: overdueInvoices.length, failedAttempts: partner.failedBillingAttempts || 0 },
+            engagement: { score: Math.round(engagementScore), completionRate: completionRate.toFixed(1) },
+            apiHealth: { score: apiScore, isSuspended: partner.isSuspended },
+          },
+          recommendations,
+          lastActivity: partnerSessions.length > 0 
+            ? partnerSessions.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt 
+            : partner.createdAt,
+        };
+      });
+      
+      // Sort by health score (lowest first to highlight issues)
+      healthScores.sort((a, b) => a.overallScore - b.overallScore);
+      
+      // Summary stats
+      const summary = {
+        healthy: healthScores.filter(p => p.status === 'healthy').length,
+        warning: healthScores.filter(p => p.status === 'warning').length,
+        critical: healthScores.filter(p => p.status === 'critical').length,
+        averageScore: Math.round(healthScores.reduce((sum, p) => sum + p.overallScore, 0) / healthScores.length),
+      };
+      
+      res.json({ partners: healthScores, summary });
+    } catch (error) {
+      console.error("Error fetching partner health scores:", error);
+      res.status(500).json({ message: "Failed to fetch partner health scores" });
+    }
+  });
+
+  // Super Admin: Get audit logs
+  app.get("/api/admin/audit-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { 
+        limit = '50', 
+        offset = '0', 
+        action, 
+        resourceType, 
+        userId: filterUserId, 
+        severity, 
+        startDate, 
+        endDate 
+      } = req.query;
+      
+      const result = await storage.getAuditLogs({
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        action: action as string,
+        resourceType: resourceType as string,
+        userId: filterUserId as string,
+        severity: severity as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
+  // Super Admin: Get audit log filter options
+  app.get("/api/admin/audit-logs/filters", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const [actions, resourceTypes] = await Promise.all([
+        storage.getAuditLogActions(),
+        storage.getAuditLogResourceTypes(),
+      ]);
+      
+      res.json({ actions, resourceTypes });
+    } catch (error) {
+      console.error("Error fetching audit log filters:", error);
+      res.status(500).json({ message: "Failed to fetch audit log filters" });
+    }
+  });
+
+  // Super Admin: Get revenue dashboard data
+  app.get("/api/admin/billing/revenue-dashboard", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      
+      const { getExchangeRates } = await import("./exchange-rates");
+      const exchangeRatesData = await getExchangeRates();
+      
+      const [allPurchases, allInvoices, allPartners, allPartnerUsage] = await Promise.all([
+        storage.getAllPurchasesWithDetails({ limit: 10000 }),
+        db.select().from(partnerInvoices),
+        storage.getAllPartnerAccounts(),
+        db.select().from(partnerMonthlyUsage),
+      ]);
+      
+      // Helper to convert to GBP
+      const toGBP = (amount: number, currency: string) => {
+        if (currency === 'GBP') return amount;
+        const rate = exchangeRatesData.rates[currency] || 1;
+        return Math.round(amount / rate);
+      };
+      
+      // B2C Revenue
+      const b2cPaidPurchases = allPurchases.filter((p: any) => p.purchase.resultsAccessPaid);
+      const b2cRevenueTotal = b2cPaidPurchases.reduce((sum: number, p: any) => 
+        sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+      const b2cRevenueThisMonth = b2cPaidPurchases
+        .filter((p: any) => p.purchase.completedAt && new Date(p.purchase.completedAt) >= thisMonthStart)
+        .reduce((sum: number, p: any) => sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+      const b2cRevenueLastMonth = b2cPaidPurchases
+        .filter((p: any) => {
+          if (!p.purchase.completedAt) return false;
+          const date = new Date(p.purchase.completedAt);
+          return date >= lastMonthStart && date <= lastMonthEnd;
+        })
+        .reduce((sum: number, p: any) => sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+      
+      // B2B Revenue
+      const b2bPaidInvoices = allInvoices.filter(i => i.status === 'paid');
+      const b2bRevenueTotal = b2bPaidInvoices.reduce((sum, i) => 
+        sum + toGBP(i.totalAmount, i.currency), 0);
+      const b2bRevenueThisMonth = b2bPaidInvoices
+        .filter(i => i.paidAt && new Date(i.paidAt) >= thisMonthStart)
+        .reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+      const b2bRevenueLastMonth = b2bPaidInvoices
+        .filter(i => {
+          if (!i.paidAt) return false;
+          const date = new Date(i.paidAt);
+          return date >= lastMonthStart && date <= lastMonthEnd;
+        })
+        .reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+      
+      // Monthly revenue trends (last 12 months)
+      const monthlyTrends = [];
+      for (let i = 11; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        
+        const b2cMonthRevenue = b2cPaidPurchases
+          .filter((p: any) => {
+            if (!p.purchase.completedAt) return false;
+            const date = new Date(p.purchase.completedAt);
+            return date >= monthStart && date <= monthEnd;
+          })
+          .reduce((sum: number, p: any) => sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+        
+        const b2bMonthRevenue = b2bPaidInvoices
+          .filter(i => {
+            if (!i.paidAt) return false;
+            const date = new Date(i.paidAt);
+            return date >= monthStart && date <= monthEnd;
+          })
+          .reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+        
+        monthlyTrends.push({
+          month: monthStart.toISOString().slice(0, 7),
+          monthLabel: monthStart.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+          b2cRevenue: b2cMonthRevenue,
+          b2bRevenue: b2bMonthRevenue,
+          totalRevenue: b2cMonthRevenue + b2bMonthRevenue,
+        });
+      }
+      
+      // Revenue by billing type
+      const revenueByBillingType = {
+        payg: 0,
+        subscription: 0,
+        enterprise: 0,
+      };
+      
+      allPartners.forEach((partner: any) => {
+        const partnerInvoices = b2bPaidInvoices.filter(i => i.partnerId === partner.id);
+        const partnerRevenue = partnerInvoices.reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+        const billingType = partner.billingType as 'payg' | 'subscription' | 'enterprise';
+        if (revenueByBillingType[billingType] !== undefined) {
+          revenueByBillingType[billingType] += partnerRevenue;
+        }
+      });
+      
+      // MRR calculation (Monthly Recurring Revenue - subscription partners)
+      const subscriptionPartners = allPartners.filter((p: any) => p.billingType === 'subscription' && !p.isSuspended);
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const mrrUsage = allPartnerUsage.filter((u: any) => 
+        u.monthKey === currentMonthKey && 
+        subscriptionPartners.some((p: any) => p.id === u.partnerId)
+      );
+      const mrr = mrrUsage.reduce((sum: number, u: any) => sum + (u.amountDue || 0), 0);
+      
+      // ARR (Annual Recurring Revenue)
+      const arr = mrr * 12;
+      
+      // Top partners by revenue
+      const partnerRevenues = allPartners.map((partner: any) => {
+        const partnerInvoices = b2bPaidInvoices.filter(i => i.partnerId === partner.id);
+        const totalRevenue = partnerInvoices.reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+        return {
+          partnerId: partner.id,
+          partnerName: partner.companyName || partner.name,
+          billingType: partner.billingType,
+          totalRevenue,
+          invoiceCount: partnerInvoices.length,
+        };
+      }).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+      
+      res.json({
+        overview: {
+          totalRevenue: b2cRevenueTotal + b2bRevenueTotal,
+          b2cRevenue: b2cRevenueTotal,
+          b2bRevenue: b2bRevenueTotal,
+          mrr,
+          arr,
+          thisMonth: {
+            total: b2cRevenueThisMonth + b2bRevenueThisMonth,
+            b2c: b2cRevenueThisMonth,
+            b2b: b2bRevenueThisMonth,
+          },
+          lastMonth: {
+            total: b2cRevenueLastMonth + b2bRevenueLastMonth,
+            b2c: b2cRevenueLastMonth,
+            b2b: b2bRevenueLastMonth,
+          },
+          growthRate: b2cRevenueLastMonth + b2bRevenueLastMonth > 0
+            ? (((b2cRevenueThisMonth + b2bRevenueThisMonth) - (b2cRevenueLastMonth + b2bRevenueLastMonth)) / 
+               (b2cRevenueLastMonth + b2bRevenueLastMonth) * 100).toFixed(1)
+            : 0,
+        },
+        monthlyTrends,
+        revenueByBillingType,
+        topPartners: partnerRevenues,
+        metrics: {
+          b2cTransactions: b2cPaidPurchases.length,
+          b2bInvoicesPaid: b2bPaidInvoices.length,
+          activeSubscriptions: subscriptionPartners.length,
+          averageB2cOrder: b2cPaidPurchases.length > 0 
+            ? Math.round(b2cRevenueTotal / b2cPaidPurchases.length) 
+            : 0,
+          averageB2bInvoice: b2bPaidInvoices.length > 0 
+            ? Math.round(b2bRevenueTotal / b2bPaidInvoices.length) 
+            : 0,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching revenue dashboard:", error);
+      res.status(500).json({ message: "Failed to fetch revenue dashboard" });
+    }
+  });
+
   // ==================== BILLING ADMIN API ====================
 
   // Super Admin: Get billing statistics

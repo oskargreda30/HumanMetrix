@@ -1755,3 +1755,33 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
+// Audit logs - tracks all admin actions for compliance and debugging
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  userEmail: varchar("user_email"), // Stored separately in case user is deleted
+  userRole: varchar("user_role"),
+  action: varchar("action").notNull(), // e.g., 'user.create', 'partner.update', 'invoice.cancel'
+  resourceType: varchar("resource_type").notNull(), // e.g., 'user', 'partner', 'invoice', 'api_key'
+  resourceId: varchar("resource_id"), // ID of the affected resource
+  details: jsonb("details").$type<Record<string, any>>(), // Additional context (before/after values, etc.)
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  severity: varchar("severity").notNull().default("info"), // 'info', 'warning', 'critical'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_audit_logs_user").on(table.userId),
+  index("idx_audit_logs_action").on(table.action),
+  index("idx_audit_logs_resource").on(table.resourceType, table.resourceId),
+  index("idx_audit_logs_severity").on(table.severity),
+  index("idx_audit_logs_created").on(table.createdAt),
+]);
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+
