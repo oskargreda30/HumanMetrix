@@ -1599,46 +1599,84 @@ function TeamAnalysisResults({
       {/* Capability Gap Matrix - Visual Overview */}
       {analysis.capabilityGapMatrix && analysis.capabilityGapMatrix.length > 0 && (
         <div>
-          <h4 className="font-semibold mb-4 flex items-center gap-2">
+          <h4 className="font-semibold mb-2 flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Capability Gap Matrix
+            Capability Gap Analysis
           </h4>
-          <div className="grid gap-3">
+          <p className="text-sm text-muted-foreground mb-4">
+            Compare your team's current capability levels against what's needed for mission success. 
+            The gap score shows how much additional capacity would strengthen each area.
+          </p>
+          <div className="space-y-4">
             {analysis.capabilityGapMatrix.map((item: any, i: number) => {
               const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
-              const strengthColors = {
-                strong: "bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700",
-                adequate: "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700",
-                weak: "bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700",
-                critical: "bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-700",
+              // Calculate scores - assume currentScore and targetScore are provided, or derive from teamStrength
+              const strengthToScore: Record<string, number> = {
+                strong: 85,
+                adequate: 65,
+                weak: 40,
+                critical: 20,
               };
-              const strengthBadge = {
-                strong: "default",
-                adequate: "secondary",
-                weak: "outline",
-                critical: "destructive",
+              const priorityToTarget: Record<string, number> = {
+                critical: 90,
+                high: 80,
+                medium: 65,
+                low: 50,
               };
+              const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
+              const targetScore = item.targetScore ?? priorityToTarget[item.missionPriority] ?? 70;
+              const gap = Math.max(0, targetScore - currentScore);
+              const gapColor = gap >= 30 ? "text-red-600 dark:text-red-400" : 
+                               gap >= 15 ? "text-amber-600 dark:text-amber-400" : 
+                               "text-green-600 dark:text-green-400";
+              
               return (
-                <div 
-                  key={i}
-                  className={`p-4 rounded-lg border ${strengthColors[item.teamStrength as keyof typeof strengthColors] || "bg-muted"}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
+                <div key={i} className="bg-muted/30 rounded-lg p-4 border">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className={`h-8 w-8 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
+                      <div className={`h-7 w-7 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
                         <span className="text-white text-xs font-bold">{item.code}</span>
                       </div>
                       <span className="font-medium">{item.capability}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        Mission: {item.missionPriority}
-                      </Badge>
-                      <Badge variant={strengthBadge[item.teamStrength as keyof typeof strengthBadge] as any}>
-                        {item.teamStrength}
-                      </Badge>
+                    <div className={`text-sm font-semibold ${gapColor}`}>
+                      {gap > 0 ? `+${gap} gap` : "On target"}
                     </div>
                   </div>
+                  
+                  {/* Horizontal bar chart */}
+                  <div className="relative h-6 bg-muted rounded-full overflow-hidden mb-2">
+                    {/* Target marker line */}
+                    <div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-foreground/60 z-10"
+                      style={{ left: `${targetScore}%` }}
+                    />
+                    {/* Current score bar */}
+                    <div 
+                      className={`h-full rounded-full transition-all ${capInfo?.color || "bg-primary"}`}
+                      style={{ width: `${currentScore}%`, opacity: 0.8 }}
+                    />
+                    {/* Target score indicator (hollow) */}
+                    <div 
+                      className="absolute top-0 h-full border-2 border-dashed border-foreground/40 rounded-full"
+                      style={{ width: `${targetScore}%` }}
+                    />
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <div className={`h-2 w-4 rounded ${capInfo?.color || "bg-primary"}`} style={{ opacity: 0.8 }} />
+                        Current: {currentScore}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <div className="h-2 w-4 rounded border-2 border-dashed border-foreground/40" />
+                        Target: {targetScore}
+                      </span>
+                    </div>
+                  </div>
+                  
                   <p className="text-sm text-muted-foreground">{item.gapAnalysis}</p>
                 </div>
               );
