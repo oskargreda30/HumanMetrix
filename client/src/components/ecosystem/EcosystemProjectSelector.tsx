@@ -187,7 +187,7 @@ export function EcosystemProjectSelector({
 
               <div className="mt-3 pt-3 border-t flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  Step {project.currentStep}/5
+                  {project.currentStep >= 5 ? "View Report" : `Step ${Math.min(project.currentStep, 4)}/4`}
                 </span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </div>

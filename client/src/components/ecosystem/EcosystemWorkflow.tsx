@@ -6,6 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  Radar, 
+  ResponsiveContainer,
+  Tooltip
+} from "recharts";
 import {
   Select,
   SelectContent,
@@ -895,6 +904,7 @@ export function EcosystemWorkflow({
                 analysis={teamAnalysis} 
                 companyName={project.companyName || "Your Team"}
                 project={project}
+                teamMembers={teamMembers}
               />
             </div>
           )}
@@ -1103,31 +1113,75 @@ export function EcosystemWorkflow({
 function TeamAnalysisResults({ 
   analysis, 
   companyName,
-  project
+  project,
+  teamMembers
 }: { 
   analysis: EcosystemTeamAnalysis; 
   companyName: string;
   project: any;
+  teamMembers: EcosystemTeamMember[];
 }) {
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
+  
+  // Calculate cumulative scores for radar chart
+  const cumulativeScores = FIT_CAPABILITIES.map(cap => {
+    const totalScore = teamMembers.reduce((sum, member) => {
+      const scores = member.fitScores as Record<string, number> | null;
+      const score = scores?.[cap.code] || 0;
+      return sum + score;
+    }, 0);
+    return {
+      capability: cap.name,
+      code: cap.code,
+      score: totalScore,
+      maxPossible: teamMembers.length * 100,
+    };
+  });
   
   return (
     <div className="space-y-8">
       {/* Header with Scores */}
-      <div className="flex items-center justify-between pb-4 border-b">
+      <div className="flex items-center justify-between pb-4 border-b flex-wrap gap-2">
         <div>
           <h3 className="text-xl font-semibold">Team Diagnostic Report</h3>
           <p className="text-sm text-muted-foreground">
             {analysis.teamSize} team members • Generated {new Date(analysis.generatedAt).toLocaleDateString()}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Badge variant={analysis.overallHealthScore >= 70 ? "default" : analysis.overallHealthScore >= 50 ? "secondary" : "destructive"}>
             Health: {analysis.overallHealthScore}%
           </Badge>
           <Badge variant={analysis.missionAlignmentScore >= 70 ? "default" : analysis.missionAlignmentScore >= 50 ? "secondary" : "destructive"}>
             Mission Fit: {analysis.missionAlignmentScore}%
           </Badge>
+        </div>
+      </div>
+      
+      {/* Score Explanations */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+          <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+            <Heart className="h-4 w-4 text-green-600" />
+            Health Score: {analysis.overallHealthScore}%
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Your team's Health Score measures overall capability coverage and risk exposure. 
+            It considers: critical gaps in high-priority skills (-20 each), warning-level gaps (-10 each), 
+            and identified risks like single points of failure (-5 each). A score above 70% indicates 
+            a well-balanced team with minimal vulnerabilities.
+          </p>
+        </div>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+          <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+            <Target className="h-4 w-4 text-blue-600" />
+            Mission Fit: {analysis.missionAlignmentScore}%
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            The Mission Fit score measures how well your team's capabilities align with your stated mission. 
+            Critical priority skills that are weak reduce this score by 20%, high priority gaps by 15%. 
+            A score above 70% means your team is well-positioned to achieve your organizational goals.
+          </p>
         </div>
       </div>
 
@@ -1293,53 +1347,74 @@ function TeamAnalysisResults({
         </div>
       )}
 
-      {/* Strategic Insights */}
-      {analysis.strategicInsights && analysis.strategicInsights.length > 0 && (
-        <div>
-          <h4 className="font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Strategic Insights
-          </h4>
-          <div className="grid gap-3">
-            {analysis.strategicInsights.map((insight: any, i: number) => {
-              const categoryStyles = {
-                strength: { bg: "bg-green-50 dark:bg-green-900/20", border: "border-green-200 dark:border-green-800", icon: "text-green-600" },
-                gap: { bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-800", icon: "text-red-600" },
-                risk: { bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-200 dark:border-amber-800", icon: "text-amber-600" },
-                opportunity: { bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-800", icon: "text-blue-600" },
-              };
-              const style = categoryStyles[insight.category as keyof typeof categoryStyles] || categoryStyles.opportunity;
+      {/* Team Capability Radar Chart */}
+      <div>
+        <h4 className="font-semibold mb-4 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4" />
+          Team Cumulative Capability Profile
+        </h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          This radar chart shows your team's combined scores across all six FIT capabilities. 
+          With {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''}, the maximum possible score for each capability is {teamMembers.length * 100}.
+        </p>
+        <div className="bg-muted/30 rounded-lg p-4 border">
+          <div className="h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={cumulativeScores} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis 
+                  dataKey="code" 
+                  tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                />
+                <PolarRadiusAxis 
+                  angle={30} 
+                  domain={[0, teamMembers.length * 100]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  tickCount={5}
+                />
+                <Radar
+                  name="Team Score"
+                  dataKey="score"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number, name: string, props: any) => [
+                    `${value} / ${props.payload.maxPossible} (${Math.round((value / props.payload.maxPossible) * 100)}%)`,
+                    props.payload.capability
+                  ]}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 pt-4 border-t">
+            {cumulativeScores.map((item) => {
+              const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
+              const percentage = Math.round((item.score / item.maxPossible) * 100);
               return (
-                <div 
-                  key={i}
-                  className={`p-4 rounded-lg border ${style.bg} ${style.border}`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {insight.category === "strength" && <CheckCircle className={`h-4 w-4 ${style.icon}`} />}
-                        {insight.category === "gap" && <Target className={`h-4 w-4 ${style.icon}`} />}
-                        {insight.category === "risk" && <AlertTriangle className={`h-4 w-4 ${style.icon}`} />}
-                        {insight.category === "opportunity" && <Sparkles className={`h-4 w-4 ${style.icon}`} />}
-                        <span className="font-medium">{insight.title}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{insight.analysis}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={insight.impact === "critical" ? "destructive" : insight.impact === "high" ? "default" : "secondary"}>
-                        {insight.impact}
-                      </Badge>
-                      {insight.actionRequired && (
-                        <span className="text-xs text-destructive font-medium">Action Required</span>
-                      )}
-                    </div>
+                <div key={item.code} className="flex items-center gap-2">
+                  <div className={`h-6 w-6 rounded flex-shrink-0 flex items-center justify-center ${capInfo?.color || "bg-gray-500"}`}>
+                    <span className="text-white text-xs font-bold">{item.code}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">{item.capability}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.score}/{item.maxPossible} ({percentage}%)
+                    </p>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Ideal Hire Profiles - Strategic Recommendations */}
       {analysis.idealHireProfiles && analysis.idealHireProfiles.length > 0 && (
