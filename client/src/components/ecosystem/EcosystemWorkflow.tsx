@@ -108,9 +108,15 @@ export function EcosystemWorkflow({
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [showPdfUploadDialog, setShowPdfUploadDialog] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberRole, setMemberRole] = useState("");
   const [memberScores, setMemberScores] = useState<Record<string, number>>({});
+  
+  // PDF upload state
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [parsedPdfData, setParsedPdfData] = useState<{name?: string; scores?: Record<string, number>} | null>(null);
 
   // Expanded sections
   const [expandedStep, setExpandedStep] = useState<number>(1);
@@ -242,6 +248,96 @@ export function EcosystemWorkflow({
       toast({
         title: "Failed to remove",
         description: error.message || "Could not remove team member.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPdfFile(file);
+      setParsedPdfData(null);
+    }
+  };
+
+  const handleParsePdf = async () => {
+    if (!pdfFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a PDF file to parse.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPdfParsing(true);
+    try {
+      const formData = new FormData();
+      formData.append("pdf", pdfFile);
+      formData.append("projectId", projectId);
+
+      const response = await fetch("/api/ecosystem/parse-fit-pdf", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to parse PDF");
+      }
+
+      const data = await response.json();
+      setParsedPdfData(data);
+      
+      if (data.name && data.scores) {
+        setMemberName(data.name);
+        setMemberScores(data.scores);
+        toast({
+          title: "PDF parsed successfully",
+          description: `Found scores for ${data.name}. Review and add to team.`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "PDF parsing failed",
+        description: error.message || "Could not extract FIT scores from PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setPdfParsing(false);
+    }
+  };
+
+  const handleAddFromPdf = async () => {
+    if (!parsedPdfData?.name || !parsedPdfData?.scores) {
+      toast({
+        title: "No parsed data",
+        description: "Please parse a PDF first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await addTeamMember.mutateAsync({
+        projectId,
+        name: parsedPdfData.name,
+        sourceType: "pdf_upload",
+        fitScores: parsedPdfData.scores,
+      });
+      toast({
+        title: "Team member added",
+        description: `${parsedPdfData.name} has been added from PDF.`,
+      });
+      setShowPdfUploadDialog(false);
+      setPdfFile(null);
+      setParsedPdfData(null);
+    } catch (error: any) {
+      toast({
+        title: "Failed to add member",
+        description: error.message || "Could not add team member.",
         variant: "destructive",
       });
     }
@@ -600,7 +696,7 @@ export function EcosystemWorkflow({
         />
         {expandedStep === 3 && (
           <div className="p-6 pt-0 space-y-4">
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3">
               <Button 
                 variant="outline" 
                 onClick={() => setShowAddMemberDialog(true)}
@@ -608,6 +704,14 @@ export function EcosystemWorkflow({
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Member Manually
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPdfUploadDialog(true)}
+                data-testid="button-upload-pdf"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload FIT Report PDF
               </Button>
               {isPartnerDashboard && partnerId && (
                 <Button variant="outline" disabled data-testid="button-invite-from-candidates">
@@ -837,6 +941,120 @@ export function EcosystemWorkflow({
                 <Plus className="mr-2 h-4 w-4" />
               )}
               Add Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload PDF Dialog */}
+      <Dialog open={showPdfUploadDialog} onOpenChange={setShowPdfUploadDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Upload FIT Report PDF</DialogTitle>
+            <DialogDescription>
+              Upload a HumanMetrix FIT assessment PDF to automatically extract scores
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <Label htmlFor="pdf-upload" className="cursor-pointer">
+                <span className="text-primary hover:underline">Click to upload</span>
+                <span className="text-muted-foreground"> or drag and drop</span>
+              </Label>
+              <Input
+                id="pdf-upload"
+                type="file"
+                accept=".pdf"
+                onChange={handlePdfFileChange}
+                className="hidden"
+                data-testid="input-pdf-upload"
+              />
+              <p className="text-xs text-muted-foreground mt-2">PDF files only (max 10MB)</p>
+            </div>
+
+            {pdfFile && (
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{pdfFile.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(pdfFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleParsePdf}
+                  disabled={pdfParsing}
+                  data-testid="button-parse-pdf"
+                >
+                  {pdfParsing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Parsing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Parse PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {parsedPdfData && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-700 dark:text-green-400">Scores Extracted</span>
+                </div>
+                {parsedPdfData.name && (
+                  <p className="text-sm mb-2">Name: <span className="font-medium">{parsedPdfData.name}</span></p>
+                )}
+                {parsedPdfData.scores && (
+                  <div className="flex flex-wrap gap-2">
+                    {FIT_CAPABILITIES.map((cap) => {
+                      const score = parsedPdfData.scores?.[cap.code];
+                      return score !== undefined ? (
+                        <div 
+                          key={cap.code}
+                          className={`${cap.color} text-white text-xs px-2 py-1 rounded font-medium`}
+                        >
+                          {cap.code}: {score}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowPdfUploadDialog(false);
+                setPdfFile(null);
+                setParsedPdfData(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddFromPdf}
+              disabled={!parsedPdfData || addTeamMember.isPending}
+              data-testid="button-add-from-pdf"
+            >
+              {addTeamMember.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Add to Team
             </Button>
           </DialogFooter>
         </DialogContent>

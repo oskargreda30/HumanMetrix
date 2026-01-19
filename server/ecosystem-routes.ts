@@ -3,6 +3,8 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import { z } from "zod";
+import multer from "multer";
+import * as pdfParse from "pdf-parse";
 import type { 
   EcosystemMissionAnalysis,
   EcosystemTeamAnalysis,
@@ -11,6 +13,19 @@ import type {
   EcosystemHireRecommendation,
   EcosystemRiskAlert,
 } from "@shared/schema";
+
+// Configure multer for PDF uploads (memory storage, max 10MB)
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files are allowed"));
+    }
+  },
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -894,6 +909,83 @@ export function registerEcosystemRoutes(app: Express): void {
     } catch (error: any) {
       console.error("[Ecosystem] Error deleting team member:", error);
       res.status(500).json({ error: "Failed to delete team member" });
+    }
+  });
+
+  // Parse FIT scores from PDF
+  app.post("/api/ecosystem/parse-fit-pdf", isAuthenticated, pdfUpload.single("pdf"), async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: "No PDF file uploaded" });
+      }
+
+      // Parse the PDF
+      const pdfData = await (pdfParse as any).default(file.buffer);
+      const text = pdfData.text;
+
+      // Extract name from PDF (look for common patterns in HumanMetrix FIT reports)
+      let name = "";
+      const namePatterns = [
+        /Candidate:\s*([A-Za-z\s]+)/i,
+        /Name:\s*([A-Za-z\s]+)/i,
+        /FIT Assessment Report\s+for\s+([A-Za-z\s]+)/i,
+        /Assessment Results\s+([A-Za-z\s]+)/i,
+      ];
+      for (const pattern of namePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          name = match[1].trim();
+          break;
+        }
+      }
+
+      // Extract FIT scores using regex patterns
+      const scores: Record<string, number> = {};
+      const scorePatterns = [
+        { code: "HA", patterns: [/High Agency[:\s]+(\d+)/i, /HA[:\s]+(\d+)/i] },
+        { code: "IC", patterns: [/Intellectual Curiosity[:\s]+(\d+)/i, /IC[:\s]+(\d+)/i] },
+        { code: "RA", patterns: [/Resilience[:\s&]+Adaptability[:\s]+(\d+)/i, /RA[:\s]+(\d+)/i, /Resilience[:\s]+(\d+)/i] },
+        { code: "EE", patterns: [/Empathy[:\s&]+Ethics[:\s]+(\d+)/i, /EE[:\s]+(\d+)/i] },
+        { code: "GM", patterns: [/Growth Mindset[:\s]+(\d+)/i, /GM[:\s]+(\d+)/i] },
+        { code: "IA", patterns: [/Interpersonal Agility[:\s]+(\d+)/i, /IA[:\s]+(\d+)/i] },
+      ];
+
+      for (const { code, patterns } of scorePatterns) {
+        for (const pattern of patterns) {
+          const match = text.match(pattern);
+          if (match) {
+            const score = parseInt(match[1], 10);
+            if (score >= 0 && score <= 100) {
+              scores[code] = score;
+              break;
+            }
+          }
+        }
+      }
+
+      if (Object.keys(scores).length === 0) {
+        return res.status(400).json({ 
+          error: "Could not extract FIT scores from PDF", 
+          hint: "Please ensure this is a valid HumanMetrix FIT assessment report."
+        });
+      }
+
+      console.log("[Ecosystem] Parsed PDF scores:", { name, scores, extractedText: text.substring(0, 500) });
+
+      res.json({ 
+        name: name || "Unknown Candidate",
+        scores,
+        extractedFields: Object.keys(scores).length,
+      });
+    } catch (error: any) {
+      console.error("[Ecosystem] Error parsing PDF:", error);
+      res.status(500).json({ error: "Failed to parse PDF", details: error.message });
     }
   });
 
