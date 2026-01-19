@@ -1871,7 +1871,33 @@ export type EcosystemRiskAlert = {
   recommendation: string;
 };
 
-// Full team analysis result
+// Strategic advisor insight
+export type EcosystemStrategicInsight = {
+  category: "strength" | "gap" | "risk" | "opportunity";
+  title: string;
+  analysis: string; // Deep explanation from AI
+  impact: "critical" | "high" | "medium" | "low";
+  actionRequired: boolean;
+};
+
+// Ideal hire profile
+export type EcosystemIdealHireProfile = {
+  roleTitle: string;
+  priority: number;
+  rationale: string; // AI-generated strategic reasoning
+  fitTargets: {
+    HA: { min: number; ideal: number };
+    IC: { min: number; ideal: number };
+    RA: { min: number; ideal: number };
+    EE: { min: number; ideal: number };
+    GM: { min: number; ideal: number };
+    IA: { min: number; ideal: number };
+  };
+  keyBehaviors: string[]; // What to look for in interviews
+  redFlags: string[]; // What to avoid
+};
+
+// Full team analysis result (enhanced with strategic advisor content)
 export type EcosystemTeamAnalysis = {
   generatedAt: string;
   teamSize: number;
@@ -1881,6 +1907,24 @@ export type EcosystemTeamAnalysis = {
   hireRecommendations: EcosystemHireRecommendation[];
   riskAlerts: EcosystemRiskAlert[];
   overallHealthScore: number; // 0-100
+  
+  // Enhanced strategic advisor content
+  executiveSummary?: string; // AI-generated strategic summary
+  strategicInsights?: EcosystemStrategicInsight[];
+  idealHireProfiles?: EcosystemIdealHireProfile[];
+  capabilityGapMatrix?: {
+    capability: string;
+    code: string;
+    missionPriority: "critical" | "high" | "medium" | "low";
+    teamStrength: "strong" | "adequate" | "weak" | "critical";
+    gapAnalysis: string; // AI-generated insight
+  }[];
+  growthRoadmap?: {
+    phase: string;
+    timeline: string;
+    focus: string;
+    hiringPriorities: string[];
+  }[];
 };
 
 // Ecosystem project status
@@ -1911,13 +1955,18 @@ export const ecosystemProjects = pgTable("ecosystem_projects", {
   companyEthos: text("company_ethos"),
   missionAnalysis: jsonb("mission_analysis").$type<EcosystemMissionAnalysis | null>(),
   
-  // Step 3: Organization context
+  // Step 2: Organization context
   companyName: varchar("company_name"),
   companySize: varchar("company_size"), // 1-10, 11-50, 51-200, 201-500, 500+
   industry: varchar("industry"),
   teamFunction: varchar("team_function"), // Engineering, Sales, HR, etc.
   teamSize: integer("team_size"),
   workMode: varchar("work_mode"), // remote, hybrid, onsite
+  
+  // Enhanced team context
+  teamStage: varchar("team_stage"), // new, growing, mature, restructuring
+  hiringPlans: varchar("hiring_plans"), // 0, 1-3, 4-10, 10+
+  currentChallenges: text("current_challenges"), // free text describing team challenges
   
   // Step 6: Team analysis results
   teamAnalysis: jsonb("team_analysis").$type<EcosystemTeamAnalysis | null>(),

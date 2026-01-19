@@ -122,12 +122,13 @@ export function useUpdateOrganizationContext() {
       ...data 
     }: { 
       projectId: string; 
-      companyName: string;
-      companySize: string;
       industry: string;
       teamFunction: string;
       teamSize: number;
       workMode: string;
+      teamStage: string;
+      hiringPlans: string;
+      currentChallenges?: string;
     }) => {
       const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/organization-context`, data);
       return response.json();
@@ -153,7 +154,6 @@ export function useAddTeamMember() {
     }: { 
       projectId: string; 
       name?: string;
-      email?: string;
       role?: string;
       sourceType: string;
       sourceId?: string;

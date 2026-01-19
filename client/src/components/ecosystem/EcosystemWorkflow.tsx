@@ -98,17 +98,17 @@ export function EcosystemWorkflow({
   // Form states
   const [missionStatement, setMissionStatement] = useState("");
   const [companyEthos, setCompanyEthos] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companySize, setCompanySize] = useState("");
   const [industry, setIndustry] = useState("");
   const [teamFunction, setTeamFunction] = useState("");
   const [teamSize, setTeamSize] = useState("");
   const [workMode, setWorkMode] = useState("");
+  const [teamStage, setTeamStage] = useState("");
+  const [hiringPlans, setHiringPlans] = useState("");
+  const [currentChallenges, setCurrentChallenges] = useState("");
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const [memberName, setMemberName] = useState("");
-  const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("");
   const [memberScores, setMemberScores] = useState<Record<string, number>>({});
 
@@ -120,12 +120,13 @@ export function EcosystemWorkflow({
     if (project) {
       setMissionStatement(project.missionStatement || "");
       setCompanyEthos(project.companyEthos || "");
-      setCompanyName(project.companyName || "");
-      setCompanySize(project.companySize || "");
       setIndustry(project.industry || "");
       setTeamFunction(project.teamFunction || "");
       setTeamSize(project.teamSize?.toString() || "");
       setWorkMode(project.workMode || "");
+      setTeamStage(project.teamStage || "");
+      setHiringPlans(project.hiringPlans || "");
+      setCurrentChallenges(project.currentChallenges || "");
       setExpandedStep(project.currentStep || 1);
     }
   }, [project]);
@@ -161,10 +162,10 @@ export function EcosystemWorkflow({
   };
 
   const handleSaveOrgContext = async () => {
-    if (!companyName.trim() || !companySize || !industry || !teamFunction || !teamSize || !workMode) {
+    if (!industry || !teamFunction || !teamSize || !workMode || !teamStage || !hiringPlans) {
       toast({
         title: "Missing information",
-        description: "Please fill in all organization details.",
+        description: "Please fill in all team context details.",
         variant: "destructive",
       });
       return;
@@ -173,12 +174,13 @@ export function EcosystemWorkflow({
     try {
       await updateOrgContext.mutateAsync({
         projectId,
-        companyName,
-        companySize,
         industry,
         teamFunction,
         teamSize: parseInt(teamSize, 10),
         workMode,
+        teamStage,
+        hiringPlans,
+        currentChallenges,
       });
       toast({
         title: "Organization context saved",
@@ -208,7 +210,6 @@ export function EcosystemWorkflow({
       await addTeamMember.mutateAsync({
         projectId,
         name: memberName,
-        email: memberEmail || undefined,
         role: memberRole || undefined,
         sourceType: "manual",
         fitScores: Object.keys(memberScores).length > 0 ? memberScores : undefined,
@@ -219,7 +220,6 @@ export function EcosystemWorkflow({
       });
       setShowAddMemberDialog(false);
       setMemberName("");
-      setMemberEmail("");
       setMemberRole("");
       setMemberScores({});
     } catch (error: any) {
@@ -442,44 +442,29 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 2: Organization Context */}
+      {/* Step 2: Team Context */}
       <Card data-testid="step-2-org-context">
         <StepHeader 
           step={2} 
-          title="Organization Context" 
-          description="Tell us about your company and team"
-          completed={!!project.companyName}
+          title="Team Context" 
+          description="Help us understand your team's situation and needs"
+          completed={!!industry && !!teamStage}
         />
         {expandedStep === 2 && (
-          <div className="p-6 pt-0 space-y-4">
+          <div className="p-6 pt-0 space-y-6">
+            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <Target className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Context Matters</p>
+                <p className="text-sm text-muted-foreground">
+                  The more context you provide, the more strategic and relevant our hiring recommendations will be.
+                </p>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="company-name">Company Name</Label>
-                <Input
-                  id="company-name"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Acme Corporation"
-                  data-testid="input-company-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-size">Company Size</Label>
-                <Select value={companySize} onValueChange={setCompanySize}>
-                  <SelectTrigger data-testid="select-company-size">
-                    <SelectValue placeholder="Select size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1-10 employees</SelectItem>
-                    <SelectItem value="11-50">11-50 employees</SelectItem>
-                    <SelectItem value="51-200">51-200 employees</SelectItem>
-                    <SelectItem value="201-500">201-500 employees</SelectItem>
-                    <SelectItem value="500+">500+ employees</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
+                <Label htmlFor="industry">Industry *</Label>
                 <Select value={industry} onValueChange={setIndustry}>
                   <SelectTrigger data-testid="select-industry">
                     <SelectValue placeholder="Select industry" />
@@ -497,7 +482,21 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="team-function">Team Function</Label>
+                <Label htmlFor="team-stage">Team Stage *</Label>
+                <Select value={teamStage} onValueChange={setTeamStage}>
+                  <SelectTrigger data-testid="select-team-stage">
+                    <SelectValue placeholder="Select stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New Team (0-6 months)</SelectItem>
+                    <SelectItem value="growing">Growing (scaling up)</SelectItem>
+                    <SelectItem value="mature">Mature (established)</SelectItem>
+                    <SelectItem value="restructuring">Restructuring</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="team-function">Team Function *</Label>
                 <Select value={teamFunction} onValueChange={setTeamFunction}>
                   <SelectTrigger data-testid="select-team-function">
                     <SelectValue placeholder="Select function" />
@@ -515,7 +514,7 @@ export function EcosystemWorkflow({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="team-size">Team Size</Label>
+                <Label htmlFor="team-size">Current Team Size *</Label>
                 <Input
                   id="team-size"
                   type="number"
@@ -527,7 +526,7 @@ export function EcosystemWorkflow({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="work-mode">Work Mode</Label>
+                <Label htmlFor="work-mode">Work Mode *</Label>
                 <Select value={workMode} onValueChange={setWorkMode}>
                   <SelectTrigger data-testid="select-work-mode">
                     <SelectValue placeholder="Select mode" />
@@ -539,6 +538,35 @@ export function EcosystemWorkflow({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="hiring-plans">Hiring Plans (next 12 months) *</Label>
+                <Select value={hiringPlans} onValueChange={setHiringPlans}>
+                  <SelectTrigger data-testid="select-hiring-plans">
+                    <SelectValue placeholder="Select hiring plans" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No planned hires</SelectItem>
+                    <SelectItem value="1-3">1-3 hires</SelectItem>
+                    <SelectItem value="4-10">4-10 hires</SelectItem>
+                    <SelectItem value="10+">10+ hires</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="current-challenges">Current Challenges (Optional)</Label>
+              <Textarea
+                id="current-challenges"
+                value={currentChallenges}
+                onChange={(e) => setCurrentChallenges(e.target.value)}
+                placeholder="Describe any challenges your team is facing... e.g., 'We struggle with meeting deadlines', 'Need to improve cross-team collaboration', 'Looking to build a stronger culture of innovation'"
+                className="min-h-[100px]"
+                data-testid="textarea-current-challenges"
+              />
+              <p className="text-xs text-muted-foreground">
+                This helps us provide more targeted and relevant recommendations
+              </p>
             </div>
 
             <Button 
@@ -768,18 +796,6 @@ export function EcosystemWorkflow({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="member-email">Email</Label>
-              <Input
-                id="member-email"
-                type="email"
-                value={memberEmail}
-                onChange={(e) => setMemberEmail(e.target.value)}
-                placeholder="john@company.com"
-                data-testid="input-member-email"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label>FIT Scores (0-100)</Label>
               <div className="grid grid-cols-2 gap-2">
                 {FIT_CAPABILITIES.map((cap) => (
@@ -829,7 +845,7 @@ export function EcosystemWorkflow({
   );
 }
 
-// Team Analysis Results Component
+// Team Analysis Results Component - Strategic Advisor Report
 function TeamAnalysisResults({ 
   analysis, 
   companyName 
@@ -838,11 +854,11 @@ function TeamAnalysisResults({
   companyName: string;
 }) {
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-8">
+      {/* Header with Scores */}
       <div className="flex items-center justify-between pb-4 border-b">
         <div>
-          <h3 className="text-lg font-semibold">{companyName}</h3>
+          <h3 className="text-xl font-semibold">Team Diagnostic Report</h3>
           <p className="text-sm text-muted-foreground">
             {analysis.teamSize} team members • Generated {new Date(analysis.generatedAt).toLocaleDateString()}
           </p>
@@ -852,73 +868,199 @@ function TeamAnalysisResults({
             Health: {analysis.overallHealthScore}%
           </Badge>
           <Badge variant={analysis.missionAlignmentScore >= 70 ? "default" : analysis.missionAlignmentScore >= 50 ? "secondary" : "destructive"}>
-            Alignment: {analysis.missionAlignmentScore}%
+            Mission Fit: {analysis.missionAlignmentScore}%
           </Badge>
         </div>
       </div>
 
-      {/* Capability Distribution */}
-      <div>
-        <h4 className="font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" />
-          Capability Distribution
-        </h4>
-        <div className="space-y-3">
-          {FIT_CAPABILITIES.map((cap) => {
-            const dist = analysis.capabilityDistribution[cap.code];
-            if (!dist) return null;
-            return (
-              <div key={cap.code} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{cap.name}</span>
-                  <span className="text-muted-foreground">
-                    Avg: {dist.average}% • Coverage: {dist.coverage}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
-                    <div 
-                      className={`h-full ${cap.color} rounded-full`}
-                      style={{ width: `${dist.average}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground w-16">
-                    {dist.min}-{dist.max}%
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+      {/* Executive Summary - AI-Generated Strategic Narrative */}
+      {analysis.executiveSummary && (
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
+          <h4 className="font-semibold mb-4 flex items-center gap-2 text-lg">
+            <Brain className="h-5 w-5 text-primary" />
+            Strategic Assessment
+          </h4>
+          <div className="prose prose-sm max-w-none text-muted-foreground">
+            {analysis.executiveSummary.split('\n\n').map((paragraph, i) => (
+              <p key={i} className="mb-3 last:mb-0 leading-relaxed">{paragraph}</p>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Gap Analysis */}
-      {analysis.gapAnalysis.length > 0 && (
+      {/* Capability Gap Matrix - Visual Overview */}
+      {analysis.capabilityGapMatrix && analysis.capabilityGapMatrix.length > 0 && (
         <div>
           <h4 className="font-semibold mb-4 flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Gap Analysis
+            <BarChart3 className="h-4 w-4" />
+            Capability Gap Matrix
           </h4>
-          <div className="space-y-2">
-            {analysis.gapAnalysis.map((gap, i) => (
-              <div 
-                key={i}
-                className={`p-3 rounded-lg border ${
-                  gap.gapSeverity === "critical" ? "bg-destructive/5 border-destructive/20" :
-                  gap.gapSeverity === "warning" ? "bg-amber-50 border-amber-200" :
-                  "bg-green-50 border-green-200"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium">{gap.capability}</span>
-                  <Badge variant={
-                    gap.gapSeverity === "critical" ? "destructive" :
-                    gap.gapSeverity === "warning" ? "secondary" : "default"
-                  }>
-                    {gap.gapSeverity}
-                  </Badge>
+          <div className="grid gap-3">
+            {analysis.capabilityGapMatrix.map((item: any, i: number) => {
+              const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
+              const strengthColors = {
+                strong: "bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700",
+                adequate: "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700",
+                weak: "bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700",
+                critical: "bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-700",
+              };
+              const strengthBadge = {
+                strong: "default",
+                adequate: "secondary",
+                weak: "outline",
+                critical: "destructive",
+              };
+              return (
+                <div 
+                  key={i}
+                  className={`p-4 rounded-lg border ${strengthColors[item.teamStrength as keyof typeof strengthColors] || "bg-muted"}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-8 w-8 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
+                        <span className="text-white text-xs font-bold">{item.code}</span>
+                      </div>
+                      <span className="font-medium">{item.capability}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        Mission: {item.missionPriority}
+                      </Badge>
+                      <Badge variant={strengthBadge[item.teamStrength as keyof typeof strengthBadge] as any}>
+                        {item.teamStrength}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.gapAnalysis}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">{gap.reasoning}</p>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Strategic Insights */}
+      {analysis.strategicInsights && analysis.strategicInsights.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Strategic Insights
+          </h4>
+          <div className="grid gap-3">
+            {analysis.strategicInsights.map((insight: any, i: number) => {
+              const categoryStyles = {
+                strength: { bg: "bg-green-50 dark:bg-green-900/20", border: "border-green-200 dark:border-green-800", icon: "text-green-600" },
+                gap: { bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-800", icon: "text-red-600" },
+                risk: { bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-200 dark:border-amber-800", icon: "text-amber-600" },
+                opportunity: { bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-800", icon: "text-blue-600" },
+              };
+              const style = categoryStyles[insight.category as keyof typeof categoryStyles] || categoryStyles.opportunity;
+              return (
+                <div 
+                  key={i}
+                  className={`p-4 rounded-lg border ${style.bg} ${style.border}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {insight.category === "strength" && <CheckCircle className={`h-4 w-4 ${style.icon}`} />}
+                        {insight.category === "gap" && <Target className={`h-4 w-4 ${style.icon}`} />}
+                        {insight.category === "risk" && <AlertTriangle className={`h-4 w-4 ${style.icon}`} />}
+                        {insight.category === "opportunity" && <Sparkles className={`h-4 w-4 ${style.icon}`} />}
+                        <span className="font-medium">{insight.title}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{insight.analysis}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={insight.impact === "critical" ? "destructive" : insight.impact === "high" ? "default" : "secondary"}>
+                        {insight.impact}
+                      </Badge>
+                      {insight.actionRequired && (
+                        <span className="text-xs text-destructive font-medium">Action Required</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Ideal Hire Profiles - Strategic Recommendations */}
+      {analysis.idealHireProfiles && analysis.idealHireProfiles.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            Recommended Hire Profiles
+          </h4>
+          <div className="grid gap-4">
+            {analysis.idealHireProfiles.map((profile: any, i: number) => (
+              <div key={i} className="p-5 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="default" className="text-xs">Priority #{profile.priority}</Badge>
+                    </div>
+                    <h5 className="font-semibold text-lg">{profile.roleTitle}</h5>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-muted-foreground mb-4">{profile.rationale}</p>
+                
+                {/* FIT Score Targets */}
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Target FIT Scores</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {profile.fitTargets && Object.entries(profile.fitTargets).map(([code, targets]: [string, any]) => {
+                      const capInfo = FIT_CAPABILITIES.find(c => c.code === code);
+                      return (
+                        <div key={code} className="flex items-center gap-2 text-sm">
+                          <div className={`h-5 w-5 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
+                            <span className="text-white text-[10px] font-bold">{code}</span>
+                          </div>
+                          <span className="text-muted-foreground">
+                            {targets.min}-{targets.ideal}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Key Behaviors & Red Flags */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {profile.keyBehaviors && profile.keyBehaviors.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-green-600 mb-2 flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" /> Look For
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {profile.keyBehaviors.map((behavior: string, j: number) => (
+                          <li key={j} className="flex items-start gap-2">
+                            <span className="text-green-500 mt-1">•</span>
+                            {behavior}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {profile.redFlags && profile.redFlags.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-red-600 mb-2 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Red Flags
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {profile.redFlags.map((flag: string, j: number) => (
+                          <li key={j} className="flex items-start gap-2">
+                            <span className="text-red-500 mt-1">•</span>
+                            {flag}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -938,8 +1080,8 @@ function TeamAnalysisResults({
                 key={i}
                 className={`p-4 rounded-lg border ${
                   alert.severity === "critical" ? "bg-destructive/5 border-destructive/20" :
-                  alert.severity === "warning" ? "bg-amber-50 border-amber-200" :
-                  "bg-blue-50 border-blue-200"
+                  alert.severity === "warning" ? "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800" :
+                  "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -948,36 +1090,12 @@ function TeamAnalysisResults({
                     alert.severity === "warning" ? "text-amber-600" : "text-blue-600"
                   }`} />
                   <span className="font-medium">{alert.title}</span>
+                  <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"} className="ml-auto">
+                    {alert.severity}
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">{alert.description}</p>
-                <p className="text-sm font-medium">{alert.recommendation}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Hire Recommendations */}
-      {analysis.hireRecommendations.length > 0 && (
-        <div>
-          <h4 className="font-semibold mb-4 flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Next Hire Recommendations
-          </h4>
-          <div className="space-y-2">
-            {analysis.hireRecommendations.map((rec, i) => (
-              <div key={i} className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">#{rec.priorityRank}</Badge>
-                    <span className="font-medium">{rec.capability}</span>
-                  </div>
-                  <Badge variant="outline">Target: {rec.targetScore}%+</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{rec.reasoning}</p>
-                {rec.alignsWithMission && (
-                  <Badge variant="secondary" className="mt-2">Aligns with Mission</Badge>
-                )}
+                <p className="text-sm font-medium text-primary">{alert.recommendation}</p>
               </div>
             ))}
           </div>
