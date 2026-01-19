@@ -33,7 +33,7 @@ const DEMO_CANDIDATE = {
 const MOCK_FIT_SCORES = {
   "High Agency": 78,
   "Intellectual Curiosity": 85,
-  "Resilience": 72,
+  "Resilience": 68,
   "Empathy & Ethics": 88,
   "Growth Mindset": 81,
   "Interpersonal Agility": 76,
@@ -97,6 +97,16 @@ function generateMockAnalysis(assessmentType: string, scores: Record<string, num
         improvements.forEach(([skill, score]) => {
           if (skill === "Resilience") {
             analysis.improvements.push(`**Resilience** (${score}/100): Focus on stress management techniques, reframing setbacks as learning opportunities, and maintaining motivation through challenges.`);
+          } else if (skill === "High Agency") {
+            analysis.improvements.push(`**High Agency** (${score}/100): Develop greater initiative-taking behaviors, practice leading projects independently, and strengthen decision-making confidence.`);
+          } else if (skill === "Intellectual Curiosity") {
+            analysis.improvements.push(`**Intellectual Curiosity** (${score}/100): Cultivate deeper questioning habits, explore cross-disciplinary knowledge, and engage more actively with complex problems.`);
+          } else if (skill === "Empathy & Ethics") {
+            analysis.improvements.push(`**Empathy & Ethics** (${score}/100): Practice active listening, consider multiple perspectives in decision-making, and strengthen ethical reasoning in ambiguous situations.`);
+          } else if (skill === "Growth Mindset") {
+            analysis.improvements.push(`**Growth Mindset** (${score}/100): Embrace challenges as learning opportunities, seek constructive feedback, and develop persistence through difficulties.`);
+          } else if (skill === "Interpersonal Agility") {
+            analysis.improvements.push(`**Interpersonal Agility** (${score}/100): Expand comfort with diverse communication styles, practice adaptability in team dynamics, and build broader relationship networks.`);
           }
         });
       }
