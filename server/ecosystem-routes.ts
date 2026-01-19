@@ -676,6 +676,15 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(403).json({ error: "Access denied" });
       }
 
+      // Check payment status (currently free at £0, but ready for future pricing)
+      if (!project.isPaid) {
+        return res.status(402).json({ 
+          error: "Payment required", 
+          message: "Please complete payment to generate your team analysis report.",
+          requiresPayment: true 
+        });
+      }
+
       // Check if project has team members
       const teamMembers = await storage.getEcosystemTeamMembers(req.params.id);
       if (teamMembers.length === 0) {
