@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Award, Brain, MessageSquare, Users, FileText, BarChart3 } from "lucide-react";
+import { ArrowLeft, Download, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Award, Brain, MessageSquare, Users, FileText, BarChart3, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -121,6 +121,9 @@ export default function SampleRoleFitReport() {
 
   const overallFitScore = 84;
 
+  const allCriticalSkills = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS].filter(s => s.criticality === "critical");
+  const criticalSkillsMet = allCriticalSkills.filter(s => s.candidateScore >= s.requiredScore).length;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
@@ -156,6 +159,251 @@ export default function SampleRoleFitReport() {
             </div>
           </div>
 
+          {/* How to Read This Report - Matching Dashboard Style */}
+          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-guide">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A step-by-step guide to understanding this role fit analysis for the {DEMO_ROLE.name} role
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Role Alignment Tiers</p>
+                    <p className="text-xs text-muted-foreground">
+                      <Badge className="bg-green-500 text-white mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
+                      <Badge className="bg-amber-500 text-white mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
+                      <Badge className="bg-red-500 text-white mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Skill Criticality</p>
+                    <p className="text-xs text-muted-foreground">
+                      Skills are prioritised based on how essential they are for success in this role. Focus on critical skills first when evaluating candidates.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Understanding Trait Scores</p>
+                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong>. Higher scores indicate stronger trait presence - whether beneficial depends on role requirements.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Gap Analysis</p>
+                    <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify where development may be needed.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hiring Recommendation - Dashboard Style with Trophy */}
+          <Card className="mb-6 border-2 border-green-500" data-testid="section-recommendation">
+            <CardHeader className="bg-green-50 dark:bg-green-950/30">
+              <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <Trophy className="h-6 w-6" />
+                Hiring Recommendation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white text-2xl font-bold">
+                      1
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{DEMO_CANDIDATE.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-2xl font-bold text-green-600">{overallFitScore}%</span>
+                        <Badge className="bg-green-500 text-white">Strong Fit</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                    <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">Why This Candidate?</h4>
+                    <ul className="space-y-2">
+                      <li className="text-sm flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>Strong alignment with role requirements across all assessment dimensions</span>
+                      </li>
+                      <li className="text-sm flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>Exceptional intellectual curiosity (88%) and responsible AI understanding (90%)</span>
+                      </li>
+                      <li className="text-sm flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>Meets or exceeds {criticalSkillsMet} of {allCriticalSkills.length} critical skill requirements</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                    <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Critical Skill Advantages</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        Responsible AI (+5 vs req)
+                      </Badge>
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        Critical Thinking (+5 vs req)
+                      </Badge>
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        High Agency (+5 vs req)
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-l-2 border-gray-200 dark:border-gray-700 pl-6">
+                  <h4 className="font-semibold text-muted-foreground mb-3">Development Areas to Address</h4>
+                  
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                    <h4 className="font-medium text-sm text-amber-700 dark:text-amber-400 mb-2">
+                      Gap Identified
+                    </h4>
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      <div>
+                        <p className="font-medium">Interpersonal Agility</p>
+                        <p className="text-xs text-muted-foreground">Score: 80 | Required: 85 | Gap: -5</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      This minor gap can be validated during interview with stakeholder management scenarios.
+                    </p>
+                  </div>
+                  
+                  <div className="p-3 bg-muted rounded-lg">
+                    <h4 className="font-medium text-sm mb-2">Recommended Next Steps</h4>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">1.</span>
+                        <span>Schedule behavioral interview focusing on stakeholder management</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">2.</span>
+                        <span>Include cross-functional collaboration exercise</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">3.</span>
+                        <span>Validate AI product experience through portfolio review</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Critical Skills Dashboard - Dashboard Style */}
+          <Card className="mb-6 border-2 border-red-200 dark:border-red-800" data-testid="section-critical-skills">
+            <CardHeader className="bg-red-50 dark:bg-red-950/30">
+              <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-6 w-6" />
+                Critical Skills Dashboard
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Must-have skills for this role. Candidates must meet thresholds (60+) on these skills to be considered.
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-semibold bg-muted/50">Critical Skill</th>
+                      <th className="text-center p-3 font-semibold bg-muted/50">Required</th>
+                      <th className="text-center p-3 font-semibold bg-green-50 dark:bg-green-950/30">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{DEMO_CANDIDATE.name.split(' ')[0]}</span>
+                          <Badge className="bg-green-600 text-white text-xs">Candidate</Badge>
+                        </div>
+                      </th>
+                      <th className="text-center p-3 font-semibold bg-muted/50">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allCriticalSkills.map((skill, idx) => {
+                      const meetsThreshold = skill.candidateScore >= 60;
+                      const meetsRequired = skill.candidateScore >= skill.requiredScore;
+                      return (
+                        <tr key={skill.skillName} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
+                          <td className="p-3 font-medium">{skill.skillName}</td>
+                          <td className="text-center p-3">
+                            <Badge variant="outline" className="text-red-600 border-red-300">{skill.requiredScore}+</Badge>
+                          </td>
+                          <td className="text-center p-3 bg-green-50/50 dark:bg-green-950/20">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`font-bold text-lg ${meetsRequired ? 'text-green-600' : meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
+                                {skill.candidateScore}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="text-center p-3">
+                            {meetsRequired ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                            ) : meetsThreshold ? (
+                              <AlertCircle className="h-5 w-5 text-amber-500 mx-auto" />
+                            ) : (
+                              <AlertTriangle className="h-5 w-5 text-red-500 mx-auto" />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 font-semibold">
+                      <td className="p-3">Critical Skills Met</td>
+                      <td className="text-center p-3">—</td>
+                      <td className="text-center p-3 bg-green-50/50 dark:bg-green-950/20">
+                        <span className="text-lg font-bold text-green-600">
+                          {criticalSkillsMet}/{allCriticalSkills.length}
+                        </span>
+                        {criticalSkillsMet === allCriticalSkills.length && (
+                          <Badge className="ml-2 bg-green-600 text-white">All Met</Badge>
+                        )}
+                      </td>
+                      <td className="text-center p-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>Meets or exceeds required score</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <span>Above 60 but below required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span>Below minimum threshold (60)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Candidate Info Cards */}
           <div className="grid gap-6 lg:grid-cols-3 mb-6">
             <Card data-testid="card-candidate-info">
               <CardHeader className="pb-2">
@@ -401,38 +649,6 @@ export default function SampleRoleFitReport() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mb-6" data-testid="section-recommendation">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Final Recommendation
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800 mb-4">
-                <p className="font-medium text-green-800 dark:text-green-200 mb-2">
-                  Strong Recommendation: Proceed to Interview
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Sarah Chen demonstrates strong alignment with the Product Manager role requirements, 
-                  particularly excelling in intellectual curiosity, responsible AI mindset, and growth orientation. 
-                  The minor gap in interpersonal agility (-5 points) is offset by strengths in other critical areas 
-                  and can be further validated during the interview process.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2 text-sm">Recommended Next Steps:</h4>
-                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Schedule behavioral interview focusing on stakeholder management scenarios</li>
-                  <li>Include a cross-functional collaboration exercise in the interview loop</li>
-                  <li>Consider pairing with a mentor strong in interpersonal skills if hired</li>
-                  <li>Validate AI product experience through portfolio review</li>
-                </ol>
               </div>
             </CardContent>
           </Card>
