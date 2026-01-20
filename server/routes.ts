@@ -7,7 +7,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, type PartnerAccount, type AssessmentSession } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
@@ -14680,7 +14680,7 @@ Format your response as JSON with this structure:
       }
       
       // Get all users and assess their countries from purchases/sessions
-      const allUsers = await storage.getAllUsers();
+      const allUsers = await db.select().from(users);
       const allPurchases = await storage.getAllPurchasesWithDetails({ limit: 10000 });
       const allSessions = await db.select().from(assessmentSessions);
       
@@ -15395,16 +15395,16 @@ Format your response as JSON with this structure:
         expand: ['data.coupon'],
       });
       
-      res.json(promoCodes.data.map(pc => ({
+      res.json(promoCodes.data.filter(pc => pc.coupon).map(pc => ({
         id: pc.id,
         code: pc.code,
         active: pc.active,
         coupon: {
-          id: typeof pc.coupon === 'string' ? pc.coupon : pc.coupon.id,
-          name: typeof pc.coupon === 'string' ? null : pc.coupon.name,
-          percentOff: typeof pc.coupon === 'string' ? null : pc.coupon.percent_off,
-          amountOff: typeof pc.coupon === 'string' ? null : pc.coupon.amount_off,
-          duration: typeof pc.coupon === 'string' ? null : pc.coupon.duration,
+          id: typeof pc.coupon === 'string' ? pc.coupon : pc.coupon?.id,
+          name: typeof pc.coupon === 'string' ? null : pc.coupon?.name,
+          percentOff: typeof pc.coupon === 'string' ? null : pc.coupon?.percent_off,
+          amountOff: typeof pc.coupon === 'string' ? null : pc.coupon?.amount_off,
+          duration: typeof pc.coupon === 'string' ? null : pc.coupon?.duration,
         },
         timesRedeemed: pc.times_redeemed,
         createdAt: new Date(pc.created * 1000).toISOString(),
