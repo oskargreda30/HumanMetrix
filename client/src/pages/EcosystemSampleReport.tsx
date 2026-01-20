@@ -304,6 +304,36 @@ export default function EcosystemSampleReport() {
               </div>
             </div>
 
+            {/* SECTION 2.5: Candidates Assessed Summary */}
+            <div className="bg-muted/30 rounded-lg p-6 border">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Candidates Assessed
+              </h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                This analysis is based on FIT assessment scores from {sampleTeamMembers.length} team members.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                {sampleTeamMembers.map((member, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-background"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                      {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{member.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.role}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                      Assessed
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* SECTION 3: Strategic Assessment */}
             <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
               <h4 className="font-semibold mb-4 flex items-center gap-2 text-lg">

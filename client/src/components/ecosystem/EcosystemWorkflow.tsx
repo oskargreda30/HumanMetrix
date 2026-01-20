@@ -1644,6 +1644,47 @@ function TeamAnalysisResults({
         )}
       </div>
 
+      {/* SECTION 2.5: Candidates Assessed Summary */}
+      {teamMembers.length > 0 && (
+        <div className="bg-muted/30 rounded-lg p-6 border">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Candidates Assessed
+          </h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            This analysis is based on FIT assessment scores from {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length} of {teamMembers.length} team members.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {teamMembers.map((member) => {
+              const hasScores = member.fitScores && Object.keys(member.fitScores).length > 0;
+              return (
+                <div 
+                  key={member.id} 
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${hasScores ? 'bg-background' : 'bg-muted/50 opacity-60'}`}
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                    {(member.name || 'TM').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{member.name || 'Team Member'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{member.role || 'Team Member'}</p>
+                  </div>
+                  {hasScores ? (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                      Assessed
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      Pending
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* SECTION 3: Strategic Assessment - AI-Generated Strategic Narrative */}
       {analysis.executiveSummary && (
         <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
