@@ -330,9 +330,9 @@ export default function HeroSection() {
             `transition-all duration-700 ${cardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`
           )}>
             {[
-              "Instant PDF Results",
-              "CV-Ready Reports", 
-              "Secure Data Storage"
+              "Team Gap Analysis",
+              "Hiring Recommendations", 
+              "AI-Powered Insights"
             ].map((item, idx) => (
               <div 
                 key={idx}
