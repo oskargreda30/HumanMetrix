@@ -406,8 +406,6 @@ Provide your analysis as JSON with this exact structure:
       "code": "HA|IC|RA|EE|GM|IA",
       "missionPriority": "critical|high|medium|low",
       "teamStrength": "strong|adequate|weak|critical",
-      "currentScore": <number 0-100, the team's current average for this capability based on their actual scores - use varied realistic numbers like 47, 63, 71, not just multiples of 5>,
-      "targetScore": <number 0-100, recommended target score for this capability based on mission priority - use varied realistic numbers like 78, 84, 91, not just multiples of 5>,
       "gapAnalysis": "1-2 sentence strategic insight about this specific gap and its implications"
     }
   ]
@@ -463,14 +461,12 @@ Generate 3-5 strategic insights, 1-3 ideal hire profiles based on hiring plans, 
       })),
       idealHireProfiles: [],
       capabilityGapMatrix: gapAnalysis.map(g => {
-        // Use actual current average from gap analysis
+        // Current = actual team average from FIT scores
         const currentScore = Math.round(g.currentAverage || 50);
-        // Calculate target based on priority with slight variance
-        const baseTarget = g.requiredPriority === "critical" ? 88 : 
-                          g.requiredPriority === "high" ? 79 : 
-                          g.requiredPriority === "medium" ? 68 : 52;
-        // Add small variance to avoid multiples of 5
-        const targetScore = baseTarget + Math.round((g.currentAverage % 7) - 3);
+        // Target = required score based on mission priority
+        const targetScore = g.requiredPriority === "critical" ? 85 : 
+                           g.requiredPriority === "high" ? 75 : 
+                           g.requiredPriority === "medium" ? 65 : 55;
         return {
           capability: g.capability,
           code: g.code,
@@ -478,7 +474,7 @@ Generate 3-5 strategic insights, 1-3 ideal hire profiles based on hiring plans, 
           teamStrength: g.gapSeverity === "healthy" ? "strong" : g.gapSeverity === "warning" ? "adequate" : "weak",
           gapAnalysis: g.reasoning,
           currentScore,
-          targetScore: Math.min(100, Math.max(currentScore + 5, targetScore)),
+          targetScore,
         };
       }),
     };
@@ -893,28 +889,20 @@ async function generateTeamAnalysis(
   // Enhance capabilityGapMatrix with actual scores from real data
   const enhancedCapabilityGapMatrix = strategicAnalysis.capabilityGapMatrix.map((item: any) => {
     const capDist = capabilityDistribution[item.code];
-    const gapItem = gapAnalysis.find(g => g.code === item.code);
     
-    // Use actual team average as currentScore
-    const actualCurrent = capDist?.average || item.currentScore || 50;
+    // Current = actual team average from FIT scores
+    const currentScore = Math.round(capDist?.average || item.currentScore || 50);
     
-    // Calculate target based on priority, with variance from current score
-    const priorityBase = item.missionPriority === "critical" ? 87 : 
-                         item.missionPriority === "high" ? 78 : 
-                         item.missionPriority === "medium" ? 67 : 53;
-    // Add variance based on the current score to avoid multiples of 5
-    const variance = Math.round((actualCurrent % 7) - 3);
-    const calculatedTarget = priorityBase + variance;
-    
-    // Use AI target if provided and not a multiple of 5, otherwise calculate
-    const aiTarget = item.targetScore;
-    const isAiTargetGood = aiTarget && (aiTarget % 5 !== 0 || aiTarget === 100);
-    const actualTarget = isAiTargetGood ? aiTarget : calculatedTarget;
+    // Target = required score based on mission priority
+    // These represent what level the mission requires for each capability
+    const targetScore = item.missionPriority === "critical" ? 85 : 
+                        item.missionPriority === "high" ? 75 : 
+                        item.missionPriority === "medium" ? 65 : 55;
     
     return {
       ...item,
-      currentScore: Math.round(actualCurrent),
-      targetScore: Math.min(100, Math.max(Math.round(actualCurrent) + 5, actualTarget)),
+      currentScore,
+      targetScore,
     };
   });
 
