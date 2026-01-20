@@ -729,3 +729,332 @@ Unlike other assessments, AIQ uses **weighted option scores**:
 **Document Version**: 1.0
 **Last Updated**: December 2025
 **Platform**: HumanMetrix AI Assessment Platform
+
+---
+
+# APPENDIX: ACADEMIC FRAMEWORK AND SKILL MAPPING RATIONALE
+
+## Document Purpose
+This appendix provides the academic and theoretical foundations underlying the HumanMetrix assessment methodology. It is intended for academic review, validation studies, and peer assessment of the psychometric properties of the skill-to-answer mappings used throughout the four assessment modules.
+
+---
+
+## Appendix A: Theoretical Framework
+
+### A.1 Competency-Based Assessment Methodology
+
+The HumanMetrix assessment suite employs a **behavioural competency-based assessment (CBA)** approach, grounded in the work of McClelland (1973) and subsequent developments by Boyatzis (1982). This methodology asserts that observable behaviours in situational contexts are reliable predictors of job performance and organisational fit.
+
+**Key Theoretical Foundations:**
+
+1. **Behavioural Event Interview (BEI) Methodology** (McClelland, 1998): Our scenario-based questions simulate real-world situations requiring candidates to indicate their preferred behavioural response. This approach measures demonstrated competencies rather than self-reported traits.
+
+2. **Situational Judgment Test (SJT) Design** (McDaniel et al., 2001): Each question presents a realistic scenario followed by multiple response options representing different behavioural strategies. Research indicates SJTs have predictive validity for job performance (r = 0.26) and low adverse impact across demographic groups.
+
+3. **Response Pattern Analysis**: Rather than measuring single traits in isolation, response patterns across multiple scenarios reveal consistent behavioural tendencies aligned with specific competency clusters.
+
+### A.2 Self-Determination Theory (SDT) Foundation
+
+The FIT Assessment's measurement of **High Agency (HA)** draws from Deci & Ryan's (1985, 2000) Self-Determination Theory:
+
+- **Autonomy**: Individuals high in agency demonstrate intrinsic motivation and self-directed behaviour
+- **Competence**: Agency correlates with belief in one's ability to effect change
+- **Relatedness**: High-agency individuals often leverage social connections to achieve outcomes
+
+**Academic Basis**: Answers coded as HA demonstrate autonomous decision-making, proactive problem-solving, and taking responsibility for outcomes—core elements of SDT's autonomy construct.
+
+### A.3 Growth Mindset Theory
+
+The **Growth Mindset (GM)** skill draws from Carol Dweck's (2006) research distinguishing fixed versus growth mindsets:
+
+- **Incremental Theory of Intelligence**: Belief that abilities can be developed through effort and learning
+- **Mastery Orientation**: Seeking challenges as opportunities for skill development
+- **Process Focus**: Valuing learning processes over outcome validation
+
+**Academic Basis**: Answers coded as GM demonstrate investment in skill development, viewing challenges as learning opportunities, and prioritising long-term capability building over short-term convenience.
+
+### A.4 Emotional Intelligence Framework
+
+The **Empathy & Ethics (EE)** skill draws from Goleman's (1995) Emotional Intelligence model and Salovey & Mayer's (1990) ability-based EI framework:
+
+- **Emotional Perception**: Recognising emotions in self and others
+- **Emotional Facilitation**: Using emotions to guide cognitive activities
+- **Emotional Understanding**: Comprehending emotional information
+- **Emotional Regulation**: Managing emotions to achieve goals
+
+**Academic Basis**: Answers coded as EE demonstrate perspective-taking, compassionate consideration of others' welfare, ethical reasoning, and prosocial behavioural choices.
+
+### A.5 Resilience and Grit Research
+
+The **Resilience (RA)** skill draws from:
+
+- **Duckworth's Grit Scale** (2007): Perseverance and passion for long-term goals
+- **Connor-Davidson Resilience Scale** (2003): Ability to cope with stress and adversity
+- **Psychological Capital Theory** (Luthans, 2007): Resilience as a developable resource
+
+**Academic Basis**: Answers coded as RA demonstrate patience under adversity, maintaining composure during setbacks, persistence through difficulties, and adaptive coping strategies.
+
+### A.6 Interpersonal Effectiveness Models
+
+The **Interpersonal Agility (IA)** skill draws from:
+
+- **Social Capital Theory** (Coleman, 1988): Leveraging social networks for resource access
+- **Relational Coordination Theory** (Gittell, 2002): Quality of communication and relationships
+- **Influence Without Authority** (Cohen & Bradford, 1989): Achieving outcomes through collaboration
+
+**Academic Basis**: Answers coded as IA demonstrate coordination with others, delegating appropriately, building coalitions, and leveraging social relationships to achieve collective outcomes.
+
+### A.7 Epistemic Curiosity Research
+
+The **Intellectual Curiosity (IC)** skill draws from:
+
+- **Epistemic Curiosity Scale** (Litman, 2008): Interest-based and deprivation-based curiosity
+- **Need for Cognition** (Cacioppo & Petty, 1982): Tendency to engage in effortful thinking
+- **Openness to Experience** (Big Five; Costa & McCrae, 1992): Intellectual engagement trait
+
+**Academic Basis**: Answers coded as IC demonstrate investigative behaviour, seeking to understand root causes, researching solutions, and valuing knowledge acquisition for its own sake.
+
+---
+
+## Appendix B: Skill Definitions with Academic Rationale
+
+### B.1 FIT Assessment Skills (Behavioural Competencies)
+
+| Skill Code | Skill Name | Academic Definition | Theoretical Basis |
+|------------|------------|---------------------|-------------------|
+| **HA** | High Agency | The tendency to take autonomous action, assume responsibility for outcomes, and proactively shape circumstances rather than react to them | Self-Determination Theory (Deci & Ryan, 2000); Locus of Control (Rotter, 1966) |
+| **IC** | Intellectual Curiosity | The dispositional tendency to seek, acquire, and integrate new information; characterized by exploratory behaviour and knowledge-seeking | Epistemic Curiosity (Litman, 2008); Need for Cognition (Cacioppo, 1982) |
+| **RA** | Resilience | The capacity to maintain stable functioning and recover quickly from setbacks; characterized by emotional regulation and adaptive coping | Psychological Resilience (Connor & Davidson, 2003); Grit (Duckworth, 2007) |
+| **EE** | Empathy & Ethics | The ability to understand others' perspectives and emotional states, combined with moral reasoning in decision-making | Emotional Intelligence (Goleman, 1995); Moral Development (Kohlberg, 1981) |
+| **GM** | Growth Mindset | The belief that abilities are developable through effort, characterized by seeking learning opportunities and viewing failure as feedback | Implicit Theories (Dweck, 2006); Mastery Goal Orientation (Elliot, 1999) |
+| **IA** | Interpersonal Agility | The ability to effectively navigate social dynamics, coordinate with diverse individuals, and leverage relationships for collective benefit | Social Intelligence (Thorndike, 1920); Relational Coordination (Gittell, 2002) |
+
+### B.2 AI Readiness Assessment Skills
+
+| Skill Code | Skill Name | Academic Definition | Theoretical Basis |
+|------------|------------|---------------------|-------------------|
+| **AL/PE** | AI Literacy & Prompt Engineering | Understanding of AI capabilities, limitations, and effective human-AI interaction techniques | Human-AI Interaction (Amershi et al., 2019); Computational Thinking (Wing, 2006) |
+| **TF** | Technical Fundamentals | Foundational understanding of technical systems, architecture, and implementation principles | Technical Expertise (Ericsson, 1993); Systems Thinking (Senge, 1990) |
+| **DF** | Data Fluency | Ability to work with, interpret, and reason about data structures, quality, and analytical outputs | Data Literacy (Ridsdale et al., 2015); Statistical Reasoning (Kahneman, 2011) |
+| **CT/PS** | Critical Thinking & Problem-Solving | Systematic analysis of problems, evaluation of evidence, and structured approach to solution development | Critical Thinking (Facione, 1990); Problem-Solving Transfer (Mayer, 1992) |
+| **ACL** | Adaptability & Continuous Learning | Disposition toward ongoing skill development and flexibility in response to changing requirements | Adaptive Performance (Pulakos, 2000); Learning Agility (DeRue et al., 2012) |
+| **RAI** | Responsible AI & Ethical Awareness | Recognition of AI ethical implications, bias considerations, and commitment to responsible development/use | AI Ethics (Floridi, 2019); Responsible Innovation (Owen et al., 2013) |
+| **DE** | Domain Expertise | Application of specialized field knowledge to inform AI-related decisions and implementations | Expert Knowledge (Chi et al., 1988); Transfer of Learning (Thorndike, 1924) |
+| **CI** | Creativity & Innovation | Generation of novel approaches, challenging assumptions, and imaginative problem-solving with AI tools | Creative Cognition (Finke et al., 1992); Design Thinking (Brown, 2008) |
+| **CC** | Collaboration & Communication | Effective coordination with others in AI-enabled contexts, including clear articulation of technical concepts | Team Cognition (Kozlowski, 2006); Knowledge Sharing (Nonaka, 1994) |
+
+---
+
+## Appendix C: Answer-to-Skill Mapping Logic
+
+### C.1 Mapping Methodology
+
+Each answer option was designed to represent a **behavioural prototype** that maximally activates specific competency indicators while remaining ecologically valid in the scenario context.
+
+**Mapping Criteria:**
+
+1. **Behavioural Specificity**: The answer describes a concrete action, not an abstract intention
+2. **Competency Alignment**: The action directly demonstrates the target skill's defining behaviours
+3. **Mutual Exclusivity**: While some overlap exists, each answer emphasizes distinct competency clusters
+4. **Ecological Validity**: The response is a plausible, appropriate reaction to the scenario
+
+### C.2 FIT Assessment Mapping Examples
+
+#### Example 1: Question 2 (Driving Test Failure Scenario)
+
+**Scenario**: A friend tells you they failed their driving test for the third time and are deeply upset.
+
+| Option | Answer | Skill | Rationale for Mapping |
+|--------|--------|-------|----------------------|
+| **A** | Proactively schedule structured driving practice sessions and take responsibility for coaching their weakest areas until measurable improvement occurs. | **HA: 4** | Demonstrates autonomous action-taking, assuming personal responsibility for another's outcome, and proactive intervention. This reflects the core Self-Determination Theory construct of autonomy and internal locus of control—the responder becomes an agent of change rather than a passive observer. |
+| **B** | Remind them that failure is normal and encourage them to take a short break before getting back to their routine. | **RA: 4, GM: 4** | Demonstrates resilience framing (normalizing failure, maintaining perspective) and growth mindset (viewing failure as temporary, encouraging continued effort). Reflects Dweck's incremental theory and Connor-Davidson resilience indicators. |
+| **C** | Focus entirely on validating their frustration and offer to listen as long as they need, avoiding judgment or practical advice. | **EE: 4, IC: 4** | Demonstrates empathetic perspective-taking and emotional validation (Goleman's EI model). The IC component reflects seeking to understand the person's emotional state fully before acting—an investigative, curious approach to the situation. |
+| **D** | Suggest setting up practice sessions with several different, patient friends to get varied feedback and make the process more fun. | **IA: 4** | Demonstrates interpersonal coordination, leveraging social networks, and organizing collective support. Reflects Social Capital Theory and Relational Coordination—achieving outcomes through relationships. |
+
+#### Example 2: Question 1 (Dinner Party Scenario)
+
+**Scenario**: You are hosting a dinner party. A key ingredient is missing, and the stores are about to close.
+
+| Option | Answer | Skill | Rationale for Mapping |
+|--------|--------|-------|----------------------|
+| **A** | Quickly change the recipe to use only what's on hand and start cooking immediately, focusing on saving time. | **HA: 4, RA: 4** | **HA**: Autonomous decision-making and taking immediate action without external validation. **RA**: Adaptive coping under time pressure, accepting constraints and moving forward rather than becoming immobilized. |
+| **B** | Call a foodie friend to find the most interesting, surprising thing you could use to replace the missing ingredient. | **IC: 4** | Demonstrates epistemic curiosity—seeking novel information and creative alternatives. The "most interesting, surprising" framing indicates curiosity-driven exploration beyond mere problem-solving. |
+| **C** | Take a few minutes to quickly look up advanced techniques for making the dish work with fewer ingredients, viewing it as a new skill challenge. | **GM: 4** | Explicitly frames the obstacle as a "skill challenge"—hallmark of growth mindset. Demonstrates mastery goal orientation and viewing setbacks as learning opportunities per Dweck's framework. |
+| **D** | Send a quick text to guests to see if one is passing a store and can grab the item, offering to pay them back. | **IA: 4, EE: 4** | **IA**: Leveraging social network to solve problems collaboratively. **EE**: Considering others' situations (who might be nearby), offering reciprocity (pay them back)—prosocial, relationally aware response. |
+
+### C.3 AI Readiness Assessment Mapping Examples
+
+#### Example: Question 1 (Data Integration Scenario)
+
+**Scenario**: You need to integrate an AI-generated data set with an existing, structured database.
+
+| Option | Answer | Skill | Rationale for Mapping |
+|--------|--------|-------|----------------------|
+| **A** | Write a structured, iterative prompt to force the AI to format the output with perfect data compatibility. | **AL/PE: 4, DF: 4** | **AL/PE**: Demonstrates understanding of prompt engineering—using structured, iterative prompts to achieve specific outputs. **DF**: Focus on data formatting and compatibility reflects data fluency. |
+| **B** | Immediately review the database schema and architecture for potential data incompatibility issues. | **TF: 4, CT/PS: 4** | **TF**: Understanding database schema and architecture. **CT/PS**: Systematic problem analysis—examining the receiving system before integration to anticipate issues. |
+| **C** | Analyze the AI-generated data for potential biases or ethical violations before merging it. | **RAI: 4, DF: 4** | **RAI**: Proactive ethical analysis, bias detection awareness. **DF**: Analytical examination of data quality and characteristics. |
+| **D** | Document the new data's structure and communicate with the team on how to access and use it effectively. | **CC: 4, TF: 4** | **CC**: Knowledge sharing, team communication, documentation practices. **TF**: Understanding data structure sufficiently to explain it. |
+| **E** | Challenge the necessity of merging the data, using AI to explore alternative analytical approaches. | **CI: 4, AL/PE: 4** | **CI**: Creative questioning of assumptions, exploring alternatives. **AL/PE**: Using AI as an exploratory tool for novel approaches. |
+
+### C.4 AIQ Assessment Scoring Logic
+
+The AIQ (Algorithmic Integrity Quotient) uses a **graded scoring model** (0-100 per question) rather than binary skill mapping, reflecting the nuanced nature of ethical reasoning.
+
+**Scoring Principles:**
+
+| Score Range | Ethical Quality | Characteristics |
+|-------------|-----------------|-----------------|
+| **100** | Optimal ethical response | Proactively addresses harm, respects autonomy, ensures equity, implements safeguards |
+| **70-75** | Strong ethical response | Addresses primary concerns with minor gaps in comprehensive protection |
+| **45-50** | Moderate response | Acknowledges issues but relies on reactive rather than proactive measures |
+| **20** | Minimal ethical consideration | Addresses symptoms without root cause analysis |
+| **0** | Ethically problematic | Ignores stakeholder welfare, prioritizes convenience over protection |
+
+**Example (Question 8 - Hospital AI Scenario):**
+
+| Option | Score | Ethical Analysis |
+|--------|-------|------------------|
+| **C** (Pause use until consent obtained) | **100** | Respects patient autonomy (fundamental bioethical principle), applies precautionary approach, addresses root consent violation |
+| **B** (Seek retroactive consent) | **70** | Attempts remediation but cannot fully restore autonomous choice already violated |
+| **A** (Anonymize data, continue use) | **50** | Technical mitigation without addressing consent violation—necessary but insufficient |
+| **D** (Post lobby notice) | **0** | Passive disclosure fails to obtain informed consent; shifts burden to patients |
+
+---
+
+## Appendix D: Scoring Methodology Justification
+
+### D.1 Hybrid Scaling Formula
+
+The HumanMetrix scoring system employs a **hybrid scaling formula** designed to maximize score variance while maintaining interpretability.
+
+**Formula Components:**
+
+```
+Floor = 50 + (minRawPct / 100)^0.5 × 10
+Ceiling = 50 + (maxRawPct / 100)^0.25 × 50
+Final Score = Floor + (relativePosition × scoreRange)
+```
+
+**Academic Justification:**
+
+1. **Floor Anchoring at 50**: Based on norm-referenced testing conventions where 50 represents average performance. Research on score interpretation suggests users intuitively understand 50 as a midpoint (Zwick, 2006).
+
+2. **Dynamic Floor (50-60 range)**: Prevents ceiling compression when minimum performance is very low. The square root transformation (^0.5) provides diminishing returns for floor elevation, consistent with psychophysical scaling laws (Stevens, 1957).
+
+3. **Dynamic Ceiling (up to 100)**: The fourth-root transformation (^0.25) on maximum raw percentage ensures ceiling approaches 100 only for near-perfect performance, preventing artificial ceiling effects that reduce discrimination at high ability levels.
+
+4. **Relative Position Scaling**: Candidates are positioned within the available score range based on their relative standing, implementing a quasi-ipsative comparison that maintains individual profile integrity while enabling normative interpretation.
+
+### D.2 Point Allocation (4-Point Model)
+
+Each correct answer awards **4 points** to associated skills. This value was selected based on:
+
+1. **Discrimination Power**: Sufficient magnitude to create meaningful score differences across 15-21 questions per assessment
+2. **Cognitive Simplicity**: Integer values simplify scoring verification and audit processes
+3. **Multi-Skill Mapping**: When answers map to multiple skills (e.g., "HA: 4, RA: 4"), each skill receives the full 4 points, reflecting that a single behaviour can simultaneously demonstrate multiple competencies
+
+### D.3 Construct Validity Considerations
+
+The assessment design addresses standard psychometric validity types:
+
+| Validity Type | Design Feature |
+|---------------|----------------|
+| **Content Validity** | Questions developed from competency frameworks; expert panel review |
+| **Construct Validity** | Skills derived from established psychological constructs with clear theoretical definitions |
+| **Criterion Validity** | Ongoing validation against job performance outcomes (in progress) |
+| **Ecological Validity** | Scenarios drawn from realistic personal and professional contexts |
+| **Face Validity** | Question clarity and relevance verified through pilot testing |
+
+---
+
+## Appendix E: References
+
+Amershi, S., Weld, D., Vorvoreanu, M., et al. (2019). Guidelines for Human-AI Interaction. *CHI Conference on Human Factors in Computing Systems*.
+
+Boyatzis, R. E. (1982). *The Competent Manager: A Model for Effective Performance*. John Wiley & Sons.
+
+Brown, T. (2008). Design Thinking. *Harvard Business Review*, 86(6), 84-92.
+
+Cacioppo, J. T., & Petty, R. E. (1982). The Need for Cognition. *Journal of Personality and Social Psychology*, 42(1), 116-131.
+
+Chi, M. T. H., Glaser, R., & Farr, M. J. (1988). *The Nature of Expertise*. Lawrence Erlbaum Associates.
+
+Cohen, A. R., & Bradford, D. L. (1989). Influence Without Authority: The Use of Alliances, Reciprocity, and Exchange to Accomplish Work. *Organizational Dynamics*, 17(3), 5-17.
+
+Coleman, J. S. (1988). Social Capital in the Creation of Human Capital. *American Journal of Sociology*, 94, S95-S120.
+
+Connor, K. M., & Davidson, J. R. T. (2003). Development of a New Resilience Scale. *Depression and Anxiety*, 18(2), 76-82.
+
+Costa, P. T., & McCrae, R. R. (1992). *Revised NEO Personality Inventory (NEO-PI-R) and NEO Five-Factor Inventory (NEO-FFI) Professional Manual*. Psychological Assessment Resources.
+
+Deci, E. L., & Ryan, R. M. (1985). *Intrinsic Motivation and Self-Determination in Human Behavior*. Plenum Press.
+
+Deci, E. L., & Ryan, R. M. (2000). The "What" and "Why" of Goal Pursuits: Human Needs and the Self-Determination of Behavior. *Psychological Inquiry*, 11(4), 227-268.
+
+DeRue, D. S., Ashford, S. J., & Myers, C. G. (2012). Learning Agility: In Search of Conceptual Clarity and Theoretical Grounding. *Industrial and Organizational Psychology*, 5(3), 258-279.
+
+Duckworth, A. L., Peterson, C., Matthews, M. D., & Kelly, D. R. (2007). Grit: Perseverance and Passion for Long-Term Goals. *Journal of Personality and Social Psychology*, 92(6), 1087-1101.
+
+Dweck, C. S. (2006). *Mindset: The New Psychology of Success*. Random House.
+
+Elliot, A. J. (1999). Approach and Avoidance Motivation and Achievement Goals. *Educational Psychologist*, 34(3), 169-189.
+
+Ericsson, K. A., Krampe, R. T., & Tesch-Römer, C. (1993). The Role of Deliberate Practice in the Acquisition of Expert Performance. *Psychological Review*, 100(3), 363-406.
+
+Facione, P. A. (1990). *Critical Thinking: A Statement of Expert Consensus for Purposes of Educational Assessment and Instruction*. The California Academic Press.
+
+Finke, R. A., Ward, T. B., & Smith, S. M. (1992). *Creative Cognition: Theory, Research, and Applications*. MIT Press.
+
+Floridi, L., Cowls, J., Beltrametti, M., et al. (2018). AI4People—An Ethical Framework for a Good AI Society. *Minds and Machines*, 28, 689-707.
+
+Gittell, J. H. (2002). Coordinating Mechanisms in Care Provider Groups: Relational Coordination as a Mediator and Input Uncertainty as a Moderator of Performance Effects. *Management Science*, 48(11), 1408-1426.
+
+Goleman, D. (1995). *Emotional Intelligence: Why It Can Matter More Than IQ*. Bantam Books.
+
+Kahneman, D. (2011). *Thinking, Fast and Slow*. Farrar, Straus and Giroux.
+
+Kohlberg, L. (1981). *Essays on Moral Development, Vol. 1: The Philosophy of Moral Development*. Harper & Row.
+
+Kozlowski, S. W. J., & Ilgen, D. R. (2006). Enhancing the Effectiveness of Work Groups and Teams. *Psychological Science in the Public Interest*, 7(3), 77-124.
+
+Litman, J. A. (2008). Interest and Deprivation Factors of Epistemic Curiosity. *Personality and Individual Differences*, 44(7), 1585-1595.
+
+Luthans, F., Youssef, C. M., & Avolio, B. J. (2007). *Psychological Capital: Developing the Human Competitive Edge*. Oxford University Press.
+
+Mayer, R. E. (1992). Thinking, Problem Solving, Cognition. *W.H. Freeman*.
+
+McClelland, D. C. (1973). Testing for Competence Rather Than for "Intelligence." *American Psychologist*, 28(1), 1-14.
+
+McClelland, D. C. (1998). Identifying Competencies with Behavioral-Event Interviews. *Psychological Science*, 9(5), 331-339.
+
+McDaniel, M. A., Morgeson, F. P., Finnegan, E. B., Campion, M. A., & Braverman, E. P. (2001). Use of Situational Judgment Tests to Predict Job Performance: A Clarification of the Literature. *Journal of Applied Psychology*, 86(4), 730-740.
+
+Nonaka, I. (1994). A Dynamic Theory of Organizational Knowledge Creation. *Organization Science*, 5(1), 14-37.
+
+Owen, R., Stilgoe, J., Macnaghten, P., et al. (2013). A Framework for Responsible Innovation. In *Responsible Innovation* (pp. 27-50). John Wiley & Sons.
+
+Pulakos, E. D., Arad, S., Donovan, M. A., & Plamondon, K. E. (2000). Adaptability in the Workplace: Development of a Taxonomy of Adaptive Performance. *Journal of Applied Psychology*, 85(4), 612-624.
+
+Ridsdale, C., Rothwell, J., Smit, M., et al. (2015). *Strategies and Best Practices for Data Literacy Education*. Dalhousie University.
+
+Rotter, J. B. (1966). Generalized Expectancies for Internal Versus External Control of Reinforcement. *Psychological Monographs: General and Applied*, 80(1), 1-28.
+
+Salovey, P., & Mayer, J. D. (1990). Emotional Intelligence. *Imagination, Cognition and Personality*, 9(3), 185-211.
+
+Senge, P. M. (1990). *The Fifth Discipline: The Art and Practice of the Learning Organization*. Doubleday.
+
+Stevens, S. S. (1957). On the Psychophysical Law. *Psychological Review*, 64(3), 153-181.
+
+Thorndike, E. L. (1920). Intelligence and Its Uses. *Harper's Magazine*, 140, 227-235.
+
+Wing, J. M. (2006). Computational Thinking. *Communications of the ACM*, 49(3), 33-35.
+
+Zwick, R. (2006). *Higher Education Admissions Testing*. National Academy of Education.
+
+---
+
+**Appendix Version**: 1.0
+**Prepared for**: Academic Peer Review
+**Date**: January 2026
+**Contact**: research@humanmetrix.ai
+
