@@ -226,11 +226,11 @@ export default function SecurityTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Shield className="h-6 w-6 text-cyan-500" />
             Security & Communications
           </h2>
-          <p className="text-muted-foreground">Manage announcements, broadcasts, and security settings</p>
+          <p className="text-white/70">Manage announcements, broadcasts, and security settings</p>
         </div>
       </div>
 

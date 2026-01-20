@@ -110,15 +110,15 @@ export default function SLAMonitoringTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Gauge className="h-5 w-5 text-cyan-500" />
             SLA Monitoring
           </h3>
-          <p className="text-sm text-muted-foreground">Service level agreement metrics and performance tracking</p>
+          <p className="text-sm text-white/70">Service level agreement metrics and performance tracking</p>
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge(overallStatus)}
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-white/30 text-white hover:bg-white/10 hover:text-white">
             <RefreshCw className="h-4 w-4 mr-2" /> Refresh
           </Button>
         </div>
