@@ -416,10 +416,11 @@ export default function HealthTab() {
           <Button 
             onClick={handleRefresh} 
             variant="outline" 
+            disabled={statsLoading || healthLoading || latencyLoading || errorsLoading}
             className="border-white/30 text-white hover:bg-white/10 hover:text-white"
             data-testid="button-refresh-health"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className={`h-4 w-4 mr-2 ${statsLoading || healthLoading || latencyLoading || errorsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>

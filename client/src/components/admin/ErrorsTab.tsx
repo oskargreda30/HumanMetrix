@@ -395,10 +395,11 @@ export default function ErrorsTab() {
         <Button 
           onClick={handleRefresh} 
           variant="outline" 
+          disabled={statsLoading || errorsLoading}
           className="border-white/30 text-white hover:bg-white/10 hover:text-white"
           data-testid="button-refresh-errors"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className={`h-4 w-4 mr-2 ${statsLoading || errorsLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

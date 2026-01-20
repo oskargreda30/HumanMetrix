@@ -50,8 +50,8 @@ export default function GeographicAnalyticsTab() {
           </h3>
           <p className="text-sm text-white/70">User distribution and activity by location</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="border-white/30 text-white hover:bg-white/10 hover:text-white">
-          <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading} className="border-white/30 text-white hover:bg-white/10 hover:text-white">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
         </Button>
       </div>
 

@@ -508,8 +508,14 @@ export default function SecurityTab() {
                 <CardTitle>Active Sessions</CardTitle>
                 <CardDescription>Recent user activity in the last 24 hours</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={() => refetchSessions()}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetchSessions()}
+                disabled={sessionsLoading}
+                className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${sessionsLoading ? 'animate-spin' : ''}`} /> Refresh
               </Button>
             </CardHeader>
             <CardContent>
@@ -642,8 +648,14 @@ export default function SecurityTab() {
                 <CardTitle>Recent Security Events</CardTitle>
                 <CardDescription>Login attempts, role changes, and security-related actions</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={() => refetchAlerts()}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetchAlerts()}
+                disabled={alertsLoading}
+                className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${alertsLoading ? 'animate-spin' : ''}`} /> Refresh
               </Button>
             </CardHeader>
             <CardContent>

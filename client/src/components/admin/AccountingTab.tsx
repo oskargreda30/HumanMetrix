@@ -415,10 +415,11 @@ export default function AccountingTab() {
           variant="outline"
           size="sm"
           onClick={refetchAll}
+          disabled={xeroLoading || expenseStatsLoading || revenueStatsLoading || expensesLoading || unsyncedLoading || logsLoading}
           data-testid="button-refresh-accounting"
-          className="border-white/30 text-white hover:bg-white/10"
+          className="border-white/30 text-white hover:bg-white/10 hover:text-white"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className={`w-4 h-4 mr-2 ${xeroLoading || expenseStatsLoading || revenueStatsLoading || expensesLoading || unsyncedLoading || logsLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

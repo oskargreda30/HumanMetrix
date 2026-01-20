@@ -105,10 +105,11 @@ export default function SystemSettingsTab() {
             refetch();
             toast({ title: "Data refreshed", description: "Settings have been reloaded" });
           }}
-          className="gap-2"
+          disabled={isLoading}
+          className="gap-2 border-white/30 text-white hover:bg-white/10 hover:text-white"
           data-testid="button-refresh-settings"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

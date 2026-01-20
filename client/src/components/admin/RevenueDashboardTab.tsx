@@ -140,6 +140,7 @@ export default function RevenueDashboardTab() {
           size="sm"
           onClick={handleRefresh}
           disabled={isFetching}
+          className="border-white/30 text-white hover:bg-white/10 hover:text-white"
           data-testid="button-refresh-revenue"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />

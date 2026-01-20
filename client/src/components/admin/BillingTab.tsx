@@ -403,10 +403,11 @@ export default function BillingTab() {
           variant="outline" 
           size="sm" 
           onClick={handleRefresh} 
+          disabled={statsLoading || transactionsLoading || promoLoading || requestsLoading || invoicesLoading}
           className="border-white/30 text-white hover:bg-white/10 hover:text-white"
           data-testid="button-refresh-billing"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className={`h-4 w-4 mr-2 ${statsLoading || transactionsLoading || promoLoading || requestsLoading || invoicesLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
