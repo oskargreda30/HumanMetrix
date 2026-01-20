@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { FileText, Users, Target, UsersRound, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const reports = [
   {
@@ -49,6 +57,35 @@ const reports = [
 ];
 
 export default function SampleReportsSection() {
+  const [, setLocation] = useLocation();
+  const [selectedReport, setSelectedReport] = useState<typeof reports[0] | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleReportClick = (report: typeof reports[0]) => {
+    if (report.comingSoon) return;
+    setSelectedReport(report);
+    setDialogOpen(true);
+  };
+
+  const handleViewOnline = () => {
+    if (selectedReport?.link) {
+      setDialogOpen(false);
+      setLocation(selectedReport.link);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (selectedReport?.downloadName) {
+      const link = document.createElement('a');
+      link.href = `/sample-reports/${selectedReport.downloadName}`;
+      link.download = selectedReport.downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    setDialogOpen(false);
+  };
+
   return (
     <section id="sample-reports" className="relative py-12 md:py-24 bg-[#0a1628] overflow-hidden">
       {/* Animated neural network background decoration - circular pattern extended */}
@@ -185,34 +222,57 @@ export default function SampleReportsSection() {
                     <Download className="mr-1.5 h-4 w-4" />
                     Coming Soon
                   </Button>
-                ) : (report as any).isViewOnline ? (
-                  <Link href={report.link} data-testid={`link-view-${report.testId}`} className="w-full">
-                    <Button 
-                      size="default"
-                      className="w-full bg-cyan-500 text-white border-cyan-600"
-                      data-testid={`button-view-${report.testId}`}
-                    >
-                      <Eye className="mr-1.5 h-4 w-4" />
-                      View Sample
-                    </Button>
-                  </Link>
                 ) : (
-                  <a href={report.link} download={report.downloadName} data-testid={`link-download-${report.testId}`} className="w-full">
-                    <Button 
-                      size="default"
-                      className="w-full bg-cyan-500 text-white border-cyan-600"
-                      data-testid={`button-download-${report.testId}`}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Download Sample
-                    </Button>
-                  </a>
+                  <Button 
+                    size="default"
+                    className="w-full bg-cyan-500 text-white border-cyan-600"
+                    onClick={() => handleReportClick(report)}
+                    data-testid={`button-view-${report.testId}`}
+                  >
+                    <Eye className="mr-1.5 h-4 w-4" />
+                    View Sample
+                  </Button>
                 )}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-sample-report">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" data-testid="dialog-title">
+              {selectedReport?.icon && <selectedReport.icon className="h-5 w-5 text-primary" />}
+              {selectedReport?.title}
+            </DialogTitle>
+            <DialogDescription>
+              How would you like to view this sample report?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              onClick={handleViewOnline}
+              className="w-full"
+              data-testid="button-view-online"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View Online
+            </Button>
+            {selectedReport?.downloadName && (
+              <Button
+                variant="outline"
+                onClick={handleDownloadPDF}
+                className="w-full"
+                data-testid="button-download-pdf"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
