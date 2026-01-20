@@ -119,17 +119,11 @@ const CANDIDATE_COLORS = [
 export default function SampleComparisonReport() {
   const { toast } = useToast();
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
+    window.open('/sample-reports/comparison-sample.pdf', '_blank');
     toast({
-      title: "Generating PDF...",
-      description: "Your comparison report is being prepared.",
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "PDF Ready",
-      description: "In the full version, this would download the comparison report PDF.",
+      title: "Downloading PDF",
+      description: "Your comparison report PDF is being downloaded.",
     });
   };
 
@@ -175,10 +169,10 @@ export default function SampleComparisonReport() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="mb-6">
-            <Link href="/for-employers">
+            <Link href="/#sample-reports">
               <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to For Employers
+                Back to Sample Reports
               </Button>
             </Link>
             

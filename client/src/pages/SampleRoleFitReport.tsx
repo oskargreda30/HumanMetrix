@@ -86,17 +86,11 @@ const ROLE_FLEXIBILITY = [
 export default function SampleRoleFitReport() {
   const { toast } = useToast();
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
+    window.open('/sample-reports/rolefit-sample.pdf', '_blank');
     toast({
-      title: "Generating PDF...",
-      description: "Your role fit report is being prepared.",
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "PDF Ready",
-      description: "In the full version, this would download the role fit report PDF.",
+      title: "Downloading PDF",
+      description: "Your role fit report PDF is being downloaded.",
     });
   };
 
@@ -134,10 +128,10 @@ export default function SampleRoleFitReport() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <div className="mb-6">
-            <Link href="/for-employers">
+            <Link href="/#sample-reports">
               <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to For Employers
+                Back to Sample Reports
               </Button>
             </Link>
             
