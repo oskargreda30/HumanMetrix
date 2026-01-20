@@ -51,6 +51,9 @@ import {
   UserPlus,
   ChevronRight,
   ChevronDown,
+  Lightbulb,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import {
   useEcosystemProject,
@@ -1753,6 +1756,96 @@ function TeamAnalysisResults({
           </div>
         </div>
       </div>
+
+      {/* Contextual Insights - AI Deep Analysis */}
+      {analysis.contextualInsights && analysis.contextualInsights.length > 0 && (
+        <div data-testid="section-contextual-insights">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            Deep Contextual Insights
+          </h4>
+          <div className="space-y-3">
+            {analysis.contextualInsights.map((insight: string, i: number) => (
+              <div key={i} className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid={`text-insight-${i}`}>
+                <p className="text-sm">{insight}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ideal Candidate Profile - AI-Generated Detailed Profile */}
+      {analysis.idealCandidateProfile && analysis.idealCandidateProfile.summary && (
+        <div data-testid="section-ideal-candidate">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Star className="h-4 w-4 text-primary" />
+            Your Ideal Next Hire
+          </h4>
+          <div className="p-5 bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm mb-4 whitespace-pre-line" data-testid="text-candidate-summary">{analysis.idealCandidateProfile.summary}</p>
+            
+            {/* Target FIT Scores with Reasoning */}
+            {Object.keys(analysis.idealCandidateProfile.fitTargets || {}).length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-medium text-muted-foreground mb-3">Target FIT Score Ranges</p>
+                <div className="grid gap-2">
+                  {Object.entries(analysis.idealCandidateProfile.fitTargets).map(([code, targets]: [string, any]) => {
+                    const capInfo = FIT_CAPABILITIES.find(c => c.code === code);
+                    return (
+                      <div key={code} className="flex items-start gap-3 p-2 bg-background/50 rounded">
+                        <div className={`h-6 w-6 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-white text-xs font-bold">{code}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">{capInfo?.name || code}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {targets.min}-{targets.ideal}%
+                            </Badge>
+                          </div>
+                          {targets.reasoning && (
+                            <p className="text-xs text-muted-foreground">{targets.reasoning}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Key Traits & Interview Focus */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {analysis.idealCandidateProfile.keyTraits && analysis.idealCandidateProfile.keyTraits.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-primary mb-2">Key Traits to Seek</p>
+                  <ul className="text-sm space-y-1">
+                    {analysis.idealCandidateProfile.keyTraits.map((trait: string, j: number) => (
+                      <li key={j} className="flex items-start gap-2">
+                        <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
+                        <span>{trait}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {analysis.idealCandidateProfile.interviewFocusAreas && analysis.idealCandidateProfile.interviewFocusAreas.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-blue-600 mb-2">Interview Focus Areas</p>
+                  <ul className="text-sm space-y-1">
+                    {analysis.idealCandidateProfile.interviewFocusAreas.map((area: string, j: number) => (
+                      <li key={j} className="flex items-start gap-2">
+                        <MessageSquare className="h-3 w-3 text-blue-500 mt-1 flex-shrink-0" />
+                        <span>{area}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ideal Hire Profiles - Strategic Recommendations */}
       {analysis.idealHireProfiles && analysis.idealHireProfiles.length > 0 && (

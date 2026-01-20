@@ -145,6 +145,37 @@ const strategicAnalysisResponseSchema = z.object({
   })),
 });
 
+// Contextual gap analysis response schema for validation
+const contextualGapAnalysisResponseSchema = z.object({
+  gapAnalysis: z.array(z.object({
+    code: z.string(),
+    capability: z.string().optional(),
+    requiredPriority: z.enum(["critical", "high", "medium", "low"]).default("medium"),
+    gapSeverity: z.enum(["critical", "warning", "healthy"]).default("healthy"),
+    currentAverage: z.number().optional(),
+    teamCoverage: z.number().optional(),
+    contextualReasoning: z.string().optional(),
+    reasoning: z.string().optional(),
+    businessImpact: z.string().optional(),
+  })),
+  contextualInsights: z.array(z.string()).default([]),
+  idealCandidateProfile: z.object({
+    summary: z.string().default(""),
+    fitTargets: z.record(z.object({
+      min: z.number(),
+      ideal: z.number(),
+      reasoning: z.string().optional(),
+    })).default({}),
+    keyTraits: z.array(z.string()).default([]),
+    interviewFocusAreas: z.array(z.string()).default([]),
+  }).default({
+    summary: "",
+    fitTargets: {},
+    keyTraits: [],
+    interviewFocusAreas: [],
+  }),
+});
+
 // Helper to analyze mission statement with OpenAI
 async function analyzeMissionWithAI(
   missionStatement: string,
@@ -438,6 +469,231 @@ Generate 3-5 strategic insights, 1-3 ideal hire profiles based on hiring plans, 
   }
 }
 
+// AI-powered contextual gap analysis - uses mission, ethos, and deep dive context for nuanced insights
+async function generateAIContextualGapAnalysis(
+  project: any,
+  teamMembers: any[],
+  missionAnalysis: EcosystemMissionAnalysis | null,
+  capabilityDistribution: Record<string, { average: number; min: number; max: number; coverage: number }>
+): Promise<{
+  gapAnalysis: EcosystemGapAnalysis[];
+  contextualInsights: string[];
+  idealCandidateProfile: {
+    summary: string;
+    fitTargets: Record<string, { min: number; ideal: number; reasoning: string }>;
+    keyTraits: string[];
+    interviewFocusAreas: string[];
+  };
+}> {
+  const teamContext = {
+    industry: project.industry || "Unknown",
+    teamFunction: project.teamFunction || "Unknown",
+    teamSize: project.teamSize || teamMembers.length,
+    teamStage: project.teamStage || "Unknown",
+    hiringPlans: project.hiringPlans || "Unknown",
+    currentChallenges: project.currentChallenges || "",
+    workMode: project.workMode || "Unknown",
+  };
+
+  const deepDiveContext = {
+    delayedTasks: project.delayedTasks || "",
+    conflictTopics: project.conflictTopics || "",
+    avoidedWork: project.avoidedWork || "",
+    overloadedMember: project.overloadedMember || "",
+    wishedSkills: project.wishedSkills || "",
+    idealInteractionStyle: project.idealInteractionStyle || "",
+    personalityGap: project.personalityGap || "",
+    upcomingInitiative: project.upcomingInitiative || "",
+    cloneableSkills: project.cloneableSkills || "",
+    transformativeFix: project.transformativeFix || "",
+  };
+
+  const hasDeepDiveData = Object.values(deepDiveContext).some(v => v.length > 0);
+
+  const teamMemberProfiles = teamMembers.map(m => ({
+    name: m.name || "Anonymous",
+    role: m.role || "Unknown",
+    scores: m.fitScores || {},
+  }));
+
+  const systemPrompt = `You are an expert organizational psychologist analyzing team capability gaps using the FIT framework. Your analysis must be deeply contextual - not just comparing numbers to thresholds, but understanding HOW the team's specific context, challenges, and goals shape what capabilities matter most.
+
+FIT Framework Capabilities:
+- HA (High Agency): Initiative, ownership, driving outcomes proactively
+- IC (Intellectual Curiosity): Learning drive, exploring ideas, understanding complexity
+- RA (Resilience & Adaptability): Recovering from setbacks, adapting to change
+- EE (Empathy & Ethics): Understanding others, principled decision-making
+- GM (Growth Mindset): Believing abilities develop, embracing challenges
+- IA (Interpersonal Agility): Building relationships, navigating social dynamics
+
+Your task: Analyze the gap between what this team HAS and what they NEED based on their specific context. Consider:
+1. Mission requirements - what capabilities are essential for their stated goals?
+2. Deep dive pain points - what do their challenges reveal about capability needs?
+3. Team dynamics - how do current scores interact with stated problems?
+4. Strategic timing - given their stage and hiring plans, what's most urgent?
+
+IMPORTANT: Generate realistic, varied score targets. Do NOT use round numbers like 70, 75, 80. Use specific numbers like 73, 82, 67 based on your contextual analysis.`;
+
+  const userPrompt = `Analyze capability gaps for this team:
+
+TEAM CONTEXT:
+- Industry: ${teamContext.industry}
+- Function: ${teamContext.teamFunction}
+- Size: ${teamContext.teamSize}
+- Stage: ${teamContext.teamStage}
+- Work Mode: ${teamContext.workMode}
+- Hiring Plans: ${teamContext.hiringPlans}
+- Current Challenges: ${teamContext.currentChallenges || "Not specified"}
+
+${missionAnalysis ? `MISSION ANALYSIS:
+- Summary: ${missionAnalysis.summary}
+- Key Themes: ${missionAnalysis.keyThemes?.join(", ") || "N/A"}
+- Capability Priorities: ${missionAnalysis.capabilityPriorities?.map(p => `${p.code}: ${p.priority}`).join(", ") || "N/A"}
+` : "No mission analysis available."}
+
+${hasDeepDiveData ? `DEEP DIVE INSIGHTS (Critical for understanding real gaps):
+${deepDiveContext.delayedTasks ? `- Tasks frequently delayed: ${deepDiveContext.delayedTasks}` : ""}
+${deepDiveContext.conflictTopics ? `- Conflict topics: ${deepDiveContext.conflictTopics}` : ""}
+${deepDiveContext.avoidedWork ? `- Work avoided/struggled with: ${deepDiveContext.avoidedWork}` : ""}
+${deepDiveContext.overloadedMember ? `- Overloaded members: ${deepDiveContext.overloadedMember}` : ""}
+${deepDiveContext.wishedSkills ? `- Skills wished for in-house: ${deepDiveContext.wishedSkills}` : ""}
+${deepDiveContext.idealInteractionStyle ? `- Desired interaction style: ${deepDiveContext.idealInteractionStyle}` : ""}
+${deepDiveContext.personalityGap ? `- Personality gap noted: ${deepDiveContext.personalityGap}` : ""}
+${deepDiveContext.upcomingInitiative ? `- Upcoming initiative needing capability: ${deepDiveContext.upcomingInitiative}` : ""}
+${deepDiveContext.cloneableSkills ? `- Skills they'd clone: ${deepDiveContext.cloneableSkills}` : ""}
+${deepDiveContext.transformativeFix ? `- Transformative fix needed: ${deepDiveContext.transformativeFix}` : ""}
+` : "No deep dive data provided."}
+
+CURRENT TEAM SCORES:
+${JSON.stringify(teamMemberProfiles, null, 2)}
+
+CAPABILITY DISTRIBUTION (Current State):
+${Object.entries(capabilityDistribution).map(([code, d]) => 
+  `${code}: Avg ${d.average}%, Coverage ${d.coverage}% (70+), Range ${d.min}-${d.max}%`
+).join("\n") || "No score data available"}
+
+Return JSON with this structure:
+{
+  "gapAnalysis": [
+    {
+      "code": "HA|IC|RA|EE|GM|IA",
+      "capability": "Full capability name",
+      "requiredPriority": "critical|high|medium|low",
+      "gapSeverity": "critical|warning|healthy",
+      "currentAverage": 67.3,
+      "teamCoverage": 45,
+      "contextualReasoning": "2-3 sentences explaining WHY this is a gap given the specific context - reference deep dive insights, mission needs, or team challenges. Not just 'score is low' but 'the team's struggle with X directly relates to insufficient Y capability'",
+      "businessImpact": "1 sentence on what this gap means for business outcomes"
+    }
+  ],
+  "contextualInsights": [
+    "Insight connecting multiple data points, e.g., 'The team's pattern of avoiding client-facing work correlates with lower Interpersonal Agility scores, suggesting a systematic gap rather than individual preference'"
+  ],
+  "idealCandidateProfile": {
+    "summary": "2-3 paragraph description of the ideal next hire based on all context. Be specific about personality, work style, and what they bring to the team.",
+    "fitTargets": {
+      "HA": { "min": 73, "ideal": 86, "reasoning": "Why this specific range for this team" },
+      "IC": { "min": 68, "ideal": 81, "reasoning": "..." },
+      "RA": { "min": 71, "ideal": 84, "reasoning": "..." },
+      "EE": { "min": 64, "ideal": 77, "reasoning": "..." },
+      "GM": { "min": 69, "ideal": 83, "reasoning": "..." },
+      "IA": { "min": 72, "ideal": 88, "reasoning": "..." }
+    },
+    "keyTraits": ["Specific trait 1", "Specific trait 2"],
+    "interviewFocusAreas": ["Behavioral question topic 1", "Scenario to probe"]
+  }
+}
+
+IMPORTANT: Use varied, specific numbers for scores (not multiples of 5). Base all analysis on the specific context provided.`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.4,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from AI");
+    }
+
+    const rawParsed = JSON.parse(content);
+    
+    // Validate with Zod for type safety and defaults
+    const validated = contextualGapAnalysisResponseSchema.safeParse(rawParsed);
+    
+    if (!validated.success) {
+      console.warn("[Ecosystem] AI contextual gap analysis validation warning:", validated.error.issues);
+    }
+    
+    // Use validated data or fall back to raw with defaults
+    const validatedData = validated.success ? validated.data : rawParsed;
+    
+    // Transform AI response to match our schema
+    const gapAnalysis: EcosystemGapAnalysis[] = (validatedData.gapAnalysis || []).map((g: any) => ({
+      capability: g.capability || FIT_CAPABILITIES[g.code as keyof typeof FIT_CAPABILITIES]?.name || g.code,
+      code: g.code,
+      currentAverage: g.currentAverage ?? capabilityDistribution[g.code]?.average ?? 0,
+      teamCoverage: g.teamCoverage ?? capabilityDistribution[g.code]?.coverage ?? 0,
+      requiredPriority: g.requiredPriority || "medium",
+      gapSeverity: g.gapSeverity || "healthy",
+      reasoning: g.contextualReasoning || g.reasoning || "",
+      businessImpact: g.businessImpact || "",
+    }));
+
+    // Ensure idealCandidateProfile has all required fields with defaults
+    const idealCandidateProfile = {
+      summary: validatedData.idealCandidateProfile?.summary || "",
+      fitTargets: validatedData.idealCandidateProfile?.fitTargets || {},
+      keyTraits: validatedData.idealCandidateProfile?.keyTraits || [],
+      interviewFocusAreas: validatedData.idealCandidateProfile?.interviewFocusAreas || [],
+    };
+
+    return {
+      gapAnalysis,
+      contextualInsights: validatedData.contextualInsights || [],
+      idealCandidateProfile,
+    };
+  } catch (error) {
+    console.error("[Ecosystem] AI contextual gap analysis error:", error);
+    // Return fallback basic analysis
+    const capabilityCodes = ["HA", "IC", "RA", "EE", "GM", "IA"] as const;
+    const fallbackGapAnalysis: EcosystemGapAnalysis[] = capabilityCodes.map(code => {
+      const dist = capabilityDistribution[code];
+      const priority = missionAnalysis?.capabilityPriorities?.find(p => p.code === code)?.priority || "medium";
+      let severity: "critical" | "warning" | "healthy" = "healthy";
+      if (dist && dist.average < 55) severity = "critical";
+      else if (dist && dist.average < 70) severity = "warning";
+      
+      return {
+        capability: FIT_CAPABILITIES[code].name,
+        code,
+        currentAverage: dist?.average || 0,
+        teamCoverage: dist?.coverage || 0,
+        requiredPriority: priority,
+        gapSeverity: severity,
+        reasoning: `Team average: ${dist?.average || 0}%, Coverage: ${dist?.coverage || 0}%`,
+      };
+    });
+    
+    return {
+      gapAnalysis: fallbackGapAnalysis,
+      contextualInsights: [],
+      idealCandidateProfile: {
+        summary: "Unable to generate AI analysis. Please try again.",
+        fitTargets: {},
+        keyTraits: [],
+        interviewFocusAreas: [],
+      },
+    };
+  }
+}
+
 // Helper to generate comprehensive team analysis
 async function generateTeamAnalysis(
   projectId: string,
@@ -472,57 +728,18 @@ async function generateTeamAnalysis(
     }
   }
 
-  // Gap analysis
-  const gapAnalysis: EcosystemGapAnalysis[] = [];
-  const priorityMap: Record<string, "critical" | "high" | "medium" | "low"> = {};
+  // AI-powered contextual gap analysis
+  console.log("[Ecosystem] Generating AI contextual gap analysis...");
+  const aiGapAnalysis = await generateAIContextualGapAnalysis(
+    project,
+    teamMembers,
+    missionAnalysis,
+    capabilityDistribution
+  );
   
-  if (missionAnalysis?.capabilityPriorities) {
-    for (const cap of missionAnalysis.capabilityPriorities) {
-      priorityMap[cap.code] = cap.priority;
-    }
-  }
-
-  for (const code of capabilityCodes) {
-    const dist = capabilityDistribution[code];
-    const priority = priorityMap[code] || "medium";
-    
-    if (dist) {
-      let gapSeverity: "critical" | "warning" | "healthy" = "healthy";
-      const thresholds = {
-        critical: { avgMin: 60, coverageMin: 40 },
-        high: { avgMin: 55, coverageMin: 35 },
-        medium: { avgMin: 50, coverageMin: 30 },
-        low: { avgMin: 45, coverageMin: 25 },
-      };
-      
-      const threshold = thresholds[priority];
-      
-      if (dist.average < threshold.avgMin - 10 || dist.coverage < threshold.coverageMin - 10) {
-        gapSeverity = "critical";
-      } else if (dist.average < threshold.avgMin || dist.coverage < threshold.coverageMin) {
-        gapSeverity = "warning";
-      }
-
-      let reasoning = "";
-      if (gapSeverity === "critical") {
-        reasoning = `Team average of ${dist.average}% with only ${dist.coverage}% strong performers is critically low for a ${priority}-priority capability.`;
-      } else if (gapSeverity === "warning") {
-        reasoning = `Team coverage could be stronger - ${dist.coverage}% of team scores 70+ in this ${priority}-priority capability.`;
-      } else {
-        reasoning = `Team is well-positioned with ${dist.average}% average and ${dist.coverage}% strong performers.`;
-      }
-
-      gapAnalysis.push({
-        capability: FIT_CAPABILITIES[code].name,
-        code,
-        currentAverage: dist.average,
-        teamCoverage: dist.coverage,
-        requiredPriority: priority,
-        gapSeverity,
-        reasoning,
-      });
-    }
-  }
+  const gapAnalysis = aiGapAnalysis.gapAnalysis;
+  const contextualInsights = aiGapAnalysis.contextualInsights;
+  const idealCandidateProfile = aiGapAnalysis.idealCandidateProfile;
 
   // Sort by severity and priority
   const severityOrder = { critical: 0, warning: 1, healthy: 2 };
@@ -533,18 +750,21 @@ async function generateTeamAnalysis(
     return priorityOrder[a.requiredPriority] - priorityOrder[b.requiredPriority];
   });
 
-  // Generate hire recommendations based on gaps
+  // Generate hire recommendations based on gaps - use AI-generated targets if available
   const hireRecommendations: EcosystemHireRecommendation[] = [];
   let priorityRank = 1;
   
   for (const gap of gapAnalysis.filter(g => g.gapSeverity !== "healthy")) {
-    const targetScore = gap.gapSeverity === "critical" ? 85 : 75;
+    // Use AI-generated ideal targets if available, otherwise fall back to defaults
+    const aiTarget = idealCandidateProfile?.fitTargets?.[gap.code];
+    const targetScore = aiTarget?.ideal || (gap.gapSeverity === "critical" ? 85 : 75);
+    
     hireRecommendations.push({
       priorityRank,
       capability: gap.capability,
       code: gap.code,
       targetScore,
-      reasoning: gap.reasoning,
+      reasoning: aiTarget?.reasoning || gap.reasoning,
       alignsWithMission: gap.requiredPriority === "critical" || gap.requiredPriority === "high",
     });
     priorityRank++;
@@ -629,6 +849,9 @@ async function generateTeamAnalysis(
     strategicInsights: strategicAnalysis.strategicInsights,
     idealHireProfiles: strategicAnalysis.idealHireProfiles,
     capabilityGapMatrix: strategicAnalysis.capabilityGapMatrix,
+    // AI-powered contextual gap analysis
+    contextualInsights,
+    idealCandidateProfile,
   };
 }
 

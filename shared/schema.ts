@@ -1925,6 +1925,15 @@ export type EcosystemTeamAnalysis = {
     focus: string;
     hiringPriorities: string[];
   }[];
+  
+  // AI-powered contextual gap analysis
+  contextualInsights?: string[]; // Deep insights connecting multiple data points
+  idealCandidateProfile?: {
+    summary: string; // Detailed description of ideal next hire
+    fitTargets: Record<string, { min: number; ideal: number; reasoning: string }>;
+    keyTraits: string[];
+    interviewFocusAreas: string[];
+  };
 };
 
 // Ecosystem project status
