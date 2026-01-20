@@ -199,11 +199,15 @@ export default function EcosystemIndex() {
               are distributed across your team and shows you how to rebalance.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/ecosystem/start">
-                <Button size="lg" data-testid="button-start-diagnostic">
-                  Start Team Diagnostic
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                data-testid="button-start-diagnostic"
+                onClick={() => {
+                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Start Team Diagnostic
+              </Button>
               <Link href="/ecosystem/sample-report">
                 <Button size="lg" variant="outline" data-testid="button-view-sample-report">
                   View Sample Report
@@ -254,7 +258,7 @@ export default function EcosystemIndex() {
 
         
         {/* How It Works - Step by Step (Informational) */}
-        <section className="py-12 md:py-20 bg-muted/30" data-testid="section-how-it-works">
+        <section id="how-it-works" className="py-12 md:py-20 bg-muted/30" data-testid="section-how-it-works">
           <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-how-it-works-title">How It Works</h2>
