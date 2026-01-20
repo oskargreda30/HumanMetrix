@@ -242,7 +242,13 @@ export function useGenerateTeamAnalysis() {
     { projectId: string }
   >({
     mutationFn: async ({ projectId }) => {
-      const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/generate-analysis`);
+      // AI analysis can take 60-90 seconds with GPT-4o, use 2 minute timeout
+      const response = await apiRequest(
+        "POST", 
+        `/api/ecosystem/projects/${projectId}/generate-analysis`,
+        undefined,
+        { timeoutMs: 120000 }
+      );
       return response.json();
     },
     onSuccess: () => {
