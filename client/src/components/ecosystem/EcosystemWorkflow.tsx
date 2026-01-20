@@ -1728,24 +1728,70 @@ function TeamAnalysisResults({
           Health Score Explained
         </h4>
         <p className="text-sm text-muted-foreground mb-4">
-          Your Team Health Score of <span className="font-semibold text-foreground">{analysis.overallHealthScore}%</span> measures 
-          your team's overall capability coverage, balance, and risk exposure.
+          Your Team Health Score of <span className="font-semibold text-foreground">{analysis.overallHealthScore}%</span> is a 
+          composite metric that tells you how well-equipped your team is to achieve your mission. Think of it as a "readiness rating" 
+          that combines capability strength, coverage breadth, and risk exposure into a single number.
         </p>
         
-        <div className="mb-4 p-3 bg-white/50 dark:bg-black/20 rounded-md">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">How It's Calculated</p>
-          <div className="grid gap-2 text-sm">
+        <div className="mb-4 p-4 bg-white/50 dark:bg-black/20 rounded-md">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">How It's Calculated</p>
+          <div className="space-y-4 text-sm">
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">40%</span>
+              </div>
+              <div>
+                <p className="font-medium">Capability Strength</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  The average of your team's FIT scores across all 8 capabilities. Higher individual scores mean a stronger foundation.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">30%</span>
+              </div>
+              <div>
+                <p className="font-medium">Capability Coverage</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Measures whether you have at least one team member meeting the target threshold for each capability. 
+                  A team with 100% coverage has someone strong in every area; gaps here indicate blind spots.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">30%</span>
+              </div>
+              <div>
+                <p className="font-medium">Risk & Gap Penalties</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Deductions for critical gaps, warnings, and risk factors. Critical gaps (where the team is 15+ points below target) 
+                  have the heaviest penalty (-8 points each). Warnings (-4 points) and minor risks (-2 points) also reduce the score.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 p-4 bg-white/50 dark:bg-black/20 rounded-md">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">What the Score Means</p>
+          <div className="grid gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-              <span><strong>40%</strong> Average capability scores across the team</span>
+              <div className="h-3 w-12 rounded-full bg-green-500"></div>
+              <span><strong>80-100%:</strong> Excellent — Team is well-balanced and mission-ready with minimal gaps</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-              <span><strong>30%</strong> Capability coverage (team members meeting thresholds)</span>
+              <div className="h-3 w-12 rounded-full bg-emerald-500"></div>
+              <span><strong>65-79%:</strong> Good — Solid foundation with some areas needing attention</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-amber-500"></div>
-              <span><strong>30%</strong> Gap and risk penalties (critical gaps, warnings, risks)</span>
+              <div className="h-3 w-12 rounded-full bg-amber-500"></div>
+              <span><strong>50-64%:</strong> Fair — Notable gaps that could impact mission success</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-12 rounded-full bg-red-500"></div>
+              <span><strong>Below 50%:</strong> Needs Attention — Significant capability gaps requiring immediate action</span>
             </div>
           </div>
         </div>
@@ -1755,13 +1801,24 @@ function TeamAnalysisResults({
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               Factors Affecting Your Score
             </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              These are the specific issues identified that are reducing your team's health score:
+            </p>
             <div className="space-y-2">
-              {analysis.riskAlerts.slice(0, 3).map((alert, i) => (
+              {analysis.riskAlerts.slice(0, 5).map((alert, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
                   <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
                     alert.severity === "critical" ? "text-red-500" : "text-amber-500"
                   }`} />
-                  <span className="text-muted-foreground">{alert.title}</span>
+                  <div>
+                    <span className="text-foreground">{alert.title}</span>
+                    {alert.severity === "critical" && (
+                      <span className="text-xs text-red-500 ml-2">(-8 points)</span>
+                    )}
+                    {alert.severity === "warning" && (
+                      <span className="text-xs text-amber-500 ml-2">(-4 points)</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
