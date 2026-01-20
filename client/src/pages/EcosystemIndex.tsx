@@ -215,7 +215,7 @@ export default function EcosystemIndex() {
               </Link>
             </div>
             <p className="text-sm text-muted-foreground mt-6" data-testid="text-hero-features">
-              Scenario-based assessment • Team-level insights • Modern work ready
+              Team Gap Analysis • Hiring Recommendations • AI-Powered Insights
             </p>
             
             {/* Book Consultation with Recommended Banner */}
