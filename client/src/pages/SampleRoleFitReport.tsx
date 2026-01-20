@@ -175,12 +175,12 @@ export default function SampleRoleFitReport() {
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
-                    <p className="font-medium text-sm">Role Alignment Tiers</p>
-                    <p className="text-xs text-muted-foreground">
-                      <Badge className="bg-green-500 text-white mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
-                      <Badge className="bg-amber-500 text-white mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
-                      <Badge className="bg-red-500 text-white mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
-                    </p>
+                    <span className="font-medium text-sm">Role Alignment Tiers</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>High alignment,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Moderate,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Development needed</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -399,6 +399,203 @@ export default function SampleRoleFitReport() {
                   <AlertTriangle className="h-4 w-4 text-red-500" />
                   <span>Below minimum threshold (60)</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hiring Decision Matrix */}
+          <Card className="mb-6" data-testid="section-hiring-decision">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Hiring Decision Matrix
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Quick reference for hiring band classification and decision drivers
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-1">
+                <div className="border-2 bg-green-100 dark:bg-green-900/30 border-green-300 rounded-lg p-4" data-testid="hiring-matrix-card">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="font-bold text-lg">{DEMO_CANDIDATE.name}</div>
+                      <div className="text-2xl font-bold" data-testid="hiring-matrix-score">{overallFitScore}%</div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className="text-sm font-bold text-green-700 bg-white dark:bg-gray-800" data-testid="badge-strong-hire">
+                        STRONG HIRE
+                      </Badge>
+                      <div className="mt-1">
+                        <Badge className="bg-amber-500 text-white">Top Pick</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2 text-green-600">
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span>Strong Fit, Intellectual Curiosity, Responsible AI</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-amber-600">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span>Interpersonal Agility (minor gap)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Advanced Analytics */}
+          <Card className="mb-6" data-testid="section-advanced-analytics">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Advanced Analytics
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Deep-dive metrics to help you understand candidate strengths beyond overall fit scores
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    Skill Dominance Count
+                  </h4>
+                  <p className="text-sm text-muted-foreground">How many skills does this candidate lead in vs role requirements?</p>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                    <span className="font-medium">{DEMO_CANDIDATE.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-green-600">9</span>
+                      <span className="text-sm text-muted-foreground">/ 11 skills above requirement</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-blue-500" />
+                    Score Consistency
+                  </h4>
+                  <p className="text-sm text-muted-foreground">How consistent are the scores across all skills?</p>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                    <span className="font-medium">{DEMO_CANDIDATE.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-blue-600">87%</span>
+                      <Badge variant="secondary" className="text-xs">Very Consistent</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">Low variance indicates reliable performance across competencies.</p>
+                </div>
+
+                <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    Critical Gap Ratio
+                  </h4>
+                  <p className="text-sm text-muted-foreground">Proportion of critical skills with gaps</p>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                    <span className="font-medium">{DEMO_CANDIDATE.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-green-600">0%</span>
+                      <Badge className="bg-green-500 text-white text-xs">Low Risk</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-purple-500" />
+                    Largest Differential
+                  </h4>
+                  <p className="text-sm text-muted-foreground">Greatest variance from role requirement</p>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                    <div>
+                      <span className="font-medium">Responsible AI</span>
+                      <Badge variant="outline" className="ml-2 text-xs text-red-600 border-red-300">Critical</Badge>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-bold text-green-600">+5</span>
+                      <span className="text-sm text-muted-foreground ml-1">points above required</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skill-by-Skill Analysis Table */}
+          <Card className="mb-6" data-testid="section-skill-analysis">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Skill-by-Skill Analysis
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Complete breakdown of candidate performance against role requirements
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-3 font-semibold">Skill</th>
+                      <th className="text-center p-3 font-semibold">Criticality</th>
+                      <th className="text-center p-3 font-semibold">Required</th>
+                      <th className="text-center p-3 font-semibold">Score</th>
+                      <th className="text-center p-3 font-semibold">Gap</th>
+                      <th className="text-center p-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={6} className="p-2 font-semibold text-muted-foreground">FIT Assessment</td>
+                    </tr>
+                    {SKILL_ALIGNMENTS.map((skill, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="p-3 font-medium">{skill.skillName}</td>
+                        <td className="text-center p-3">{getCriticalityBadge(skill.criticality)}</td>
+                        <td className="text-center p-3">{skill.requiredScore}</td>
+                        <td className="text-center p-3">
+                          <span className={`font-bold ${skill.candidateScore >= skill.requiredScore ? 'text-green-600' : 'text-amber-600'}`}>
+                            {skill.candidateScore}
+                          </span>
+                        </td>
+                        <td className="text-center p-3">
+                          <span className={skill.gap >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {skill.gap > 0 ? '+' : ''}{skill.gap}
+                          </span>
+                        </td>
+                        <td className="text-center p-3">{getAlignmentBadge(skill.alignment)}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={6} className="p-2 font-semibold text-muted-foreground">AI Readiness</td>
+                    </tr>
+                    {AI_SKILL_ALIGNMENTS.map((skill, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="p-3 font-medium">{skill.skillName}</td>
+                        <td className="text-center p-3">{getCriticalityBadge(skill.criticality)}</td>
+                        <td className="text-center p-3">{skill.requiredScore}</td>
+                        <td className="text-center p-3">
+                          <span className={`font-bold ${skill.candidateScore >= skill.requiredScore ? 'text-green-600' : 'text-amber-600'}`}>
+                            {skill.candidateScore}
+                          </span>
+                        </td>
+                        <td className="text-center p-3">
+                          <span className={skill.gap >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {skill.gap > 0 ? '+' : ''}{skill.gap}
+                          </span>
+                        </td>
+                        <td className="text-center p-3">{getAlignmentBadge(skill.alignment)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

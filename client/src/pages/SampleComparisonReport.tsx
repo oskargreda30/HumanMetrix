@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy } from "lucide-react";
+import { ArrowLeft, Download, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -117,6 +117,58 @@ const CANDIDATE_COLORS = [
   { stroke: "#3b82f6", fill: "#3b82f6" },
   { stroke: "#22c55e", fill: "#22c55e" },
   { stroke: "#f59e0b", fill: "#f59e0b" },
+];
+
+const PROMPT_ARCHITECTURE_SCORES = [
+  {
+    candidateId: "1",
+    name: "Sarah Chen",
+    totalScore: 78,
+    percentile: 82,
+    levels: [
+      { level: 1, clarity: 16, structure: 17, contextRelevance: 15, creativity: 14, iterativeImprovement: 16 },
+      { level: 2, clarity: 15, structure: 16, contextRelevance: 14, creativity: 15, iterativeImprovement: 15 },
+      { level: 3, clarity: 14, structure: 15, contextRelevance: 16, creativity: 13, iterativeImprovement: 14 },
+    ],
+  },
+  {
+    candidateId: "2",
+    name: "Marcus Johnson",
+    totalScore: 82,
+    percentile: 86,
+    levels: [
+      { level: 1, clarity: 17, structure: 18, contextRelevance: 16, creativity: 15, iterativeImprovement: 17 },
+      { level: 2, clarity: 16, structure: 17, contextRelevance: 15, creativity: 16, iterativeImprovement: 16 },
+      { level: 3, clarity: 15, structure: 16, contextRelevance: 17, creativity: 14, iterativeImprovement: 15 },
+    ],
+  },
+  {
+    candidateId: "3",
+    name: "Emily Rodriguez",
+    totalScore: null,
+    percentile: null,
+    levels: [],
+  },
+];
+
+const AIQ_SCORES = [
+  { candidateId: "1", name: "Sarah Chen", totalScore: 85, completedAt: "2026-01-15" },
+  { candidateId: "2", name: "Marcus Johnson", totalScore: 78, completedAt: "2026-01-14" },
+  { candidateId: "3", name: "Emily Rodriguez", totalScore: 82, completedAt: "2026-01-13" },
+];
+
+const COMBINED_RADAR_DATA = [
+  { skill: "HA", fullName: "High Agency", candidate0: 85, candidate1: 72, candidate2: 68 },
+  { skill: "IC", fullName: "Intellectual Curiosity", candidate0: 88, candidate1: 78, candidate2: 74 },
+  { skill: "RE", fullName: "Resilience", candidate0: 78, candidate1: 82, candidate2: 72 },
+  { skill: "EE", fullName: "Empathy & Ethics", candidate0: 84, candidate1: 75, candidate2: 82 },
+  { skill: "GM", fullName: "Growth Mindset", candidate0: 86, candidate1: 74, candidate2: 70 },
+  { skill: "IA", fullName: "Interpersonal Agility", candidate0: 80, candidate1: 76, candidate2: 78 },
+  { skill: "AL", fullName: "AI Literacy", candidate0: 82, candidate1: 78, candidate2: 70 },
+  { skill: "TF", fullName: "Technical Fluency", candidate0: 75, candidate1: 82, candidate2: 65 },
+  { skill: "CT", fullName: "Critical Thinking", candidate0: 85, candidate1: 74, candidate2: 76 },
+  { skill: "AD", fullName: "Adaptive Learning", candidate0: 88, candidate1: 76, candidate2: 72 },
+  { skill: "RA", fullName: "Responsible AI", candidate0: 90, candidate1: 72, candidate2: 85 },
 ];
 
 export default function SampleComparisonReport() {
@@ -326,6 +378,95 @@ export default function SampleComparisonReport() {
             </CardContent>
           </Card>
 
+          {/* Overall Ranking & Composite Score */}
+          <Card className="mb-6" data-testid="section-composite-ranking">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Overall Ranking & Composite Score
+              </CardTitle>
+              <CardDescription>
+                Weighted composite score across all completed assessments with configurable weights
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-medium mb-3">Assessment Weight Distribution</h4>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground">FIT (25%)</label>
+                      <Progress value={25} className="mt-2 h-2" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">AI Readiness (25%)</label>
+                      <Progress value={25} className="mt-2 h-2" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Prompt Arch (25%)</label>
+                      <Progress value={25} className="mt-2 h-2" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">AIQ (25%)</label>
+                      <Progress value={25} className="mt-2 h-2" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {[...DEMO_CANDIDATES].sort((a, b) => b.overallScore - a.overallScore).map((candidate, idx) => {
+                    const rank = idx + 1;
+                    const originalIndex = DEMO_CANDIDATES.findIndex(c => c.id === candidate.id);
+                    return (
+                      <div key={candidate.id} className={`relative overflow-visible rounded-lg border bg-card p-4 ${rank === 1 ? 'border-2 border-primary' : ''}`} data-testid={`ranking-card-${rank}`}>
+                        {rank === 1 && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <Badge className="bg-primary">Top Candidate</Badge>
+                          </div>
+                        )}
+                        <div className="pt-2 text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            {rank === 1 && <Trophy className="h-6 w-6 text-amber-500" />}
+                            {rank === 2 && <ChevronUp className="h-6 w-6 text-gray-400" />}
+                            {rank === 3 && <ChevronDown className="h-6 w-6 text-gray-500" />}
+                            <span className="text-2xl font-bold">#{rank}</span>
+                          </div>
+                          <p className="font-medium" style={{ color: CANDIDATE_COLORS[originalIndex].stroke }}>
+                            {candidate.name}
+                          </p>
+                          <div className="text-4xl font-bold mt-2" style={{ color: CANDIDATE_COLORS[originalIndex].stroke }} data-testid={`score-${candidate.id}`}>
+                            {candidate.overallScore}
+                          </div>
+                          <p className="text-sm text-muted-foreground">Composite Score</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="p-4 bg-muted/30 rounded-lg border">
+                  <p className="text-base font-semibold text-foreground mb-2">Understanding the Scores</p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        <strong className="text-foreground">Composite Score</strong> is a weighted average across all four assessment types 
+                        (FIT, AI Readiness, Prompt Architecture, and AIQ). Use the sliders above to adjust how much each assessment 
+                        contributes to the final score. This allows you to prioritize assessments that matter most for your specific role requirements.
+                      </p>
+                    </div>
+                    <div className="border-t pt-3">
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        <strong className="text-foreground">Why weighted scoring matters:</strong> Different roles require different skill profiles. 
+                        For technical AI roles, you might weight AI Readiness and Prompt Architecture higher. For leadership positions, 
+                        FIT (behavioral traits) and AIQ (ethical awareness) may be more important.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Radar Charts */}
           <div className="grid gap-6 lg:grid-cols-2 mb-6">
             <Card data-testid="section-fit-comparison">
@@ -404,6 +545,201 @@ export default function SampleComparisonReport() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Prompt Architecture Comparison */}
+          <Card className="mb-6" data-testid="section-prompt-architecture">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Prompt Architecture Comparison
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Progressive difficulty levels (1-3) with dimensional scoring
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium">Level</th>
+                      <th className="text-left p-3 font-medium">Dimension</th>
+                      {PROMPT_ARCHITECTURE_SCORES.map((candidate, index) => (
+                        <th key={candidate.candidateId} className="text-left p-3 font-medium">
+                          <span style={{ color: CANDIDATE_COLORS[index].stroke }}>
+                            {candidate.name}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3].map((level) => {
+                      const dimensions = ['clarity', 'structure', 'contextRelevance', 'creativity', 'iterativeImprovement'] as const;
+                      const dimensionLabels = {
+                        clarity: 'Clarity',
+                        structure: 'Structure',
+                        contextRelevance: 'Context Relevance',
+                        creativity: 'Creativity',
+                        iterativeImprovement: 'Iterative Improvement',
+                      };
+
+                      return dimensions.map((dimension, dimIndex) => (
+                        <tr key={`${level}-${dimension}`} className={dimIndex === 0 ? 'border-t-2' : 'border-t'}>
+                          {dimIndex === 0 && (
+                            <td className="p-3 font-semibold align-top" rowSpan={5}>
+                              Level {level}
+                            </td>
+                          )}
+                          <td className="p-3 text-sm">{dimensionLabels[dimension]}</td>
+                          {PROMPT_ARCHITECTURE_SCORES.map((candidate, candIndex) => {
+                            if (!candidate.levels.length) {
+                              return (
+                                <td key={candidate.candidateId} className="p-3">
+                                  {dimIndex === 2 && <Badge variant="outline">Not Completed</Badge>}
+                                </td>
+                              );
+                            }
+                            const levelData = candidate.levels.find(l => l.level === level);
+                            const score = levelData?.[dimension];
+
+                            return (
+                              <td key={candidate.candidateId} className="p-3">
+                                {score !== undefined ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold">{score}/20</span>
+                                    <div className="h-2 rounded-full bg-primary/20" style={{ width: '60px' }}>
+                                      <div
+                                        className="h-full rounded-full bg-primary"
+                                        style={{ width: `${(score / 20) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ));
+                    })}
+                    <tr className="border-t-2 font-semibold bg-muted/30">
+                      <td className="p-3" colSpan={2}>Total Score</td>
+                      {PROMPT_ARCHITECTURE_SCORES.map((candidate, index) => (
+                        <td key={candidate.candidateId} className="p-3">
+                          {candidate.totalScore !== null ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg text-primary">{candidate.totalScore}/100</span>
+                              {candidate.percentile && (
+                                <Badge variant="secondary">{candidate.percentile}th percentile</Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AIQ Comparison */}
+          <Card className="mb-6" data-testid="section-aiq-comparison">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Algorithmic Integrity Quotient (AIQ) Comparison
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Comprehensive AI ethics, bias, fairness, and responsibility assessment
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-3">
+                {AIQ_SCORES.map((candidate, index) => {
+                  const performance = candidate.totalScore >= 80 ? 'Excellent' : candidate.totalScore >= 70 ? 'Good' : 'Developing';
+                  const variant = candidate.totalScore >= 80 ? 'default' : candidate.totalScore >= 70 ? 'secondary' : 'outline';
+                  
+                  return (
+                    <div key={candidate.candidateId} className="border-2 rounded-lg bg-card" style={{ borderColor: CANDIDATE_COLORS[index].stroke }} data-testid={`aiq-card-${candidate.candidateId}`}>
+                      <div className="text-center p-4 pb-2">
+                        <p className="font-medium" style={{ color: CANDIDATE_COLORS[index].stroke }}>
+                          {candidate.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Completed {new Date(candidate.completedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 pt-0">
+                        <div className="py-6">
+                          <div className="text-6xl font-bold mb-2" style={{ color: CANDIDATE_COLORS[index].stroke }} data-testid={`aiq-score-${candidate.candidateId}`}>
+                            {candidate.totalScore}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4">out of 100</p>
+                          <Badge variant={variant} className="text-sm px-4 py-1">
+                            {performance}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
+                <p className="text-base text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">AIQ Analysis:</strong>{' '}
+                  <span style={{ color: CANDIDATE_COLORS[0].stroke }} className="font-medium">Sarah Chen</span> demonstrates 
+                  exceptional understanding of AI ethics and algorithmic fairness with a score of 85/100.
+                  This is 7 points higher than{' '}
+                  <span style={{ color: CANDIDATE_COLORS[1].stroke }} className="font-medium">Marcus Johnson</span> (78/100).
+                  Higher AIQ scores indicate better preparedness for responsible AI governance and decision-making in AI-driven environments.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Overall Skills Comparison */}
+          <Card className="mb-6" data-testid="section-overall-skills">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Overall Skills Comparison
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Combined view of all skill-based assessments
+              </p>
+            </CardHeader>
+            <CardContent>
+              <h3 className="font-semibold mb-4">All Skills Combined</h3>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={COMBINED_RADAR_DATA}>
+                    <PolarGrid strokeDasharray="3 3" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                    {DEMO_CANDIDATES.map((candidate, index) => (
+                      <Radar
+                        key={candidate.id}
+                        name={candidate.name}
+                        dataKey={`candidate${index}`}
+                        stroke={CANDIDATE_COLORS[index].stroke}
+                        strokeWidth={3}
+                        strokeDasharray="8 4"
+                        fill="transparent"
+                        fillOpacity={0}
+                      />
+                    ))}
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Detailed Score Comparison */}
           <Card className="mb-6" data-testid="section-detailed-scores">
