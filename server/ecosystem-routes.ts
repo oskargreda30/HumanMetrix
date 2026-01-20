@@ -807,22 +807,61 @@ async function generateTeamAnalysis(
     }
   }
 
-  // Calculate overall health and mission alignment scores
+  // Calculate overall health score with granular scoring
+  // Base score from capability averages
+  const capAverages = Object.values(capabilityDistribution).map(c => c.average);
+  const avgCapabilityScore = capAverages.length > 0 
+    ? capAverages.reduce((a, b) => a + b, 0) / capAverages.length 
+    : 50;
+  
+  // Calculate coverage factor (how many capabilities have adequate team coverage)
+  const coverageScores = Object.values(capabilityDistribution).map(c => c.coverage);
+  const avgCoverage = coverageScores.length > 0 
+    ? coverageScores.reduce((a, b) => a + b, 0) / coverageScores.length 
+    : 50;
+  
+  // Penalty factors for gaps and risks
   const criticalGaps = gapAnalysis.filter(g => g.gapSeverity === "critical").length;
   const warningGaps = gapAnalysis.filter(g => g.gapSeverity === "warning").length;
-  const overallHealthScore = Math.max(0, 100 - (criticalGaps * 20) - (warningGaps * 10) - (riskAlerts.length * 5));
+  const gapPenalty = (criticalGaps * 12) + (warningGaps * 6) + (riskAlerts.length * 3);
+  
+  // Weighted health score: 40% capability average, 30% coverage, 30% gap/risk penalty
+  const overallHealthScore = Math.round(
+    Math.max(0, Math.min(100, 
+      (avgCapabilityScore * 0.4) + (avgCoverage * 0.3) + ((100 - gapPenalty) * 0.3)
+    ))
+  );
   
   // Mission alignment based on how well critical/high priority capabilities are covered
   let missionAlignmentScore = 100;
   if (missionAnalysis) {
     for (const gap of gapAnalysis) {
+      // Use capability average to determine penalty amount for more granular scoring
+      const capAvg = gap.currentAverage || 50;
+      const capDeficit = Math.max(0, 70 - capAvg); // How far below 70% threshold
+      
       if (gap.requiredPriority === "critical") {
-        missionAlignmentScore -= gap.gapSeverity === "critical" ? 20 : gap.gapSeverity === "warning" ? 10 : 0;
+        // Critical priorities: larger penalty scaled by actual deficit
+        missionAlignmentScore -= gap.gapSeverity === "critical" 
+          ? Math.round(8 + (capDeficit * 0.3))
+          : gap.gapSeverity === "warning" 
+            ? Math.round(4 + (capDeficit * 0.15))
+            : 0;
       } else if (gap.requiredPriority === "high") {
-        missionAlignmentScore -= gap.gapSeverity === "critical" ? 15 : gap.gapSeverity === "warning" ? 5 : 0;
+        missionAlignmentScore -= gap.gapSeverity === "critical" 
+          ? Math.round(6 + (capDeficit * 0.2))
+          : gap.gapSeverity === "warning" 
+            ? Math.round(3 + (capDeficit * 0.1))
+            : 0;
+      } else if (gap.requiredPriority === "medium") {
+        missionAlignmentScore -= gap.gapSeverity === "critical" 
+          ? Math.round(4 + (capDeficit * 0.1))
+          : gap.gapSeverity === "warning" 
+            ? Math.round(2)
+            : 0;
       }
     }
-    missionAlignmentScore = Math.max(0, missionAlignmentScore);
+    missionAlignmentScore = Math.max(0, Math.min(100, Math.round(missionAlignmentScore)));
   }
 
   // Generate AI-powered strategic advisor analysis
