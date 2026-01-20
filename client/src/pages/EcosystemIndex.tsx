@@ -199,12 +199,16 @@ export default function EcosystemIndex() {
               are distributed across your team and shows you how to rebalance.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" data-testid="button-start-diagnostic">
-                Start Team Diagnostic
-              </Button>
-              <Button size="lg" variant="outline" data-testid="button-view-sample-report">
-                View Sample Report
-              </Button>
+              <Link href="/ecosystem/start">
+                <Button size="lg" data-testid="button-start-diagnostic">
+                  Start Team Diagnostic
+                </Button>
+              </Link>
+              <Link href="/ecosystem/sample-report">
+                <Button size="lg" variant="outline" data-testid="button-view-sample-report">
+                  View Sample Report
+                </Button>
+              </Link>
             </div>
             <p className="text-sm text-muted-foreground mt-6" data-testid="text-hero-features">
               Scenario-based assessment • Team-level insights • Modern work ready
@@ -784,9 +788,11 @@ export default function EcosystemIndex() {
               Stop guessing why talented teams underperform. Get clear visibility into 
               capability distribution and actionable recommendations.
             </p>
-            <Button size="lg" className="px-8" data-testid="button-final-cta">
-              Start Team Diagnostic
-            </Button>
+            <Link href="/ecosystem/start">
+              <Button size="lg" className="px-8" data-testid="button-final-cta">
+                Start Team Diagnostic
+              </Button>
+            </Link>
             <p className="text-xs text-muted-foreground mt-4" data-testid="text-cta-disclaimer">
               Early access • No commitment required
             </p>

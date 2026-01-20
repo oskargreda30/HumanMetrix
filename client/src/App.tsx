@@ -49,6 +49,8 @@ import B2BResults from "@/pages/B2BResults";
 import B2BPaymentCallback from "@/pages/B2BPaymentCallback";
 import PartnerResult from "@/pages/PartnerResult";
 import SampleIndividualReport from "@/pages/SampleIndividualReport";
+import EcosystemSampleReport from "@/pages/EcosystemSampleReport";
+import EcosystemStart from "@/pages/EcosystemStart";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -59,6 +61,8 @@ function Router() {
       <Route path="/assessments" component={Assessments} />
       <Route path="/for-employers" component={ForEmployers} />
       <Route path="/ecosystem-index" component={EcosystemIndex} />
+      <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
+      <Route path="/ecosystem/start" component={EcosystemStart} />
       <Route path="/sample-report/individual" component={SampleIndividualReport} />
       <Route path="/articles" component={Articles} />
       <Route path="/articles/how-to-pass-psychometric-tests-job-interviews" component={ArticlePsychometricTests} />
