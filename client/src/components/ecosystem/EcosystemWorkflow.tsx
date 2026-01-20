@@ -1158,36 +1158,48 @@ export function EcosystemWorkflow({
           {expandedStep === 5 && (
             <div className="p-6 pt-0 space-y-6">
               {/* Regenerate Analysis Option */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Made changes?</p>
-                    <p className="text-xs text-muted-foreground">
-                      Update mission, team members, or context and regenerate your analysis
-                    </p>
+              {generateAnalysis.isPending ? (
+                <div className="space-y-4" data-testid="regenerate-analysis-progress">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="relative">
+                        <Brain className="h-6 w-6 text-primary" />
+                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Regenerating AI Analysis</p>
+                        <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
+                      </div>
+                    </div>
+                    <Progress value={analysisProgress} className="h-2" />
+                    <div className="flex justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
+                      <span className="text-xs text-muted-foreground">~60-90 seconds</span>
+                    </div>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleGenerateAnalysis}
-                  disabled={generateAnalysis.isPending}
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-regenerate-analysis"
-                >
-                  {generateAnalysis.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate Analysis
-                    </>
-                  )}
-                </Button>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Made changes?</p>
+                      <p className="text-xs text-muted-foreground">
+                        Update mission, team members, or context and regenerate your analysis
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleGenerateAnalysis}
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-regenerate-analysis"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate Analysis
+                  </Button>
+                </div>
+              )}
 
               <TeamAnalysisResults 
                 analysis={teamAnalysis} 
