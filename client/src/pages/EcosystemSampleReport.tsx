@@ -541,17 +541,43 @@ export default function EcosystemSampleReport() {
               <div className="bg-muted/30 rounded-lg p-4 border">
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={cumulativeScores} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                    <RadarChart data={cumulativeScores} margin={{ top: 30, right: 40, bottom: 30, left: 40 }}>
                       <PolarGrid stroke="hsl(var(--border))" />
                       <PolarAngleAxis 
                         dataKey="code" 
-                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                        tick={({ x, y, payload, textAnchor, index }: any) => {
+                          const item = cumulativeScores[index];
+                          const score = item?.score || 0;
+                          return (
+                            <g transform={`translate(${x},${y})`}>
+                              <text 
+                                x={0} 
+                                y={0} 
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--foreground))" 
+                                fontSize={12}
+                                fontWeight="600"
+                              >
+                                {payload.value}
+                              </text>
+                              <text 
+                                x={0} 
+                                y={14} 
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--muted-foreground))" 
+                                fontSize={10}
+                              >
+                                {score}
+                              </text>
+                            </g>
+                          );
+                        }}
                       />
                       <PolarRadiusAxis 
                         angle={30} 
                         domain={[0, sampleTeamMembers.length * 100]}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                        tickCount={5}
+                        tick={false}
+                        axisLine={false}
                       />
                       <Radar
                         name="Team Score"
