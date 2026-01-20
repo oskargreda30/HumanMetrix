@@ -261,3 +261,19 @@ export function useGenerateTeamAnalysis() {
     },
   });
 }
+
+// Type for searchable candidates
+export interface SearchableCandidate {
+  id: string;
+  email: string;
+  name: string;
+  fitScores: Record<string, number>;
+  completedAt: string | null;
+}
+
+export function useSearchableCandidates(projectId: string | null) {
+  return useQuery<SearchableCandidate[]>({
+    queryKey: [`/api/ecosystem/projects/${projectId}/searchable-candidates`],
+    enabled: !!projectId,
+  });
+}

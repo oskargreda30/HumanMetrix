@@ -55,6 +55,13 @@ import {
   Lightbulb,
   Star,
   MessageSquare,
+  HelpCircle,
+  Calendar,
+  ExternalLink,
+  Clock,
+  DollarSign,
+  ShieldAlert,
+  Search,
 } from "lucide-react";
 import {
   useEcosystemProject,
@@ -64,6 +71,8 @@ import {
   useAddTeamMember,
   useDeleteTeamMember,
   useGenerateTeamAnalysis,
+  useSearchableCandidates,
+  type SearchableCandidate,
 } from "@/hooks/useEcosystemProject";
 import type { 
   EcosystemProject, 
@@ -1423,6 +1432,22 @@ function TeamAnalysisResults({
   teamMembers: EcosystemTeamMember[];
 }) {
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
+  const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  
+  // State for candidate search
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [showCandidateSearch, setShowCandidateSearch] = useState(false);
+  
+  // Fetch searchable candidates (only for partners)
+  const { data: searchableCandidates = [], isLoading: candidatesLoading } = useSearchableCandidates(
+    showCandidateSearch ? project.id : null
+  );
+  
+  // Filter candidates based on search
+  const filteredCandidates = searchableCandidates.filter(c => 
+    c.name.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    c.email.toLowerCase().includes(candidateSearch.toLowerCase())
+  );
   
   // Calculate cumulative scores for radar chart
   const cumulativeScores = FIT_CAPABILITIES.map(cap => {
@@ -1459,34 +1484,59 @@ function TeamAnalysisResults({
         </div>
       </div>
       
-      {/* Score Explanations */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-          <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
-            <Heart className="h-4 w-4 text-green-600" />
-            Health Score: {analysis.overallHealthScore}%
-          </h4>
-          <p className="text-xs text-muted-foreground">
-            Your team's Health Score measures overall capability coverage and risk exposure. 
-            It considers: critical gaps in high-priority skills (-20 each), warning-level gaps (-10 each), 
-            and identified risks like single points of failure (-5 each). A score above 70% indicates 
-            a well-balanced team with minimal vulnerabilities.
-          </p>
-        </div>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-          <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
-            <Target className="h-4 w-4 text-blue-600" />
-            Mission Fit: {analysis.missionAlignmentScore}%
-          </h4>
-          <p className="text-xs text-muted-foreground">
-            The Mission Fit score measures how well your team's capabilities align with your stated mission. 
-            Critical priority skills that are weak reduce this score by 20%, high priority gaps by 15%. 
-            A score above 70% means your team is well-positioned to achieve your organizational goals.
-          </p>
+      {/* SECTION 1: How to Read This Report */}
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+        <h4 className="font-semibold mb-4 flex items-center gap-2">
+          <HelpCircle className="h-4 w-4 text-slate-600" />
+          How to Read This Report
+        </h4>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 text-sm">
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <FileText className="h-3 w-3 text-muted-foreground" />
+              Your Context
+            </p>
+            <p className="text-xs text-muted-foreground">Summary of the mission, team details, and insights you provided during setup.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <Brain className="h-3 w-3 text-muted-foreground" />
+              Strategic Assessment
+            </p>
+            <p className="text-xs text-muted-foreground">AI-generated executive summary analyzing your team's strengths, gaps, and strategic recommendations.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <Target className="h-3 w-3 text-muted-foreground" />
+              Mission Alignment
+            </p>
+            <p className="text-xs text-muted-foreground">How well your team's capabilities match what your mission requires for success.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <Heart className="h-3 w-3 text-muted-foreground" />
+              Health Score
+            </p>
+            <p className="text-xs text-muted-foreground">Overall team capability coverage, balance, and risk exposure assessment.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <BarChart3 className="h-3 w-3 text-muted-foreground" />
+              Gap Analysis
+            </p>
+            <p className="text-xs text-muted-foreground">Visual comparison of current team capabilities vs. what your mission requires.</p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium flex items-center gap-2">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              Hiring Recommendations
+            </p>
+            <p className="text-xs text-muted-foreground">AI-generated ideal candidate profiles with specific FIT score targets and interview guidance.</p>
+          </div>
         </div>
       </div>
 
-      {/* Your Context - What you told us */}
+      {/* SECTION 2: Your Context - What you told us */}
       <div className="bg-muted/30 rounded-lg p-6 border">
         <h4 className="font-semibold mb-4 flex items-center gap-2">
           <FileText className="h-4 w-4" />
@@ -1594,7 +1644,22 @@ function TeamAnalysisResults({
         )}
       </div>
 
-      {/* Mission Score Explanation */}
+      {/* SECTION 3: Strategic Assessment - AI-Generated Strategic Narrative */}
+      {analysis.executiveSummary && (
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
+          <h4 className="font-semibold mb-4 flex items-center gap-2 text-lg">
+            <Brain className="h-5 w-5 text-primary" />
+            Strategic Assessment
+          </h4>
+          <div className="prose prose-sm max-w-none text-muted-foreground">
+            {analysis.executiveSummary.split('\n\n').map((paragraph, i) => (
+              <p key={i} className="mb-3 last:mb-0 leading-relaxed">{paragraph}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 4: Mission Alignment Score Explained */}
       {missionAnalysis && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
           <h4 className="font-semibold mb-3 flex items-center gap-2">
@@ -1656,22 +1721,55 @@ function TeamAnalysisResults({
         </div>
       )}
 
-      {/* Executive Summary - AI-Generated Strategic Narrative */}
-      {analysis.executiveSummary && (
-        <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
-          <h4 className="font-semibold mb-4 flex items-center gap-2 text-lg">
-            <Brain className="h-5 w-5 text-primary" />
-            Strategic Assessment
-          </h4>
-          <div className="prose prose-sm max-w-none text-muted-foreground">
-            {analysis.executiveSummary.split('\n\n').map((paragraph, i) => (
-              <p key={i} className="mb-3 last:mb-0 leading-relaxed">{paragraph}</p>
-            ))}
+      {/* SECTION 5: Health Score Explained */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800" data-testid="section-health-score">
+        <h4 className="font-semibold mb-3 flex items-center gap-2">
+          <Heart className="h-4 w-4 text-green-600" />
+          Health Score Explained
+        </h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Your Team Health Score of <span className="font-semibold text-foreground">{analysis.overallHealthScore}%</span> measures 
+          your team's overall capability coverage, balance, and risk exposure.
+        </p>
+        
+        <div className="mb-4 p-3 bg-white/50 dark:bg-black/20 rounded-md">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">How It's Calculated</p>
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <span><strong>40%</strong> Average capability scores across the team</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <span><strong>30%</strong> Capability coverage (team members meeting thresholds)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+              <span><strong>30%</strong> Gap and risk penalties (critical gaps, warnings, risks)</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Capability Gap Matrix - Visual Overview */}
+        {analysis.riskAlerts && analysis.riskAlerts.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              Factors Affecting Your Score
+            </p>
+            <div className="space-y-2">
+              {analysis.riskAlerts.slice(0, 3).map((alert, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm">
+                  <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                    alert.severity === "critical" ? "text-red-500" : "text-amber-500"
+                  }`} />
+                  <span className="text-muted-foreground">{alert.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 6: Capability Gap Analysis - Visual Overview */}
       {analysis.capabilityGapMatrix && analysis.capabilityGapMatrix.length > 0 && (
         <div>
           <h4 className="font-semibold mb-2 flex items-center gap-2">
@@ -1760,8 +1858,8 @@ function TeamAnalysisResults({
         </div>
       )}
 
-      {/* Team Capability Radar Chart */}
-      <div>
+      {/* SECTION 7: Team Capability Radar Chart */}
+      <div data-testid="section-radar-chart">
         <h4 className="font-semibold mb-4 flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
           Team Cumulative Capability Profile
@@ -1829,7 +1927,7 @@ function TeamAnalysisResults({
         </div>
       </div>
 
-      {/* Contextual Insights - AI Deep Analysis */}
+      {/* SECTION 8: Deep Contextual Insights - AI Analysis */}
       {analysis.contextualInsights && analysis.contextualInsights.length > 0 && (
         <div data-testid="section-contextual-insights">
           <h4 className="font-semibold mb-4 flex items-center gap-2">
@@ -1846,7 +1944,7 @@ function TeamAnalysisResults({
         </div>
       )}
 
-      {/* Ideal Candidate Profile - AI-Generated Detailed Profile */}
+      {/* SECTION 9: Ideal Candidate Profile - AI-Generated Detailed Profile */}
       {analysis.idealCandidateProfile && analysis.idealCandidateProfile.summary && (
         <div data-testid="section-ideal-candidate">
           <h4 className="font-semibold mb-4 flex items-center gap-2">
@@ -1919,9 +2017,9 @@ function TeamAnalysisResults({
         </div>
       )}
 
-      {/* Ideal Hire Profiles - Strategic Recommendations */}
+      {/* SECTION 10: Ideal Hire Profiles - Strategic Recommendations */}
       {analysis.idealHireProfiles && analysis.idealHireProfiles.length > 0 && (
-        <div>
+        <div data-testid="section-hire-profiles">
           <h4 className="font-semibold mb-4 flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
             Recommended Hire Profiles
@@ -1996,6 +2094,93 @@ function TeamAnalysisResults({
               </div>
             ))}
           </div>
+          
+          {/* Candidate Search Section - Only for partner projects */}
+          {project.partnerId && (
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex items-center justify-between mb-4">
+                <h5 className="font-medium flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Search Your Candidates
+                </h5>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCandidateSearch(!showCandidateSearch)}
+                  data-testid="button-toggle-candidate-search"
+                >
+                  {showCandidateSearch ? "Hide" : "Show"} Candidates
+                </Button>
+              </div>
+              
+              {showCandidateSearch && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Search through candidates who have completed assessments to find potential matches for your ideal hire profiles.
+                  </p>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name or email..."
+                      value={candidateSearch}
+                      onChange={(e) => setCandidateSearch(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-candidate-search"
+                    />
+                  </div>
+                  
+                  {candidatesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading candidates...</span>
+                    </div>
+                  ) : filteredCandidates.length === 0 ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      {candidateSearch 
+                        ? "No candidates match your search" 
+                        : "No candidates available (all have been added to your team or none have completed assessments)"}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {filteredCandidates.slice(0, 10).map((candidate) => (
+                        <div key={candidate.id} className="p-4 bg-muted/30 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-medium">{candidate.name}</p>
+                              <p className="text-xs text-muted-foreground">{candidate.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {FIT_CAPABILITIES.map(cap => {
+                              const score = candidate.fitScores[cap.code];
+                              if (!score) return null;
+                              return (
+                                <Badge 
+                                  key={cap.code} 
+                                  variant="outline" 
+                                  className="text-xs"
+                                  data-testid={`badge-score-${candidate.id}-${cap.code}`}
+                                >
+                                  {cap.code}: {score}%
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {filteredCandidates.length > 10 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Showing 10 of {filteredCandidates.length} candidates. Refine your search to see more.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -2033,6 +2218,103 @@ function TeamAnalysisResults({
           </div>
         </div>
       )}
+
+      {/* SECTION 11: Additional Services On Request */}
+      <Card className="border-primary/20 bg-primary">
+        <div className="p-6">
+          <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
+            <Sparkles className="h-5 w-5 text-white" />
+            Additional Services on Request
+          </h4>
+          <p className="text-sm text-white/80 mb-4">
+            Contact our team to unlock these premium insights for your hiring decisions
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <MessageSquare className="h-4 w-4 text-white" />
+                Suggested Interview Questions
+              </h5>
+              <p className="text-sm text-white/70">
+                AI-generated questions based on your team gaps and ideal candidate profiles
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <Users className="h-4 w-4 text-white" />
+                Team Composition Analysis
+              </h5>
+              <p className="text-sm text-white/70">
+                Deep-dive into how new hires would complement your existing team dynamics
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <Clock className="h-4 w-4 text-white" />
+                Time to Productivity Estimate
+              </h5>
+              <p className="text-sm text-white/70">
+                Projected onboarding timeline based on skill readiness and team fit
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <ShieldAlert className="h-4 w-4 text-white" />
+                Hiring Risk Analysis
+              </h5>
+              <p className="text-sm text-white/70">
+                Comprehensive risk assessment with potential challenges and mitigations
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <DollarSign className="h-4 w-4 text-white" />
+                Development Investment Cost
+              </h5>
+              <p className="text-sm text-white/70">
+                Estimated training investment to close identified capability gaps
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+              <h5 className="font-medium flex items-center gap-2 mb-2 text-white">
+                <BarChart3 className="h-4 w-4 text-white" />
+                Cohort Benchmarking
+              </h5>
+              <p className="text-sm text-white/70">
+                Compare your team's capabilities against industry benchmarks
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* SECTION 12: Schedule Consultation */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 className="font-semibold text-lg mb-2 flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Ready to Discuss Your Results?
+            </h4>
+            <p className="text-white/90 text-sm">
+              Book a 30-minute consultation with our team capability experts to review your report, 
+              discuss hiring strategies, and get personalized recommendations for your next steps.
+            </p>
+          </div>
+          <div className="flex gap-3 flex-shrink-0">
+            <Button 
+              variant="outline" 
+              className="border-white text-white hover:bg-white/20"
+              onClick={() => window.open(CALENDLY_URL, '_blank')}
+              data-testid="button-schedule-consultation"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Consultation
+              <ExternalLink className="ml-2 h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Export Button */}
       <div className="pt-4 border-t">

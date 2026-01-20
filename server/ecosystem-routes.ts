@@ -1446,4 +1446,81 @@ export function registerEcosystemRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to fetch partner projects" });
     }
   });
+
+  // Get searchable candidates for ecosystem project (partner's invited candidates, excluding already compared)
+  app.get("/api/ecosystem/projects/:id/searchable-candidates", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const project = await storage.getEcosystemProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Check ownership
+      if (project.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // If project has no partnerId, return empty array
+      if (!project.partnerId) {
+        return res.json([]);
+      }
+
+      // Get team members already in the project (to exclude from search)
+      const existingMembers = await storage.getEcosystemTeamMembers(req.params.id);
+      const existingEmails = new Set(existingMembers.map(m => m.email?.toLowerCase()).filter(Boolean));
+
+      // Get all completed FIT sessions for this partner
+      const sessions = await storage.getSessionsByPartner(project.partnerId, 10000);
+      
+      // Filter to completed FIT assessments with scores, excluding already added members
+      const candidatesMap = new Map<string, any>();
+      
+      for (const session of sessions) {
+        // Skip test sessions and non-FIT assessments
+        if (session.isTestSession || session.assessmentType !== "fit") continue;
+        
+        // Must have email and be completed with scores
+        if (!session.externalEmail || session.status !== "completed" || !session.scores) continue;
+        
+        const emailLower = session.externalEmail.toLowerCase();
+        
+        // Skip if already in team
+        if (existingEmails.has(emailLower)) continue;
+        
+        // Extract FIT scores from session
+        const fitScores: Record<string, number> = {};
+        if (session.scores) {
+          Object.entries(session.scores).forEach(([key, value]) => {
+            if (typeof value === 'number') {
+              fitScores[key] = value;
+            }
+          });
+        }
+        
+        if (Object.keys(fitScores).length === 0) continue;
+        
+        // Add to candidates map (deduplicate by email, keep most recent)
+        const existing = candidatesMap.get(emailLower);
+        if (!existing || (session.completedAt && existing.completedAt && new Date(session.completedAt) > new Date(existing.completedAt))) {
+          candidatesMap.set(emailLower, {
+            id: session.id,
+            email: session.externalEmail,
+            name: session.externalEmail.split('@')[0],
+            fitScores,
+            completedAt: session.completedAt,
+          });
+        }
+      }
+      
+      res.json(Array.from(candidatesMap.values()));
+    } catch (error: any) {
+      console.error("[Ecosystem] Error fetching searchable candidates:", error);
+      res.status(500).json({ error: "Failed to fetch candidates" });
+    }
+  });
 }
