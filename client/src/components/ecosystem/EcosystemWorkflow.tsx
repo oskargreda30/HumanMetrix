@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { 
   RadarChart, 
@@ -132,6 +133,10 @@ export function EcosystemWorkflow({
   
   // Deep dive section visibility
   const [showDeepDive, setShowDeepDive] = useState(false);
+  
+  // Analysis progress tracking
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStage, setAnalysisStage] = useState("");
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -182,6 +187,39 @@ export function EcosystemWorkflow({
       setExpandedStep(project.currentStep || 1);
     }
   }, [project]);
+
+  // Progress tracking for analysis generation
+  useEffect(() => {
+    if (!generateAnalysis.isPending) {
+      setAnalysisProgress(0);
+      setAnalysisStage("");
+      return;
+    }
+
+    const stages = [
+      { progress: 10, stage: "Analyzing team composition..." },
+      { progress: 25, stage: "Processing FIT scores..." },
+      { progress: 40, stage: "Evaluating mission alignment..." },
+      { progress: 55, stage: "Analyzing team context..." },
+      { progress: 70, stage: "Running AI gap analysis..." },
+      { progress: 85, stage: "Generating ideal candidate profile..." },
+      { progress: 95, stage: "Finalizing recommendations..." },
+    ];
+
+    let currentStageIndex = 0;
+    setAnalysisProgress(stages[0].progress);
+    setAnalysisStage(stages[0].stage);
+
+    const interval = setInterval(() => {
+      currentStageIndex++;
+      if (currentStageIndex < stages.length) {
+        setAnalysisProgress(stages[currentStageIndex].progress);
+        setAnalysisStage(stages[currentStageIndex].stage);
+      }
+    }, 8000); // Move to next stage every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [generateAnalysis.isPending]);
 
   const handleAnalyzeMission = async () => {
     if (!missionStatement.trim()) {
@@ -1064,24 +1102,46 @@ export function EcosystemWorkflow({
               </div>
             </div>
 
-            <Button 
-              onClick={handleGenerateAnalysis}
-              disabled={generateAnalysis.isPending || teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length === 0}
-              size="lg"
-              data-testid="button-generate-analysis"
-            >
-              {generateAnalysis.isPending ? (
-                <>
+            {generateAnalysis.isPending ? (
+              <div className="space-y-4" data-testid="analysis-progress">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <Brain className="h-6 w-6 text-primary" />
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">AI Analysis in Progress</p>
+                      <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
+                    </div>
+                  </div>
+                  <Progress value={analysisProgress} className="h-2" />
+                  <div className="flex justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
+                    <span className="text-xs text-muted-foreground">~60-90 seconds</span>
+                  </div>
+                </div>
+                <Button 
+                  disabled
+                  size="lg"
+                  className="w-full"
+                  data-testid="button-generate-analysis"
+                >
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generating Analysis...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Team Analysis
-                </>
-              )}
-            </Button>
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                onClick={handleGenerateAnalysis}
+                disabled={teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length === 0}
+                size="lg"
+                data-testid="button-generate-analysis"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate Team Analysis
+              </Button>
+            )}
           </div>
         )}
       </Card>
