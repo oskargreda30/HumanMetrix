@@ -28,8 +28,8 @@ export default function HowItWorks() {
     },
     {
       icon: Download,
-      title: "Download Results",
-      description: "Get professional PDF reports with detailed breakdowns, perfect for your CV or employer review.",
+      title: "Share Results",
+      description: "Export professional PDF reports and share directly with employers for data-driven hiring decisions.",
     },
   ];
 
