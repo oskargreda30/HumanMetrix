@@ -142,6 +142,8 @@ const strategicAnalysisResponseSchema = z.object({
     missionPriority: z.enum(["critical", "high", "medium", "low"]),
     teamStrength: z.enum(["strong", "adequate", "weak", "critical"]),
     gapAnalysis: z.string(),
+    currentScore: z.number().optional(),
+    targetScore: z.number().optional(),
   })),
 });
 
@@ -404,6 +406,8 @@ Provide your analysis as JSON with this exact structure:
       "code": "HA|IC|RA|EE|GM|IA",
       "missionPriority": "critical|high|medium|low",
       "teamStrength": "strong|adequate|weak|critical",
+      "currentScore": <number 0-100, the team's current average for this capability based on their actual scores - use varied realistic numbers like 47, 63, 71, not just multiples of 5>,
+      "targetScore": <number 0-100, recommended target score for this capability based on mission priority - use varied realistic numbers like 78, 84, 91, not just multiples of 5>,
       "gapAnalysis": "1-2 sentence strategic insight about this specific gap and its implications"
     }
   ]
@@ -458,13 +462,25 @@ Generate 3-5 strategic insights, 1-3 ideal hire profiles based on hiring plans, 
         actionRequired: true,
       })),
       idealHireProfiles: [],
-      capabilityGapMatrix: gapAnalysis.map(g => ({
-        capability: g.capability,
-        code: g.code,
-        missionPriority: g.requiredPriority,
-        teamStrength: g.gapSeverity === "healthy" ? "strong" : g.gapSeverity === "warning" ? "adequate" : "weak",
-        gapAnalysis: g.reasoning,
-      })),
+      capabilityGapMatrix: gapAnalysis.map(g => {
+        // Use actual current average from gap analysis
+        const currentScore = Math.round(g.currentAverage || 50);
+        // Calculate target based on priority with slight variance
+        const baseTarget = g.requiredPriority === "critical" ? 88 : 
+                          g.requiredPriority === "high" ? 79 : 
+                          g.requiredPriority === "medium" ? 68 : 52;
+        // Add small variance to avoid multiples of 5
+        const targetScore = baseTarget + Math.round((g.currentAverage % 7) - 3);
+        return {
+          capability: g.capability,
+          code: g.code,
+          missionPriority: g.requiredPriority,
+          teamStrength: g.gapSeverity === "healthy" ? "strong" : g.gapSeverity === "warning" ? "adequate" : "weak",
+          gapAnalysis: g.reasoning,
+          currentScore,
+          targetScore: Math.min(100, Math.max(currentScore + 5, targetScore)),
+        };
+      }),
     };
   }
 }
@@ -874,6 +890,34 @@ async function generateTeamAnalysis(
     riskAlerts
   );
 
+  // Enhance capabilityGapMatrix with actual scores from real data
+  const enhancedCapabilityGapMatrix = strategicAnalysis.capabilityGapMatrix.map((item: any) => {
+    const capDist = capabilityDistribution[item.code];
+    const gapItem = gapAnalysis.find(g => g.code === item.code);
+    
+    // Use actual team average as currentScore
+    const actualCurrent = capDist?.average || item.currentScore || 50;
+    
+    // Calculate target based on priority, with variance from current score
+    const priorityBase = item.missionPriority === "critical" ? 87 : 
+                         item.missionPriority === "high" ? 78 : 
+                         item.missionPriority === "medium" ? 67 : 53;
+    // Add variance based on the current score to avoid multiples of 5
+    const variance = Math.round((actualCurrent % 7) - 3);
+    const calculatedTarget = priorityBase + variance;
+    
+    // Use AI target if provided and not a multiple of 5, otherwise calculate
+    const aiTarget = item.targetScore;
+    const isAiTargetGood = aiTarget && (aiTarget % 5 !== 0 || aiTarget === 100);
+    const actualTarget = isAiTargetGood ? aiTarget : calculatedTarget;
+    
+    return {
+      ...item,
+      currentScore: Math.round(actualCurrent),
+      targetScore: Math.min(100, Math.max(Math.round(actualCurrent) + 5, actualTarget)),
+    };
+  });
+
   return {
     generatedAt: new Date().toISOString(),
     teamSize: teamMembers.length,
@@ -887,7 +931,7 @@ async function generateTeamAnalysis(
     executiveSummary: strategicAnalysis.executiveSummary,
     strategicInsights: strategicAnalysis.strategicInsights,
     idealHireProfiles: strategicAnalysis.idealHireProfiles,
-    capabilityGapMatrix: strategicAnalysis.capabilityGapMatrix,
+    capabilityGapMatrix: enhancedCapabilityGapMatrix,
     // AI-powered contextual gap analysis
     contextualInsights,
     idealCandidateProfile,
