@@ -21,6 +21,7 @@ export interface AssessmentCardProps {
   free?: boolean;
   comingSoon?: boolean;
   showPricing?: boolean;
+  tag?: string;
 }
 
 export default function AssessmentCard({
@@ -36,6 +37,7 @@ export default function AssessmentCard({
   free = false,
   comingSoon = false,
   showPricing = true,
+  tag,
 }: AssessmentCardProps) {
   const { addToBasket, removeFromBasket, isInBasket } = useBasket();
   const { formatLocalPrice, currency } = useCurrency();
@@ -93,9 +95,16 @@ export default function AssessmentCard({
           </div>
           <div>
             <h3 className="text-sm md:text-lg lg:text-xl font-semibold mb-1 text-white" data-testid={`text-assessment-title`}>{title}</h3>
-            <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid="badge-question-count">
-              {questionCount} questions
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid="badge-question-count">
+                {questionCount} questions
+              </Badge>
+              {tag && (
+                <Badge variant="outline" className="text-[10px] md:text-xs border-cyan-400/50 text-cyan-300" data-testid="badge-tag">
+                  {tag}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         {status === "completed" && (

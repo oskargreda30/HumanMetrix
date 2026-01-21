@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
 import RoadmapSection from "@/components/RoadmapSection";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
@@ -54,6 +54,29 @@ const assessments = [
     icon: Shield,
     status: "available" as const,
     price: "£4",
+  },
+];
+
+const teamAssessments = [
+  {
+    id: "ecosystem_index",
+    title: "The Ecosystem Index",
+    description: "AI-powered team diagnostic tool that analyzes mission alignment, capability gaps, and generates ideal candidate profiles based on your team's FIT scores.",
+    questionCount: 12,
+    duration: "25 min",
+    icon: Users,
+    status: "available" as const,
+    tag: "Team Analysis",
+  },
+  {
+    id: "cohort_benchmarking",
+    title: "Cohort Benchmarking",
+    description: "Compare candidate performance against industry benchmarks with percentile rankings and peer group analysis.",
+    questionCount: 0,
+    duration: "Varies",
+    icon: BarChart3,
+    status: "coming-soon" as const,
+    tag: "Team Analysis",
   },
 ];
 
@@ -186,6 +209,34 @@ export default function Assessments() {
             <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">
               {viewMode === 'employer' ? 'Our Assessment Suite' : 'Available Assessments'}
             </h2>
+            
+            {/* Team Analysis Assessments - Employer view only */}
+            {viewMode === 'employer' && (
+              <div className="mb-6 md:mb-8">
+                <h3 className="text-xs md:text-lg font-semibold mb-3 md:mb-4 text-cyan-400">Team Analysis</h3>
+                <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+                  {teamAssessments.map((assessment) => (
+                    <AssessmentCard
+                      key={assessment.id}
+                      id={assessment.id}
+                      title={assessment.title}
+                      description={assessment.description}
+                      questionCount={assessment.questionCount}
+                      duration={assessment.duration}
+                      icon={assessment.icon}
+                      status={assessment.status}
+                      tag={assessment.tag}
+                      showPricing={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Individual Assessments */}
+            {viewMode === 'employer' && (
+              <h3 className="text-xs md:text-lg font-semibold mb-3 md:mb-4 text-cyan-400">Individual Assessments</h3>
+            )}
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               {assessments.map((assessment) => (
                 <AssessmentCard
