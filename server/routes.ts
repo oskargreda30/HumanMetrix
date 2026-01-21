@@ -3069,9 +3069,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resumeCount: 0,
         canPauseAgain: true,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting assessment:", error);
-      res.status(500).json({ message: "Failed to start assessment" });
+      // Provide more specific error message for debugging
+      const errorMessage = error?.message || 'Unknown error';
+      const errorCode = error?.code || 'UNKNOWN';
+      console.error(`[START ASSESSMENT ERROR] Code: ${errorCode}, Message: ${errorMessage}, Stack: ${error?.stack}`);
+      res.status(500).json({ 
+        message: "Failed to start assessment", 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined 
+      });
     }
   });
 
