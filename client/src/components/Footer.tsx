@@ -196,10 +196,10 @@ export default function Footer() {
             <div>
               <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Careers</h3>
               <p className="text-[11px] md:text-sm text-blue-100/60 leading-relaxed mb-3">
-                We're always looking for creative and hardworking people to join our team. Send us your CV and if it's a fit, we'll create a role for you.
+                We're always on the lookout for talented, driven individuals. If you share our passion for innovation, send us your CV — we believe in creating roles for the right people.
               </p>
               <a
-                href="mailto:careers@humanmetrix.co.uk?subject=Career Opportunity"
+                href="mailto:hello@humanmetrix.co.uk?subject=Career Opportunity"
                 className="inline-flex items-center gap-1.5 text-[11px] md:text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
                 data-testid="link-careers-email"
               >
