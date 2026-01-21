@@ -57,8 +57,8 @@ export default function Pricing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-16">
-            <Card className="bg-white/5 border-cyan-400/20 backdrop-blur-sm">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-16 items-stretch">
+            <Card className="bg-white/5 border-cyan-400/20 backdrop-blur-sm flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <User className="h-5 w-5 text-cyan-400" />
@@ -67,8 +67,8 @@ export default function Pricing() {
                 <CardTitle className="text-2xl text-white">Individual</CardTitle>
                 <p className="text-blue-100/60 text-sm">Perfect for job seekers and career development</p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
+              <CardContent className="flex flex-col flex-1">
+                <div className="mb-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-white">{platformFee}</span>
                     <span className="text-blue-100/60">platform fee</span>
@@ -78,7 +78,7 @@ export default function Pricing() {
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 flex-1">
                   {b2cFeatures.map((feature, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm text-blue-100/80">
                       <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
@@ -87,7 +87,7 @@ export default function Pricing() {
                   ))}
                 </div>
 
-                <Link href="/assessments?view=candidate">
+                <Link href="/assessments?view=candidate" className="mt-6">
                   <Button 
                     className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
                     data-testid="button-get-started-candidate"
@@ -99,7 +99,7 @@ export default function Pricing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/5 border-cyan-400/30 backdrop-blur-sm ring-2 ring-cyan-400/20">
+            <Card className="bg-white/5 border-cyan-400/30 backdrop-blur-sm ring-2 ring-cyan-400/20 flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="h-5 w-5 text-cyan-400" />
@@ -108,8 +108,8 @@ export default function Pricing() {
                 <CardTitle className="text-2xl text-white">Enterprise</CardTitle>
                 <p className="text-blue-100/60 text-sm">Volume pricing for hiring teams</p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
+              <CardContent className="flex flex-col flex-1">
+                <div className="mb-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-white">Custom</span>
                     <span className="text-blue-100/60">pricing</span>
@@ -119,7 +119,7 @@ export default function Pricing() {
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 flex-1">
                   {b2bFeatures.map((feature, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm text-blue-100/80">
                       <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
@@ -130,7 +130,7 @@ export default function Pricing() {
 
                 <Button 
                   onClick={() => setContactOpen(true)}
-                  className="w-full bg-white text-[#0a1628] hover:bg-blue-100"
+                  className="w-full bg-white text-[#0a1628] hover:bg-blue-100 mt-6"
                   data-testid="button-request-demo"
                 >
                   Request Demo
