@@ -38,7 +38,7 @@ const FIT_CAPABILITIES = [
 const sampleAnalysis = {
   missionAlignmentScore: 72,
   overallHealthScore: 68,
-  executiveSummary: `TechFlow Solutions demonstrates strong foundational capabilities in Trust (78%) and Influence (74%), creating a solid base for client relationships and team cohesion. However, the team faces significant gaps in Innovation (52%) and Foresight (58%), which may limit their ability to anticipate market shifts and develop breakthrough solutions.
+  executiveSummary: `TechFlow Solutions Team demonstrates strong foundational capabilities in Trust (78%) and Influence (74%), creating a solid base for client relationships and team cohesion. However, the team faces significant gaps in Innovation (52%) and Foresight (58%), which may limit their ability to anticipate market shifts and develop breakthrough solutions.
 
 The team's current composition is well-suited for executing established processes and maintaining client satisfaction, but lacks the creative problem-solving capacity needed to differentiate in a competitive SaaS market. The moderate Agility score (65%) suggests some capacity for adaptation, but this should be strengthened to support rapid product iteration.
 
@@ -173,7 +173,7 @@ export default function EcosystemSampleReport() {
           </div>
           
           <h1 className="text-3xl font-bold mb-2" data-testid="text-sample-report-title">
-            Team Diagnostic Report: TechFlow Solutions
+            Team Diagnostic Report: TechFlow Solutions Team
           </h1>
           <p className="text-muted-foreground">
             This is an example report showing what insights you'll receive after completing the Ecosystem Index diagnostic.
@@ -184,7 +184,7 @@ export default function EcosystemSampleReport() {
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">TechFlow Solutions</CardTitle>
+                <CardTitle className="text-xl">TechFlow Solutions Team</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">4 team members • Growth Stage</p>
               </div>
               <div className="flex gap-4 text-center">
@@ -220,7 +220,7 @@ export default function EcosystemSampleReport() {
                     <Brain className="h-3 w-3 text-muted-foreground" />
                     Strategic Assessment
                   </p>
-                  <p className="text-xs text-muted-foreground">AI-generated executive summary analyzing your team's strengths, gaps, and strategic recommendations.</p>
+                  <p className="text-xs text-muted-foreground">Executive summary analyzing your team's strengths, gaps, and strategic recommendations.</p>
                 </div>
                 <div className="space-y-1">
                   <p className="font-medium flex items-center gap-2">
@@ -248,7 +248,7 @@ export default function EcosystemSampleReport() {
                     <Users className="h-3 w-3 text-muted-foreground" />
                     Hiring Recommendations
                   </p>
-                  <p className="text-xs text-muted-foreground">AI-generated ideal candidate profiles with specific FIT score targets and interview guidance.</p>
+                  <p className="text-xs text-muted-foreground">Ideal candidate profiles with specific FIT score targets and interview guidance.</p>
                 </div>
               </div>
             </div>
