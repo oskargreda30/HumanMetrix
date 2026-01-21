@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { SEO } from "@/lib/seo";
 
@@ -153,17 +151,10 @@ export default function Team() {
         }} />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/">
-            <Button variant="ghost" size="sm" data-testid="button-back-home">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </header>
+      {/* Navigation */}
+      <div className="relative z-10">
+        <Navigation />
+      </div>
 
       {/* Main content */}
       <main className="relative z-10 flex-1 container mx-auto px-4 py-12 md:py-20">
