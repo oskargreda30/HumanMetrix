@@ -58,8 +58,13 @@ export default function B2BPricingCalculator() {
   const totalPriceInPence = useMemo(() => calculateTotalPriceInPence(volume, multiplier), [volume, multiplier]);
   const pricePerTestInPence = useMemo(() => currentTier.pricePerTestPence * multiplier, [currentTier, multiplier]);
 
-  const formattedTotal = useMemo(
-    () => formatLocalPrice(totalPriceInPence),
+  const formattedTotalLow = useMemo(
+    () => formatLocalPrice(Math.round(totalPriceInPence * 0.95)),
+    [totalPriceInPence, formatLocalPrice]
+  );
+
+  const formattedTotalHigh = useMemo(
+    () => formatLocalPrice(Math.round(totalPriceInPence * 1.05)),
     [totalPriceInPence, formatLocalPrice]
   );
 
@@ -107,10 +112,17 @@ export default function B2BPricingCalculator() {
           </div>
           <Slider
             value={[volume]}
-            onValueChange={(values) => setVolume(values[0])}
+            onValueChange={(values) => {
+              const val = values[0];
+              if (val <= 1) {
+                setVolume(1);
+              } else {
+                setVolume(Math.round(val / 50) * 50);
+              }
+            }}
             min={1}
             max={10000}
-            step={50}
+            step={1}
             className="w-full"
             data-testid="volume-slider"
           />
@@ -136,10 +148,10 @@ export default function B2BPricingCalculator() {
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
           <p className="text-sm text-muted-foreground mb-2">Estimated Monthly Cost</p>
           <p className="text-3xl font-bold text-primary" data-testid="total-price">
-            {formattedTotal}
+            {formattedTotalLow} – {formattedTotalHigh}
           </p>
           <p className="text-xs text-muted-foreground mt-2">
-            Based on {volume.toLocaleString()} tests at {formattedPerTest}/test
+            Based on {volume.toLocaleString()} tests at {formattedPerTest}/test (±5%)
           </p>
         </div>
 
