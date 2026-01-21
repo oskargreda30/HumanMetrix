@@ -51,3 +51,6 @@ integrations = ["javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.
 [userenv.shared]
 TESTING_VITE_STRIPE_PUBLIC_KEY = "jkadnh"
 TESTING_STRIPE_SECRET_KEY = "kdsfj"
+
+[userenv.production]
+PRODUCTION_URL = "https://www.humanmetrix.co.uk"

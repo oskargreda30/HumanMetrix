@@ -2,6 +2,17 @@ import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
 import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from './generateReceipt';
 
+// Get the production base URL - prioritize custom domain over Replit domains
+function getBaseUrl(): string {
+  // Use custom domain if set (for production with custom domains)
+  if (process.env.PRODUCTION_URL) {
+    return process.env.PRODUCTION_URL.replace(/\/$/, ''); // Remove trailing slash
+  }
+  // Fall back to Replit domains
+  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+  return domain ? `https://${domain}` : 'http://localhost:5000';
+}
+
 // Format assessment type for display (e.g., "fit" -> "FIT Assessment")
 function formatAssessmentName(type: string): string {
   const names: Record<string, string> = {
@@ -98,8 +109,8 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
   const formattedAssessments = invitation.assessmentTypes.map(formatAssessmentName);
   const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
   const assessmentListText = formattedAssessments.join(', ');
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const inviteUrl = domain ? `https://${domain}/invite/${invitation.token}` : `http://localhost:5000/invite/${invitation.token}`;
+  const baseUrl = getBaseUrl();
+  const inviteUrl = `${baseUrl}/invite/${invitation.token}`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -194,8 +205,7 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const baseUrl = domain ? `https://${domain}` : 'http://localhost:5000';
+  const baseUrl = getBaseUrl();
   const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
   
   const mailOptions = {
@@ -277,8 +287,8 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const loginUrl = domain ? `https://${domain}/login` : 'http://localhost:5000/login';
+  const baseUrl = getBaseUrl();
+  const loginUrl = `${baseUrl}/login`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -838,10 +848,8 @@ export async function sendPartnerQuotaWarning70(
   }
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const baseUrl = getBaseUrl();
+  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -949,10 +957,8 @@ export async function sendPartnerQuotaWarning90(
   }
   
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const baseUrl = getBaseUrl();
+  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -1060,10 +1066,8 @@ export async function sendPartnerAccessSuspendedEmail(
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const topUpUrl = domain 
-    ? `https://${domain}/developers?tab=billing&action=purchase` 
-    : 'http://localhost:5000/developers?tab=billing&action=purchase';
+  const baseUrl = getBaseUrl();
+  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -1162,10 +1166,8 @@ export async function sendPartnerSecurityAlert(
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const dashboardUrl = domain 
-    ? `https://${domain}/developers?tab=security` 
-    : 'http://localhost:5000/developers?tab=security';
+  const baseUrl = getBaseUrl();
+  const dashboardUrl = `${baseUrl}/developers?tab=security`;
   
   const mailOptions = {
     from: `"HumanMetrix Security" <${process.env.GMAIL_USER}>`,
@@ -1266,10 +1268,8 @@ export async function sendPartnerMonthlySummary(
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const dashboardUrl = domain 
-    ? `https://${domain}/developers?tab=analytics` 
-    : 'http://localhost:5000/developers?tab=analytics';
+  const baseUrl = getBaseUrl();
+  const dashboardUrl = `${baseUrl}/developers?tab=analytics`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -1376,8 +1376,8 @@ export async function sendPartnerAutoTopUpConfirmation(
     return;
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const dashboardUrl = domain ? `https://${domain}/partner-dashboard` : 'http://localhost:5000/partner-dashboard';
+  const baseUrl = getBaseUrl();
+  const dashboardUrl = `${baseUrl}/partner-dashboard`;
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
@@ -1769,8 +1769,8 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
     return { success: false };
   }
   
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-  const loginUrl = domain ? `https://${domain}/login` : 'http://localhost:5000/login';
+  const baseUrl = getBaseUrl();
+  const loginUrl = `${baseUrl}/login`;
   const developerDocsUrl = domain ? `https://${domain}/developers` : 'http://localhost:5000/developers';
   
   const billingTypeDescriptions: Record<string, string> = {
@@ -2618,9 +2618,7 @@ export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitat
   
   const baseUrl = process.env.REPLIT_DEV_DOMAIN 
     ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : process.env.REPLIT_DOMAINS?.split(',')[0] 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : 'https://www.humanmetrix.co.uk';
+    : getBaseUrl();
   
   const acceptUrl = `${baseUrl}/partner/accept-invite/${details.inviteToken}`;
   const greeting = details.inviteeName ? `Hello ${details.inviteeName},` : 'Hello,';
@@ -2754,9 +2752,7 @@ export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCreden
   
   const baseUrl = process.env.REPLIT_DEV_DOMAIN 
     ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : process.env.REPLIT_DOMAINS?.split(',')[0] 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : 'https://www.humanmetrix.co.uk';
+    : getBaseUrl();
   
   const loginUrl = `${baseUrl}/login`;
   const greeting = details.name ? `Hello ${details.name},` : 'Hello,';
