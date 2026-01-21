@@ -9,12 +9,26 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import ContactFormDialog from "@/components/ContactFormDialog";
 import networkBg from "@assets/image_1761537286469.png";
 import resultsImage from "@assets/image_1765688061458.png";
 import resultsImage2 from "@assets/image_1765687714401.png";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  variant?: 'b2c' | 'b2b';
+}
+
+export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
   const { formatLocalPrice } = useCurrency();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
+
+  const openDialog = (intent: 'demo' | 'sales') => {
+    setDialogIntent(intent);
+    setIsDialogOpen(true);
+  };
+
+  const isB2B = variant === 'b2b';
   const [isVisible, setIsVisible] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false); // Start hidden for animation
   const [scrollY, setScrollY] = useState(0);
@@ -142,7 +156,7 @@ export default function HeroSection() {
               )}
             >
               <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs md:text-sm font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
-                AI-Powered Psychometric Testing Platform
+                {isB2B ? 'Enterprise Pre-Employment Testing' : 'AI-Powered Psychometric Testing Platform'}
               </span>
             </div>
             
@@ -153,7 +167,7 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              Your Next Role Demands More Than a Resume.
+              {isB2B ? 'Hire for the AI Era' : 'Your Next Role Demands More Than a Resume.'}
             </h1>
             
             {/* Subheadline */}
@@ -163,7 +177,10 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              Stand out from the crowd with HumanMetrix psychometric tests. Our pre-employment assessments provide CV-ready reports measuring your human metrics across FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity - trusted by UK recruiters.
+              {isB2B 
+                ? 'Make better hiring decisions with objective, AI-powered assessments that measure both behavioral competencies and AI literacy. Find candidates who will thrive in your organization.'
+                : 'Stand out from the crowd with HumanMetrix psychometric tests. Our pre-employment assessments provide CV-ready reports measuring your human metrics across FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity - trusted by UK recruiters.'
+              }
             </p>
 
             {/* CTA Buttons */}
@@ -173,67 +190,132 @@ export default function HeroSection() {
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
-              <Link href="/assessments" data-testid="link-hero-get-started">
-                <Button 
-                  size="lg"
-                  className={getAnimationClass(
-                    'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
-                    'transition-all duration-300'
-                  )}
-                  data-testid="button-hero-get-started"
-                >
-                  {!prefersReducedMotion && (
-                    <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
-                  )}
-                  <span className="relative flex items-center">
-                    Our Assessments
-                    <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
-                  </span>
-                </Button>
-              </Link>
-              <Button 
-                size="lg"
-                variant="ghost"
-                onClick={() => {
-                  const element = document.getElementById('sample-reports');
-                  element?.scrollIntoView({ 
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth', 
-                    block: 'start' 
-                  });
-                }}
-                className={getAnimationClass(
-                  'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
-                  'transition-all duration-300'
-                )}
-                data-testid="button-hero-sample-reports"
-              >
-                <span className="relative flex items-center">
-                  Sample Reports
-                  <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
-                </span>
-              </Button>
-              <Link href="/" data-testid="link-hero-for-employers">
-                <Button 
-                  size="lg"
-                  variant="outline"
-                  className={getAnimationClass(
-                    'group border-cyan-400/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-400/60 text-sm md:text-base px-3 md:px-4',
-                    'transition-all duration-300'
-                  )}
-                  data-testid="button-hero-for-employers"
-                >
-                  <span className="relative flex items-center">
-                    For Employers
-                    <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
-                  </span>
-                </Button>
-              </Link>
+              {isB2B ? (
+                <>
+                  <Button 
+                    size="lg"
+                    onClick={() => openDialog('demo')}
+                    className={getAnimationClass(
+                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
+                      'transition-all duration-300'
+                    )}
+                    data-testid="button-hero-request-demo"
+                  >
+                    {!prefersReducedMotion && (
+                      <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                    )}
+                    <span className="relative flex items-center">
+                      Request Demo
+                      <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
+                    </span>
+                  </Button>
+                  <Link href="/assessments" data-testid="link-hero-view-assessments">
+                    <Button 
+                      size="lg"
+                      variant="ghost"
+                      className={getAnimationClass(
+                        'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-view-assessments"
+                    >
+                      <span className="relative flex items-center">
+                        View Assessments
+                        <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link href="/for-candidates" data-testid="link-hero-for-candidates">
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className={getAnimationClass(
+                        'group border-cyan-400/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-400/60 text-sm md:text-base px-3 md:px-4',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-for-candidates"
+                    >
+                      <span className="relative flex items-center">
+                        For Candidates
+                        <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/assessments" data-testid="link-hero-get-started">
+                    <Button 
+                      size="lg"
+                      className={getAnimationClass(
+                        'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-get-started"
+                    >
+                      {!prefersReducedMotion && (
+                        <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                      )}
+                      <span className="relative flex items-center">
+                        Our Assessments
+                        <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
+                  <Button 
+                    size="lg"
+                    variant="ghost"
+                    onClick={() => {
+                      const element = document.getElementById('sample-reports');
+                      element?.scrollIntoView({ 
+                        behavior: prefersReducedMotion ? 'auto' : 'smooth', 
+                        block: 'start' 
+                      });
+                    }}
+                    className={getAnimationClass(
+                      'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
+                      'transition-all duration-300'
+                    )}
+                    data-testid="button-hero-sample-reports"
+                  >
+                    <span className="relative flex items-center">
+                      Sample Reports
+                      <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                    </span>
+                  </Button>
+                  <Link href="/" data-testid="link-hero-for-employers">
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className={getAnimationClass(
+                        'group border-cyan-400/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-400/60 text-sm md:text-base px-3 md:px-4',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-for-employers"
+                    >
+                      <span className="relative flex items-center">
+                        For Employers
+                        <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
             
-            {/* Desktop only: Pricing disclosure */}
-            <p className="hidden lg:block text-xs md:text-sm text-blue-100/60 italic">
-              Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
-            </p>
+            {/* Desktop only: Pricing disclosure - only for B2C */}
+            {!isB2B && (
+              <p className="hidden lg:block text-xs md:text-sm text-blue-100/60 italic">
+                Tests from {formatLocalPrice(400)} (plus one-time {formatLocalPrice(1500)} computation price)
+              </p>
+            )}
+            
+            {/* Contact Form Dialog for B2B */}
+            <ContactFormDialog 
+              open={isDialogOpen} 
+              onOpenChange={setIsDialogOpen} 
+              intent={dialogIntent}
+            />
 
             {/* Mobile Report Images - shown only on mobile, FIRST */}
             <div 
