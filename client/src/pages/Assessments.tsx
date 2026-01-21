@@ -270,13 +270,6 @@ export default function Assessments() {
                   <p className="text-xs md:text-sm text-blue-100/60">
                     Volume pricing available for enterprise teams
                   </p>
-                  <button
-                    onClick={() => setViewMode('candidate')}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 mt-2"
-                    data-testid="link-switch-to-candidate"
-                  >
-                    Looking to take assessments yourself? View individual pricing
-                  </button>
                 </>
               ) : (
                 /* B2C CTA - Continue to Tests */
