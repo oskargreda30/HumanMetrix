@@ -14,6 +14,7 @@ import About from "@/pages/About";
 import Assessments from "@/pages/Assessments";
 import ForEmployers from "@/pages/ForEmployers";
 import ForCandidates from "@/pages/ForCandidates";
+import Pricing from "@/pages/Pricing";
 import EcosystemIndex from "@/pages/EcosystemIndex";
 import Articles from "@/pages/Articles";
 import ArticlePsychometricTests from "@/pages/ArticlePsychometricTests";
@@ -66,6 +67,7 @@ function Router() {
         {() => <Redirect to="/" />}
       </Route>
       <Route path="/for-candidates" component={ForCandidates} />
+      <Route path="/pricing" component={Pricing} />
       <Route path="/ecosystem-index" component={EcosystemIndex} />
       <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
       <Route path="/ecosystem/start" component={EcosystemStart} />

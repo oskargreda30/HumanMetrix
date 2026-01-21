@@ -19,7 +19,7 @@ const VOLUME_TIERS: VolumeTier[] = [
   { name: "Growth", minVolume: 101, maxVolume: 500, pricePerTestPence: 787 },
   { name: "Small Enterprise", minVolume: 501, maxVolume: 2500, pricePerTestPence: 394 },
   { name: "Enterprise", minVolume: 2501, maxVolume: 9999, pricePerTestPence: 197 },
-  { name: "Pro", minVolume: 10000, maxVolume: 50000, pricePerTestPence: 79 },
+  { name: "Pro", minVolume: 10000, maxVolume: 10000, pricePerTestPence: 79 },
 ];
 
 const B2B_COUNTRY_MULTIPLIERS: Record<string, number> = {
@@ -95,12 +95,12 @@ export default function B2BPricingCalculator() {
               value={volume}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                if (!isNaN(val) && val >= 1 && val <= 50000) {
+                if (!isNaN(val) && val >= 1 && val <= 10000) {
                   setVolume(val);
                 }
               }}
               min={1}
-              max={50000}
+              max={10000}
               className="w-28 text-right text-lg font-bold"
               data-testid="volume-input"
             />
@@ -109,16 +109,16 @@ export default function B2BPricingCalculator() {
             value={[volume]}
             onValueChange={(values) => setVolume(values[0])}
             min={1}
-            max={50000}
-            step={100}
+            max={10000}
+            step={50}
             className="w-full"
             data-testid="volume-slider"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>1</span>
-            <span>10,000</span>
-            <span>25,000</span>
-            <span>50,000</span>
+            <span>2,500</span>
+            <span>5,000</span>
+            <span>10,000+</span>
           </div>
         </div>
 

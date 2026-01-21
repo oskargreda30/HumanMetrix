@@ -225,7 +225,7 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
                       </span>
                     </Button>
                   </Link>
-                  <Link href="/assessments?view=candidate" data-testid="link-hero-pricing">
+                  <Link href="/pricing" data-testid="link-hero-pricing">
                     <Button 
                       size="lg"
                       variant="ghost"
