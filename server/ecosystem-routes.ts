@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
 import OpenAI from "openai";
+import Stripe from "stripe";
 import { z } from "zod";
 import multer from "multer";
 import * as pdfParse from "pdf-parse";
@@ -13,6 +14,16 @@ import type {
   EcosystemHireRecommendation,
   EcosystemRiskAlert,
 } from "@shared/schema";
+import { 
+  convertToStripeCurrencyAmount, 
+  getStripeCurrencyCode, 
+  COUNTRY_CURRENCY_MAP,
+  getBaseUrl
+} from "@shared/currencies";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2024-11-20.acacia" as any,
+});
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({

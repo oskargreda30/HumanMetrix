@@ -1999,8 +1999,8 @@ export const ecosystemProjects = pgTable("ecosystem_projects", {
   teamAnalysis: jsonb("team_analysis").$type<EcosystemTeamAnalysis | null>(),
   
   // Payment
-  isPaid: boolean("is_paid").notNull().default(true), // Default true since price is £0 for now
-  paidAmount: integer("paid_amount").default(0), // In pence, 0 for free tier
+  isPaid: boolean("is_paid").notNull().default(false), // Default false - paid service at £15 base
+  paidAmount: integer("paid_amount").default(0), // In pence
   paidAt: timestamp("paid_at"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id"),
   
