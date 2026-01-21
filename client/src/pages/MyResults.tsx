@@ -424,7 +424,7 @@ export default function MyResults() {
             return (
               <Card className="p-6 mb-8" data-testid="card-key-metrics">
                 <h2 className="text-lg font-semibold mb-4">Key Metrics</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-muted/30 rounded-lg">
                     <div className="text-3xl font-bold text-primary mb-1">{uniqueAssessmentTypes.size}</div>
                     <div className="text-xs text-muted-foreground">Assessments Completed</div>
@@ -432,10 +432,6 @@ export default function MyResults() {
                   <div className="text-center p-4 bg-muted/30 rounded-lg">
                     <div className="text-3xl font-bold text-primary mb-1">{skillCount}</div>
                     <div className="text-xs text-muted-foreground">Skills Assessed</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-3xl font-bold text-primary mb-1">{avgScore}/100</div>
-                    <div className="text-xs text-muted-foreground">Average Score</div>
                   </div>
                   <div className="text-center p-4 bg-muted/30 rounded-lg">
                     <div className="text-sm font-bold text-primary mb-1 px-1 leading-tight">{topSkill.name}</div>
@@ -466,10 +462,6 @@ export default function MyResults() {
                       <h2 className="text-xl font-semibold">FIT Assessment</h2>
                       <p className="text-sm text-muted-foreground">Behavioural Skills (15 Questions)</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-500">{fitAvg}/100</div>
-                    <div className="text-xs text-muted-foreground">Average Score</div>
                   </div>
                 </div>
 
@@ -558,10 +550,6 @@ export default function MyResults() {
                       <h2 className="text-xl font-semibold">AI Readiness Assessment</h2>
                       <p className="text-sm text-muted-foreground">Technical AI Skills (21 Questions)</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-purple-500">{aiAvg}/100</div>
-                    <div className="text-xs text-muted-foreground">Average Score</div>
                   </div>
                 </div>
 
