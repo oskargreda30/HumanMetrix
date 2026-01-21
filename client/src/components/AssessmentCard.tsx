@@ -20,6 +20,7 @@ export interface AssessmentCardProps {
   onSelect?: () => void;
   free?: boolean;
   comingSoon?: boolean;
+  showPricing?: boolean;
 }
 
 export default function AssessmentCard({
@@ -34,6 +35,7 @@ export default function AssessmentCard({
   onSelect,
   free = false,
   comingSoon = false,
+  showPricing = true,
 }: AssessmentCardProps) {
   const { addToBasket, removeFromBasket, isInBasket } = useBasket();
   const { formatLocalPrice, currency } = useCurrency();
@@ -120,70 +122,82 @@ export default function AssessmentCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 md:pt-4 border-t border-cyan-400/20">
-          <div>
-            <span className="text-sm md:text-lg lg:text-xl font-bold font-mono text-cyan-400" data-testid="text-price">
-              {getDisplayPrice()}
-            </span>
-          </div>
-          {isComingSoon ? (
-            <Badge variant="secondary" data-testid="badge-coming-soon">Coming Soon</Badge>
-          ) : status === "completed" ? (
-            onSelect && (
-              <Button
-                onClick={onSelect}
-                data-testid="button-purchase-assessment"
-              >
-                View Results
-              </Button>
-            )
-          ) : (
-            <div className="flex gap-2">
-              {inBasket ? (
-                <>
-                  <Badge 
-                    variant="default" 
-                    className="flex items-center gap-1 text-xs"
-                    data-testid="badge-in-basket"
-                  >
-                    <Check className="h-3 w-3" />
-                    Added
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRemoveFromBasket}
-                    disabled={!isAvailable}
-                    data-testid="button-remove-from-basket"
-                    className="border-cyan-400/30 hover:border-cyan-400/50 hover:bg-cyan-400/10 text-cyan-400"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={handleAddToBasket}
-                  disabled={!isAvailable || !id}
-                  data-testid="button-add-to-basket"
-                  size="sm"
-                  className="text-xs bg-cyan-400 hover:bg-cyan-500 text-white"
-                >
-                  {justAdded ? (
-                    <>
-                      <Check className="mr-1 h-3 w-3" />
-                      Added!
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="mr-1 h-3 w-3" />
-                      Add to Testing Suite
-                    </>
-                  )}
-                </Button>
-              )}
+        {showPricing ? (
+          <div className="flex items-center justify-between pt-2 md:pt-4 border-t border-cyan-400/20">
+            <div>
+              <span className="text-sm md:text-lg lg:text-xl font-bold font-mono text-cyan-400" data-testid="text-price">
+                {getDisplayPrice()}
+              </span>
             </div>
-          )}
-        </div>
+            {isComingSoon ? (
+              <Badge variant="secondary" data-testid="badge-coming-soon">Coming Soon</Badge>
+            ) : status === "completed" ? (
+              onSelect && (
+                <Button
+                  onClick={onSelect}
+                  data-testid="button-purchase-assessment"
+                >
+                  View Results
+                </Button>
+              )
+            ) : (
+              <div className="flex gap-2">
+                {inBasket ? (
+                  <>
+                    <Badge 
+                      variant="default" 
+                      className="flex items-center gap-1 text-xs"
+                      data-testid="badge-in-basket"
+                    >
+                      <Check className="h-3 w-3" />
+                      Added
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRemoveFromBasket}
+                      disabled={!isAvailable}
+                      data-testid="button-remove-from-basket"
+                      className="border-cyan-400/30 hover:border-cyan-400/50 hover:bg-cyan-400/10 text-cyan-400"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleAddToBasket}
+                    disabled={!isAvailable || !id}
+                    data-testid="button-add-to-basket"
+                    size="sm"
+                    className="text-xs bg-cyan-400 hover:bg-cyan-500 text-white"
+                  >
+                    {justAdded ? (
+                      <>
+                        <Check className="mr-1 h-3 w-3" />
+                        Added!
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="mr-1 h-3 w-3" />
+                        Add to Testing Suite
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="pt-2 md:pt-4 border-t border-cyan-400/20">
+            {isComingSoon ? (
+              <Badge variant="secondary" data-testid="badge-coming-soon">Coming Soon</Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30" data-testid="badge-available">
+                Available
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -3,12 +3,13 @@ import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
 import RoadmapSection from "@/components/RoadmapSection";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Code2, Shield, ShoppingCart } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
 import { useState } from "react";
 import CheckoutModal from "@/components/CheckoutModal";
+import ContactFormDialog from "@/components/ContactFormDialog";
 import { SEO, ProductSchema } from "@/lib/seo";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
@@ -60,6 +61,8 @@ export default function Assessments() {
   const { isAuthenticated } = useAuth();
   const { getBasketCount, basketItems } = useBasket();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'employer' | 'candidate'>('employer');
   const { formatLocalPrice } = useCurrency();
 
   const basketCount = getBasketCount();
@@ -67,6 +70,13 @@ export default function Assessments() {
   // Get localised prices for the pricing text
   const platformFee = formatLocalPrice(BASE_FEE);
   const minAssessmentPrice = formatLocalPrice(Math.min(...Object.values(ASSESSMENT_PRICES)));
+
+  const b2bBenefits = [
+    "Objective, AI-powered candidate evaluation",
+    "Reduce time-to-hire by up to 40%",
+    "Comprehensive skill and behavioral insights",
+    "Seamless ATS integration available",
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
@@ -88,41 +98,94 @@ export default function Assessments() {
       <Navigation />
       <main className="flex-grow py-8 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8 md:mb-12">
-            <h1 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
-              Assessment Suite
-            </h1>
-            <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-2 px-2">
-              Please select your assessments below.
-            </p>
-            <p className="text-xs md:text-sm text-blue-100/50 mb-3 md:mb-6 px-2">
-              Already have an account?{' '}
-              {isAuthenticated ? (
-                <Link href="/dashboard" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
-                  Go to dashboard
-                </Link>
-              ) : (
-                <Link href="/login" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
-                  Log in here
-                </Link>
-              )}
-            </p>
-            
-            {/* Pricing info banner */}
-            <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-3 md:p-4 max-w-2xl mx-auto" data-testid="pricing-info-banner">
-              <p className="text-sm md:text-base text-cyan-100 font-medium">
-                <span className="text-cyan-400 font-semibold">{platformFee}</span> one-time platform fee
-                <span className="text-blue-100/60"> + </span>
-                assessments from <span className="text-cyan-400 font-semibold">{minAssessmentPrice}</span> each
-              </p>
-              <p className="text-xs md:text-sm text-blue-100/50 mt-1">
-                Complete assessments for free, pay only to unlock your results
-              </p>
+          {/* View Mode Toggle */}
+          <div className="flex justify-center mb-6 md:mb-10">
+            <div className="inline-flex rounded-lg bg-[#1a2744]/70 p-1 border border-cyan-400/20" data-testid="view-mode-toggle">
+              <button
+                onClick={() => setViewMode('employer')}
+                className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-md text-sm md:text-base font-medium transition-all ${
+                  viewMode === 'employer'
+                    ? 'bg-cyan-500 text-white shadow-lg'
+                    : 'text-blue-100/70 hover:text-white'
+                }`}
+                data-testid="toggle-employer"
+              >
+                <Building2 className="h-4 w-4" />
+                I'm an Employer
+              </button>
+              <button
+                onClick={() => setViewMode('candidate')}
+                className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-md text-sm md:text-base font-medium transition-all ${
+                  viewMode === 'candidate'
+                    ? 'bg-cyan-500 text-white shadow-lg'
+                    : 'text-blue-100/70 hover:text-white'
+                }`}
+                data-testid="toggle-candidate"
+              >
+                <User className="h-4 w-4" />
+                I'm a Candidate
+              </button>
             </div>
           </div>
 
+          <div className="text-center mb-8 md:mb-12">
+            <h1 className="text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 text-white px-2">
+              {viewMode === 'employer' ? 'Enterprise Assessment Suite' : 'Assessment Suite'}
+            </h1>
+            <p className="text-xs md:text-base lg:text-xl text-blue-100/70 mb-2 px-2">
+              {viewMode === 'employer' 
+                ? 'AI-powered assessments to identify top talent and reduce hiring risk'
+                : 'Please select your assessments below.'
+              }
+            </p>
+            
+            {viewMode === 'employer' ? (
+              /* B2B Employer View - Benefits list */
+              <div className="max-w-2xl mx-auto mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
+                  {b2bBenefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm text-blue-100/80">
+                      <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                      <span>{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* B2C Candidate View - Login link and pricing */
+              <>
+                <p className="text-xs md:text-sm text-blue-100/50 mb-3 md:mb-6 px-2">
+                  Already have an account?{' '}
+                  {isAuthenticated ? (
+                    <Link href="/dashboard" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+                      Go to dashboard
+                    </Link>
+                  ) : (
+                    <Link href="/login" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+                      Log in here
+                    </Link>
+                  )}
+                </p>
+                
+                {/* Pricing info banner - only for candidates */}
+                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-3 md:p-4 max-w-2xl mx-auto" data-testid="pricing-info-banner">
+                  <p className="text-sm md:text-base text-cyan-100 font-medium">
+                    <span className="text-cyan-400 font-semibold">{platformFee}</span> one-time platform fee
+                    <span className="text-blue-100/60"> + </span>
+                    assessments from <span className="text-cyan-400 font-semibold">{minAssessmentPrice}</span> each
+                  </p>
+                  <p className="text-xs md:text-sm text-blue-100/50 mt-1">
+                    Complete assessments for free, pay only to unlock your results
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="mb-12 md:mb-16">
-            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">Available Assessments</h2>
+            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">
+              {viewMode === 'employer' ? 'Our Assessment Suite' : 'Available Assessments'}
+            </h2>
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               {assessments.map((assessment) => (
                 <AssessmentCard
@@ -134,29 +197,58 @@ export default function Assessments() {
                   duration={assessment.duration}
                   icon={assessment.icon}
                   price={assessment.price}
+                  showPricing={viewMode === 'candidate'}
                 />
               ))}
             </div>
             
-            {/* Checkout Button */}
+            {/* CTA Section - different for each view mode */}
             <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
-              <Button 
-                size="lg"
-                onClick={() => setCheckoutOpen(true)}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-lg"
-                data-testid="button-view-basket-checkout"
-              >
-                <ShoppingCart className="h-4 w-4 md:h-6 md:w-6" />
-                Continue to Tests
-                {basketCount > 0 && (
-                  <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                    {basketCount}
-                  </span>
-                )}
-              </Button>
-              <p className="text-xs md:text-sm text-blue-100/60 italic">
-                {platformFee} one-time platform fee + assessments from {minAssessmentPrice} each
-              </p>
+              {viewMode === 'employer' ? (
+                /* B2B CTA - Request Demo */
+                <>
+                  <Button 
+                    size="lg"
+                    onClick={() => setContactOpen(true)}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-lg"
+                    data-testid="button-request-demo"
+                  >
+                    Request a Demo
+                    <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
+                  </Button>
+                  <p className="text-xs md:text-sm text-blue-100/60">
+                    Volume pricing available for enterprise teams
+                  </p>
+                  <button
+                    onClick={() => setViewMode('candidate')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 mt-2"
+                    data-testid="link-switch-to-candidate"
+                  >
+                    Looking to take assessments yourself? View individual pricing
+                  </button>
+                </>
+              ) : (
+                /* B2C CTA - Continue to Tests */
+                <>
+                  <Button 
+                    size="lg"
+                    onClick={() => setCheckoutOpen(true)}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 gap-2 text-sm md:text-lg"
+                    data-testid="button-view-basket-checkout"
+                  >
+                    <ShoppingCart className="h-4 w-4 md:h-6 md:w-6" />
+                    Continue to Tests
+                    {basketCount > 0 && (
+                      <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                        {basketCount}
+                      </span>
+                    )}
+                  </Button>
+                  <p className="text-xs md:text-sm text-blue-100/60 italic">
+                    {platformFee} one-time platform fee + assessments from {minAssessmentPrice} each
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
@@ -171,6 +263,13 @@ export default function Assessments() {
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         basketItems={basketItems}
+      />
+      
+      {/* Contact Form Dialog for B2B Demo Requests */}
+      <ContactFormDialog
+        open={contactOpen}
+        onOpenChange={setContactOpen}
+        intent="demo"
       />
     </div>
   );
