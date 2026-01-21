@@ -728,30 +728,17 @@ export default function EcosystemSampleReport() {
                 </div>
               </div>
               
-              {/* Key Traits & Interview Focus */}
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-medium text-primary mb-2">Key Traits to Seek</p>
-                  <ul className="text-sm space-y-1">
-                    {sampleAnalysis.idealCandidateProfile.keyTraits.map((trait, j) => (
-                      <li key={j} className="flex items-start gap-2">
-                        <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
-                        <span>{trait}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-blue-600 mb-2">Interview Focus Areas</p>
-                  <ul className="text-sm space-y-1">
-                    {sampleAnalysis.idealCandidateProfile.interviewFocusAreas.map((area, j) => (
-                      <li key={j} className="flex items-start gap-2">
-                        <MessageSquare className="h-3 w-3 text-blue-500 mt-1 flex-shrink-0" />
-                        <span>{area}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {/* Key Traits */}
+              <div>
+                <p className="text-xs font-medium text-primary mb-2">Key Traits to Seek</p>
+                <ul className="text-sm space-y-1">
+                  {sampleAnalysis.idealCandidateProfile.keyTraits.map((trait, j) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
+                      <span>{trait}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>

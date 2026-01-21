@@ -62,6 +62,7 @@ import {
   DollarSign,
   ShieldAlert,
   Search,
+  TrendingUp,
 } from "lucide-react";
 import {
   useEcosystemProject,
@@ -1437,6 +1438,7 @@ function TeamAnalysisResults({
   // State for candidate search
   const [candidateSearch, setCandidateSearch] = useState("");
   const [showCandidateSearch, setShowCandidateSearch] = useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   
   // Fetch searchable candidates (only for partners)
   const { data: searchableCandidates = [], isLoading: candidatesLoading } = useSearchableCandidates(
@@ -1463,6 +1465,27 @@ function TeamAnalysisResults({
       maxPossible: teamMembers.length * 100,
     };
   });
+  
+  // Get selected candidate for team complement visualization
+  const selectedCandidate = selectedCandidateId 
+    ? filteredCandidates.find(c => c.id === selectedCandidateId) 
+    : null;
+  
+  // Calculate projected team scores with selected candidate added
+  const projectedScoresWithCandidate = selectedCandidate ? FIT_CAPABILITIES.map(cap => {
+    const currentTotal = cumulativeScores.find(s => s.code === cap.code)?.score || 0;
+    const candidateScore = selectedCandidate.fitScores[cap.code] || 0;
+    const newTotal = currentTotal + candidateScore;
+    const newTeamSize = teamMembers.length + 1;
+    return {
+      capability: cap.name,
+      code: cap.code,
+      currentAverage: teamMembers.length > 0 ? Math.round(currentTotal / teamMembers.length) : 0,
+      projectedAverage: Math.round(newTotal / newTeamSize),
+      improvement: Math.round(newTotal / newTeamSize) - (teamMembers.length > 0 ? Math.round(currentTotal / teamMembers.length) : 0),
+      candidateScore,
+    };
+  }) : [];
   
   return (
     <div className="space-y-8">
@@ -2108,35 +2131,20 @@ function TeamAnalysisResults({
               </div>
             )}
             
-            {/* Key Traits & Interview Focus */}
-            <div className="grid md:grid-cols-2 gap-4">
-              {analysis.idealCandidateProfile.keyTraits && analysis.idealCandidateProfile.keyTraits.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-primary mb-2">Key Traits to Seek</p>
-                  <ul className="text-sm space-y-1">
-                    {analysis.idealCandidateProfile.keyTraits.map((trait: string, j: number) => (
-                      <li key={j} className="flex items-start gap-2">
-                        <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
-                        <span>{trait}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {analysis.idealCandidateProfile.interviewFocusAreas && analysis.idealCandidateProfile.interviewFocusAreas.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-blue-600 mb-2">Interview Focus Areas</p>
-                  <ul className="text-sm space-y-1">
-                    {analysis.idealCandidateProfile.interviewFocusAreas.map((area: string, j: number) => (
-                      <li key={j} className="flex items-start gap-2">
-                        <MessageSquare className="h-3 w-3 text-blue-500 mt-1 flex-shrink-0" />
-                        <span>{area}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            {/* Key Traits */}
+            {analysis.idealCandidateProfile.keyTraits && analysis.idealCandidateProfile.keyTraits.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-primary mb-2">Key Traits to Seek</p>
+                <ul className="text-sm space-y-1">
+                  {analysis.idealCandidateProfile.keyTraits.map((trait: string, j: number) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
+                      <span>{trait}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2266,40 +2274,130 @@ function TeamAnalysisResults({
                         : "No candidates available (all have been added to your team or none have completed assessments)"}
                     </div>
                   ) : (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {filteredCandidates.slice(0, 10).map((candidate) => (
-                        <div key={candidate.id} className="p-4 bg-muted/30 rounded-lg border">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <p className="font-medium">{candidate.name}</p>
-                              <p className="text-xs text-muted-foreground">{candidate.email}</p>
+                    <>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Click on a candidate to see how they would complement your team
+                      </p>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {filteredCandidates.slice(0, 10).map((candidate) => (
+                          <div 
+                            key={candidate.id} 
+                            className={`p-4 rounded-lg border cursor-pointer transition-all hover-elevate ${
+                              selectedCandidateId === candidate.id 
+                                ? 'bg-primary/10 border-primary ring-2 ring-primary/20' 
+                                : 'bg-muted/30'
+                            }`}
+                            onClick={() => setSelectedCandidateId(
+                              selectedCandidateId === candidate.id ? null : candidate.id
+                            )}
+                            data-testid={`card-candidate-${candidate.id}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <p className="font-medium">{candidate.name}</p>
+                                <p className="text-xs text-muted-foreground">{candidate.email}</p>
+                              </div>
+                              {selectedCandidateId === candidate.id && (
+                                <Badge variant="default" className="text-xs">Selected</Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {FIT_CAPABILITIES.map(cap => {
+                                const score = candidate.fitScores[cap.code];
+                                if (!score) return null;
+                                return (
+                                  <Badge 
+                                    key={cap.code} 
+                                    variant="outline" 
+                                    className="text-xs"
+                                    data-testid={`badge-score-${candidate.id}-${cap.code}`}
+                                  >
+                                    {cap.code}: {score}%
+                                  </Badge>
+                                );
+                              })}
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {FIT_CAPABILITIES.map(cap => {
-                              const score = candidate.fitScores[cap.code];
-                              if (!score) return null;
-                              return (
-                                <Badge 
-                                  key={cap.code} 
-                                  variant="outline" 
-                                  className="text-xs"
-                                  data-testid={`badge-score-${candidate.id}-${cap.code}`}
-                                >
-                                  {cap.code}: {score}%
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                   
                   {filteredCandidates.length > 10 && (
                     <p className="text-sm text-muted-foreground text-center">
                       Showing 10 of {filteredCandidates.length} candidates. Refine your search to see more.
                     </p>
+                  )}
+                  
+                  {/* Team Complement Visualization */}
+                  {selectedCandidate && projectedScoresWithCandidate.length > 0 && (
+                    <div className="mt-6 p-5 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <h6 className="font-semibold mb-3 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        Team Impact: Adding {selectedCandidate.name}
+                      </h6>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        See how this candidate's scores would improve your team's overall capabilities
+                      </p>
+                      
+                      <div className="space-y-3">
+                        {projectedScoresWithCandidate.map((item) => {
+                          const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
+                          const hasImprovement = item.improvement > 0;
+                          const hasDecline = item.improvement < 0;
+                          return (
+                            <div key={item.code} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                  <div className={`h-5 w-5 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
+                                    <span className="text-white text-[10px] font-bold">{item.code}</span>
+                                  </div>
+                                  <span className="font-medium">{item.capability}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-muted-foreground">{item.currentAverage}%</span>
+                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                  <span className="font-semibold">{item.projectedAverage}%</span>
+                                  {hasImprovement && (
+                                    <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50 dark:bg-green-900/30">
+                                      +{item.improvement}%
+                                    </Badge>
+                                  )}
+                                  {hasDecline && (
+                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/30">
+                                      {item.improvement}%
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="absolute inset-y-0 left-0 bg-muted-foreground/30 rounded-full"
+                                  style={{ width: `${item.currentAverage}%` }}
+                                />
+                                <div 
+                                  className={`absolute inset-y-0 left-0 rounded-full ${hasImprovement ? 'bg-green-500' : hasDecline ? 'bg-amber-500' : 'bg-muted-foreground/50'}`}
+                                  style={{ width: `${item.projectedAverage}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">Overall Team Improvement</span>
+                          <Badge 
+                            variant={projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) > 0 ? "default" : "secondary"}
+                            className="text-sm"
+                          >
+                            {projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) > 0 ? '+' : ''}
+                            {Math.round(projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) / projectedScoresWithCandidate.length)}% avg
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
