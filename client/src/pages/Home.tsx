@@ -384,9 +384,7 @@ export default function Home() {
         </section>
 
         {/* Sample Reports Section */}
-        <div className="bg-white">
-          <SampleReportsSection />
-        </div>
+        <SampleReportsSection />
 
         {/* Use Cases */}
         <section className="py-12 md:py-24 bg-slate-50">
