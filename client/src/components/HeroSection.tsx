@@ -225,18 +225,18 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
                       </span>
                     </Button>
                   </Link>
-                  <Link href="/for-candidates" data-testid="link-hero-for-candidates">
+                  <Link href="/assessments?view=candidate" data-testid="link-hero-pricing">
                     <Button 
                       size="lg"
-                      variant="outline"
+                      variant="ghost"
                       className={getAnimationClass(
-                        'group border-cyan-400/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-400/60 text-sm md:text-base px-3 md:px-4',
+                        'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
                         'transition-all duration-300'
                       )}
-                      data-testid="button-hero-for-candidates"
+                      data-testid="button-hero-pricing"
                     >
                       <span className="relative flex items-center">
-                        For Candidates
+                        Pricing
                         <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                       </span>
                     </Button>
@@ -404,7 +404,7 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
         {/* Feature highlights - Below the main hero */}
         <div 
           ref={cardsRef}
-          className="mt-16 max-w-4xl mx-auto"
+          className="mt-24 md:mt-32 max-w-4xl mx-auto"
         >
           {/* Simple horizontal feature list */}
           <div className={getAnimationClass(

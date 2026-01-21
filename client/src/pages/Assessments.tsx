@@ -7,9 +7,10 @@ import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCir
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CheckoutModal from "@/components/CheckoutModal";
 import ContactFormDialog from "@/components/ContactFormDialog";
+import { useSearch } from "wouter";
 import { SEO, ProductSchema } from "@/lib/seo";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
@@ -87,6 +88,16 @@ export default function Assessments() {
   const [contactOpen, setContactOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'employer' | 'candidate'>('employer');
   const { formatLocalPrice } = useCurrency();
+  const searchString = useSearch();
+
+  // Check URL parameter for view mode
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const viewParam = params.get('view');
+    if (viewParam === 'candidate') {
+      setViewMode('candidate');
+    }
+  }, [searchString]);
 
   const basketCount = getBasketCount();
   

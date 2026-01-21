@@ -66,22 +66,22 @@ const assessments = [
   {
     name: "FIT Assessment",
     description: "Measure your behavioral competencies across key workplace dimensions",
-    duration: "14-20 min",
+    duration: "20 min",
   },
   {
     name: "AI Readiness",
     description: "Evaluate your preparedness for AI-integrated work environments",
-    duration: "14-20 min",
+    duration: "20 min",
   },
   {
     name: "Prompt Architecture",
     description: "Test your ability to effectively communicate with AI systems",
-    duration: "14-20 min",
+    duration: "14 min",
   },
   {
     name: "Algorithmic Integrity (AIQ)",
     description: "Assess your understanding of AI ethics and responsible AI use",
-    duration: "14-20 min",
+    duration: "20 min",
   },
 ];
 
@@ -115,7 +115,7 @@ const howItWorks = [
 const faqs = [
   {
     question: "How long do the assessments take to complete?",
-    answer: "Each of our four assessments takes approximately 14-20 minutes to complete. You can complete them in any order and at your own pace, with results available immediately upon completion.",
+    answer: "Each of our four assessments takes between 14-20 minutes to complete. You can complete them in any order and at your own pace, with results available immediately upon completion.",
   },
   {
     question: "Are the assessments free to take?",
@@ -127,7 +127,7 @@ const faqs = [
   },
   {
     question: "Can I retake the assessments?",
-    answer: "Yes, you can retake assessments if you want to improve your scores. Each retake will generate new, AI-generated questions so you're always being assessed fairly.",
+    answer: "Yes, you can retake assessments if you want to improve your scores. Each retake will generate new questions so you're always being assessed fairly.",
   },
   {
     question: "How do I add my results to my CV?",
@@ -197,13 +197,13 @@ export default function ForCandidates() {
               AI literacy, and ethical reasoning to employers who are hiring for the future.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-              <Link href="/assessments">
+              <Link href="/assessments?view=candidate">
                 <Button size="lg" data-testid="button-start-assessments">
-                  Start Free Assessments
+                  Start Assessments
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/assessments#pricing">
+              <Link href="/assessments?view=candidate">
                 <Button size="lg" variant="outline" data-testid="button-view-pricing">
                   View Pricing
                 </Button>
@@ -359,9 +359,9 @@ export default function ForCandidates() {
               Join thousands of candidates who have enhanced their job applications 
               with verified HumanMetrix assessment results.
             </p>
-            <Link href="/assessments">
+            <Link href="/assessments?view=candidate">
               <Button size="lg" data-testid="button-get-started-cta">
-                Get Started Free
+                Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
