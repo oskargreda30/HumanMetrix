@@ -11,9 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Building2,
   Users,
-  BarChart3,
   Target,
-  AlertTriangle,
   CheckCircle,
   ArrowRight,
   Sparkles,
@@ -32,7 +30,10 @@ import {
   Clock,
   Info,
   Mail,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  AlertTriangle,
+  BarChart3
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
@@ -331,91 +332,31 @@ export default function EcosystemIndex() {
         {/* Sample Report Preview */}
         <section className="py-12 md:py-20" data-testid="section-sample-report">
           <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <div className="text-center">
               <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-sample-report-title">Sample Report Preview</h2>
-              <p className="text-muted-foreground" data-testid="text-sample-report-description">See what your team diagnostic reveals</p>
-            </div>
-            
-            <Card className="p-6 md:p-8 overflow-hidden" data-testid="sample-report-card">
-              {/* Mock Team Header */}
-              <div className="flex items-center justify-between mb-8 pb-6 border-b" data-testid="sample-report-header">
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-sample-team-name">Acme Engineering Team</h3>
-                  <p className="text-sm text-muted-foreground">8 team members • Technology • Hybrid</p>
-                </div>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200" data-testid="badge-imbalance-status">
-                  Moderate Imbalance Detected
-                </Badge>
-              </div>
+              <p className="text-muted-foreground mb-8" data-testid="text-sample-report-description">See what your team diagnostic reveals</p>
               
-              {/* Capability Distribution */}
-              <div className="mb-8" data-testid="sample-capability-distribution">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Team Capability Distribution
-                </h4>
-                <div className="space-y-3">
-                  {capabilities.map((cap, index) => {
-                    const values = [75, 45, 60, 30, 85, 55];
-                    const value = values[index];
-                    return (
-                      <div key={cap.code} className="flex items-center gap-3" data-testid={`capability-bar-${cap.code}`}>
-                        <div className="w-20 text-sm font-medium">{cap.code}</div>
-                        <div className="flex-1 bg-muted rounded-full h-6 overflow-hidden">
-                          <div 
-                            className={`h-full ${cap.color} rounded-full flex items-center justify-end pr-2`}
-                            style={{ width: `${value}%` }}
-                          >
-                            <span className="text-xs text-white font-medium">{value}%</span>
-                          </div>
-                        </div>
-                        <div className="w-24 text-xs text-muted-foreground">{cap.name}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Risk Alerts */}
-              <div className="grid md:grid-cols-2 gap-4 mb-8" data-testid="sample-risk-alerts">
-                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg" data-testid="alert-capability-gap">
-                  <div className="flex items-center gap-2 text-destructive font-medium mb-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    Capability Gap Detected
+              <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20" data-testid="sample-report-card">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-primary" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Empathy & Ethics (EE)</strong> is critically underrepresented. 
-                    Only 1 of 8 team members shows strength in this area.
-                  </p>
-                </div>
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg" data-testid="alert-overload-risk">
-                  <div className="flex items-center gap-2 text-amber-700 font-medium mb-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    Overload Risk
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">TechFlow Solutions Team Diagnostic</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Explore a complete sample report with mission alignment analysis, capability gap visualization, 
+                      contextual insights, and ideal candidate profiles.
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Growth Mindset (GM)</strong> is concentrated in 2 team members 
-                    who may be overloaded with change initiatives.
-                  </p>
+                  <Link href="/ecosystem/sample-report">
+                    <Button size="lg" data-testid="button-view-sample-report">
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Full Sample Report
+                    </Button>
+                  </Link>
                 </div>
-              </div>
-
-              {/* Ideal Hire Profile */}
-              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg" data-testid="sample-ideal-hire">
-                <div className="flex items-center gap-2 font-semibold mb-2">
-                  <UserPlus className="h-4 w-4 text-primary" />
-                  Recommended Complement Hire
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  To balance this team, prioritize candidates who demonstrate:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="bg-rose-100 text-rose-700 border-rose-200" data-testid="badge-recommend-ee">High EE (Empathy & Ethics)</Badge>
-                  <Badge className="bg-purple-100 text-purple-700 border-purple-200" data-testid="badge-recommend-ic">Strong IC (Intellectual Curiosity)</Badge>
-                  <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200" data-testid="badge-recommend-ia">Solid IA (Interpersonal Agility)</Badge>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         </section>
 
