@@ -52,15 +52,25 @@ const teamMembers: TeamMember[] = [
 
 function TeamMemberCard({ member }: { member: TeamMember }) {
   const [showBio, setShowBio] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
     <div className="flex flex-col items-center text-center">
-      {/* Circular photo */}
-      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4 border-4 border-primary/20">
+      {/* Circular photo with loading skeleton */}
+      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden mb-4 border-4 border-primary/20 relative bg-muted">
+        {/* Loading skeleton */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-pulse rounded-full" />
+        )}
         <img
           src={member.photo}
           alt={member.name}
-          className="w-full h-full object-cover"
+          width={160}
+          height={160}
+          loading="lazy"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ objectPosition: member.photoPosition }}
           data-testid={`img-team-${member.name.toLowerCase().replace(/\s+/g, '-')}`}
         />
