@@ -2538,13 +2538,6 @@ function TeamAnalysisResults({
         </div>
       </div>
 
-      {/* Export Button */}
-      <div className="pt-4 border-t">
-        <Button variant="outline" data-testid="button-export-report">
-          <FileText className="mr-2 h-4 w-4" />
-          Export Report as PDF
-        </Button>
-      </div>
     </div>
   );
 }
