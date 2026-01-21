@@ -17,13 +17,24 @@ import type {
 import { 
   convertToStripeCurrencyAmount, 
   getStripeCurrencyCode, 
-  COUNTRY_CURRENCY_MAP,
-  getBaseUrl
+  COUNTRY_CURRENCY_MAP
 } from "@shared/currencies";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-11-20.acacia" as any,
 });
+
+// Helper function to get base URL for redirects
+function getBaseUrl(req: Request): string {
+  // Use PRODUCTION_URL if set (for deployed environment)
+  if (process.env.PRODUCTION_URL) {
+    return process.env.PRODUCTION_URL.replace(/\/$/, '');
+  }
+  // Fall back to request-based URL
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${protocol}://${host}`;
+}
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({
@@ -1532,6 +1543,147 @@ export function registerEcosystemRoutes(app: Express): void {
     } catch (error: any) {
       console.error("[Ecosystem] Error fetching searchable candidates:", error);
       res.status(500).json({ error: "Failed to fetch candidates" });
+    }
+  });
+
+  // ============================================
+  // Ecosystem Payment - Step 6 Checkout
+  // ============================================
+  
+  // Base price for Ecosystem Team Diagnostic: £15 (1500 pence)
+  const ECOSYSTEM_BASE_PRICE_PENCE = 1500;
+
+  // Create Stripe checkout session for ecosystem project payment
+  app.post("/api/ecosystem/projects/:id/create-checkout", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { countryCode } = req.body;
+      const projectId = req.params.id;
+
+      const project = await storage.getEcosystemProject(projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Check ownership
+      if (project.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Check if already paid
+      if (project.isPaid) {
+        return res.status(400).json({ error: "This project has already been paid for" });
+      }
+
+      // Check if analysis has been generated (required before payment)
+      if (!project.teamAnalysis) {
+        return res.status(400).json({ error: "Please generate team analysis before proceeding to payment" });
+      }
+
+      // Get pricing based on country
+      const userCountry = countryCode || 'GB';
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      // Apply PPP pricing adjustment and convert to local currency
+      const adjustedPrice = convertToStripeCurrencyAmount(ECOSYSTEM_BASE_PRICE_PENCE, localCurrencyCode, userCountry);
+
+      // Get base URL for redirects
+      const baseUrl = getBaseUrl(req);
+
+      // Create Stripe checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer_email: user.email,
+        line_items: [{
+          price_data: {
+            currency: stripeCurrency,
+            product_data: {
+              name: "Ecosystem Team Diagnostic Report",
+              description: "AI-powered team capability analysis with gap identification and hire recommendations",
+            },
+            unit_amount: adjustedPrice,
+          },
+          quantity: 1,
+        }],
+        mode: "payment",
+        allow_promotion_codes: true, // Enable promo codes like FREE
+        payment_intent_data: {
+          receipt_email: user.email, // Send receipt email
+        },
+        success_url: `${baseUrl}/partner-dashboard?tab=ecosystem&project=${projectId}&payment=success`,
+        cancel_url: `${baseUrl}/partner-dashboard?tab=ecosystem&project=${projectId}&payment=cancelled`,
+        metadata: {
+          type: "ecosystem_project",
+          projectId: projectId,
+          userId: user.id,
+          countryCode: userCountry,
+          localCurrency: localCurrencyCode,
+        },
+      });
+
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (error: any) {
+      console.error("[Ecosystem] Error creating checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Verify payment and mark project as paid (called after redirect from Stripe)
+  app.post("/api/ecosystem/projects/:id/verify-payment", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const projectId = req.params.id;
+      const project = await storage.getEcosystemProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      if (project.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // If already paid, return success
+      if (project.isPaid) {
+        return res.json({ success: true, alreadyPaid: true });
+      }
+
+      // Check for completed payments via Stripe
+      const sessions = await stripe.checkout.sessions.list({
+        limit: 10,
+      });
+
+      // Find a completed session for this project
+      const completedSession = sessions.data.find(session => 
+        session.metadata?.projectId === projectId &&
+        session.metadata?.type === "ecosystem_project" &&
+        session.payment_status === "paid"
+      );
+
+      if (completedSession) {
+        // Mark project as paid
+        await storage.updateEcosystemProject(projectId, {
+          isPaid: true,
+          paidAmount: completedSession.amount_total || ECOSYSTEM_BASE_PRICE_PENCE,
+          paidAt: new Date(),
+          stripePaymentIntentId: completedSession.payment_intent as string,
+        });
+
+        return res.json({ success: true, paid: true });
+      }
+
+      return res.json({ success: false, paid: false });
+    } catch (error: any) {
+      console.error("[Ecosystem] Error verifying payment:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
     }
   });
 }

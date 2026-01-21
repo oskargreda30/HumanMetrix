@@ -75,6 +75,8 @@ import {
   useSearchableCandidates,
   type SearchableCandidate,
 } from "@/hooks/useEcosystemProject";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { apiRequest } from "@/lib/queryClient";
 import type { 
   EcosystemProject, 
   EcosystemTeamMember,
@@ -109,14 +111,19 @@ export function EcosystemWorkflow({
   partnerId,
 }: EcosystemWorkflowProps) {
   const { toast } = useToast();
-  const { data: project, isLoading: projectLoading } = useEcosystemProject(projectId);
+  const { data: project, isLoading: projectLoading, refetch: refetchProject } = useEcosystemProject(projectId);
   const { data: teamMembers = [], isLoading: membersLoading } = useEcosystemTeamMembers(projectId);
+  const { formatLocalPrice, countryCode, getAdjustedPriceInPence } = useCurrency();
   
   const analyzeMission = useAnalyzeMission();
   const updateOrgContext = useUpdateOrganizationContext();
   const addTeamMember = useAddTeamMember();
   const deleteTeamMember = useDeleteTeamMember();
   const generateAnalysis = useGenerateTeamAnalysis();
+  
+  // Payment state
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const ECOSYSTEM_BASE_PRICE_PENCE = 1500; // £15 base price
 
   // Form states
   const [missionStatement, setMissionStatement] = useState("");
@@ -251,7 +258,7 @@ export function EcosystemWorkflow({
         title: "Mission analyzed",
         description: "AI has analyzed your mission and identified capability priorities.",
       });
-      setExpandedStep(2);
+      setExpandedStep(3);
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -297,7 +304,7 @@ export function EcosystemWorkflow({
         title: "Team context saved",
         description: "Your team details have been saved.",
       });
-      setExpandedStep(3);
+      setExpandedStep(4);
     } catch (error: any) {
       toast({
         title: "Failed to save",
@@ -463,9 +470,9 @@ export function EcosystemWorkflow({
       await generateAnalysis.mutateAsync({ projectId });
       toast({
         title: "Analysis generated",
-        description: "Your team diagnostic report is ready.",
+        description: "Proceed to payment to unlock your comprehensive report.",
       });
-      setExpandedStep(5);
+      setExpandedStep(6); // Go to payment step
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -474,6 +481,67 @@ export function EcosystemWorkflow({
       });
     }
   };
+
+  // Handle payment checkout
+  const handlePaymentCheckout = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/create-checkout`, {
+        countryCode: countryCode || 'GB',
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Payment failed",
+        description: error.message || "Could not initiate payment. Please try again.",
+        variant: "destructive",
+      });
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Check for payment success and verify
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success' && project && !project.isPaid) {
+      // Verify payment with backend
+      apiRequest("POST", `/api/ecosystem/projects/${projectId}/verify-payment`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.paid || data.alreadyPaid) {
+            refetchProject();
+            toast({
+              title: "Payment successful",
+              description: "Your Team Diagnostic Report is now unlocked.",
+            });
+            setExpandedStep(7);
+            // Clean up URL
+            const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=success/, '').replace(/^&/, '?');
+            window.history.replaceState({}, '', newUrl);
+          }
+        })
+        .catch(console.error);
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment cancelled",
+        description: "You can complete payment anytime to unlock your report.",
+        variant: "destructive",
+      });
+      // Clean up URL
+      const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=cancelled/, '').replace(/^&/, '?');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [project, projectId, refetchProject, toast]);
+
+  // Calendly URL for consultation
+  const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
 
   if (projectLoading) {
     return (
@@ -529,15 +597,118 @@ export function EcosystemWorkflow({
 
   return (
     <div className="space-y-4">
-      {/* Step 1: Mission Analysis */}
-      <Card data-testid="step-1-mission">
+      {/* Intro Banner - Premium Service Explanation */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl font-bold">Team Diagnostic Service</h2>
+                <Badge variant="default" className="bg-primary">NEW</Badge>
+              </div>
+              <p className="text-muted-foreground mb-3">
+                Our AI-powered team capability analysis helps you understand your team's strengths, 
+                identify skill gaps, and generate ideal candidate profiles for your next hire.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Capability gap analysis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Ideal hire recommendations</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Risk alerts & insights</span>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm">
+                  <strong>Pricing:</strong> {formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)} per analysis 
+                  <span className="text-muted-foreground"> (one-time fee, includes full diagnostic report)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Step 1: Book Consultation (Optional) */}
+      <Card data-testid="step-1-consultation">
+        <div 
+          className="flex items-center gap-3 p-4 cursor-pointer hover-elevate rounded-lg"
+          onClick={() => setExpandedStep(expandedStep === 1 ? -1 : 1)}
+          data-testid="step-header-1"
+        >
+          <div className="h-10 w-10 rounded-full flex items-center justify-center font-bold bg-primary text-primary-foreground">
+            1
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">Book a Consultation Call</h3>
+              <Badge variant="outline" className="text-xs">Optional</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">Discuss your team's needs with our experts</p>
+          </div>
+          {expandedStep === 1 ? (
+            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+        {expandedStep === 1 && (
+          <div className="p-6 pt-0 space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Free 30-Minute Consultation</p>
+                <p className="text-sm text-muted-foreground">
+                  Not sure where to start? Book a call with our team diagnostic experts to discuss 
+                  your organization's needs and how the Ecosystem Index can help.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a 
+                href={CALENDLY_URL} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex"
+              >
+                <Button data-testid="button-book-consultation">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Book Consultation
+                  <ExternalLink className="ml-2 h-3 w-3" />
+                </Button>
+              </a>
+              <Button 
+                variant="outline" 
+                onClick={() => setExpandedStep(2)}
+                data-testid="button-skip-consultation"
+              >
+                Skip - Start Analysis
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Step 2: Mission Analysis */}
+      <Card data-testid="step-2-mission">
         <StepHeader 
-          step={1} 
+          step={2} 
           title="Define Your Mission & Ethos" 
           description="AI-powered analysis of your organizational priorities"
           completed={!!missionAnalysis}
         />
-        {expandedStep === 1 && (
+        {expandedStep === 2 && (
           <div className="p-6 pt-0 space-y-4">
             <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -574,7 +745,9 @@ export function EcosystemWorkflow({
             </div>
 
             <Button 
-              onClick={handleAnalyzeMission}
+              onClick={() => {
+                handleAnalyzeMission();
+              }}
               disabled={analyzeMission.isPending}
               data-testid="button-analyze-mission"
             >
@@ -643,15 +816,15 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 2: Team Context */}
-      <Card data-testid="step-2-org-context">
+      {/* Step 3: Team Context */}
+      <Card data-testid="step-3-org-context">
         <StepHeader 
-          step={2} 
+          step={3} 
           title="Team Context" 
           description="Help us understand your team's situation and needs"
           completed={!!industry && !!teamStage}
         />
-        {expandedStep === 2 && (
+        {expandedStep === 3 && (
           <div className="p-6 pt-0 space-y-6">
             <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <Target className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -972,15 +1145,15 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 3: Team Members */}
-      <Card data-testid="step-3-team-members">
+      {/* Step 4: Team Members */}
+      <Card data-testid="step-4-team-members">
         <StepHeader 
-          step={3} 
+          step={4} 
           title="Add Team Members" 
           description={`${teamMembers.length} members added`}
           completed={teamMembers.length > 0}
         />
-        {expandedStep === 3 && (
+        {expandedStep === 4 && (
           <div className="p-6 pt-0 space-y-4">
             <div className="flex flex-wrap gap-3">
               <Button 
@@ -1082,15 +1255,15 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 4: Generate Analysis */}
-      <Card data-testid="step-4-generate-analysis">
+      {/* Step 5: Generate Analysis */}
+      <Card data-testid="step-5-generate-analysis">
         <StepHeader 
-          step={4} 
+          step={5} 
           title="Generate Team Analysis" 
           description="AI-powered diagnostic report"
           completed={!!teamAnalysis}
         />
-        {expandedStep === 4 && (
+        {expandedStep === 5 && (
           <div className="p-6 pt-0 space-y-4">
             <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -1156,16 +1329,92 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 5: Results */}
-      {teamAnalysis && (
-        <Card data-testid="step-5-results">
+      {/* Step 6: Payment */}
+      {teamAnalysis && !project.isPaid && (
+        <Card data-testid="step-6-payment" className="border-primary/30">
           <StepHeader 
-            step={5} 
+            step={6} 
+            title="Complete Payment" 
+            description="Unlock your comprehensive diagnostic report"
+            completed={false}
+          />
+          {expandedStep === 6 && (
+            <div className="p-6 pt-0 space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <DollarSign className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium mb-1">Unlock Your Team Diagnostic Report</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your AI analysis is ready. Complete payment to access your comprehensive team capability report, 
+                    including gap analysis, ideal candidate profiles, and actionable recommendations.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Team Diagnostic Report</span>
+                  <span className="text-lg font-bold">{formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)}</span>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Complete capability gap analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Ideal candidate profile with FIT targets</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Risk alerts and recommendations</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Exportable PDF report</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <HelpCircle className="h-4 w-4" />
+                <span>Have a promo code? You can apply it at checkout.</span>
+              </div>
+
+              <Button 
+                onClick={handlePaymentCheckout}
+                disabled={isProcessingPayment}
+                size="lg"
+                className="w-full"
+                data-testid="button-checkout"
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Proceed to Payment
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Step 7: Results (only visible after payment) */}
+      {teamAnalysis && project.isPaid && (
+        <Card data-testid="step-7-results">
+          <StepHeader 
+            step={7} 
             title="Team Diagnostic Report" 
             description="Your comprehensive analysis"
             completed={true}
           />
-          {expandedStep === 5 && (
+          {expandedStep === 7 && (
             <div className="p-6 pt-0 space-y-6">
               {/* Regenerate Analysis Option */}
               {generateAnalysis.isPending ? (
