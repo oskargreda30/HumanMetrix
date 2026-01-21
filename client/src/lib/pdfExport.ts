@@ -4223,13 +4223,13 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   pdf.setTextColor(0, 0, 0);
   
-  // All info boxes on same row - Candidate Profile + 3 Key Metrics (all same height, aligned)
+  // All info boxes on same row - Candidate Profile + 2 Key Metrics (all same height, aligned)
   yPos = 108;
   const rowBoxHeight = 22; // Same height for all boxes
   const totalWidth = pageWidth - 40; // 20px margin each side
   const gap = 5;
   const profileWidth = totalWidth * 0.4; // Profile takes 40% width
-  const metricsWidth = (totalWidth - profileWidth - gap * 3) / 3; // Remaining 60% split into 3
+  const metricsWidth = (totalWidth - profileWidth - gap * 2) / 2; // Remaining 60% split into 2 boxes
   
   const completedCount = [data.fitData, data.aiData, data.promptData, data.aiqData].filter(Boolean).length;
   
@@ -4250,7 +4250,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   const displayEmail = data.candidate.user.email.length > 22 ? data.candidate.user.email.substring(0, 19) + '...' : data.candidate.user.email;
   pdf.text(`${displayName} | ${displayEmail} | ${completedCount} Assessments`, 20 + profileWidth / 2, yPos + 15, { align: 'center' });
   
-  // Key Metrics Boxes (right side - 3 boxes)
+  // Key Metrics Boxes (right side - 2 boxes)
   const metricsData = [
     { label: 'Skills Assessed', value: String(skillsAssessed), smallFont: false },
     { label: 'Top Skill', value: topSkill.length > 18 ? topSkill.substring(0, 16) + '...' : topSkill, smallFont: true },

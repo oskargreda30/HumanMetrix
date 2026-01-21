@@ -338,7 +338,7 @@ export async function exportProfessionalCandidatePDF(
   
   // Key Metrics Box
   yPos = 215;
-  const boxWidth = (pageWidth - 60) / 3;
+  const boxWidth = (pageWidth - 60) / 2; // 2 metric boxes
   
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [

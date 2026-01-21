@@ -648,8 +648,8 @@ export async function exportEnhancedCandidatePDF(
   
   // Key Metrics (moved up since Executive Summary removed)
   yPos = 150;
-  // Calculate box widths to fit 3 boxes with gaps within totalBoxWidth
-  const metricBoxWidth = (totalBoxWidth - boxGap * 2) / 3; // 3 boxes with 2 gaps
+  // Calculate box widths to fit 2 boxes with gap within totalBoxWidth
+  const metricBoxWidth = (totalBoxWidth - boxGap) / 2; // 2 boxes with 1 gap
   
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [
