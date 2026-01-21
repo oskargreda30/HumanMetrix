@@ -23,7 +23,12 @@ import {
   Loader2,
   CheckCircle,
   Clock,
+  Sparkles,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+
+// Base price for Ecosystem: £15 (1500 pence)
+const ECOSYSTEM_BASE_PRICE_PENCE = 1500;
 import {
   useEcosystemProjects,
   useCreateEcosystemProject,
@@ -44,6 +49,48 @@ export function EcosystemProjectSelector({
 }: EcosystemProjectSelectorProps) {
   const { toast } = useToast();
   const { data: projects = [], isLoading } = useEcosystemProjects(partnerId);
+
+  // Get geolocation and exchange rates for pricing display
+  const { data: geoData } = useQuery<{ countryCode: string }>({
+    queryKey: ["/api/geolocation"],
+  });
+  const { data: exchangeData } = useQuery<{ rates: Record<string, number> }>({
+    queryKey: ["/api/exchange-rates"],
+  });
+
+  // Currency mapping for display
+  const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+    'GB': 'GBP', 'US': 'USD', 'AU': 'AUD', 'CA': 'CAD', 'EU': 'EUR',
+    'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR', 'NL': 'EUR',
+    'JP': 'JPY', 'TH': 'THB', 'SG': 'SGD', 'MY': 'MYR', 'ID': 'IDR',
+    'PH': 'PHP', 'VN': 'VND', 'IN': 'INR', 'KR': 'KRW', 'HK': 'HKD',
+    'NZ': 'NZD', 'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK',
+  };
+  const PPP_MULTIPLIERS: Record<string, number> = {
+    'TH': 0.35, 'ID': 0.25, 'VN': 0.25, 'IN': 0.25, 'PH': 0.35,
+    'MY': 0.45, 'MX': 0.45, 'BR': 0.40, 'PL': 0.50, 'HU': 0.45,
+  };
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    'GBP': '£', 'USD': '$', 'EUR': '€', 'JPY': '¥', 'THB': '฿',
+    'SGD': 'S$', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱', 'VND': '₫',
+    'INR': '₹', 'KRW': '₩', 'HKD': 'HK$', 'AUD': 'A$', 'CAD': 'C$',
+    'NZD': 'NZ$', 'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
+  };
+
+  const formatLocalPrice = (basePriceInPence: number): string => {
+    const countryCode = geoData?.countryCode || 'GB';
+    const localCurrency = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
+    const pppMultiplier = PPP_MULTIPLIERS[countryCode] || 1.0;
+    const adjustedGBP = (basePriceInPence / 100) * pppMultiplier;
+    const rates = exchangeData?.rates || {};
+    const rate = rates[localCurrency] || 1;
+    const localAmount = adjustedGBP * rate;
+    const symbol = CURRENCY_SYMBOLS[localCurrency] || localCurrency + ' ';
+    if (['JPY', 'KRW', 'VND', 'IDR'].includes(localCurrency)) {
+      return `${symbol}${Math.round(localAmount).toLocaleString()}`;
+    }
+    return `${symbol}${localAmount.toFixed(2)}`;
+  };
   const createProject = useCreateEcosystemProject();
   const deleteProject = useDeleteEcosystemProject();
 
@@ -125,6 +172,47 @@ export function EcosystemProjectSelector({
 
   return (
     <div className="space-y-6">
+      {/* Intro Banner - Premium Service Explanation */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl font-bold">Team Diagnostic Service</h2>
+                <Badge variant="default" className="bg-primary">NEW</Badge>
+              </div>
+              <p className="text-muted-foreground mb-3">
+                Our AI-powered team capability analysis helps you understand your team's strengths, 
+                identify skill gaps, and generate ideal candidate profiles for your next hire.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Capability gap analysis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Ideal hire recommendations</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Risk alerts & insights</span>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm">
+                  <strong>Pricing:</strong> {formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)} per analysis 
+                  <span className="text-muted-foreground"> (one-time fee, includes full diagnostic report)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Team Analysis Projects</h2>
