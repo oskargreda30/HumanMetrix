@@ -150,9 +150,6 @@ export default function B2BPricingCalculator() {
           <p className="text-3xl font-bold text-primary" data-testid="total-price">
             {formattedTotalLow} – {formattedTotalHigh}
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Based on {volume.toLocaleString()} tests at {formattedPerTest}/test (±5%)
-          </p>
         </div>
 
         <div className="space-y-2">
