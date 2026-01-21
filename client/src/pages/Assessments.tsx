@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AssessmentCard from "@/components/AssessmentCard";
 import RoadmapSection from "@/components/RoadmapSection";
+import B2BPricingCalculator from "@/components/B2BPricingCalculator";
 import { Button } from "@/components/ui/button";
 import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -306,6 +307,16 @@ export default function Assessments() {
               )}
             </div>
           </div>
+
+          {/* B2B Pricing Calculator - Employer view only */}
+          {viewMode === 'employer' && (
+            <div className="mb-12 md:mb-16">
+              <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white text-center">
+                Estimate Your Costs
+              </h2>
+              <B2BPricingCalculator />
+            </div>
+          )}
 
           {/* Roadmap Section */}
           <RoadmapSection />
