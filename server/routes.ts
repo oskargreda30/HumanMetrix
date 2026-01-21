@@ -7240,6 +7240,10 @@ Format your response as JSON with this structure:
         isTeamMember,
         teamMemberRole,
         isAdmin,
+        user: {
+          name: user.name || user.email?.split('@')[0] || 'Partner User',
+          email: user.email,
+        },
         partner: {
           id: matchingPartner.id,
           name: matchingPartner.name,

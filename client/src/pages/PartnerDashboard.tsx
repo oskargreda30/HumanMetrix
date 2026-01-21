@@ -803,6 +803,10 @@ interface PartnerAccount {
   isTeamMember?: boolean;
   teamMemberRole?: string;
   isAdmin?: boolean;
+  user?: {
+    name: string;
+    email: string;
+  };
   partner?: {
     id: string;
     name: string;
@@ -3928,6 +3932,31 @@ export default function PartnerDashboard() {
                 </Card>
               ) : (
                 <>
+                  {/* Account Details */}
+                  <Card data-testid="card-account-details">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Account Details
+                      </CardTitle>
+                      <CardDescription>
+                        Your login information for this partner account
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-muted-foreground text-xs">Name</Label>
+                          <p className="font-medium" data-testid="text-account-name">{account?.user?.name || 'Partner User'}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-muted-foreground text-xs">Email</Label>
+                          <p className="font-medium" data-testid="text-account-email">{account?.user?.email || 'Not available'}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
