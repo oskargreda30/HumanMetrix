@@ -62,7 +62,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
       <Route path="/assessments" component={Assessments} />
-      <Route path="/for-employers" component={ForEmployers} />
+      <Route path="/for-employers">
+        {() => <Redirect to="/" />}
+      </Route>
       <Route path="/for-candidates" component={ForCandidates} />
       <Route path="/ecosystem-index" component={EcosystemIndex} />
       <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
