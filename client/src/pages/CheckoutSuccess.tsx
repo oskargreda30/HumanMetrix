@@ -41,7 +41,7 @@ export default function CheckoutSuccess() {
                   Go to Dashboard
                 </Button>
               </Link>
-              <Link href="/assessments">
+              <Link href="/assessments?view=candidate">
                 <Button size="lg" variant="outline" data-testid="button-view-assessments">
                   View My Assessments
                 </Button>

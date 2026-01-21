@@ -522,7 +522,7 @@ export default function Dashboard() {
                 <p className="text-muted-foreground mb-4">
                   No assessments available. Get started with a testing series.
                 </p>
-                <Link href="/assessments">
+                <Link href="/assessments?view=candidate">
                   <Button data-testid="button-browse-assessments">Browse More Assessments</Button>
                 </Link>
               </Card>
