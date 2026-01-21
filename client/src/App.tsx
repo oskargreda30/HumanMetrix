@@ -13,6 +13,7 @@ import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Assessments from "@/pages/Assessments";
 import ForEmployers from "@/pages/ForEmployers";
+import ForCandidates from "@/pages/ForCandidates";
 import EcosystemIndex from "@/pages/EcosystemIndex";
 import Articles from "@/pages/Articles";
 import ArticlePsychometricTests from "@/pages/ArticlePsychometricTests";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/assessments" component={Assessments} />
       <Route path="/for-employers" component={ForEmployers} />
+      <Route path="/for-candidates" component={ForCandidates} />
       <Route path="/ecosystem-index" component={EcosystemIndex} />
       <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
       <Route path="/ecosystem/start" component={EcosystemStart} />

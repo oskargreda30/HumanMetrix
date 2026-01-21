@@ -224,9 +224,9 @@ export default function ForEmployers() {
       
       {/* For Job Seekers link - top left */}
       <div className="relative z-20 px-4 md:px-6 lg:px-8 pt-2">
-        <Link href="/" data-testid="link-for-job-seekers" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-          <span>Looking for job seeker assessments?</span>
-          <span className="font-medium underline underline-offset-2">Click here</span>
+        <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+          <span>Looking for individual assessments?</span>
+          <span className="font-medium underline underline-offset-2">For Candidates</span>
         </Link>
       </div>
       

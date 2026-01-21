@@ -37,7 +37,7 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
     { href: "/about", label: "About Us" },
     { href: "/assessments", label: "Assessments" },
     { href: "/assessments#product-roadmap", label: "Product Roadmap" },
-    { href: "/for-employers", label: "For Employers" },
+    { href: "/for-candidates", label: "For Candidates" },
     { href: "/developers", label: "Developers" },
     { href: "/articles", label: "Articles" },
   ];

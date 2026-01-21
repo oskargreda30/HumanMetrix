@@ -46,7 +46,7 @@ export default function Footer() {
       { label: "Algorithmic Integrity", href: "/assessments#aiq" },
     ],
     resources: [
-      { label: "For Employers", href: "/for-employers" },
+      { label: "For Candidates", href: "/for-candidates" },
       { label: "Pricing", href: "/assessments#pricing" },
     ],
   };

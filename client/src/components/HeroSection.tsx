@@ -212,7 +212,7 @@ export default function HeroSection() {
                   <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
                 </span>
               </Button>
-              <Link href="/for-employers" data-testid="link-hero-for-employers">
+              <Link href="/" data-testid="link-hero-for-employers">
                 <Button 
                   size="lg"
                   variant="outline"
