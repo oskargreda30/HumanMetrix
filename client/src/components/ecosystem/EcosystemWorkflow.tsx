@@ -1503,7 +1503,7 @@ function TeamAnalysisResults({
               <Brain className="h-3 w-3 text-muted-foreground" />
               Strategic Assessment
             </p>
-            <p className="text-xs text-muted-foreground">AI-generated executive summary analyzing your team's strengths, gaps, and strategic recommendations.</p>
+            <p className="text-xs text-muted-foreground">Executive summary analyzing your team's strengths, gaps, and strategic recommendations.</p>
           </div>
           <div className="space-y-1">
             <p className="font-medium flex items-center gap-2">
@@ -1531,7 +1531,7 @@ function TeamAnalysisResults({
               <Users className="h-3 w-3 text-muted-foreground" />
               Hiring Recommendations
             </p>
-            <p className="text-xs text-muted-foreground">AI-generated ideal candidate profiles with specific FIT score targets and interview guidance.</p>
+            <p className="text-xs text-muted-foreground">Ideal candidate profiles with specific FIT score targets and interview guidance.</p>
           </div>
         </div>
       </div>
@@ -2360,7 +2360,7 @@ function TeamAnalysisResults({
                 Suggested Interview Questions
               </h5>
               <p className="text-sm text-white/70">
-                AI-generated questions based on your team gaps and ideal candidate profiles
+                Tailored questions based on your team gaps and ideal candidate profiles
               </p>
             </div>
             <div className="p-4 rounded-lg bg-white/10 border border-white/20">
