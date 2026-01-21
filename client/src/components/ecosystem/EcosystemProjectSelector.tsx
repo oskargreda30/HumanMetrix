@@ -25,7 +25,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 // Base price for Ecosystem: £15 (1500 pence)
 const ECOSYSTEM_BASE_PRICE_PENCE = 1500;
@@ -49,48 +49,7 @@ export function EcosystemProjectSelector({
 }: EcosystemProjectSelectorProps) {
   const { toast } = useToast();
   const { data: projects = [], isLoading } = useEcosystemProjects(partnerId);
-
-  // Get geolocation and exchange rates for pricing display
-  const { data: geoData } = useQuery<{ countryCode: string }>({
-    queryKey: ["/api/geolocation"],
-  });
-  const { data: exchangeData } = useQuery<{ rates: Record<string, number> }>({
-    queryKey: ["/api/exchange-rates"],
-  });
-
-  // Currency mapping for display
-  const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-    'GB': 'GBP', 'US': 'USD', 'AU': 'AUD', 'CA': 'CAD', 'EU': 'EUR',
-    'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR', 'NL': 'EUR',
-    'JP': 'JPY', 'TH': 'THB', 'SG': 'SGD', 'MY': 'MYR', 'ID': 'IDR',
-    'PH': 'PHP', 'VN': 'VND', 'IN': 'INR', 'KR': 'KRW', 'HK': 'HKD',
-    'NZ': 'NZD', 'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK',
-  };
-  const PPP_MULTIPLIERS: Record<string, number> = {
-    'TH': 0.35, 'ID': 0.25, 'VN': 0.25, 'IN': 0.25, 'PH': 0.35,
-    'MY': 0.45, 'MX': 0.45, 'BR': 0.40, 'PL': 0.50, 'HU': 0.45,
-  };
-  const CURRENCY_SYMBOLS: Record<string, string> = {
-    'GBP': '£', 'USD': '$', 'EUR': '€', 'JPY': '¥', 'THB': '฿',
-    'SGD': 'S$', 'MYR': 'RM', 'IDR': 'Rp', 'PHP': '₱', 'VND': '₫',
-    'INR': '₹', 'KRW': '₩', 'HKD': 'HK$', 'AUD': 'A$', 'CAD': 'C$',
-    'NZD': 'NZ$', 'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
-  };
-
-  const formatLocalPrice = (basePriceInPence: number): string => {
-    const countryCode = geoData?.countryCode || 'GB';
-    const localCurrency = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
-    const pppMultiplier = PPP_MULTIPLIERS[countryCode] || 1.0;
-    const adjustedGBP = (basePriceInPence / 100) * pppMultiplier;
-    const rates = exchangeData?.rates || {};
-    const rate = rates[localCurrency] || 1;
-    const localAmount = adjustedGBP * rate;
-    const symbol = CURRENCY_SYMBOLS[localCurrency] || localCurrency + ' ';
-    if (['JPY', 'KRW', 'VND', 'IDR'].includes(localCurrency)) {
-      return `${symbol}${Math.round(localAmount).toLocaleString()}`;
-    }
-    return `${symbol}${localAmount.toFixed(2)}`;
-  };
+  const { formatLocalPrice } = useCurrency();
   const createProject = useCreateEcosystemProject();
   const deleteProject = useDeleteEcosystemProject();
 
