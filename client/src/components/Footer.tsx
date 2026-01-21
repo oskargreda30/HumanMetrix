@@ -30,7 +30,7 @@ export default function Footer() {
   });
   const { toast } = useToast();
   
-  const footerLinks: { company: FooterLink[]; assessments: FooterLink[]; resources: FooterLink[] } = {
+  const footerLinks: { company: FooterLink[]; resources: FooterLink[] } = {
     company: [
       { label: "About Us", href: "/about" },
       { label: "Our Team", href: "/team" },
@@ -39,15 +39,9 @@ export default function Footer() {
       { label: "Privacy Policy", href: "/privacy" },
       { label: "EULA", href: "/eula" },
     ],
-    assessments: [
-      { label: "FIT Assessment", href: "/assessments#fit" },
-      { label: "AI Readiness", href: "/assessments#ai-readiness" },
-      { label: "Prompt Architecture", href: "/assessments#prompt" },
-      { label: "Algorithmic Integrity", href: "/assessments#aiq" },
-    ],
     resources: [
       { label: "For Candidates", href: "/for-candidates" },
-      { label: "Pricing", href: "/assessments#pricing" },
+      { label: "Pricing", href: "/pricing" },
     ],
   };
 
@@ -158,6 +152,7 @@ export default function Footer() {
                 <SiFacebook className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
                 <span>Follow us on Facebook</span>
               </a>
+              {/* Instagram link hidden for now - may use in the future
               <a
                 href="https://www.instagram.com/human_metrix/"
                 target="_blank"
@@ -168,6 +163,7 @@ export default function Footer() {
                 <SiInstagram className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
                 <span>Follow us on Instagram</span>
               </a>
+              */}
             </div>
 
             {/* Company Links */}
@@ -196,20 +192,20 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Assessment Links */}
+            {/* Careers Section */}
             <div>
-              <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Assessments</h3>
-              <ul className="space-y-1.5 md:space-y-3">
-                {footerLinks.assessments.map((link) => (
-                  <li key={link.href}>
-                    <Link href={link.href}>
-                      <span className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                        {link.label}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Careers</h3>
+              <p className="text-[11px] md:text-sm text-blue-100/60 leading-relaxed mb-3">
+                We're always looking for creative and hardworking people to join our team. Send us your CV and if it's a fit, we'll create a role for you.
+              </p>
+              <a
+                href="mailto:careers@humanmetrix.co.uk?subject=Career Opportunity"
+                className="inline-flex items-center gap-1.5 text-[11px] md:text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                data-testid="link-careers-email"
+              >
+                <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                <span>Send your CV</span>
+              </a>
             </div>
 
             {/* Resources Links */}
