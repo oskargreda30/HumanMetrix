@@ -186,7 +186,7 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
             {/* CTA Buttons */}
             <div 
               className={getAnimationClass(
-                'flex flex-row flex-wrap items-center gap-3 pt-2',
+                'flex flex-row flex-wrap md:flex-nowrap items-center gap-3 pt-2',
                 `transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`
               )}
             >
