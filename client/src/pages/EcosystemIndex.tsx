@@ -4,30 +4,17 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
-import { Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   Building2,
   Users,
-  FileText,
   BarChart3,
   Target,
   AlertTriangle,
   CheckCircle,
-  Upload,
-  Send,
   ArrowRight,
   Sparkles,
   Scale,
@@ -39,8 +26,6 @@ import {
   Network,
   Puzzle,
   Eye,
-  Brain,
-  Heart,
   Zap,
   RefreshCw,
   Calendar,
@@ -101,39 +86,14 @@ const differentiators = [
 ];
 
 export default function EcosystemIndex() {
-  // Auth state for gating sections 2-6
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  
   // Calendly URL for booking consultations
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
   
   // State for contact options dialog
   const [showContactDialog, setShowContactDialog] = useState(false);
   
-  // State for ecosystem project workflow
-  
   // Pre-filled enquiry message for email option
   const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about The Ecosystem Index team diagnostic service. Please send me pricing information and details about how the assessment works for my team.");
-  
-  // Login prompt overlay for locked sections
-  const LoginOverlay = () => (
-    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
-      <div className="text-center p-6 max-w-sm">
-        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-          <Lock className="h-6 w-6 text-muted-foreground" />
-        </div>
-        <h4 className="font-semibold mb-2">Login Required</h4>
-        <p className="text-sm text-muted-foreground mb-4">
-          Sign in to access the team diagnostic workflow
-        </p>
-        <Link href="/login">
-          <Button data-testid="button-login-to-continue">
-            Login to Continue
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
   
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -149,15 +109,11 @@ export default function EcosystemIndex() {
         url="/ecosystem-index"
       />
       <HowToSchema 
-        name="How to Diagnose Your Team's Capability Distribution"
-        description="Use The Ecosystem Index consulting service to analyze your team's capability distribution and get actionable insights"
+        name="How to Get Started with The Ecosystem Index"
+        description="Learn how to access The Ecosystem Index team diagnostic service"
         steps={[
-          { name: "Login or Create Account", text: "Sign in to your account or create a new one to get started" },
-          { name: "Define Mission & Ethos", text: "Share your company mission statement for AI-powered analysis" },
-          { name: "Define Organization Context", text: "Enter your company details, industry, and team information" },
-          { name: "Add Team Members", text: "Upload existing HumanMetrix reports or send assessment invitations" },
-          { name: "Team FIT Assessment", text: "Team members complete the FIT behavioral assessment" },
-          { name: "Schedule Consultation & Generate Report", text: "Book your pre-consultation to begin the team diagnostic process and receive your comprehensive report" }
+          { name: "Login to Partner Dashboard", text: "Sign in to your partner account to access the team diagnostic tools" },
+          { name: "Contact Our Team", text: "New to HumanMetrix? Get in touch with our team to learn about pricing and setup" }
         ]}
       />
       
@@ -257,348 +213,72 @@ export default function EcosystemIndex() {
         </section>
 
         
-        {/* How It Works - Step by Step (Informational) */}
+        {/* Get Started */}
         <section id="how-it-works" className="py-12 md:py-20 bg-muted/30" data-testid="section-how-it-works">
-          <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-how-it-works-title">How It Works</h2>
-              <p className="text-muted-foreground" data-testid="text-how-it-works-description">Six simple steps to team clarity</p>
+              <h2 className="text-2xl md:text-3xl font-semibold mb-2" data-testid="text-how-it-works-title">Get Started</h2>
+              <p className="text-muted-foreground" data-testid="text-how-it-works-description">Login to your partner dashboard or contact us to begin</p>
             </div>
 
-            {/* Step 1: Login or Create Account */}
-            <div className="mb-12" data-testid="step-1-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  1
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-1-title">Login or Create Account</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-1-description">Sign in to get started or create a new account</p>
-                </div>
-              </div>
-              
-              <Card className="p-6 md:p-8" data-testid="step-1-form">
-                <div className="flex flex-col md:flex-row gap-8">
-                  {/* Existing Account Login */}
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <h4 className="font-semibold">Already have an account?</h4>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <Input id="login-email" type="email" placeholder="your@company.com" data-testid="input-login-email" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="login-password">Password</Label>
-                        <Input id="login-password" type="password" placeholder="••••••••" data-testid="input-login-password" />
-                      </div>
-                      <Button className="w-full" data-testid="button-login">
-                        Sign In
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Partner accounts will have organization details pre-filled
-                    </p>
+            {/* Login or Contact */}
+            <Card className="p-6 md:p-8" data-testid="get-started-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Existing Account Login */}
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Already have an account?</h4>
                   </div>
-                  
-                  {/* Divider */}
-                  <div className="hidden md:block w-px bg-border" />
-                  <div className="md:hidden border-t" />
-                  
-                  {/* Contact the Team */}
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                      <h4 className="font-semibold">New to HumanMetrix?</h4>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <Input id="login-email" type="email" placeholder="your@company.com" data-testid="input-login-email" />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Get in touch with our team to learn more about the Ecosystem Index and how it can help your organization.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => setShowContactDialog(true)}
-                      data-testid="button-contact-team"
-                    >
-                      Contact the Team
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password">Password</Label>
+                      <Input id="login-password" type="password" placeholder="••••••••" data-testid="input-login-password" />
+                    </div>
+                    <Button className="w-full" data-testid="button-login">
+                      Sign In
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Access your partner dashboard to manage team diagnostics
+                  </p>
                 </div>
-              </Card>
-            </div>
-
-            {/* Step 2: Mission Statement / Company Ethos */}
-            <div className="mb-12" data-testid="step-2-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  2
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-2-title">Define Your Mission & Ethos</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-2-description">Help our AI understand your organizational culture</p>
-                </div>
-              </div>
-              
-              <div className="relative">
-                {!authLoading && !isAuthenticated && <LoginOverlay />}
-                <Card className="p-6 md:p-8" data-testid="step-2-form">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4">
-                    <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">AI-Powered Analysis</p>
-                      <p className="text-sm text-muted-foreground">
-                        Our AI model will evaluate your mission statement and company ethos to extract insights about 
-                        how your organization works, what capabilities you prioritize, and what your team may need to succeed.
-                      </p>
-                    </div>
+                
+                {/* Divider */}
+                <div className="hidden md:block w-px bg-border" />
+                <div className="md:hidden border-t" />
+                
+                {/* Contact the Team */}
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">New to HumanMetrix?</h4>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mission">Mission Statement or Company Ethos</Label>
-                    <Textarea 
-                      id="mission" 
-                      placeholder="Paste your company's mission statement, core values, cultural manifesto, or guiding principles here. The more context you provide, the better our AI can tailor recommendations to your organization..."
-                      className="min-h-[150px]"
-                      data-testid="textarea-mission"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Examples: Company mission, vision statement, core values, employee handbook excerpts, or team charter
-                    </p>
-                  </div>
-                </div>
-              </Card>
-              </div>
-            </div>
-
-            {/* Step 3: Define Organization Context */}
-            <div className="mb-12" data-testid="step-3-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  3
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-3-title">Define Organization Context</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-3-description">Tell us about your company and team</p>
-                </div>
-              </div>
-              
-              <div className="relative">
-                {!authLoading && !isAuthenticated && <LoginOverlay />}
-                <Card className="p-6 md:p-8" data-testid="step-3-form">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="company-name">Company Name</Label>
-                    <Input id="company-name" placeholder="Acme Corporation" data-testid="input-company-name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="company-size">Company Size</Label>
-                    <Select>
-                      <SelectTrigger id="company-size" data-testid="select-company-size">
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1-10">1-10 employees</SelectItem>
-                        <SelectItem value="11-50">11-50 employees</SelectItem>
-                        <SelectItem value="51-200">51-200 employees</SelectItem>
-                        <SelectItem value="201-500">201-500 employees</SelectItem>
-                        <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                        <SelectItem value="1000+">1000+ employees</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">Industry</Label>
-                    <Select>
-                      <SelectTrigger id="industry" data-testid="select-industry">
-                        <SelectValue placeholder="Select industry" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="finance">Finance & Banking</SelectItem>
-                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                        <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                        <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                        <SelectItem value="consulting">Consulting</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sub-industry">Sub-Industry (Optional)</Label>
-                    <Input id="sub-industry" placeholder="e.g., SaaS, Fintech" data-testid="input-sub-industry" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="team-type">Team Type</Label>
-                    <Select>
-                      <SelectTrigger id="team-type" data-testid="select-team-type">
-                        <SelectValue placeholder="Select team type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="engineering">Engineering</SelectItem>
-                        <SelectItem value="product">Product</SelectItem>
-                        <SelectItem value="design">Design</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="sales">Sales</SelectItem>
-                        <SelectItem value="operations">Operations</SelectItem>
-                        <SelectItem value="leadership">Leadership/Executive</SelectItem>
-                        <SelectItem value="cross-functional">Cross-functional</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="work-mode">Work Mode</Label>
-                    <Select>
-                      <SelectTrigger id="work-mode" data-testid="select-work-mode">
-                        <SelectValue placeholder="Select work mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="remote">Fully Remote</SelectItem>
-                        <SelectItem value="hybrid">Hybrid</SelectItem>
-                        <SelectItem value="onsite">On-site</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </Card>
-              </div>
-            </div>
-
-            {/* Step 4: Add Team Members */}
-            <div className="mb-12" data-testid="step-4-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  4
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-4-title">Add Team Members</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-4-description">Upload reports or invite team members</p>
-                </div>
-              </div>
-              
-              <div className="relative">
-                {!authLoading && !isAuthenticated && <LoginOverlay />}
-                <Card className="p-6 md:p-8" data-testid="step-4-form">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover-elevate cursor-pointer" data-testid="upload-reports-area">
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                    <h4 className="font-medium mb-1" data-testid="text-upload-title">Upload Existing Reports</h4>
-                    <p className="text-sm text-muted-foreground mb-3" data-testid="text-upload-description">
-                      Drag & drop HumanMetrix PDF reports
-                    </p>
-                    <Button variant="outline" size="sm" data-testid="button-upload-reports">
-                      Browse Files
-                    </Button>
-                  </div>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover-elevate cursor-pointer" data-testid="send-invites-area">
-                    <Send className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                    <h4 className="font-medium mb-1" data-testid="text-invite-title">Send Assessment Links</h4>
-                    <p className="text-sm text-muted-foreground mb-3" data-testid="text-invite-description">
-                      Invite team members to complete assessments
-                    </p>
-                    <Button variant="outline" size="sm" data-testid="button-send-invites">
-                      Invite Team
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-6 p-4 bg-muted/50 rounded-lg" data-testid="team-count-indicator">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span data-testid="text-team-count">0 team members added</span>
-                  </div>
-                </div>
-              </Card>
-              </div>
-            </div>
-
-            {/* Step 5: FIT Assessment */}
-            <div className="mb-12" data-testid="step-5-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  5
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-5-title">Team FIT Assessment</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-5-description">Team members complete the FIT behavioral assessment</p>
-                </div>
-              </div>
-              
-              <div className="relative">
-                {!authLoading && !isAuthenticated && <LoginOverlay />}
-                <Card className="p-6 md:p-8" data-testid="step-5-form">
-                <div className="flex flex-col md:flex-row gap-6 items-start">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Heart className="h-7 w-7 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">FIT Assessment</h4>
-                      <p className="text-muted-foreground mb-4">
-                        The FIT Assessment measures 6 core behavioral capabilities that drive team performance 
-                        and collaboration effectiveness.
-                      </p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {[
-                          { code: "HA", name: "High Agency", color: "bg-blue-500" },
-                          { code: "IC", name: "Intellectual Curiosity", color: "bg-purple-500" },
-                          { code: "RA", name: "Resilience", color: "bg-green-500" },
-                          { code: "EE", name: "Empathy & Ethics", color: "bg-rose-500" },
-                          { code: "GM", name: "Growth Mindset", color: "bg-amber-500" },
-                          { code: "IA", name: "Interpersonal Agility", color: "bg-cyan-500" },
-                        ].map((cap, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm">
-                            <div className={`h-3 w-3 rounded ${cap.color}`} />
-                            <span className="text-muted-foreground">{cap.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-muted/50 rounded-lg md:w-40">
-                    <span className="text-2xl font-bold text-primary">~15</span>
-                    <span className="text-xs text-muted-foreground text-center">minutes per team member</span>
-                  </div>
-                </div>
-              </Card>
-              </div>
-            </div>
-
-            {/* Step 6: Export Results */}
-            <div data-testid="step-6-container">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                  6
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-step-6-title">Export Results</h3>
-                  <p className="text-sm text-muted-foreground" data-testid="text-step-6-description">Generate a comprehensive team diagnostic report</p>
-                </div>
-              </div>
-              
-              <div className="relative">
-                {!authLoading && !isAuthenticated && <LoginOverlay />}
-                <Card className="p-6 md:p-8" data-testid="step-6-payment">
-                <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
+                  <p className="text-sm text-muted-foreground">
+                    Get in touch with our team to learn more about the Ecosystem Index and how it can help your organization.
+                  </p>
                   <Button 
-                    size="lg" 
+                    variant="outline" 
                     className="w-full" 
-                    data-testid="button-generate-report"
+                    onClick={() => setShowContactDialog(true)}
+                    data-testid="button-contact-team"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate Report
+                    Contact the Team
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Shield className="h-3 w-3" />
-                    <span>Comprehensive team analysis</span>
+                  <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg mt-4">
+                    <Shield className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">
+                      Partner accounts include full access to team diagnostic tools, AI-powered gap analysis, and comprehensive reporting.
+                    </p>
                   </div>
                 </div>
-              </Card>
               </div>
-            </div>
+            </Card>
           </div>
         </section>
 
