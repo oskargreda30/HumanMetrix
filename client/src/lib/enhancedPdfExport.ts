@@ -654,7 +654,6 @@ export async function exportEnhancedCandidatePDF(
   const topSkills = [...skills].sort((a, b) => b.score - a.score).slice(0, 3);
   const metricsData = [
     { label: 'Skills Assessed', value: skills.length.toString() },
-    { label: 'Average Score', value: `${avgScore}/100` },
     { label: 'Top Skill', value: topSkills[0]?.name || 'N/A' },
   ];
   

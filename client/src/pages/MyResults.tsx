@@ -181,17 +181,6 @@ export default function MyResults() {
 
   // Calculate aggregate statistics
   const totalAssessments = completedResults.length;
-  const allScores: number[] = [];
-  
-  completedResults.forEach((result: any) => {
-    if (result.totalScore !== null && result.totalScore !== undefined) {
-      allScores.push(result.totalScore);
-    }
-  });
-
-  const averageScore = allScores.length > 0 
-    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) 
-    : null;
 
   const handleDownloadPDF = async () => {
     if (!user || !completedResults) {
@@ -463,6 +452,10 @@ export default function MyResults() {
                       <p className="text-sm text-muted-foreground">Behavioural Skills (15 Questions)</p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-500">{fitAvg}/100</div>
+                    <div className="text-xs text-muted-foreground">FIT Score</div>
+                  </div>
                 </div>
 
                 {/* Assessment Summary */}
@@ -550,6 +543,10 @@ export default function MyResults() {
                       <h2 className="text-xl font-semibold">AI Readiness Assessment</h2>
                       <p className="text-sm text-muted-foreground">Technical AI Skills (21 Questions)</p>
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-purple-500">{aiAvg}/100</div>
+                    <div className="text-xs text-muted-foreground">AI Readiness Score</div>
                   </div>
                 </div>
 

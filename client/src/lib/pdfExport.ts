@@ -4253,7 +4253,6 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   // Key Metrics Boxes (right side - 3 boxes)
   const metricsData = [
     { label: 'Skills Assessed', value: String(skillsAssessed), smallFont: false },
-    { label: 'Average Score', value: `${avgScore}/100`, smallFont: false },
     { label: 'Top Skill', value: topSkill.length > 18 ? topSkill.substring(0, 16) + '...' : topSkill, smallFont: true },
   ];
   
