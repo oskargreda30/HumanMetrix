@@ -88,7 +88,7 @@ const createProjectSchema = z.object({
 });
 
 const missionAnalysisSchema = z.object({
-  missionStatement: z.string().min(10, "Mission statement is too short"),
+  missionStatement: z.string().min(1, "Mission statement is required"),
   companyEthos: z.string().optional(),
 });
 
