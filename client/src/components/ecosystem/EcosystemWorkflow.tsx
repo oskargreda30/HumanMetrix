@@ -343,7 +343,7 @@ export function EcosystemWorkflow({
         title: "Team context saved",
         description: "Your team details have been saved.",
       });
-      setExpandedStep(4);
+      navigateToStep(4);
     } catch (error: any) {
       toast({
         title: "Failed to save",
@@ -511,7 +511,7 @@ export function EcosystemWorkflow({
         title: "Analysis generated",
         description: "Your comprehensive Team Diagnostic Report is ready.",
       });
-      setExpandedStep(7); // Go to results step
+      navigateToStep(7); // Go to results step
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -560,7 +560,7 @@ export function EcosystemWorkflow({
               title: "Payment successful",
               description: "You can now generate your Team Diagnostic Report.",
             });
-            setExpandedStep(6); // Go to generate analysis step
+            navigateToStep(6); // Go to generate analysis step
             // Clean up URL
             const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=success/, '').replace(/^&/, '?');
             window.history.replaceState({}, '', newUrl);
@@ -614,7 +614,13 @@ export function EcosystemWorkflow({
   }) => (
     <div 
       className="flex items-center gap-3 p-4 cursor-pointer hover-elevate rounded-lg"
-      onClick={() => setExpandedStep(expandedStep === step ? -1 : step)}
+      onClick={() => {
+        const isExpanding = expandedStep !== step;
+        setExpandedStep(isExpanding ? step : -1);
+        if (isExpanding) {
+          scrollToStep(step);
+        }
+      }}
       data-testid={`step-header-${step}`}
     >
       <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
@@ -681,7 +687,13 @@ export function EcosystemWorkflow({
       <Card data-testid="step-1-consultation">
         <div 
           className="flex items-center gap-3 p-4 cursor-pointer hover-elevate rounded-lg"
-          onClick={() => setExpandedStep(expandedStep === 1 ? -1 : 1)}
+          onClick={() => {
+            const isExpanding = expandedStep !== 1;
+            setExpandedStep(isExpanding ? 1 : -1);
+            if (isExpanding) {
+              scrollToStep(1);
+            }
+          }}
           data-testid="step-header-1"
         >
           <div className="h-10 w-10 rounded-full flex items-center justify-center font-bold bg-primary text-primary-foreground">
@@ -728,7 +740,7 @@ export function EcosystemWorkflow({
               </a>
               <Button 
                 variant="outline" 
-                onClick={() => setExpandedStep(2)}
+                onClick={() => navigateToStep(2)}
                 data-testid="button-skip-consultation"
               >
                 Skip - Start Analysis
@@ -1283,10 +1295,10 @@ export function EcosystemWorkflow({
 
             {teamMembers.length > 0 && (
               <Button 
-                onClick={() => setExpandedStep(4)}
-                data-testid="button-continue-to-analysis"
+                onClick={() => navigateToStep(5)}
+                data-testid="button-continue-to-payment"
               >
-                Continue to Analysis
+                Continue to Payment
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}

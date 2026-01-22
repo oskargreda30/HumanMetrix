@@ -1208,7 +1208,7 @@ export function registerEcosystemRoutes(app: Express): void {
         cloneableSkills: data.cloneableSkills || null,
         transformativeFix: data.transformativeFix || null,
         
-        currentStep: Math.max(project.currentStep, 3),
+        currentStep: Math.max(project.currentStep, 4), // Move to step 4 (Team Members)
         status: "in_progress",
       } as any);
 
