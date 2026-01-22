@@ -152,3 +152,102 @@ export interface AirwallexWebhookEvent {
   };
   created_at: string;
 }
+
+interface CreateCustomerParams {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  metadata?: Record<string, string>;
+}
+
+interface CustomerResult {
+  id: string;
+  email: string;
+}
+
+export async function createCustomer(params: CreateCustomerParams): Promise<CustomerResult> {
+  const client = getAirwallexClient();
+  
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  
+  const customerParams: any = {
+    request_id: requestId,
+    email: params.email,
+    merchant_customer_id: `cust_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+  };
+  
+  if (params.businessName) {
+    customerParams.business_name = params.businessName;
+  }
+  
+  if (params.firstName || params.lastName) {
+    customerParams.first_name = params.firstName || '';
+    customerParams.last_name = params.lastName || '';
+  }
+  
+  if (params.metadata) {
+    customerParams.metadata = params.metadata;
+  }
+  
+  const customer = await client.paymentAcceptance.customers.createCustomer(customerParams);
+  
+  return {
+    id: customer.id || '',
+    email: customer.email || params.email,
+  };
+}
+
+export async function getCustomer(customerId: string): Promise<any> {
+  const client = getAirwallexClient();
+  return client.paymentAcceptance.customers.getCustomer(customerId);
+}
+
+interface CreatePaymentLinkParams {
+  amount: number;
+  currency: string;
+  title: string;
+  description?: string;
+  expiresAt?: Date;
+  metadata?: Record<string, string>;
+}
+
+interface PaymentLinkResult {
+  id: string;
+  url: string;
+  status: string;
+}
+
+export async function createPaymentLink(params: CreatePaymentLinkParams): Promise<PaymentLinkResult> {
+  const client = getAirwallexClient();
+  
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  
+  const linkParams: any = {
+    request_id: requestId,
+    amount: params.amount,
+    currency: params.currency.toUpperCase(),
+    title: params.title,
+  };
+  
+  if (params.description) {
+    linkParams.description = params.description;
+  }
+  
+  if (params.expiresAt) {
+    linkParams.expires_at = params.expiresAt.toISOString();
+  }
+  
+  if (params.metadata) {
+    linkParams.metadata = params.metadata;
+  }
+  
+  // Create payment link via Airwallex API
+  const paymentLink = await (client as any).paymentAcceptance.paymentLinks.createPaymentLink(linkParams);
+  
+  return {
+    id: paymentLink.id || '',
+    url: paymentLink.url || '',
+    status: paymentLink.status || '',
+  };
+}

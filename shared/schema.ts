@@ -957,6 +957,8 @@ export const partnerTestPackages = pgTable("partner_test_packages", {
   currency: varchar("currency").notNull().default("gbp"),
   stripeCheckoutSessionId: varchar("stripe_checkout_session_id"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  airwallexPaymentIntentId: varchar("airwallex_payment_intent_id"), // Airwallex payment intent ID
+  paymentProvider: varchar("payment_provider").default("stripe"), // 'stripe' or 'airwallex'
   status: varchar("status").notNull().default("pending"), // pending, completed, failed, refunded
   purchasedAt: timestamp("purchased_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

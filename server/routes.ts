@@ -1830,6 +1830,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airwallex webhook handler for payment events (B2B billing)
+  app.post("/api/webhooks/airwallex", express.raw({ type: 'application/json' }), async (req: any, res) => {
+    const signature = req.headers['x-signature'];
+    const timestamp = req.headers['x-timestamp'];
+    const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET;
+    
+    let event: any;
+    
+    try {
+      const payload = req.body.toString();
+      
+      if (webhookSecret && signature && timestamp) {
+        const { verifyAirwallexWebhookSignature } = await import("./airwallex");
+        const isValid = verifyAirwallexWebhookSignature(payload, signature, timestamp, webhookSecret);
+        if (!isValid) {
+          console.error('[Airwallex Webhook] Signature verification failed');
+          return res.status(400).json({ error: 'Invalid signature' });
+        }
+      } else {
+        console.warn('[Airwallex Webhook] No webhook secret configured - signature verification skipped');
+      }
+      
+      event = JSON.parse(payload);
+    } catch (err: any) {
+      console.error('[Airwallex Webhook] Failed to parse webhook:', err.message);
+      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+    
+    console.log(`[Airwallex Webhook] Received event: ${event.name}, id: ${event.id}`);
+    
+    try {
+      switch (event.name) {
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object;
+          const metadata = paymentIntent.metadata || {};
+          
+          // Handle partner package purchase
+          if (metadata.type === 'partner_package' && metadata.packageId) {
+            const packageId = metadata.packageId;
+            const pkg = await storage.getPartnerTestPackage(packageId);
+            
+            if (pkg && pkg.status !== 'completed') {
+              const partnerId = pkg.partnerId;
+              const packageSize = pkg.packageSize;
+              
+              // Update package status
+              await storage.updatePartnerTestPackage(packageId, {
+                status: 'completed',
+              } as any);
+              
+              // Credit the tests
+              const result = await storage.creditPartnerTests(
+                partnerId,
+                packageId,
+                packageSize,
+                `Package purchase: ${packageSize} tests (Airwallex webhook)`
+              );
+              
+              // Reactivate API access if suspended
+              const partner = await storage.getPartnerAccount(partnerId);
+              if (partner?.apiAccessSuspendedAt) {
+                await storage.reactivatePartnerApiAccess(partnerId);
+              }
+              
+              console.log(`[Airwallex Webhook] Credited ${packageSize} tests to partner ${partnerId}`);
+              
+              // Create notification
+              await storage.createPartnerNotification({
+                partnerId,
+                type: 'credits_purchased',
+                title: 'Credits Purchased',
+                message: `${packageSize} assessment credits have been added to your account via Airwallex.`,
+                metadata: { packageId, packageSize, newBalance: result.newBalance },
+              });
+            }
+          }
+          
+          // Handle enterprise invoice payment
+          if (metadata.type === 'enterprise_invoice' && metadata.invoiceId) {
+            const invoiceId = metadata.invoiceId;
+            const invoice = await storage.getPartnerInvoice(invoiceId);
+            
+            if (invoice && invoice.status !== 'paid') {
+              // Mark invoice as paid
+              await storage.updatePartnerInvoice(invoiceId, {
+                status: 'paid',
+                paidAt: new Date(),
+              });
+              
+              console.log(`[Airwallex Webhook] Invoice ${invoice.invoiceNumber} marked as paid via Airwallex`);
+              
+              // Reactivate API access if suspended due to overdue invoices
+              const partner = await storage.getPartnerAccount(invoice.partnerId);
+              if (partner?.invoiceOverdueSuspendedAt) {
+                // Check if there are other overdue invoices
+                const remainingOverdueInvoices = await storage.getOverdueInvoicesByPartner(invoice.partnerId);
+                if (remainingOverdueInvoices.length === 0) {
+                  await storage.updatePartnerAccount(invoice.partnerId, {
+                    invoiceOverdueSuspendedAt: null,
+                  });
+                  await storage.reactivatePartnerApiAccess(invoice.partnerId);
+                  console.log(`[Airwallex Webhook] Restored API access for partner ${invoice.partnerId} after invoice payment`);
+                  
+                  // Notify partner
+                  await storage.createPartnerNotification({
+                    partnerId: invoice.partnerId,
+                    type: 'api_access_restored',
+                    title: 'API Access Restored',
+                    message: `Your production API keys have been reactivated following payment of invoice ${invoice.invoiceNumber}. Thank you for your payment.`,
+                    metadata: { invoiceId, invoiceNumber: invoice.invoiceNumber },
+                  });
+                }
+              }
+              
+              // Send payment confirmation notification
+              await storage.createPartnerNotification({
+                partnerId: invoice.partnerId,
+                type: 'invoice_paid',
+                title: 'Invoice Paid',
+                message: `Invoice ${invoice.invoiceNumber} has been paid successfully via Airwallex.`,
+                metadata: { invoiceId, invoiceNumber: invoice.invoiceNumber },
+              });
+            }
+          }
+          
+          // Clear any billing failures - use partnerId (consistent with metadata)
+          const partnerId = metadata.partnerId || metadata.partner_id;
+          if (partnerId) {
+            const partner = await storage.getPartnerAccount(partnerId);
+            if (partner && partner.failedBillingAttempts && partner.failedBillingAttempts > 0) {
+              await storage.updatePartnerAccount(partnerId, {
+                failedBillingAttempts: 0,
+                lastBillingFailureAt: null,
+                billingFailureReason: null,
+                nextBillingRetryAt: null,
+                billingStatusOverride: null,
+              });
+              console.log(`[Airwallex Webhook] Cleared billing failures for partner ${partnerId}`);
+            }
+          }
+          break;
+        }
+        
+        case 'payment_intent.payment_failed':
+        case 'payment_intent.requires_payment_method': {
+          const paymentIntent = event.data.object;
+          const partnerId = paymentIntent.metadata?.partnerId || paymentIntent.metadata?.partner_id;
+          
+          if (partnerId) {
+            console.log(`[Airwallex Webhook] Payment failed for partner ${partnerId}`);
+            
+            const partner = await storage.getPartnerAccount(partnerId);
+            if (partner) {
+              const failureReason = paymentIntent.failure_reason || 'payment_failed';
+              const amountDue = paymentIntent.amount || 0;
+              
+              // Track failure
+              const newAttempts = (partner.failedBillingAttempts || 0) + 1;
+              const nextRetry = newAttempts < 3 ? calculateNextRetryDate(newAttempts) : null;
+              const isSuspended = newAttempts >= 3;
+              
+              await storage.updatePartnerAccount(partnerId, {
+                failedBillingAttempts: newAttempts,
+                lastBillingFailureAt: new Date(),
+                billingFailureReason: failureReason,
+                nextBillingRetryAt: nextRetry,
+                billingStatusOverride: isSuspended ? 'suspended_billing_failure' : null,
+              });
+              
+              // Send notification
+              const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+                ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+                : 'https://humanmetrix.ai';
+              
+              const { sendBillingFailureNotification, sendBillingFailureAdminNotification } = await import('./email');
+              
+              await sendBillingFailureNotification({
+                partnerEmail: partner.billingEmail || partner.email,
+                companyName: partner.companyName,
+                failureReason,
+                failedAttempts: newAttempts,
+                amountDue,
+                currency: partner.currency || 'GBP',
+                nextRetryDate: nextRetry || undefined,
+                updatePaymentUrl: `${baseUrl}/partner-dashboard?tab=billing`,
+              });
+              
+              await sendBillingFailureAdminNotification({
+                partnerId: partner.id,
+                companyName: partner.companyName,
+                partnerEmail: partner.email,
+                failureReason,
+                failedAttempts: newAttempts,
+                amountDue,
+                currency: partner.currency || 'GBP',
+                billingType: partner.billingType,
+              });
+              
+              console.log(`[Airwallex Webhook] Recorded payment failure for partner ${partnerId} (attempt ${newAttempts}/3)`);
+            }
+          }
+          break;
+        }
+        
+        default:
+          console.log(`[Airwallex Webhook] Unhandled event type: ${event.name}`);
+      }
+      
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[Airwallex Webhook ERROR]', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -11938,6 +12153,13 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Partner not found" });
       }
       
+      // Check payment provider - metered subscriptions only supported with Stripe
+      if (partner.paymentProvider === 'airwallex') {
+        return res.status(400).json({ 
+          message: "Metered subscriptions are only available with Stripe. Please use PAYG or Enterprise billing for Airwallex partners." 
+        });
+      }
+      
       const { priceId } = req.body;
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
@@ -12097,55 +12319,115 @@ Format your response as JSON with this structure:
       const pricePerTest = tier?.pricePerTest || 2000; // Default to $20/test (Boutique tier) for custom sizes
       const totalPrice = packageSize * pricePerTest;
       
-      // Create package record (pending)
-      const pkg = await storage.createPartnerTestPackage({
-        partnerId: partner.id,
-        packageSize,
-        pricePerTest,
-        totalPrice,
-        currency: 'usd',
-        status: 'pending',
-      });
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'http://localhost:5000';
       
-      // Create Stripe checkout session
-      const stripe = (await import("stripe")).default;
-      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
-      
-      const session = await stripeClient.checkout.sessions.create({
-        mode: 'payment',
-        customer: partner.stripeCustomerId || undefined,
-        customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at $${(pricePerTest / 100).toFixed(2)} per test`,
-            },
-            unit_amount: totalPrice,
-          },
-          quantity: 1,
-        }],
-        metadata: {
-          type: 'partner_package',
+      // Check partner's payment provider and route accordingly
+      if (partner.paymentProvider === 'airwallex') {
+        // Use Airwallex for payment
+        const { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } = await import("./airwallex");
+        
+        if (!isAirwallexConfigured()) {
+          return res.status(500).json({ message: "Airwallex is not configured. Please contact support." });
+        }
+        
+        // Create package record (pending) with Airwallex provider
+        const pkg = await storage.createPartnerTestPackage({
           partnerId: partner.id,
+          packageSize,
+          pricePerTest,
+          totalPrice,
+          currency: 'usd',
+          status: 'pending',
+          paymentProvider: 'airwallex',
+        });
+        
+        // Create Airwallex payment intent
+        const paymentIntent = await createPaymentIntent({
+          amount: formatAmountForAirwallex(totalPrice), // Airwallex uses decimal amounts
+          currency: 'usd',
+          merchantOrderId: pkg.id,
+          returnUrl: `${baseUrl}/admin/partners/${partner.id}?package_success=true&airwallex_intent=${pkg.id}`,
+          customerEmail: partner.billingEmail || partner.email,
+          description: `HumanMetrix Test Package - ${packageSize} Tests`,
+          metadata: {
+            type: 'partner_package',
+            partnerId: partner.id,
+            packageId: pkg.id,
+            packageSize: packageSize.toString(),
+          },
+        });
+        
+        // Update package with Airwallex payment intent ID
+        await storage.updatePartnerTestPackage(pkg.id, {
+          airwallexPaymentIntentId: paymentIntent.id,
+        });
+        
+        // Return Airwallex hosted payment page URL (or client secret for embedded checkout)
+        res.json({ 
+          success: true,
+          paymentProvider: 'airwallex',
+          paymentIntentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
           packageId: pkg.id,
-          packageSize: packageSize.toString(),
-        },
-        success_url: `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'}/admin/partners/${partner.id}?package_success=true`,
-        cancel_url: `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'}/admin/partners/${partner.id}?package_cancelled=true`,
-      });
-      
-      // Update package with Stripe session ID
-      await storage.updatePartnerTestPackage(pkg.id, {
-        stripeCheckoutSessionId: session.id,
-      });
-      
-      res.json({ 
-        success: true, 
-        sessionUrl: session.url,
-        packageId: pkg.id,
-      });
+          // Airwallex uses a different flow - client-side checkout with clientSecret
+          // For now, provide details for frontend to handle
+        });
+      } else {
+        // Default: Use Stripe for payment
+        // Create package record (pending)
+        const pkg = await storage.createPartnerTestPackage({
+          partnerId: partner.id,
+          packageSize,
+          pricePerTest,
+          totalPrice,
+          currency: 'usd',
+          status: 'pending',
+          paymentProvider: 'stripe',
+        });
+        
+        // Create Stripe checkout session
+        const stripe = (await import("stripe")).default;
+        const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+        
+        const session = await stripeClient.checkout.sessions.create({
+          mode: 'payment',
+          customer: partner.stripeCustomerId || undefined,
+          customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
+          line_items: [{
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `HumanMetrix Test Package - ${packageSize} Tests`,
+                description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at $${(pricePerTest / 100).toFixed(2)} per test`,
+              },
+              unit_amount: totalPrice,
+            },
+            quantity: 1,
+          }],
+          metadata: {
+            type: 'partner_package',
+            partnerId: partner.id,
+            packageId: pkg.id,
+            packageSize: packageSize.toString(),
+          },
+          success_url: `${baseUrl}/admin/partners/${partner.id}?package_success=true`,
+          cancel_url: `${baseUrl}/admin/partners/${partner.id}?package_cancelled=true`,
+        });
+        
+        // Update package with Stripe session ID
+        await storage.updatePartnerTestPackage(pkg.id, {
+          stripeCheckoutSessionId: session.id,
+        });
+        
+        res.json({ 
+          success: true,
+          paymentProvider: 'stripe',
+          sessionUrl: session.url,
+          packageId: pkg.id,
+        });
+      }
     } catch (error) {
       console.error("Error creating package checkout:", error);
       res.status(500).json({ message: "Failed to create package checkout" });
@@ -12298,6 +12580,155 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error processing partner package callback:", error);
       res.status(500).json({ success: false, message: "Failed to process package purchase" });
+    }
+  });
+
+  // Process Airwallex partner package payment callback
+  // Validates Airwallex payment intent and credits tests
+  app.post("/api/partner/package/airwallex-callback", async (req: any, res) => {
+    try {
+      const { packageId, paymentIntentId } = req.body;
+      
+      if (!packageId) {
+        return res.status(400).json({ success: false, message: "Package ID required" });
+      }
+      
+      // Verify package exists
+      const pkg = await storage.getPartnerTestPackage(packageId);
+      if (!pkg) {
+        return res.status(404).json({ success: false, message: "Package not found" });
+      }
+      
+      // Verify this is an Airwallex payment
+      if (pkg.paymentProvider !== 'airwallex') {
+        return res.status(400).json({ success: false, message: "Package is not using Airwallex payment" });
+      }
+      
+      // Verify payment intent matches
+      if (paymentIntentId && pkg.airwallexPaymentIntentId !== paymentIntentId) {
+        console.warn(`[Partner Package] Airwallex intent mismatch for package ${packageId}: expected ${pkg.airwallexPaymentIntentId}, got ${paymentIntentId}`);
+        return res.status(403).json({ success: false, message: "Invalid payment intent for this package" });
+      }
+      
+      if (pkg.status === 'completed') {
+        console.log(`[Partner Package] Airwallex package ${packageId} already processed, skipping`);
+        return res.json({ 
+          success: true, 
+          message: "Package already credited",
+          alreadyProcessed: true
+        });
+      }
+      
+      // Verify payment status with Airwallex
+      const { getPaymentIntent, isAirwallexConfigured } = await import("./airwallex");
+      
+      if (!isAirwallexConfigured()) {
+        return res.status(500).json({ success: false, message: "Airwallex is not configured" });
+      }
+      
+      const intentId = pkg.airwallexPaymentIntentId;
+      if (!intentId) {
+        return res.status(400).json({ success: false, message: "No Airwallex payment intent found" });
+      }
+      
+      const paymentIntent = await getPaymentIntent(intentId);
+      
+      // Check payment status - Airwallex uses 'SUCCEEDED' for completed payments
+      if (!paymentIntent || (paymentIntent.status !== 'SUCCEEDED' && paymentIntent.status !== 'REQUIRES_CAPTURE')) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Payment not completed. Status: ${paymentIntent?.status || 'unknown'}` 
+        });
+      }
+      
+      const partnerId = pkg.partnerId;
+      const packageSize = pkg.packageSize;
+      
+      // Update package status
+      await storage.updatePartnerTestPackage(packageId, {
+        status: 'completed',
+      } as any);
+      
+      // Get the current balance BEFORE crediting (for animation)
+      const partnerBeforeCredit = await storage.getPartnerAccount(partnerId);
+      const previousBalance = (partnerBeforeCredit?.testsPurchased || 0) - (partnerBeforeCredit?.testsConsumed || 0) + (partnerBeforeCredit?.freeTestsAllocated || 0);
+      
+      // Credit the tests
+      const result = await storage.creditPartnerTests(
+        partnerId,
+        packageId,
+        packageSize,
+        `Package purchase: ${packageSize} tests (Airwallex)`
+      );
+      
+      // Reactivate API access if it was suspended
+      const partner = await storage.getPartnerAccount(partnerId);
+      if (partner?.apiAccessSuspendedAt) {
+        await storage.reactivatePartnerApiAccess(partnerId);
+        console.log(`[Partner Package] Reactivated API access for partner ${partnerId}`);
+      }
+      
+      console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId} via Airwallex`);
+      
+      // Create notification for credits purchased
+      await storage.createPartnerNotification({
+        partnerId,
+        type: 'credits_purchased',
+        title: 'Credits Purchased',
+        message: `${packageSize} assessment credits have been added to your account. New balance: ${result.newBalance} credits.`,
+        metadata: { packageId, packageSize, newBalance: result.newBalance },
+      });
+      
+      // Send PDF receipt email to partner
+      try {
+        const pricePerTest = partner?.pricePerAssessment || 1500;
+        const partnerCurrency = (partner?.currency || 'gbp').toLowerCase();
+        const totalAmount = pkg.totalPrice;
+        
+        const receiptDetails: PdfReceiptEmailDetails = {
+          email: partner?.email || '',
+          name: partner?.name || 'Partner',
+          companyName: partner?.companyName || partner?.name,
+          items: [{
+            description: `${packageSize} Assessment Credits`,
+            quantity: packageSize,
+            unitPrice: pricePerTest,
+            amount: totalAmount
+          }],
+          subtotal: totalAmount,
+          total: totalAmount,
+          currency: partnerCurrency,
+          transactionId: intentId,
+          paymentMethod: 'Airwallex',
+          billingAddress: partner?.billingAddressLine1 ? {
+            line1: partner.billingAddressLine1,
+            line2: partner.billingAddressLine2 || undefined,
+            city: partner.billingCity || undefined,
+            postcode: partner.billingPostcode || undefined,
+            country: partner.billingCountry || undefined,
+          } : undefined,
+        };
+        
+        if (receiptDetails.email) {
+          const receiptResult = await sendPaymentReceiptWithPdf(receiptDetails);
+          if (receiptResult.success) {
+            console.log(`[Partner Package] ✓ PDF receipt sent to ${receiptDetails.email} via Airwallex (Receipt: ${receiptResult.receiptNumber})`);
+          }
+        }
+      } catch (receiptError) {
+        console.error(`[Partner Package] Failed to send Airwallex receipt email:`, receiptError);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully credited ${packageSize} tests`,
+        newBalance: result.newBalance,
+        previousBalance,
+        creditsAdded: packageSize
+      });
+    } catch (error) {
+      console.error("Error processing Airwallex package callback:", error);
+      res.status(500).json({ success: false, message: "Failed to process Airwallex package purchase" });
     }
   });
 
@@ -12843,6 +13274,112 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error sending invoice reminder:", error);
       res.status(500).json({ message: "Failed to send reminder" });
+    }
+  });
+
+  // Super Admin: Generate payment link for invoice (Airwallex partners)
+  app.post("/api/admin/invoices/:invoiceId/payment-link", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+        return res.status(400).json({ message: `Cannot create payment link for ${invoice.status} invoice` });
+      }
+      
+      const partner = await storage.getPartnerAccount(invoice.partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Check payment provider
+      if (partner.paymentProvider === 'airwallex') {
+        const { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } = await import("./airwallex");
+        
+        if (!isAirwallexConfigured()) {
+          return res.status(500).json({ message: "Airwallex is not configured" });
+        }
+        
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+          : 'http://localhost:5000';
+        
+        // Create Airwallex payment intent for the invoice
+        const paymentIntent = await createPaymentIntent({
+          amount: formatAmountForAirwallex(invoice.totalAmount),
+          currency: invoice.currency || 'gbp',
+          merchantOrderId: `invoice_${invoice.id}`,
+          returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}`,
+          customerEmail: partner.billingEmail || partner.email,
+          description: `Invoice ${invoice.invoiceNumber} - HumanMetrix`,
+          metadata: {
+            type: 'enterprise_invoice',
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            partnerId: partner.id,
+          },
+        });
+        
+        res.json({
+          success: true,
+          paymentProvider: 'airwallex',
+          paymentIntentId: paymentIntent.id,
+          clientSecret: paymentIntent.clientSecret,
+          message: "Airwallex payment intent created. Use the client secret for checkout.",
+        });
+      } else {
+        // Stripe payment link
+        const stripe = (await import("stripe")).default;
+        const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+        
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+          : 'http://localhost:5000';
+        
+        const session = await stripeClient.checkout.sessions.create({
+          mode: 'payment',
+          customer: partner.stripeCustomerId || undefined,
+          customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
+          line_items: [{
+            price_data: {
+              currency: invoice.currency || 'gbp',
+              product_data: {
+                name: `Invoice ${invoice.invoiceNumber}`,
+                description: `HumanMetrix Invoice Payment - ${invoice.testsUsed} assessments`,
+              },
+              unit_amount: invoice.totalAmount,
+            },
+            quantity: 1,
+          }],
+          metadata: {
+            type: 'enterprise_invoice',
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            partnerId: partner.id,
+          },
+          success_url: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}`,
+          cancel_url: `${baseUrl}/admin/invoices?payment_cancelled=true&invoice=${invoice.id}`,
+        });
+        
+        res.json({
+          success: true,
+          paymentProvider: 'stripe',
+          sessionUrl: session.url,
+          message: "Stripe checkout session created",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating payment link:", error);
+      res.status(500).json({ message: "Failed to create payment link" });
     }
   });
 
