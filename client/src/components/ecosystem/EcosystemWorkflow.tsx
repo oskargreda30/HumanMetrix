@@ -525,8 +525,11 @@ export function EcosystemWorkflow({
   const handlePaymentCheckout = async () => {
     setIsProcessingPayment(true);
     try {
+      // Send current path for proper redirect after payment
+      const currentPath = window.location.pathname;
       const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/create-checkout`, {
         countryCode: countryCode || 'GB',
+        returnPath: currentPath,
       });
       const data = await response.json();
       if (data.url) {

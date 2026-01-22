@@ -1612,7 +1612,7 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const { countryCode } = req.body;
+      const { countryCode, returnPath } = req.body;
       const projectId = req.params.id;
 
       const project = await storage.getEcosystemProject(projectId);
@@ -1667,8 +1667,8 @@ export function registerEcosystemRoutes(app: Express): void {
         payment_intent_data: {
           receipt_email: user.email, // Send receipt email
         },
-        success_url: `${baseUrl}/partner-dashboard?tab=ecosystem&project=${projectId}&payment=success`,
-        cancel_url: `${baseUrl}/partner-dashboard?tab=ecosystem&project=${projectId}&payment=cancelled`,
+        success_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=success`,
+        cancel_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=cancelled`,
         metadata: {
           type: "ecosystem_project",
           projectId: projectId,

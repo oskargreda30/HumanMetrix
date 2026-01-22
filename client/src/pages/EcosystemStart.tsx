@@ -3,13 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
 import { EcosystemWorkflow } from "@/components/ecosystem/EcosystemWorkflow";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Users } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 
 export default function EcosystemStart() {
   const { user, isLoading } = useUser();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
+  // Check for project ID in URL (from payment redirect)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectFromUrl = urlParams.get('project');
+    if (projectFromUrl && !selectedProjectId) {
+      setSelectedProjectId(projectFromUrl);
+    }
+  }, [selectedProjectId]);
 
   if (isLoading) {
     return (
