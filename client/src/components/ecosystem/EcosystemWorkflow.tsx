@@ -170,6 +170,22 @@ export function EcosystemWorkflow({
   const [pdfParsing, setPdfParsing] = useState(false);
   const [parsedPdfData, setParsedPdfData] = useState<{name?: string; scores?: Record<string, number>} | null>(null);
 
+  // Candidate search state (for adding from partner pool)
+  const [candidateSearchTerm, setCandidateSearchTerm] = useState("");
+  const [showCandidatePool, setShowCandidatePool] = useState(false);
+  
+  // Fetch searchable candidates (only for partners - must be called unconditionally for hooks rules)
+  const { data: searchableCandidates = [], isLoading: candidatesLoading } = useSearchableCandidates(
+    showCandidatePool && isPartnerDashboard ? project.id : null
+  );
+  
+  // Filter candidates based on search
+  const filteredSearchCandidates = searchableCandidates.filter((c: SearchableCandidate) => 
+    !candidateSearchTerm || 
+    c.email.toLowerCase().includes(candidateSearchTerm.toLowerCase()) ||
+    (c.name && c.name.toLowerCase().includes(candidateSearchTerm.toLowerCase()))
+  );
+
   // Expanded sections
   const [expandedStep, setExpandedStep] = useState<number>(1);
   const isInitialLoadRef = useRef(true);
@@ -1270,12 +1286,103 @@ export function EcosystemWorkflow({
                 Upload FIT Report PDF
               </Button>
               {isPartnerDashboard && partnerId && (
-                <Button variant="outline" disabled data-testid="button-invite-from-candidates">
-                  <Send className="mr-2 h-4 w-4" />
-                  Invite from Candidates
+                <Button 
+                  variant={showCandidatePool ? "default" : "outline"}
+                  onClick={() => setShowCandidatePool(!showCandidatePool)}
+                  data-testid="button-invite-from-candidates"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {showCandidatePool ? "Hide Candidates" : "Add from Candidates"}
                 </Button>
               )}
             </div>
+
+            {/* Searchable Candidates Section */}
+            {showCandidatePool && isPartnerDashboard && (
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search candidates by name or email..."
+                    value={candidateSearchTerm}
+                    onChange={(e) => setCandidateSearchTerm(e.target.value)}
+                    className="flex-1"
+                    data-testid="input-candidate-search"
+                  />
+                </div>
+                
+                {candidatesLoading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading candidates...</span>
+                  </div>
+                ) : filteredSearchCandidates.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {filteredSearchCandidates.map((candidate: SearchableCandidate) => (
+                      <div 
+                        key={candidate.id}
+                        className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                        data-testid={`candidate-${candidate.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{candidate.name || candidate.email.split('@')[0]}</p>
+                            <p className="text-xs text-muted-foreground">{candidate.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1 flex-wrap">
+                            {['HA', 'IC', 'RA', 'EE', 'GM', 'IA'].map((key) => {
+                              const value = (candidate.fitScores as Record<string, number>)?.[key];
+                              return value !== undefined ? (
+                                <span 
+                                  key={key} 
+                                  className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded"
+                                  title={`${key}: ${value}%`}
+                                >
+                                  {key}:{value}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await apiRequest('POST', `/api/ecosystem/projects/${project.id}/team-members`, {
+                                  name: candidate.name || candidate.email.split('@')[0],
+                                  email: candidate.email,
+                                  sourceType: 'linked_result',
+                                  sourceId: candidate.id,
+                                  fitScores: candidate.fitScores,
+                                });
+                                queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/team-members`] });
+                                queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/searchable-candidates`] });
+                                toast({ title: "Added", description: `${candidate.name || candidate.email} added to team` });
+                              } catch (e) {
+                                toast({ title: "Error", description: "Failed to add candidate", variant: "destructive" });
+                              }
+                            }}
+                            data-testid={`button-add-candidate-${candidate.id}`}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center p-4 text-muted-foreground text-sm">
+                    No candidates with completed FIT assessments found
+                  </div>
+                )}
+              </div>
+            )}
+
 
             {teamMembers.length > 0 && (
               <div className="space-y-2">
