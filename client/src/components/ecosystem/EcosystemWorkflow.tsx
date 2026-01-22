@@ -2378,17 +2378,65 @@ function TeamAnalysisResults({
         )}
       </div>
 
-      {/* SECTION 6: Capability Gap Analysis - Visual Overview */}
+      {/* SECTION 6: Capability Gap Analysis - Visual Overview with Candidate Toggle */}
       {analysis.capabilityGapMatrix && analysis.capabilityGapMatrix.length > 0 && (
         <div>
-          <h4 className="font-semibold mb-2 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Capability Gap Analysis
-          </h4>
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <h4 className="font-semibold flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Capability Gap Analysis
+            </h4>
+            
+            {/* Candidate Toggle Dropdown */}
+            {searchableCandidates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Preview impact:</span>
+                <Select
+                  value={gapAnalysisCandidate || "none"}
+                  onValueChange={(val) => setGapAnalysisCandidate(val === "none" ? null : val)}
+                >
+                  <SelectTrigger className="w-48" data-testid="select-gap-candidate">
+                    <SelectValue placeholder="Select candidate" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No candidate selected</SelectItem>
+                    {searchableCandidates.map((c: SearchableCandidate) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name || c.email.split('@')[0]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
           <p className="text-sm text-muted-foreground mb-4">
             Compare your team's current capability levels against what's needed for mission success. 
-            The gap score shows how much additional capacity would strengthen each area.
+            {gapAnalysisCandidate ? " See how adding this candidate would affect your gaps." : " The gap score shows how much additional capacity would strengthen each area."}
           </p>
+          
+          {/* Selected candidate info banner */}
+          {gapAnalysisCandidate && (() => {
+            const candidate = searchableCandidates.find((c: SearchableCandidate) => c.id === gapAnalysisCandidate);
+            if (!candidate) return null;
+            return (
+              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Previewing: {candidate.name || candidate.email}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setGapAnalysisCandidate(null)}
+                >
+                  Clear
+                </Button>
+              </div>
+            );
+          })()}
+          
           <div className="space-y-4">
             {analysis.capabilityGapMatrix.map((item: any, i: number) => {
               const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
@@ -2412,17 +2460,50 @@ function TeamAnalysisResults({
                                gap >= 15 ? "text-amber-600 dark:text-amber-400" : 
                                "text-green-600 dark:text-green-400";
               
+              // Calculate projected score if candidate is selected
+              const selectedGapCandidate = gapAnalysisCandidate 
+                ? searchableCandidates.find((c: SearchableCandidate) => c.id === gapAnalysisCandidate)
+                : null;
+              const candidateScore = selectedGapCandidate?.fitScores?.[item.code];
+              const hasCandidateScore = candidateScore !== undefined && candidateScore !== null;
+              
+              // Only calculate improvement if candidate score > current team average
+              // If candidate has no score or lower score, no change to projection
+              const wouldImprove = hasCandidateScore && candidateScore > currentScore;
+              const projectedScore = wouldImprove
+                ? Math.round((currentScore * teamMembers.length + candidateScore) / (teamMembers.length + 1))
+                : currentScore;
+              const projectedGap = Math.max(0, targetScore - projectedScore);
+              const gapReduction = wouldImprove ? gap - projectedGap : 0;
+              
               return (
                 <div key={i} className="bg-muted/30 rounded-lg p-4 border">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <div className={`h-7 w-7 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
                         <span className="text-white text-xs font-bold">{item.code}</span>
                       </div>
                       <span className="font-medium">{item.capability}</span>
                     </div>
-                    <div className={`text-sm font-semibold ${gapColor}`}>
-                      {gap > 0 ? `+${gap} gap` : "On target"}
+                    <div className="flex items-center gap-2">
+                      <div className={`text-sm font-semibold ${gapColor}`}>
+                        {gap > 0 ? `+${gap} gap` : "On target"}
+                      </div>
+                      {selectedGapCandidate && wouldImprove && gapReduction > 0 && (
+                        <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50 dark:bg-green-900/30">
+                          -{gapReduction} with candidate
+                        </Badge>
+                      )}
+                      {selectedGapCandidate && hasCandidateScore && !wouldImprove && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          No improvement
+                        </Badge>
+                      )}
+                      {selectedGapCandidate && !hasCandidateScore && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground/50">
+                          No score
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   
@@ -2436,8 +2517,15 @@ function TeamAnalysisResults({
                     {/* Current score bar */}
                     <div 
                       className={`h-full rounded-full transition-all ${capInfo?.color || "bg-primary"}`}
-                      style={{ width: `${currentScore}%`, opacity: 0.8 }}
+                      style={{ width: `${currentScore}%`, opacity: selectedGapCandidate ? 0.4 : 0.8 }}
                     />
+                    {/* Projected score bar (if candidate selected and improves) */}
+                    {selectedGapCandidate && projectedScore > currentScore && (
+                      <div 
+                        className="absolute top-0 h-full rounded-full bg-green-500 transition-all"
+                        style={{ width: `${projectedScore}%`, opacity: 0.7 }}
+                      />
+                    )}
                     {/* Target score indicator (hollow) */}
                     <div 
                       className="absolute top-0 h-full border-2 border-dashed border-foreground/40 rounded-full"
@@ -2446,16 +2534,27 @@ function TeamAnalysisResults({
                   </div>
                   
                   {/* Legend */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2 flex-wrap gap-2">
+                    <div className="flex items-center gap-4 flex-wrap">
                       <span className="flex items-center gap-1">
                         <div className={`h-2 w-4 rounded ${capInfo?.color || "bg-primary"}`} style={{ opacity: 0.8 }} />
-                        Current: {currentScore}
+                        Current: {currentScore}%
                       </span>
+                      {selectedGapCandidate && projectedScore !== currentScore && (
+                        <span className="flex items-center gap-1">
+                          <div className="h-2 w-4 rounded bg-green-500" style={{ opacity: 0.7 }} />
+                          Projected: {projectedScore}%
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <div className="h-2 w-4 rounded border-2 border-dashed border-foreground/40" />
-                        Target: {targetScore}
+                        Target: {targetScore}%
                       </span>
+                      {selectedGapCandidate && hasCandidateScore && (
+                        <span className="text-primary font-medium">
+                          Candidate: {candidateScore}%
+                        </span>
+                      )}
                     </div>
                   </div>
                   
@@ -2464,6 +2563,64 @@ function TeamAnalysisResults({
               );
             })}
           </div>
+          
+          {/* Summary when candidate is selected */}
+          {gapAnalysisCandidate && (() => {
+            const candidate = searchableCandidates.find((c: SearchableCandidate) => c.id === gapAnalysisCandidate);
+            if (!candidate) return null;
+            
+            // Calculate total gap reduction - only count when candidate score > current team average
+            let totalGapReduction = 0;
+            let improvementCount = 0;
+            
+            analysis.capabilityGapMatrix.forEach((item: any) => {
+              const strengthToScore: Record<string, number> = { strong: 85, adequate: 65, weak: 40, critical: 20 };
+              const priorityToTarget: Record<string, number> = { critical: 90, high: 80, medium: 65, low: 50 };
+              const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
+              const targetScore = item.targetScore ?? priorityToTarget[item.missionPriority] ?? 70;
+              const candidateScore = candidate.fitScores?.[item.code];
+              
+              // Only calculate improvement if candidate has score AND it exceeds team average
+              const hasCandidateScore = candidateScore !== undefined && candidateScore !== null;
+              const wouldImprove = hasCandidateScore && candidateScore > currentScore;
+              
+              if (wouldImprove) {
+                const projectedScore = Math.round((currentScore * teamMembers.length + candidateScore) / (teamMembers.length + 1));
+                const currentGap = Math.max(0, targetScore - currentScore);
+                const projectedGap = Math.max(0, targetScore - projectedScore);
+                const gapReduction = currentGap - projectedGap;
+                
+                if (gapReduction > 0) {
+                  totalGapReduction += gapReduction;
+                  improvementCount++;
+                }
+              }
+            });
+            
+            const totalReduction = totalGapReduction;
+            
+            return (
+              <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h6 className="font-semibold flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      Impact Summary: {candidate.name || candidate.email}
+                    </h6>
+                    <p className="text-sm text-muted-foreground">
+                      Improves {improvementCount} of {analysis.capabilityGapMatrix.length} capability gaps
+                    </p>
+                  </div>
+                  <Badge 
+                    variant={totalReduction > 0 ? "default" : "secondary"}
+                    className="text-lg px-3 py-1"
+                  >
+                    {totalReduction > 0 ? `-${totalReduction}` : "0"} total gap reduction
+                  </Badge>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
