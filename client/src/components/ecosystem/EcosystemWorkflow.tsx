@@ -565,9 +565,10 @@ export function EcosystemWorkflow({
               description: "You can now generate your Team Diagnostic Report.",
             });
             navigateToStep(6); // Go to generate analysis step
-            // Clean up URL
-            const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=success/, '').replace(/^&/, '?');
-            window.history.replaceState({}, '', newUrl);
+            // Clean up URL - preserve project param, remove payment param
+            const url = new URL(window.location.href);
+            url.searchParams.delete('payment');
+            window.history.replaceState({}, '', url.pathname + url.search);
           }
         })
         .catch(console.error);
@@ -577,9 +578,10 @@ export function EcosystemWorkflow({
         description: "You can complete payment anytime to unlock your report.",
         variant: "destructive",
       });
-      // Clean up URL
-      const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=cancelled/, '').replace(/^&/, '?');
-      window.history.replaceState({}, '', newUrl);
+      // Clean up URL - preserve project param, remove payment param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment');
+      window.history.replaceState({}, '', url.pathname + url.search);
     }
   }, [project, projectId, refetchProject, toast]);
 

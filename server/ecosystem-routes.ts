@@ -1709,9 +1709,9 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.json({ success: true, alreadyPaid: true });
       }
 
-      // Check for completed payments via Stripe
+      // Check for completed payments via Stripe - search more sessions to ensure we find it
       const sessions = await stripe.checkout.sessions.list({
-        limit: 10,
+        limit: 100,
       });
 
       // Find a completed session for this project
