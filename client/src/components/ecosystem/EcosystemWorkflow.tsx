@@ -1443,15 +1443,11 @@ export function EcosystemWorkflow({
               variant="outline"
               onClick={async () => {
                 try {
-                  const response = await fetch(`/api/ecosystem/projects/${project.id}/bypass-payment`, {
+                  await apiRequest(`/api/ecosystem/projects/${project.id}/bypass-payment`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
                   });
-                  if (response.ok) {
-                    queryClient.invalidateQueries({ queryKey: ['/api/ecosystem/projects', project.id] });
-                    navigateToStep(6);
-                  }
+                  queryClient.invalidateQueries({ queryKey: ['/api/ecosystem/projects', project.id] });
+                  navigateToStep(6);
                 } catch (e) {
                   console.error('Bypass failed:', e);
                 }
