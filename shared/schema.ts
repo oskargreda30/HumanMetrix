@@ -749,6 +749,8 @@ export const partnerAccounts = pgTable("partner_accounts", {
   termsAcceptedAt: timestamp("terms_accepted_at"), // When terms were accepted
   // Tour completion tracking
   tourCompleted: boolean("tour_completed").notNull().default(false), // Dashboard tour has been completed
+  // Payment provider configuration
+  paymentProvider: varchar("payment_provider").notNull().default("stripe"), // 'stripe' or 'airwallex'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

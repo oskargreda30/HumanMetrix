@@ -11225,7 +11225,7 @@ Format your response as JSON with this structure:
       
       const { 
         name, companyName, email, country, phone, currency, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
-        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
+        billingType, paymentProvider, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
         billingCycleAnchor, prepaidBalance
       } = req.body;
       
@@ -11326,6 +11326,12 @@ Format your response as JSON with this structure:
         ? currency.toUpperCase() 
         : 'GBP';
       
+      // Validate payment provider
+      const validPaymentProviders = ['stripe', 'airwallex'];
+      const selectedPaymentProvider = paymentProvider && validPaymentProviders.includes(paymentProvider)
+        ? paymentProvider
+        : 'stripe';
+      
       const partner = await storage.createPartnerAccount({
         name,
         companyName: companyName || name, // Default to contact name if company not provided
@@ -11340,6 +11346,7 @@ Format your response as JSON with this structure:
         isActive: true,
         // New billing type system: payg, subscription, or enterprise
         billingType: selectedBillingType,
+        paymentProvider: selectedPaymentProvider,
         freeTestsAllocated: freeTestsAllocated || 0,
         freeTestsExpiresAt: freeTestsExpiryDate,
         // PAYG and Enterprise use prepaid balance

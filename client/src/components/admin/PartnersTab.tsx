@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CURRENCIES } from "@shared/currencies";
 import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
+import stripeLogo from "@assets/images_1769082266515.png";
+import airwallexLogo from "@assets/images_1769082266514.jpg";
 
 interface Partner {
   id: string;
@@ -48,6 +50,7 @@ interface Partner {
   invoiceContact: string | null;
   currency: string;
   organizationId: string | null;
+  paymentProvider: 'stripe' | 'airwallex';
 }
 
 interface ApiKey {
@@ -521,6 +524,7 @@ export default function PartnersTab() {
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
   const [billingType, setBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
+  const [paymentProvider, setPaymentProvider] = useState<"stripe" | "airwallex">("stripe");
   const [freeTests, setFreeTests] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
@@ -693,6 +697,7 @@ export default function PartnersTab() {
       pricePerAssessment: number; 
       organizationId?: string;
       billingType: 'payg' | 'subscription' | 'enterprise';
+      paymentProvider: 'stripe' | 'airwallex';
       freeTestsAllocated: number;
       prepaidBalance?: number;
       billingCycleAnchor?: number;
@@ -708,6 +713,7 @@ export default function PartnersTab() {
       setIsCreateOpen(false);
       setSelectedOrganizationId("");
       setBillingType("payg");
+      setPaymentProvider("stripe");
       setFreeTests(0);
       setPaymentTerms(30);
       setBillingCycleAnchor(1);
@@ -896,6 +902,7 @@ export default function PartnersTab() {
       pricePerAssessment: parseInt(formData.get("pricePerAssessment") as string) || 500,
       organizationId: selectedOrganizationId !== "none" ? selectedOrganizationId : undefined,
       billingType,
+      paymentProvider,
       freeTestsAllocated: freeTests,
       // PAYG and Enterprise use prepaid balance
       prepaidBalance: (billingType === "payg" || billingType === "enterprise") ? freeTests : undefined,
@@ -3051,6 +3058,30 @@ export default function PartnersTab() {
                         ? "Card on file. Min monthly charge + auto-bill for additional usage at base rates."
                         : "For high-volume BPOs. Pro-forma invoicing for bulk credit blocks. No credit extended."}
                     </p>
+                  </div>
+
+                  <div className="space-y-2 mt-4">
+                    <Label>Payment Provider</Label>
+                    <Select value={paymentProvider} onValueChange={(v) => setPaymentProvider(v as "stripe" | "airwallex")}>
+                      <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-payment-provider">
+                        <SelectValue placeholder="Select payment provider..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectItem value="stripe" className="text-white">
+                          <div className="flex items-center gap-2">
+                            <img src={stripeLogo} alt="Stripe" className="h-5 w-5 rounded object-cover" />
+                            <span>Stripe</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="airwallex" className="text-white">
+                          <div className="flex items-center gap-2">
+                            <img src={airwallexLogo} alt="Airwallex" className="h-5 w-5 rounded object-cover" />
+                            <span>Airwallex</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-400">Payment gateway for processing partner billing</p>
                   </div>
 
                   {billingType === "subscription" && (
