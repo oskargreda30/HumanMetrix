@@ -971,7 +971,7 @@ export function registerEcosystemRoutes(app: Express): void {
         name: data.name || "My Team Analysis",
         status: "draft",
         currentStep: 1,
-        isPaid: true, // Free for now (£0)
+        isPaid: false, // Requires payment at £15 base (with PPP pricing)
         paidAmount: 0,
       });
 
