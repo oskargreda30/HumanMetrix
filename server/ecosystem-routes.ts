@@ -1630,9 +1630,11 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(400).json({ error: "This project has already been paid for" });
       }
 
-      // Check if analysis has been generated (required before payment)
-      if (!project.teamAnalysis) {
-        return res.status(400).json({ error: "Please generate team analysis before proceeding to payment" });
+      // Check if team members with FIT scores exist (required before payment)
+      const teamMembers = await storage.getEcosystemTeamMembers(projectId);
+      const membersWithScores = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores as object).length > 0);
+      if (membersWithScores.length === 0) {
+        return res.status(400).json({ error: "Please add at least one team member with FIT scores before proceeding to payment" });
       }
 
       // Get pricing based on country
