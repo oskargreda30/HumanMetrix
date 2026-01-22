@@ -1293,12 +1293,23 @@ export function EcosystemWorkflow({
               </div>
             )}
 
-            {teamMembers.length > 0 && (
+            {/* Show Continue to Payment only when team members have FIT scores and not yet paid */}
+            {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && !project.isPaid && (
               <Button 
                 onClick={() => navigateToStep(5)}
                 data-testid="button-continue-to-payment"
               >
                 Continue to Payment
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+            {/* Show Continue to Generate when already paid */}
+            {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && project.isPaid && !teamAnalysis && (
+              <Button 
+                onClick={() => navigateToStep(6)}
+                data-testid="button-continue-to-generate"
+              >
+                Continue to Generate Analysis
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
