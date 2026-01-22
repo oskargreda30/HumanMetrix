@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -171,6 +171,34 @@ export function EcosystemWorkflow({
 
   // Expanded sections
   const [expandedStep, setExpandedStep] = useState<number>(1);
+  const isInitialLoadRef = useRef(true);
+  const lastProjectStepRef = useRef<number | null>(null);
+
+  // Scroll to a specific step card
+  const scrollToStep = useCallback((stepNumber: number) => {
+    setTimeout(() => {
+      // Map step numbers to their testid suffixes
+      const stepTestIdMap: Record<number, string> = {
+        1: 'step-1-consultation',
+        2: 'step-2-mission', 
+        3: 'step-3-org-context',
+        4: 'step-4-team-members',
+        5: 'step-5-payment',
+        6: 'step-6-generate-analysis',
+        7: 'step-7-results'
+      };
+      const stepElement = document.querySelector(`[data-testid="${stepTestIdMap[stepNumber]}"]`);
+      if (stepElement) {
+        stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  }, []);
+
+  // Navigate to a step and scroll to it
+  const navigateToStep = useCallback((stepNumber: number) => {
+    setExpandedStep(stepNumber);
+    scrollToStep(stepNumber);
+  }, [scrollToStep]);
 
   // Initialize form from project data
   useEffect(() => {
@@ -203,9 +231,18 @@ export function EcosystemWorkflow({
         project.personalityGap || project.upcomingInitiative || project.cloneableSkills || project.transformativeFix;
       setShowDeepDive(!!hasDeepDiveData);
       
-      setExpandedStep(project.currentStep || 1);
+      // Only auto-expand on initial load or when project step actually advances
+      const newStep = project.currentStep || 1;
+      if (isInitialLoadRef.current || (lastProjectStepRef.current !== null && newStep > lastProjectStepRef.current)) {
+        setExpandedStep(newStep);
+        if (!isInitialLoadRef.current && newStep > (lastProjectStepRef.current || 0)) {
+          scrollToStep(newStep);
+        }
+      }
+      lastProjectStepRef.current = newStep;
+      isInitialLoadRef.current = false;
     }
-  }, [project]);
+  }, [project, scrollToStep]);
 
   // Progress tracking for analysis generation
   useEffect(() => {
@@ -260,7 +297,7 @@ export function EcosystemWorkflow({
         title: "Mission saved",
         description: "Your mission statement has been saved. AI analysis will run when generating the team report.",
       });
-      setExpandedStep(3);
+      navigateToStep(3);
     } catch (error: any) {
       toast({
         title: "Save failed",

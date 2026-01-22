@@ -1097,10 +1097,11 @@ export function registerEcosystemRoutes(app: Express): void {
       const data = missionAnalysisSchema.parse(req.body);
       
       // Just save the mission data - AI analysis will happen during team analysis generation
+      // Advance to step 3 (Team Context) after saving mission
       const updated = await storage.updateEcosystemProject(req.params.id, {
         missionStatement: data.missionStatement,
         companyEthos: data.companyEthos,
-        currentStep: Math.max(project.currentStep, 2),
+        currentStep: Math.max(project.currentStep, 3), // Move to step 3
         status: "in_progress",
       });
 
