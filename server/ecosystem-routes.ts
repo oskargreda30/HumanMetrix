@@ -1798,4 +1798,36 @@ export function registerEcosystemRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to verify payment" });
     }
   });
+
+  // TEMPORARY: Bypass payment for testing (REMOVE AFTER TESTING)
+  app.post("/api/ecosystem/projects/:id/bypass-payment", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
+      
+      // Verify project exists and belongs to user
+      const project = await storage.getEcosystemProject(id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Mark project as paid
+      await storage.updateEcosystemProject(id, {
+        isPaid: true,
+        stripePaymentIntentId: "TESTING_BYPASS_" + Date.now(),
+        paidAmount: 0,
+        paidAt: new Date(),
+        status: "paid",
+      });
+      
+      console.log(`[Ecosystem] TESTING BYPASS: Project ${id} marked as paid`);
+      res.json({ success: true, bypassed: true });
+    } catch (error: any) {
+      console.error("[Ecosystem] Error bypassing payment:", error);
+      res.status(500).json({ error: "Failed to bypass payment" });
+    }
+  });
 }

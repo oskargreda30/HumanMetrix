@@ -78,7 +78,7 @@ import {
   type SearchableCandidate,
 } from "@/hooks/useEcosystemProject";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { 
   EcosystemProject, 
   EcosystemTeamMember,
@@ -1436,6 +1436,31 @@ export function EcosystemWorkflow({
                   Proceed to Payment
                 </>
               )}
+            </Button>
+
+            {/* TEMPORARY: Bypass payment button for testing - REMOVE AFTER TESTING */}
+            <Button 
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const response = await fetch(`/api/ecosystem/projects/${project.id}/bypass-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                  });
+                  if (response.ok) {
+                    queryClient.invalidateQueries({ queryKey: ['/api/ecosystem/projects', project.id] });
+                    navigateToStep(6);
+                  }
+                } catch (e) {
+                  console.error('Bypass failed:', e);
+                }
+              }}
+              size="lg"
+              className="w-full border-dashed border-orange-500 text-orange-600 hover:bg-orange-50"
+              data-testid="button-bypass-payment"
+            >
+              ⚠️ TESTING: Bypass Payment (Remove After Testing)
             </Button>
           </div>
         )}
