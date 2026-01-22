@@ -113,6 +113,33 @@ export function useAnalyzeMission() {
   });
 }
 
+// Save mission without AI analysis (analysis happens during team generation)
+export function useSaveMission() {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    { project: EcosystemProject },
+    Error,
+    { projectId: string; missionStatement: string; companyEthos?: string }
+  >({
+    mutationFn: async ({ projectId, missionStatement, companyEthos }) => {
+      const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/save-mission`, {
+        missionStatement,
+        companyEthos,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/ecosystem');
+        }
+      });
+    },
+  });
+}
+
 export function useUpdateOrganizationContext() {
   const queryClient = useQueryClient();
   

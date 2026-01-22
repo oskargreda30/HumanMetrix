@@ -68,6 +68,7 @@ import {
   useEcosystemProject,
   useEcosystemTeamMembers,
   useAnalyzeMission,
+  useSaveMission,
   useUpdateOrganizationContext,
   useAddTeamMember,
   useDeleteTeamMember,
@@ -116,6 +117,7 @@ export function EcosystemWorkflow({
   const { formatLocalPrice, countryCode, getAdjustedPriceInPence } = useCurrency();
   
   const analyzeMission = useAnalyzeMission();
+  const saveMission = useSaveMission();
   const updateOrgContext = useUpdateOrganizationContext();
   const addTeamMember = useAddTeamMember();
   const deleteTeamMember = useDeleteTeamMember();
@@ -238,7 +240,7 @@ export function EcosystemWorkflow({
     return () => clearInterval(interval);
   }, [generateAnalysis.isPending]);
 
-  const handleAnalyzeMission = async () => {
+  const handleSaveMission = async () => {
     if (!missionStatement.trim()) {
       toast({
         title: "Mission statement required",
@@ -249,20 +251,20 @@ export function EcosystemWorkflow({
     }
 
     try {
-      await analyzeMission.mutateAsync({
+      await saveMission.mutateAsync({
         projectId,
         missionStatement,
         companyEthos,
       });
       toast({
-        title: "Mission analyzed",
-        description: "AI has analyzed your mission and identified capability priorities.",
+        title: "Mission saved",
+        description: "Your mission statement has been saved. AI analysis will run when generating the team report.",
       });
       setExpandedStep(3);
     } catch (error: any) {
       toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze mission statement.",
+        title: "Save failed",
+        description: error.message || "Failed to save mission statement.",
         variant: "destructive",
       });
     }
@@ -470,9 +472,9 @@ export function EcosystemWorkflow({
       await generateAnalysis.mutateAsync({ projectId });
       toast({
         title: "Analysis generated",
-        description: "Proceed to payment to unlock your comprehensive report.",
+        description: "Your comprehensive Team Diagnostic Report is ready.",
       });
-      setExpandedStep(6); // Go to payment step
+      setExpandedStep(7); // Go to results step
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -519,9 +521,9 @@ export function EcosystemWorkflow({
             refetchProject();
             toast({
               title: "Payment successful",
-              description: "Your Team Diagnostic Report is now unlocked.",
+              description: "You can now generate your Team Diagnostic Report.",
             });
-            setExpandedStep(7);
+            setExpandedStep(6); // Go to generate analysis step
             // Clean up URL
             const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment=success/, '').replace(/^&/, '?');
             window.history.replaceState({}, '', newUrl);
@@ -746,20 +748,20 @@ export function EcosystemWorkflow({
 
             <Button 
               onClick={() => {
-                handleAnalyzeMission();
+                handleSaveMission();
               }}
-              disabled={analyzeMission.isPending}
-              data-testid="button-analyze-mission"
+              disabled={saveMission.isPending}
+              data-testid="button-save-mission"
             >
-              {analyzeMission.isPending ? (
+              {saveMission.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  Saving...
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Analyze Mission
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Save and Continue
                 </>
               )}
             </Button>
@@ -1255,98 +1257,24 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 5: Generate Analysis */}
-      <Card data-testid="step-5-generate-analysis">
-        <StepHeader 
-          step={5} 
-          title="Generate Team Analysis" 
-          description="AI-powered diagnostic report"
-          completed={!!teamAnalysis}
-        />
-        {expandedStep === 5 && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">Comprehensive Analysis</p>
-                <p className="text-sm text-muted-foreground">
-                  Generate a detailed report including capability distribution, gap analysis, 
-                  hire recommendations, and risk alerts.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4" />
-                <span>{teamMembers.length} team members</span>
-                <span className="text-muted-foreground">•</span>
-                <span>{teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length} with FIT scores</span>
-              </div>
-            </div>
-
-            {generateAnalysis.isPending ? (
-              <div className="space-y-4" data-testid="analysis-progress">
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="relative">
-                      <Brain className="h-6 w-6 text-primary" />
-                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">AI Analysis in Progress</p>
-                      <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
-                    </div>
-                  </div>
-                  <Progress value={analysisProgress} className="h-2" />
-                  <div className="flex justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
-                    <span className="text-xs text-muted-foreground">~60-90 seconds</span>
-                  </div>
-                </div>
-                <Button 
-                  disabled
-                  size="lg"
-                  className="w-full"
-                  data-testid="button-generate-analysis"
-                >
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Analysis...
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                onClick={handleGenerateAnalysis}
-                disabled={teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length === 0}
-                size="lg"
-                data-testid="button-generate-analysis"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Team Analysis
-              </Button>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Step 6: Payment */}
-      {teamAnalysis && !project.isPaid && (
-        <Card data-testid="step-6-payment" className="border-primary/30">
+      {/* Step 5: Complete Payment - Show when team members with FIT scores exist and not paid */}
+      {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && !project.isPaid && (
+        <Card data-testid="step-5-payment" className="border-primary/30">
           <StepHeader 
-            step={6} 
+            step={5} 
             title="Complete Payment" 
             description="Unlock your comprehensive diagnostic report"
             completed={false}
           />
-          {expandedStep === 6 && (
+          {expandedStep === 5 && (
             <div className="p-6 pt-0 space-y-4">
               <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <DollarSign className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium mb-1">Unlock Your Team Diagnostic Report</p>
                   <p className="text-sm text-muted-foreground">
-                    Your AI analysis is ready. Complete payment to access your comprehensive team capability report, 
-                    including gap analysis, ideal candidate profiles, and actionable recommendations.
+                    Complete payment to generate your comprehensive team capability report, 
+                    including AI-powered gap analysis, ideal candidate profiles, and actionable recommendations.
                   </p>
                 </div>
               </div>
@@ -1357,6 +1285,10 @@ export function EcosystemWorkflow({
                   <span className="text-lg font-bold">{formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)}</span>
                 </div>
                 <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>AI-powered mission analysis</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <span>Complete capability gap analysis</span>
@@ -1405,7 +1337,83 @@ export function EcosystemWorkflow({
         </Card>
       )}
 
-      {/* Step 7: Results (only visible after payment) */}
+      {/* Step 6: Generate Analysis - Only visible after payment */}
+      {project.isPaid && !teamAnalysis && (
+        <Card data-testid="step-6-generate-analysis">
+          <StepHeader 
+            step={6} 
+            title="Generate Team Analysis" 
+            description="AI-powered diagnostic report"
+            completed={!!teamAnalysis}
+          />
+          {expandedStep === 6 && (
+            <div className="p-6 pt-0 space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium mb-1">Comprehensive Analysis</p>
+                  <p className="text-sm text-muted-foreground">
+                    Generate a detailed report including capability distribution, gap analysis, 
+                    hire recommendations, and risk alerts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4" />
+                  <span>{teamMembers.length} team members</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length} with FIT scores</span>
+                </div>
+              </div>
+
+              {generateAnalysis.isPending ? (
+                <div className="space-y-4" data-testid="analysis-progress">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="relative">
+                        <Brain className="h-6 w-6 text-primary" />
+                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">AI Analysis in Progress</p>
+                        <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
+                      </div>
+                    </div>
+                    <Progress value={analysisProgress} className="h-2" />
+                    <div className="flex justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
+                      <span className="text-xs text-muted-foreground">~60-90 seconds</span>
+                    </div>
+                  </div>
+                  <Button 
+                    disabled
+                    size="lg"
+                    className="w-full"
+                    data-testid="button-generate-analysis"
+                  >
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Analysis...
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  onClick={handleGenerateAnalysis}
+                  disabled={teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length === 0}
+                  size="lg"
+                  data-testid="button-generate-analysis"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Team Analysis
+                </Button>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Step 7: Results (only visible after analysis generated) */}
       {teamAnalysis && project.isPaid && (
         <Card data-testid="step-7-results">
           <StepHeader 

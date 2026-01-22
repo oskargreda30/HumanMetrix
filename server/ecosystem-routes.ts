@@ -1077,7 +1077,46 @@ export function registerEcosystemRoutes(app: Express): void {
     }
   });
 
-  // Analyze mission statement with AI
+  // Save mission statement (no AI analysis - analysis happens during team generation)
+  app.post("/api/ecosystem/projects/:id/save-mission", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const project = await storage.getEcosystemProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      if (!(await hasProjectAccess(project, user.email, user.id))) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const data = missionAnalysisSchema.parse(req.body);
+      
+      // Just save the mission data - AI analysis will happen during team analysis generation
+      const updated = await storage.updateEcosystemProject(req.params.id, {
+        missionStatement: data.missionStatement,
+        companyEthos: data.companyEthos,
+        currentStep: Math.max(project.currentStep, 2),
+        status: "in_progress",
+      });
+
+      res.json({
+        project: updated,
+      });
+    } catch (error: any) {
+      console.error("[Ecosystem] Error saving mission:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to save mission" });
+    }
+  });
+
+  // Analyze mission statement with AI (legacy - kept for backwards compatibility)
   app.post("/api/ecosystem/projects/:id/analyze-mission", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as any;
@@ -1420,17 +1459,28 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(400).json({ error: "No team members have FIT scores. Please add assessment data for at least one team member." });
       }
 
+      // Run mission analysis if not already done (deferred from Step 2)
+      let missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
+      if (!missionAnalysis && project.missionStatement) {
+        console.log("[Ecosystem] Running deferred mission analysis for project:", req.params.id);
+        missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "");
+        // Save mission analysis immediately
+        await storage.updateEcosystemProject(req.params.id, {
+          missionAnalysis,
+        });
+      }
+
       // Generate the analysis
       const teamAnalysis = await generateTeamAnalysis(
         req.params.id,
-        project.missionAnalysis as EcosystemMissionAnalysis | null,
+        missionAnalysis,
         project
       );
 
       // Update project
       const updated = await storage.updateEcosystemProject(req.params.id, {
         teamAnalysis,
-        currentStep: 6,
+        currentStep: 7, // Step 7 is the results step
         status: "completed",
       });
 
