@@ -1922,14 +1922,15 @@ function TeamAnalysisResults({
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
   
-  // State for candidate search
+  // State for candidate search and selection
   const [candidateSearch, setCandidateSearch] = useState("");
   const [showCandidateSearch, setShowCandidateSearch] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [gapAnalysisCandidate, setGapAnalysisCandidate] = useState<string | null>(null);
   
-  // Fetch searchable candidates (only for partners)
+  // Fetch searchable candidates (always fetch for gap analysis toggle)
   const { data: searchableCandidates = [], isLoading: candidatesLoading } = useSearchableCandidates(
-    showCandidateSearch ? project.id : null
+    project.partnerId ? project.id : null
   );
   
   // Filter candidates based on search
