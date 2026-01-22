@@ -175,7 +175,7 @@ export function EcosystemWorkflow({
   const isInitialLoadRef = useRef(true);
   const lastProjectStepRef = useRef<number | null>(null);
 
-  // Scroll to a specific step card
+  // Scroll to a specific step card with header offset
   const scrollToStep = useCallback((stepNumber: number) => {
     setTimeout(() => {
       // Map step numbers to their testid suffixes
@@ -190,9 +190,16 @@ export function EcosystemWorkflow({
       };
       const stepElement = document.querySelector(`[data-testid="${stepTestIdMap[stepNumber]}"]`);
       if (stepElement) {
-        stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Calculate position with offset for header (80px buffer)
+        const elementRect = stepElement.getBoundingClientRect();
+        const absoluteElementTop = elementRect.top + window.scrollY;
+        const headerOffset = 80;
+        window.scrollTo({
+          top: absoluteElementTop - headerOffset,
+          behavior: 'smooth'
+        });
       }
-    }, 150);
+    }, 300); // Increased delay for expansion animations
   }, []);
 
   // Navigate to a step and scroll to it
@@ -553,25 +560,37 @@ export function EcosystemWorkflow({
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
     
-    if (paymentStatus === 'success' && project && !project.isPaid) {
-      // Verify payment with backend
-      apiRequest("POST", `/api/ecosystem/projects/${projectId}/verify-payment`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.paid || data.alreadyPaid) {
-            refetchProject();
-            toast({
-              title: "Payment successful",
-              description: "You can now generate your Team Diagnostic Report.",
-            });
-            navigateToStep(6); // Go to generate analysis step
-            // Clean up URL - preserve project param, remove payment param
-            const url = new URL(window.location.href);
-            url.searchParams.delete('payment');
-            window.history.replaceState({}, '', url.pathname + url.search);
-          }
-        })
-        .catch(console.error);
+    if (paymentStatus === 'success' && project) {
+      if (project.isPaid) {
+        // Already paid - just navigate to Step 6 and clean up URL
+        toast({
+          title: "Payment confirmed",
+          description: "You can now generate your Team Diagnostic Report.",
+        });
+        navigateToStep(6);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('payment');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      } else {
+        // Verify payment with backend
+        apiRequest("POST", `/api/ecosystem/projects/${projectId}/verify-payment`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.paid || data.alreadyPaid) {
+              refetchProject();
+              toast({
+                title: "Payment successful",
+                description: "You can now generate your Team Diagnostic Report.",
+              });
+              navigateToStep(6); // Go to generate analysis step
+              // Clean up URL - preserve project param, remove payment param
+              const url = new URL(window.location.href);
+              url.searchParams.delete('payment');
+              window.history.replaceState({}, '', url.pathname + url.search);
+            }
+          })
+          .catch(console.error);
+      }
     } else if (paymentStatus === 'cancelled') {
       toast({
         title: "Payment cancelled",
@@ -583,7 +602,7 @@ export function EcosystemWorkflow({
       url.searchParams.delete('payment');
       window.history.replaceState({}, '', url.pathname + url.search);
     }
-  }, [project, projectId, refetchProject, toast]);
+  }, [project, projectId, refetchProject, toast, navigateToStep]);
 
   // Calendly URL for consultation
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
@@ -1498,15 +1517,15 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 7: Results - Always visible, locked when not paid */}
+      {/* Step 7: Results - Always visible, locked until payment AND Step 6 analysis completed */}
       <Card data-testid="step-7-results">
         <StepHeader 
           step={7} 
           title="Team Diagnostic Report" 
           description={teamAnalysis ? "Your comprehensive analysis" : "View your results"}
           completed={!!teamAnalysis}
-          locked={!project.isPaid}
-          lockedMessage="Unlocks after payment"
+          locked={!project.isPaid || !teamAnalysis}
+          lockedMessage={!project.isPaid ? "Unlocks after payment" : "Unlocks after generating analysis"}
         />
         {expandedStep === 7 && project.isPaid && teamAnalysis && (
           <div className="p-6 pt-0 space-y-6">

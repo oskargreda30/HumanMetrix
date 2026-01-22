@@ -1378,25 +1378,83 @@ export function registerEcosystemRoutes(app: Express): void {
         }
       }
 
-      // Extract FIT scores using regex patterns
+      // Log first 2000 chars of extracted text for debugging
+      console.log("[Ecosystem] PDF Text (first 2000 chars):", text.substring(0, 2000));
+
+      // Extract FIT scores using regex patterns - more flexible to handle various PDF formats
       const scores: Record<string, number> = {};
+      
+      // Try multiple pattern strategies
       const scorePatterns = [
-        { code: "HA", patterns: [/High Agency[:\s]+(\d+)/i, /HA[:\s]+(\d+)/i] },
-        { code: "IC", patterns: [/Intellectual Curiosity[:\s]+(\d+)/i, /IC[:\s]+(\d+)/i] },
-        { code: "RA", patterns: [/Resilience[:\s&]+Adaptability[:\s]+(\d+)/i, /RA[:\s]+(\d+)/i, /Resilience[:\s]+(\d+)/i] },
-        { code: "EE", patterns: [/Empathy[:\s&]+Ethics[:\s]+(\d+)/i, /EE[:\s]+(\d+)/i] },
-        { code: "GM", patterns: [/Growth Mindset[:\s]+(\d+)/i, /GM[:\s]+(\d+)/i] },
-        { code: "IA", patterns: [/Interpersonal Agility[:\s]+(\d+)/i, /IA[:\s]+(\d+)/i] },
+        // Pattern: "Skill Name: 85" or "Skill Name 85" with possible newlines/spaces
+        { code: "HA", patterns: [
+          /High Agency[:\s]*(\d{1,3})/gi,
+          /\bHA[:\s]+(\d{1,3})/gi,
+        ]},
+        { code: "IC", patterns: [
+          /Intellectual Curiosity[:\s]*(\d{1,3})/gi,
+          /\bIC[:\s]+(\d{1,3})/gi,
+        ]},
+        { code: "RA", patterns: [
+          /Resilience[:\s]*(\d{1,3})/gi,
+          /\bRA[:\s]+(\d{1,3})/gi,
+        ]},
+        { code: "EE", patterns: [
+          /Empathy\s*[&]+\s*Ethics[:\s]*(\d{1,3})/gi,
+          /Empathy[:\s]*(\d{1,3})/gi,
+          /\bEE[:\s]+(\d{1,3})/gi,
+          /E\s*&\s*E[:\s]+(\d{1,3})/gi,
+        ]},
+        { code: "GM", patterns: [
+          /Growth Mindset[:\s]*(\d{1,3})/gi,
+          /\bGM[:\s]+(\d{1,3})/gi,
+        ]},
+        { code: "IA", patterns: [
+          /Interpersonal Agility[:\s]*(\d{1,3})/gi,
+          /\bIA[:\s]+(\d{1,3})/gi,
+        ]},
       ];
 
       for (const { code, patterns } of scorePatterns) {
         for (const pattern of patterns) {
-          const match = text.match(pattern);
+          // Reset lastIndex for global patterns
+          pattern.lastIndex = 0;
+          const match = pattern.exec(text);
           if (match) {
             const score = parseInt(match[1], 10);
             if (score >= 0 && score <= 100) {
               scores[code] = score;
+              console.log(`[Ecosystem] Found ${code}: ${score}`);
               break;
+            }
+          }
+        }
+      }
+
+      // If no scores found with standard patterns, try to find any individual skill scores section
+      if (Object.keys(scores).length === 0) {
+        // Look for "Individual Skill Scores" section and extract numbers near skill names
+        const skillsSection = text.match(/Individual Skill Scores[\s\S]{0,1000}/i);
+        if (skillsSection) {
+          console.log("[Ecosystem] Found skills section:", skillsSection[0].substring(0, 500));
+          // Try extracting again from this section
+          const sectionText = skillsSection[0];
+          const simplePatterns = [
+            { code: "HA", regex: /High Agency[\s\S]*?(\d{1,3})/i },
+            { code: "IC", regex: /Intellectual Curiosity[\s\S]*?(\d{1,3})/i },
+            { code: "RA", regex: /Resilience[\s\S]*?(\d{1,3})/i },
+            { code: "EE", regex: /Empathy[\s\S]*?(\d{1,3})/i },
+            { code: "GM", regex: /Growth Mindset[\s\S]*?(\d{1,3})/i },
+            { code: "IA", regex: /Interpersonal Agility[\s\S]*?(\d{1,3})/i },
+          ];
+          for (const { code, regex } of simplePatterns) {
+            const match = sectionText.match(regex);
+            if (match) {
+              const score = parseInt(match[1], 10);
+              if (score >= 0 && score <= 100 && !scores[code]) {
+                scores[code] = score;
+                console.log(`[Ecosystem] Found ${code} from section: ${score}`);
+              }
             }
           }
         }
@@ -1405,11 +1463,12 @@ export function registerEcosystemRoutes(app: Express): void {
       if (Object.keys(scores).length === 0) {
         return res.status(400).json({ 
           error: "Could not extract FIT scores from PDF", 
-          hint: "Please ensure this is a valid HumanMetrix FIT assessment report."
+          hint: "Please ensure this is a valid HumanMetrix FIT assessment report.",
+          debug: { extractedTextPreview: text.substring(0, 500) }
         });
       }
 
-      console.log("[Ecosystem] Parsed PDF scores:", { name, scores, extractedText: text.substring(0, 500) });
+      console.log("[Ecosystem] Parsed PDF scores:", { name, scores });
 
       res.json({ 
         name: name || "Unknown Candidate",
