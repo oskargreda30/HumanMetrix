@@ -3347,9 +3347,16 @@ export async function notifySuperAdmins(details: {
       const superAdmins = await storage.getSuperAdminUsers();
       const fromEmail = process.env.GMAIL_USER;
       
-      if (fromEmail && superAdmins.length > 0) {
-        // Get unique email addresses (some users might have same email)
-        const adminEmails = [...new Set(superAdmins.map(u => u.email).filter(Boolean))];
+      // Critical error recipients - always receive notifications regardless of database
+      const CRITICAL_ERROR_RECIPIENTS = [
+        'daena@humanmetrix.co.uk',
+        'oskar@humanmetrix.co.uk',
+      ];
+      
+      if (fromEmail) {
+        // Combine database super admins with hardcoded critical recipients
+        const dbAdminEmails = superAdmins.map(u => u.email).filter(Boolean);
+        const adminEmails = [...new Set([...CRITICAL_ERROR_RECIPIENTS, ...dbAdminEmails])];
         
         for (const adminEmail of adminEmails) {
           try {
@@ -3365,16 +3372,6 @@ export async function notifySuperAdmins(details: {
           }
         }
         emailSent = true;
-      } else if (fromEmail) {
-        // Fallback: send to system email if no super admins found
-        await emailTransporter.sendMail({
-          from: `"HumanMetrix System" <${fromEmail}>`,
-          to: fromEmail,
-          subject: details.emailSubject,
-          html: details.emailHtml,
-        });
-        emailSent = true;
-        console.log(`[Admin Notification] Email sent to fallback (no super admins): ${details.emailSubject}`);
       }
     } catch (error: any) {
       console.error(`[Admin Notification] Failed to send emails:`, error.message);
