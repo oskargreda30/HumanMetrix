@@ -172,62 +172,189 @@ interface EmailMessage {
   }>;
 }
 
-async function sendEmail(msg: EmailMessage): Promise<{ success: boolean; messageId?: string }> {
-  const provider = currentEmailProvider;
+// Send email via SendGrid
+async function sendViaSendGrid(msg: EmailMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    return { success: false, error: 'SendGrid not initialized' };
+  }
   
-  if (provider === 'sendgrid') {
-    await initSendGrid();
-    if (!sendGridInitialized) {
-      console.warn('[SendGrid] Not initialized - cannot send email');
-      return { success: false };
-    }
-    
-    try {
-      const sendgridMsg = {
-        ...msg,
-        from: msg.from || { email: fromEmail, name: 'HumanMetrix' },
-      };
-      const [response] = await sgMail.send(sendgridMsg as any);
-      const messageId = response.headers['x-message-id'];
-      return { success: true, messageId };
-    } catch (error: any) {
-      console.error('[SendGrid] Error sending email:', error.message);
-      return { success: false };
-    }
-  } else {
-    // Gmail provider
-    if (!gmailInitialized || !gmailTransporter) {
-      initGmail();
-      if (!gmailTransporter) {
-        console.warn('[Gmail] Not initialized - cannot send email');
-        return { success: false };
-      }
-    }
-    
-    try {
-      const gmailUser = process.env.GMAIL_USER;
-      const fromName = msg.from?.name || 'HumanMetrix';
-      const mailOptions = {
-        from: `"${fromName}" <${gmailUser}>`,
-        to: Array.isArray(msg.to) ? msg.to.join(', ') : msg.to,
-        subject: msg.subject,
-        html: msg.html,
-        text: msg.text,
-        replyTo: msg.replyTo,
-        attachments: msg.attachments?.map(att => ({
-          filename: att.filename,
-          content: Buffer.from(att.content, 'base64'),
-          contentType: att.type,
-        })),
-      };
-      
-      const info = await gmailTransporter.sendMail(mailOptions);
-      return { success: true, messageId: info.messageId };
-    } catch (error: any) {
-      console.error('[Gmail] Error sending email:', error.message);
-      return { success: false };
+  try {
+    const sendgridMsg = {
+      ...msg,
+      from: msg.from || { email: fromEmail, name: 'HumanMetrix' },
+    };
+    const [response] = await sgMail.send(sendgridMsg as any);
+    const messageId = response.headers['x-message-id'];
+    return { success: true, messageId };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Send email via Gmail
+async function sendViaGmail(msg: EmailMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  if (!gmailInitialized || !gmailTransporter) {
+    initGmail();
+    if (!gmailTransporter) {
+      return { success: false, error: 'Gmail not initialized' };
     }
   }
+  
+  try {
+    const gmailUser = process.env.GMAIL_USER;
+    const fromName = msg.from?.name || 'HumanMetrix';
+    const mailOptions = {
+      from: `"${fromName}" <${gmailUser}>`,
+      to: Array.isArray(msg.to) ? msg.to.join(', ') : msg.to,
+      subject: msg.subject,
+      html: msg.html,
+      text: msg.text,
+      replyTo: msg.replyTo,
+      attachments: msg.attachments?.map(att => ({
+        filename: att.filename,
+        content: Buffer.from(att.content, 'base64'),
+        contentType: att.type,
+      })),
+    };
+    
+    const info = await gmailTransporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Critical error notification recipients
+const criticalErrorRecipients = ['daena@humanmetrix.co.uk', 'oskar@humanmetrix.co.uk'];
+
+// Send failure notification (uses backup provider directly to avoid infinite loop)
+async function sendEmailFailureNotification(
+  originalMsg: EmailMessage,
+  primaryProvider: 'gmail' | 'sendgrid',
+  primaryError: string,
+  backupProvider: 'gmail' | 'sendgrid',
+  backupError?: string
+) {
+  const subject = `⚠️ Email Delivery Failure Alert`;
+  const timestamp = new Date().toISOString();
+  const recipientList = Array.isArray(originalMsg.to) ? originalMsg.to.join(', ') : originalMsg.to;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .alert { background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+          .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+          .success { background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+          .detail { background: #f3f4f6; border-radius: 4px; padding: 12px; margin: 8px 0; font-family: monospace; font-size: 12px; }
+          h2 { color: #dc2626; }
+          .label { font-weight: 600; color: #374151; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>Email Delivery Failure</h2>
+          
+          <div class="${backupError ? 'alert' : 'warning'}">
+            <p><strong>${backupError ? 'Both providers failed' : 'Primary provider failed, backup succeeded'}</strong></p>
+          </div>
+          
+          <p><span class="label">Timestamp:</span> ${timestamp}</p>
+          <p><span class="label">Original Subject:</span> ${originalMsg.subject}</p>
+          <p><span class="label">Recipient(s):</span> ${recipientList}</p>
+          
+          <h3>Primary Provider: ${primaryProvider.toUpperCase()}</h3>
+          <div class="alert">
+            <p><span class="label">Status:</span> Failed</p>
+            <p><span class="label">Error:</span></p>
+            <div class="detail">${primaryError}</div>
+          </div>
+          
+          <h3>Backup Provider: ${backupProvider.toUpperCase()}</h3>
+          ${backupError ? `
+            <div class="alert">
+              <p><span class="label">Status:</span> Failed</p>
+              <p><span class="label">Error:</span></p>
+              <div class="detail">${backupError}</div>
+            </div>
+          ` : `
+            <div class="success">
+              <p><span class="label">Status:</span> Success - Email delivered via backup</p>
+            </div>
+          `}
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+            This is an automated notification from HumanMetrix email system.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  const notificationMsg: EmailMessage = {
+    to: criticalErrorRecipients,
+    subject,
+    html,
+    text: `Email Delivery Failure\n\nTimestamp: ${timestamp}\nOriginal Subject: ${originalMsg.subject}\nRecipient(s): ${recipientList}\n\nPrimary (${primaryProvider}): Failed - ${primaryError}\nBackup (${backupProvider}): ${backupError ? `Failed - ${backupError}` : 'Success'}`,
+  };
+  
+  // Try to send notification via whichever provider might work
+  // Use the backup provider first (it just worked if backupError is undefined)
+  if (!backupError) {
+    // Backup worked, use it for notification
+    if (backupProvider === 'sendgrid') {
+      await sendViaSendGrid(notificationMsg);
+    } else {
+      await sendViaGmail(notificationMsg);
+    }
+  } else {
+    // Both failed - try both for notification (best effort)
+    const result1 = await sendViaSendGrid(notificationMsg);
+    if (!result1.success) {
+      await sendViaGmail(notificationMsg);
+    }
+  }
+}
+
+// Unified email sending with automatic failover
+async function sendEmail(msg: EmailMessage): Promise<{ success: boolean; messageId?: string }> {
+  const primaryProvider = currentEmailProvider;
+  const backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
+  
+  // Try primary provider
+  console.log(`[Email] Sending via ${primaryProvider} (primary)...`);
+  const primaryResult = primaryProvider === 'sendgrid' 
+    ? await sendViaSendGrid(msg) 
+    : await sendViaGmail(msg);
+  
+  if (primaryResult.success) {
+    return { success: true, messageId: primaryResult.messageId };
+  }
+  
+  console.error(`[Email] ${primaryProvider} failed: ${primaryResult.error}`);
+  console.log(`[Email] Retrying via ${backupProvider} (backup)...`);
+  
+  // Try backup provider
+  const backupResult = backupProvider === 'sendgrid'
+    ? await sendViaSendGrid(msg)
+    : await sendViaGmail(msg);
+  
+  if (backupResult.success) {
+    console.log(`[Email] Successfully sent via backup provider (${backupProvider})`);
+    // Notify admins about the primary failure (but email was delivered)
+    sendEmailFailureNotification(msg, primaryProvider, primaryResult.error || 'Unknown error', backupProvider);
+    return { success: true, messageId: backupResult.messageId };
+  }
+  
+  console.error(`[Email] Both providers failed! Primary: ${primaryResult.error}, Backup: ${backupResult.error}`);
+  // Notify admins about complete failure
+  sendEmailFailureNotification(msg, primaryProvider, primaryResult.error || 'Unknown error', backupProvider, backupResult.error);
+  
+  return { success: false };
 }
 
 // Generic partner email function for simple notifications

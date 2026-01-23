@@ -20,7 +20,7 @@ The frontend utilizes React + TypeScript, Shadcn UI, and Tailwind CSS for a resp
 - **Authentication**: Email/Password with bcryptjs and session-based authentication.
 - **Payment**: Stripe integration.
 - **AI Integration**: OpenAI API (GPT-5).
-- **Email Services**: Nodemailer (Gmail - current), SendGrid (prepared for future migration in `server/email-sendgrid.ts`).
+- **Email Services**: Dual-provider system with Gmail (Nodemailer) and SendGrid, featuring automatic failover and admin-configurable primary provider toggle in System Settings. Provider preference persisted to database.
 - **PDF Generation**: `jsPDF` and `html2canvas`.
 
 ### Feature Specifications
@@ -67,7 +67,7 @@ The frontend utilizes React + TypeScript, Shadcn UI, and Tailwind CSS for a resp
 - **PostgreSQL (Neon)**: Database hosting.
 - **Stripe**: Payment gateway.
 - **OpenAI API**: AI-powered assessment and role alignment.
-- **Gmail (via Nodemailer)**: Transactional email service (current).
-- **SendGrid**: Transactional and marketing email service (configured, not yet active). Migration module at `server/email-sendgrid.ts`.
+- **Gmail (via Nodemailer)**: Transactional email service with SMTP.
+- **SendGrid**: Transactional email service via API. Both providers configured with automatic failover - if primary fails, system retries with backup and notifies admins.
 - **Replit Auth**: User management.
 - **Xero (via xero-node)**: Accounting software integration.
