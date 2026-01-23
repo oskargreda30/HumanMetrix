@@ -5,10 +5,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import gmailLogo from "@assets/gmail_1769166926907.png";
+import sendgridLogo from "@assets/sendgrid_1769166926908.png";
 
 type SystemSetting = {
   id: string;
@@ -23,6 +25,12 @@ const SETTING_KEYS = {
   RUN_TESTS_BEFORE_DEPLOY: "run_tests_before_deploy",
 };
 
+type EmailProviderData = {
+  provider: 'gmail' | 'sendgrid';
+  gmailConfigured: boolean;
+  sendgridConfigured: boolean;
+};
+
 export default function SystemSettingsTab() {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -34,6 +42,10 @@ export default function SystemSettingsTab() {
 
   const { data: settings, isLoading, refetch } = useQuery<SystemSetting[]>({
     queryKey: ["/api/admin/system-settings"],
+  });
+
+  const { data: emailProviderData, isLoading: emailProviderLoading } = useQuery<EmailProviderData>({
+    queryKey: ["/api/admin/email-provider"],
   });
 
   const updateSettingMutation = useMutation({
@@ -51,6 +63,29 @@ export default function SystemSettingsTab() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update the setting.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsUpdating(null);
+    },
+  });
+
+  const updateEmailProviderMutation = useMutation({
+    mutationFn: async (provider: 'gmail' | 'sendgrid') => {
+      return apiRequest("PUT", "/api/admin/email-provider", { provider });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-provider"] });
+      toast({
+        title: "Email Provider Updated",
+        description: "The email provider has been changed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update the email provider.",
         variant: "destructive",
       });
     },
@@ -242,6 +277,119 @@ export default function SystemSettingsTab() {
         </CardContent>
       </Card>
       )}
+
+      {/* Email Provider Settings */}
+      <Card className="bg-white/10 border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Mail className="h-5 w-5 text-cyan-400" />
+            Email Provider
+          </CardTitle>
+          <CardDescription className="text-white/70">
+            Choose which email service to use for sending transactional emails
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {emailProviderLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Gmail Option */}
+                <button
+                  onClick={() => {
+                    if (emailProviderData?.provider !== 'gmail') {
+                      setIsUpdating('email_provider');
+                      updateEmailProviderMutation.mutate('gmail');
+                    }
+                  }}
+                  disabled={isUpdating === 'email_provider' || !emailProviderData?.gmailConfigured}
+                  className={`relative p-6 rounded-lg border-2 transition-all ${
+                    emailProviderData?.provider === 'gmail'
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-white/20 bg-white/5 hover-elevate'
+                  } ${!emailProviderData?.gmailConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  data-testid="button-select-gmail"
+                >
+                  {emailProviderData?.provider === 'gmail' && (
+                    <div className="absolute top-3 right-3">
+                      <CheckCircle2 className="h-5 w-5 text-cyan-400" />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center gap-3">
+                    <img src={gmailLogo} alt="Gmail" className="h-12 w-12 object-contain" />
+                    <div className="text-center">
+                      <h4 className="text-white font-medium">Gmail</h4>
+                      <p className="text-white/60 text-sm mt-1">Via SMTP (App Password)</p>
+                    </div>
+                    {!emailProviderData?.gmailConfigured && (
+                      <Badge variant="outline" className="bg-amber-500/20 text-amber-300 border-amber-500/30">
+                        Not Configured
+                      </Badge>
+                    )}
+                    {emailProviderData?.gmailConfigured && emailProviderData?.provider === 'gmail' && (
+                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+
+                {/* SendGrid Option */}
+                <button
+                  onClick={() => {
+                    if (emailProviderData?.provider !== 'sendgrid') {
+                      setIsUpdating('email_provider');
+                      updateEmailProviderMutation.mutate('sendgrid');
+                    }
+                  }}
+                  disabled={isUpdating === 'email_provider'}
+                  className={`relative p-6 rounded-lg border-2 transition-all cursor-pointer ${
+                    emailProviderData?.provider === 'sendgrid'
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-white/20 bg-white/5 hover-elevate'
+                  }`}
+                  data-testid="button-select-sendgrid"
+                >
+                  {emailProviderData?.provider === 'sendgrid' && (
+                    <div className="absolute top-3 right-3">
+                      <CheckCircle2 className="h-5 w-5 text-cyan-400" />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center gap-3">
+                    <img src={sendgridLogo} alt="SendGrid" className="h-12 w-12 object-contain" />
+                    <div className="text-center">
+                      <h4 className="text-white font-medium">SendGrid</h4>
+                      <p className="text-white/60 text-sm mt-1">Via API (Replit Integration)</p>
+                    </div>
+                    {emailProviderData?.provider === 'sendgrid' && (
+                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Info about current provider */}
+              <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+                  <div>
+                    <h4 className="text-cyan-300 font-medium mb-1">Provider Information</h4>
+                    <ul className="text-white/70 text-sm space-y-1 list-disc list-inside">
+                      <li><strong className="text-white">Gmail</strong>: Uses SMTP with an App Password. Good for low volume. Requires GMAIL_USER and GMAIL_APP_PASSWORD secrets.</li>
+                      <li><strong className="text-white">SendGrid</strong>: Uses the SendGrid API via Replit's integration. Recommended for production with higher sending limits.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Environment Info - Only show in production */}
       {!isDevelopment && (
