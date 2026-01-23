@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import type { Invitation } from '@shared/schema';
 import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from './generateReceipt';
 
@@ -24,84 +24,98 @@ function formatAssessmentName(type: string): string {
   return names[type] || type;
 }
 
-let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
-let transporterVerified = false;
+// SendGrid configuration
+let sendGridInitialized = false;
+let fromEmail: string = '';
+
+async function getSendGridCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  }
+
+  const connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
+    throw new Error('SendGrid not connected - please configure the SendGrid integration');
+  }
+  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
+}
+
+async function initSendGrid(): Promise<boolean> {
+  if (sendGridInitialized) return true;
+  
+  try {
+    const { apiKey, email } = await getSendGridCredentials();
+    sgMail.setApiKey(apiKey);
+    fromEmail = email;
+    sendGridInitialized = true;
+    return true;
+  } catch (error: any) {
+    console.error('❌ SendGrid initialization failed:', error.message);
+    return false;
+  }
+}
 
 function getTransporter() {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.error('❌ Email credentials not configured. GMAIL_USER and GMAIL_APP_PASSWORD required.');
-    return null;
-  }
-  
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      requireTLS: true,
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-      pool: true, // use pooled connections for better performance
-      maxConnections: 5,
-      maxMessages: 100,
-      debug: process.env.NODE_ENV === 'development', // show SMTP traffic in dev
-      logger: true, // log to console
-    });
-
-    // Verify connection configuration
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error('❌ SMTP Connection Error:', error);
-        transporterVerified = false;
-      } else {
-        console.log('✅ SMTP Server ready to send emails');
-        transporterVerified = true;
-      }
-    });
-  }
-  
-  return transporter;
+  // For backward compatibility - returns a truthy value if SendGrid is initialized
+  return sendGridInitialized ? sgMail : null;
 }
 
 // Initialize email system on startup
-export function initializeEmailSystem() {
-  console.log('Initializing email system...');
-  getTransporter();
+export async function initializeEmailSystem() {
+  console.log('Initializing SendGrid email system...');
+  const success = await initSendGrid();
+  if (success) {
+    console.log('✅ SendGrid ready to send emails');
+  }
 }
 
 // Generic partner email function for simple notifications
 export async function sendPartnerEmail(options: { to: string; subject: string; html: string; text?: string }): Promise<{ success: boolean; messageId?: string }> {
-  const emailTransporter = getTransporter();
-  if (!emailTransporter) {
-    console.log('[Email] Transporter not configured - skipping email');
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.log('[SendGrid] Not configured - skipping email');
     return { success: false };
   }
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
     to: options.to,
+    from: { email: fromEmail, name: 'HumanMetrix' },
     subject: options.subject,
     html: options.html,
-    text: options.text || undefined,
+    text: options.text || options.html.replace(/<[^>]*>/g, ''),
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`[Email] Partner email sent to ${options.to} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Partner email sent to ${options.to} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`[Email] Failed to send partner email:`, error.message);
+    console.error(`[SendGrid] Failed to send partner email:`, error.message);
     return { success: false };
   }
 }
 
 export async function sendInvitationEmail(invitation: Invitation, inviterName: string) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Email not sent for invitation ${invitation.id} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Email not sent for invitation ${invitation.id} - not configured`);
     return;
   }
   
@@ -112,8 +126,8 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
   const baseUrl = getBaseUrl();
   const inviteUrl = `${baseUrl}/invite/${invitation.token}`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: invitation.candidateEmail,
     subject: `Assessment Invitation from ${inviterName}`,
     html: `
@@ -193,23 +207,23 @@ This invitation expires on ${new Date(invitation.expiresAt).toLocaleDateString('
     `.trim(),
   };
 
-  const info = await emailTransporter.sendMail(mailOptions);
-  console.log(`✅ Invitation email sent to ${invitation.candidateEmail} (ID: ${info.messageId})`);
+  const [response] = await sgMail.send(msg);
+  const messageId = response.headers['x-message-id'];
+  console.log(`[SendGrid] Invitation email sent to ${invitation.candidateEmail} (ID: ${messageId})`);
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, resetToken: string) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Password reset email not sent for ${email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Password reset email not sent for ${email} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: email,
     subject: 'Reset Your Password - HumanMetrix',
     html: `
@@ -275,23 +289,23 @@ If you didn't request a password reset, please ignore this email.
     `.trim(),
   };
 
-  const info = await emailTransporter.sendMail(mailOptions);
-  console.log(`✅ Password reset email sent to ${email} (ID: ${info.messageId})`);
+  const [response] = await sgMail.send(msg);
+  const messageId = response.headers['x-message-id'];
+  console.log(`[SendGrid] Password reset email sent to ${email} (ID: ${messageId})`);
 }
 
 export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string, note?: string) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Welcome email not sent for ${email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Welcome email not sent for ${email} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const loginUrl = `${baseUrl}/login`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: email,
     subject: 'Your Assessment Invitation - HumanMetrix',
     html: `
@@ -362,10 +376,11 @@ Log in at: ${loginUrl}
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Welcome email sent to ${email} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Welcome email sent to ${email} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send welcome email to ${email}:`, error.message);
+    console.error(`[SendGrid] Failed to send welcome email to ${email}:`, error.message);
     throw new Error(`Failed to send welcome email: ${error.message}`);
   }
 }
@@ -377,18 +392,17 @@ export async function sendContactFormEmail(
   message: string,
   intent: 'demo' | 'sales'
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Contact form email not sent - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Contact form email not sent - not configured`);
     return;
   }
 
   const intentLabel = intent === 'demo' ? 'Demo Request' : 'Sales Inquiry';
   const salesEmail = 'hello@humanmetrix.co.uk';
 
-  const mailOptions = {
-    from: `"HumanMetrix Contact Form" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Contact Form' },
     to: salesEmail,
     replyTo: email,
     subject: `${intentLabel} from ${name} - ${company}`,
@@ -484,8 +498,9 @@ Reply directly to this email to respond to ${name}
     `.trim(),
   };
 
-  const info = await emailTransporter.sendMail(mailOptions);
-  console.log(`✅ Contact form email sent to ${salesEmail} from ${email} (ID: ${info.messageId})`);
+  const [response] = await sgMail.send(msg);
+  const messageId = response.headers['x-message-id'];
+  console.log(`[SendGrid] Contact form email sent to ${salesEmail} from ${email} (ID: ${messageId})`);
 }
 
 // Format amount with currency symbol
@@ -531,10 +546,9 @@ export async function sendPaymentReceiptEmail(
   sessionId: string,
   currency: string = 'gbp'
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Payment receipt email not sent for ${email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Payment receipt email not sent for ${email} - not configured`);
     return;
   }
 
@@ -544,8 +558,8 @@ export async function sendPaymentReceiptEmail(
   const assessmentListText = formattedAssessments.join(', ');
   const amountFormatted = formatCurrencyAmount(totalAmount, currency);
 
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: email,
     subject: 'Payment Receipt - HumanMetrix',
     html: `
@@ -637,10 +651,11 @@ This is an automated receipt for your records.
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Payment receipt email sent to ${email} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Payment receipt email sent to ${email} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send payment receipt to ${email}:`, error.message);
+    console.error(`[SendGrid] Failed to send payment receipt to ${email}:`, error.message);
     // Don't throw error - payment already succeeded, email failure shouldn't break flow
   }
 }
@@ -674,10 +689,9 @@ export interface PdfReceiptEmailDetails {
 
 // Send payment receipt email with PDF attachment
 export async function sendPaymentReceiptWithPdf(details: PdfReceiptEmailDetails): Promise<{ success: boolean; receiptNumber?: string }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Payment receipt email not sent for ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Payment receipt email not sent for ${details.email} - not configured`);
     return { success: false };
   }
   
@@ -730,8 +744,8 @@ export async function sendPaymentReceiptWithPdf(details: PdfReceiptEmailDetails)
     </tr>
   `).join('');
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `Payment Receipt ${receiptNumber} - HumanMetrix`,
     html: `
@@ -823,11 +837,12 @@ If you have any questions, please contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Payment receipt with PDF sent to ${details.email} (Receipt: ${receiptNumber}, ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Payment receipt with PDF sent to ${details.email} (Receipt: ${receiptNumber}, ID: ${messageId})`);
     return { success: true, receiptNumber };
   } catch (error: any) {
-    console.error(`❌ Failed to send payment receipt with PDF to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send payment receipt with PDF to ${details.email}:`, error.message);
     return { success: false };
   }
 }
@@ -840,10 +855,9 @@ export async function sendPartnerQuotaWarning70(
   testsTotal: number,
   testsRemaining: number
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Quota warning email not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Quota warning email not sent to ${partnerEmail} - not configured`);
     return;
   }
   
@@ -851,8 +865,8 @@ export async function sendPartnerQuotaWarning70(
   const baseUrl = getBaseUrl();
   const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: partnerEmail,
     subject: `Test Quota Alert: 70% Used - ${companyName}`,
     html: `
@@ -934,10 +948,11 @@ Questions? Contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ 70% quota warning email sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] 70% quota warning email sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send 70% quota warning to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send 70% quota warning to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -949,10 +964,9 @@ export async function sendPartnerQuotaWarning90(
   testsTotal: number,
   testsRemaining: number
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Urgent quota warning email not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Urgent quota warning email not sent to ${partnerEmail} - not configured`);
     return;
   }
   
@@ -960,8 +974,8 @@ export async function sendPartnerQuotaWarning90(
   const baseUrl = getBaseUrl();
   const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: partnerEmail,
     subject: `URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
     html: `
@@ -1047,10 +1061,11 @@ Need help? Contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ 90% URGENT quota warning email sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] 90% URGENT quota warning email sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send 90% quota warning to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send 90% quota warning to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -1059,18 +1074,17 @@ export async function sendPartnerAccessSuspendedEmail(
   partnerEmail: string,
   companyName: string
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Access suspended email not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Access suspended email not sent to ${partnerEmail} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: partnerEmail,
     subject: `API Access Suspended - Quota Exhausted`,
     html: `
@@ -1145,10 +1159,11 @@ Need immediate assistance? Contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Access suspended email sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Access suspended email sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send access suspended email to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send access suspended email to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -1159,18 +1174,17 @@ export async function sendPartnerSecurityAlert(
   alertType: string,
   alertMessage: string
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Security alert email not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Security alert email not sent to ${partnerEmail} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const dashboardUrl = `${baseUrl}/developers?tab=security`;
   
-  const mailOptions = {
-    from: `"HumanMetrix Security" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Security' },
     to: partnerEmail,
     subject: `[Security Alert] ${alertType} - ${companyName}`,
     html: `
@@ -1246,10 +1260,11 @@ If you have any concerns, contact us immediately at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`Security alert email sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Security alert email sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`Failed to send security alert to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send security alert to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -1261,18 +1276,17 @@ export async function sendPartnerMonthlySummary(
   testsUsed: number,
   testsRemaining: number
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Monthly summary email not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Monthly summary email not sent to ${partnerEmail} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const dashboardUrl = `${baseUrl}/developers?tab=analytics`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: partnerEmail,
     subject: `Monthly Usage Summary - ${monthName}`,
     html: `
@@ -1354,10 +1368,11 @@ Questions? Contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`Monthly summary email sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Monthly summary email sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`Failed to send monthly summary to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send monthly summary to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -1369,18 +1384,17 @@ export async function sendPartnerAutoTopUpConfirmation(
   amountCharged: number,
   packageName: string
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Auto top-up confirmation not sent to ${partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Auto top-up confirmation not sent to ${partnerEmail} - not configured`);
     return;
   }
   
   const baseUrl = getBaseUrl();
   const dashboardUrl = `${baseUrl}/partner-dashboard`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: partnerEmail,
     subject: `Auto Top-Up Complete: ${testsAdded} Tests Added`,
     html: `
@@ -1464,10 +1478,11 @@ Visit ${dashboardUrl} to view your dashboard.
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Auto top-up confirmation sent to ${partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Auto top-up confirmation sent to ${partnerEmail} (ID: ${messageId})`);
   } catch (error: any) {
-    console.error(`❌ Failed to send auto top-up confirmation to ${partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send auto top-up confirmation to ${partnerEmail}:`, error.message);
   }
 }
 
@@ -1499,10 +1514,9 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 // Send invoice email to enterprise partner with PDF attachment
 export async function sendPartnerInvoiceEmail(details: InvoiceDetails & { billingAddress?: { line1?: string; line2?: string; city?: string; postcode?: string; country?: string } }) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Invoice email not sent to ${details.partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Invoice email not sent to ${details.partnerEmail} - not configured`);
     return;
   }
   
@@ -1551,8 +1565,8 @@ export async function sendPartnerInvoiceEmail(details: InvoiceDetails & { billin
     // Continue without attachment
   }
   
-  const mailOptions = {
-    from: `"HumanMetrix Finance" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Finance' },
     to: details.partnerEmail,
     subject: `Invoice ${details.invoiceNumber} - HumanMetrix Assessment Services`,
     html: `
@@ -1743,11 +1757,12 @@ Questions about this invoice? Contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Invoice email ${pdfBuffer ? 'with PDF' : '(no PDF)'} sent to ${details.partnerEmail} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Invoice email ${pdfBuffer ? 'with PDF' : '(no PDF)'} sent to ${details.partnerEmail} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send invoice to ${details.partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send invoice to ${details.partnerEmail}:`, error.message);
     throw new Error(`Failed to send invoice email: ${error.message}`);
   }
 }
@@ -1762,10 +1777,9 @@ export interface PartnerWelcomeDetails {
 }
 
 export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): Promise<{ success: boolean; messageId?: string }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Partner welcome email not sent for ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Partner welcome email not sent for ${details.email} - not configured`);
     return { success: false };
   }
   
@@ -1779,8 +1793,8 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
     invoice: 'Invoice (monthly invoicing with payment terms)'
   };
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `Welcome to HumanMetrix Partner Programme - Your Account Details`,
     html: `
@@ -1913,11 +1927,12 @@ If you have any questions, contact us at hello@humanmetrix.co.uk
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Partner welcome email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Partner welcome email sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send partner welcome email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send partner welcome email to ${details.email}:`, error.message);
     return { success: false };
   }
 }
@@ -1929,15 +1944,14 @@ export async function sendGeneralEnquiryEmail(details: {
   subject: string;
   message: string;
 }) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn('General enquiry email not sent - email not configured');
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn('[SendGrid] General enquiry email not sent - not configured');
     return { success: false };
   }
 
-  const mailOptions = {
-    from: `"HumanMetrix Website" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Website' },
     to: 'hello@humanmetrix.co.uk',
     replyTo: details.email,
     subject: `Website Enquiry: ${details.subject}`,
@@ -2002,11 +2016,12 @@ This message was sent via the HumanMetrix website contact form.
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ General enquiry email sent (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] General enquiry email sent (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send general enquiry email:`, error.message);
+    console.error(`[SendGrid] Failed to send general enquiry email:`, error.message);
     return { success: false };
   }
 }
@@ -2027,10 +2042,9 @@ interface PartnerBulkInvitationDetails {
 
 // Send bulk invitation email from partner to candidate
 export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitationDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Partner bulk invitation email not sent to ${details.candidateEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Partner bulk invitation email not sent to ${details.candidateEmail} - not configured`);
     return { success: false };
   }
   
@@ -2060,8 +2074,8 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
     ? `<img src="${details.partnerLogoUrl}" alt="${details.partnerCompanyName}" style="max-height: 50px; max-width: 200px;" />`
     : `<h1 style="margin: 0; font-size: 24px;">${details.partnerCompanyName}</h1>`;
   
-  const mailOptions = {
-    from: `"${details.partnerCompanyName} via HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: `${details.partnerCompanyName} via HumanMetrix` },
     to: details.candidateEmail,
     subject: `Assessment Invitation from ${details.partnerCompanyName}`,
     html: `
@@ -2166,11 +2180,12 @@ Powered by HumanMetrix - AI Assessment Platform
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Partner bulk invitation email sent to ${details.candidateEmail} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Partner bulk invitation email sent to ${details.candidateEmail} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send partner bulk invitation email to ${details.candidateEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send partner bulk invitation email to ${details.candidateEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2188,10 +2203,9 @@ interface B2BCongratulatoryEmailDetails {
 }
 
 export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B congratulatory email not sent to ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] B2B congratulatory email not sent to ${details.email} - not configured`);
     return { success: false };
   }
   
@@ -2212,8 +2226,8 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
     ? `${details.originalPaymentAmount} → ${details.paymentAmount} (25% off)`
     : details.paymentAmount;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `Congratulations! You've completed your ${assessmentName}`,
     html: `
@@ -2309,11 +2323,12 @@ Thank you for completing your assessment!
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B congratulatory email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] B2B congratulatory email sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send B2B congratulatory email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send B2B congratulatory email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2332,10 +2347,9 @@ interface B2BAllCompleteEmailDetails {
 }
 
 export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B all-complete email not sent to ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] B2B all-complete email not sent to ${details.email} - not configured`);
     return { success: false };
   }
   
@@ -2350,8 +2364,8 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
   const assessmentsHtml = assessmentsList.map(a => `<li style="margin: 5px 0;">${a}</li>`).join('');
   const assessmentsText = assessmentsList.join(', ');
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `🎉 All Assessments Complete - Unlock All Results with ${details.discountPercentage}% Bundle Discount!`,
     html: `
@@ -2465,11 +2479,12 @@ We'll send you an email when they're ready.
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B all-complete email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] B2B all-complete email sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send B2B all-complete email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send B2B all-complete email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2485,10 +2500,9 @@ interface B2BResultsEmailDetails {
 }
 
 export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B results email not sent to ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] B2B results email not sent to ${details.email} - not configured`);
     return { success: false };
   }
   
@@ -2498,15 +2512,16 @@ export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
     ? `https://${process.env.REPLIT_DEV_DOMAIN}`
     : 'https://humanmetrix.co.uk';
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `Your ${assessmentName} Results Are Ready`,
     attachments: [
       {
         filename: details.pdfFilename,
-        content: details.pdfBuffer,
-        contentType: 'application/pdf',
+        content: details.pdfBuffer.toString('base64'),
+        type: 'application/pdf',
+        disposition: 'attachment',
       },
     ],
     html: `
@@ -2589,11 +2604,12 @@ Questions about your results? Contact us at ${baseUrl}/contact
   };
 
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B results email with PDF sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] B2B results email with PDF sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send B2B results email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send B2B results email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2609,10 +2625,9 @@ export interface PartnerTeamInvitationDetails {
 }
 
 export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitationDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Partner team invitation email not sent to ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Partner team invitation email not sent to ${details.email} - not configured`);
     return { success: false, error: 'Email not configured' };
   }
   
@@ -2624,8 +2639,8 @@ export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitat
   const greeting = details.inviteeName ? `Hello ${details.inviteeName},` : 'Hello,';
   const roleDisplay = details.role === 'admin' ? 'Administrator' : details.role === 'member' ? 'Team Member' : 'Viewer';
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `You've been invited to join ${details.companyName} on HumanMetrix`,
     html: `
@@ -2725,11 +2740,12 @@ If you didn't expect this invitation, you can safely ignore this email.
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Partner team invitation email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Partner team invitation email sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send partner team invitation email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send partner team invitation email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2743,10 +2759,9 @@ interface PartnerTeamCredentialsDetails {
 }
 
 export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCredentialsDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Partner team credentials email not sent to ${details.email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Partner team credentials email not sent to ${details.email} - not configured`);
     return { success: false, error: 'Email not configured' };
   }
   
@@ -2758,8 +2773,8 @@ export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCreden
   const greeting = details.name ? `Hello ${details.name},` : 'Hello,';
   const roleDisplay = details.role === 'admin' ? 'Administrator' : details.role === 'member' ? 'Team Member' : 'Viewer';
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
     subject: `Your HumanMetrix Login Credentials - ${details.companyName}`,
     html: `
@@ -2870,11 +2885,12 @@ If you didn't request this account, please contact support immediately.
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Partner team credentials email sent to ${details.email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Partner team credentials email sent to ${details.email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send partner team credentials email to ${details.email}:`, error.message);
+    console.error(`[SendGrid] Failed to send partner team credentials email to ${details.email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2886,10 +2902,9 @@ export async function sendB2BResultsUnlockedEmail(
   partnerName: string,
   resultsUrl: string
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`B2B results unlocked email not sent to ${email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] B2B results unlocked email not sent to ${email} - not configured`);
     return { success: false };
   }
   
@@ -2898,8 +2913,8 @@ export async function sendB2BResultsUnlockedEmail(
     ? `https://${process.env.REPLIT_DEV_DOMAIN}`
     : 'https://humanmetrix.co.uk';
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: email,
     subject: `Your ${assessmentName} Results Are Now Unlocked!`,
     html: `
@@ -2979,11 +2994,12 @@ Assessment completed as part of your evaluation with ${partnerName}.
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ B2B results unlocked email sent to ${email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] B2B results unlocked email sent to ${email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send B2B results unlocked email to ${email}:`, error.message);
+    console.error(`[SendGrid] Failed to send B2B results unlocked email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -2994,10 +3010,9 @@ export async function sendEmailVerificationCode(
   code: string,
   partnerName?: string
 ) {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Verification code email not sent to ${email} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Verification code email not sent to ${email} - not configured`);
     return { success: false };
   }
   
@@ -3007,8 +3022,8 @@ export async function sendEmailVerificationCode(
   
   const partnerText = partnerName ? ` for ${partnerName}` : '';
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: email,
     subject: `Your verification code: ${code}`,
     html: `
@@ -3069,11 +3084,12 @@ If you didn't request this code, you can safely ignore this email.
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Verification code email sent to ${email} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Verification code email sent to ${email} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`❌ Failed to send verification code email to ${email}:`, error.message);
+    console.error(`[SendGrid] Failed to send verification code email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -3094,10 +3110,9 @@ export interface BillingFailureDetails {
 }
 
 export async function sendBillingFailureNotification(details: BillingFailureDetails): Promise<{ success: boolean }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Billing failure email not sent to ${details.partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Billing failure email not sent to ${details.partnerEmail} - not configured`);
     return { success: false };
   }
   
@@ -3118,8 +3133,8 @@ export async function sendBillingFailureNotification(details: BillingFailureDeta
     'processing_error': 'Payment processing error',
   }[details.failureReason] || details.failureReason;
   
-  const mailOptions = {
-    from: `"HumanMetrix Billing" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Billing' },
     to: details.partnerEmail,
     subject: isLastAttempt 
       ? `URGENT: API Access Suspended - Payment Required`
@@ -3189,11 +3204,12 @@ export async function sendBillingFailureNotification(details: BillingFailureDeta
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Billing failure notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Billing failure notification sent to ${details.partnerEmail} (ID: ${messageId})`);
     return { success: true };
   } catch (error: any) {
-    console.error(`❌ Failed to send billing failure notification to ${details.partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send billing failure notification to ${details.partnerEmail}:`, error.message);
     return { success: false };
   }
 }
@@ -3210,10 +3226,9 @@ export interface CardExpiryWarningDetails {
 }
 
 export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): Promise<{ success: boolean }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Card expiry warning not sent to ${details.partnerEmail} - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Card expiry warning not sent to ${details.partnerEmail} - not configured`);
     return { success: false };
   }
   
@@ -3225,8 +3240,8 @@ export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): 
   
   const urgencyColor = details.daysUntilExpiry <= 1 ? '#dc2626' : details.daysUntilExpiry <= 7 ? '#f59e0b' : '#3b82f6';
   
-  const mailOptions = {
-    from: `"HumanMetrix Billing" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Billing' },
     to: details.partnerEmail,
     subject: details.daysUntilExpiry <= 1 
       ? `URGENT: Card Expires Tomorrow - Update Required`
@@ -3289,11 +3304,12 @@ export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): 
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Card expiry warning sent to ${details.partnerEmail} (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Card expiry warning sent to ${details.partnerEmail} (ID: ${messageId})`);
     return { success: true };
   } catch (error: any) {
-    console.error(`❌ Failed to send card expiry warning to ${details.partnerEmail}:`, error.message);
+    console.error(`[SendGrid] Failed to send card expiry warning to ${details.partnerEmail}:`, error.message);
     return { success: false };
   }
 }
@@ -3340,12 +3356,11 @@ export async function notifySuperAdmins(details: {
   }
   
   // Send email to all super admins
-  const emailTransporter = getTransporter();
-  if (emailTransporter) {
+  await initSendGrid();
+  if (sendGridInitialized) {
     try {
       const { storage } = await import('./storage');
       const superAdmins = await storage.getSuperAdminUsers();
-      const fromEmail = process.env.GMAIL_USER;
       
       // Critical error recipients - always receive notifications regardless of database
       const CRITICAL_ERROR_RECIPIENTS = [
@@ -3353,28 +3368,26 @@ export async function notifySuperAdmins(details: {
         'oskar@humanmetrix.co.uk',
       ];
       
-      if (fromEmail) {
-        // Combine database super admins with hardcoded critical recipients
-        const dbAdminEmails = superAdmins.map(u => u.email).filter(Boolean);
-        const adminEmails = [...new Set([...CRITICAL_ERROR_RECIPIENTS, ...dbAdminEmails])];
-        
-        for (const adminEmail of adminEmails) {
-          try {
-            await emailTransporter.sendMail({
-              from: `"HumanMetrix System" <${fromEmail}>`,
-              to: adminEmail,
-              subject: details.emailSubject,
-              html: details.emailHtml,
-            });
-            console.log(`[Admin Notification] Email sent to ${adminEmail}: ${details.emailSubject}`);
-          } catch (sendError: any) {
-            console.error(`[Admin Notification] Failed to send email to ${adminEmail}:`, sendError.message);
-          }
+      // Combine database super admins with hardcoded critical recipients
+      const dbAdminEmails = superAdmins.map(u => u.email).filter(Boolean);
+      const adminEmails = [...new Set([...CRITICAL_ERROR_RECIPIENTS, ...dbAdminEmails])];
+      
+      for (const adminEmail of adminEmails) {
+        try {
+          await sgMail.send({
+            from: { email: fromEmail, name: 'HumanMetrix System' },
+            to: adminEmail,
+            subject: details.emailSubject,
+            html: details.emailHtml,
+          });
+          console.log(`[SendGrid] Admin notification email sent to ${adminEmail}: ${details.emailSubject}`);
+        } catch (sendError: any) {
+          console.error(`[SendGrid] Failed to send admin notification to ${adminEmail}:`, sendError.message);
         }
-        emailSent = true;
       }
+      emailSent = true;
     } catch (error: any) {
-      console.error(`[Admin Notification] Failed to send emails:`, error.message);
+      console.error(`[SendGrid] Failed to send admin notification emails:`, error.message);
     }
   }
   
@@ -3382,21 +3395,20 @@ export async function notifySuperAdmins(details: {
 }
 
 export async function sendBillingFailureAdminNotification(details: BillingFailureAdminDetails): Promise<{ success: boolean }> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn(`Admin billing failure email not sent - email not configured`);
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.warn(`[SendGrid] Admin billing failure email not sent - not configured`);
     return { success: false };
   }
   
-  const adminEmail = process.env.GMAIL_USER; // Send to system admin
+  const adminEmail = fromEmail; // Send to system admin
   const currencySymbol = CURRENCY_SYMBOLS[details.currency.toLowerCase()] || details.currency.toUpperCase() + ' ';
   const formatCurrency = (amount: number) => `${currencySymbol}${(amount / 100).toFixed(2)}`;
   
   const isSuspended = details.failedAttempts >= 3;
   
-  const mailOptions = {
-    from: `"HumanMetrix System" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix System' },
     to: adminEmail,
     subject: isSuspended 
       ? `[ALERT] Partner API Suspended: ${details.companyName} - Billing Failure`
@@ -3466,8 +3478,9 @@ export async function sendBillingFailureAdminNotification(details: BillingFailur
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Admin billing failure notification sent (ID: ${info.messageId})`);
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Admin billing failure notification sent (ID: ${messageId})`);
     
     // Also create in-app notification
     try {
@@ -3771,9 +3784,9 @@ export interface InvoiceSuspensionDetails {
 }
 
 export async function notifyInvoiceSuspension(details: InvoiceSuspensionDetails): Promise<{ success: boolean; messageId?: string }> {
-  const emailTransporter = getTransporter();
-  if (!emailTransporter) {
-    console.log('[Email] Transporter not configured - skipping invoice suspension notification');
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.log('[SendGrid] Not configured - skipping invoice suspension notification');
     return { success: false };
   }
   
@@ -3830,8 +3843,8 @@ Days Overdue: ${details.daysOverdue}
                 <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
               </div>`;
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.partnerEmail,
     subject,
     html: `
@@ -3928,11 +3941,12 @@ HumanMetrix Ltd | AI Assessment Platform
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`[Email] Invoice suspension notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Invoice suspension notification sent to ${details.partnerEmail} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`[Email] Failed to send invoice suspension notification:`, error.message);
+    console.error(`[SendGrid] Failed to send invoice suspension notification:`, error.message);
     return { success: false };
   }
 }
@@ -3946,14 +3960,14 @@ export interface InvoiceRestorationDetails {
 }
 
 export async function notifyInvoiceRestoration(details: InvoiceRestorationDetails): Promise<{ success: boolean; messageId?: string }> {
-  const emailTransporter = getTransporter();
-  if (!emailTransporter) {
-    console.log('[Email] Transporter not configured - skipping invoice restoration notification');
+  await initSendGrid();
+  if (!sendGridInitialized) {
+    console.log('[SendGrid] Not configured - skipping invoice restoration notification');
     return { success: false };
   }
   
-  const mailOptions = {
-    from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.partnerEmail,
     subject: 'API Access Restored - HumanMetrix',
     html: `
@@ -4030,11 +4044,12 @@ HumanMetrix Ltd | AI Assessment Platform
   };
   
   try {
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log(`[Email] Invoice restoration notification sent to ${details.partnerEmail} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const [response] = await sgMail.send(msg);
+    const messageId = response.headers['x-message-id'];
+    console.log(`[SendGrid] Invoice restoration notification sent to ${details.partnerEmail} (ID: ${messageId})`);
+    return { success: true, messageId };
   } catch (error: any) {
-    console.error(`[Email] Failed to send invoice restoration notification:`, error.message);
+    console.error(`[SendGrid] Failed to send invoice restoration notification:`, error.message);
     return { success: false };
   }
 }
