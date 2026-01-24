@@ -2,7 +2,8 @@ import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Target, Users, Award, TrendingUp, ArrowRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Target, Users, Award, TrendingUp, ArrowRight, Rocket, Brain, Sparkles, Shield } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO } from "@/lib/seo";
 
@@ -69,53 +70,71 @@ export default function About() {
           </div>
         </section>
 
-        {/* Mission Section */}
-        <section className="pt-4 md:pt-6 pb-8 md:pb-12">
-          <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
-            <div className="space-y-6 md:space-y-12">
-              <div>
-                <h2 className="text-sm md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">Our Mission</h2>
-                <p className="text-xs md:text-base lg:text-lg text-muted-foreground leading-relaxed">
-                  In an era where AI is transforming every industry, traditional assessments no longer capture 
-                  the full picture of a candidate's potential. HumanMetrix was created to bridge this gap by 
-                  evaluating both timeless behavioral competencies and emerging AI literacy skills.
-                </p>
-              </div>
+        {/* Mission Section - Side by Side Cards */}
+        <section className="pt-4 md:pt-6 pb-8 md:pb-16">
+          <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+              {/* Our Mission Card */}
+              <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Rocket className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    </div>
+                    <h2 className="text-base md:text-2xl lg:text-3xl font-semibold">Our Mission</h2>
+                  </div>
+                  <p className="text-xs md:text-base lg:text-lg text-muted-foreground leading-relaxed">
+                    In an era where AI is transforming every industry, traditional assessments no longer capture 
+                    the full picture of a candidate's potential. HumanMetrix was created to bridge this gap by 
+                    evaluating both timeless behavioral competencies and emerging AI literacy skills.
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div>
-                <h2 className="text-sm md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">Why HumanMetrix?</h2>
-                <p className="text-xs md:text-base lg:text-lg text-muted-foreground leading-relaxed mb-3 md:mb-6">
-                  The workplace is evolving rapidly. Success in 2025 and beyond requires more than technical 
-                  knowledge—it demands adaptability, ethical judgment, and the ability to leverage AI tools 
-                  effectively. Our comprehensive assessment suite measures:
-                </p>
-                <ul className="space-y-2 md:space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2 md:gap-3">
-                    <span className="h-4 w-4 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-[10px] md:text-sm">✓</span>
-                    </span>
-                    <span className="text-xs md:text-sm"><strong>Behavioral Competencies:</strong> Core skills like agency, curiosity, resilience, empathy, growth mindset, and interpersonal agility</span>
-                  </li>
-                  <li className="flex items-start gap-2 md:gap-3">
-                    <span className="h-4 w-4 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-[10px] md:text-sm">✓</span>
-                    </span>
-                    <span className="text-xs md:text-sm"><strong>AI Readiness:</strong> Ability to work with AI systems, from basic prompting to complex reasoning tasks</span>
-                  </li>
-                  <li className="flex items-start gap-2 md:gap-3">
-                    <span className="h-4 w-4 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-[10px] md:text-sm">✓</span>
-                    </span>
-                    <span className="text-xs md:text-sm"><strong>Technical AI Skills:</strong> Prompt architecture, iterative refinement, and debugging AI outputs</span>
-                  </li>
-                  <li className="flex items-start gap-2 md:gap-3">
-                    <span className="h-4 w-4 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-[10px] md:text-sm">✓</span>
-                    </span>
-                    <span className="text-xs md:text-sm"><strong>Ethical AI Understanding:</strong> Knowledge of bias, fairness, transparency, and responsible deployment</span>
-                  </li>
-                </ul>
-              </div>
+              {/* Why HumanMetrix Card */}
+              <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    </div>
+                    <h2 className="text-base md:text-2xl lg:text-3xl font-semibold">Why HumanMetrix?</h2>
+                  </div>
+                  <p className="text-xs md:text-base text-muted-foreground leading-relaxed mb-4">
+                    Success in 2025 and beyond requires adaptability, ethical judgment, and the ability to leverage AI tools effectively.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs md:text-sm font-medium">Behavioral Competencies</span>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">Agency, curiosity, resilience, empathy, and growth mindset</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs md:text-sm font-medium">AI Readiness</span>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">From basic prompting to complex reasoning tasks</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Target className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs md:text-sm font-medium">Technical AI Skills</span>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">Prompt architecture and iterative refinement</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs md:text-sm font-medium">Ethical AI Understanding</span>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">Bias, fairness, and responsible deployment</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
