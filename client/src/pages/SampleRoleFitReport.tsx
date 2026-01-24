@@ -194,6 +194,9 @@ export default function SampleRoleFitReport() {
                 <Trophy className="h-6 w-6" />
                 Hiring Recommendation
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                For <span className="font-semibold">{DEMO_ROLE.level} {DEMO_ROLE.name}</span> position in {DEMO_ROLE.department}
+              </p>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid gap-6 lg:grid-cols-2">
