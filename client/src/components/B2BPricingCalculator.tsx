@@ -51,7 +51,7 @@ function calculateTotalPriceInPence(volume: number, multiplier: number): number 
 
 export default function B2BPricingCalculator() {
   const [volume, setVolume] = useState(100);
-  const { countryCode, pricingTier, formatLocalPrice } = useCurrency();
+  const { countryCode, formatLocalPrice } = useCurrency();
 
   const multiplier = useMemo(() => getB2BMultiplier(countryCode), [countryCode]);
   const currentTier = useMemo(() => getCurrentTier(volume), [volume]);
@@ -73,8 +73,6 @@ export default function B2BPricingCalculator() {
     [pricePerTestInPence, formatLocalPrice]
   );
 
-  const tierLabel = pricingTier === "tier3" ? "Emerging Market" : pricingTier === "tier2" ? "Growth Market" : "Premium Market";
-
   return (
     <Card className="w-full max-w-2xl mx-auto" data-testid="b2b-pricing-calculator">
       <CardHeader className="pb-4">
@@ -83,9 +81,6 @@ export default function B2BPricingCalculator() {
             <Calculator className="h-5 w-5 text-primary" />
             Enterprise Pricing Calculator
           </CardTitle>
-          <Badge variant="secondary" className="text-xs">
-            {tierLabel} Pricing
-          </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           Estimate your monthly assessment costs based on expected volume

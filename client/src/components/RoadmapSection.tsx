@@ -28,8 +28,8 @@ const roadmapItems: RoadmapItem[] = [
   {
     date: "February 2026",
     status: "upcoming",
-    title: "Perfect Role Finder",
-    description: "AI-powered career matching that analyzes your complete skill profile to recommend ideal roles and growth paths",
+    title: "Cohort Benchmarking",
+    description: "Compare assessment results against industry benchmarks and peer cohorts to understand relative strengths and areas for development",
     icon: Compass,
   },
   {
