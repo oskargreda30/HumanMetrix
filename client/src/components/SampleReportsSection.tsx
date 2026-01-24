@@ -18,7 +18,7 @@ const reports = [
     title: "Individual Report",
     description: "Comprehensive analysis of all 4 assessments with detailed skill breakdowns, performance levels, and personalized recommendations",
     link: "/sample-report/individual",
-    downloadName: "",
+    downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
     testId: "individual",
     comingSoon: false,
     category: "individual" as const,
