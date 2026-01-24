@@ -638,9 +638,9 @@ export default function SampleRoleFitReport() {
                 Get detailed role fit analysis for data-driven hiring decisions with HumanMetrix assessments.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/for-employers">
-                  <Button data-testid="button-learn-more">
-                    Learn More
+                <Link href="/#sample-reports">
+                  <Button data-testid="button-back-to-samples">
+                    Back to Sample Reports
                   </Button>
                 </Link>
                 <Link href="/assessments">

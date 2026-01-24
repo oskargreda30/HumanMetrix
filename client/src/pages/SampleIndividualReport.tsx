@@ -634,8 +634,13 @@ export default function SampleIndividualReport() {
               This is a sample report showing what your complete assessment results will look like.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/#sample-reports">
+                <Button size="lg" data-testid="button-back-to-samples">
+                  Back to Sample Reports
+                </Button>
+              </Link>
               <Link href="/assessments">
-                <Button size="lg" data-testid="button-start-assessments">
+                <Button size="lg" variant="outline" data-testid="button-start-assessments">
                   Start Your Assessment
                 </Button>
               </Link>
