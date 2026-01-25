@@ -10610,6 +10610,86 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Generate AI profile insights for individual candidate
+  app.post("/api/partner/me/candidates/:candidateId/profile-insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId } = req.params;
+      const { assessmentData } = req.body;
+      
+      if (!candidateId || !assessmentData) {
+        return res.status(400).json({ message: "Candidate ID and assessment data are required" });
+      }
+
+      // Verify the candidate belongs to this partner
+      const invitations = await storage.getInvitationsByPartner(partner.id);
+      const candidateInvitation = invitations.find(inv => inv.userId === candidateId);
+      if (!candidateInvitation) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Fetch candidate from database for verified name
+      const candidate = await storage.getUser(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
+        candidate.email?.split('@')[0] || 'Candidate';
+
+      // Build prompt for OpenAI
+      const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
+
+CANDIDATE: ${candidateName}
+
+ASSESSMENT DATA:
+${assessmentData.fit ? `FIT (Behavioral Traits) - Average: ${assessmentData.fit.average}%
+Individual Scores: ${JSON.stringify(assessmentData.fit.scores, null, 2)}` : 'FIT Assessment: Not completed'}
+
+${assessmentData.aiReadiness ? `AI Readiness (Technical) - Average: ${assessmentData.aiReadiness.average}%
+Individual Scores: ${JSON.stringify(assessmentData.aiReadiness.scores, null, 2)}` : 'AI Readiness Assessment: Not completed'}
+
+${assessmentData.promptArchitecture ? `Prompt Architecture: ${assessmentData.promptArchitecture.totalScore}%` : 'Prompt Architecture: Not completed'}
+
+${assessmentData.aiq ? `AIQ (AI Ethics): ${assessmentData.aiq.totalScore}%` : 'AIQ Assessment: Not completed'}
+
+HIGHEST SCORING TRAITS: ${assessmentData.strengths?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+LOWEST SCORING TRAITS: ${assessmentData.lowestScoring?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
+
+IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements. Do NOT label traits as strengths or weaknesses - just describe what the scores indicate about the candidate's profile.
+
+Write 2-3 paragraphs (max 200 words total) covering:
+1. Overall profile characteristics and distinctive traits
+2. Types of roles/environments where this profile typically thrives
+3. Key considerations for role matching (without making value judgments about high/low scores)
+
+Keep the tone professional and objective. Focus on describing the candidate's profile, not evaluating it.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+
+      const insights = completion.choices[0].message.content || '';
+      
+      res.json({ insights });
+    } catch (error) {
+      console.error("Error generating profile insights:", error);
+      res.status(500).json({ message: "Failed to generate profile insights" });
+    }
+  });
+
   // Partner: Compare candidates (for analysis tab)
   app.get("/api/partner/me/compare", isAuthenticated, async (req: any, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, User, BarChart3, Target, Award, Brain, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, FileText, Star, Building2, MessageSquare, Mail, Trophy, AlertCircle } from "lucide-react";
+import { Loader2, Users, User, BarChart3, Target, Award, Brain, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, FileText, Star, Building2, MessageSquare, Mail, Trophy, AlertCircle, Lightbulb, RefreshCw, Sparkles, Download, BookOpen } from "lucide-react";
+import html2canvas from "html2canvas";
 import {
   RadarChart,
   PolarGrid,
@@ -324,17 +325,18 @@ interface AIRecommendations {
 export default function PartnerAnalysisTab() {
   const [subTab, setSubTab] = useState("individual");
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<string>('');
   const [aiRecommendations, setAIRecommendations] = useState<AIRecommendations | null>(null);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [profileInsights, setProfileInsights] = useState<string | null>(null);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
+  
+  const fitChartRef = useRef<HTMLDivElement>(null);
+  const aiChartRef = useRef<HTMLDivElement>(null);
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<CandidateData[]>({
     queryKey: ['/api/partner/me/candidates'],
-  });
-
-  const { data: roles } = useQuery<any[]>({
-    queryKey: ['/api/partner/me/roles'],
   });
 
   const { data: candidateReport, isLoading: isLoadingReport } = useQuery<ComparisonData>({
@@ -347,28 +349,6 @@ export default function PartnerAnalysisTab() {
       return response.json();
     },
     enabled: !!selectedCandidate,
-  });
-
-  const { data: alignment, isLoading: isLoadingAlignment, refetch: refetchAlignment } = useQuery<RoleAlignment>({
-    queryKey: selectedCandidate && selectedRole
-      ? [`/api/partner/me/role-alignment?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
-      : undefined as any,
-    enabled: false,
-  });
-
-  // Cohort benchmarking query
-  interface CohortBenchmarkData {
-    overallPosition: number;
-    totalCandidates: number;
-    assessments: AssessmentBenchmark[];
-    targetCandidateId: string;
-  }
-  
-  const { data: cohortBenchmark, isLoading: isLoadingCohort, refetch: refetchCohort } = useQuery<CohortBenchmarkData>({
-    queryKey: selectedCandidate && selectedRole
-      ? [`/api/partner/me/cohort-benchmark?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
-      : undefined as any,
-    enabled: !!selectedCandidate && !!selectedRole && !!alignment,
   });
 
   const getCandidateName = (candidate: CandidateData | undefined) => {
@@ -463,6 +443,144 @@ export default function PartnerAnalysisTab() {
     }
   };
 
+  // Get all skills from FIT and AI Readiness for trait analysis
+  const getAllSkills = () => {
+    const skills: Array<{ name: string; score: number; category: string }> = [];
+    
+    if (fitData) {
+      fitRadarData.forEach(s => {
+        skills.push({ name: s.fullName, score: s.score, category: 'FIT' });
+      });
+    }
+    
+    if (aiData) {
+      aiRadarData.forEach(s => {
+        skills.push({ name: s.fullName, score: s.score, category: 'AI Readiness' });
+      });
+    }
+    
+    return skills.sort((a, b) => b.score - a.score);
+  };
+
+  const getStrengthsAndWeaknesses = () => {
+    const skills = getAllSkills();
+    return {
+      strengths: skills.slice(0, 3),
+      weaknesses: skills.slice(-3).reverse(),
+    };
+  };
+
+  // Generate AI profile insights
+  const handleGenerateInsights = async () => {
+    if (!selectedCandidate || !candidateReport || isGeneratingInsights) return;
+    
+    setIsGeneratingInsights(true);
+    try {
+      const assessmentData = {
+        candidateName: getCandidateName(selectedCandidateData),
+        fit: fitData ? {
+          average: fitOverallScore,
+          scores: fitData.scores,
+        } : null,
+        aiReadiness: aiData ? {
+          average: aiOverallScore,
+          scores: aiData.scores,
+        } : null,
+        promptArchitecture: promptArchData ? { totalScore: promptArchScore } : null,
+        aiq: aiqData ? { totalScore: aiqScore } : null,
+        strengths: getStrengthsAndWeaknesses().strengths,
+        lowestScoring: getStrengthsAndWeaknesses().weaknesses,
+      };
+      
+      const response = await apiRequest('POST', `/api/partner/me/candidates/${encodeURIComponent(selectedCandidate)}/profile-insights`, {
+        assessmentData
+      });
+      const data = await response.json();
+      setProfileInsights(data.insights);
+    } catch (error) {
+      console.error('Failed to generate profile insights:', error);
+      toast({
+        title: "Error",
+        description: "Could not generate profile insights",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
+
+  // Export PDF
+  const handleExportPDF = async () => {
+    if (!selectedCandidateData || !candidateReport) return;
+    
+    setIsExporting(true);
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we prepare your report...",
+      });
+      
+      // Capture radar charts as images
+      let fitChartImage: string | null = null;
+      let aiChartImage: string | null = null;
+      
+      if (fitChartRef.current) {
+        try {
+          const canvas = await html2canvas(fitChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          fitChartImage = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture FIT chart:', e);
+        }
+      }
+      
+      if (aiChartRef.current) {
+        try {
+          const canvas = await html2canvas(aiChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          aiChartImage = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture AI chart:', e);
+        }
+      }
+      
+      // Dynamic import for PDF generation
+      const { generateIndividualReportPDF } = await import('@/lib/pdfExport');
+      await generateIndividualReportPDF({
+        candidate: selectedCandidateData,
+        candidateName: getCandidateName(selectedCandidateData),
+        fitData: fitData ? { scores: fitData.scores } : null,
+        aiData: aiData ? { scores: aiData.scores } : null,
+        promptData: promptArchData ? { totalScore: promptArchData.totalScore } : null,
+        aiqData: aiqData ? { totalScore: aiqData.totalScore } : null,
+        profileInsights,
+        fitChartImage,
+        aiChartImage,
+      });
+      
+      toast({
+        title: "PDF Generated",
+        description: "Your individual report has been downloaded.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to generate PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoadingCandidates) {
     return (
       <div className="flex justify-center py-8">
@@ -517,6 +635,7 @@ export default function PartnerAnalysisTab() {
               <Select value={selectedCandidate} onValueChange={(value) => {
                 setSelectedCandidate(value);
                 setAIRecommendations(null);
+                setProfileInsights(null);
               }}>
                 <SelectTrigger data-testid="select-individual-candidate">
                   <SelectValue placeholder="Select a candidate..." />
@@ -667,6 +786,60 @@ export default function PartnerAnalysisTab() {
                 </CardContent>
               </Card>
 
+              {/* Trait Profile Summary */}
+              {(fitData || aiData) && (
+                <Card className="mb-6" data-testid="card-strengths-weaknesses">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Award className="h-4 w-4 text-primary" />
+                      Trait Profile Summary
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Highest and lowest scoring traits across FIT and AI Readiness assessments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <h4 className="flex items-center gap-2 mb-3 font-semibold text-sm text-blue-600 dark:text-blue-400">
+                          <TrendingUp className="h-4 w-4" />
+                          Highest Scoring Traits
+                        </h4>
+                        <div className="space-y-2">
+                          {getStrengthsAndWeaknesses().strengths.map((skill, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20" data-testid={`item-strength-${i}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{skill.name}</span>
+                                <Badge variant="outline" className="text-[10px]">{skill.category}</Badge>
+                              </div>
+                              <span className="font-bold text-blue-600 dark:text-blue-400">{skill.score}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="flex items-center gap-2 mb-3 font-semibold text-sm text-slate-600 dark:text-slate-400">
+                          <TrendingDown className="h-4 w-4" />
+                          Lowest Scoring Traits
+                        </h4>
+                        <div className="space-y-2">
+                          {getStrengthsAndWeaknesses().weaknesses.map((skill, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/20" data-testid={`item-weakness-${i}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{skill.name}</span>
+                                <Badge variant="outline" className="text-[10px]">{skill.category}</Badge>
+                              </div>
+                              <span className="font-bold text-slate-600 dark:text-slate-400">{skill.score}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* FIT Assessment Section */}
               {fitData && (
                 <section className="mb-8" data-testid="section-fit-assessment">
@@ -683,7 +856,7 @@ export default function PartnerAnalysisTab() {
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-fit-radar">Skills Radar</h3>
-                      <div data-testid="chart-fit-radar">
+                      <div ref={fitChartRef} className="bg-white dark:bg-gray-900 rounded-lg" data-testid="chart-fit-radar">
                         <ResponsiveContainer width="100%" height={220}>
                           <RadarChart data={fitRadarData}>
                             <PolarGrid stroke="hsl(var(--border))" />
@@ -789,7 +962,7 @@ export default function PartnerAnalysisTab() {
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-ai-radar">Skills Radar</h3>
-                      <div data-testid="chart-ai-radar">
+                      <div ref={aiChartRef} className="bg-white dark:bg-gray-900 rounded-lg" data-testid="chart-ai-radar">
                         <ResponsiveContainer width="100%" height={220}>
                           <RadarChart data={aiRadarData}>
                             <PolarGrid stroke="hsl(var(--border))" />
@@ -1178,45 +1351,139 @@ export default function PartnerAnalysisTab() {
                 </CardContent>
               </Card>
 
-              {/* Recommended Next Steps */}
+              {/* AI-Powered Profile Insights */}
+              <Card className="mb-6" data-testid="card-profile-insights">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base text-foreground">
+                        <Lightbulb className="h-4 w-4 text-amber-500" />
+                        AI-Powered Profile Insights
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        AI-generated analysis of {getCandidateName(selectedCandidateData)}'s trait profile
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateInsights}
+                      disabled={isGeneratingInsights || !candidateReport}
+                      data-testid="button-generate-insights"
+                    >
+                      {isGeneratingInsights ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Generating...
+                        </>
+                      ) : profileInsights ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Regenerate
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Generate Insights
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {profileInsights ? (
+                    <div className="prose prose-sm max-w-none dark:prose-invert" data-testid="text-profile-insights">
+                      {profileInsights.split('\n').map((paragraph, i) => (
+                        paragraph.trim() && <p key={i} className="text-xs text-muted-foreground mb-2">{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-xs">Click "Generate Insights" to create an AI-powered analysis of this candidate's trait profile.</p>
+                      <p className="text-[10px] mt-1">The analysis considers all completed assessments and provides hiring-relevant observations.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recommended Next Steps - Dynamic */}
               <Card className="mb-6 border-primary/20" data-testid="section-next-steps">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-foreground text-base">
-                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <Target className="h-4 w-4 text-primary" />
                     Recommended Next Steps
                   </CardTitle>
+                  <CardDescription className="text-xs">
+                    Based on assessment results for {getCandidateName(selectedCandidateData)}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <div className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">1</div>
-                      <div>
-                        <p className="font-medium text-foreground text-xs">Review Assessment Insights</p>
-                        <p className="text-[11px] text-muted-foreground">Identify strengths and development areas for interview discussion.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">2</div>
-                      <div>
-                        <p className="font-medium text-foreground text-xs">Compare with Role Requirements</p>
-                        <p className="text-[11px] text-muted-foreground">Use the Role Fit Analysis tab to match candidate profile against specific roles.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">3</div>
-                      <div>
-                        <p className="font-medium text-foreground text-xs">Plan Interview Questions</p>
-                        <p className="text-[11px] text-muted-foreground">Focus on areas where scores indicate development opportunities.</p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const allScoresArr = [
+                        ...(fitOverallScore !== null ? [fitOverallScore] : []),
+                        ...(aiOverallScore !== null ? [aiOverallScore] : []),
+                        ...(promptArchScore !== null ? [promptArchScore] : []),
+                        ...(aiqScore !== null ? [aiqScore] : [])
+                      ];
+                      const avgScoreVal = allScoresArr.length > 0 
+                        ? Math.round(allScoresArr.reduce((a, b) => a + b, 0) / allScoresArr.length) 
+                        : 0;
+                      
+                      const steps: string[] = [];
+                      
+                      if (avgScoreVal >= 80) {
+                        steps.push('Schedule a final interview to validate exceptional assessment results with practical scenarios.');
+                        steps.push('Consider for accelerated onboarding or leadership development programs.');
+                        steps.push('Evaluate for cross-functional project opportunities that leverage diverse strengths.');
+                      } else if (avgScoreVal >= 60) {
+                        steps.push('Conduct a structured interview focusing on identified development areas.');
+                        steps.push('Discuss tailored training and mentorship opportunities during onboarding.');
+                        steps.push('Consider pairing with experienced team members for knowledge transfer.');
+                      } else {
+                        steps.push('Assess alignment with entry-level or developmental role requirements.');
+                        steps.push('Explore structured upskilling programs to address skill gaps.');
+                        steps.push('Consider role modifications that play to existing strengths while building capabilities.');
+                      }
+                      
+                      // Cap to 3 steps for consistent UX
+                      return steps.slice(0, 3).map((step, i) => (
+                        <div key={i} className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">{i + 1}</div>
+                          <p className="text-xs text-muted-foreground">{step}</p>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </CardContent>
               </Card>
 
               {/* Skills Legend */}
-              <section className="mb-8">
+              <section className="mb-6">
                 <SkillsLegend compact data-testid="section-skills-legend" />
               </section>
+
+              {/* Export Options */}
+              <div className="flex justify-end gap-2 mb-6">
+                <Button 
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  data-testid="button-export-individual-report"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export as PDF
+                    </>
+                  )}
+                </Button>
+              </div>
             </>
           )}
 
