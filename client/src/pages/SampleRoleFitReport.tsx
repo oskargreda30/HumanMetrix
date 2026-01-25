@@ -129,7 +129,7 @@ export default function SampleRoleFitReport() {
                 <FileText className="h-5 w-5 text-primary" />
                 How to Read This Report
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground" data-testid="text-guide-intro">
                 A step-by-step guide to understanding this role fit analysis for the {DEMO_ROLE.name} role
               </p>
             </CardHeader>

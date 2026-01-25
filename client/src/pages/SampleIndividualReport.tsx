@@ -227,7 +227,7 @@ export default function SampleIndividualReport() {
                 <FileText className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
                 A step-by-step guide to understanding your assessment results and how to use them for career growth
               </p>
               <div className="grid gap-4 md:grid-cols-2">

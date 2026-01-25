@@ -824,43 +824,43 @@ export default function MyResults() {
                     <h4 className="font-semibold" data-testid="heading-service-career-fit">Career Fit Analysis</h4>
                   </div>
                   <p className="text-sm text-muted-foreground" data-testid="text-service-career-fit">
-                    Discover roles that align with your unique profile and maximize your potential
+                    Discover which roles and industries best match your skills, traits, and working style
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview-prep">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-interview">Interview Preparation</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-interview-prep">Interview Preparation Guide</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
-                    Personalized interview guide based on your assessment results and target roles
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview-prep">
+                    Customized questions you're likely to face based on your profile, with strategies to highlight your strengths
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-compatibility">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-work-style">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-compatibility">Work Style Compatibility</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-work-style">Work Style Compatibility</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-compatibility">
-                    Understand how your working preferences align with different team cultures
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-work-style">
+                    Understand how you collaborate and what team environments help you thrive
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-acceleration">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-roadmap">
                   <div className="flex items-center gap-2 mb-2">
                     <Rocket className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-acceleration">Career Acceleration</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-career-roadmap">Career Acceleration Roadmap</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-acceleration">
-                    Strategic roadmap to accelerate your professional growth based on your strengths
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-career-roadmap">
+                    Personalized development plan with skills to prioritize for faster career progression
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths-growth">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-strengths">Strengths & Growth Areas</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-strengths-growth">Strengths & Growth Areas</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-strengths">
-                    Detailed analysis of your key strengths and targeted development recommendations
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-strengths-growth">
+                    Comprehensive self-awareness report highlighting your competitive advantages and areas for development
                   </p>
                 </div>
               </div>
