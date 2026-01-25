@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download } from "lucide-react";
+import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
@@ -566,6 +566,59 @@ export default function Results() {
             </div>
           </div>
 
+          {/* How to Read This Report */}
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-guide">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">How to Read This Report</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                A step-by-step guide to understanding your assessment results and how to use them for career growth
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <span className="font-medium text-sm">Score Interpretation</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong capability,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Growth opportunity</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Four Assessment Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Using Your Results</p>
+                    <p className="text-xs text-muted-foreground">
+                      Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Overall Score - only show for assessments with total scores */}
           {hasTotalScore && (
             <Card className="p-8 mb-8">
@@ -773,6 +826,72 @@ export default function Results() {
                 </div>
               </div>
             )}
+          </Card>
+
+          {/* Additional Services Section */}
+          <Card className="border-2 border-primary/20 mb-8" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold">Additional Services on Request</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                HumanMetrix offers additional analysis services to support your career journey:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Career Fit Analysis</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Discover which roles and industries best match your skills, traits, and working style
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview-prep">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Interview Preparation Guide</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Customized questions you're likely to face based on your profile, with strategies to highlight your strengths
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-work-style">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Work Style Compatibility</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Understand how you collaborate and what team environments help you thrive
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-roadmap">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Rocket className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Career Acceleration Roadmap</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Personalized development plan with skills to prioritize for faster career progression
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths-growth">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strengths & Growth Areas</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive self-awareness report highlighting your competitive advantages and areas for development
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary hover:underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> for more information about these services.
+                </p>
+              </div>
+            </div>
           </Card>
 
         </div>
