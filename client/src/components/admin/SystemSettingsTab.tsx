@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail } from "lucide-react";
+import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail, Database, Briefcase } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
