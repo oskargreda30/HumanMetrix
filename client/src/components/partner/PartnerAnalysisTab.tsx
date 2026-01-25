@@ -384,6 +384,12 @@ export default function PartnerAnalysisTab() {
     return 'destructive';
   };
 
+  const getPromptArchInterpretation = (score: number): string => {
+    if (score >= 70) return 'Excellent';
+    if (score >= 50) return 'Competent';
+    return 'Developing';
+  };
+
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
 
   const fitData = candidateReport?.fitAssessments?.[0];
@@ -1025,6 +1031,12 @@ export default function PartnerAnalysisTab() {
                           {promptArchScore}%
                         </div>
                         <div className="text-sm text-muted-foreground">Total Score</div>
+                        <Badge 
+                          variant={promptArchScore >= 70 ? "default" : promptArchScore >= 50 ? "secondary" : "outline"}
+                          className="mt-2"
+                        >
+                          {getPromptArchInterpretation(promptArchScore || 0)}
+                        </Badge>
                       </div>
                       {promptArchData.percentile && (
                         <div className="text-center p-4 rounded-lg bg-muted">
@@ -1058,10 +1070,12 @@ export default function PartnerAnalysisTab() {
                                   style={{ width: `${level.totalScore}%` }}
                                 />
                               </div>
-                              <div className="flex gap-4 text-xs text-muted-foreground">
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                 <span>Clarity: {level.scores?.clarity || 0}%</span>
                                 <span>Structure: {level.scores?.structure || 0}%</span>
+                                <span>Context: {level.scores?.contextRelevance || 0}%</span>
                                 <span>Creativity: {level.scores?.creativity || 0}%</span>
+                                <span>Iterative: {level.scores?.iterativeImprovement || 0}%</span>
                               </div>
                             </div>
                           ))}
@@ -1073,27 +1087,39 @@ export default function PartnerAnalysisTab() {
               )}
 
               {/* AIQ Assessment */}
-              {aiqData && (
-                <Card data-testid="card-aiq-details">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-amber-500" />
-                      AIQ Assessment
-                    </CardTitle>
-                    <CardDescription>
-                      Algorithmic Integrity Quotient - AI ethics and responsibility
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center p-6 rounded-lg bg-muted inline-block">
-                      <div className={`text-4xl font-bold ${getScoreColor(aiqScore || 0)}`}>
-                        {aiqScore}
+              {aiqData && (() => {
+                const aiqBandInfo = getAIQBandInterpretation(aiqScore || 0);
+                return (
+                  <Card data-testid="card-aiq-details">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-amber-500" />
+                        AIQ Assessment
+                      </CardTitle>
+                      <CardDescription>
+                        Algorithmic Integrity Quotient - AI ethics and responsibility
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center p-6 rounded-lg bg-muted inline-block">
+                        <div className={`text-4xl font-bold ${getScoreColor(aiqScore || 0)}`}>
+                          {aiqScore}%
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
+                        <Badge 
+                          variant={(aiqScore || 0) >= 80 ? "default" : (aiqScore || 0) >= 60 ? "secondary" : "outline"}
+                          className="mt-2"
+                        >
+                          {aiqBandInfo.title}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground mt-2 max-w-xs">
+                          {aiqBandInfo.description}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Final Candidate Recommendations */}
               {(fitData || aiData || promptArchData || aiqData) && (

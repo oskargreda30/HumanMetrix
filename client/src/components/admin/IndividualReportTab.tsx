@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
 import CompareTab from "@/components/admin/CompareTab";
@@ -125,6 +126,12 @@ export default function IndividualReportTab() {
     if (score >= 80) return 'default';
     if (score >= 60) return 'secondary';
     return 'destructive';
+  };
+
+  const getPromptArchInterpretation = (score: number): string => {
+    if (score >= 70) return 'Excellent';
+    if (score >= 50) return 'Competent';
+    return 'Developing';
   };
 
   const getCompletedAssessments = () => {
@@ -711,6 +718,12 @@ export default function IndividualReportTab() {
                       {promptData.totalScore}%
                     </div>
                     <div className="text-sm text-muted-foreground">Total Score</div>
+                    <Badge 
+                      variant={promptData.totalScore >= 70 ? "default" : promptData.totalScore >= 50 ? "secondary" : "outline"}
+                      className="mt-2"
+                    >
+                      {getPromptArchInterpretation(promptData.totalScore)}
+                    </Badge>
                   </div>
                   {promptData.percentile && (
                     <div className="text-center p-4 rounded-lg bg-muted">
@@ -744,10 +757,12 @@ export default function IndividualReportTab() {
                               style={{ width: `${level.totalScore}%` }}
                             />
                           </div>
-                          <div className="flex gap-4 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                             <span>Clarity: {level.scores?.clarity || 0}%</span>
                             <span>Structure: {level.scores?.structure || 0}%</span>
+                            <span>Context: {level.scores?.contextRelevance || 0}%</span>
                             <span>Creativity: {level.scores?.creativity || 0}%</span>
+                            <span>Iterative: {level.scores?.iterativeImprovement || 0}%</span>
                           </div>
                         </div>
                       ))}
@@ -758,27 +773,39 @@ export default function IndividualReportTab() {
             </Card>
           )}
 
-          {aiqData && (
-            <Card data-testid="card-aiq-details">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-amber-500" />
-                  AIQ Assessment
-                </CardTitle>
-                <CardDescription>
-                  Algorithmic Integrity Quotient - AI ethics and responsibility
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center p-6 rounded-lg bg-muted inline-block">
-                  <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
-                    {aiqData.totalScore}
+          {aiqData && (() => {
+            const aiqBandInfo = getAIQBandInterpretation(aiqData.totalScore);
+            return (
+              <Card data-testid="card-aiq-details">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-amber-500" />
+                    AIQ Assessment
+                  </CardTitle>
+                  <CardDescription>
+                    Algorithmic Integrity Quotient - AI ethics and responsibility
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center p-6 rounded-lg bg-muted inline-block">
+                    <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
+                      {aiqData.totalScore}%
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
+                    <Badge 
+                      variant={aiqData.totalScore >= 80 ? "default" : aiqData.totalScore >= 60 ? "secondary" : "outline"}
+                      className="mt-2"
+                    >
+                      {aiqBandInfo.title}
+                    </Badge>
+                    <div className="text-xs text-muted-foreground mt-2 max-w-xs">
+                      {aiqBandInfo.description}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Final Candidate Recommendations */}
           {(fitData || aiData || promptData || aiqData) && (
