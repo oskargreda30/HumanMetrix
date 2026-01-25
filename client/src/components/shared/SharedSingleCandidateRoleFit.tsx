@@ -98,11 +98,11 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [selectedRole, setSelectedRole] = useState("");
   const { toast } = useToast();
 
-  const { data: candidates } = useQuery<any[]>({
+  const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
     queryKey: [config.candidatesEndpoint],
   });
 
-  const { data: roles } = useQuery<any[]>({
+  const { data: roles, isLoading: isLoadingRoles, error: rolesError } = useQuery<any[]>({
     queryKey: [config.rolesEndpoint],
   });
 
@@ -279,16 +279,24 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Job Role</label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <Select value={selectedRole} onValueChange={setSelectedRole} disabled={isLoadingRoles}>
                 <SelectTrigger data-testid="select-role">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : rolesError ? "Error loading roles" : "Select a role"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles?.map((role: any) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
+                  {isLoadingRoles ? (
+                    <div className="p-2 text-sm text-muted-foreground">Loading roles...</div>
+                  ) : rolesError ? (
+                    <div className="p-2 text-sm text-red-500">Failed to load roles</div>
+                  ) : roles && roles.length > 0 ? (
+                    roles.map((role: any) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-muted-foreground">No roles available</div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
