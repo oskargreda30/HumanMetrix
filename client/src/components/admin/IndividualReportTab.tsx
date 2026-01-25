@@ -2,10 +2,11 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket, BarChart3, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RadarChart,
   PolarGrid,
@@ -19,6 +20,7 @@ import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, 
 import SkillsLegend from "@/components/SkillsLegend";
 import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
+import CompareTab from "@/components/admin/CompareTab";
 
 const CHART_COLOR = "#3b82f6";
 
@@ -60,6 +62,7 @@ interface CandidateData {
 }
 
 export default function IndividualReportTab() {
+  const [subTab, setSubTab] = useState("individual");
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -271,31 +274,44 @@ export default function IndividualReportTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Individual Candidate Report
-          </CardTitle>
-          <CardDescription>
-            Select a candidate to view their detailed assessment report
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select value={selectedCandidate} onValueChange={setSelectedCandidate}>
-            <SelectTrigger className="w-full max-w-md" data-testid="select-individual-candidate">
-              <SelectValue placeholder="Select a candidate..." />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates?.map((candidate) => (
-                <SelectItem key={candidate.user.id} value={candidate.user.id}>
-                  {getCandidateName(candidate)} ({candidate.user.email})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <Tabs value={subTab} onValueChange={setSubTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="individual" data-testid="tab-individual">
+            <User className="h-4 w-4 mr-2" />
+            Individual Report
+          </TabsTrigger>
+          <TabsTrigger value="compare" data-testid="tab-compare">
+            <Users className="h-4 w-4 mr-2" />
+            Compare Candidates
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="individual" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Individual Candidate Report
+              </CardTitle>
+              <CardDescription>
+                Select a candidate to view their detailed assessment report
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={selectedCandidate} onValueChange={setSelectedCandidate}>
+                <SelectTrigger className="w-full max-w-md" data-testid="select-individual-candidate">
+                  <SelectValue placeholder="Select a candidate..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {candidates?.map((candidate) => (
+                    <SelectItem key={candidate.user.id} value={candidate.user.id}>
+                      {getCandidateName(candidate)} ({candidate.user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
 
       {isLoading && (
         <Card>
@@ -1068,16 +1084,82 @@ export default function IndividualReportTab() {
         </>
       )}
 
-      {!selectedCandidate && !isLoading && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground">
-              Select a candidate above to view their individual report
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          {!selectedCandidate && !isLoading && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">
+                  Select a candidate above to view their individual report
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Enterprise Services Section */}
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Advanced Analysis Features
+              </CardTitle>
+              <CardDescription>
+                Additional tools available for comprehensive candidate evaluation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-interview">Suggested Interview Questions</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
+                    AI-generated questions to dig deeper into assessment results and explore trait gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
+                    Compare candidate's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
+                    Compare multiple candidates against a specific role with ranked recommendations
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm" data-testid="text-contact-email">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Compare Candidates Tab */}
+        <TabsContent value="compare" className="space-y-6">
+          <CompareTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

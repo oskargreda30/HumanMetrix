@@ -23,8 +23,6 @@ import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, 
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
-import { CriticalSkillsAnalysis, CriticalSkillData } from "@/components/shared/CriticalSkillsAnalysis";
-import { CohortBenchmarking, AssessmentBenchmark } from "@/components/shared/CohortBenchmarking";
 import PartnerCompareTab from "@/components/partner/PartnerCompareTab";
 
 const CHART_COLORS = [
