@@ -695,6 +695,14 @@ export default function PartnerAnalysisTab() {
 
           {selectedCandidate && candidateReport && (
             <>
+              {/* Individual Candidate Report Section Heading */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  Individual Candidate Report
+                </h2>
+              </div>
+
               {/* Candidate Info Summary Box - First */}
               <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
                 <CardContent className="pt-6">
@@ -720,6 +728,26 @@ export default function PartnerAnalysisTab() {
                       })()}
                     </div>
                     <div className="md:col-span-2">
+                      <div className="flex justify-end mb-2">
+                        <Button 
+                          size="sm"
+                          onClick={handleExportPDF}
+                          disabled={isExporting}
+                          data-testid="button-export-pdf-top"
+                        >
+                          {isExporting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Exporting...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4 mr-2" />
+                              Export as PDF
+                            </>
+                          )}
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-4 gap-2">
                         <div className="text-center p-2 rounded-lg bg-background/50">
                           <div className="text-xs text-muted-foreground mb-1">FIT</div>
