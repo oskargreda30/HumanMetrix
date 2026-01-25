@@ -220,7 +220,7 @@ export default function SampleComparisonReport() {
           </div>
 
           {/* How to Use This Comparison - Matching Dashboard Style */}
-          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-comparison-guide">
+          <Card className="mb-8" data-testid="section-comparison-guide">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg" data-testid="heading-comparison-guide">
                 <FileText className="h-5 w-5 text-primary" />
