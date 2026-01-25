@@ -160,9 +160,6 @@ export default function AdminDashboard() {
               <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
               </TabsTrigger>
-              <TabsTrigger value="role-fit" data-testid="tab-role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Role Fit
-              </TabsTrigger>
               <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Invitations
               </TabsTrigger>
@@ -222,7 +219,7 @@ export default function AdminDashboard() {
               <CandidatesTab />
             </TabsContent>
 
-            {/* Analysis tab - consolidates Individual Report + Compare Candidates */}
+            {/* Analysis tab - consolidates Individual Report + Compare Candidates + Role Fit */}
             <TabsContent value="analysis" className="space-y-4">
               <Tabs value={analysisSubTab} onValueChange={setAnalysisSubTab}>
                 <TabsList className="bg-white/5 border border-white/10">
@@ -232,6 +229,9 @@ export default function AdminDashboard() {
                   <TabsTrigger value="compare" data-testid="subtab-compare" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                     Compare Candidates
                   </TabsTrigger>
+                  <TabsTrigger value="role-fit" data-testid="subtab-role-fit" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                    Role Fit
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="individual" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <IndividualReportTab />
@@ -239,12 +239,10 @@ export default function AdminDashboard() {
                 <TabsContent value="compare" className="mt-4 data-[state=inactive]:hidden" forceMount>
                   <CompareTab />
                 </TabsContent>
+                <TabsContent value="role-fit" className="mt-4 data-[state=inactive]:hidden" forceMount>
+                  <RoleFitTab />
+                </TabsContent>
               </Tabs>
-            </TabsContent>
-
-            {/* Role Fit Tab - top-level tab matching Partner Dashboard structure */}
-            <TabsContent value="role-fit" className="space-y-6" data-testid="panel-role-fit">
-              <RoleFitTab />
             </TabsContent>
 
             <TabsContent value="invitations" className="space-y-4">
