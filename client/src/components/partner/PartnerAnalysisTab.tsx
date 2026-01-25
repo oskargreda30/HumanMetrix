@@ -22,6 +22,7 @@ import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessme
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
+import { CriticalSkillsAnalysis, CriticalSkillData } from "@/components/shared/CriticalSkillsAnalysis";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -1928,35 +1929,26 @@ export default function PartnerAnalysisTab() {
                 </Card>
               )}
 
-              {/* Suggested Interview Questions */}
-              <Card data-testid="section-interview-questions">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Suggested Interview Questions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    These questions are tailored to probe areas where additional validation would strengthen the hiring decision.
-                  </p>
-                  <div className="space-y-4">
-                    {generateInterviewQuestions(
-                      alignment.gaps, 
-                      alignment.fitSkillAlignments ? Object.fromEntries(alignment.fitSkillAlignments.map(s => [s.skillName, s.candidateScore || 0])) : null,
-                      alignment.aiReadinessSkillAlignments ? Object.fromEntries(alignment.aiReadinessSkillAlignments.map(s => [s.skillName, s.candidateScore || 0])) : null
-                    ).map((item, index) => (
-                      <div key={index} className="p-4 bg-muted/30 rounded-lg border-l-4 border-primary">
-                        <p className="font-medium mb-2">"{item.question}"</p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <Badge variant="outline">{item.targetSkill}</Badge>
-                          <span className="text-muted-foreground">{item.purpose}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Critical Skills Analysis */}
+              <CriticalSkillsAnalysis 
+                skills={[
+                  ...(alignment.fitSkillAlignments || []).map(s => ({
+                    skillName: s.skillName,
+                    candidateScore: s.candidateScore,
+                    requiredScore: s.requiredScore,
+                    gap: s.gap,
+                    criticality: s.criticality || 'important',
+                  })),
+                  ...(alignment.aiReadinessSkillAlignments || []).map(s => ({
+                    skillName: s.skillName,
+                    candidateScore: s.candidateScore,
+                    requiredScore: s.requiredScore,
+                    gap: s.gap,
+                    criticality: s.criticality || 'important',
+                  })),
+                ]}
+                candidateName={getCandidateName(selectedCandidateData)}
+              />
 
               {/* Alternative Role Fit */}
               <Card data-testid="section-role-flexibility">

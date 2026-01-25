@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2 } from "lucide-react";
 import SkillsLegend from "@/components/SkillsLegend";
+import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -522,30 +523,19 @@ export default function SampleRoleFitReport() {
             </CardContent>
           </Card>
 
-          <Card className="mb-6" data-testid="section-interview-questions">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Suggested Interview Questions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                These questions are tailored to probe areas where additional validation would strengthen the hiring decision.
-              </p>
-              <div className="space-y-4">
-                {INTERVIEW_QUESTIONS.map((item, index) => (
-                  <div key={index} className="p-4 bg-muted/30 rounded-lg border-l-4 border-primary">
-                    <p className="font-medium mb-2">"{item.question}"</p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <Badge variant="outline">{item.targetSkill}</Badge>
-                      <span className="text-muted-foreground">{item.purpose}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Critical Skills Analysis - using shared component */}
+          <div className="mb-6">
+            <CriticalSkillsAnalysis 
+              skills={[...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS].map(s => ({
+                skillName: s.skillName,
+                candidateScore: s.candidateScore,
+                requiredScore: s.requiredScore,
+                gap: s.gap,
+                criticality: s.criticality,
+              }))}
+              candidateName={DEMO_CANDIDATE.name}
+            />
+          </div>
 
           <Card className="mb-6" data-testid="section-role-flexibility">
             <CardHeader>
