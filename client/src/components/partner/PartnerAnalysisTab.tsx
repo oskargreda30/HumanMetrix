@@ -565,18 +565,15 @@ export default function PartnerAnalysisTab() {
             <>
               {/* FIT Assessment Section */}
               {fitData && (
-                <section className="mb-8" data-testid="section-fit-assessment">
+                <section className="mb-12" data-testid="section-fit-assessment">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Award className="h-5 w-5 text-primary" />
+                      <FileText className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold" data-testid="heading-fit-assessment">FIT Assessment</h2>
                       <p className="text-muted-foreground text-sm" data-testid="text-fit-subtitle">Behavioral competencies for workplace success</p>
                     </div>
-                    <Badge className={`ml-auto ${fitOverallScore !== null && fitOverallScore >= 75 ? 'bg-green-500' : fitOverallScore !== null && fitOverallScore >= 50 ? 'bg-amber-500' : 'bg-red-500'} text-white`}>
-                      {fitOverallScore}% Overall
-                    </Badge>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -614,7 +611,7 @@ export default function PartnerAnalysisTab() {
                           <div key={item.fullName} className="space-y-2" data-testid={`fit-skill-${item.fullName.toLowerCase().replace(/\s+/g, '-')}`}>
                             <div className="flex items-center justify-between text-sm">
                               <span className="font-medium" data-testid={`text-fit-skill-name`}>{item.fullName}</span>
-                              <Badge variant={item.score >= 75 ? "default" : item.score >= 50 ? "secondary" : "destructive"} data-testid={`badge-fit-score`}>
+                              <Badge variant={item.score >= 80 ? "default" : item.score >= 60 ? "secondary" : "outline"} data-testid={`badge-fit-score`}>
                                 {item.score}%
                               </Badge>
                             </div>
@@ -632,42 +629,41 @@ export default function PartnerAnalysisTab() {
                         <p className="text-foreground leading-relaxed">{fitAnalysis.overall}</p>
                       </div>
                       
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {fitAnalysis.strengths.length > 0 && (
-                          <div data-testid="container-fit-strengths">
-                            <div className="flex items-center gap-2 mb-3">
-                              <TrendingUp className="h-4 w-4 text-green-500" />
-                              <h4 className="font-semibold" data-testid="heading-fit-strengths">Key Strengths</h4>
-                            </div>
-                            <div className="space-y-2">
-                              {fitAnalysis.strengths.map((strength, index) => (
-                                <div key={index} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500" data-testid={`fit-strength-${index}`}>
-                                  <p className="text-sm text-foreground leading-relaxed"
-                                     dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                  />
-                                </div>
-                              ))}
-                            </div>
+                      {fitAnalysis.strengths.length > 0 && (
+                        <div className="mb-4" data-testid="container-fit-strengths">
+                          <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp className="h-4 w-4 text-primary" />
+                            <h4 className="font-semibold" data-testid="heading-fit-strengths">Key Strengths</h4>
                           </div>
-                        )}
-                        {fitAnalysis.improvements.length > 0 && (
-                          <div data-testid="container-fit-improvements">
-                            <div className="flex items-center gap-2 mb-3">
-                              <AlertTriangle className="h-4 w-4 text-amber-500" />
-                              <h4 className="font-semibold" data-testid="heading-fit-improvements">Development Areas</h4>
-                            </div>
-                            <div className="space-y-2">
-                              {fitAnalysis.improvements.map((improvement, index) => (
-                                <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`fit-improvement-${index}`}>
-                                  <p className="text-sm text-foreground leading-relaxed"
-                                     dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                  />
-                                </div>
-                              ))}
-                            </div>
+                          <div className="space-y-2">
+                            {fitAnalysis.strengths.map((strength, index) => (
+                              <div key={index} className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary" data-testid={`fit-strength-${index}`}>
+                                <p className="text-sm text-foreground leading-relaxed"
+                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                                />
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+
+                      {fitAnalysis.improvements.length > 0 && (
+                        <div data-testid="container-fit-improvements">
+                          <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <h4 className="font-semibold" data-testid="heading-fit-improvements">Areas for Development</h4>
+                          </div>
+                          <div className="space-y-2">
+                            {fitAnalysis.improvements.map((improvement, index) => (
+                              <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`fit-improvement-${index}`}>
+                                <p className="text-sm text-foreground leading-relaxed"
+                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </Card>
                   )}
                 </section>
@@ -675,18 +671,15 @@ export default function PartnerAnalysisTab() {
 
               {/* AI Readiness Assessment Section */}
               {aiData && (
-                <section className="mb-8" data-testid="section-ai-assessment">
+                <section className="mb-12" data-testid="section-ai-assessment">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Brain className="h-5 w-5 text-blue-500" />
+                    <div className="h-10 w-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-cyan-500" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold" data-testid="heading-ai-assessment">AI Readiness Assessment</h2>
-                      <p className="text-muted-foreground text-sm" data-testid="text-ai-subtitle">Technical capabilities for AI-augmented work</p>
+                      <p className="text-muted-foreground text-sm" data-testid="text-ai-subtitle">Capabilities for AI-augmented work</p>
                     </div>
-                    <Badge className={`ml-auto ${aiOverallScore !== null && aiOverallScore >= 75 ? 'bg-green-500' : aiOverallScore !== null && aiOverallScore >= 50 ? 'bg-amber-500' : 'bg-red-500'} text-white`}>
-                      {aiOverallScore}% Overall
-                    </Badge>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -708,8 +701,8 @@ export default function PartnerAnalysisTab() {
                             <Radar
                               name="Score"
                               dataKey="score"
-                              stroke="hsl(var(--chart-2))"
-                              fill="hsl(var(--chart-2))"
+                              stroke="#06b6d4"
+                              fill="#06b6d4"
                               fillOpacity={0.5}
                             />
                           </RadarChart>
@@ -719,12 +712,12 @@ export default function PartnerAnalysisTab() {
 
                     <Card className="p-6">
                       <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-breakdown">Skills Breakdown</h3>
-                      <div className="space-y-4" data-testid="container-ai-skills">
+                      <div className="space-y-3" data-testid="container-ai-skills">
                         {aiRadarData.map((item) => (
-                          <div key={item.fullName} className="space-y-2" data-testid={`ai-skill-${item.fullName.toLowerCase().replace(/\s+/g, '-')}`}>
+                          <div key={item.fullName} className="space-y-1" data-testid={`ai-skill-${item.fullName.toLowerCase().replace(/\s+/g, '-')}`}>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium">{item.fullName}</span>
-                              <Badge variant={item.score >= 75 ? "default" : item.score >= 50 ? "secondary" : "destructive"}>
+                              <span className="font-medium text-xs">{item.fullName}</span>
+                              <Badge variant={item.score >= 80 ? "default" : item.score >= 60 ? "secondary" : "outline"}>
                                 {item.score}%
                               </Badge>
                             </div>
@@ -742,42 +735,41 @@ export default function PartnerAnalysisTab() {
                         <p className="text-foreground leading-relaxed">{aiAnalysis.overall}</p>
                       </div>
                       
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {aiAnalysis.strengths.length > 0 && (
-                          <div data-testid="container-ai-strengths">
-                            <div className="flex items-center gap-2 mb-3">
-                              <TrendingUp className="h-4 w-4 text-blue-500" />
-                              <h4 className="font-semibold">Key Strengths</h4>
-                            </div>
-                            <div className="space-y-2">
-                              {aiAnalysis.strengths.map((strength, index) => (
-                                <div key={index} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
-                                  <p className="text-sm text-foreground leading-relaxed"
-                                     dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                  />
-                                </div>
-                              ))}
-                            </div>
+                      {aiAnalysis.strengths.length > 0 && (
+                        <div className="mb-4" data-testid="container-ai-strengths">
+                          <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp className="h-4 w-4 text-cyan-500" />
+                            <h4 className="font-semibold" data-testid="heading-ai-strengths">Key Strengths</h4>
                           </div>
-                        )}
-                        {aiAnalysis.improvements.length > 0 && (
-                          <div data-testid="container-ai-improvements">
-                            <div className="flex items-center gap-2 mb-3">
-                              <AlertTriangle className="h-4 w-4 text-amber-500" />
-                              <h4 className="font-semibold">Development Areas</h4>
-                            </div>
-                            <div className="space-y-2">
-                              {aiAnalysis.improvements.map((improvement, index) => (
-                                <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
-                                  <p className="text-sm text-foreground leading-relaxed"
-                                     dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                  />
-                                </div>
-                              ))}
-                            </div>
+                          <div className="grid md:grid-cols-2 gap-2">
+                            {aiAnalysis.strengths.map((strength, index) => (
+                              <div key={index} className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border-l-4 border-cyan-500">
+                                <p className="text-sm text-foreground leading-relaxed"
+                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                                />
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+
+                      {aiAnalysis.improvements.length > 0 && (
+                        <div data-testid="container-ai-improvements">
+                          <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <h4 className="font-semibold" data-testid="heading-ai-improvements">Areas for Development</h4>
+                          </div>
+                          <div className="space-y-2">
+                            {aiAnalysis.improvements.map((improvement, index) => (
+                              <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
+                                <p className="text-sm text-foreground leading-relaxed"
+                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </Card>
                   )}
                 </section>

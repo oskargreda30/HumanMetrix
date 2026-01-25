@@ -739,7 +739,11 @@ export default function SampleIndividualReport() {
             <p className="text-muted-foreground mb-4" data-testid="text-sample-report-description">
               This is a sample report showing what your complete assessment results will look like.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+              <Button size="lg" variant="secondary" disabled className="opacity-50 cursor-not-allowed" data-testid="button-role-fit-disabled">
+                <Target className="mr-2 h-4 w-4" />
+                AI Role Fit Analysis
+              </Button>
               <Link href="/#sample-reports">
                 <Button size="lg" data-testid="button-back-to-samples">
                   Back to Sample Reports
@@ -751,6 +755,9 @@ export default function SampleIndividualReport() {
                 </Button>
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground mt-3" data-testid="text-role-fit-note">
+              AI Role Fit Analysis powered by OpenAI is available with real candidate data in the Partner Dashboard
+            </p>
           </div>
         </div>
       </main>

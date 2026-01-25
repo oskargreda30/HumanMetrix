@@ -651,7 +651,11 @@ export default function SampleRoleFitReport() {
               <p className="text-muted-foreground mb-4">
                 Get detailed role fit analysis for data-driven hiring decisions with HumanMetrix assessments.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
+                <Button variant="secondary" disabled className="opacity-50 cursor-not-allowed" data-testid="button-role-fit-disabled">
+                  <Target className="mr-2 h-4 w-4" />
+                  AI Role Fit Analysis
+                </Button>
                 <Link href="/#sample-reports">
                   <Button data-testid="button-back-to-samples">
                     Back to Sample Reports
@@ -663,6 +667,9 @@ export default function SampleRoleFitReport() {
                   </Button>
                 </Link>
               </div>
+              <p className="text-xs text-muted-foreground mt-3" data-testid="text-role-fit-note">
+                AI Role Fit Analysis powered by OpenAI is available with real candidate data in the Partner Dashboard
+              </p>
             </CardContent>
           </Card>
         </div>
