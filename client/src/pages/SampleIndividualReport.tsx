@@ -4,9 +4,8 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, AlertTriangle, Download, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertTriangle, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
 import { getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
@@ -146,16 +145,6 @@ function generateMockAnalysis(assessmentType: string, scores: Record<string, num
 }
 
 export default function SampleIndividualReport() {
-  const { toast } = useToast();
-
-  const handleDownloadPDF = () => {
-    window.open('/sample-reports/individual-sample.pdf', '_blank');
-    toast({
-      title: "Downloading PDF",
-      description: "Your sample report PDF is being downloaded.",
-    });
-  };
-
   const fitRadarData = Object.entries(MOCK_FIT_SCORES).map(([skill, score]) => ({
     skill: getSkillAcronym(skill),
     fullName: skill,
@@ -227,16 +216,6 @@ export default function SampleIndividualReport() {
                   </div>
                 </div>
               </div>
-              <Button 
-                onClick={handleDownloadPDF}
-                variant="default"
-                size="default"
-                data-testid="button-download-sample-pdf"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
             </div>
           </div>
 
@@ -765,15 +744,6 @@ export default function SampleIndividualReport() {
                   Start Your Assessment
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={handleDownloadPDF}
-                data-testid="button-download-sample-pdf-footer"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF Version
-              </Button>
             </div>
           </div>
         </div>

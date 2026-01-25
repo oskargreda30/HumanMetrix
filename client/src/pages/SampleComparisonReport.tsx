@@ -4,9 +4,8 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
 import {
   Radar,
   RadarChart,
@@ -172,16 +171,6 @@ const COMBINED_RADAR_DATA = [
 ];
 
 export default function SampleComparisonReport() {
-  const { toast } = useToast();
-
-  const handleDownloadPDF = () => {
-    window.open('/sample-reports/comparison-sample.pdf', '_blank');
-    toast({
-      title: "Downloading PDF",
-      description: "Your comparison report PDF is being downloaded.",
-    });
-  };
-
   const fitRadarData = Object.keys(DEMO_CANDIDATES[0].fitScores).map(skill => ({
     skill: SKILL_ACRONYMS[skill] || skill,
     fullName: skill,
@@ -226,10 +215,6 @@ export default function SampleComparisonReport() {
                   Side-by-side analysis of 3 candidates for Product Manager role
                 </p>
               </div>
-              <Button onClick={handleDownloadPDF} data-testid="button-download-pdf">
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
             </div>
           </div>
 

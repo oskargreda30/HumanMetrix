@@ -4,8 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy } from "lucide-react";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -68,16 +67,6 @@ const ROLE_FLEXIBILITY = [
 ];
 
 export default function SampleRoleFitReport() {
-  const { toast } = useToast();
-
-  const handleDownloadPDF = () => {
-    window.open('/sample-reports/rolefit-sample.pdf', '_blank');
-    toast({
-      title: "Downloading PDF",
-      description: "Your role fit report PDF is being downloaded.",
-    });
-  };
-
   const getAlignmentIcon = (alignment: string) => {
     if (alignment === "exceeds") return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     if (alignment === "meets") return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
@@ -129,10 +118,6 @@ export default function SampleRoleFitReport() {
                   {DEMO_CANDIDATE.name} for {DEMO_ROLE.name} position
                 </p>
               </div>
-              <Button onClick={handleDownloadPDF} data-testid="button-download-pdf">
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
             </div>
           </div>
 
