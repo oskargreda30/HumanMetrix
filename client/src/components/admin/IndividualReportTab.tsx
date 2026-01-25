@@ -22,6 +22,7 @@ import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
 import CompareTab from "@/components/admin/CompareTab";
+import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLOR = "#3b82f6";
 
@@ -67,6 +68,7 @@ export default function IndividualReportTab() {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
   
   const fitChartRef = useRef<HTMLDivElement>(null);
@@ -787,19 +789,23 @@ export default function IndividualReportTab() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center p-6 rounded-lg bg-muted inline-block">
-                    <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
-                      {aiqData.totalScore}%
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-muted/50 border">
+                      <Badge 
+                        variant={aiqData.totalScore >= 80 ? "default" : aiqData.totalScore >= 60 ? "secondary" : "outline"}
+                        className="mb-3"
+                      >
+                        {aiqBandInfo.title}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {aiqBandInfo.description}
+                      </p>
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
-                    <Badge 
-                      variant={aiqData.totalScore >= 80 ? "default" : aiqData.totalScore >= 60 ? "secondary" : "outline"}
-                      className="mt-2"
-                    >
-                      {aiqBandInfo.title}
-                    </Badge>
-                    <div className="text-xs text-muted-foreground mt-2 max-w-xs">
-                      {aiqBandInfo.description}
+                    <div className="text-center p-6 rounded-lg bg-muted flex flex-col items-center justify-center">
+                      <div className={`text-5xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
+                        {aiqData.totalScore}%
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2">Overall AIQ Score</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1061,11 +1067,11 @@ export default function IndividualReportTab() {
                 </div>
                 <div className="p-4 rounded-lg bg-white/10 border border-white/20">
                   <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <ShieldAlert className="h-4 w-4 text-white" />
-                    Hiring Risk Analysis
+                    <BarChart3 className="h-4 w-4 text-white" />
+                    Candidate Comparison Tool
                   </h4>
                   <p className="text-sm text-white/70">
-                    Comprehensive risk assessment highlighting potential challenges and mitigations
+                    Compare multiple candidates side-by-side across all assessment dimensions with visual analytics
                   </p>
                 </div>
               </div>
@@ -1073,7 +1079,7 @@ export default function IndividualReportTab() {
                 <Button 
                   variant="outline" 
                   className="border-white text-white hover:bg-white/20"
-                  onClick={() => window.location.href = '/for-employers'}
+                  onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-individual"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -1187,6 +1193,12 @@ export default function IndividualReportTab() {
           <CompareTab />
         </TabsContent>
       </Tabs>
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Individual Report - Enterprise Services"
+      />
     </div>
   );
 }

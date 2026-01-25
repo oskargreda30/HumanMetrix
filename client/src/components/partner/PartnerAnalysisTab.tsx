@@ -24,6 +24,7 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import PartnerCompareTab from "@/components/partner/PartnerCompareTab";
+import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -342,6 +343,7 @@ export default function PartnerAnalysisTab() {
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
   
   const fitChartRef = useRef<HTMLDivElement>(null);
@@ -1101,19 +1103,23 @@ export default function PartnerAnalysisTab() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center p-6 rounded-lg bg-muted inline-block">
-                        <div className={`text-4xl font-bold ${getScoreColor(aiqScore || 0)}`}>
-                          {aiqScore}%
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-lg bg-muted/50 border">
+                          <Badge 
+                            variant={(aiqScore || 0) >= 80 ? "default" : (aiqScore || 0) >= 60 ? "secondary" : "outline"}
+                            className="mb-3"
+                          >
+                            {aiqBandInfo.title}
+                          </Badge>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {aiqBandInfo.description}
+                          </p>
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
-                        <Badge 
-                          variant={(aiqScore || 0) >= 80 ? "default" : (aiqScore || 0) >= 60 ? "secondary" : "outline"}
-                          className="mt-2"
-                        >
-                          {aiqBandInfo.title}
-                        </Badge>
-                        <div className="text-xs text-muted-foreground mt-2 max-w-xs">
-                          {aiqBandInfo.description}
+                        <div className="text-center p-6 rounded-lg bg-muted flex flex-col items-center justify-center">
+                          <div className={`text-5xl font-bold ${getScoreColor(aiqScore || 0)}`}>
+                            {aiqScore}%
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-2">Overall AIQ Score</div>
                         </div>
                       </div>
                     </CardContent>
@@ -1407,11 +1413,21 @@ export default function PartnerAnalysisTab() {
                   </p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
-                <Mail className="h-5 w-5 text-primary" />
-                <p className="text-sm" data-testid="text-contact-email">
-                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
-                </p>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center justify-between gap-3" data-testid="container-contact-email">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <p className="text-sm" data-testid="text-contact-email">
+                    Interested in enterprise solutions? Let's discuss your requirements.
+                  </p>
+                </div>
+                <Button 
+                  variant="default" 
+                  onClick={() => setShowEnquiryModal(true)}
+                  data-testid="button-contact-team-partner"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Speak to the Team
+                </Button>
               </div>
             </div>
           </Card>
@@ -1422,6 +1438,12 @@ export default function PartnerAnalysisTab() {
           <PartnerCompareTab />
         </TabsContent>
       </Tabs>
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Partner Dashboard - Enterprise Services"
+      />
     </div>
   );
 }

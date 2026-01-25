@@ -516,6 +516,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enterprise services enquiry endpoint (from individual report modal)
+  app.post("/api/enterprise-enquiry", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      const rateLimitData = contactFormRateLimiter.get(ip);
+      if (rateLimitData) {
+        if (now < rateLimitData.resetTime) {
+          if (rateLimitData.count >= 5) {
+            return res.status(429).json({ 
+              message: "Too many requests. Please try again later." 
+            });
+          }
+          rateLimitData.count += 1;
+        } else {
+          contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+        }
+      } else {
+        contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
+      }
+
+      const { name, email, company, message, context } = req.body;
+      
+      if (!email || typeof email !== 'string' || !isValidEmail(email)) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+      
+      if (typeof name !== 'string' || !isValidName(name)) {
+        return res.status(400).json({ message: "Invalid name format" });
+      }
+
+      if (!message || typeof message !== 'string' || message.trim().length < 10) {
+        return res.status(400).json({ message: "Please provide a detailed message" });
+      }
+
+      const subject = context ? `Enterprise Services Enquiry - ${context}` : 'Enterprise Services Enquiry';
+      const result = await sendGeneralEnquiryEmail({ 
+        name: name.trim(), 
+        email, 
+        subject, 
+        message: `${company ? `Company: ${company}\n\n` : ''}${message}${context ? `\n\n[Context: ${context}]` : ''}`
+      });
+
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: "Enquiry sent successfully" 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to send enquiry. Please try again later." 
+        });
+      }
+    } catch (error: any) {
+      console.error("Enterprise enquiry form error:", error);
+      res.status(500).json({ 
+        message: "Failed to send enquiry. Please try again later." 
+      });
+    }
+  });
+
   // Marketing opt-in endpoint (public - no auth required)
   app.post("/api/marketing-optin", async (req, res) => {
     try {
