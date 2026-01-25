@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
   Radar,
@@ -960,6 +960,125 @@ export default function SampleComparisonReport() {
                 </div>
               </div>
             </CardContent>
+          </Card>
+
+          {/* How to Read This Report */}
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-guide">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">How to Read This Report</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                A guide to understanding candidate comparison data and making informed hiring decisions
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <span className="font-medium text-sm">Score Interpretation</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Charts</p>
+                    <p className="text-xs text-muted-foreground">
+                      Visual overlays show how candidates compare across each capability dimension at a glance.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Rankings & Percentiles</p>
+                    <p className="text-xs text-muted-foreground">
+                      See how each candidate ranks relative to others in the cohort and against broader benchmarks.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each candidate's key strengths and growth areas help you understand their unique value proposition.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Additional Services Section */}
+          <Card className="border-2 border-primary/20 mb-8" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold">Enterprise Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Enhance your hiring process with our advanced enterprise solutions:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare your team's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-role-fit">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Role Fit Analysis</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    AI-powered matching of candidates to specific roles with detailed fit recommendations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strategic Consulting</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Expert-led sessions to interpret results and develop actionable hiring strategies
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">ATS Integration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Seamless integration with your existing applicant tracking and HR systems
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary hover:underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </div>
           </Card>
 
           {/* CTA */}

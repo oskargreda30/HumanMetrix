@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy } from "lucide-react";
+import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2 } from "lucide-react";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -617,6 +617,72 @@ export default function SampleRoleFitReport() {
                 ))}
               </div>
             </CardContent>
+          </Card>
+
+          {/* Additional Services Section */}
+          <Card className="border-2 border-primary/20 mb-8" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold">Enterprise Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Enhance your hiring process with our advanced enterprise solutions:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare your team's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Multi-Candidate Role Fit</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare multiple candidates against a specific role with ranked recommendations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strategic Consulting</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Expert-led sessions to interpret results and develop actionable hiring strategies
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">ATS Integration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Seamless integration with your existing applicant tracking and HR systems
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary hover:underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </div>
           </Card>
 
           <Card data-testid="section-cta">
