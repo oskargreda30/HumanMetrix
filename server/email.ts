@@ -2173,11 +2173,7 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
   const assessmentListHtml = assessmentNames.map(a => `<li>${a}</li>`).join('');
   const assessmentListText = assessmentNames.join(', ');
   
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase()}.repl.co`
-      : 'https://humanmetrix.co.uk';
+  const baseUrl = getBaseUrl();
   
   const assessmentUrl = `${baseUrl}/start-assessment?token=${details.inviteToken}`;
   const candidateName = details.candidateName || 'there';
@@ -2597,9 +2593,7 @@ interface B2BResultsEmailDetails {
 export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
   const assessmentName = formatAssessmentName(details.assessmentType);
   const candidateName = details.candidateName || 'there';
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'https://humanmetrix.co.uk';
+  const baseUrl = getBaseUrl();
   
   const msg = {
     to: details.email,
@@ -2709,9 +2703,7 @@ export interface PartnerTeamInvitationDetails {
 }
 
 export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitationDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : getBaseUrl();
+  const baseUrl = getBaseUrl();
   
   const acceptUrl = `${baseUrl}/partner/accept-invite/${details.inviteToken}`;
   const greeting = details.inviteeName ? `Hello ${details.inviteeName},` : 'Hello,';
@@ -2832,9 +2824,7 @@ interface PartnerTeamCredentialsDetails {
 }
 
 export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCredentialsDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : getBaseUrl();
+  const baseUrl = getBaseUrl();
   
   const loginUrl = `${baseUrl}/login`;
   const greeting = details.name ? `Hello ${details.name},` : 'Hello,';
@@ -2965,9 +2955,7 @@ export async function sendB2BResultsUnlockedEmail(
   resultsUrl: string
 ) {
   const assessmentName = formatAssessmentName(assessmentType);
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'https://humanmetrix.co.uk';
+  const baseUrl = getBaseUrl();
   
   const msg = {
     to: email,
@@ -3061,9 +3049,7 @@ export async function sendEmailVerificationCode(
   code: string,
   partnerName?: string
 ) {
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'https://humanmetrix.co.uk';
+  const baseUrl = getBaseUrl();
   
   const partnerText = partnerName ? ` for ${partnerName}` : '';
   
