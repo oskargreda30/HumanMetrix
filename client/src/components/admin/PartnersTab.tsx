@@ -15,8 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CURRENCIES } from "@shared/currencies";
+import { CURRENCIES, COUNTRY_PRICING_TIER, PPP_MULTIPLIERS } from "@shared/currencies";
 import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
+import { B2B_VOLUME_TIERS } from "@shared/schema";
 import stripeLogo from "@assets/images_1769082266515.png";
 import airwallexLogo from "@assets/images_1769082266514.jpg";
 
@@ -539,7 +540,7 @@ export default function PartnersTab() {
   const [countryHighlightIndex, setCountryHighlightIndex] = useState(0);
   const [phoneCodeHighlightIndex, setPhoneCodeHighlightIndex] = useState(0);
   const [currencySearch, setCurrencySearch] = useState<string>("");
-  const [createPricePerAssessment, setCreatePricePerAssessment] = useState<number>(500);
+  const [createPricePerAssessment, setCreatePricePerAssessment] = useState<string>("");
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
   const [currencyHighlightIndex, setCurrencyHighlightIndex] = useState(0);
   const [editCurrencySearch, setEditCurrencySearch] = useState<string>("");
@@ -593,6 +594,38 @@ export default function PartnersTab() {
     ZA: 'ZAR', NG: 'NGN', KE: 'KES', GH: 'GHS', TZ: 'TZS', UG: 'UGX', RW: 'RWF', ET: 'ETB', MW: 'MWK', ZM: 'ZMW',
     ZW: 'ZWL', BW: 'BWP', NA: 'NAD', MZ: 'MZN', AO: 'AOA', CM: 'XAF', CI: 'XOF', SN: 'XOF', ML: 'XOF', BF: 'XOF',
     NE: 'XOF', TG: 'XOF', BJ: 'XOF', GA: 'XAF', CG: 'XAF', CD: 'CDF', MU: 'MUR', SC: 'SCR', MG: 'MGA',
+  };
+
+  // Calculate suggested B2B pricing based on country's PPP tier
+  const getSuggestedPricing = (countryCode: string, currencyCode: string): { 
+    suggestedPrice: number | null; 
+    tierName: string; 
+    inDatabase: boolean;
+  } => {
+    const pricingTier = COUNTRY_PRICING_TIER[countryCode];
+    if (!pricingTier || pricingTier === 'sea_launch') {
+      return { suggestedPrice: null, tierName: '', inDatabase: false };
+    }
+    
+    // Get base price for Boutique tier (default for new partners) in USD cents
+    const basePriceUsdCents = B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest;
+    const multiplier = PPP_MULTIPLIERS[pricingTier];
+    const adjustedPriceUsdCents = Math.round(basePriceUsdCents * multiplier);
+    
+    // Convert from USD cents to target currency's minor units
+    const usdConfig = CURRENCIES.USD;
+    const targetConfig = CURRENCIES[currencyCode];
+    if (!usdConfig || !targetConfig) {
+      return { suggestedPrice: adjustedPriceUsdCents, tierName: pricingTier, inDatabase: true };
+    }
+    
+    // Exchange rate is GBP -> target, so we need to go USD -> GBP -> target
+    // USD to GBP: divide by USD exchange rate (1.27)
+    // GBP to target: multiply by target exchange rate
+    const priceInGbpPence = adjustedPriceUsdCents / usdConfig.exchangeRate;
+    const priceInTargetMinor = Math.round(priceInGbpPence * targetConfig.exchangeRate);
+    
+    return { suggestedPrice: priceInTargetMinor, tierName: pricingTier, inDatabase: true };
   };
 
   const handleCountryChange = (countryCode: string) => {
@@ -3006,15 +3039,51 @@ export default function PartnersTab() {
                     name="pricePerAssessment" 
                     type="number" 
                     value={createPricePerAssessment}
-                    onChange={(e) => setCreatePricePerAssessment(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setCreatePricePerAssessment(e.target.value)}
+                    placeholder="Enter price..."
                     className="bg-slate-800 border-slate-600" 
                     data-testid="input-partner-price" 
                   />
-                  <p className="text-xs text-slate-400">
-                    {selectedCurrency && CURRENCIES[selectedCurrency] 
-                      ? `${createPricePerAssessment} = ${CURRENCIES[selectedCurrency].symbol}${CURRENCIES[selectedCurrency].decimalPlaces === 0 ? createPricePerAssessment.toLocaleString() : (createPricePerAssessment / 100).toFixed(2)}`
-                      : `${createPricePerAssessment} = ${(createPricePerAssessment / 100).toFixed(2)} in major units`}
-                  </p>
+                  {createPricePerAssessment && selectedCurrency && CURRENCIES[selectedCurrency] && (
+                    <p className="text-xs text-slate-400">
+                      {CURRENCIES[selectedCurrency].decimalPlaces === 0 
+                        ? `${parseInt(createPricePerAssessment).toLocaleString()} = ${CURRENCIES[selectedCurrency].symbol}${parseInt(createPricePerAssessment).toLocaleString()}`
+                        : `${createPricePerAssessment} = ${CURRENCIES[selectedCurrency].symbol}${(parseInt(createPricePerAssessment) / 100).toFixed(2)}`}
+                    </p>
+                  )}
+                  {(() => {
+                    if (!selectedCountry) return null;
+                    const suggestion = getSuggestedPricing(selectedCountry, selectedCurrency);
+                    if (!suggestion.inDatabase) {
+                      return (
+                        <p className="text-xs text-amber-400">
+                          Country not in database - enter price manually
+                        </p>
+                      );
+                    }
+                    if (suggestion.suggestedPrice !== null) {
+                      const currencyConfig = CURRENCIES[selectedCurrency];
+                      const displayPrice = currencyConfig?.decimalPlaces === 0 
+                        ? suggestion.suggestedPrice.toLocaleString()
+                        : (suggestion.suggestedPrice / 100).toFixed(2);
+                      return (
+                        <p className="text-xs text-cyan-400">
+                          Suggested: {currencyConfig?.symbol}{displayPrice} ({suggestion.tierName.toUpperCase()} market, Boutique tier)
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="ml-2 h-5 px-2 text-xs"
+                            onClick={() => setCreatePricePerAssessment(String(suggestion.suggestedPrice))}
+                            data-testid="button-apply-suggested-price"
+                          >
+                            Apply
+                          </Button>
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 
                 <div className="border-t border-slate-700 pt-4 mt-4">
