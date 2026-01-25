@@ -1074,6 +1074,16 @@ export default function IndividualReportTab() {
                     Compare multiple candidates side-by-side across all assessment dimensions with visual analytics
                   </p>
                 </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20 relative">
+                  <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-amber-600 text-xs">Coming Soon</Badge>
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                    Cohort Benchmarking
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Compare candidate performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
               </div>
               <div className="mt-4 text-center">
                 <Button 
