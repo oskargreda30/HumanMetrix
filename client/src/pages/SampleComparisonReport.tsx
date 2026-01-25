@@ -963,59 +963,6 @@ export default function SampleComparisonReport() {
             </CardContent>
           </Card>
 
-          {/* How to Read This Report */}
-          <Card className="mb-8" data-testid="section-how-to-read">
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
-                A guide to understanding candidate comparison data and making informed hiring decisions
-              </p>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex gap-3" data-testid="guide-score-interpretation">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <span className="font-medium text-sm" data-testid="heading-guide-score">Score Interpretation</span>
-                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1" data-testid="text-guide-score">
-                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
-                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
-                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-3" data-testid="guide-radar-charts">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm" data-testid="heading-guide-radar">Radar Charts</p>
-                    <p className="text-xs text-muted-foreground" data-testid="text-guide-radar">
-                      Visual overlays show how candidates compare across each capability dimension at a glance.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3" data-testid="guide-rankings">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm" data-testid="heading-guide-rankings">Rankings & Percentiles</p>
-                    <p className="text-xs text-muted-foreground" data-testid="text-guide-rankings">
-                      See how each candidate ranks relative to others in the cohort and against broader benchmarks.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3" data-testid="guide-strengths">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm" data-testid="heading-guide-strengths">Strengths & Development Areas</p>
-                    <p className="text-xs text-muted-foreground" data-testid="text-guide-strengths">
-                      Each candidate's key strengths and growth areas help you understand their unique value proposition.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
           {/* Skills Legend */}
           <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
