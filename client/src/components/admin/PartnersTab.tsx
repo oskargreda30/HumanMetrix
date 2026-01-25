@@ -816,7 +816,7 @@ export default function PartnersTab() {
 
   const manualCreditMutation = useMutation({
     mutationFn: async (data: { partnerId: string; quantity: number; reason: string }) => {
-      const res = await apiRequest("POST", `/api/admin/partners/${data.partnerId}/credit`, { quantity: data.quantity, reason: data.reason });
+      const res = await apiRequest("POST", `/api/admin/partners/${data.partnerId}/credit`, { amount: data.quantity, description: data.reason });
       return res.json();
     },
     onSuccess: () => {
@@ -1232,7 +1232,7 @@ export default function PartnersTab() {
                             min={1}
                             value={creditAmount}
                             onChange={(e) => setCreditAmount(parseInt(e.target.value) || 1)}
-                            className="bg-slate-800 border-slate-600"
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                             data-testid="input-credit-amount"
                           />
                         </div>
@@ -1243,7 +1243,7 @@ export default function PartnersTab() {
                             value={creditReason}
                             onChange={(e) => setCreditReason(e.target.value)}
                             placeholder="e.g., Promotional credit"
-                            className="bg-slate-800 border-slate-600"
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                             data-testid="input-credit-reason"
                           />
                         </div>
