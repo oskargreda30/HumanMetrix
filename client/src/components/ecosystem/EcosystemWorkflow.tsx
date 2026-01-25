@@ -176,7 +176,7 @@ export function EcosystemWorkflow({
   
   // Fetch searchable candidates (only for partners - must be called unconditionally for hooks rules)
   const { data: searchableCandidates = [], isLoading: candidatesLoading } = useSearchableCandidates(
-    showCandidatePool && isPartnerDashboard ? project.id : null
+    showCandidatePool && isPartnerDashboard && project ? project.id : null
   );
   
   // Filter candidates based on search
