@@ -20,6 +20,10 @@ import CohortBenchmarking from "@/pages/CohortBenchmarking";
 import Articles from "@/pages/Articles";
 import ArticlePsychometricTests from "@/pages/ArticlePsychometricTests";
 import ArticleRecruitmentTesting from "@/pages/ArticleRecruitmentTesting";
+import ArticleHumanMetrixSuite from "@/pages/ArticleHumanMetrixSuite";
+import ArticleFutureRoadmap from "@/pages/ArticleFutureRoadmap";
+import ArticleAILiteracy from "@/pages/ArticleAILiteracy";
+import ArticlePromptEngineering from "@/pages/ArticlePromptEngineering";
 import WhitePaperFIT from "@/pages/WhitePaperFIT";
 import WhitePaperAIReadiness from "@/pages/WhitePaperAIReadiness";
 import Login from "@/pages/Login";
@@ -79,6 +83,10 @@ function Router() {
       <Route path="/articles" component={Articles} />
       <Route path="/articles/how-to-pass-psychometric-tests-job-interviews" component={ArticlePsychometricTests} />
       <Route path="/articles/role-of-psychometric-testing-in-recruitment" component={ArticleRecruitmentTesting} />
+      <Route path="/articles/humanmetrix-ai-assessment-suite" component={ArticleHumanMetrixSuite} />
+      <Route path="/articles/future-of-ai-assessments-2026-roadmap" component={ArticleFutureRoadmap} />
+      <Route path="/articles/why-ai-literacy-matters-recruitment" component={ArticleAILiteracy} />
+      <Route path="/articles/prompt-engineering-skills-workplace" component={ArticlePromptEngineering} />
       <Route path="/articles/white-paper-fit-test" component={WhitePaperFIT} />
       <Route path="/articles/white-paper-ai-readiness-test" component={WhitePaperAIReadiness} />
       <Route path="/login" component={Login} />

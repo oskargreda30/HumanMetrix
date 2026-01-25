@@ -41,7 +41,7 @@ const articles = [
     description: "From Human-AI Collaboration Style to Adaptability Quotient—explore the upcoming assessments that will help organisations identify talent ready to thrive as AI transforms the workplace.",
     category: "Product Roadmap",
     readTime: "5 min read",
-    date: "December 2025",
+    date: "January 2026",
     featured: false,
   },
   {
@@ -50,7 +50,7 @@ const articles = [
     description: "As AI tools become ubiquitous across industries, employers are prioritising candidates who can effectively collaborate with AI. Learn why AI literacy assessments are becoming essential in modern hiring.",
     category: "Industry Insights",
     readTime: "7 min read",
-    date: "December 2025",
+    date: "January 2026",
     featured: false,
   },
   {
