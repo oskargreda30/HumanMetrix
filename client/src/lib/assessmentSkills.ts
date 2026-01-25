@@ -9,21 +9,21 @@ export interface SkillDefinition {
   color: string;
 }
 
-// Acronym mappings for PDF radar charts
+// Acronym mappings for PDF radar charts - MUST match ALL assessments v1.md exactly
 export const SKILL_ACRONYMS: Record<string, string> = {
-  // FIT Skills
+  // FIT Skills (from ALL assessments v1.md)
   'High Agency': 'HA',
   'Intellectual Curiosity': 'IC',
-  'Resilience': 'R',
-  'Empathy & Ethics': 'E&E',
+  'Resilience': 'RA',
+  'Empathy & Ethics': 'EE',
   'Growth Mindset': 'GM',
   'Interpersonal Agility': 'IA',
   
-  // AI Readiness Skills (Canonical keys)
-  'AI Literacy & Prompt Engineering': 'AL&PE',
+  // AI Readiness Skills (from ALL assessments v1.md)
+  'AI Literacy & Prompt Engineering': 'AL/PE',
   'Technical Fundamentals': 'TF',
   'Data Fluency': 'DF',
-  'Critical Thinking & Problem-Solving': 'CT&PS',
+  'Critical Thinking & Problem-Solving': 'CT/PS',
   'Adaptability & Continuous Learning': 'ACL',
   'Collaboration & Communication': 'CC',
   'Responsible AI & Ethical Awareness': 'RAI',
@@ -43,11 +43,11 @@ export const SKILL_ACRONYMS: Record<string, string> = {
   'Constraint Definition': 'CD',
   
   // Legacy AI Readiness keys (for backward compatibility with old data)
-  'AI Literacy': 'AL&PE',
-  'AI Literacy/Prompting': 'AL&PE', // Very old legacy key
+  'AI Literacy': 'AL/PE',
+  'AI Literacy/Prompting': 'AL/PE', // Very old legacy key
   'Technical Fluency': 'TF',
   'Domain Fluency': 'DF',
-  'Critical Thinking': 'CT&PS',
+  'Critical Thinking': 'CT/PS',
   'Adaptive Learning': 'ACL',
   'Collaboration': 'CC',
   'Cross-functional Collaboration': 'CC', // Very old legacy key
