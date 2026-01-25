@@ -4461,7 +4461,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   const leftColStart = 20;
   const rightColStart = leftColStart + halfWidth + 10;
   const chartWidth = halfWidth - 5;
-  const chartHeight = 55;
+  const chartHeight = 50; // Compact to fit FIT + AI Readiness on same page
   
   // FIT Assessment Skills
   if (data.fitData) {
@@ -4541,31 +4541,25 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.circle(centerX, centerY, 2, 'F');
     }
     
-    yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 10;
+    yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 8;
   }
   
-  // AI Readiness Skills
+  // AI Readiness Skills - stays on same page as FIT
   if (data.aiData) {
-    // AI Readiness has 9 skills - always start on new page for clean layout
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-    
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(34, 197, 94);
     pdf.text('AI Readiness Assessment', leftColStart, yPos);
-    yPos += 5;
+    yPos += 4;
     
     pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Measures: AI Literacy, Technical Fundamentals, Data Fluency, Critical Thinking, Adaptability, Collaboration, Responsible AI, Creativity, Domain Expertise', leftColStart, yPos);
-    yPos += 10;
+    yPos += 8;
     
     const aiScoresStartY = yPos;
-    const aiChartHeight = 75; // Taller for 9 skills
+    const aiChartHeight = 65; // Compact to fit on same page as FIT
     
     // Left column - Individual Skill Scores
     pdf.setFontSize(9);
@@ -4575,7 +4569,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     yPos += 7;
     
     Object.entries(data.aiData.scores).forEach(([skillName, score]) => {
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
       pdf.text(`${skillName}:`, leftColStart + 5, yPos);
@@ -4585,7 +4579,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
       pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
       
-      yPos += 7;
+      yPos += 6; // Tighter spacing for 9 skills
     });
     
     // Right column - Radar Chart (positioned to align with skills list)
@@ -4613,7 +4607,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       // Draw simple radar placeholder
       const centerX = rightColStart + chartWidth / 2;
       const centerY = aiScoresStartY + aiChartHeight / 2 + 5;
-      const radius = 22;
+      const radius = 18; // Smaller to fit compact chart
       pdf.setDrawColor(34, 197, 94);
       for (let i = 0; i < 9; i++) {
         const angle = (i * Math.PI * 2) / 9 - Math.PI / 2;
@@ -4706,27 +4700,31 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     
     yPos += boxHeight + 8;
     
-    // Level breakdown - compact bars
+    // Level breakdown - compact bars with blue gradient shading
     if (data.promptData.levels && data.promptData.levels.length > 0) {
       data.promptData.levels.forEach((levelData) => {
-        const levelPerf = getPerformanceLevel(levelData.totalScore);
+        // Blue shading based on score - darker blue for higher scores
+        const blueIntensity = Math.max(0.4, levelData.totalScore / 100);
+        const blueR = Math.round(59 + (1 - blueIntensity) * 140); // Range from light blue to darker blue
+        const blueG = Math.round(130 + (1 - blueIntensity) * 80);
+        const blueB = 246;
         
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(55, 65, 81);
         pdf.text(`Level ${levelData.level}`, 25, yPos);
         
-        // Progress bar - smaller
+        // Progress bar - blue shades
         const barWidth = 90;
         const barX = 50;
-        pdf.setFillColor(229, 231, 235);
+        pdf.setFillColor(219, 234, 254); // Light blue background (blue-100)
         pdf.rect(barX, yPos - 2.5, barWidth, 4, 'F');
-        pdf.setFillColor(levelPerf.color[0], levelPerf.color[1], levelPerf.color[2]);
+        pdf.setFillColor(blueR, blueG, blueB); // Blue fill with opacity based on score
         pdf.rect(barX, yPos - 2.5, (barWidth * levelData.totalScore) / 100, 4, 'F');
         
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(levelPerf.color[0], levelPerf.color[1], levelPerf.color[2]);
+        pdf.setTextColor(59, 130, 246); // Consistent blue text color
         pdf.text(`${levelData.totalScore}`, pageWidth - 28, yPos, { align: 'right' });
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(107, 114, 128);
