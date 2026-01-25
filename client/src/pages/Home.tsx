@@ -215,10 +215,10 @@ export default function Home() {
       <div className="bg-[#0a1628]">
         <Navigation />
         {/* For Candidates link - top left */}
-        <div className="px-4 md:px-6 lg:px-8 pt-2">
-          <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-1.5 text-sm text-blue-100/60 hover:text-blue-100 transition-colors">
+        <div className="px-4 md:px-6 lg:px-8 pt-3">
+          <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-2 text-sm bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-blue-100/80 hover:text-white transition-all">
             <span>Looking for a job?</span>
-            <span className="font-medium underline underline-offset-2">For Candidates</span>
+            <span className="font-semibold text-cyan-300">For Candidates →</span>
           </Link>
         </div>
         <HeroSection variant="b2b" />

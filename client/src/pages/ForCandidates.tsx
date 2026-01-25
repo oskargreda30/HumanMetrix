@@ -173,10 +173,10 @@ export default function ForCandidates() {
       <Navigation />
       
       {/* For Employers link - top left */}
-      <div className="relative z-20 px-4 md:px-6 lg:px-8 pt-2">
-        <Link href="/" data-testid="link-for-employers" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+      <div className="relative z-20 px-4 md:px-6 lg:px-8 pt-3">
+        <Link href="/" data-testid="link-for-employers" className="inline-flex items-center gap-2 text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-full border border-primary/20 text-muted-foreground hover:text-foreground transition-all">
           <span>Hiring for your organization?</span>
-          <span className="font-medium underline underline-offset-2">For Employers</span>
+          <span className="font-semibold text-primary">For Employers →</span>
         </Link>
       </div>
       
