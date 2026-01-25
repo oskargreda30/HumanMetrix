@@ -179,52 +179,94 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
 function generateInterviewQuestions(gaps: string[], fitScores: Record<string, number> | null, aiScores: Record<string, number> | null) {
   const questions: Array<{question: string; targetSkill: string; purpose: string}> = [];
   
-  if (fitScores) {
+  const gapQuestionMap: Record<string, {question: string; purpose: string}> = {
+    "High Agency": {
+      question: "Describe a time when you identified a problem and took action without being asked. What was the outcome?",
+      purpose: "Validates initiative-taking and independent problem-solving"
+    },
+    "Resilience": {
+      question: "Tell me about a significant setback you faced at work. How did you handle it and what did you learn?",
+      purpose: "Assesses ability to recover from challenges and maintain performance"
+    },
+    "Interpersonal Agility": {
+      question: "Describe a situation where you had to adapt your communication style to work effectively with a difficult stakeholder.",
+      purpose: "Tests stakeholder management and communication adaptability"
+    },
+    "Intellectual Curiosity": {
+      question: "Tell me about a time when you dove deep into a topic outside your expertise. What drove you and what did you learn?",
+      purpose: "Validates self-directed learning and curiosity"
+    },
+    "Empathy & Ethics": {
+      question: "Describe a situation where you had to make a decision that affected others. How did you balance different perspectives?",
+      purpose: "Assesses ethical reasoning and stakeholder consideration"
+    },
+    "Growth Mindset": {
+      question: "Tell me about a skill you struggled with initially. How did you approach improving it?",
+      purpose: "Tests response to challenges and learning approach"
+    },
+    "Technical Fluency": {
+      question: "Walk me through how you would evaluate whether to implement an AI solution for a business process.",
+      purpose: "Assesses practical AI implementation knowledge"
+    },
+    "Critical Thinking": {
+      question: "How would you validate whether an AI system's output is reliable for a high-stakes decision?",
+      purpose: "Tests analytical approach to AI outputs"
+    },
+    "AI Literacy & Prompting": {
+      question: "Describe your experience working with AI tools. How do you craft effective prompts?",
+      purpose: "Assesses hands-on AI experience and prompt engineering"
+    },
+    "Adaptive Learning": {
+      question: "How do you stay current with emerging technologies in your field?",
+      purpose: "Assesses continuous learning mindset"
+    }
+  };
+  
+  gaps.forEach(gap => {
+    const skillMatch = Object.keys(gapQuestionMap).find(skill => 
+      gap.toLowerCase().includes(skill.toLowerCase()) || skill.toLowerCase().includes(gap.toLowerCase().split(' ')[0])
+    );
+    if (skillMatch && gapQuestionMap[skillMatch]) {
+      questions.push({
+        question: gapQuestionMap[skillMatch].question,
+        targetSkill: skillMatch,
+        purpose: gapQuestionMap[skillMatch].purpose
+      });
+    }
+  });
+  
+  if (questions.length < 2 && fitScores) {
     const sortedFit = Object.entries(fitScores).sort((a, b) => a[1] - b[1]);
     const lowestFit = sortedFit.slice(0, 2);
     
-    lowestFit.forEach(([skill, score]) => {
-      if (skill.includes("Agency") || skill === "highAgency") {
+    lowestFit.forEach(([skill]) => {
+      const normalizedSkill = skill.replace(/([A-Z])/g, ' $1').trim();
+      const match = Object.keys(gapQuestionMap).find(s => 
+        normalizedSkill.toLowerCase().includes(s.toLowerCase().split(' ')[0])
+      );
+      if (match && gapQuestionMap[match] && !questions.some(q => q.targetSkill === match)) {
         questions.push({
-          question: "Describe a time when you identified a problem and took action without being asked. What was the outcome?",
-          targetSkill: "High Agency",
-          purpose: "Validates initiative-taking and independent problem-solving"
-        });
-      }
-      if (skill.includes("Resilience") || skill === "resilience") {
-        questions.push({
-          question: "Tell me about a significant setback you faced at work. How did you handle it and what did you learn?",
-          targetSkill: "Resilience",
-          purpose: "Assesses ability to recover from challenges and maintain performance"
-        });
-      }
-      if (skill.includes("Interpersonal") || skill === "interpersonalAgility") {
-        questions.push({
-          question: "Describe a situation where you had to adapt your communication style to work effectively with a difficult stakeholder.",
-          targetSkill: "Interpersonal Agility",
-          purpose: "Tests stakeholder management and communication adaptability"
+          question: gapQuestionMap[match].question,
+          targetSkill: match,
+          purpose: gapQuestionMap[match].purpose
         });
       }
     });
   }
   
-  if (aiScores) {
+  if (questions.length < 2 && aiScores) {
     const sortedAI = Object.entries(aiScores).sort((a, b) => a[1] - b[1]);
     const lowestAI = sortedAI.slice(0, 1);
     
     lowestAI.forEach(([skill]) => {
-      if (skill.includes("Technical") || skill.includes("Fluency")) {
+      const match = Object.keys(gapQuestionMap).find(s => 
+        skill.toLowerCase().includes(s.toLowerCase().split(' ')[0])
+      );
+      if (match && gapQuestionMap[match] && !questions.some(q => q.targetSkill === match)) {
         questions.push({
-          question: "Walk me through how you would evaluate whether to implement an AI solution for a business process.",
-          targetSkill: "Technical Fluency",
-          purpose: "Assesses practical AI implementation knowledge"
-        });
-      }
-      if (skill.includes("Critical") || skill.includes("Thinking")) {
-        questions.push({
-          question: "How would you validate whether an AI system's output is reliable for a high-stakes decision?",
-          targetSkill: "Critical Thinking",
-          purpose: "Tests analytical approach to AI outputs"
+          question: gapQuestionMap[match].question,
+          targetSkill: match,
+          purpose: gapQuestionMap[match].purpose
         });
       }
     });
