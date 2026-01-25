@@ -412,6 +412,168 @@ function generateIndividualPDF(
   
   pdf.setTextColor(0, 0, 0);
   
+  // ========== PAGE 4: HOW TO READ THIS REPORT ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  yPos = addSectionHeader(pdf, 'HOW TO READ THIS REPORT', yPos, pageWidth);
+  yPos += 8;
+  
+  const howToReadSteps = [
+    {
+      step: '1',
+      title: 'Review Your Skill Scores',
+      description: 'Look at each skill category to understand where you excel and where there\'s room for growth. Scores above 70 indicate strong competencies.'
+    },
+    {
+      step: '2',
+      title: 'Identify Your Strengths',
+      description: 'Focus on your highest-scoring areas. These are the skills you should highlight in interviews and job applications.'
+    },
+    {
+      step: '3',
+      title: 'Plan Your Development',
+      description: 'For lower-scoring areas, consider targeted learning or practice. Small improvements can significantly boost your overall profile.'
+    },
+    {
+      step: '4',
+      title: 'Use for Career Planning',
+      description: 'Match your skill profile against roles you\'re interested in. This report helps you identify which positions align with your capabilities.'
+    }
+  ];
+  
+  howToReadSteps.forEach((item, index) => {
+    // Step number circle
+    pdf.setFillColor(59, 130, 246);
+    pdf.circle(30, yPos + 5, 5, 'F');
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(item.step, 30, yPos + 7, { align: 'center' });
+    
+    // Title
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(item.title, 42, yPos + 6);
+    
+    // Description
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    const descLines = pdf.splitTextToSize(item.description, pageWidth - 65);
+    pdf.text(descLines, 42, yPos + 13);
+    
+    yPos += 25;
+  });
+  
+  // ========== PAGE 5: ADDITIONAL SERVICES ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  
+  yPos = 35;
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES', yPos, pageWidth);
+  yPos += 8;
+  
+  // Introduction text
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(75, 85, 99);
+  const introText = 'Unlock deeper career insights with our premium services designed to accelerate your professional growth:';
+  pdf.text(introText, 20, yPos);
+  yPos += 15;
+  
+  const additionalServices = [
+    {
+      icon: 'TARGET',
+      title: 'Career Fit Analysis',
+      description: 'Discover which roles and industries align best with your unique skill profile and work preferences.',
+      price: '£25'
+    },
+    {
+      icon: 'BOOK',
+      title: 'Interview Preparation Guide',
+      description: 'Personalized coaching tips based on your assessment results to help you confidently present your strengths.',
+      price: '£35'
+    },
+    {
+      icon: 'USERS',
+      title: 'Work Style Compatibility',
+      description: 'Understand your ideal work environment and team dynamics for better job satisfaction.',
+      price: '£20'
+    },
+    {
+      icon: 'ROCKET',
+      title: 'Career Acceleration Roadmap',
+      description: 'A tailored 90-day action plan with specific steps to advance your career goals.',
+      price: '£45'
+    },
+    {
+      icon: 'STAR',
+      title: 'Strengths & Growth Areas',
+      description: 'In-depth analysis of your top skills and development opportunities with actionable recommendations.',
+      price: '£30'
+    }
+  ];
+  
+  additionalServices.forEach((service) => {
+    if (yPos > pageHeight - 45) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    }
+    
+    // Service card background
+    pdf.setFillColor(249, 250, 251);
+    pdf.setDrawColor(229, 231, 235);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'FD');
+    
+    // Icon placeholder (simple circle with initial)
+    pdf.setFillColor(59, 130, 246);
+    pdf.circle(32, yPos + 14, 6, 'F');
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(service.icon.charAt(0), 32, yPos + 16, { align: 'center' });
+    
+    // Service title
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(service.title, 45, yPos + 10);
+    
+    // Price on the right
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text(service.price, pageWidth - 30, yPos + 10, { align: 'right' });
+    
+    // Description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 95);
+    pdf.text(descLines, 45, yPos + 18);
+    
+    yPos += 32;
+  });
+  
+  // Contact CTA
+  yPos += 10;
+  pdf.setFillColor(59, 130, 246);
+  pdf.roundedRect(40, yPos, pageWidth - 80, 20, 2, 2, 'F');
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('Interested? Contact us at hello@humanmetrix.co.uk', pageWidth / 2, yPos + 12, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
+  
   // Add footers
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
