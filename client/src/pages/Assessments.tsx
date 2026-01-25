@@ -239,6 +239,7 @@ export default function Assessments() {
                       status={assessment.status}
                       tag={assessment.tag}
                       showPricing={false}
+                      hideQuestionCount={true}
                     />
                   ))}
                 </div>

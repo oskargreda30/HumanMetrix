@@ -22,6 +22,7 @@ export interface AssessmentCardProps {
   comingSoon?: boolean;
   showPricing?: boolean;
   tag?: string;
+  hideQuestionCount?: boolean;
 }
 
 export default function AssessmentCard({
@@ -38,6 +39,7 @@ export default function AssessmentCard({
   comingSoon = false,
   showPricing = true,
   tag,
+  hideQuestionCount = false,
 }: AssessmentCardProps) {
   const { addToBasket, removeFromBasket, isInBasket } = useBasket();
   const { formatLocalPrice, currency } = useCurrency();
@@ -96,9 +98,11 @@ export default function AssessmentCard({
           <div>
             <h3 className="text-sm md:text-lg lg:text-xl font-semibold mb-1 text-white" data-testid={`text-assessment-title`}>{title}</h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid="badge-question-count">
-                {questionCount} questions
-              </Badge>
+              {!hideQuestionCount && (
+                <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid="badge-question-count">
+                  {questionCount} questions
+                </Badge>
+              )}
               {tag && (
                 <Badge variant="outline" className="text-[10px] md:text-xs border-cyan-400/50 text-cyan-300" data-testid="badge-tag">
                   {tag}
@@ -125,10 +129,12 @@ export default function AssessmentCard({
             <Clock className="h-3 w-3 md:h-4 md:w-4" />
             <span data-testid="text-duration">{duration}</span>
           </div>
-          <div className="flex items-center gap-1 md:gap-2 text-blue-100/70">
-            <FileText className="h-3 w-3 md:h-4 md:w-4" />
-            <span data-testid="text-question-count">{questionCount} questions</span>
-          </div>
+          {!hideQuestionCount && (
+            <div className="flex items-center gap-1 md:gap-2 text-blue-100/70">
+              <FileText className="h-3 w-3 md:h-4 md:w-4" />
+              <span data-testid="text-question-count">{questionCount} questions</span>
+            </div>
+          )}
         </div>
 
         {showPricing ? (
