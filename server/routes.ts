@@ -10132,22 +10132,17 @@ Format your response as JSON with this structure:
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       const orgSessions = sessions.filter(s => s.partnerOrganisationId === org.id);
       
-      // Get results for completed sessions
-      const results = await Promise.all(
-        orgSessions
-          .filter(s => s.status === 'completed')
-          .map(async (session) => {
-            const result = await storage.getAssessmentResultBySessionId(session.id);
-            return {
-              sessionId: session.id,
-              assessmentType: session.assessmentType,
-              externalUserId: session.externalUserId,
-              externalEmail: session.externalEmail,
-              completedAt: session.completedAt,
-              score: result?.scores || null,
-            };
-          })
-      );
+      // Get results for completed sessions (sessions store scores directly)
+      const results = orgSessions
+        .filter(s => s.status === 'completed')
+        .map((session) => ({
+          sessionId: session.id,
+          assessmentType: session.assessmentType,
+          externalUserId: session.externalUserId,
+          externalEmail: session.externalEmail,
+          completedAt: session.completedAt,
+          score: session.scores || null,
+        }));
       
       res.json({
         organization: org,
@@ -10770,29 +10765,24 @@ Format your response as JSON with this structure:
 
       // Collect all assessment results for this candidate
       const completedSessions = candidateSessions.filter(s => s.status === 'completed');
-      const results = await Promise.all(
-        completedSessions.map(session => storage.getAssessmentResultBySessionId(session.id))
-      );
-      const validResults = results.filter(r => r !== null && r !== undefined);
 
-      // Calculate fit scores
+      // Calculate fit scores from session data (sessions store scores directly)
       let fitScores: Record<string, number> | null = null;
       let aiReadinessScores: Record<string, number> | null = null;
       let promptArchitectureScore: number | null = null;
       let aiqScore: number | null = null;
 
       for (const session of completedSessions) {
-        const result = await storage.getAssessmentResultBySessionId(session.id);
-        if (!result) continue;
+        if (!session.scores) continue;
         
         if (session.assessmentType === 'fit') {
-          fitScores = result.scores as Record<string, number>;
+          fitScores = session.scores as Record<string, number>;
         } else if (session.assessmentType === 'ai_readiness') {
-          aiReadinessScores = result.scores as Record<string, number>;
+          aiReadinessScores = session.scores as Record<string, number>;
         } else if (session.assessmentType === 'prompt_architecture') {
-          promptArchitectureScore = result.overallScore;
+          promptArchitectureScore = session.totalScore;
         } else if (session.assessmentType === 'aiq') {
-          aiqScore = result.overallScore;
+          aiqScore = session.totalScore;
         }
       }
 
