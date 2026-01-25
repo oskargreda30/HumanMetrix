@@ -418,13 +418,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Consulting Services Section - Ecosystem Index */}
+        {/* Team Analysis Section - Ecosystem Index & Cohort Benchmarking */}
         <section className="py-12 md:py-24 bg-white" data-testid="section-consulting">
           <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
             <div className="text-center mb-8 md:mb-12">
               <div className="inline-block mb-4">
                 <Badge variant="outline" className="px-3 py-1 text-sm border-primary/40 bg-primary/5">
-                  Consulting Services
+                  Team Analysis
                 </Badge>
               </div>
               <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold mb-2 md:mb-4">
@@ -524,6 +524,85 @@ export default function Home() {
                   </div>
                   <p className="text-sm text-muted-foreground text-center">
                     Map your team's 6 core capabilities
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Cohort Benchmarking Service Card */}
+            <Card className="mt-6 p-6 md:p-8 lg:p-10 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg md:text-xl font-semibold">Cohort Benchmarking</h3>
+                      <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-700 bg-amber-50">Coming Soon</Badge>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Compare your team's performance against industry benchmarks and similar cohorts. Understand where your team 
+                    stands relative to peers and identify competitive advantages and areas for strategic improvement.
+                  </p>
+                  
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Industry Benchmarks</span>
+                        <p className="text-sm text-muted-foreground">Compare against sector-specific performance data</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Percentile Rankings</span>
+                        <p className="text-sm text-muted-foreground">See exactly where your team ranks across key metrics</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <div>
+                        <span className="font-medium">Competitive Intelligence</span>
+                        <p className="text-sm text-muted-foreground">Identify strengths and opportunities relative to market</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link href="/cohort-benchmarking">
+                      <Button size="lg" variant="outline" className="border-amber-500/40 text-amber-700" data-testid="button-cohort-benchmarking">
+                        Learn More
+                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                      </Button>
+                    </Link>
+                    <a href="https://calendly.com/hello-humanmetrix/30min" target="_blank" rel="noopener noreferrer">
+                      <Button size="lg" variant="outline" data-testid="button-book-cohort-consultation">
+                        Book a Consultation
+                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="hidden md:flex flex-col items-center justify-center p-8 bg-amber-50/50 rounded-xl">
+                  <div className="flex items-end gap-2 mb-4">
+                    <div className="w-8 h-16 bg-amber-200 rounded-t-lg"></div>
+                    <div className="w-8 h-24 bg-amber-400 rounded-t-lg"></div>
+                    <div className="w-8 h-20 bg-amber-300 rounded-t-lg"></div>
+                    <div className="w-8 h-28 bg-amber-500 rounded-t-lg"></div>
+                    <div className="w-8 h-14 bg-amber-200 rounded-t-lg"></div>
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Benchmark against industry peers
                   </p>
                 </div>
               </div>

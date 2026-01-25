@@ -16,6 +16,7 @@ import ForEmployers from "@/pages/ForEmployers";
 import ForCandidates from "@/pages/ForCandidates";
 import Pricing from "@/pages/Pricing";
 import EcosystemIndex from "@/pages/EcosystemIndex";
+import CohortBenchmarking from "@/pages/CohortBenchmarking";
 import Articles from "@/pages/Articles";
 import ArticlePsychometricTests from "@/pages/ArticlePsychometricTests";
 import ArticleRecruitmentTesting from "@/pages/ArticleRecruitmentTesting";
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/for-candidates" component={ForCandidates} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/ecosystem-index" component={EcosystemIndex} />
+      <Route path="/cohort-benchmarking" component={CohortBenchmarking} />
       <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
       <Route path="/ecosystem/start" component={EcosystemStart} />
       <Route path="/sample-report/individual" component={SampleIndividualReport} />
