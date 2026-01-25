@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import SkillsLegend from "@/components/SkillsLegend";
 import {
   Radar,
   RadarChart,
@@ -1014,6 +1015,9 @@ export default function SampleComparisonReport() {
               </div>
             </div>
           </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
           {/* Additional Services Section */}
           <Card className="mb-8" data-testid="section-additional-services">

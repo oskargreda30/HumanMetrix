@@ -8,6 +8,7 @@ import { ArrowLeft, TrendingUp, AlertTriangle, User, Calendar, FileText, Target,
 import { Progress } from "@/components/ui/progress";
 import { getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
+import SkillsLegend from "@/components/SkillsLegend";
 import {
   Radar,
   RadarChart,
@@ -661,68 +662,73 @@ export default function SampleIndividualReport() {
             </Card>
           </section>
 
+          {/* Skills Legend */}
+          <section className="mb-8">
+            <SkillsLegend compact data-testid="section-skills-legend" />
+          </section>
+
           {/* Additional Services Section */}
           <section className="mb-8" data-testid="section-additional-services">
-            <Card className="border-2 border-primary/20">
+            <Card>
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-bold">Additional Services on Request</h3>
+                  <h3 className="text-xl font-bold" data-testid="heading-career-services">Career Development Services</h3>
                 </div>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
                   HumanMetrix offers additional analysis services to support your career journey:
                 </p>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
                     <div className="flex items-center gap-2 mb-2">
                       <Target className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">Career Fit Analysis</h4>
+                      <h4 className="font-semibold" data-testid="heading-service-career-fit">Career Fit Analysis</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground" data-testid="text-service-career-fit">
                       Discover which roles and industries best match your skills, traits, and working style
                     </p>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview-prep">
                     <div className="flex items-center gap-2 mb-2">
                       <MessageSquare className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">Interview Preparation Guide</h4>
+                      <h4 className="font-semibold" data-testid="heading-service-interview-prep">Interview Preparation Guide</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground" data-testid="text-service-interview-prep">
                       Customized questions you're likely to face based on your profile, with strategies to highlight your strengths
                     </p>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-work-style">
                     <div className="flex items-center gap-2 mb-2">
                       <Users className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">Work Style Compatibility</h4>
+                      <h4 className="font-semibold" data-testid="heading-service-work-style">Work Style Compatibility</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground" data-testid="text-service-work-style">
                       Understand how you collaborate and what team environments help you thrive
                     </p>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-roadmap">
                     <div className="flex items-center gap-2 mb-2">
                       <Rocket className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">Career Acceleration Roadmap</h4>
+                      <h4 className="font-semibold" data-testid="heading-service-career-roadmap">Career Acceleration Roadmap</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground" data-testid="text-service-career-roadmap">
                       Personalized development plan with skills to prioritize for faster career progression
                     </p>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths-growth">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">Strengths & Growth Areas</h4>
+                      <h4 className="font-semibold" data-testid="heading-service-strengths-growth">Strengths & Growth Areas</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground" data-testid="text-service-strengths-growth">
                       Comprehensive self-awareness report highlighting your competitive advantages and areas for development
                     </p>
                   </div>
                 </div>
                 <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
                   <Mail className="h-5 w-5 text-primary" />
-                  <p className="text-sm">
-                    Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary hover:underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> for more information about these services.
+                  <p className="text-sm" data-testid="text-contact-email">
+                    Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> for more information about these services.
                   </p>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2 } from "lucide-react";
+import SkillsLegend from "@/components/SkillsLegend";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -618,6 +619,9 @@ export default function SampleRoleFitReport() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
           {/* Additional Services Section */}
           <Card className="mb-8" data-testid="section-additional-services">

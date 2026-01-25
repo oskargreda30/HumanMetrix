@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, User, Calendar, Building2, TrendingUp, Target, Info, Star, Users, MessageSquare, BarChart3, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import SkillsLegend from "@/components/SkillsLegend";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -320,6 +321,9 @@ export default function PartnerResult() {
             </div>
           </div>
         </Card>
+
+        {/* Skills Legend */}
+        <SkillsLegend className="mt-8" compact data-testid="section-skills-legend" />
 
         {/* Additional Services Section */}
         <Card className="mt-6" data-testid="section-additional-services">

@@ -14,6 +14,7 @@ import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
 import { ResultsRetentionConsentDialog } from "@/components/ResultsRetentionConsentDialog";
 import { format } from "date-fns";
+import SkillsLegend from "@/components/SkillsLegend";
 import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
@@ -802,6 +803,9 @@ export default function MyResults() {
               </div>
             </div>
           </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
           {/* Additional Services Section */}
           <Card className="mb-6" data-testid="section-additional-services">
