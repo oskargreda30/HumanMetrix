@@ -136,6 +136,37 @@ export default function IndividualReportTab() {
     return 'Developing';
   };
 
+  const getPromptArchBandInterpretation = (score: number): { title: string; description: string } => {
+    if (score >= 80) {
+      return {
+        title: "Expert Prompt Engineer",
+        description: "Demonstrates mastery of prompt engineering across all difficulty levels. Crafts highly effective prompts with exceptional clarity, structure, and creative problem-solving."
+      };
+    }
+    if (score >= 70) {
+      return {
+        title: "Advanced Prompt Skills",
+        description: "Shows strong prompt engineering capabilities with consistent performance across complexity levels. Effectively structures prompts for optimal AI responses."
+      };
+    }
+    if (score >= 50) {
+      return {
+        title: "Competent Practitioner",
+        description: "Demonstrates solid foundational skills in prompt construction. Handles standard scenarios well with room for growth in complex or nuanced prompting situations."
+      };
+    }
+    if (score >= 30) {
+      return {
+        title: "Developing Skills",
+        description: "Shows basic understanding of prompt engineering principles. Would benefit from training on advanced techniques, context setting, and iterative refinement."
+      };
+    }
+    return {
+      title: "Foundational Level",
+      description: "Early stage in prompt engineering development. Requires structured learning on clarity, context relevance, and effective AI communication strategies."
+    };
+  };
+
   const getCompletedAssessments = () => {
     if (!selectedCandidateData) return [];
     return selectedCandidateData.results.filter(r => r.status === 'completed');
@@ -640,27 +671,24 @@ export default function IndividualReportTab() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="text-center p-4 rounded-lg bg-muted">
-                    <div className={`text-3xl font-bold ${getScoreColor(promptData.totalScore)}`}>
-                      {promptData.totalScore}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">Total Score</div>
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-lg bg-muted/50 border">
                     <Badge 
                       variant={promptData.totalScore >= 70 ? "default" : promptData.totalScore >= 50 ? "secondary" : "outline"}
-                      className="mt-2"
+                      className="mb-3"
                     >
-                      {getPromptArchInterpretation(promptData.totalScore)}
+                      {getPromptArchBandInterpretation(promptData.totalScore).title}
                     </Badge>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {getPromptArchBandInterpretation(promptData.totalScore).description}
+                    </p>
                   </div>
-                  {promptData.percentile && (
-                    <div className="text-center p-4 rounded-lg bg-muted">
-                      <div className="text-3xl font-bold text-blue-600">
-                        {promptData.percentile}th
-                      </div>
-                      <div className="text-sm text-muted-foreground">Percentile</div>
+                  <div className="text-center p-6 rounded-lg bg-muted flex flex-col items-center justify-center">
+                    <div className={`text-5xl font-bold ${getScoreColor(promptData.totalScore)}`}>
+                      {promptData.totalScore}%
                     </div>
-                  )}
+                    <div className="text-sm text-muted-foreground mt-2">Overall Prompt Architecture Score</div>
+                  </div>
                 </div>
                 
                 {promptData.levels && (
