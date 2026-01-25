@@ -1,16 +1,8 @@
-import { useState } from "react";
 import { FileText, Users, Target, UsersRound, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link, useLocation } from "wouter";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Link } from "wouter";
 
 const reports = [
   {
@@ -18,40 +10,33 @@ const reports = [
     title: "Individual Report",
     description: "Comprehensive analysis of all 4 assessments with detailed skill breakdowns, performance levels, and personalized recommendations",
     link: "/sample-report/individual",
-    downloadName: "Individual_Candidate_Report_Example_HumanMetrix.pdf",
     testId: "individual",
     comingSoon: false,
     category: "individual" as const,
-    isViewOnline: true,
   },
   {
     icon: Users,
     title: "Candidate Comparison Report",
     description: "Side-by-side comparison of multiple candidates across all assessments with visual charts and performance indicators",
     link: "/sample-report/comparison",
-    downloadName: "Candidate_Comparison_Example_Report_HumanMetrix.pdf",
     testId: "comparison",
     comingSoon: false,
     category: "employer" as const,
-    isViewOnline: true,
   },
   {
     icon: Target,
     title: "Role Fit Report",
     description: "AI-powered role alignment analysis showing skill match, strengths, development areas, and hiring recommendations",
     link: "/sample-report/role-fit",
-    downloadName: "Role_Fit_Example_Report_HumanMetrix.pdf",
     testId: "rolefit",
     comingSoon: false,
     category: "employer" as const,
-    isViewOnline: true,
   },
   {
     icon: UsersRound,
     title: "Multiple Candidate Role Fit Report",
     description: "Compare multiple candidates against a specific role with cohort benchmarking and ranked recommendations",
     link: "",
-    downloadName: "",
     testId: "multi-rolefit",
     comingSoon: true,
     category: "employer" as const,
@@ -59,35 +44,6 @@ const reports = [
 ];
 
 export default function SampleReportsSection() {
-  const [, setLocation] = useLocation();
-  const [selectedReport, setSelectedReport] = useState<typeof reports[0] | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleReportClick = (report: typeof reports[0]) => {
-    if (report.comingSoon) return;
-    setSelectedReport(report);
-    setDialogOpen(true);
-  };
-
-  const handleViewOnline = () => {
-    if (selectedReport?.link) {
-      setDialogOpen(false);
-      setLocation(selectedReport.link);
-    }
-  };
-
-  const handleDownloadPDF = () => {
-    if (selectedReport?.downloadName) {
-      const link = document.createElement('a');
-      link.href = `/sample-reports/${selectedReport.downloadName}`;
-      link.download = selectedReport.downloadName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-    setDialogOpen(false);
-  };
-
   return (
     <section id="sample-reports" className="py-12 md:py-24 bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
@@ -140,56 +96,22 @@ export default function SampleReportsSection() {
                     Coming Soon
                   </Button>
                 ) : (
-                  <Button 
-                    size="default"
-                    className="w-full"
-                    onClick={() => handleReportClick(report)}
-                    data-testid={`button-view-${report.testId}`}
-                  >
-                    <Eye className="mr-1.5 h-4 w-4" />
-                    View Sample
-                  </Button>
+                  <Link href={report.link}>
+                    <Button 
+                      size="default"
+                      className="w-full"
+                      data-testid={`button-view-${report.testId}`}
+                    >
+                      <Eye className="mr-1.5 h-4 w-4" />
+                      View Sample
+                    </Button>
+                  </Link>
                 )}
               </div>
             </Card>
           ))}
         </div>
       </div>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-sample-report">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" data-testid="dialog-title">
-              {selectedReport?.icon && <selectedReport.icon className="h-5 w-5 text-primary" />}
-              {selectedReport?.title}
-            </DialogTitle>
-            <DialogDescription>
-              How would you like to view this sample report?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 mt-4">
-            <Button
-              onClick={handleViewOnline}
-              className="w-full"
-              data-testid="button-view-online"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              View Online
-            </Button>
-            {selectedReport?.downloadName && (
-              <Button
-                variant="outline"
-                onClick={handleDownloadPDF}
-                className="w-full"
-                data-testid="button-download-pdf"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }
