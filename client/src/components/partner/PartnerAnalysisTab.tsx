@@ -703,8 +703,8 @@ export default function PartnerAnalysisTab() {
             <>
               {/* Individual Candidate Report Section Heading */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <FileText className="h-6 w-6 text-primary" />
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-blue-300" />
                   Individual Candidate Report
                 </h2>
               </div>
@@ -780,87 +780,6 @@ export default function PartnerAnalysisTab() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Candidate Overview - After Summary */}
-              <Card data-testid="card-candidate-overview">
-                <CardHeader>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <CardTitle className="text-xl">{getCandidateName(selectedCandidateData)}</CardTitle>
-                      <CardDescription>{selectedCandidateData?.user.email}</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="text-sm">
-                      {(() => {
-                        let count = 0;
-                        if (fitData) count++;
-                        if (aiData) count++;
-                        if (promptArchData) count++;
-                        if (aiqData) count++;
-                        return count;
-                      })()} Assessments Completed
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <div className="p-4 rounded-lg bg-muted">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Target className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm font-medium">FIT</span>
-                      </div>
-                      {fitData ? (
-                        <span className="text-2xl font-bold">
-                          {fitOverallScore}%
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not taken</span>
-                      )}
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-muted">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Brain className="h-4 w-4 text-purple-500" />
-                        <span className="text-sm font-medium">AI Readiness</span>
-                      </div>
-                      {aiData ? (
-                        <span className="text-2xl font-bold">
-                          {aiOverallScore}%
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not taken</span>
-                      )}
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-muted">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="h-4 w-4 text-green-500" />
-                        <span className="text-sm font-medium">Prompt Arch</span>
-                      </div>
-                      {promptArchData ? (
-                        <span className={`text-2xl font-bold ${getScoreColor(promptArchScore || 0)}`}>
-                          {promptArchScore}%
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not taken</span>
-                      )}
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-muted">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Award className="h-4 w-4 text-amber-500" />
-                        <span className="text-sm font-medium">AIQ</span>
-                      </div>
-                      {aiqData ? (
-                        <span className={`text-2xl font-bold ${getScoreColor(aiqScore || 0)}`}>
-                          {aiqScore}%
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not taken</span>
-                      )}
                     </div>
                   </div>
                 </CardContent>
