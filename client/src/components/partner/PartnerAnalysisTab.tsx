@@ -77,6 +77,8 @@ interface RoleAlignment {
     criticality?: 'critical' | 'important' | 'nice-to-have';
     dataAvailable?: boolean;
   }> | null;
+  promptArchitectureScore?: number | null;
+  aiqScore?: number | null;
   strengths: string[];
   gaps: string[];
   dataCoverage?: {
@@ -154,14 +156,14 @@ export default function PartnerAnalysisTab() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-amber-600';
+    if (score >= 75) return 'text-green-600';
+    if (score >= 50) return 'text-amber-600';
     return 'text-red-600';
   };
 
   const getScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
-    if (score >= 80) return 'default';
-    if (score >= 60) return 'secondary';
+    if (score >= 75) return 'default';
+    if (score >= 50) return 'secondary';
     return 'destructive';
   };
 
@@ -172,6 +174,8 @@ export default function PartnerAnalysisTab() {
 
   const fitData = candidateReport?.fitAssessments?.[0];
   const aiData = candidateReport?.aiReadinessAssessments?.[0];
+  const promptArchData = candidateReport?.promptArchitectureAssessments?.[0];
+  const aiqData = candidateReport?.aiqAssessments?.[0];
 
   const fitRadarData = fitData ? FIT_SKILLS.map(skill => ({
     skill: getSkillAcronym(skill.displayName),
@@ -184,6 +188,16 @@ export default function PartnerAnalysisTab() {
     fullName: skill.displayName,
     score: aiData.scores[skill.displayName] || aiData.scores[skill.key] || 0,
   })) : [];
+
+  // Calculate overall scores for each assessment type
+  const fitOverallScore = fitRadarData.length > 0 
+    ? Math.round(fitRadarData.reduce((sum, d) => sum + d.score, 0) / fitRadarData.length) 
+    : null;
+  const aiOverallScore = aiRadarData.length > 0 
+    ? Math.round(aiRadarData.reduce((sum, d) => sum + d.score, 0) / aiRadarData.length) 
+    : null;
+  const promptArchScore = promptArchData?.totalScore ?? null;
+  const aiqScore = aiqData?.totalScore ?? null;
 
   if (isLoadingCandidates) {
     return (
@@ -315,6 +329,72 @@ export default function PartnerAnalysisTab() {
           )}
 
           {selectedCandidate && candidateReport && (
+            <>
+            {/* Assessment Overview - All 4 Assessments */}
+            <Card className="mb-6" data-testid="section-assessment-overview">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Assessment Overview
+                </CardTitle>
+                <CardDescription>
+                  Summary of all completed assessments for {getCandidateName(selectedCandidateData)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="p-4 border rounded-lg text-center" data-testid="score-card-fit">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Award className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">FIT Assessment</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${fitOverallScore !== null ? getScoreColor(fitOverallScore) : 'text-muted-foreground'}`}>
+                      {fitOverallScore !== null ? `${fitOverallScore}%` : 'N/A'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {fitData ? 'Completed' : 'Not taken'}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center" data-testid="score-card-ai-readiness">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">AI Readiness</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${aiOverallScore !== null ? getScoreColor(aiOverallScore) : 'text-muted-foreground'}`}>
+                      {aiOverallScore !== null ? `${aiOverallScore}%` : 'N/A'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {aiData ? 'Completed' : 'Not taken'}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center" data-testid="score-card-prompt-arch">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Prompt Architecture</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${promptArchScore !== null ? getScoreColor(promptArchScore) : 'text-muted-foreground'}`}>
+                      {promptArchScore !== null ? `${promptArchScore}%` : 'N/A'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {promptArchData ? 'Completed' : 'Not taken'}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center" data-testid="score-card-aiq">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">AIQ (Ethics)</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${aiqScore !== null ? getScoreColor(aiqScore) : 'text-muted-foreground'}`}>
+                      {aiqScore !== null ? `${aiqScore}%` : 'N/A'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {aiqData ? 'Completed' : 'Not taken'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid gap-6 lg:grid-cols-2">
               {/* FIT Assessment Radar */}
               {fitRadarData.length > 0 && (
@@ -405,6 +485,7 @@ export default function PartnerAnalysisTab() {
                 </Card>
               )}
             </div>
+            </>
           )}
 
           {/* Enterprise Services Section */}
@@ -605,10 +686,105 @@ export default function PartnerAnalysisTab() {
                 </CardContent>
               </Card>
 
+              {/* All 4 Assessments Comparison */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assessment Comparison</CardTitle>
+                  <CardDescription>All 4 assessments across selected candidates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-2 font-medium">Assessment</th>
+                          {selectedCandidateDataList.map((candidate, idx) => (
+                            <th key={idx} className="text-center py-3 px-2 font-medium" style={{ color: CHART_COLORS[idx] }}>
+                              {getCandidateName(candidate)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="py-3 px-2 flex items-center gap-2">
+                            <Award className="h-4 w-4 text-primary" />
+                            FIT Assessment
+                          </td>
+                          {selectedCandidateDataList.map((_, idx) => {
+                            const fitResult = comparison.fitAssessments?.[idx];
+                            const score = fitResult ? Math.round(Object.values(fitResult.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitResult.scores).length) : null;
+                            return (
+                              <td key={idx} className="text-center py-3 px-2">
+                                <span className={`font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                                  {score !== null ? `${score}%` : 'N/A'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-3 px-2 flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-primary" />
+                            AI Readiness
+                          </td>
+                          {selectedCandidateDataList.map((_, idx) => {
+                            const aiResult = comparison.aiReadinessAssessments?.[idx];
+                            const score = aiResult ? Math.round(Object.values(aiResult.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiResult.scores).length) : null;
+                            return (
+                              <td key={idx} className="text-center py-3 px-2">
+                                <span className={`font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                                  {score !== null ? `${score}%` : 'N/A'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-3 px-2 flex items-center gap-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            Prompt Architecture
+                          </td>
+                          {selectedCandidateDataList.map((_, idx) => {
+                            const paResult = comparison.promptArchitectureAssessments?.[idx];
+                            const score = paResult?.totalScore ?? null;
+                            return (
+                              <td key={idx} className="text-center py-3 px-2">
+                                <span className={`font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                                  {score !== null ? `${score}%` : 'N/A'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-2 flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            AIQ (Ethics)
+                          </td>
+                          {selectedCandidateDataList.map((_, idx) => {
+                            const aiqResult = comparison.aiqAssessments?.[idx];
+                            const score = aiqResult?.totalScore ?? null;
+                            return (
+                              <td key={idx} className="text-center py-3 px-2">
+                                <span className={`font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                                  {score !== null ? `${score}%` : 'N/A'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Average Scores */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Overall Scores</CardTitle>
+                  <CardTitle>Overall Average</CardTitle>
+                  <CardDescription>Average across skill-based assessments (FIT + AI Readiness)</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-3">
@@ -760,9 +936,9 @@ export default function PartnerAnalysisTab() {
                   <div>
                     <p className="font-medium text-sm">Overall Fit Score</p>
                     <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">80%+</Badge> <span>Excellent,</span>
-                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">60-79%</Badge> <span>Good,</span>
-                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;60%</Badge> <span>Developing</span>
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
                     </div>
                   </div>
                 </div>
@@ -844,6 +1020,70 @@ export default function PartnerAnalysisTab() {
                         )}
                       </div>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* All 4 Assessments Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assessment Summary</CardTitle>
+                  <CardDescription>All 4 assessment types for this candidate</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Award className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">FIT Assessment</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${alignment.fitSkillAlignments ? getScoreColor(Math.round(alignment.fitSkillAlignments.filter(a => a.candidateScore !== null).reduce((sum, a) => sum + (a.candidateScore || 0), 0) / (alignment.fitSkillAlignments.filter(a => a.candidateScore !== null).length || 1))) : 'text-muted-foreground'}`}>
+                        {alignment.fitSkillAlignments && alignment.fitSkillAlignments.some(a => a.candidateScore !== null)
+                          ? `${Math.round(alignment.fitSkillAlignments.filter(a => a.candidateScore !== null).reduce((sum, a) => sum + (a.candidateScore || 0), 0) / (alignment.fitSkillAlignments.filter(a => a.candidateScore !== null).length || 1))}%`
+                          : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {alignment.fitSkillAlignments ? 'Completed' : 'Not taken'}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Brain className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">AI Readiness</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${alignment.aiReadinessSkillAlignments ? getScoreColor(Math.round(alignment.aiReadinessSkillAlignments.filter(a => a.candidateScore !== null).reduce((sum, a) => sum + (a.candidateScore || 0), 0) / (alignment.aiReadinessSkillAlignments.filter(a => a.candidateScore !== null).length || 1))) : 'text-muted-foreground'}`}>
+                        {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.some(a => a.candidateScore !== null)
+                          ? `${Math.round(alignment.aiReadinessSkillAlignments.filter(a => a.candidateScore !== null).reduce((sum, a) => sum + (a.candidateScore || 0), 0) / (alignment.aiReadinessSkillAlignments.filter(a => a.candidateScore !== null).length || 1))}%`
+                          : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {alignment.aiReadinessSkillAlignments ? 'Completed' : 'Not taken'}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Prompt Arch.</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${alignment.promptArchitectureScore !== null && alignment.promptArchitectureScore !== undefined ? getScoreColor(alignment.promptArchitectureScore) : 'text-muted-foreground'}`}>
+                        {alignment.promptArchitectureScore !== null && alignment.promptArchitectureScore !== undefined ? `${alignment.promptArchitectureScore}%` : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {alignment.promptArchitectureScore !== null && alignment.promptArchitectureScore !== undefined ? 'Completed' : 'Not taken'}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">AIQ (Ethics)</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${alignment.aiqScore !== null && alignment.aiqScore !== undefined ? getScoreColor(alignment.aiqScore) : 'text-muted-foreground'}`}>
+                        {alignment.aiqScore !== null && alignment.aiqScore !== undefined ? `${alignment.aiqScore}%` : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {alignment.aiqScore !== null && alignment.aiqScore !== undefined ? 'Completed' : 'Not taken'}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

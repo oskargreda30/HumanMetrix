@@ -10855,6 +10855,8 @@ Format your response as JSON with this structure:
         overallFit,
         fitSkillAlignments,
         aiReadinessSkillAlignments,
+        promptArchitectureScore,
+        aiqScore,
         strengths,
         gaps,
         cohortBenchmarks: null, // Partners don't see cross-platform benchmarks
