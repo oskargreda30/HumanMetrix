@@ -4383,9 +4383,9 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
-  const displayName = data.candidateName.length > 20 ? data.candidateName.substring(0, 17) + '...' : data.candidateName;
-  const displayEmail = data.candidate.user.email.length > 22 ? data.candidate.user.email.substring(0, 19) + '...' : data.candidate.user.email;
-  pdf.text(`${displayName} | ${displayEmail} | ${completedCount} Assessments`, 20 + profileWidth / 2, yPos + 15, { align: 'center' });
+  const displayName = data.candidateName.length > 30 ? data.candidateName.substring(0, 27) + '...' : data.candidateName;
+  const displayEmail = data.candidate.user.email.length > 35 ? data.candidate.user.email.substring(0, 32) + '...' : data.candidate.user.email;
+  pdf.text(`${displayName} | ${displayEmail}`, 20 + profileWidth / 2, yPos + 15, { align: 'center' });
   
   // Key Metrics Boxes (right side - 2 boxes)
   const metricsData = [
