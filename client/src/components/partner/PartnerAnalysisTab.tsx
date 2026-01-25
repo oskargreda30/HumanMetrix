@@ -645,56 +645,56 @@ export default function PartnerAnalysisTab() {
                 Enhance your hiring process with our advanced enterprise solutions:
               </p>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem-compare">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-ecosystem-compare">The Ecosystem Index</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem-compare">
                     Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort-compare">
                   <div className="flex items-center gap-2 mb-2">
                     <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-cohort-compare">Cohort Benchmarking</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-cohort-compare">
                     Compare your team's performance against industry benchmarks and peer organizations
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role-compare">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Multi-Candidate Role Fit</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-multi-role-compare">Multi-Candidate Role Fit</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role-compare">
                     Compare multiple candidates against a specific role with ranked recommendations
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting-compare">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Strategic Consulting</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-consulting-compare">Strategic Consulting</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-consulting-compare">
                     Expert-led sessions to interpret results and develop actionable hiring strategies
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration-compare">
                   <div className="flex items-center gap-2 mb-2">
                     <Building2 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">ATS Integration</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-integration-compare">ATS Integration</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-integration-compare">
                     Seamless integration with your existing applicant tracking and HR systems
                   </p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3">
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email-compare">
                 <Mail className="h-5 w-5 text-primary" />
-                <p className="text-sm">
-                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                <p className="text-sm" data-testid="text-contact-email-compare">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email-compare">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
                 </p>
               </div>
             </div>
@@ -1003,56 +1003,56 @@ export default function PartnerAnalysisTab() {
                 Enhance your hiring process with our advanced enterprise solutions:
               </p>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem-rolefit">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-ecosystem-rolefit">The Ecosystem Index</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem-rolefit">
                     Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort-rolefit">
                   <div className="flex items-center gap-2 mb-2">
                     <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-cohort-rolefit">Cohort Benchmarking</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-cohort-rolefit">
                     Compare your team's performance against industry benchmarks and peer organizations
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role-rolefit">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Multi-Candidate Role Fit</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-multi-role-rolefit">Multi-Candidate Role Fit</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role-rolefit">
                     Compare multiple candidates against a specific role with ranked recommendations
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting-rolefit">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">Strategic Consulting</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-consulting-rolefit">Strategic Consulting</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-consulting-rolefit">
                     Expert-led sessions to interpret results and develop actionable hiring strategies
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration-rolefit">
                   <div className="flex items-center gap-2 mb-2">
                     <Building2 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">ATS Integration</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-integration-rolefit">ATS Integration</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-integration-rolefit">
                     Seamless integration with your existing applicant tracking and HR systems
                   </p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3">
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email-rolefit">
                 <Mail className="h-5 w-5 text-primary" />
-                <p className="text-sm">
-                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                <p className="text-sm" data-testid="text-contact-email-rolefit">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email-rolefit">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
                 </p>
               </div>
             </div>
