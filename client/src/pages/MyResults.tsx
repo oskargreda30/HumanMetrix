@@ -808,14 +808,14 @@ export default function MyResults() {
           <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
           {/* Additional Services Section */}
-          <Card className="mb-6" data-testid="section-additional-services">
+          <Card className="mb-8" data-testid="section-additional-services">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Star className="h-5 w-5 text-primary" />
-                <h3 className="text-xl font-bold" data-testid="heading-additional-services">Additional Services</h3>
+                <h3 className="text-xl font-bold" data-testid="heading-career-services">Career Development Services</h3>
               </div>
               <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
-                Take your career development to the next level with our premium services:
+                HumanMetrix offers additional analysis services to support your career journey:
               </p>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
