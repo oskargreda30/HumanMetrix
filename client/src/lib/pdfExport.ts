@@ -4546,12 +4546,11 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   // AI Readiness Skills
   if (data.aiData) {
-    if (yPos > pageHeight - 100) {
-      pdf.addPage();
-      addBackgroundPattern(pdf, pageWidth, pageHeight);
-      addHeader(pdf, pageWidth);
-      yPos = 35;
-    }
+    // AI Readiness has 9 skills - always start on new page for clean layout
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
     
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
@@ -4559,18 +4558,14 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.text('AI Readiness Assessment', leftColStart, yPos);
     yPos += 5;
     
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const aiMeasures = 'Measures: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise';
-    const aiMeasureLines = pdf.splitTextToSize(aiMeasures, pageWidth - 40);
-    aiMeasureLines.forEach((line: string) => {
-      pdf.text(line, leftColStart, yPos);
-      yPos += 4;
-    });
-    yPos += 6;
+    pdf.text('Measures: AI Literacy, Technical Fundamentals, Data Fluency, Critical Thinking, Adaptability, Collaboration, Responsible AI, Creativity, Domain Expertise', leftColStart, yPos);
+    yPos += 10;
     
     const aiScoresStartY = yPos;
+    const aiChartHeight = 75; // Taller for 9 skills
     
     // Left column - Individual Skill Scores
     pdf.setFontSize(9);
@@ -4593,8 +4588,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       yPos += 7;
     });
     
-    // Right column - Radar Chart
-    const aiChartHeight = 70; // Slightly taller for more skills
+    // Right column - Radar Chart (positioned to align with skills list)
     if (data.aiChartImage) {
       try {
         pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight);
