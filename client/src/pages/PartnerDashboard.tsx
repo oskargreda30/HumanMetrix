@@ -2048,7 +2048,7 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Cohort Benchmarking
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-cyan-500 text-white border-0">New</Badge>
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-amber-500 text-white border-0">Coming Soon</Badge>
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}
               {false && (
@@ -4710,7 +4710,7 @@ export default function PartnerDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     Cohort Benchmarking
-                    <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
+                    <Badge variant="secondary" className="bg-amber-500 text-white border-0">Coming Soon</Badge>
                   </CardTitle>
                   <CardDescription>Compare candidate performance against industry benchmarks</CardDescription>
                 </CardHeader>
