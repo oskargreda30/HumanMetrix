@@ -404,13 +404,6 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
                   <div>
-                    <p className="font-medium text-sm">Interview Questions</p>
-                    <p className="text-xs text-muted-foreground">AI-generated questions targeting skill gaps. Use these to probe deeper into areas where candidate scores were below requirements.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
                     <p className="font-medium text-sm">Alternative Roles</p>
                     <p className="text-xs text-muted-foreground">If candidate isn't ideal for this role, see which other roles in your organization might be a better match.</p>
                   </div>
@@ -844,37 +837,6 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     Note: Some assessment type benchmarks may not be available if there are insufficient completed assessments
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Interview Questions */}
-          {alignment.interviewQuestions && alignment.interviewQuestions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Suggested Interview Questions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alignment.interviewQuestions.map((q, index) => (
-                    <div key={index} className="p-4 bg-muted/50 rounded-lg">
-                      <p className="font-medium text-sm mb-2">{q.question}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          Target: {q.targetSkill}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" />
-                          {q.purpose}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </CardContent>
             </Card>
           )}
