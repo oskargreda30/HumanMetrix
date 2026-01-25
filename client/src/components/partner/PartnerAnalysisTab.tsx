@@ -612,7 +612,6 @@ export default function PartnerAnalysisTab() {
             <CardContent>
               <Select value={selectedCandidate} onValueChange={(value) => {
                 setSelectedCandidate(value);
-                setAIRecommendations(null);
                 setProfileInsights(null);
               }}>
                 <SelectTrigger data-testid="select-individual-candidate">
