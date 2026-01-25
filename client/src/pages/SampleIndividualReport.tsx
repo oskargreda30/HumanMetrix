@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, AlertTriangle, Download, User, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertTriangle, Download, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { getSkillAcronym } from "@/lib/assessmentSkills";
@@ -624,6 +624,74 @@ export default function SampleIndividualReport() {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* Additional Services Section */}
+          <section className="mb-8" data-testid="section-additional-services">
+            <Card className="border-2 border-primary/20">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Star className="h-5 w-5 text-primary" />
+                  <h3 className="text-xl font-bold">Additional Services on Request</h3>
+                </div>
+                <p className="text-muted-foreground mb-6">
+                  HumanMetrix offers additional analysis services to support your career journey:
+                </p>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold">Career Fit Analysis</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Discover which roles and industries best match your skills, traits, and working style
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview-prep">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageSquare className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold">Interview Preparation Guide</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Customized questions you're likely to face based on your profile, with strategies to highlight your strengths
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-work-style">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold">Work Style Compatibility</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Understand how you collaborate and what team environments help you thrive
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-roadmap">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Rocket className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold">Career Acceleration Roadmap</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Personalized development plan with skills to prioritize for faster career progression
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths-growth">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold">Strengths & Growth Areas</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Comprehensive self-awareness report highlighting your competitive advantages and areas for development
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <p className="text-sm">
+                    Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary hover:underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> for more information about these services.
+                  </p>
                 </div>
               </div>
             </Card>
