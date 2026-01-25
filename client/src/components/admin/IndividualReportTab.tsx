@@ -749,14 +749,13 @@ export default function IndividualReportTab() {
                               {level.totalScore}%
                             </Badge>
                           </div>
-                          <div className="h-4 bg-muted rounded-full overflow-hidden">
+                          <div className="h-4 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
                             <div 
-                              className={`h-full rounded-full transition-all ${
-                                level.totalScore >= 80 ? 'bg-green-500' : 
-                                level.totalScore >= 60 ? 'bg-primary' : 
-                                level.totalScore >= 40 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${level.totalScore}%` }}
+                              className="h-full rounded-full transition-all bg-blue-500"
+                              style={{ 
+                                width: `${level.totalScore}%`,
+                                opacity: 0.4 + (level.totalScore / 100) * 0.6
+                              }}
                             />
                           </div>
                           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
