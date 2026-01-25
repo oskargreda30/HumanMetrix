@@ -29,6 +29,7 @@ import {
 import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
+import { MultiCandidateCriticalSkillsAnalysis, type CriticalSkillMultiData } from "@/components/shared/MultiCandidateCriticalSkillsAnalysis";
 
 // Mapping from short/legacy skill names to canonical names used in candidate data
 const SKILL_NAME_MAPPING: Record<string, string> = {
@@ -853,6 +854,78 @@ export default function PartnerMultiCandidateRoleFitTab() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Critical Skills Deep Dive - AI-Identified Analysis */}
+          {(() => {
+            const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+            const skillCriticality = roleSkills?.skillCriticality || {};
+            
+            // Build critical skills data for the new component
+            const criticalSkillsData: CriticalSkillMultiData[] = [];
+            
+            // Process FIT skills
+            if (roleSkills?.fitSkills) {
+              Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
+                if (skillCriticality[skillName] === 'critical') {
+                  const candidates = comparison.candidateEntries.map(candidate => {
+                    const skill = findSkillInScores(candidate.skillScores, skillName);
+                    const hasData = skill?.dataAvailable !== false && skill?.score != null;
+                    return {
+                      userId: candidate.userId,
+                      userName: candidate.userName,
+                      score: hasData ? skill.score : null,
+                      dataAvailable: hasData,
+                      gap: hasData && skill.score != null ? skill.score - (requiredScore as number) : null,
+                      meetsRequirement: hasData && (skill?.score || 0) >= (requiredScore as number),
+                    };
+                  });
+                  criticalSkillsData.push({
+                    skillName,
+                    requiredScore: requiredScore as number,
+                    criticality: 'critical',
+                    category: 'fit',
+                    candidates,
+                  });
+                }
+              });
+            }
+            
+            // Process AI Readiness skills
+            if (roleSkills?.aiReadinessSkills) {
+              Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+                if (skillCriticality[skillName] === 'critical') {
+                  const candidates = comparison.candidateEntries.map(candidate => {
+                    const skill = findSkillInScores(candidate.skillScores, skillName);
+                    const hasData = skill?.dataAvailable !== false && skill?.score != null;
+                    return {
+                      userId: candidate.userId,
+                      userName: candidate.userName,
+                      score: hasData ? skill.score : null,
+                      dataAvailable: hasData,
+                      gap: hasData && skill.score != null ? skill.score - (requiredScore as number) : null,
+                      meetsRequirement: hasData && (skill?.score || 0) >= (requiredScore as number),
+                    };
+                  });
+                  criticalSkillsData.push({
+                    skillName,
+                    requiredScore: requiredScore as number,
+                    criticality: 'critical',
+                    category: 'ai_readiness',
+                    candidates,
+                  });
+                }
+              });
+            }
+            
+            if (criticalSkillsData.length === 0) return null;
+            
+            return (
+              <MultiCandidateCriticalSkillsAnalysis 
+                skills={criticalSkillsData}
+                roleName={comparison.roleSnapshot.roleName}
+              />
+            );
+          })()}
 
           {/* Hiring Decision Matrix */}
           <Card>

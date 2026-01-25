@@ -3292,7 +3292,7 @@ interface MultiCandidateComparisonData {
     skillDominance?: Array<{ candidateName: string; winsCount: number; totalSkills: number }>;
     consistencyScores?: Array<{ candidateName: string; consistencyScore: number; interpretation: string }>;
     criticalGapRatios?: Array<{ candidateName: string; criticalGaps: number; totalCritical: number; riskLevel: string }>;
-    largestDifferential?: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number };
+    largestDifferential?: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number; spread?: number; criticality?: string } | null;
   };
   barChartImage?: string | null;
 }
@@ -3986,6 +3986,143 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
     pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
+    
+    // ========== CRITICAL SKILLS DEEP DIVE ==========
+    // Explanation of why each critical skill matters
+    const SKILL_DESCRIPTIONS: Record<string, string> = {
+      "High Agency": "Enables proactive problem-solving and ownership of outcomes, reducing dependency on constant supervision in fast-moving AI environments.",
+      "Intellectual Curiosity": "Drives continuous learning and exploration of new technologies, essential for staying current in rapidly evolving AI landscape.",
+      "Resilience": "Supports persistence through setbacks and ambiguity, critical for navigating complex AI implementation challenges.",
+      "Empathy & Ethics": "Ensures AI solutions consider human impact and ethical implications, vital for responsible AI deployment.",
+      "Growth Mindset": "Facilitates adaptation to new tools and methodologies, enabling continuous improvement in AI capabilities.",
+      "Interpersonal Agility": "Essential for effective collaboration across diverse teams and stakeholders in complex AI initiatives.",
+      "AI Literacy & Prompt Engineering": "Foundational understanding of AI concepts and effective prompt engineering, required for AI-augmented work.",
+      "Technical Fundamentals": "Core technical knowledge enabling effective interaction with AI systems and tools.",
+      "Data Fluency": "Ability to work with and interpret data, essential for leveraging AI insights effectively.",
+      "Critical Thinking & Problem-Solving": "Key for evaluating AI recommendations and identifying optimal solutions to complex challenges.",
+      "Adaptability & Continuous Learning": "Enables quick adaptation to new AI tools and evolving best practices.",
+      "Collaboration & Communication": "Facilitates effective teamwork in AI-augmented environments and cross-functional projects.",
+      "Responsible AI & Ethical Awareness": "Ensures ethical considerations in AI usage and deployment decisions.",
+      "Creativity & Innovation": "Drives novel applications of AI technology to solve business problems.",
+      "Domain Expertise": "Deep knowledge in specific areas that enhances AI application and interpretation.",
+    };
+    
+    yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+    yPos += 15;
+    yPos = addSectionHeader(pdf, 'CRITICAL SKILLS DEEP DIVE', yPos, pageWidth);
+    yPos += 3;
+    
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('AI-identified must-have skills for this role with detailed analysis of why each matters', 20, yPos);
+    yPos += 10;
+    
+    criticalSkillsWithRequirements.forEach((criticalSkill, idx) => {
+      // Check page space for each skill entry
+      if (yPos > pageHeight - 45) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      const skillBoxHeight = 32;
+      const description = SKILL_DESCRIPTIONS[criticalSkill.skillName] || `Critical for success in roles requiring ${criticalSkill.skillName.toLowerCase()} capabilities.`;
+      
+      // Skill box with blue left border
+      pdf.setFillColor(239, 246, 255);
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(20, yPos, pageWidth - 40, skillBoxHeight, 2, 2, 'FD');
+      
+      // Blue left accent bar
+      pdf.setFillColor(59, 130, 246);
+      pdf.rect(20, yPos, 3, skillBoxHeight, 'F');
+      
+      // "CRITICAL" badge
+      pdf.setFillColor(59, 130, 246);
+      pdf.roundedRect(26, yPos + 4, 25, 6, 1, 1, 'F');
+      pdf.setFontSize(5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('CRITICAL', 28, yPos + 8);
+      
+      // Category badge
+      const categoryLabel = criticalSkill.category === 'fit' ? 'Behavioral' : 'Technical';
+      pdf.setFillColor(229, 231, 235);
+      pdf.roundedRect(54, yPos + 4, 23, 6, 1, 1, 'F');
+      pdf.setFontSize(5);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text(categoryLabel, 56, yPos + 8);
+      
+      // Skill name and required score
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(criticalSkill.skillName, 26, yPos + 18);
+      
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`Required: ${criticalSkill.requiredScore}/100`, pageWidth - 55, yPos + 18);
+      
+      // Why it matters description
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(59, 130, 246);
+      const truncDesc = description.length > 110 ? description.slice(0, 108) + '...' : description;
+      pdf.text(`Why it matters: ${truncDesc}`, 26, yPos + 27);
+      
+      yPos += skillBoxHeight + 5;
+    });
+    
+    // Summary of candidates meeting critical skills
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos += 5;
+    
+    pdf.setFillColor(240, 253, 244);
+    pdf.setDrawColor(34, 197, 94);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 30, 2, 2, 'FD');
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 101, 52);
+    pdf.text('Critical Skills Summary by Candidate', 26, yPos + 8);
+    
+    const summaryColWidth = (pageWidth - 50) / Math.min(4, sortedCandidates.length);
+    sortedCandidates.slice(0, 4).forEach((candidate, idx) => {
+      const colX = 26 + (idx * summaryColWidth);
+      
+      const criticalMet = criticalSkillsWithRequirements.filter(cs => {
+        const skill = findSkillInScores(candidate.skillScores, cs.skillName);
+        return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
+      }).length;
+      
+      const criticalAssessed = criticalSkillsWithRequirements.filter(cs => {
+        const skill = findSkillInScores(candidate.skillScores, cs.skillName);
+        return skill?.dataAvailable !== false && skill?.score != null;
+      }).length;
+      
+      const percentage = criticalAssessed > 0 ? Math.round((criticalMet / criticalAssessed) * 100) : 0;
+      
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const truncName = candidate.userName.length > 15 ? candidate.userName.slice(0, 13) + '...' : candidate.userName;
+      pdf.text(truncName, colX, yPos + 15);
+      
+      const meetColor = percentage >= 75 ? [34, 197, 94] : percentage >= 50 ? [234, 179, 8] : [239, 68, 68];
+      pdf.setTextColor(meetColor[0], meetColor[1], meetColor[2]);
+      pdf.setFontSize(10);
+      pdf.text(`${criticalMet}/${criticalAssessed}`, colX, yPos + 24);
+      
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('skills met', colX + 16, yPos + 24);
+    });
+    
+    yPos += 35;
   }
   
   // ========== HIRING DECISION MATRIX - CANDIDATE CARDS ==========
