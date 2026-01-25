@@ -40,13 +40,14 @@ const MOCK_FIT_SCORES = {
 };
 
 const MOCK_AI_READINESS_SCORES = {
-  "AI Literacy & Prompting": 82,
-  "Technical Fluency": 68,
-  "Critical Thinking": 79,
-  "Adaptive Learning": 85,
-  "Responsible AI": 91,
-  "Creative Innovation": 74,
-  "Cross-functional Collaboration": 77,
+  "AI Literacy & Prompt Engineering": 82,
+  "Technical Fundamentals": 68,
+  "Data Fluency": 75,
+  "Critical Thinking & Problem-Solving": 79,
+  "Adaptability & Continuous Learning": 85,
+  "Collaboration & Communication": 77,
+  "Responsible AI & Ethical Awareness": 91,
+  "Creativity & Innovation": 74,
 };
 
 const MOCK_PROMPT_SCORES = {

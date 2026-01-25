@@ -36,11 +36,14 @@ const DEMO_CANDIDATES = [
       "Interpersonal Agility": 80,
     },
     aiReadinessScores: {
-      "AI Literacy": 82,
-      "Technical Fluency": 75,
-      "Critical Thinking": 85,
-      "Adaptive Learning": 88,
-      "Responsible AI": 90,
+      "AI Literacy & Prompt Engineering": 82,
+      "Technical Fundamentals": 75,
+      "Data Fluency": 80,
+      "Critical Thinking & Problem-Solving": 85,
+      "Adaptability & Continuous Learning": 88,
+      "Collaboration & Communication": 78,
+      "Responsible AI & Ethical Awareness": 90,
+      "Creativity & Innovation": 76,
     },
     strengths: ["Strategic thinking", "Innovation mindset", "Team leadership"],
     areas: ["Technical depth", "Risk tolerance"],
@@ -62,11 +65,14 @@ const DEMO_CANDIDATES = [
       "Interpersonal Agility": 76,
     },
     aiReadinessScores: {
-      "AI Literacy": 78,
-      "Technical Fluency": 82,
-      "Critical Thinking": 74,
-      "Adaptive Learning": 76,
-      "Responsible AI": 72,
+      "AI Literacy & Prompt Engineering": 78,
+      "Technical Fundamentals": 82,
+      "Data Fluency": 74,
+      "Critical Thinking & Problem-Solving": 74,
+      "Adaptability & Continuous Learning": 76,
+      "Collaboration & Communication": 70,
+      "Responsible AI & Ethical Awareness": 72,
+      "Creativity & Innovation": 68,
     },
     strengths: ["Technical expertise", "Problem solving", "Resilience under pressure"],
     areas: ["Communication", "Strategic vision"],
@@ -88,11 +94,14 @@ const DEMO_CANDIDATES = [
       "Interpersonal Agility": 78,
     },
     aiReadinessScores: {
-      "AI Literacy": 70,
-      "Technical Fluency": 65,
-      "Critical Thinking": 76,
-      "Adaptive Learning": 72,
-      "Responsible AI": 85,
+      "AI Literacy & Prompt Engineering": 70,
+      "Technical Fundamentals": 65,
+      "Data Fluency": 68,
+      "Critical Thinking & Problem-Solving": 76,
+      "Adaptability & Continuous Learning": 72,
+      "Collaboration & Communication": 74,
+      "Responsible AI & Ethical Awareness": 85,
+      "Creativity & Innovation": 70,
     },
     strengths: ["Collaboration", "Ethical judgment", "Stakeholder management"],
     areas: ["Technical skills", "Initiative"],
@@ -100,17 +109,22 @@ const DEMO_CANDIDATES = [
 ];
 
 const SKILL_ACRONYMS: Record<string, string> = {
+  // FIT Skills
   "High Agency": "HA",
   "Intellectual Curiosity": "IC",
   "Resilience": "RE",
   "Empathy & Ethics": "EE",
   "Growth Mindset": "GM",
   "Interpersonal Agility": "IA",
-  "AI Literacy": "AL",
-  "Technical Fluency": "TF",
-  "Critical Thinking": "CT",
-  "Adaptive Learning": "AD",
-  "Responsible AI": "RA",
+  // AI Readiness Skills (8 official skills)
+  "AI Literacy & Prompt Engineering": "AL&PE",
+  "Technical Fundamentals": "TF",
+  "Data Fluency": "DF",
+  "Critical Thinking & Problem-Solving": "CT&PS",
+  "Adaptability & Continuous Learning": "ACL",
+  "Collaboration & Communication": "CC",
+  "Responsible AI & Ethical Awareness": "RAI",
+  "Creativity & Innovation": "CI",
 };
 
 const CANDIDATE_COLORS = [
@@ -158,17 +172,22 @@ const AIQ_SCORES = [
 ];
 
 const COMBINED_RADAR_DATA = [
+  // FIT Skills (6)
   { skill: "HA", fullName: "High Agency", candidate0: 85, candidate1: 72, candidate2: 68 },
   { skill: "IC", fullName: "Intellectual Curiosity", candidate0: 88, candidate1: 78, candidate2: 74 },
   { skill: "RE", fullName: "Resilience", candidate0: 78, candidate1: 82, candidate2: 72 },
   { skill: "EE", fullName: "Empathy & Ethics", candidate0: 84, candidate1: 75, candidate2: 82 },
   { skill: "GM", fullName: "Growth Mindset", candidate0: 86, candidate1: 74, candidate2: 70 },
   { skill: "IA", fullName: "Interpersonal Agility", candidate0: 80, candidate1: 76, candidate2: 78 },
-  { skill: "AL", fullName: "AI Literacy", candidate0: 82, candidate1: 78, candidate2: 70 },
-  { skill: "TF", fullName: "Technical Fluency", candidate0: 75, candidate1: 82, candidate2: 65 },
-  { skill: "CT", fullName: "Critical Thinking", candidate0: 85, candidate1: 74, candidate2: 76 },
-  { skill: "AD", fullName: "Adaptive Learning", candidate0: 88, candidate1: 76, candidate2: 72 },
-  { skill: "RA", fullName: "Responsible AI", candidate0: 90, candidate1: 72, candidate2: 85 },
+  // AI Readiness Skills (8 official skills)
+  { skill: "AL&PE", fullName: "AI Literacy & Prompt Engineering", candidate0: 82, candidate1: 78, candidate2: 70 },
+  { skill: "TF", fullName: "Technical Fundamentals", candidate0: 75, candidate1: 82, candidate2: 65 },
+  { skill: "DF", fullName: "Data Fluency", candidate0: 80, candidate1: 74, candidate2: 68 },
+  { skill: "CT&PS", fullName: "Critical Thinking & Problem-Solving", candidate0: 85, candidate1: 74, candidate2: 76 },
+  { skill: "ACL", fullName: "Adaptability & Continuous Learning", candidate0: 88, candidate1: 76, candidate2: 72 },
+  { skill: "CC", fullName: "Collaboration & Communication", candidate0: 78, candidate1: 70, candidate2: 74 },
+  { skill: "RAI", fullName: "Responsible AI & Ethical Awareness", candidate0: 90, candidate1: 72, candidate2: 85 },
+  { skill: "CI", fullName: "Creativity & Innovation", candidate0: 76, candidate1: 68, candidate2: 70 },
 ];
 
 export default function SampleComparisonReport() {
@@ -789,7 +808,7 @@ export default function SampleComparisonReport() {
                       <td colSpan={5} className="py-2 px-2 font-semibold text-muted-foreground">AI Readiness</td>
                     </tr>
                     {Object.keys(DEMO_CANDIDATES[0].aiReadinessScores).map(skill => {
-                      const scores = DEMO_CANDIDATES.map(c => c.aiReadinessScores[skill as keyof typeof c.aiReadinessScores]);
+                      const scores = DEMO_CANDIDATES.map(c => c.aiReadinessScores[skill as keyof typeof c.aiReadinessScores] ?? 0);
                       const maxScore = Math.max(...scores);
                       const bestIndex = scores.indexOf(maxScore);
                       return (

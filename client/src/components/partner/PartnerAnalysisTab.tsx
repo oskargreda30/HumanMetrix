@@ -23,6 +23,7 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import { CriticalSkillsAnalysis, CriticalSkillData } from "@/components/shared/CriticalSkillsAnalysis";
+import { CohortBenchmarking, AssessmentBenchmark } from "@/components/shared/CohortBenchmarking";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -356,6 +357,21 @@ export default function PartnerAnalysisTab() {
       ? [`/api/partner/me/role-alignment?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
       : undefined as any,
     enabled: false,
+  });
+
+  // Cohort benchmarking query
+  interface CohortBenchmarkData {
+    overallPosition: number;
+    totalCandidates: number;
+    assessments: AssessmentBenchmark[];
+    targetCandidateId: string;
+  }
+  
+  const { data: cohortBenchmark, isLoading: isLoadingCohort, refetch: refetchCohort } = useQuery<CohortBenchmarkData>({
+    queryKey: selectedCandidate && selectedRole
+      ? [`/api/partner/me/cohort-benchmark?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
+      : undefined as any,
+    enabled: !!selectedCandidate && !!selectedRole && !!alignment,
   });
 
   const toggleCandidate = (candidateId: string) => {
@@ -1949,6 +1965,25 @@ export default function PartnerAnalysisTab() {
                 ]}
                 candidateName={getCandidateName(selectedCandidateData)}
               />
+
+              {/* Cohort Benchmarking */}
+              {cohortBenchmark && cohortBenchmark.totalCandidates > 1 && (
+                <CohortBenchmarking
+                  overallPosition={cohortBenchmark.overallPosition}
+                  totalCandidates={cohortBenchmark.totalCandidates}
+                  assessments={cohortBenchmark.assessments}
+                />
+              )}
+              {isLoadingCohort && (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Loading cohort benchmarks...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Alternative Role Fit */}
               <Card data-testid="section-role-flexibility">

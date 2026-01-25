@@ -10919,6 +10919,160 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Get cohort benchmarking for a candidate
+  app.get("/api/partner/me/cohort-benchmark", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.query;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Get all sessions for this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      
+      // Verify the candidate belongs to this partner
+      const targetCandidateSessions = allSessions.filter(
+        s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
+      );
+      
+      if (targetCandidateSessions.length === 0) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Get all unique candidates for this partner with completed assessments
+      const candidateMap = new Map<string, {
+        id: string;
+        fitScore: number | null;
+        aiReadinessScore: number | null;
+        promptScore: number | null;
+        aiqScore: number | null;
+      }>();
+
+      for (const session of allSessions) {
+        if (session.status !== 'completed') continue;
+        
+        const candidateKey = session.externalEmail || session.externalUserId || session.id;
+        if (!candidateKey) continue;
+
+        if (!candidateMap.has(candidateKey)) {
+          candidateMap.set(candidateKey, {
+            id: candidateKey,
+            fitScore: null,
+            aiReadinessScore: null,
+            promptScore: null,
+            aiqScore: null,
+          });
+        }
+
+        const candidate = candidateMap.get(candidateKey)!;
+        
+        if (session.assessmentType === 'fit' && session.scores) {
+          const scores = session.scores as Record<string, number>;
+          const values = Object.values(scores).filter(v => typeof v === 'number');
+          candidate.fitScore = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
+        } else if (session.assessmentType === 'ai_readiness' && session.scores) {
+          const scores = session.scores as Record<string, number>;
+          const values = Object.values(scores).filter(v => typeof v === 'number');
+          candidate.aiReadinessScore = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
+        } else if (session.assessmentType === 'prompt_architecture') {
+          candidate.promptScore = session.totalScore;
+        } else if (session.assessmentType === 'aiq') {
+          candidate.aiqScore = session.totalScore;
+        }
+      }
+
+      const candidates = Array.from(candidateMap.values());
+      const targetCandidate = candidateMap.get(candidateId as string);
+
+      if (!targetCandidate) {
+        return res.status(404).json({ message: "Candidate assessment data not found" });
+      }
+
+      // Calculate overall scores and rankings
+      const calculatePercentile = (score: number | null, allScores: (number | null)[]): number => {
+        if (score === null) return 0;
+        const validScores = allScores.filter((s): s is number => s !== null);
+        if (validScores.length === 0) return 0;
+        const belowCount = validScores.filter(s => s < score).length;
+        return Math.round((belowCount / validScores.length) * 100);
+      };
+
+      const calculatePosition = (score: number | null, allScores: (number | null)[]): number => {
+        if (score === null) return candidates.length;
+        const validScores = allScores
+          .filter((s): s is number => s !== null)
+          .sort((a, b) => b - a); // Descending
+        return validScores.indexOf(score) + 1 || validScores.length;
+      };
+
+      const getPositionLabel = (percentile: number): 'above' | 'below' | 'average' => {
+        if (percentile >= 60) return 'above';
+        if (percentile <= 40) return 'below';
+        return 'average';
+      };
+
+      // Calculate overall score (average of all available assessments)
+      const calculateOverallScore = (c: typeof targetCandidate): number | null => {
+        const scores = [c.fitScore, c.aiReadinessScore, c.promptScore, c.aiqScore].filter((s): s is number => s !== null);
+        return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+      };
+
+      const overallScores = candidates.map(c => calculateOverallScore(c));
+      const targetOverallScore = calculateOverallScore(targetCandidate);
+      const overallPosition = calculatePosition(targetOverallScore, overallScores);
+
+      // Per-assessment benchmarks
+      const fitPercentile = calculatePercentile(targetCandidate.fitScore, candidates.map(c => c.fitScore));
+      const aiPercentile = calculatePercentile(targetCandidate.aiReadinessScore, candidates.map(c => c.aiReadinessScore));
+      const promptPercentile = calculatePercentile(targetCandidate.promptScore, candidates.map(c => c.promptScore));
+      const aiqPercentile = calculatePercentile(targetCandidate.aiqScore, candidates.map(c => c.aiqScore));
+
+      const assessments = [
+        {
+          assessmentType: 'FIT',
+          skillsCompared: '6 Behavioral Skills',
+          avgPercentile: fitPercentile,
+          position: getPositionLabel(fitPercentile),
+        },
+        {
+          assessmentType: 'AI Readiness',
+          skillsCompared: '8 Technical Skills',
+          avgPercentile: aiPercentile,
+          position: getPositionLabel(aiPercentile),
+        },
+        {
+          assessmentType: 'Prompt Architecture',
+          skillsCompared: '5 Prompt Dimensions',
+          avgPercentile: promptPercentile,
+          position: getPositionLabel(promptPercentile),
+        },
+        {
+          assessmentType: 'AIQ',
+          skillsCompared: 'AI Ethics Quotient',
+          avgPercentile: aiqPercentile,
+          position: getPositionLabel(aiqPercentile),
+        },
+      ];
+
+      res.json({
+        overallPosition,
+        totalCandidates: candidates.length,
+        assessments,
+        targetCandidateId: candidateId,
+      });
+    } catch (error) {
+      console.error("Error fetching cohort benchmark:", error);
+      res.status(500).json({ message: "Failed to fetch cohort benchmark" });
+    }
+  });
+
   // Admin: Get current user's organization info
   app.get("/api/admin/my-organization", isAuthenticated, async (req: any, res) => {
     try {
