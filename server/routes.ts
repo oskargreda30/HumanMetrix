@@ -10981,6 +10981,497 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Multi-candidate role fit comparison - compare multiple candidates against one role
+  app.post("/api/partner/me/multi-candidate-comparison", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { jobRoleId, candidateIds } = req.body;
+      
+      if (!jobRoleId || !candidateIds || !Array.isArray(candidateIds) || candidateIds.length < 2) {
+        return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
+      }
+      
+      if (candidateIds.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
+      }
+
+      // Verify all candidates belong to this partner
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const partnerCandidateIds = new Set<string>();
+      allSessions.forEach(s => {
+        if (s.externalEmail) partnerCandidateIds.add(s.externalEmail);
+        if (s.externalUserId) partnerCandidateIds.add(s.externalUserId);
+        if (s.id) partnerCandidateIds.add(s.id);
+        if (s.userId) partnerCandidateIds.add(s.userId);
+      });
+      
+      const unauthorizedCandidates = candidateIds.filter(id => !partnerCandidateIds.has(id));
+      if (unauthorizedCandidates.length > 0) {
+        return res.status(403).json({ 
+          message: "Some candidates do not belong to your organization",
+          unauthorizedCandidates 
+        });
+      }
+
+      // Get job role - roles are shared/public resources accessible by all partners
+      // Security note: candidate ownership is validated above; roles are templates not per-partner
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      if (!role.requiredSkillScores) {
+        return res.status(400).json({ 
+          message: "Role does not have required skill scores. Please generate them first.",
+          requiresGeneration: true
+        });
+      }
+
+      // Helper functions
+      const ensureNoMultipleOf5 = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) {
+          const nudge = score % 10 === 0 ? 2 : 1;
+          return Math.max(1, Math.min(99, score + nudge));
+        }
+        return score;
+      };
+
+      const normalizeSkillName = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+
+      const skillCriticality = role.requiredSkillScores.skillCriticality || {};
+      
+      const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
+        if (skillCriticality[skillName]) return skillCriticality[skillName] as any;
+        const normalizedInput = normalizeSkillName(skillName);
+        for (const [key, value] of Object.entries(skillCriticality)) {
+          const normalizedKey = normalizeSkillName(key);
+          if (normalizedKey === normalizedInput || normalizedKey.includes(normalizedInput) || normalizedInput.includes(normalizedKey)) {
+            return value as any;
+          }
+        }
+        return 'important';
+      };
+
+      const getSkillWeight = (criticality: string): number => {
+        if (criticality === 'critical') return 2.0;
+        if (criticality === 'important') return 1.5;
+        return 1.0;
+      };
+
+      // AI Readiness skill mapping
+      const aiReadinessSkillMapping: Record<string, string> = {
+        'AI Literacy': 'AI Literacy & Prompt Engineering',
+        'Collaboration': 'Collaboration & Communication',
+        'Domain Fluency': 'Data Fluency',
+        'Responsible AI': 'Responsible AI & Ethical Awareness',
+        'Data Fluency': 'Data Fluency',
+        'Technical Fundamentals': 'Technical Fundamentals',
+        'Technical Fluency': 'Technical Fundamentals',
+        'Critical Thinking': 'Critical Thinking & Problem-Solving',
+        'Adaptability': 'Adaptability & Continuous Learning',
+        'Adaptive Learning': 'Adaptability & Continuous Learning',
+        'Creativity': 'Creativity & Innovation',
+        'Creative Innovation': 'Creativity & Innovation',
+        'Domain Expertise': 'Domain Expertise',
+      };
+
+      // Process each candidate
+      const candidateEntries: any[] = [];
+      
+      for (const candidateId of candidateIds) {
+        const user = await storage.getUser(candidateId);
+        if (!user) continue;
+
+        const resultsRaw = await storage.getResultsByUser(candidateId);
+        const results = resultsRaw.map(recalculateScores);
+        const completedResults = results.filter((r) => r.status === 'completed');
+
+        // Aggregate skills
+        const fitSkills = new Map<string, number>();
+        const aiReadinessSkills = new Map<string, number>();
+        
+        completedResults.forEach((result) => {
+          if (result.scores && typeof result.scores === 'object') {
+            Object.entries(result.scores).forEach(([skill, score]) => {
+              if (result.assessmentType === 'fit') {
+                fitSkills.set(skill, score as number);
+              } else if (result.assessmentType === 'ai_readiness') {
+                aiReadinessSkills.set(skill, score as number);
+              }
+            });
+          }
+        });
+
+        // Build skill alignments with coverage tracking
+        const skillScores: any[] = [];
+        let totalRequiredSkills = 0;
+        let assessedSkillCount = 0;
+        
+        // Process FIT skills
+        if (role.requiredSkillScores.fitSkills) {
+          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const candidateScoreRaw = fitSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
+            
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: true
+              });
+            } else {
+              skillScores.push({
+                skillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName),
+                category: 'fit' as const,
+                dataAvailable: false
+              });
+            }
+          });
+        }
+        
+        // Process AI Readiness skills
+        if (role.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
+            totalRequiredSkills++;
+            const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
+            const normalizedSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScoreRaw = aiReadinessSkills.get(normalizedSkillName) || aiReadinessSkills.get(skillName);
+            const dataAvailable = candidateScoreRaw !== undefined;
+            
+            if (dataAvailable) {
+              assessedSkillCount++;
+              const candidateScore = candidateScoreRaw;
+              const gap = requiredScore - candidateScore;
+              let alignment: string;
+              if (gap <= -10) alignment = 'excellent';
+              else if (gap <= 0) alignment = 'good';
+              else if (gap <= 15) alignment = 'fair';
+              else alignment = 'poor';
+              
+              skillScores.push({
+                skillName,
+                score: candidateScore,
+                requiredScore,
+                gap,
+                alignment,
+                criticality: findCriticality(skillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: true
+              });
+            } else {
+              skillScores.push({
+                skillName,
+                score: null,
+                requiredScore,
+                gap: null,
+                alignment: 'not_assessed',
+                criticality: findCriticality(skillName),
+                category: 'ai_readiness' as const,
+                dataAvailable: false
+              });
+            }
+          });
+        }
+
+        // Calculate overall fit with weighting
+        const assessedSkills = skillScores.filter(s => s.dataAvailable);
+        let overallFit = 0;
+        if (assessedSkills.length > 0) {
+          let totalWeight = 0;
+          let weightedSum = 0;
+          assessedSkills.forEach(skill => {
+            const weight = getSkillWeight(skill.criticality);
+            const skillFit = Math.max(0, Math.min(100, 100 - Math.max(0, skill.gap || 0)));
+            weightedSum += skillFit * weight;
+            totalWeight += weight;
+          });
+          overallFit = Math.round(weightedSum / totalWeight);
+        }
+
+        // Determine data coverage
+        const dataCoverage = totalRequiredSkills > 0 
+          ? Math.round((assessedSkillCount / totalRequiredSkills) * 100) 
+          : 0;
+        const hasSufficientData = dataCoverage >= 40;
+
+        // Build strengths and gaps
+        const strengths: string[] = [];
+        const gaps: string[] = [];
+        const riskFlags: string[] = [];
+        
+        assessedSkills.forEach(skill => {
+          if (skill.gap <= -10) {
+            strengths.push(`Strong in ${skill.skillName} (+${Math.abs(skill.gap)} above required)`);
+          } else if (skill.gap > 15) {
+            gaps.push(`Gap in ${skill.skillName} (${skill.gap} points below required)`);
+            if (skill.criticality === 'critical') {
+              riskFlags.push(`Critical skill gap: ${skill.skillName}`);
+            }
+          }
+        });
+
+        // Track missing assessments
+        const missingAssessments: string[] = [];
+        const hasFit = completedResults.some(r => r.assessmentType === 'fit');
+        const hasAiReadiness = completedResults.some(r => r.assessmentType === 'ai_readiness');
+        if (!hasFit) missingAssessments.push('FIT Assessment');
+        if (!hasAiReadiness) missingAssessments.push('AI Readiness Assessment');
+
+        const userName = user.firstName || user.lastName 
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+          : user.email;
+
+        candidateEntries.push({
+          userId: candidateId,
+          userName,
+          email: user.email,
+          overallFit: hasSufficientData ? overallFit : null,
+          rank: 0,
+          fitTier: !hasSufficientData ? 'insufficient-data' : (overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed'),
+          skillScores,
+          strengths: strengths.slice(0, 5),
+          gaps: gaps.slice(0, 5),
+          riskFlags,
+          dataCoverage: {
+            percentage: dataCoverage,
+            assessedSkillCount,
+            totalRequiredSkills,
+            missingAssessments,
+            hasSufficientData
+          },
+          hasSufficientData,
+          missingAssessments
+        });
+      }
+
+      // Separate candidates with sufficient data from those without
+      const comparableCandidates = candidateEntries.filter(e => e.hasSufficientData);
+      const insufficientDataCandidates = candidateEntries.filter(e => !e.hasSufficientData);
+
+      if (comparableCandidates.length < 2) {
+        if (candidateEntries.length >= 2) {
+          return res.status(400).json({ 
+            message: "Not enough candidates with sufficient assessment data for comparison. Candidates need at least 40% of required skills assessed.",
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage.percentage,
+              missingAssessments: c.missingAssessments
+            }))
+          });
+        }
+        return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
+      }
+
+      // Sort and assign ranks
+      const getHiringBandScore = (candidate: any): number => {
+        const overallFit = candidate.overallFit || 0;
+        const criticalGaps = candidate.skillScores.filter((skill: any) => {
+          if (skill.criticality !== 'critical' || skill.dataAvailable === false || skill.score == null) return false;
+          const requiredScore = skill.requiredScore || 60;
+          return skill.score < requiredScore;
+        }).length;
+        
+        if (overallFit >= 80 && criticalGaps === 0) return 4;
+        if (overallFit >= 70 && criticalGaps <= 1) return 3;
+        if (overallFit >= 60 && criticalGaps <= 2) return 2;
+        return 1;
+      };
+      
+      comparableCandidates.sort((a, b) => {
+        const bandDiff = getHiringBandScore(b) - getHiringBandScore(a);
+        if (bandDiff !== 0) return bandDiff;
+        return (b.overallFit || 0) - (a.overallFit || 0);
+      });
+      comparableCandidates.forEach((entry, index) => {
+        entry.rank = index + 1;
+      });
+      insufficientDataCandidates.forEach((entry) => {
+        entry.rank = null;
+      });
+      
+      const allCandidateEntries = [...comparableCandidates, ...insufficientDataCandidates];
+
+      // Calculate summary insights
+      const fitScores = comparableCandidates.map(e => e.overallFit as number);
+      const topPerformer = comparableCandidates[0];
+      const averageFit = fitScores.length > 0 ? Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length) : 0;
+      
+      const fitDistribution = {
+        strong: comparableCandidates.filter(e => e.fitTier === 'strong').length,
+        moderate: comparableCandidates.filter(e => e.fitTier === 'moderate').length,
+        developmentNeeded: comparableCandidates.filter(e => e.fitTier === 'development-needed').length,
+        insufficientData: insufficientDataCandidates.length
+      };
+
+      // Find common strengths and gaps
+      const strengthCounts: Record<string, number> = {};
+      const gapCounts: Record<string, number> = {};
+      
+      comparableCandidates.forEach(entry => {
+        entry.strengths.forEach((s: string) => {
+          strengthCounts[s] = (strengthCounts[s] || 0) + 1;
+        });
+        entry.gaps.forEach((g: string) => {
+          gapCounts[g] = (gapCounts[g] || 0) + 1;
+        });
+      });
+
+      const commonStrengths = Object.entries(strengthCounts)
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
+        .map(([strength]) => strength)
+        .slice(0, 3);
+
+      const commonGaps = Object.entries(gapCounts)
+        .filter(([_, count]) => count >= Math.ceil(comparableCandidates.length / 2))
+        .map(([gap]) => gap)
+        .slice(0, 3);
+
+      // Generate hiring recommendation
+      const topEntry = comparableCandidates[0];
+      const runnerUp = comparableCandidates.length > 1 ? comparableCandidates[1] : null;
+      
+      const topAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      const runnerUpAdvantages: { skill: string; advantage: number; criticality: string }[] = [];
+      
+      if (runnerUp) {
+        topEntry.skillScores.forEach((skill: any) => {
+          if (!skill.dataAvailable) return;
+          const runnerUpSkill = runnerUp.skillScores.find((s: any) => s.skillName === skill.skillName);
+          if (runnerUpSkill && runnerUpSkill.dataAvailable) {
+            const diff = skill.score - runnerUpSkill.score;
+            if (diff > 5) {
+              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
+            } else if (diff < -5) {
+              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'important' });
+            }
+          }
+        });
+      }
+      
+      const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
+      topAdvantages.sort((a, b) => {
+        const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
+                         (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
+        return critDiff !== 0 ? critDiff : b.advantage - a.advantage;
+      });
+      
+      const topCriticalAdvantages = topAdvantages.filter(a => a.criticality === 'critical');
+      
+      // Build recommendation reasons
+      const recommendationReasons: string[] = [];
+      if (topEntry.overallFit >= 80) {
+        recommendationReasons.push(`Highest overall fit score (${topEntry.overallFit}%)`);
+      }
+      if (topCriticalAdvantages.length > 0) {
+        recommendationReasons.push(`Leads in ${topCriticalAdvantages.length} critical skill(s)`);
+      }
+      if (topEntry.strengths.length > 0) {
+        recommendationReasons.push(`Strong in multiple key areas`);
+      }
+      if (topEntry.riskFlags.length === 0) {
+        recommendationReasons.push('No critical skill gaps identified');
+      }
+      
+      const runnerUpConsideration: string[] = [];
+      if (runnerUp) {
+        if (runnerUpAdvantages.some(a => a.criticality === 'critical')) {
+          runnerUpConsideration.push('Has advantages in some critical skills');
+        }
+        if (Math.abs((topEntry.overallFit || 0) - (runnerUp.overallFit || 0)) <= 5) {
+          runnerUpConsideration.push('Very close overall fit score');
+        }
+      }
+
+      const summaryInsights = {
+        topPerformer: { userId: topPerformer.userId, userName: topPerformer.userName, overallFit: topPerformer.overallFit },
+        averageFit,
+        fitDistribution,
+        commonStrengths,
+        commonGaps,
+        recommendation: {
+          recommendedCandidate: topEntry.userName,
+          recommendedUserId: topEntry.userId,
+          fitScore: topEntry.overallFit,
+          fitTier: topEntry.fitTier,
+          reasons: recommendationReasons.slice(0, 4),
+          criticalSkillAdvantages: topCriticalAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        },
+        runnerUp: runnerUp ? {
+          name: runnerUp.userName,
+          userId: runnerUp.userId,
+          fitScore: runnerUp.overallFit,
+          fitTier: runnerUp.fitTier,
+          consideration: runnerUpConsideration.slice(0, 3),
+          advantagesOverTop: runnerUpAdvantages.slice(0, 3).map(a => `${a.skill} (+${a.advantage} pts)`),
+        } : null,
+        keyDifferentiators: topAdvantages.slice(0, 5).map(a => 
+          `${topEntry.userName} leads in ${a.skill} by ${a.advantage} points${a.criticality === 'critical' ? ' (CRITICAL)' : ''}`
+        ),
+      };
+
+      // Create comparison record
+      const comparison = await storage.createMultiCandidateComparison({
+        jobRoleId,
+        createdBy: req.user.id,
+        candidateEntries: allCandidateEntries,
+        roleSnapshot: {
+          roleId: role.id,
+          roleName: role.name,
+          requiredSkillScores: role.requiredSkillScores
+        },
+        summaryInsights: {
+          ...summaryInsights,
+          coverageSummary: {
+            comparableCandidatesCount: comparableCandidates.length,
+            insufficientDataCandidatesCount: insufficientDataCandidates.length,
+            insufficientDataCandidates: insufficientDataCandidates.map(c => ({
+              userName: c.userName,
+              email: c.email,
+              dataCoverage: c.dataCoverage,
+              missingAssessments: c.missingAssessments
+            }))
+          }
+        },
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      });
+
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error creating partner multi-candidate comparison:", error);
+      res.status(500).json({ message: "Failed to create comparison" });
+    }
+  });
+
   // Partner: Get cohort benchmarking for a candidate
   app.get("/api/partner/me/cohort-benchmark", isAuthenticated, async (req: any, res) => {
     try {

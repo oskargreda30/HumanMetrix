@@ -1,0 +1,1161 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { exportRoleFitPDF } from "@/lib/pdfExport";
+import SkillsLegend from "@/components/SkillsLegend";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PartnerMultiCandidateRoleFitTab from "./PartnerMultiCandidateRoleFitTab";
+
+function SingleCandidateRoleFit() {
+  const [selectedCandidate, setSelectedCandidate] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const { toast } = useToast();
+
+  const { data: candidates } = useQuery<any[]>({
+    queryKey: ['/api/partner/me/candidates'],
+  });
+
+  const { data: roles } = useQuery<any[]>({
+    queryKey: ['/api/partner/me/roles'],
+  });
+
+  type RoleAlignment = {
+    overallFit: number | null;
+    fitSkillAlignments?: Array<{
+      skillName: string;
+      candidateScore: number | null;
+      requiredScore: number;
+      gap: number | null;
+      alignment: string;
+      criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
+    }> | null;
+    aiReadinessSkillAlignments?: Array<{
+      skillName: string;
+      candidateScore: number | null;
+      requiredScore: number;
+      gap: number | null;
+      alignment: string;
+      criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
+    }> | null;
+    strengths: string[];
+    gaps: string[];
+    cohortBenchmarks?: {
+      overall?: { percentile: number; totalCandidates: number; position: string };
+      fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+      prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+      aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+    } | null;
+    interviewQuestions?: Array<{
+      question: string;
+      purpose: string;
+      targetSkill: string;
+    }> | null;
+    roleFlexibility?: Array<{
+      roleId: string;
+      roleName: string;
+      fitScore: number;
+      rawFitScore?: number;
+      roleSimilarity?: number;
+      coveragePercent?: number;
+      coverageLabel?: 'High' | 'Medium' | 'Limited';
+      missingCriticalSkills?: string[];
+      description?: string;
+    }> | null;
+    finalRecommendation?: string;
+    nextSteps?: string[];
+    dataCoverage?: {
+      percentage: number;
+      assessedSkillCount: number;
+      totalRequiredSkills: number;
+      missingAssessments: string[];
+      hasSufficientData: boolean;
+    };
+  };
+
+  const getPercentileBadge = (percentile: number) => {
+    // percentile = 90 means candidate is better than 90% of candidates, so they're in Top 10%
+    if (percentile >= 90) return { label: `Top ${100 - percentile}%`, variant: 'default' as const, color: 'text-green-600' };
+    if (percentile >= 75) return { label: `Top ${100 - percentile}%`, variant: 'secondary' as const, color: 'text-blue-600' };
+    if (percentile >= 50) return { label: `Top ${100 - percentile}%`, variant: 'outline' as const, color: 'text-muted-foreground' };
+    // For below median: percentile=40 means they're in the bottom 40%, so we show "Bottom 40%"
+    return { label: `Bottom ${percentile}%`, variant: 'outline' as const, color: 'text-amber-600' };
+  };
+
+  const getCriticalityBadge = (criticality: string | undefined) => {
+    const level = criticality || 'important';
+    // Only show badge for critical skills
+    if (level === 'critical') {
+      return (
+        <Badge className="text-xs ml-1 px-1.5 min-w-[20px] justify-center bg-blue-600 text-white hover:bg-blue-700">
+          C
+        </Badge>
+      );
+    }
+    // No badge for Important or Nice-to-have
+    return null;
+  };
+  
+  const CriticalityLegend = () => (
+    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4 pt-3 border-t">
+      <span className="font-medium">Legend:</span>
+      <span className="flex items-center gap-1">
+        <Badge className="text-xs px-1.5 min-w-[20px] justify-center bg-blue-600 text-white">C</Badge>
+        = Critical (Essential for role success)
+      </span>
+    </div>
+  );
+
+  const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
+    queryKey: selectedCandidate && selectedRole
+      ? [`/api/partner/me/role-alignment?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
+      : undefined as any,
+    enabled: !!selectedCandidate && !!selectedRole,
+  });
+
+  const generateRequiredScoresMutation = useMutation({
+    mutationFn: async (roleId: string) => {
+      // Use 90 second timeout for AI score generation which includes OpenAI API calls
+      const res = await apiRequest('POST', `/api/partner/me/roles/${roleId}/generate-required-scores`, undefined, { timeoutMs: 90000 });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/roles'] });
+      toast({ title: "Required scores generated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Generation failed",
+        description: error.message || "Failed to generate required scores. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const analyzeRoleFitMutation = useMutation({
+    mutationFn: async () => {
+      // Use 120 second timeout for AI analysis which includes OpenAI API calls
+      const res = await apiRequest('POST', '/api/partner/me/role-alignment', {
+        candidateId: selectedCandidate,
+        jobRoleId: selectedRole,
+      }, { timeoutMs: 120000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Directly set the query data for immediate display
+      queryClient.setQueryData([`/api/partner/me/role-alignment?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`], data);
+      toast({ title: "Role fit analysis completed" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Analysis failed",
+        description: error.message || "Failed to analyze role fit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
+  const selectedRoleData = roles?.find((r) => r.id === selectedRole);
+
+  const handleExportPDF = async () => {
+    if (!alignment || !selectedCandidateData || !selectedRoleData) return;
+    
+    try {
+      await exportRoleFitPDF({
+        candidate: selectedCandidateData,
+        role: selectedRoleData,
+        alignment: alignment,
+      });
+      toast({
+        title: "PDF exported successfully",
+        description: "Your role fit analysis has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>AI-Powered Role Alignment Analysis</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Select a candidate and job role to see how well they match using AI analysis
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Candidate</label>
+              <Select value={selectedCandidate} onValueChange={setSelectedCandidate}>
+                <SelectTrigger data-testid="select-candidate">
+                  <SelectValue placeholder="Select a candidate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {candidates?.map((candidate: any) => (
+                    <SelectItem key={candidate.user.id} value={candidate.user.id}>
+                      {candidate.user.firstName || candidate.user.lastName
+                        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+                        : candidate.user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Job Role</label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger data-testid="select-role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles?.map((role: any) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {selectedRole && selectedRoleData && !selectedRoleData.requiredSkillScores && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-yellow-800">
+                    Required Skill Scores Not Generated
+                  </p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    This role needs required skill scores before you can analyze candidates. Click the button to generate them using AI.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => generateRequiredScoresMutation.mutate(selectedRole)}
+                  disabled={generateRequiredScoresMutation.isPending}
+                  size="sm"
+                  data-testid="button-generate-required-scores"
+                >
+                  {generateRequiredScoresMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Required Scores'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {selectedCandidate && selectedRole && !alignment && selectedRoleData?.requiredSkillScores && (
+            <Button
+              onClick={() => analyzeRoleFitMutation.mutate()}
+              disabled={analyzeRoleFitMutation.isPending}
+              className="w-full"
+              data-testid="button-analyze-fit"
+            >
+              {analyzeRoleFitMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing with AI... (this may take up to 2 minutes)
+                </>
+              ) : (
+                <>
+                  <Target className="mr-2 h-4 w-4" />
+                  Analyze Role Fit
+                </>
+              )}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {isLoadingAlignment && (
+        <Card>
+          <CardContent className="flex justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading AI analysis...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {alignment && !isLoadingAlignment && (
+        <div className="space-y-6">
+          {/* Executive Summary - Guide for Hiring Managers */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A step-by-step guide to understanding this candidate's fit for the {selectedRoleData?.name} role
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Step 1 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Overall Role Fit Score</p>
+                    <p className="text-xs text-muted-foreground">The weighted average of all skill scores against role requirements. <span className="font-medium">80%+ = Strong fit</span>, 60-79% = Good potential, Below 60% = Development needed.</p>
+                  </div>
+                </div>
+                {/* Step 2 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Skill Alignments (FIT & AI Readiness)</p>
+                    <p className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600">C</Badge> marked skills - these are <span className="font-medium">critical</span> for success.</p>
+                  </div>
+                </div>
+                {/* Step 3 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Critical Skills Analysis</p>
+                    <p className="text-xs text-muted-foreground">Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.</p>
+                  </div>
+                </div>
+                {/* Step 4 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Cohort Benchmarking</p>
+                    <p className="text-xs text-muted-foreground">See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.</p>
+                  </div>
+                </div>
+                {/* Step 5 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Role Flexibility Analysis</p>
+                    <p className="text-xs text-muted-foreground">Alternative roles where this candidate might excel if the primary role isn't ideal. Useful for internal mobility.</p>
+                  </div>
+                </div>
+                {/* Step 6 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">Hiring Recommendation</p>
+                    <p className="text-xs text-muted-foreground">Summary with specific hiring guidance, interview focus areas, and onboarding considerations.</p>
+                  </div>
+                </div>
+                {/* What each assessment measures */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">?</div>
+                  <div>
+                    <p className="font-medium text-sm">What We Measure</p>
+                    <p className="text-xs text-muted-foreground"><span className="font-medium">FIT:</span> Behavioral traits & mindset. <span className="font-medium">AI Readiness:</span> Technical AI skills. <span className="font-medium">PA:</span> Prompt writing ability. <span className="font-medium">AIQ:</span> AI ethics & judgment.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Overall Fit Score */}
+          {(() => {
+            // Always show score if we have any data, even if incomplete
+            const hasPartialData = alignment.dataCoverage && 
+              alignment.dataCoverage.percentage > 0 && 
+              alignment.dataCoverage.percentage < 100;
+            const hasNoData = !alignment.dataCoverage || 
+              alignment.overallFit == null || 
+              (typeof alignment.overallFit !== 'number') ||
+              alignment.dataCoverage.percentage === 0;
+            const fitScore = hasNoData ? 0 : alignment.overallFit;
+            
+            return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Overall Role Fit</span>
+                {hasNoData ? (
+                  <Badge variant="outline" className="text-lg px-3 py-1 bg-amber-50 border-amber-300 text-amber-700">
+                    No Data
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant={
+                      fitScore >= 80
+                        ? 'default'
+                        : fitScore >= 60
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                    className="text-lg px-3 py-1"
+                  >
+                    {fitScore}%
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hasNoData ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">No assessment data available</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    This candidate has not completed any assessments yet. Please have them complete the required assessments for a role fit analysis.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Progress value={fitScore} className="h-3" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {fitScore >= 80
+                      ? 'Excellent match for this role'
+                      : fitScore >= 60
+                      ? 'Good potential for this role'
+                      : 'May need additional training for this role'}
+                  </p>
+                  {hasPartialData && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-amber-700 mb-1">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-medium text-sm">Incomplete Picture</span>
+                      </div>
+                      <p className="text-sm text-amber-700">
+                        Based on {alignment.dataCoverage!.percentage}% of required assessments ({alignment.dataCoverage!.assessedSkillCount}/{alignment.dataCoverage!.totalRequiredSkills} skills). 
+                        Complete all assessments for a full capability picture.
+                      </p>
+                      {alignment.dataCoverage?.missingAssessments && alignment.dataCoverage.missingAssessments.length > 0 && (
+                        <p className="text-sm text-amber-600 mt-1">
+                          <span className="font-medium">Missing: </span>
+                          {alignment.dataCoverage.missingAssessments.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+            );
+          })()}
+
+          {/* FIT Skill Alignments */}
+          {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-blue-600" />
+                  FIT Assessment Skills (Behavioral)
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Behavioral competencies and workplace adaptability
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.fitSkillAlignments.map((skill: any, index: number) => (
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{skill.skillName}</span>
+                          {getCriticalityBadge(skill.criticality)}
+                          {skill.dataAvailable === false ? (
+                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
+                          ) : skill.gap > 0 ? (
+                            <TrendingDown className="h-4 w-4 text-destructive ml-1" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
+                          )}
+                        </div>
+                        <Badge
+                          variant={
+                            skill.alignment === 'not_assessed'
+                              ? 'outline'
+                              : skill.alignment === 'excellent'
+                              ? 'default'
+                              : skill.alignment === 'good'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
+                        >
+                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
+                        </Badge>
+                      </div>
+                      {skill.dataAvailable === false ? (
+                        <div className="text-sm text-muted-foreground italic">
+                          Assessment not completed - Required score: {skill.requiredScore}%
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Candidate Score</p>
+                              <p className="font-semibold">{skill.candidateScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Required Score</p>
+                              <p className="font-semibold">{skill.requiredScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Gap</p>
+                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                              </p>
+                            </div>
+                          </div>
+                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  <CriticalityLegend />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Readiness Skill Alignments */}
+          {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  AI Readiness Skills (Technical)
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  AI collaboration capabilities and technical fluency
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alignment.aiReadinessSkillAlignments.map((skill: any, index: number) => (
+                    <div key={index} className={`space-y-2 p-3 rounded-lg ${skill.dataAvailable === false ? 'bg-muted/50' : skill.criticality === 'critical' && skill.gap > 0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{skill.skillName}</span>
+                          {getCriticalityBadge(skill.criticality)}
+                          {skill.dataAvailable === false ? (
+                            <AlertCircle className="h-4 w-4 text-muted-foreground ml-1" />
+                          ) : skill.gap > 0 ? (
+                            <TrendingDown className="h-4 w-4 text-destructive ml-1" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-600 ml-1" />
+                          )}
+                        </div>
+                        <Badge
+                          variant={
+                            skill.alignment === 'not_assessed'
+                              ? 'outline'
+                              : skill.alignment === 'excellent'
+                              ? 'default'
+                              : skill.alignment === 'good'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                          className={skill.alignment === 'not_assessed' ? 'text-muted-foreground' : ''}
+                        >
+                          {skill.alignment === 'not_assessed' ? 'N/A' : skill.alignment}
+                        </Badge>
+                      </div>
+                      {skill.dataAvailable === false ? (
+                        <div className="text-sm text-muted-foreground italic">
+                          Assessment not completed - Required score: {skill.requiredScore}%
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Candidate Score</p>
+                              <p className="font-semibold">{skill.candidateScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Required Score</p>
+                              <p className="font-semibold">{skill.requiredScore}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Gap</p>
+                              <p className={skill.gap > 0 ? 'font-semibold text-destructive' : 'font-semibold text-green-600'}>
+                                {skill.gap > 0 ? '-' : '+'}{Math.abs(skill.gap)}%
+                              </p>
+                            </div>
+                          </div>
+                          <Progress value={(skill.candidateScore / skill.requiredScore) * 100} className="h-2" />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  <CriticalityLegend />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Critical Skills Analysis */}
+          {(() => {
+            const allSkills = [
+              ...(alignment.fitSkillAlignments || []),
+              ...(alignment.aiReadinessSkillAlignments || [])
+            ];
+            // Get ALL critical skills (including those with no data)
+            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
+            // Separate into assessed vs no data (check both dataAvailable flag AND null candidateScore)
+            const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;
+            const assessedCritical = criticalSkills.filter(hasData);
+            const noDataCritical = criticalSkills.filter((s: any) => !hasData(s));
+            const criticalMet = assessedCritical.filter((s: any) => s.candidateScore >= s.requiredScore);
+            const criticalGaps = assessedCritical.filter((s: any) => s.candidateScore < s.requiredScore);
+            
+            if (criticalSkills.length === 0) return null;
+            
+            return (
+              <Card data-testid="card-critical-skills-analysis">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    Critical Skills Analysis
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Summary of skills marked as critical for the {selectedRoleData?.name || 'selected'} role
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-lg font-semibold">
+                          {criticalMet.length} of {criticalSkills.length} Critical Skills Met
+                        </p>
+                        <Badge 
+                          variant={criticalGaps.length === 0 && noDataCritical.length === 0 ? 'default' : criticalGaps.length > 1 ? 'destructive' : 'secondary'}
+                          className="text-sm"
+                        >
+                          {criticalGaps.length === 0 && noDataCritical.length === 0 ? 'All Met' : 
+                           noDataCritical.length > 0 && criticalGaps.length === 0 ? `${noDataCritical.length} Pending` :
+                           `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
+                        </Badge>
+                      </div>
+                      <Progress 
+                        value={(criticalMet.length / criticalSkills.length) * 100} 
+                        className="h-3"
+                      />
+                      {noDataCritical.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {noDataCritical.length} critical skill{noDataCritical.length > 1 ? 's' : ''} awaiting assessment data
+                        </p>
+                      )}
+                    </div>
+                    
+                    {noDataCritical.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-amber-600 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          No Data Received
+                        </p>
+                        <div className="grid gap-2">
+                          {noDataCritical.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-amber-600">No data</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {criticalGaps.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-destructive flex items-center gap-1">
+                          <TrendingDown className="h-4 w-4" />
+                          Critical Gaps Requiring Development
+                        </p>
+                        <div className="grid gap-2">
+                          {criticalGaps.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-muted-foreground">{skill.candidateScore}%</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-destructive font-medium">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {criticalMet.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-green-600 flex items-center gap-1">
+                          <TrendingUp className="h-4 w-4" />
+                          Critical Skills Met
+                        </p>
+                        <div className="grid gap-2">
+                          {criticalMet.map((skill: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-green-600 font-medium">{skill.candidateScore}%</span>
+                                <span className="text-muted-foreground">/</span>
+                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Cohort Benchmarking */}
+          {alignment.cohortBenchmarks && (alignment.cohortBenchmarks.fit || alignment.cohortBenchmarks.ai_readiness || alignment.cohortBenchmarks.prompt_architecture || alignment.cohortBenchmarks.aiq) && (
+            <Card data-testid="card-cohort-benchmarking">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-amber-600" />
+                  Cohort Benchmarking
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  How this candidate compares to other assessed candidates across each assessment type
+                </p>
+              </CardHeader>
+              <CardContent>
+                {alignment.cohortBenchmarks.overall && (
+                  <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-semibold">Overall Cohort Position</p>
+                        <p className="text-sm text-muted-foreground">
+                          Ranking based on comparison with other assessed candidates in the cohort
+                        </p>
+                      </div>
+                      <Badge 
+                        variant={alignment.cohortBenchmarks.overall.percentile >= 75 ? 'default' : alignment.cohortBenchmarks.overall.percentile >= 50 ? 'secondary' : 'outline'}
+                        className="text-lg px-4 py-2"
+                      >
+                        {alignment.cohortBenchmarks.overall.position}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 font-medium">Assessment Type</th>
+                        <th className="text-center py-2 font-medium">Skills Compared</th>
+                        <th className="text-center py-2 font-medium">Avg Percentile</th>
+                        <th className="text-center py-2 font-medium">Position</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alignment.cohortBenchmarks.fit && (
+                        <tr className="border-b">
+                          <td className="py-3">FIT Assessment (Behavioral)</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.fit.skillCount} skills</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.fit.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.ai_readiness && (
+                        <tr className="border-b">
+                          <td className="py-3">AI Readiness Assessment</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.skillCount} skills</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.prompt_architecture && (
+                        <tr className="border-b">
+                          <td className="py-3">Prompt Architecture</td>
+                          <td className="text-center">1 composite score</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      {alignment.cohortBenchmarks.aiq && (
+                        <tr>
+                          <td className="py-3">Artificial Intelligence Quotient (AIQ)</td>
+                          <td className="text-center">1 composite score</td>
+                          <td className="text-center">{alignment.cohortBenchmarks.aiq.percentile}th</td>
+                          <td className="text-center">
+                            <Badge variant={alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'}>
+                              {alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {!alignment.cohortBenchmarks.prompt_architecture && !alignment.cohortBenchmarks.aiq && (
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Note: Some assessment type benchmarks may not be available if there are insufficient completed assessments
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+
+          {/* Strengths and Gaps */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Key Strengths
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Areas where the candidate exceeds role requirements and demonstrates strong capability
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {alignment.strengths?.map((strength: string, index: number) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-600" />
+                  Development Areas
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Skill gaps requiring targeted development to meet role requirements
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {alignment.gaps?.map((gap: string, index: number) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{gap}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Role Flexibility Analysis */}
+          {alignment.roleFlexibility && alignment.roleFlexibility.length > 0 && (
+            <Card data-testid="card-role-flexibility">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  Role Flexibility Analysis
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Alternative roles based on skill profile similarity and candidate fit (40%+ role similarity required)
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {alignment.roleFlexibility.map((role) => (
+                    <div 
+                      key={role.roleId} 
+                      className="p-3 rounded-lg bg-muted/50 border"
+                      data-testid={`row-alternative-role-${role.roleId}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-sm" data-testid={`text-role-name-${role.roleId}`}>{role.roleName}</p>
+                            {role.roleSimilarity !== undefined && (
+                              <Badge 
+                                variant={role.roleSimilarity >= 70 ? 'default' : role.roleSimilarity >= 55 ? 'secondary' : 'outline'}
+                                className="text-xs"
+                                data-testid={`badge-similarity-${role.roleId}`}
+                              >
+                                {role.roleSimilarity}% Similar Role
+                              </Badge>
+                            )}
+                            {role.coverageLabel && (
+                              <Badge 
+                                variant="outline"
+                                className="text-xs"
+                                data-testid={`badge-coverage-${role.roleId}`}
+                              >
+                                {role.coveragePercent}% Coverage
+                              </Badge>
+                            )}
+                          </div>
+                          {role.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-md mt-1">{role.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <Progress value={role.fitScore} className="w-24 h-2" />
+                            {role.rawFitScore !== undefined && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Candidate Fit: {role.rawFitScore}%
+                              </p>
+                            )}
+                          </div>
+                          <Badge 
+                            variant={role.fitScore >= 60 ? 'default' : role.fitScore >= 40 ? 'secondary' : 'outline'}
+                            className="min-w-[60px] justify-center"
+                            data-testid={`badge-role-fit-score-${role.roleId}`}
+                          >
+                            {role.fitScore}%
+                          </Badge>
+                        </div>
+                      </div>
+                      {role.missingCriticalSkills && role.missingCriticalSkills.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-dashed">
+                          <p className="text-xs text-amber-600 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Missing critical skills: {role.missingCriticalSkills.join(', ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Final Recommendation */}
+          {alignment.finalRecommendation && (() => {
+            // Clean up the recommendation text - remove redundant or separate sections
+            let cleanedText = alignment.finalRecommendation
+              .replace(/OVERALL ASSESSMENT:.*?\n/gi, '') // Remove OVERALL ASSESSMENT line
+              .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+              .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+              .replace(/\n{3,}/g, '\n\n')
+              // Convert section titles from ALL CAPS to Title Case
+              .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
+              .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
+              .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
+              .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:')
+              .trim();
+            
+            // Split into sections by double newlines or section headers
+            const sections = cleanedText.split(/\n\n+/).filter(s => s.trim());
+            
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Final Recommendation
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Overall hiring recommendation based on comprehensive assessment analysis and role alignment
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4" data-testid="text-final-recommendation">
+                    {sections.map((section, index) => (
+                      <p key={index} className="text-sm text-muted-foreground leading-relaxed">
+                        {section.trim()}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Recommended Next Steps */}
+          {alignment.nextSteps && alignment.nextSteps.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-blue-600" />
+                  Recommended Next Steps
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {alignment.nextSteps.map((step, index) => (
+                    <li key={index} className="flex items-start gap-3" data-testid={`list-item-next-step-${index}`}>
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-muted-foreground">{step}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Additional Services on Request */}
+          <Card className="border-primary/20 bg-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-white" />
+                Additional Services on Request
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                Contact our team to unlock these premium insights for your hiring decisions
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                    Suggested Interview Questions
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    AI-generated questions based on candidate's assessment results and skill gaps
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Users className="h-4 w-4 text-white" />
+                    Team Composition Fit
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Analysis of how the candidate would complement your existing team dynamics
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Clock className="h-4 w-4 text-white" />
+                    Time to Productivity Estimate
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Projected onboarding timeline based on skill readiness and learning agility
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <ShieldAlert className="h-4 w-4 text-white" />
+                    Hiring Risk Analysis
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Comprehensive risk assessment highlighting potential challenges and mitigations
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <DollarSign className="h-4 w-4 text-white" />
+                    Development Investment Cost
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Estimated training and development investment to close identified skill gaps
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white/20"
+                  onClick={() => window.location.href = '/for-employers'}
+                  data-testid="button-contact-team-services"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Speak to the Team
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skills Legend */}
+          <SkillsLegend />
+
+          {/* Export Button */}
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="secondary" 
+              className="bg-white hover:bg-gray-100 text-gray-900 border"
+              onClick={() => analyzeRoleFitMutation.mutate()}
+              data-testid="button-refresh-analysis"
+            >
+              Refresh Analysis
+            </Button>
+            <Button 
+              onClick={handleExportPDF}
+              data-testid="button-export-role-fit"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export as PDF
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PartnerRoleFitTab() {
+  return (
+    <Tabs defaultValue="single" className="w-full">
+      <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsTrigger value="single" className="flex items-center gap-2" data-testid="tab-single-candidate">
+          <User className="h-4 w-4" />
+          Single Candidate
+        </TabsTrigger>
+        <TabsTrigger value="multi" className="flex items-center gap-2" data-testid="tab-multi-candidate">
+          <Users className="h-4 w-4" />
+          Multiple Candidates
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="single" className="mt-6 data-[state=inactive]:hidden" forceMount>
+        <SingleCandidateRoleFit />
+      </TabsContent>
+      <TabsContent value="multi" className="mt-6 data-[state=inactive]:hidden" forceMount>
+        <PartnerMultiCandidateRoleFitTab />
+      </TabsContent>
+    </Tabs>
+  );
+}
