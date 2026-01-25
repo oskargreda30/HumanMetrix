@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
+import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
@@ -429,10 +429,12 @@ export default function PartnerAnalysisTab() {
     score: fitData.scores[skill.key] || fitData.scores[skill.displayName] || 0,
   })) : [];
 
+  // Normalize AI Readiness scores to handle legacy key mappings
+  const normalizedAIScores = aiData ? normalizeAIReadinessScores(aiData.scores) : {};
   const aiRadarData = aiData ? AI_READINESS_SKILLS.map(skill => ({
     skill: getSkillAcronym(skill.displayName),
     fullName: skill.displayName,
-    score: aiData.scores[skill.displayName] || aiData.scores[skill.key] || 0,
+    score: getAIReadinessScore(aiData.scores, skill.displayName),
   })) : [];
 
   const fitOverallScore = fitRadarData.length > 0 
@@ -545,9 +547,12 @@ export default function PartnerAnalysisTab() {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                   <div>
                     <p className="font-medium text-sm">Four Assessment Areas</p>
-                    <p className="text-xs text-muted-foreground">
-                      The report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture.
-                    </p>
+                    <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                      <div><span className="font-medium text-primary">1. FIT:</span> Behavioral traits for workplace success</div>
+                      <div><span className="font-medium text-cyan-500">2. AI Readiness:</span> Capabilities for AI-augmented work</div>
+                      <div><span className="font-medium text-purple-500">3. Prompt Architecture:</span> Prompt engineering skills</div>
+                      <div><span className="font-medium text-emerald-500">4. AIQ:</span> Ethical reasoning in AI scenarios</div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -580,6 +585,71 @@ export default function PartnerAnalysisTab() {
 
           {selectedCandidate && candidateReport && (
             <>
+              {/* Candidate Summary Box */}
+              <Card className="mb-8 border-primary/20" data-testid="card-candidate-summary">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-foreground" data-testid="text-candidate-name">
+                        {selectedCandidateData?.user.firstName && selectedCandidateData?.user.lastName 
+                          ? `${selectedCandidateData.user.firstName} ${selectedCandidateData.user.lastName}`
+                          : selectedCandidateData?.user.email}
+                      </h3>
+                      <p className="text-sm text-muted-foreground" data-testid="text-candidate-email">
+                        {selectedCandidateData?.user.email}
+                      </p>
+                      {(() => {
+                        // Find top skill across all assessments
+                        const allSkills: Array<{name: string, score: number, type: string}> = [];
+                        fitRadarData.forEach(s => allSkills.push({name: s.fullName, score: s.score, type: 'FIT'}));
+                        aiRadarData.forEach(s => allSkills.push({name: s.fullName, score: s.score, type: 'AI Readiness'}));
+                        const topSkill = allSkills.sort((a, b) => b.score - a.score)[0];
+                        return topSkill && topSkill.score > 0 ? (
+                          <p className="text-sm text-primary mt-1" data-testid="text-top-skill">
+                            Top Skill: <span className="font-semibold">{topSkill.name}</span> ({topSkill.score}%)
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                  
+                  {/* Assessment Scores Summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div className="text-center p-3 bg-primary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-primary" data-testid="score-fit-summary">
+                        {fitOverallScore ?? 'N/A'}
+                        {fitOverallScore !== null && <span className="text-sm">%</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">FIT Score</div>
+                    </div>
+                    <div className="text-center p-3 bg-cyan-500/10 rounded-lg">
+                      <div className="text-2xl font-bold text-cyan-500" data-testid="score-ai-summary">
+                        {aiOverallScore ?? 'N/A'}
+                        {aiOverallScore !== null && <span className="text-sm">%</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">AI Readiness</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-500/10 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-500" data-testid="score-prompt-summary">
+                        {promptArchScore ?? 'N/A'}
+                        {promptArchScore !== null && <span className="text-sm">%</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Prompt Arch</div>
+                    </div>
+                    <div className="text-center p-3 bg-emerald-500/10 rounded-lg">
+                      <div className="text-2xl font-bold text-emerald-500" data-testid="score-aiq-summary">
+                        {aiqScore ?? 'N/A'}
+                        {aiqScore !== null && <span className="text-sm">%</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">AIQ Score</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* FIT Assessment Section */}
               {fitData && (
                 <section className="mb-12" data-testid="section-fit-assessment">
@@ -808,12 +878,48 @@ export default function PartnerAnalysisTab() {
                     </Badge>
                   </div>
 
-                  <Card className="p-8 mb-6">
+                  <Card className="p-6 mb-6">
                     <div className="text-center mb-6">
                       <h3 className="text-lg font-medium text-muted-foreground mb-2" data-testid="label-prompt-score">Overall Score</h3>
-                      <div className="text-6xl font-bold text-purple-500 mb-2" data-testid="text-prompt-score">{promptArchScore}</div>
-                      <p className="text-muted-foreground">out of 100</p>
+                      <div className="text-5xl font-bold text-purple-500 mb-2" data-testid="text-prompt-score">{promptArchScore}%</div>
                     </div>
+                    
+                    {/* Level-by-Level Scores */}
+                    {promptArchData.levels && promptArchData.levels.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="font-semibold text-foreground mb-4">Performance by Level</h4>
+                        <div className="space-y-3">
+                          {promptArchData.levels.map((level: any, index: number) => {
+                            const levelScore = level.totalScore || Math.round(
+                              ((level.scores?.clarity || 0) + 
+                               (level.scores?.structure || 0) + 
+                               (level.scores?.contextRelevance || 0) + 
+                               (level.scores?.creativity || 0) + 
+                               (level.scores?.iterativeImprovement || 0)) / 5
+                            );
+                            return (
+                              <div key={index} className="space-y-1" data-testid={`prompt-level-${index + 1}`}>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium text-foreground">Level {index + 1}</span>
+                                  <Badge variant={levelScore >= 75 ? "default" : levelScore >= 50 ? "secondary" : "outline"}>
+                                    {levelScore}%
+                                  </Badge>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all ${
+                                      levelScore >= 75 ? 'bg-green-500' : 
+                                      levelScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${levelScore}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </Card>
 
                   {promptAnalysis && (
@@ -976,6 +1082,106 @@ export default function PartnerAnalysisTab() {
                 </section>
               )}
 
+              {/* Final Candidate Recommendations */}
+              <Card className="mb-8" data-testid="section-final-recommendations">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-foreground">
+                    <Award className="h-5 w-5 text-primary" />
+                    Final Candidate Recommendations
+                  </CardTitle>
+                  <CardDescription>Strategic insights based on assessment performance</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-primary/5 rounded-lg border-l-4 border-primary">
+                        <h4 className="font-semibold text-foreground mb-2" data-testid="heading-role-suitability">Role Suitability</h4>
+                        <p className="text-sm text-muted-foreground" data-testid="text-role-suitability">
+                          {fitOverallScore !== null && fitOverallScore >= 75 
+                            ? "Strong candidate for roles requiring behavioral competencies and team collaboration. Well-suited for leadership and client-facing positions."
+                            : fitOverallScore !== null && fitOverallScore >= 50
+                            ? "Suitable for most roles with some development support. Consider structured onboarding to strengthen key behavioral areas."
+                            : "May require significant development in core behavioral competencies. Best suited for roles with strong mentorship and training support."}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-cyan-500/10 rounded-lg border-l-4 border-cyan-500">
+                        <h4 className="font-semibold text-foreground mb-2" data-testid="heading-optimal-environment">Optimal Environment</h4>
+                        <p className="text-sm text-muted-foreground" data-testid="text-optimal-environment">
+                          {aiOverallScore !== null && aiOverallScore >= 75
+                            ? "Thrives in AI-augmented, technology-forward environments. Ready to leverage AI tools for enhanced productivity and innovation."
+                            : aiOverallScore !== null && aiOverallScore >= 50
+                            ? "Adaptable to modern tech environments with appropriate training. Will benefit from gradual AI tool introduction."
+                            : "Best suited for environments with established workflows. Provide structured AI literacy training before complex tool adoption."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-purple-500/10 rounded-lg border-l-4 border-purple-500">
+                        <h4 className="font-semibold text-foreground mb-2" data-testid="heading-key-strengths">Key Strengths</h4>
+                        <p className="text-sm text-muted-foreground" data-testid="text-key-strengths">
+                          {(() => {
+                            const strengths: string[] = [];
+                            if (fitOverallScore && fitOverallScore >= 70) strengths.push("Strong behavioral competencies");
+                            if (aiOverallScore && aiOverallScore >= 70) strengths.push("AI-ready mindset");
+                            if (promptArchScore && promptArchScore >= 70) strengths.push("Effective prompt engineering");
+                            if (aiqScore && aiqScore >= 70) strengths.push("Sound ethical reasoning");
+                            return strengths.length > 0 ? strengths.join(", ") + "." : "Assessment results indicate areas for focused development across core competencies.";
+                          })()}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-emerald-500/10 rounded-lg border-l-4 border-emerald-500">
+                        <h4 className="font-semibold text-foreground mb-2" data-testid="heading-development-focus">Development Focus</h4>
+                        <p className="text-sm text-muted-foreground" data-testid="text-development-focus">
+                          {(() => {
+                            const focus: string[] = [];
+                            if (!fitOverallScore || fitOverallScore < 60) focus.push("behavioral skill development");
+                            if (!aiOverallScore || aiOverallScore < 60) focus.push("AI literacy training");
+                            if (!promptArchScore || promptArchScore < 60) focus.push("prompt engineering practice");
+                            if (!aiqScore || aiqScore < 60) focus.push("ethical AI reasoning");
+                            return focus.length > 0 ? "Priority areas: " + focus.join(", ") + "." : "Candidate demonstrates strong performance across all assessment areas. Focus on continuous growth and advanced skill development.";
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recommended Next Steps */}
+              <Card className="mb-8 border-primary/20" data-testid="section-next-steps">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-foreground">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Recommended Next Steps
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                      <div>
+                        <p className="font-medium text-foreground">Review Assessment Insights</p>
+                        <p className="text-sm text-muted-foreground">Use the detailed breakdown above to identify specific strengths and development areas for interview discussion.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                      <div>
+                        <p className="font-medium text-foreground">Compare with Role Requirements</p>
+                        <p className="text-sm text-muted-foreground">Use the Role Fit Analysis tab to match this candidate's profile against your specific role requirements.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                      <div>
+                        <p className="font-medium text-foreground">Plan Interview Questions</p>
+                        <p className="text-sm text-muted-foreground">Focus interview questions on areas where scores indicate development opportunities or where you need deeper insight.</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Skills Legend */}
               <section className="mb-8">
                 <SkillsLegend compact data-testid="section-skills-legend" />
@@ -988,16 +1194,34 @@ export default function PartnerAnalysisTab() {
             <div className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Star className="h-5 w-5 text-primary" />
-                <h3 className="text-xl font-bold" data-testid="heading-enterprise-services">Enterprise Services</h3>
+                <h3 className="text-xl font-bold text-foreground" data-testid="heading-enterprise-services">Enterprise Services</h3>
               </div>
               <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
                 Enhance your hiring process with our advanced enterprise solutions:
               </p>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-onboarding">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-onboarding">Onboarding Service</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-onboarding">
+                    Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-interview">Suggested Interview Questions</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
+                    AI-generated questions to dig deeper into assessment results and explore trait gaps
+                  </p>
+                </div>
                 <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
                   </div>
                   <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem">
                     Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
@@ -1006,7 +1230,7 @@ export default function PartnerAnalysisTab() {
                 <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
                   <div className="flex items-center gap-2 mb-2">
                     <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
                   </div>
                   <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
                     Compare your team's performance against industry benchmarks and peer organizations
@@ -1015,28 +1239,10 @@ export default function PartnerAnalysisTab() {
                 <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
+                    <h4 className="font-semibold text-foreground" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
                   </div>
                   <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
                     Compare multiple candidates against a specific role with ranked recommendations
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MessageSquare className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-consulting">Strategic Consulting</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-consulting">
-                    Expert-led sessions to interpret results and develop actionable hiring strategies
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-integration">ATS Integration</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-integration">
-                    Seamless integration with your existing applicant tracking and HR systems
                   </p>
                 </div>
               </div>
