@@ -100,9 +100,9 @@ export type PricingTier = 'tier1' | 'tier2' | 'tier3' | 'sea_launch';
 
 export const PPP_MULTIPLIERS: Record<PricingTier, number> = {
   tier1: 1.0,   // Western markets - full price (UK, US, EU, Australia, etc.)
-  tier2: 0.7,  // Middle markets - 30% discount (Eastern Europe, Latin America, Middle East)
+  tier2: 0.5,   // Middle markets - 50% discount (Eastern Europe, Latin America, Middle East)
   sea_launch: 0, // SEA launch countries use fixed pricing, not multipliers
-  tier3: 0.5,  // Emerging markets - 50% discount (Southeast Asia, South Asia, Africa)
+  tier3: 0.25,  // Emerging markets - 75% discount (Southeast Asia, South Asia, Africa)
 };
 
 // Map countries to their pricing tier

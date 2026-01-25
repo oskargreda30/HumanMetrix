@@ -601,13 +601,14 @@ export function formatPriceGBP(pence: number): string {
 // B2B Volume-Based Pricing ($1.00 = 1 Credit, 6-month expiration)
 // ============================================
 
-// Volume tiers based on monthly volume commitment (prices in USD cents)
+// Volume tiers based on monthly volume commitment (prices in USD cents for Tier 1 countries)
+// PPP multipliers apply: Tier 1 = 1.0x (base), Tier 2 = 0.5x, Tier 3 = 0.25x
 export const B2B_VOLUME_TIERS = {
-  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 2000, trialQuota: 5 },      // $20/test
-  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 1000, trialQuota: 10 },       // $10/test
-  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 500, trialQuota: 20 }, // $5/test
-  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 250, trialQuota: 50 }, // $2.50/test
-  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 100, trialQuota: 50 },              // $1.00/test
+  BOUTIQUE: { name: 'Boutique', volumeRange: '1-100', pricePerTest: 8000, trialQuota: 5 },      // $80/test (Tier 1), $40 (Tier 2), $20 (Tier 3)
+  GROWTH: { name: 'Growth', volumeRange: '101-500', pricePerTest: 4000, trialQuota: 10 },       // $40/test (Tier 1), $20 (Tier 2), $10 (Tier 3)
+  SMALL_ENTERPRISE: { name: 'Small Enterprise', volumeRange: '501-2,500', pricePerTest: 2000, trialQuota: 20 }, // $20/test (Tier 1), $10 (Tier 2), $5 (Tier 3)
+  ENTERPRISE: { name: 'Enterprise', volumeRange: '2,501-9,999', pricePerTest: 1000, trialQuota: 50 }, // $10/test (Tier 1), $5 (Tier 2), $2.50 (Tier 3)
+  PRO: { name: 'Pro', volumeRange: '10,000+', pricePerTest: 400, trialQuota: 50 },              // $4/test (Tier 1), $2 (Tier 2), $1 (Tier 3)
 } as const;
 
 // Unbundled report pricing discounts
