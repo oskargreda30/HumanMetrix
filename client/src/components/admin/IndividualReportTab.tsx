@@ -1128,64 +1128,6 @@ export default function IndividualReportTab() {
             </Card>
           )}
 
-          {/* Enterprise Services Section */}
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Advanced Analysis Features
-              </CardTitle>
-              <CardDescription>
-                Additional tools available for comprehensive candidate evaluation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MessageSquare className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold text-foreground" data-testid="heading-service-interview">Suggested Interview Questions</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
-                    AI-generated questions to dig deeper into assessment results and explore trait gaps
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold text-foreground" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem">
-                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
-                    Compare candidate's performance against industry benchmarks and peer organizations
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold text-foreground" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
-                    Compare multiple candidates against a specific role with ranked recommendations
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
-                <Mail className="h-5 w-5 text-primary" />
-                <p className="text-sm" data-testid="text-contact-email">
-                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Compare Candidates Tab */}
