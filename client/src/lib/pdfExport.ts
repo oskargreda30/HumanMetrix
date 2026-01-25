@@ -5012,6 +5012,8 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   nextSteps.forEach(step => {
     pdf.setTextColor(37, 99, 235);
     pdf.text('•', 27, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
     pdf.setTextColor(55, 65, 81);
     const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
     stepLines.forEach((line: string, idx: number) => {
