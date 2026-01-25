@@ -51,6 +51,61 @@ export function getSkillAcronym(skillName: string): string {
   return SKILL_ACRONYMS[skillName] || skillName;
 }
 
+/**
+ * Legacy to canonical key mapping for AI Readiness skills
+ */
+const AI_READINESS_KEY_MAPPING: Record<string, string> = {
+  // Legacy keys -> Canonical keys
+  'AI Literacy': 'AI Literacy & Prompt Engineering',
+  'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering',
+  'Technical Fluency': 'Technical Fundamentals',
+  'Domain Fluency': 'Data Fluency',
+  'Critical Thinking': 'Critical Thinking & Problem-Solving',
+  'Adaptive Learning': 'Adaptability & Continuous Learning',
+  'Collaboration': 'Collaboration & Communication',
+  'Cross-functional Collaboration': 'Collaboration & Communication',
+  'Responsible AI': 'Responsible AI & Ethical Awareness',
+  'Creative Innovation': 'Creativity & Innovation',
+};
+
+/**
+ * Normalize AI Readiness scores to use canonical skill names
+ * This handles legacy data that may have different key names
+ */
+export function normalizeAIReadinessScores(scores: Record<string, number>): Record<string, number> {
+  const normalized: Record<string, number> = {};
+  
+  for (const [key, value] of Object.entries(scores)) {
+    // Check if this is a legacy key that needs mapping
+    const canonicalKey = AI_READINESS_KEY_MAPPING[key] || key;
+    // Only add if we don't already have a value for this canonical key
+    if (normalized[canonicalKey] === undefined) {
+      normalized[canonicalKey] = value;
+    }
+  }
+  
+  return normalized;
+}
+
+/**
+ * Get AI Readiness score for a skill, checking both canonical and legacy keys
+ */
+export function getAIReadinessScore(scores: Record<string, number>, canonicalSkillName: string): number {
+  // Try canonical key first
+  if (scores[canonicalSkillName] !== undefined) {
+    return scores[canonicalSkillName];
+  }
+  
+  // Find legacy key that maps to this canonical key
+  for (const [legacyKey, canonical] of Object.entries(AI_READINESS_KEY_MAPPING)) {
+    if (canonical === canonicalSkillName && scores[legacyKey] !== undefined) {
+      return scores[legacyKey];
+    }
+  }
+  
+  return 0;
+}
+
 // FIT Assessment: 6 behavioral skills
 export const FIT_SKILLS: SkillDefinition[] = [
   {

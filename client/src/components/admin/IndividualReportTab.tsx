@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
+import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
@@ -140,10 +140,13 @@ export default function IndividualReportTab() {
     score: fitData.scores[skill.key] || 0,
   })) : [];
 
+  // Normalize AI Readiness scores to handle legacy key names
+  const normalizedAIScores = aiData ? normalizeAIReadinessScores(aiData.scores) : {};
+  
   const aiRadarData = aiData ? AI_READINESS_SKILLS.map(skill => ({
     skill: getSkillAcronym(skill.displayName),
     fullName: skill.displayName,
-    score: aiData.scores[skill.displayName] || aiData.scores[skill.key] || 0,
+    score: getAIReadinessScore(aiData.scores, skill.displayName),
   })) : [];
 
   const getAllSkills = () => {
@@ -156,7 +159,8 @@ export default function IndividualReportTab() {
     }
     
     if (aiData) {
-      Object.entries(aiData.scores).forEach(([name, score]) => {
+      // Use normalized scores to display canonical skill names
+      Object.entries(normalizedAIScores).forEach(([name, score]) => {
         skills.push({ name, score: score as number, category: 'AI Readiness' });
       });
     }
@@ -311,10 +315,66 @@ export default function IndividualReportTab() {
 
       {selectedCandidate && candidateReport && selectedCandidateData && (
         <>
-          {/* How to Read This Report - First */}
+          {/* Candidate Info Summary Box - First */}
+          <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
+            <CardContent className="pt-6">
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
+                      <p className="text-sm text-muted-foreground">{selectedCandidateData.user.email}</p>
+                    </div>
+                  </div>
+                  {(() => {
+                    const topSkill = getStrengthsAndWeaknesses().strengths[0];
+                    return topSkill ? (
+                      <div className="mt-3 p-2 bg-background/50 rounded-lg inline-flex items-center gap-2">
+                        <Award className="h-4 w-4 text-primary" />
+                        <span className="text-sm">Top Skill: <span className="font-semibold text-foreground">{topSkill.name}</span> ({topSkill.score}%)</span>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center p-2 rounded-lg bg-background/50">
+                      <div className="text-xs text-muted-foreground mb-1">FIT</div>
+                      <div className={`text-lg font-bold ${fitData ? getScoreColor(Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)) : 'text-muted-foreground'}`}>
+                        {fitData ? `${Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-background/50">
+                      <div className="text-xs text-muted-foreground mb-1">AI Ready</div>
+                      <div className={`text-lg font-bold ${aiData ? getScoreColor(Math.round(Object.values(normalizedAIScores).reduce((a: number, b: any) => a + b, 0) / Object.keys(normalizedAIScores).length)) : 'text-muted-foreground'}`}>
+                        {aiData ? `${Math.round(Object.values(normalizedAIScores).reduce((a: number, b: any) => a + b, 0) / Object.keys(normalizedAIScores).length)}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-background/50">
+                      <div className="text-xs text-muted-foreground mb-1">Prompt</div>
+                      <div className={`text-lg font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                        {promptData ? `${promptData.totalScore}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-background/50">
+                      <div className="text-xs text-muted-foreground mb-1">AIQ</div>
+                      <div className={`text-lg font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                        {aiqData ? `${aiqData.totalScore}%` : '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* How to Read This Report */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-lg text-foreground">
                 <BookOpen className="h-5 w-5 text-primary" />
                 How to Read This Report
               </CardTitle>
@@ -327,43 +387,43 @@ export default function IndividualReportTab() {
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
-                    <p className="font-medium text-sm">Understanding Trait-Based Scores</p>
+                    <p className="font-semibold text-sm text-foreground">Understanding Trait-Based Scores</p>
                     <p className="text-xs text-muted-foreground">FIT and AI Readiness are <span className="font-medium">trait-based assessments</span>. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                   <div>
-                    <p className="font-medium text-sm">Trait Profile Summary</p>
-                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.</p>
+                    <p className="font-semibold text-sm text-foreground">FIT Assessment (Behavioral)</p>
+                    <p className="text-xs text-muted-foreground">Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                   <div>
-                    <p className="font-medium text-sm">FIT Assessment (Behavioral)</p>
-                    <p className="text-xs text-muted-foreground">Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.</p>
+                    <p className="font-semibold text-sm text-foreground">AI Readiness (Technical)</p>
+                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                   <div>
-                    <p className="font-medium text-sm">AI Readiness (Technical)</p>
-                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.</p>
+                    <p className="font-semibold text-sm text-foreground">Prompt Architecture</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
                   <div>
-                    <p className="font-medium text-sm">Prompt Architecture</p>
-                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                    <p className="font-semibold text-sm text-foreground">AIQ (Ethics)</p>
+                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
                   <div>
-                    <p className="font-medium text-sm">AIQ (Ethics)</p>
-                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
+                    <p className="font-semibold text-sm text-foreground">Trait Profile Summary</p>
+                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.</p>
                   </div>
                 </div>
               </div>
@@ -574,7 +634,7 @@ export default function IndividualReportTab() {
                   </div>
                   
                   <div className="space-y-3">
-                    {Object.entries(aiData.scores).map(([skill, score]) => (
+                    {Object.entries(normalizedAIScores).map(([skill, score]) => (
                       <div key={skill} className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="truncate max-w-[200px]">{skill}</span>
@@ -592,12 +652,12 @@ export default function IndividualReportTab() {
           {promptData && (
             <Card data-testid="card-prompt-details">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-foreground">
                   <FileText className="h-5 w-5 text-green-500" />
                   Prompt Architecture Assessment
                 </CardTitle>
                 <CardDescription>
-                  AI prompt engineering capabilities
+                  AI prompt engineering capabilities across 4 difficulty levels
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -620,29 +680,30 @@ export default function IndividualReportTab() {
                 
                 {promptData.levels && (
                   <div className="space-y-4">
-                    <h4 className="font-semibold">Level Breakdown</h4>
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    <h4 className="font-semibold text-foreground">Level Breakdown</h4>
+                    <div className="space-y-3">
                       {promptData.levels.map((level: any) => (
-                        <div key={level.level} className="p-3 rounded-lg border">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">Level {level.level}</span>
+                        <div key={level.level} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm text-foreground">Level {level.level}</span>
                             <Badge variant={getScoreBadgeVariant(level.totalScore)}>
                               {level.totalScore}%
                             </Badge>
                           </div>
-                          <div className="space-y-1 text-xs text-muted-foreground">
-                            <div className="flex justify-between">
-                              <span>Clarity</span>
-                              <span>{level.scores.clarity}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Structure</span>
-                              <span>{level.scores.structure}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Creativity</span>
-                              <span>{level.scores.creativity}%</span>
-                            </div>
+                          <div className="h-4 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all ${
+                                level.totalScore >= 80 ? 'bg-green-500' : 
+                                level.totalScore >= 60 ? 'bg-primary' : 
+                                level.totalScore >= 40 ? 'bg-amber-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${level.totalScore}%` }}
+                            />
+                          </div>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>Clarity: {level.scores?.clarity || 0}%</span>
+                            <span>Structure: {level.scores?.structure || 0}%</span>
+                            <span>Creativity: {level.scores?.creativity || 0}%</span>
                           </div>
                         </div>
                       ))}
@@ -675,12 +736,97 @@ export default function IndividualReportTab() {
             </Card>
           )}
 
+          {/* Final Candidate Recommendations */}
+          {(fitData || aiData || promptData || aiqData) && (
+            <Card data-testid="card-final-recommendations" className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 border-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-foreground uppercase tracking-wide">
+                  Final Candidate Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Role Suitability */}
+                <div>
+                  <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">Role Suitability</h4>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {(() => {
+                      const avgScore = (() => {
+                        const scores = [
+                          ...(fitData ? Object.values(fitData.scores) : []),
+                          ...(aiData ? Object.values(normalizedAIScores) : []),
+                          ...(promptData ? [promptData.totalScore] : []),
+                          ...(aiqData ? [aiqData.totalScore] : [])
+                        ];
+                        return scores.length ? Math.round(scores.reduce((a: any, b: any) => a + b, 0) / scores.length) : 0;
+                      })();
+                      
+                      if (avgScore >= 75) {
+                        return `${getCandidateName(selectedCandidateData)} demonstrates exceptional capabilities that would translate well into leadership and specialist positions. Roles such as Senior AI Strategist, Team Lead, or Technical Director would leverage their comprehensive skill set effectively. Their balanced profile across multiple assessment areas opens opportunities in cross-functional and client-facing roles.`;
+                      } else if (avgScore >= 60) {
+                        return `${getCandidateName(selectedCandidateData)} demonstrates solid interpersonal strengths that would translate well into people-focused positions. Roles such as Team Coordinator or Client Success Manager would leverage their natural empathy and relationship-building capabilities effectively. Their assessment profile also suggests potential in specialized AI roles such as Prompt Engineer or AI Content Strategist.`;
+                      } else {
+                        return `${getCandidateName(selectedCandidateData)} shows foundational capabilities with room for growth. Entry-level positions with structured mentorship would allow them to develop their skills while contributing immediate value. Consider roles that play to their identified strengths while providing development opportunities.`;
+                      }
+                    })()}
+                  </p>
+                </div>
+
+                {/* Optimal Environment */}
+                <div>
+                  <h4 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-2">Optimal Environment</h4>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {(() => {
+                      const aiqScore = aiqData?.totalScore || 0;
+                      const promptScore = promptData?.totalScore || 0;
+                      
+                      if (aiqScore >= 70 && promptScore >= 70) {
+                        return `This candidate would thrive in organizations with strong ethical frameworks and AI-forward companies embracing emerging technologies. Their assessment profile suggests they perform best when given clear objectives while having the autonomy to determine how to achieve them. A collaborative environment that values both innovation and responsibility would be ideal.`;
+                      } else if (aiqScore >= 70) {
+                        return `This candidate would thrive in organizations that prioritize ethical practices and responsible innovation. Their strong ethical awareness suggests they would excel in governance-focused roles or companies with established compliance frameworks. They perform best in structured environments with clear guidelines.`;
+                      } else if (promptScore >= 70) {
+                        return `This candidate would thrive in dynamic, fast-paced environments that embrace AI and automation. Their technical capabilities suggest they would excel in innovative companies at the forefront of AI adoption. They perform best when given creative freedom and challenging problems to solve.`;
+                      } else {
+                        return `This candidate would benefit from a supportive, growth-oriented environment with clear structure and mentorship. Organizations that invest in employee development and provide clear career progression paths would be ideal. They perform best when given guidance while building their capabilities.`;
+                      }
+                    })()}
+                  </p>
+                </div>
+
+                {/* Key Strengths */}
+                <div>
+                  <h4 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wide mb-2">Key Strengths</h4>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {(() => {
+                      const strengths = getStrengthsAndWeaknesses().strengths;
+                      const strengthNames = strengths.map(s => s.name.toLowerCase()).join(', ');
+                      
+                      return `${getCandidateName(selectedCandidateData)}'s key strengths include strong ${strengthNames}. These capabilities position them to add immediate value in roles that require clear communication and thoughtful problem-solving. Their balanced skill profile across both behavioral and technical dimensions makes them adaptable to various team contexts.`;
+                    })()}
+                  </p>
+                </div>
+
+                {/* Development Focus */}
+                <div>
+                  <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-2">Development Focus</h4>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {(() => {
+                      const weaknesses = getStrengthsAndWeaknesses().weaknesses;
+                      const weaknessNames = weaknesses.slice(0, 2).map(w => w.name).join(' and ');
+                      
+                      return `To maximize ${getCandidateName(selectedCandidateData)}'s potential, we recommend focusing development efforts on ${weaknessNames} through targeted training and practical exercises. Structured learning combined with real-world application will accelerate their growth in these areas. Consider pairing with experienced mentors who excel in these dimensions.`;
+                    })()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* AI-Powered Profile Insights */}
           <Card data-testid="card-profile-insights">
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-foreground">
                     <Lightbulb className="h-5 w-5 text-amber-500" />
                     AI-Powered Profile Insights
                   </CardTitle>
@@ -798,21 +944,30 @@ export default function IndividualReportTab() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Sparkles className="h-5 w-5 text-white" />
-                Additional Services on Request
+                Enterprise Services
               </CardTitle>
               <p className="text-sm text-white/80">
-                Contact our team to unlock these premium insights for your hiring decisions
+                Enhance your hiring decisions with premium services
               </p>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="p-4 rounded-lg bg-white/10 border border-white/20">
                   <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Rocket className="h-4 w-4 text-white" />
+                    Onboarding Service
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
                     <MessageSquare className="h-4 w-4 text-white" />
                     Suggested Interview Questions
                   </h4>
                   <p className="text-sm text-white/70">
-                    AI-generated questions based on this candidate's assessment results and trait gaps
+                    AI-generated questions to dig deeper into assessment results and explore trait gaps
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-white/10 border border-white/20">
@@ -840,15 +995,6 @@ export default function IndividualReportTab() {
                   </h4>
                   <p className="text-sm text-white/70">
                     Comprehensive risk assessment highlighting potential challenges and mitigations
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <DollarSign className="h-4 w-4 text-white" />
-                    Development Investment Cost
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Estimated training and development investment to close identified skill gaps
                   </p>
                 </div>
               </div>

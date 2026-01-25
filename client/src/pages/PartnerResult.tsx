@@ -3,10 +3,11 @@ import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, User, Calendar, Building2, TrendingUp, Target, FileText, Star, Users, MessageSquare, BarChart3, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, User, Calendar, Building2, TrendingUp, Target, FileText, Star, Users, MessageSquare, BarChart3, Mail, Rocket, Clock, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import SkillsLegend from "@/components/SkillsLegend";
+import { normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -105,8 +106,12 @@ export default function PartnerResult() {
   }
 
   const hasDetailedScores = data.scores && Object.keys(data.scores).length > 0;
+  // Normalize AI Readiness scores to use canonical skill names
+  const normalizedScores = data.assessmentType === 'ai_readiness' 
+    ? normalizeAIReadinessScores(data.scores) 
+    : data.scores;
   const radarData = hasDetailedScores 
-    ? Object.entries(data.scores)
+    ? Object.entries(normalizedScores)
         .filter(([_, score]) => typeof score === 'number')
         .map(([skill, score]) => ({
           skill,
@@ -175,12 +180,12 @@ export default function PartnerResult() {
             <CardContent>
               {hasDetailedScores ? (
                 <div className="space-y-4">
-                  {Object.entries(data.scores)
+                  {Object.entries(normalizedScores)
                     .filter(([_, score]) => typeof score === 'number')
                     .map(([skill, score]) => (
                     <div key={skill} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{skill}</span>
+                        <span className="font-medium text-foreground">{skill}</span>
                         <Badge variant={getScoreBadgeVariant(score)}>{score}%</Badge>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -344,16 +349,34 @@ export default function PartnerResult() {
           <div className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Star className="h-5 w-5 text-primary" />
-              <h3 className="text-xl font-bold" data-testid="heading-enterprise-services">Enterprise Services</h3>
+              <h3 className="text-xl font-bold text-foreground" data-testid="heading-enterprise-services">Enterprise Services</h3>
             </div>
             <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
               Enhance your hiring process with our advanced enterprise solutions:
             </p>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-onboarding">
+                <div className="flex items-center gap-2 mb-2">
+                  <Rocket className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-foreground" data-testid="heading-service-onboarding">Onboarding Service</h4>
+                </div>
+                <p className="text-sm text-muted-foreground" data-testid="text-service-onboarding">
+                  Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process
+                </p>
+              </div>
+              <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-foreground" data-testid="heading-service-interview">Suggested Interview Questions</h4>
+                </div>
+                <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
+                  AI-generated questions to dig deeper into assessment results and explore trait gaps
+                </p>
+              </div>
               <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="h-4 w-4 text-primary" />
-                  <h4 className="font-semibold" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
+                  <h4 className="font-semibold text-foreground" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
                 </div>
                 <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem">
                   Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
@@ -362,7 +385,7 @@ export default function PartnerResult() {
               <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  <h4 className="font-semibold" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                  <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
                 </div>
                 <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
                   Compare your team's performance against industry benchmarks and peer organizations
@@ -371,34 +394,16 @@ export default function PartnerResult() {
               <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4 text-primary" />
-                  <h4 className="font-semibold" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
+                  <h4 className="font-semibold text-foreground" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
                 </div>
                 <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
                   Compare multiple candidates against a specific role with ranked recommendations
                 </p>
               </div>
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-4 w-4 text-primary" />
-                  <h4 className="font-semibold" data-testid="heading-service-consulting">Strategic Consulting</h4>
-                </div>
-                <p className="text-sm text-muted-foreground" data-testid="text-service-consulting">
-                  Expert-led sessions to interpret results and develop actionable hiring strategies
-                </p>
-              </div>
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="h-4 w-4 text-primary" />
-                  <h4 className="font-semibold" data-testid="heading-service-integration">ATS Integration</h4>
-                </div>
-                <p className="text-sm text-muted-foreground" data-testid="text-service-integration">
-                  Seamless integration with your existing applicant tracking and HR systems
-                </p>
-              </div>
             </div>
             <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
               <Mail className="h-5 w-5 text-primary" />
-              <p className="text-sm" data-testid="text-contact-email">
+              <p className="text-sm text-foreground" data-testid="text-contact-email">
                 Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
               </p>
             </div>
