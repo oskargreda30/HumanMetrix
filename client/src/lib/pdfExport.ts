@@ -4389,8 +4389,8 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   // Key Metrics Boxes (right side - 2 boxes)
   const metricsData = [
-    { label: 'Skills Assessed', value: String(skillsAssessed), smallFont: false },
-    { label: 'Top Skill', value: topSkill.length > 18 ? topSkill.substring(0, 16) + '...' : topSkill, smallFont: true },
+    { label: 'Skills Assessed', value: String(skillsAssessed), fontSize: 11 },
+    { label: 'Top Skill', value: topSkill.length > 28 ? topSkill.substring(0, 25) + '...' : topSkill, fontSize: 6.5 },
   ];
   
   metricsData.forEach((metric, index) => {
@@ -4404,7 +4404,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.setTextColor(107, 114, 128);
     pdf.text(metric.label, xPos + metricsWidth / 2, yPos + 7, { align: 'center' });
     
-    pdf.setFontSize(metric.smallFont ? 8 : 11);
+    pdf.setFontSize(metric.fontSize);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(metric.value, xPos + metricsWidth / 2, yPos + 16, { align: 'center' });
