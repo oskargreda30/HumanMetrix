@@ -2,7 +2,7 @@ import { FileText, Users, Target, UsersRound, Download, Eye } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 const reports = [
   {
@@ -44,6 +44,8 @@ const reports = [
 ];
 
 export default function SampleReportsSection() {
+  const [, setLocation] = useLocation();
+
   return (
     <section id="sample-reports" className="py-12 md:py-24 bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
@@ -96,16 +98,15 @@ export default function SampleReportsSection() {
                     Coming Soon
                   </Button>
                 ) : (
-                  <Link href={report.link}>
-                    <Button 
-                      size="default"
-                      className="w-full"
-                      data-testid={`button-view-${report.testId}`}
-                    >
-                      <Eye className="mr-1.5 h-4 w-4" />
-                      View Sample
-                    </Button>
-                  </Link>
+                  <Button 
+                    size="default"
+                    className="w-full"
+                    onClick={() => setLocation(report.link)}
+                    data-testid={`button-view-${report.testId}`}
+                  >
+                    <Eye className="mr-1.5 h-4 w-4" />
+                    View Sample
+                  </Button>
                 )}
               </div>
             </Card>
