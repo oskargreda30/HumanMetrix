@@ -31,11 +31,14 @@ const SKILL_ALIGNMENTS = [
 ];
 
 const AI_SKILL_ALIGNMENTS = [
-  { skillName: "AI Literacy", candidateScore: 82, requiredScore: 80, gap: 2, alignment: "meets", criticality: "critical" },
-  { skillName: "Technical Fluency", candidateScore: 75, requiredScore: 70, gap: 5, alignment: "exceeds", criticality: "important" },
-  { skillName: "Critical Thinking", candidateScore: 85, requiredScore: 80, gap: 5, alignment: "exceeds", criticality: "critical" },
-  { skillName: "Adaptive Learning", candidateScore: 88, requiredScore: 85, gap: 3, alignment: "exceeds", criticality: "important" },
-  { skillName: "Responsible AI", candidateScore: 90, requiredScore: 85, gap: 5, alignment: "exceeds", criticality: "critical" },
+  { skillName: "AI Literacy & Prompt Engineering", candidateScore: 82, requiredScore: 80, gap: 2, alignment: "meets", criticality: "critical" },
+  { skillName: "Technical Fundamentals", candidateScore: 75, requiredScore: 70, gap: 5, alignment: "exceeds", criticality: "important" },
+  { skillName: "Data Fluency", candidateScore: 78, requiredScore: 75, gap: 3, alignment: "exceeds", criticality: "important" },
+  { skillName: "Critical Thinking & Problem-Solving", candidateScore: 85, requiredScore: 80, gap: 5, alignment: "exceeds", criticality: "critical" },
+  { skillName: "Adaptability & Continuous Learning", candidateScore: 88, requiredScore: 85, gap: 3, alignment: "exceeds", criticality: "important" },
+  { skillName: "Collaboration & Communication", candidateScore: 80, requiredScore: 75, gap: 5, alignment: "exceeds", criticality: "important" },
+  { skillName: "Responsible AI & Ethical Awareness", candidateScore: 90, requiredScore: 85, gap: 5, alignment: "exceeds", criticality: "critical" },
+  { skillName: "Creativity & Innovation", candidateScore: 76, requiredScore: 70, gap: 6, alignment: "exceeds", criticality: "important" },
 ];
 
 const INTERVIEW_QUESTIONS = [
