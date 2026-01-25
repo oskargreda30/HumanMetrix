@@ -10548,6 +10548,68 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Partner: Generate AI-powered candidate recommendations
+  app.post("/api/partner/me/candidates/:candidateId/recommendations", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId } = req.params;
+      const { fitScore, aiReadinessScore, promptArchScore, aiqScore, fitSkills, aiSkills } = req.body;
+      
+      // Build context for OpenAI
+      const candidateName = candidateId.includes('@') ? candidateId.split('@')[0] : 'Candidate';
+      
+      const prompt = `You are an expert HR consultant providing detailed candidate recommendations for recruitment.
+
+CANDIDATE ASSESSMENT SCORES:
+- FIT (Behavioral Competencies): ${fitScore !== null ? fitScore + '%' : 'Not assessed'}
+- AI Readiness: ${aiReadinessScore !== null ? aiReadinessScore + '%' : 'Not assessed'}
+- Prompt Architecture: ${promptArchScore !== null ? promptArchScore + '%' : 'Not assessed'}
+- AIQ (Ethical AI Reasoning): ${aiqScore !== null ? aiqScore + '%' : 'Not assessed'}
+
+${fitSkills && fitSkills.length > 0 ? `FIT SKILL BREAKDOWN:
+${fitSkills.map((s: any) => `- ${s.name}: ${s.score}%`).join('\n')}` : ''}
+
+${aiSkills && aiSkills.length > 0 ? `AI READINESS SKILL BREAKDOWN:
+${aiSkills.map((s: any) => `- ${s.name}: ${s.score}%`).join('\n')}` : ''}
+
+Based on this comprehensive assessment data, provide detailed recommendations across these 4 categories:
+
+1. ROLE SUITABILITY (2-3 sentences): What types of roles is this candidate best suited for? Consider their behavioral traits, technical capabilities, and AI readiness. Be specific about job types, seniority levels, and team dynamics.
+
+2. OPTIMAL ENVIRONMENT (2-3 sentences): Describe the ideal work environment for this candidate. Consider factors like pace, structure, team size, management style, and technology adoption level.
+
+3. KEY STRENGTHS (3-4 bullet points): List specific, actionable strengths that hiring managers should leverage. Focus on behavioral and technical capabilities demonstrated through the assessments.
+
+4. DEVELOPMENT FOCUS (3-4 bullet points): Identify priority areas for professional development. Be specific about what training, mentoring, or experiences would benefit this candidate most.
+
+Format your response as JSON with this structure:
+{
+  "roleSuitability": "string (2-3 sentences)",
+  "optimalEnvironment": "string (2-3 sentences)", 
+  "keyStrengths": ["string bullet point 1", "string bullet point 2", "string bullet point 3"],
+  "developmentFocus": ["string bullet point 1", "string bullet point 2", "string bullet point 3"]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
+
+      const recommendations = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating AI recommendations:", error);
+      res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+
   // Partner: Compare candidates (for analysis tab)
   app.get("/api/partner/me/compare", isAuthenticated, async (req: any, res) => {
     try {
