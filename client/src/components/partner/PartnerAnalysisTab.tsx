@@ -33,6 +33,28 @@ const CHART_COLORS = [
   "hsl(var(--chart-3))",
 ];
 
+const CHART_COLOR = "#3b82f6";
+
+const renderInsideLabel = (props: any) => {
+  const { cx, cy, x, y, value } = props;
+  const insideX = cx + (x - cx) * 0.8;
+  const insideY = cy + (y - cy) * 0.8;
+  
+  return (
+    <text
+      x={insideX}
+      y={insideY}
+      fill="#374151"
+      fontSize={10}
+      fontWeight="bold"
+      textAnchor="middle"
+      dominantBaseline="middle"
+    >
+      {value}
+    </text>
+  );
+};
+
 interface CandidateData {
   user: {
     id: string;
@@ -315,18 +337,10 @@ function generateAlternativeRoles(fitScores: Record<string, number> | null, aiSc
   return roles.sort((a, b) => b.fitScore - a.fitScore).slice(0, 4);
 }
 
-interface AIRecommendations {
-  roleSuitability: string;
-  optimalEnvironment: string;
-  keyStrengths: string[];
-  developmentFocus: string[];
-}
 
 export default function PartnerAnalysisTab() {
   const [subTab, setSubTab] = useState("individual");
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
-  const [aiRecommendations, setAIRecommendations] = useState<AIRecommendations | null>(null);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -372,14 +386,6 @@ export default function PartnerAnalysisTab() {
     return 'destructive';
   };
 
-  const getAIQBarColor = (score: number) => {
-    if (score >= 80) return 'bg-green-600';
-    if (score >= 60) return 'bg-blue-600';
-    if (score >= 40) return 'bg-amber-500';
-    if (score >= 20) return 'bg-orange-500';
-    return 'bg-red-500';
-  };
-
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
 
   const fitData = candidateReport?.fitAssessments?.[0];
@@ -414,34 +420,6 @@ export default function PartnerAnalysisTab() {
   const aiAnalysis = aiData ? generateAnalysis("ai_readiness", aiData.scores) : null;
   const promptAnalysis = promptArchData ? generateAnalysis("prompt_architecture", {}, promptArchScore || 0) : null;
   const aiqAnalysis = aiqData ? generateAnalysis("aiq", {}, aiqScore || 0) : null;
-
-  // Fetch AI recommendations when candidate data is available
-  const fetchAIRecommendations = async () => {
-    if (!selectedCandidate || isLoadingRecommendations) return;
-    
-    setIsLoadingRecommendations(true);
-    try {
-      const response = await apiRequest('POST', `/api/partner/me/candidates/${encodeURIComponent(selectedCandidate)}/recommendations`, {
-        fitScore: fitOverallScore,
-        aiReadinessScore: aiOverallScore,
-        promptArchScore,
-        aiqScore,
-        fitSkills: fitRadarData.map(s => ({ name: s.fullName, score: s.score })),
-        aiSkills: aiRadarData.map(s => ({ name: s.fullName, score: s.score })),
-      });
-      const data = await response.json();
-      setAIRecommendations(data);
-    } catch (error) {
-      console.error('Failed to fetch AI recommendations:', error);
-      toast({
-        title: "Recommendations",
-        description: "Could not generate AI recommendations",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingRecommendations(false);
-    }
-  };
 
   // Get all skills from FIT and AI Readiness for trait analysis
   const getAllSkills = () => {
@@ -652,59 +630,62 @@ export default function PartnerAnalysisTab() {
           </Card>
 
           {/* How to Read This Report */}
-          <Card className="mb-6" data-testid="section-how-to-read">
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <FileText className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3" data-testid="text-guide-intro">
-                A step-by-step guide to understanding candidate assessment results for informed hiring decisions
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-how-to-read">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg text-foreground">
+                <BookOpen className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
               </p>
-              <div className="grid gap-3 md:grid-cols-2">
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">1</div>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
-                    <span className="font-medium text-xs">Score Interpretation</span>
-                    <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                      <Badge className="bg-green-500 text-white text-[9px] px-1 py-0">75%+</Badge> <span>Strong,</span>
-                      <Badge className="bg-amber-500 text-white text-[9px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
-                      <Badge className="bg-red-500 text-white text-[9px] px-1 py-0">&lt;50%</Badge> <span>Growth</span>
-                    </div>
+                    <p className="font-semibold text-sm text-foreground">Understanding Trait-Based Scores</p>
+                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <span className="font-medium">trait-based assessments</span>. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">2</div>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                   <div>
-                    <p className="font-medium text-xs">Four Assessment Areas</p>
-                    <div className="text-[11px] text-muted-foreground space-y-0.5 mt-1">
-                      <div><span className="font-medium">1. FIT:</span> Behavioral traits for workplace success</div>
-                      <div><span className="font-medium">2. AI Readiness:</span> Capabilities for AI-augmented work</div>
-                      <div><span className="font-medium">3. Prompt Architecture:</span> Prompt engineering skills</div>
-                      <div><span className="font-medium">4. AIQ:</span> Ethical reasoning in AI scenarios</div>
-                    </div>
+                    <p className="font-semibold text-sm text-foreground">FIT Assessment (Behavioral)</p>
+                    <p className="text-xs text-muted-foreground">Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">3</div>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                   <div>
-                    <p className="font-medium text-xs">Strengths & Development Areas</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Highlights strengths to leverage and areas to probe during hiring.
-                    </p>
+                    <p className="font-semibold text-sm text-foreground">AI Readiness (Technical)</p>
+                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">4</div>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                   <div>
-                    <p className="font-medium text-xs">Using the Results</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Guide interview questions and make informed hiring decisions.
-                    </p>
+                    <p className="font-semibold text-sm text-foreground">Prompt Architecture</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-semibold text-sm text-foreground">AIQ (Ethics)</p>
+                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-semibold text-sm text-foreground">Trait Profile Summary</p>
+                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
 
           {selectedCandidate && isLoadingReport && (
@@ -715,72 +696,138 @@ export default function PartnerAnalysisTab() {
 
           {selectedCandidate && candidateReport && (
             <>
-              {/* Candidate Summary Box */}
-              <Card className="mb-6 border-primary/20" data-testid="card-candidate-summary">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-foreground" data-testid="text-candidate-name">
-                          {selectedCandidateData?.user.firstName && selectedCandidateData?.user.lastName 
-                            ? `${selectedCandidateData.user.firstName} ${selectedCandidateData.user.lastName}`
-                            : selectedCandidateData?.user.email}
-                        </h3>
-                        <p className="text-xs text-muted-foreground" data-testid="text-candidate-email">
-                          {selectedCandidateData?.user.email}
-                        </p>
-                      </div>
-                    </div>
-                    {(() => {
-                      // Find top skill across all assessments
-                      const allSkills: Array<{name: string, score: number, type: string}> = [];
-                      fitRadarData.forEach(s => allSkills.push({name: s.fullName, score: s.score, type: 'FIT'}));
-                      aiRadarData.forEach(s => allSkills.push({name: s.fullName, score: s.score, type: 'AI Readiness'}));
-                      const topSkill = allSkills.sort((a, b) => b.score - a.score)[0];
-                      return topSkill && topSkill.score > 0 ? (
-                        <div className="flex-shrink-0 p-3 bg-primary/5 rounded-lg border border-primary/20" data-testid="box-top-skill">
-                          <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1">Top Skill</p>
-                          <p className="text-sm font-semibold text-primary" data-testid="text-top-skill">
-                            {topSkill.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{topSkill.score}%</p>
+              {/* Candidate Info Summary Box - First */}
+              <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
+                <CardContent className="pt-6">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="md:col-span-2">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="h-6 w-6 text-primary" />
                         </div>
-                      ) : null;
-                    })()}
+                        <div>
+                          <h2 className="text-xl font-bold text-foreground" data-testid="text-candidate-name">{getCandidateName(selectedCandidateData)}</h2>
+                          <p className="text-sm text-muted-foreground" data-testid="text-candidate-email">{selectedCandidateData?.user.email}</p>
+                        </div>
+                      </div>
+                      {(() => {
+                        const topSkill = getStrengthsAndWeaknesses().strengths[0];
+                        return topSkill ? (
+                          <div className="mt-3 p-2 bg-background/50 rounded-lg inline-flex items-center gap-2" data-testid="box-top-skill">
+                            <Award className="h-4 w-4 text-primary" />
+                            <span className="text-sm">Top Skill: <span className="font-semibold text-foreground">{topSkill.name}</span> ({topSkill.score}%)</span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center p-2 rounded-lg bg-background/50">
+                          <div className="text-xs text-muted-foreground mb-1">FIT</div>
+                          <div className={`text-lg font-bold ${fitOverallScore !== null ? getScoreColor(fitOverallScore) : 'text-muted-foreground'}`}>
+                            {fitOverallScore !== null ? `${fitOverallScore}%` : '-'}
+                          </div>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-background/50">
+                          <div className="text-xs text-muted-foreground mb-1">AI Ready</div>
+                          <div className={`text-lg font-bold ${aiOverallScore !== null ? getScoreColor(aiOverallScore) : 'text-muted-foreground'}`}>
+                            {aiOverallScore !== null ? `${aiOverallScore}%` : '-'}
+                          </div>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-background/50">
+                          <div className="text-xs text-muted-foreground mb-1">Prompt</div>
+                          <div className={`text-lg font-bold ${promptArchScore !== null ? getScoreColor(promptArchScore) : 'text-muted-foreground'}`}>
+                            {promptArchScore !== null ? `${promptArchScore}%` : '-'}
+                          </div>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-background/50">
+                          <div className="text-xs text-muted-foreground mb-1">AIQ</div>
+                          <div className={`text-lg font-bold ${aiqScore !== null ? getScoreColor(aiqScore) : 'text-muted-foreground'}`}>
+                            {aiqScore !== null ? `${aiqScore}%` : '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {/* Assessment Scores Summary */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-                    <div className="text-center p-2 bg-primary/5 rounded-lg">
-                      <div className="text-lg font-bold text-primary" data-testid="score-fit-summary">
-                        {fitOverallScore ?? 'N/A'}
-                        {fitOverallScore !== null && <span className="text-[10px]">%</span>}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">FIT</div>
+                </CardContent>
+              </Card>
+
+              {/* Candidate Overview - After Summary */}
+              <Card data-testid="card-candidate-overview">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <CardTitle className="text-xl">{getCandidateName(selectedCandidateData)}</CardTitle>
+                      <CardDescription>{selectedCandidateData?.user.email}</CardDescription>
                     </div>
-                    <div className="text-center p-2 bg-cyan-500/10 rounded-lg">
-                      <div className="text-lg font-bold text-cyan-500" data-testid="score-ai-summary">
-                        {aiOverallScore ?? 'N/A'}
-                        {aiOverallScore !== null && <span className="text-[10px]">%</span>}
+                    <Badge variant="outline" className="text-sm">
+                      {(() => {
+                        let count = 0;
+                        if (fitData) count++;
+                        if (aiData) count++;
+                        if (promptArchData) count++;
+                        if (aiqData) count++;
+                        return count;
+                      })()} Assessments Completed
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="p-4 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">FIT</span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">AI Ready</div>
+                      {fitData ? (
+                        <span className="text-2xl font-bold">
+                          {fitOverallScore}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not taken</span>
+                      )}
                     </div>
-                    <div className="text-center p-2 bg-purple-500/10 rounded-lg">
-                      <div className="text-lg font-bold text-purple-500" data-testid="score-prompt-summary">
-                        {promptArchScore ?? 'N/A'}
-                        {promptArchScore !== null && <span className="text-[10px]">%</span>}
+                    
+                    <div className="p-4 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm font-medium">AI Readiness</span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">Prompt</div>
+                      {aiData ? (
+                        <span className="text-2xl font-bold">
+                          {aiOverallScore}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not taken</span>
+                      )}
                     </div>
-                    <div className="text-center p-2 bg-emerald-500/10 rounded-lg">
-                      <div className="text-lg font-bold text-emerald-500" data-testid="score-aiq-summary">
-                        {aiqScore ?? 'N/A'}
-                        {aiqScore !== null && <span className="text-[10px]">%</span>}
+                    
+                    <div className="p-4 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium">Prompt Arch</span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">AIQ</div>
+                      {promptArchData ? (
+                        <span className={`text-2xl font-bold ${getScoreColor(promptArchScore || 0)}`}>
+                          {promptArchScore}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not taken</span>
+                      )}
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm font-medium">AIQ</span>
+                      </div>
+                      {aiqData ? (
+                        <span className={`text-2xl font-bold ${getScoreColor(aiqScore || 0)}`}>
+                          {aiqScore}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not taken</span>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -840,516 +887,273 @@ export default function PartnerAnalysisTab() {
                 </Card>
               )}
 
-              {/* FIT Assessment Section */}
+              {/* FIT Assessment Details */}
               {fitData && (
-                <section className="mb-8" data-testid="section-fit-assessment">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white" data-testid="heading-fit-assessment">FIT Assessment</h2>
-                      <p className="text-white/70 text-xs" data-testid="text-fit-subtitle">Behavioral competencies for workplace success</p>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-fit-radar">Skills Radar</h3>
-                      <div ref={fitChartRef} className="bg-white dark:bg-gray-900 rounded-lg" data-testid="chart-fit-radar">
-                        <ResponsiveContainer width="100%" height={220}>
-                          <RadarChart data={fitRadarData}>
-                            <PolarGrid stroke="hsl(var(--border))" />
-                            <PolarAngleAxis 
-                              dataKey="skill" 
-                              tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }}
-                            />
-                            <PolarRadiusAxis 
-                              angle={90} 
-                              domain={[0, 100]}
-                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 8 }}
-                            />
+                <Card data-testid="card-fit-details">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-blue-500" />
+                      FIT Assessment Details
+                    </CardTitle>
+                    <CardDescription>
+                      Behavioral trait scores - higher values indicate stronger trait presence
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div ref={fitChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
+                            <PolarGrid strokeDasharray="3 3" />
+                            <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                             <Radar
-                              name="Score"
                               dataKey="score"
-                              stroke="hsl(var(--primary))"
-                              fill="hsl(var(--primary))"
+                              stroke={CHART_COLOR}
+                              fill={CHART_COLOR}
                               fillOpacity={0.5}
+                              label={renderInsideLabel}
                             />
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                    </Card>
-
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-fit-breakdown">Skills Breakdown</h3>
-                      <div className="space-y-2" data-testid="container-fit-skills">
+                      
+                      <div className="space-y-3">
                         {fitRadarData.map((item) => (
-                          <div key={item.fullName} className="space-y-1" data-testid={`fit-skill-${item.fullName.toLowerCase().replace(/\s+/g, '-')}`}>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium" data-testid={`text-fit-skill-name`}>{item.fullName}</span>
-                              <Badge variant={item.score >= 80 ? "default" : item.score >= 60 ? "secondary" : "outline"} className="text-[10px]" data-testid={`badge-fit-score`}>
-                                {item.score}%
-                              </Badge>
+                          <div key={item.fullName} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>{item.fullName}</span>
+                              <span className={`font-medium ${getScoreColor(item.score)}`}>{item.score}%</span>
                             </div>
-                            <Progress value={item.score} className="h-1.5" data-testid={`progress-fit`} />
+                            <Progress value={item.score} className="h-2" />
                           </div>
                         ))}
                       </div>
-                    </Card>
-                  </div>
-
-                  {fitAnalysis && (
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3" data-testid="heading-fit-analysis">Analysis</h3>
-                      <div className="mb-3 p-3 bg-muted/50 rounded-lg" data-testid="text-fit-overview">
-                        <p className="text-xs text-foreground leading-relaxed">{fitAnalysis.overall}</p>
-                      </div>
-                      
-                      {fitAnalysis.strengths.length > 0 && (
-                        <div className="mb-3" data-testid="container-fit-strengths">
-                          <div className="flex items-center gap-2 mb-2">
-                            <TrendingUp className="h-3 w-3 text-primary" />
-                            <h4 className="font-semibold text-xs" data-testid="heading-fit-strengths">Key Strengths</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {fitAnalysis.strengths.map((strength, index) => (
-                              <div key={index} className="p-2 bg-primary/5 rounded-lg border-l-4 border-primary" data-testid={`fit-strength-${index}`}>
-                                <p className="text-xs text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {fitAnalysis.improvements.length > 0 && (
-                        <div data-testid="container-fit-improvements">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="h-3 w-3 text-amber-500" />
-                            <h4 className="font-semibold text-xs" data-testid="heading-fit-improvements">Areas for Development</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {fitAnalysis.improvements.map((improvement, index) => (
-                              <div key={index} className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`fit-improvement-${index}`}>
-                                <p className="text-xs text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  )}
-                </section>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* AI Readiness Assessment Section */}
+              {/* AI Readiness Assessment Details */}
               {aiData && (
-                <section className="mb-8" data-testid="section-ai-assessment">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-cyan-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white" data-testid="heading-ai-assessment">AI Readiness Assessment</h2>
-                      <p className="text-white/70 text-xs" data-testid="text-ai-subtitle">Capabilities for AI-augmented work</p>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-ai-radar">Skills Radar</h3>
-                      <div ref={aiChartRef} className="bg-white dark:bg-gray-900 rounded-lg" data-testid="chart-ai-radar">
-                        <ResponsiveContainer width="100%" height={220}>
-                          <RadarChart data={aiRadarData}>
-                            <PolarGrid stroke="hsl(var(--border))" />
-                            <PolarAngleAxis 
-                              dataKey="skill" 
-                              tick={{ fill: 'hsl(var(--foreground))', fontSize: 9 }}
-                            />
-                            <PolarRadiusAxis 
-                              angle={90} 
-                              domain={[0, 100]}
-                              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 8 }}
-                            />
+                <Card data-testid="card-ai-details">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-purple-500" />
+                      AI Readiness Assessment Details
+                    </CardTitle>
+                    <CardDescription>
+                      Technical capability scores - higher values indicate stronger aptitude in each area
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div ref={aiChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
+                            <PolarGrid strokeDasharray="3 3" />
+                            <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
                             <Radar
-                              name="Score"
                               dataKey="score"
-                              stroke="#06b6d4"
-                              fill="#06b6d4"
+                              stroke={CHART_COLOR}
+                              fill={CHART_COLOR}
                               fillOpacity={0.5}
+                              label={renderInsideLabel}
                             />
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                    </Card>
-
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3 text-center" data-testid="heading-ai-breakdown">Skills Breakdown</h3>
-                      <div className="space-y-2" data-testid="container-ai-skills">
+                      
+                      <div className="space-y-3">
                         {aiRadarData.map((item) => (
-                          <div key={item.fullName} className="space-y-1" data-testid={`ai-skill-${item.fullName.toLowerCase().replace(/\s+/g, '-')}`}>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium">{item.fullName}</span>
-                              <Badge variant={item.score >= 80 ? "default" : item.score >= 60 ? "secondary" : "outline"} className="text-[10px]">
-                                {item.score}%
-                              </Badge>
+                          <div key={item.fullName} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="truncate max-w-[200px]">{item.fullName}</span>
+                              <span className={`font-medium ${getScoreColor(item.score)}`}>{item.score}%</span>
                             </div>
-                            <Progress value={item.score} className="h-1.5" />
+                            <Progress value={item.score} className="h-2" />
                           </div>
                         ))}
                       </div>
-                    </Card>
-                  </div>
-
-                  {aiAnalysis && (
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3" data-testid="heading-ai-analysis">Analysis</h3>
-                      <div className="mb-3 p-3 bg-muted/50 rounded-lg" data-testid="text-ai-overview">
-                        <p className="text-xs text-foreground leading-relaxed">{aiAnalysis.overall}</p>
-                      </div>
-                      
-                      {aiAnalysis.strengths.length > 0 && (
-                        <div className="mb-3" data-testid="container-ai-strengths">
-                          <div className="flex items-center gap-2 mb-2">
-                            <TrendingUp className="h-3 w-3 text-cyan-500" />
-                            <h4 className="font-semibold text-xs" data-testid="heading-ai-strengths">Key Strengths</h4>
-                          </div>
-                          <div className="grid md:grid-cols-2 gap-1">
-                            {aiAnalysis.strengths.map((strength, index) => (
-                              <div key={index} className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border-l-4 border-cyan-500">
-                                <p className="text-xs text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {aiAnalysis.improvements.length > 0 && (
-                        <div data-testid="container-ai-improvements">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="h-3 w-3 text-amber-500" />
-                            <h4 className="font-semibold text-xs" data-testid="heading-ai-improvements">Areas for Development</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {aiAnalysis.improvements.map((improvement, index) => (
-                              <div key={index} className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
-                                <p className="text-xs text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  )}
-                </section>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* Prompt Architecture Section */}
+              {/* Prompt Architecture Assessment */}
               {promptArchData && (
-                <section className="mb-8" data-testid="section-prompt-assessment">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                      <Target className="h-4 w-4 text-purple-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white" data-testid="heading-prompt-assessment">Prompt Architecture</h2>
-                      <p className="text-white/70 text-xs" data-testid="text-prompt-subtitle">Real-world prompt engineering skills</p>
-                    </div>
-                    <Badge className={`ml-auto text-xs ${promptArchScore !== null && promptArchScore >= 75 ? 'bg-green-500' : promptArchScore !== null && promptArchScore >= 50 ? 'bg-amber-500' : 'bg-red-500'} text-white`}>
-                      {promptArchScore}% Overall
-                    </Badge>
-                  </div>
-
-                  <Card className="p-4 mb-4">
-                    <div className="text-center mb-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1" data-testid="label-prompt-score">Overall Score</h3>
-                      <div className="text-3xl font-bold text-purple-500 mb-1" data-testid="text-prompt-score">{promptArchScore}%</div>
+                <Card data-testid="card-prompt-details">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <FileText className="h-5 w-5 text-green-500" />
+                      Prompt Architecture Assessment
+                    </CardTitle>
+                    <CardDescription>
+                      AI prompt engineering capabilities across 4 difficulty levels
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="text-center p-4 rounded-lg bg-muted">
+                        <div className={`text-3xl font-bold ${getScoreColor(promptArchScore || 0)}`}>
+                          {promptArchScore}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Score</div>
+                      </div>
+                      {promptArchData.percentile && (
+                        <div className="text-center p-4 rounded-lg bg-muted">
+                          <div className="text-3xl font-bold text-blue-600">
+                            {promptArchData.percentile}th
+                          </div>
+                          <div className="text-sm text-muted-foreground">Percentile</div>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Level-by-Level Scores */}
-                    {promptArchData.levels && promptArchData.levels.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="font-semibold text-foreground mb-4">Performance by Level</h4>
+                    {promptArchData.levels && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-foreground">Level Breakdown</h4>
                         <div className="space-y-3">
-                          {promptArchData.levels.map((level: any, index: number) => {
-                            const levelScore = level.totalScore || Math.round(
-                              ((level.scores?.clarity || 0) + 
-                               (level.scores?.structure || 0) + 
-                               (level.scores?.contextRelevance || 0) + 
-                               (level.scores?.creativity || 0) + 
-                               (level.scores?.iterativeImprovement || 0)) / 5
-                            );
-                            return (
-                              <div key={index} className="space-y-1" data-testid={`prompt-level-${index + 1}`}>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="font-medium text-foreground">Level {index + 1}</span>
-                                  <Badge variant={levelScore >= 75 ? "default" : levelScore >= 50 ? "secondary" : "outline"}>
-                                    {levelScore}%
-                                  </Badge>
-                                </div>
-                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full rounded-full transition-all ${
-                                      levelScore >= 75 ? 'bg-green-500' : 
-                                      levelScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${levelScore}%` }}
-                                  />
-                                </div>
+                          {promptArchData.levels.map((level: any) => (
+                            <div key={level.level} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm text-foreground">Level {level.level}</span>
+                                <Badge variant={getScoreBadgeVariant(level.totalScore)}>
+                                  {level.totalScore}%
+                                </Badge>
                               </div>
-                            );
-                          })}
+                              <div className="h-4 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full transition-all ${
+                                    level.totalScore >= 80 ? 'bg-green-500' : 
+                                    level.totalScore >= 60 ? 'bg-primary' : 
+                                    level.totalScore >= 40 ? 'bg-amber-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ width: `${level.totalScore}%` }}
+                                />
+                              </div>
+                              <div className="flex gap-4 text-xs text-muted-foreground">
+                                <span>Clarity: {level.scores?.clarity || 0}%</span>
+                                <span>Structure: {level.scores?.structure || 0}%</span>
+                                <span>Creativity: {level.scores?.creativity || 0}%</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
-                  </Card>
-
-                  {promptAnalysis && (
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold mb-4" data-testid="heading-prompt-analysis">Analysis</h3>
-                      <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-prompt-overview">
-                        <p className="text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: promptAnalysis.overall.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                      
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div data-testid="container-prompt-strengths">
-                          <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp className="h-4 w-4 text-purple-500" />
-                            <h4 className="font-semibold">Strengths</h4>
-                          </div>
-                          <div className="space-y-2">
-                            {promptAnalysis.strengths.map((strength, index) => (
-                              <div key={index} className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
-                                <p className="text-sm text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div data-testid="container-prompt-improvements">
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <h4 className="font-semibold">Development Areas</h4>
-                          </div>
-                          <div className="space-y-2">
-                            {promptAnalysis.improvements.map((improvement, index) => (
-                              <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
-                                <p className="text-sm text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-                </section>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* AIQ Section */}
+              {/* AIQ Assessment */}
               {aiqData && (
-                <section className="mb-8" data-testid="section-aiq">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white" data-testid="heading-aiq-assessment">Algorithmic Integrity Quotient (AIQ)</h2>
-                      <p className="text-white/70 text-xs" data-testid="text-aiq-subtitle">Ethical reasoning in AI scenarios</p>
-                    </div>
-                  </div>
-
-                  <Card className="p-4 mb-4">
-                    <div className="text-center mb-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1" data-testid="label-aiq-score">Overall Score</h3>
-                      <div className="text-3xl font-bold text-emerald-500 mb-1" data-testid="text-aiq-score">{aiqScore}%</div>
-                    </div>
-
-                    <div className="space-y-6" data-testid="container-aiq-progress">
-                      <div className="flex justify-between text-xs text-muted-foreground" data-testid="container-aiq-scale">
-                        <span>0</span>
-                        <span>20</span>
-                        <span>40</span>
-                        <span>60</span>
-                        <span>80</span>
-                        <span>100</span>
+                <Card data-testid="card-aiq-details">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-amber-500" />
+                      AIQ Assessment
+                    </CardTitle>
+                    <CardDescription>
+                      Algorithmic Integrity Quotient - AI ethics and responsibility
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center p-6 rounded-lg bg-muted inline-block">
+                      <div className={`text-4xl font-bold ${getScoreColor(aiqScore || 0)}`}>
+                        {aiqScore}
                       </div>
-                      
-                      <div className="relative">
-                        <Progress 
-                          value={aiqScore || 0} 
-                          className="h-8"
-                          indicatorClassName={getAIQBarColor(aiqScore || 0)}
-                          data-testid="progress-aiq-score"
-                        />
-                        
-                        {[20, 40, 60, 80].map((mark) => (
-                          <div 
-                            key={mark}
-                            className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 pointer-events-none" 
-                            style={{ left: `${mark}%` }}
-                          />
-                        ))}
-                        
-                        <div 
-                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-1 rounded text-sm font-bold whitespace-nowrap pointer-events-none"
-                          style={{ left: `${Math.min(Math.max(aiqScore || 0, 8), 92)}%` }}
-                          data-testid="badge-aiq-score-indicator"
-                        >
-                          {aiqScore}%
-                        </div>
-                      </div>
-                      
-                      {aiqScore !== null && (
-                        <div className="text-center space-y-2">
-                          <Badge className="text-sm px-4 py-1 bg-emerald-600" data-testid="badge-aiq-band">
-                            {getAIQBandInterpretation(aiqScore).title}
-                          </Badge>
-                          <p className="text-muted-foreground text-sm max-w-2xl mx-auto" data-testid="text-aiq-band-description">
-                            {getAIQBandInterpretation(aiqScore).description}
-                          </p>
-                        </div>
-                      )}
+                      <div className="text-sm text-muted-foreground mt-1">Overall AIQ Score</div>
                     </div>
-                  </Card>
-
-                  {aiqAnalysis && (
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold mb-4" data-testid="heading-aiq-analysis">Analysis</h3>
-                      <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-aiq-overview">
-                        <p className="text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: aiqAnalysis.overall.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                      
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div data-testid="container-aiq-strengths">
-                          <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
-                            <h4 className="font-semibold">Strengths</h4>
-                          </div>
-                          <div className="space-y-2">
-                            {aiqAnalysis.strengths.map((strength, index) => (
-                              <div key={index} className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border-l-4 border-emerald-500">
-                                <p className="text-sm text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div data-testid="container-aiq-improvements">
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <h4 className="font-semibold">Development Areas</h4>
-                          </div>
-                          <div className="space-y-2">
-                            {aiqAnalysis.improvements.map((improvement, index) => (
-                              <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
-                                <p className="text-sm text-foreground leading-relaxed"
-                                   dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-                </section>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Final Candidate Recommendations */}
-              <Card className="mb-6" data-testid="section-final-recommendations">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+              {(fitData || aiData || promptArchData || aiqData) && (
+                <Card data-testid="card-final-recommendations" className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 border-2">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl font-bold text-foreground uppercase tracking-wide">
+                      Final Candidate Recommendations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Role Suitability */}
                     <div>
-                      <CardTitle className="flex items-center gap-2 text-foreground text-base">
-                        <Award className="h-4 w-4 text-primary" />
-                        Final Candidate Recommendations
-                      </CardTitle>
-                      <CardDescription className="text-xs">AI-powered strategic insights based on assessment data</CardDescription>
+                      <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">Role Suitability</h4>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {(() => {
+                          const avgScore = (() => {
+                            const scores = [
+                              ...(fitOverallScore !== null ? [fitOverallScore] : []),
+                              ...(aiOverallScore !== null ? [aiOverallScore] : []),
+                              ...(promptArchScore !== null ? [promptArchScore] : []),
+                              ...(aiqScore !== null ? [aiqScore] : [])
+                            ];
+                            return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+                          })();
+                          
+                          if (avgScore >= 75) {
+                            return `${getCandidateName(selectedCandidateData)} demonstrates exceptional capabilities that would translate well into leadership and specialist positions. Roles such as Senior AI Strategist, Team Lead, or Technical Director would leverage their comprehensive skill set effectively. Their balanced profile across multiple assessment areas opens opportunities in cross-functional and client-facing roles.`;
+                          } else if (avgScore >= 60) {
+                            return `${getCandidateName(selectedCandidateData)} demonstrates solid interpersonal strengths that would translate well into people-focused positions. Roles such as Team Coordinator or Client Success Manager would leverage their natural empathy and relationship-building capabilities effectively. Their assessment profile also suggests potential in specialized AI roles such as Prompt Engineer or AI Content Strategist.`;
+                          } else {
+                            return `${getCandidateName(selectedCandidateData)} shows foundational capabilities with room for growth. Entry-level positions with structured mentorship would allow them to develop their skills while contributing immediate value. Consider roles that play to their identified strengths while providing development opportunities.`;
+                          }
+                        })()}
+                      </p>
                     </div>
-                    {!aiRecommendations && !isLoadingRecommendations && (
-                      <Button 
-                        size="sm" 
-                        onClick={fetchAIRecommendations}
-                        disabled={isLoadingRecommendations}
-                        data-testid="button-generate-recommendations"
-                      >
-                        <Brain className="h-3 w-3 mr-1" />
-                        Generate AI Insights
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {isLoadingRecommendations ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-                      <span className="text-sm text-muted-foreground">Generating AI recommendations...</span>
+
+                    {/* Optimal Environment */}
+                    <div>
+                      <h4 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-2">Optimal Environment</h4>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {(() => {
+                          const aiqVal = aiqScore || 0;
+                          const promptVal = promptArchScore || 0;
+                          
+                          if (aiqVal >= 70 && promptVal >= 70) {
+                            return `This candidate would thrive in organizations with strong ethical frameworks and AI-forward companies embracing emerging technologies. Their assessment profile suggests they perform best when given clear objectives while having the autonomy to determine how to achieve them. A collaborative environment that values both innovation and responsibility would be ideal.`;
+                          } else if (aiqVal >= 70) {
+                            return `This candidate would thrive in organizations that prioritize ethical practices and responsible innovation. Their strong ethical awareness suggests they would excel in governance-focused roles or companies with established compliance frameworks. They perform best in structured environments with clear guidelines.`;
+                          } else if (promptVal >= 70) {
+                            return `This candidate would thrive in dynamic, fast-paced environments that embrace AI and automation. Their technical capabilities suggest they would excel in innovative companies at the forefront of AI adoption. They perform best when given creative freedom and challenging problems to solve.`;
+                          } else {
+                            return `This candidate would benefit from a supportive, growth-oriented environment with clear structure and mentorship. Organizations that invest in employee development and provide clear career progression paths would be ideal. They perform best when given guidance while building their capabilities.`;
+                          }
+                        })()}
+                      </p>
                     </div>
-                  ) : aiRecommendations ? (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <div className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
-                          <h4 className="font-semibold text-foreground mb-1 text-sm" data-testid="heading-role-suitability">Role Suitability</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed" data-testid="text-role-suitability">
-                            {aiRecommendations.roleSuitability}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-cyan-500/10 rounded-lg border-l-4 border-cyan-500">
-                          <h4 className="font-semibold text-foreground mb-1 text-sm" data-testid="heading-optimal-environment">Optimal Environment</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed" data-testid="text-optimal-environment">
-                            {aiRecommendations.optimalEnvironment}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="p-3 bg-purple-500/10 rounded-lg border-l-4 border-purple-500">
-                          <h4 className="font-semibold text-foreground mb-1 text-sm" data-testid="heading-key-strengths">Key Strengths</h4>
-                          <ul className="text-xs text-muted-foreground space-y-1" data-testid="text-key-strengths">
-                            {aiRecommendations.keyStrengths.map((strength, i) => (
-                              <li key={i} className="flex items-start gap-1">
-                                <CheckCircle2 className="h-3 w-3 text-purple-500 mt-0.5 flex-shrink-0" />
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="p-3 bg-emerald-500/10 rounded-lg border-l-4 border-emerald-500">
-                          <h4 className="font-semibold text-foreground mb-1 text-sm" data-testid="heading-development-focus">Development Focus</h4>
-                          <ul className="text-xs text-muted-foreground space-y-1" data-testid="text-development-focus">
-                            {aiRecommendations.developmentFocus.map((focus, i) => (
-                              <li key={i} className="flex items-start gap-1">
-                                <TrendingUp className="h-3 w-3 text-emerald-500 mt-0.5 flex-shrink-0" />
-                                <span>{focus}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
+
+                    {/* Key Strengths */}
+                    <div>
+                      <h4 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wide mb-2">Key Strengths</h4>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {(() => {
+                          const strengths = getStrengthsAndWeaknesses().strengths;
+                          const strengthNames = strengths.map(s => s.name.toLowerCase()).join(', ');
+                          
+                          return `${getCandidateName(selectedCandidateData)}'s key strengths include strong ${strengthNames}. These capabilities position them to add immediate value in roles that require clear communication and thoughtful problem-solving. Their balanced skill profile across both behavioral and technical dimensions makes them adaptable to various team contexts.`;
+                        })()}
+                      </p>
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-xs">Click "Generate AI Insights" to create personalized recommendations</p>
+
+                    {/* Development Focus */}
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-2">Development Focus</h4>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {(() => {
+                          const weaknesses = getStrengthsAndWeaknesses().weaknesses;
+                          const weaknessNames = weaknesses.slice(0, 2).map(w => w.name).join(' and ');
+                          
+                          return `To maximize ${getCandidateName(selectedCandidateData)}'s potential, we recommend focusing development efforts on ${weaknessNames} through targeted training and practical exercises. Structured learning combined with real-world application will accelerate their growth in these areas. Consider pairing with experienced mentors who excel in these dimensions.`;
+                        })()}
+                      </p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* AI-Powered Profile Insights */}
               <Card className="mb-6" data-testid="card-profile-insights">
@@ -1407,19 +1211,19 @@ export default function PartnerAnalysisTab() {
                 </CardContent>
               </Card>
 
-              {/* Recommended Next Steps - Dynamic */}
-              <Card className="mb-6 border-primary/20" data-testid="section-next-steps">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-foreground text-base">
-                    <Target className="h-4 w-4 text-primary" />
+              {/* Recommended Next Steps */}
+              <Card data-testid="card-recommended-next-steps">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-blue-500" />
                     Recommended Next Steps
                   </CardTitle>
-                  <CardDescription className="text-xs">
-                    Based on assessment results for {getCandidateName(selectedCandidateData)}
+                  <CardDescription>
+                    Based on assessment results, consider these next steps for {getCandidateName(selectedCandidateData)}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
+                <CardContent>
+                  <div className="space-y-3">
                     {(() => {
                       const allScoresArr = [
                         ...(fitOverallScore !== null ? [fitOverallScore] : []),
@@ -1447,11 +1251,19 @@ export default function PartnerAnalysisTab() {
                         steps.push('Consider role modifications that play to existing strengths while building capabilities.');
                       }
                       
-                      // Cap to 3 steps for consistent UX
-                      return steps.slice(0, 3).map((step, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
-                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">{i + 1}</div>
-                          <p className="text-xs text-muted-foreground">{step}</p>
+                      if (promptArchScore !== null && promptArchScore >= 75) {
+                        steps.push('Leverage strong prompt engineering skills for AI integration initiatives.');
+                      }
+                      if (aiqScore !== null && aiqScore >= 80) {
+                        steps.push('Consider for roles involving AI governance or ethical AI implementation.');
+                      }
+                      
+                      return steps.map((step, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{i + 1}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{step}</p>
                         </div>
                       ));
                     })()}
