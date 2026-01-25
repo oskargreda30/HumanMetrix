@@ -1621,6 +1621,24 @@ export default function PartnerAnalysisTab() {
                   </Select>
                 </div>
               </div>
+              
+              <Button 
+                disabled={!selectedCandidate || !selectedRole || isLoadingAlignment}
+                className="w-full sm:w-auto"
+                data-testid="button-analyze-role-fit"
+              >
+                {isLoadingAlignment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Target className="mr-2 h-4 w-4" />
+                    Analyze Role Fit
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 
