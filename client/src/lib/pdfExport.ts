@@ -4569,7 +4569,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     yPos += 7;
     
     Object.entries(data.aiData.scores).forEach(([skillName, score]) => {
-      pdf.setFontSize(7);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
       pdf.text(`${skillName}:`, leftColStart + 5, yPos);
@@ -4579,7 +4579,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setTextColor(perf.color[0], perf.color[1], perf.color[2]);
       pdf.text(`${score}`, leftColStart + halfWidth - 10, yPos, { align: 'right' });
       
-      yPos += 6; // Tighter spacing for 9 skills
+      yPos += 7; // Match FIT spacing
     });
     
     // Right column - Radar Chart (positioned to align with skills list)
