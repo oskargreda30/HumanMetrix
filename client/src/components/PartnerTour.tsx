@@ -57,16 +57,6 @@ const TOUR_STEPS: TourStep[] = [
     position: 'top',
   },
   {
-    id: 'organizations-content',
-    title: 'Organizations - Manage Your Clients',
-    description: 'Create organizations to group assessments by client, department, or project. Each organization gets its own usage tracking and can have dedicated admin contacts.',
-    icon: Building2,
-    tab: 'organizations',
-    targetSelector: '[data-testid="panel-organizations"][data-state="active"]',
-    highlightPadding: 8,
-    position: 'top',
-  },
-  {
     id: 'analytics-content',
     title: 'Analytics - Insights & Trends',
     description: 'Visualize your assessment data with charts and graphs. See usage trends over time, breakdowns by assessment type, and performance metrics by organization.',
