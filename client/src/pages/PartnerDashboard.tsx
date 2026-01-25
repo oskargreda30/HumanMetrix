@@ -2898,15 +2898,9 @@ export default function PartnerDashboard() {
               ) : (
                 // Organizations List View
                 <>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold text-white">Organizations</h2>
-                      <p className="text-white/70 text-sm">Manage client organizations under your partner account</p>
-                    </div>
-                    <Button onClick={() => setShowAddOrgDialog(true)} className="gap-2" data-testid="button-add-org">
-                      <Plus className="h-4 w-4" />
-                      Add Organization
-                    </Button>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Organizations</h2>
+                    <p className="text-white/70 text-sm">Manage client organizations under your partner account</p>
                   </div>
 
                   {organizationsLoading ? (
