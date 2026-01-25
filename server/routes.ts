@@ -10786,9 +10786,20 @@ Format your response as JSON with this structure:
         }
       }
 
+      // Parse role requirements from requiredSkillScores JSON
+      const roleRequirements = role.requiredSkillScores as {
+        fitSkills?: Record<string, number>;
+        aiReadinessSkills?: Record<string, number>;
+        skillCriticality?: Record<string, string>;
+      } | null;
+      
+      const fitRequiredScores = roleRequirements?.fitSkills || null;
+      const aiReadinessRequiredScores = roleRequirements?.aiReadinessSkills || null;
+      const skillCriticality = roleRequirements?.skillCriticality || {};
+
       // Calculate alignment
-      const fitSkillAlignments = role.fitRequiredScores && fitScores
-        ? Object.entries(role.fitRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+      const fitSkillAlignments = fitRequiredScores && fitScores
+        ? Object.entries(fitRequiredScores).map(([skillName, requiredScore]) => {
             const candidateScore = fitScores![skillName] ?? null;
             const gap = candidateScore !== null ? candidateScore - requiredScore : null;
             return {
@@ -10797,14 +10808,14 @@ Format your response as JSON with this structure:
               requiredScore,
               gap,
               alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
-              criticality: (role.fitSkillCriticality as any)?.[skillName] || 'important',
+              criticality: skillCriticality[skillName] || 'important',
               dataAvailable: candidateScore !== null,
             };
           })
         : null;
 
-      const aiReadinessSkillAlignments = role.aiReadinessRequiredScores && aiReadinessScores
-        ? Object.entries(role.aiReadinessRequiredScores as Record<string, number>).map(([skillName, requiredScore]) => {
+      const aiReadinessSkillAlignments = aiReadinessRequiredScores && aiReadinessScores
+        ? Object.entries(aiReadinessRequiredScores).map(([skillName, requiredScore]) => {
             const candidateScore = aiReadinessScores![skillName] ?? null;
             const gap = candidateScore !== null ? candidateScore - requiredScore : null;
             return {
@@ -10813,7 +10824,7 @@ Format your response as JSON with this structure:
               requiredScore,
               gap,
               alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
-              criticality: (role.aiReadinessSkillCriticality as any)?.[skillName] || 'important',
+              criticality: skillCriticality[skillName] || 'important',
               dataAvailable: candidateScore !== null,
             };
           })
