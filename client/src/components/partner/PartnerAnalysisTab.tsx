@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, User, BarChart3, Target, Award, Brain, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Users, User, BarChart3, Target, Award, Brain, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, FileText, Star, Building2, MessageSquare, Mail } from "lucide-react";
 import {
   RadarChart,
   PolarGrid,
@@ -255,6 +255,59 @@ export default function PartnerAnalysisTab() {
             </CardContent>
           </Card>
 
+          {/* How to Read This Report */}
+          <Card className="mb-8" data-testid="section-how-to-read">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+                A guide to interpreting candidate assessment data for informed hiring decisions
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <span className="font-medium text-sm">Score Interpretation</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Charts</p>
+                    <p className="text-xs text-muted-foreground">
+                      Visual overlays show how candidates compare across each capability dimension at a glance.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Rankings & Percentiles</p>
+                    <p className="text-xs text-muted-foreground">
+                      See how each candidate ranks relative to others in the cohort and against broader benchmarks.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each candidate's key strengths and growth areas help you understand their unique value proposition.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {selectedCandidate && isLoadingReport && (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -289,7 +342,7 @@ export default function PartnerAnalysisTab() {
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
-                    <SkillsLegend skills={FIT_SKILLS} />
+                    <SkillsLegend compact />
                   </CardContent>
                 </Card>
               )}
@@ -320,7 +373,7 @@ export default function PartnerAnalysisTab() {
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
-                    <SkillsLegend skills={AI_READINESS_SKILLS} />
+                    <SkillsLegend compact />
                   </CardContent>
                 </Card>
               )}
@@ -353,6 +406,72 @@ export default function PartnerAnalysisTab() {
               )}
             </div>
           )}
+
+          {/* Enterprise Services Section */}
+          <Card className="mb-8" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold" data-testid="heading-enterprise-services">Enterprise Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
+                Enhance your hiring process with our advanced enterprise solutions:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-ecosystem">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-ecosystem">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-ecosystem">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
+                    Compare your team's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
+                    Compare multiple candidates against a specific role with ranked recommendations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-consulting">Strategic Consulting</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-consulting">
+                    Expert-led sessions to interpret results and develop actionable hiring strategies
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-integration">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-integration">ATS Integration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-integration">
+                    Seamless integration with your existing applicant tracking and HR systems
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm" data-testid="text-contact-email">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </div>
+          </Card>
         </TabsContent>
 
         {/* Compare Candidates Tab */}
@@ -391,6 +510,59 @@ export default function PartnerAnalysisTab() {
                 ))}
               </div>
             </CardContent>
+          </Card>
+
+          {/* How to Read This Comparison */}
+          <Card className="mb-8" data-testid="section-how-to-read-compare">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read-compare">How to Read This Comparison</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro-compare">
+                A guide to interpreting multi-candidate comparison data
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Overlay</p>
+                    <p className="text-xs text-muted-foreground">
+                      Visual comparison across all skills - larger coverage indicates stronger overall performance
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Score Bands</p>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Attention</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Color Coding</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each candidate is represented by a distinct color for easy visual tracking across charts
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Decision Support</p>
+                    <p className="text-xs text-muted-foreground">
+                      Use overall scores combined with skill-specific analysis for comprehensive candidate evaluation
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Card>
 
           {selectedCandidates.length >= 2 && isComparing && (
@@ -461,6 +633,72 @@ export default function PartnerAnalysisTab() {
               </CardContent>
             </Card>
           )}
+
+          {/* Enterprise Services Section */}
+          <Card className="mb-8" data-testid="section-additional-services-compare">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold" data-testid="heading-enterprise-services-compare">Enterprise Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6" data-testid="text-services-intro-compare">
+                Enhance your hiring process with our advanced enterprise solutions:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare your team's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Multi-Candidate Role Fit</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare multiple candidates against a specific role with ranked recommendations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strategic Consulting</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Expert-led sessions to interpret results and develop actionable hiring strategies
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">ATS Integration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Seamless integration with your existing applicant tracking and HR systems
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </div>
+          </Card>
         </TabsContent>
 
         {/* Role Fit Tab */}
@@ -504,6 +742,59 @@ export default function PartnerAnalysisTab() {
                 </div>
               </div>
             </CardContent>
+          </Card>
+
+          {/* How to Read This Role Fit Analysis */}
+          <Card className="mb-8" data-testid="section-how-to-read-rolefit">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read-rolefit">How to Read This Role Fit Analysis</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro-rolefit">
+                A guide to interpreting candidate-role alignment data
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-sm">Overall Fit Score</p>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">80%+</Badge> <span>Excellent,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">60-79%</Badge> <span>Good,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;60%</Badge> <span>Developing</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Critical Skills</p>
+                    <p className="text-xs text-muted-foreground">
+                      Skills marked with <Badge className="bg-blue-600 text-white text-[10px] px-1 py-0 mx-1">C</Badge> are critical for role success
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Alignment Status</p>
+                    <p className="text-xs text-muted-foreground">
+                      "Meets" indicates candidate exceeds requirements; "Gap" indicates development needed
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Data Coverage</p>
+                    <p className="text-xs text-muted-foreground">
+                      Higher coverage percentage means more comprehensive assessment data is available
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Card>
 
           {selectedCandidate && selectedRole && isLoadingAlignment && (
@@ -700,6 +991,72 @@ export default function PartnerAnalysisTab() {
               </CardContent>
             </Card>
           )}
+
+          {/* Enterprise Services Section */}
+          <Card className="mb-8" data-testid="section-additional-services-rolefit">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold" data-testid="heading-enterprise-services-rolefit">Enterprise Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6" data-testid="text-services-intro-rolefit">
+                Enhance your hiring process with our advanced enterprise solutions:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">The Ecosystem Index</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Cohort Benchmarking</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare your team's performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Multi-Candidate Role Fit</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Compare multiple candidates against a specific role with ranked recommendations
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strategic Consulting</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Expert-led sessions to interpret results and develop actionable hiring strategies
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">ATS Integration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Seamless integration with your existing applicant tracking and HR systems
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline">hello@humanmetrix.co.uk</a> to discuss your enterprise requirements.
+                </p>
+              </div>
+            </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
