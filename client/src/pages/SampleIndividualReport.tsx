@@ -221,11 +221,11 @@ export default function SampleIndividualReport() {
           </div>
 
           {/* How to Read This Report */}
-          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-guide">
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-how-to-read">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold">How to Read This Report</h3>
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
                 A step-by-step guide to understanding your assessment results and how to use them for career growth

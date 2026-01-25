@@ -123,9 +123,9 @@ export default function SampleRoleFitReport() {
           </div>
 
           {/* How to Read This Report - Matching Dashboard Style */}
-          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-guide">
+          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-how-to-read">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-lg" data-testid="heading-how-to-read">
                 <FileText className="h-5 w-5 text-primary" />
                 How to Read This Report
               </CardTitle>
