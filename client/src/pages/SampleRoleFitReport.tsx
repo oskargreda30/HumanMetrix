@@ -369,50 +369,6 @@ export default function SampleRoleFitReport() {
             </CardContent>
           </Card>
 
-          {/* Hiring Decision Matrix */}
-          <Card className="mb-6" data-testid="section-hiring-decision">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Hiring Decision Matrix
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Quick reference for hiring band classification and decision drivers
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-1">
-                <div className="border-2 bg-green-100 dark:bg-green-900/30 border-green-300 rounded-lg p-4" data-testid="hiring-matrix-card">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="font-bold text-lg">{DEMO_CANDIDATE.name}</div>
-                      <div className="text-2xl font-bold" data-testid="hiring-matrix-score">{overallFitScore}%</div>
-                    </div>
-                    <div className="text-right">
-                      <Badge className="text-sm font-bold text-green-700 bg-white dark:bg-gray-800" data-testid="badge-strong-hire">
-                        STRONG HIRE
-                      </Badge>
-                      <div className="mt-1">
-                        <Badge className="bg-amber-500 text-white">Top Pick</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2 text-green-600">
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                      <span>Strong Fit, Intellectual Curiosity, Responsible AI</span>
-                    </div>
-                    <div className="flex items-start gap-2 text-amber-600">
-                      <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                      <span>Interpersonal Agility (minor gap)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Advanced Analytics */}
           <Card className="mb-6" data-testid="section-advanced-analytics">
             <CardHeader>
