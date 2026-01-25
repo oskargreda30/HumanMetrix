@@ -574,7 +574,7 @@ export default function PartnerAnalysisTab() {
         candidateName: getCandidateName(selectedCandidateData),
         fitData: fitData ? { scores: fitData.scores } : null,
         aiData: aiData ? { scores: aiData.scores } : null,
-        promptData: promptArchData ? { totalScore: promptArchData.totalScore } : null,
+        promptData: promptArchData ? { totalScore: promptArchData.totalScore, levels: promptArchData.levels } : null,
         aiqData: aiqData ? { totalScore: aiqData.totalScore } : null,
         profileInsights,
         fitChartImage,
