@@ -281,14 +281,24 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const prepareBarChartData = () => {
     if (!comparison) return [];
     // Only include candidates with valid data in the chart
-    return comparison.candidateEntries
+    const validEntries = comparison.candidateEntries
       .filter((entry) => entry.overallFit != null && entry.fitTier !== 'insufficient-data')
-      .map((entry) => ({
-        name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
-        fullName: entry.userName,
-        'Overall Fit': entry.overallFit as number,
-        tier: entry.fitTier,
-      }));
+      .sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
+    
+    return validEntries.map((entry, index) => ({
+      name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
+      fullName: entry.userName,
+      'Overall Fit': entry.overallFit as number,
+      tier: entry.fitTier,
+      rank: index + 1,
+    }));
+  };
+
+  const getRankBadge = (rank: number) => {
+    if (rank === 1) return { label: '1st', color: 'bg-amber-500 text-white' };
+    if (rank === 2) return { label: '2nd', color: 'bg-gray-400 text-white' };
+    if (rank === 3) return { label: '3rd', color: 'bg-amber-700 text-white' };
+    return { label: `${rank}th`, color: 'bg-muted text-muted-foreground' };
   };
 
   const handleExportPDF = async () => {
@@ -1114,26 +1124,32 @@ export default function PartnerMultiCandidateRoleFitTab() {
               <CardTitle>Overall Fit Comparison</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-80" ref={chartRef} id="multi-candidate-bar-chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareBarChartData()} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value}%`, 'Overall Fit']}
-                      labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
-                    />
-                    <Bar dataKey="Overall Fit" radius={[0, 4, 4, 0]}>
-                      {prepareBarChartData().map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.tier === 'strong' ? '#22c55e' : entry.tier === 'moderate' ? '#f59e0b' : '#ef4444'}
+              <div className="space-y-3" ref={chartRef} id="multi-candidate-bar-chart">
+                {prepareBarChartData().map((entry) => {
+                  const rankBadge = getRankBadge(entry.rank);
+                  return (
+                    <div key={entry.fullName} className="flex items-center gap-3">
+                      <span className={`flex-shrink-0 w-8 h-6 rounded text-xs font-bold flex items-center justify-center ${rankBadge.color}`}>
+                        {rankBadge.label}
+                      </span>
+                      <span className="w-28 text-sm font-medium truncate" title={entry.fullName}>
+                        {entry.name}
+                      </span>
+                      <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${entry['Overall Fit']}%`,
+                            backgroundColor: entry.tier === 'strong' ? '#22c55e' : entry.tier === 'moderate' ? '#f59e0b' : '#ef4444'
+                          }}
                         />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                      </div>
+                      <span className="w-12 text-sm font-bold text-right">
+                        {entry['Overall Fit']}%
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-center gap-4 mt-4 text-sm">
                 <span className="flex items-center gap-1">
@@ -1195,6 +1211,85 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   </span>
                 </li>
               </ul>
+
+              {/* Complete Candidate Ranking */}
+              <div className="mt-6 pt-6 border-t">
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-amber-500" />
+                  Complete Candidate Ranking
+                </h4>
+                <div className="grid gap-2">
+                  {(() => {
+                    if (!comparison) return null;
+                    const allCandidates = comparison.candidateEntries
+                      .map((entry, index) => ({
+                        ...entry,
+                        hasData: entry.overallFit != null && entry.fitTier !== 'insufficient-data',
+                      }))
+                      .sort((a, b) => {
+                        if (a.hasData && !b.hasData) return -1;
+                        if (!a.hasData && b.hasData) return 1;
+                        return (b.overallFit || 0) - (a.overallFit || 0);
+                      });
+                    
+                    let rankCounter = 0;
+                    return allCandidates.map((entry) => {
+                      if (entry.hasData) rankCounter++;
+                      const rank = entry.hasData ? rankCounter : null;
+                      const rankBadge = rank ? getRankBadge(rank) : null;
+                      
+                      return (
+                        <div 
+                          key={entry.userId} 
+                          className={`flex items-center gap-3 p-3 rounded-lg border ${
+                            rank === 1 
+                              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' 
+                              : entry.hasData 
+                                ? 'bg-muted/30 border-muted'
+                                : 'bg-muted/10 border-muted/50 opacity-60'
+                          }`}
+                        >
+                          {rankBadge ? (
+                            <span className={`flex-shrink-0 w-8 h-8 rounded-full text-sm font-bold flex items-center justify-center ${rankBadge.color}`}>
+                              {rankBadge.label}
+                            </span>
+                          ) : (
+                            <span className="flex-shrink-0 w-8 h-8 rounded-full text-xs font-medium flex items-center justify-center bg-muted text-muted-foreground">
+                              N/A
+                            </span>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium truncate block">{entry.userName}</span>
+                            <span className="text-xs text-muted-foreground block">
+                              {entry.hasData ? (
+                                <>
+                                  Overall Fit: {entry.overallFit}% - 
+                                  <span className={`ml-1 ${
+                                    entry.fitTier === 'strong' ? 'text-green-600' :
+                                    entry.fitTier === 'moderate' ? 'text-amber-600' :
+                                    'text-red-600'
+                                  }`}>
+                                    {entry.fitTier === 'strong' ? 'Strong Match' :
+                                     entry.fitTier === 'moderate' ? 'Moderate Match' :
+                                     'Development Needed'}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground italic">Insufficient assessment data</span>
+                              )}
+                            </span>
+                          </div>
+                          {rank === 1 && (
+                            <Badge variant="default">
+                              Recommended
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
