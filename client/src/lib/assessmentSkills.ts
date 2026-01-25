@@ -30,6 +30,18 @@ export const SKILL_ACRONYMS: Record<string, string> = {
   'Creativity & Innovation': 'CI',
   'Domain Expertise': 'DE',
   
+  // AIQ Skills
+  'Transparency': 'T',
+  'Accountability': 'A',
+  'Bias Awareness': 'BA',
+  'Privacy Sensitivity': 'PS',
+  
+  // Prompt Architecture Skills
+  'Clarity': 'CL',
+  'Context Setting': 'CS',
+  'Output Formatting': 'OF',
+  'Constraint Definition': 'CD',
+  
   // Legacy AI Readiness keys (for backward compatibility with old data)
   'AI Literacy': 'AL&PE',
   'AI Literacy/Prompting': 'AL&PE', // Very old legacy key
@@ -204,13 +216,59 @@ export const AI_READINESS_SKILLS: SkillDefinition[] = [
   },
 ];
 
-// AIQ: Algorithmic Integrity Quotient (graded scoring with 20% band interpretations)
+// AIQ: Algorithmic Integrity Quotient - 4 ethical dimensions
 export const AIQ_SKILLS: SkillDefinition[] = [
   {
-    key: 'Algorithmic Integrity',
-    displayName: 'Algorithmic Integrity',
-    description: 'AI ethics using graded scoring (0-100%) with weighted options for nuanced ethical judgment',
+    key: 'Transparency',
+    displayName: 'Transparency',
+    description: 'Commitment to explainable AI and clear communication of AI decisions',
     color: 'hsl(var(--chart-1))',
+  },
+  {
+    key: 'Accountability',
+    displayName: 'Accountability',
+    description: 'Taking responsibility for AI outcomes and maintaining oversight',
+    color: 'hsl(var(--chart-2))',
+  },
+  {
+    key: 'Bias Awareness',
+    displayName: 'Bias Awareness',
+    description: 'Recognizing and mitigating algorithmic bias in AI systems',
+    color: 'hsl(var(--chart-3))',
+  },
+  {
+    key: 'Privacy Sensitivity',
+    displayName: 'Privacy Sensitivity',
+    description: 'Protecting user data and respecting privacy in AI applications',
+    color: 'hsl(var(--chart-4))',
+  },
+];
+
+// Prompt Architecture: 4 prompt design skills
+export const PROMPT_ARCHITECTURE_SKILLS: SkillDefinition[] = [
+  {
+    key: 'Clarity',
+    displayName: 'Clarity',
+    description: 'Writing clear and unambiguous prompts',
+    color: 'hsl(var(--chart-1))',
+  },
+  {
+    key: 'Context Setting',
+    displayName: 'Context Setting',
+    description: 'Providing appropriate background and context in prompts',
+    color: 'hsl(var(--chart-2))',
+  },
+  {
+    key: 'Output Formatting',
+    displayName: 'Output Formatting',
+    description: 'Specifying desired output format and structure',
+    color: 'hsl(var(--chart-3))',
+  },
+  {
+    key: 'Constraint Definition',
+    displayName: 'Constraint Definition',
+    description: 'Defining boundaries and limitations for AI responses',
+    color: 'hsl(var(--chart-4))',
   },
 ];
 
@@ -237,8 +295,8 @@ export const ASSESSMENT_METADATA: Record<AssessmentType, {
   },
   prompt_architecture: {
     displayName: 'Prompt Architecture',
-    skills: [],
-    isSkillBased: false, // Uses pass/fail percentage
+    skills: PROMPT_ARCHITECTURE_SKILLS,
+    isSkillBased: true,
   },
 };
 
