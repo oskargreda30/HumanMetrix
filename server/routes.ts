@@ -11167,12 +11167,49 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       const candidateEntries: any[] = [];
       
       for (const candidateId of candidateIds) {
-        const user = await storage.getUser(candidateId);
-        if (!user) continue;
-
-        const resultsRaw = await storage.getResultsByUser(candidateId);
-        const results = resultsRaw.map(recalculateScores);
-        const completedResults = results.filter((r) => r.status === 'completed');
+        // For B2B partners, candidateId is typically the email address
+        // Try to find by user ID first, then fall back to email-based lookup from sessions
+        let user = await storage.getUser(candidateId);
+        let completedResults: any[] = [];
+        let candidateName = '';
+        let candidateEmail = candidateId;
+        
+        if (user) {
+          // Standard B2C user found
+          const resultsRaw = await storage.getResultsByUser(candidateId);
+          const results = resultsRaw.map(recalculateScores);
+          completedResults = results.filter((r: any) => r.status === 'completed');
+          candidateName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || candidateId;
+          candidateEmail = user.email || candidateId;
+        } else {
+          // B2B candidate - look up by email in assessment_sessions
+          const candidateSessions = allSessions.filter(s => 
+            s.externalEmail === candidateId || 
+            s.externalUserId === candidateId ||
+            s.id === candidateId
+          );
+          
+          if (candidateSessions.length === 0) continue;
+          
+          // Convert sessions to result-like objects for processing
+          completedResults = candidateSessions
+            .filter(s => s.status === 'completed')
+            .map(s => ({
+              id: s.id,
+              assessmentType: s.assessmentType,
+              status: s.status,
+              scores: s.scores,
+              totalScore: s.totalScore,
+              completedAt: s.completedAt,
+            }));
+          
+          // Extract name from email
+          const emailPart = candidateSessions[0].externalEmail?.split('@')[0] || candidateId;
+          candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          candidateEmail = candidateSessions[0].externalEmail || candidateId;
+        }
+        
+        if (completedResults.length === 0) continue;
 
         // Aggregate skills
         const fitSkills = new Map<string, number>();
@@ -11326,14 +11363,10 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         if (!hasFit) missingAssessments.push('FIT Assessment');
         if (!hasAiReadiness) missingAssessments.push('AI Readiness Assessment');
 
-        const userName = user.firstName || user.lastName 
-          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-          : user.email;
-
         candidateEntries.push({
           userId: candidateId,
-          userName,
-          email: user.email,
+          userName: candidateName || candidateEmail,
+          email: candidateEmail,
           overallFit: hasSufficientData ? overallFit : null,
           rank: 0,
           fitTier: !hasSufficientData ? 'insufficient-data' : (overallFit >= 80 ? 'strong' : overallFit >= 60 ? 'moderate' : 'development-needed'),
