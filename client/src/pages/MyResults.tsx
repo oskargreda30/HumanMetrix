@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap } from "lucide-react";
+import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Info, Star, Target, Users, MessageSquare, Rocket, Mail } from "lucide-react";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
@@ -762,6 +762,112 @@ export default function MyResults() {
               </Card>
             );
           })()}
+
+          {/* How to Read This Report Section */}
+          <Card className="mb-6" data-testid="section-how-to-read">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Info className="h-5 w-5 text-blue-500" />
+                <h3 className="text-xl font-bold" data-testid="heading-how-to-read">How to Read Your Results</h3>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-scores">
+                  <h4 className="font-semibold mb-2" data-testid="heading-guide-scores">Understanding Your Scores</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-guide-scores">
+                    Each assessment measures different capabilities. Scores above 70% indicate strong proficiency,
+                    50-70% shows developing skills, and below 50% highlights areas for growth.
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-dimensions">
+                  <h4 className="font-semibold mb-2" data-testid="heading-guide-dimensions">Skill Dimensions</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-guide-dimensions">
+                    Your results break down into multiple dimensions. Use these to identify your unique 
+                    strengths and target specific areas for professional development.
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-radar">
+                  <h4 className="font-semibold mb-2" data-testid="heading-guide-radar">Radar Charts</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-guide-radar">
+                    The radar visualization shows your balanced profile across dimensions. 
+                    A more symmetrical shape indicates well-rounded capabilities.
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-apply">
+                  <h4 className="font-semibold mb-2" data-testid="heading-guide-apply">Applying Your Results</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-guide-apply">
+                    Use these insights to guide your career decisions, identify training opportunities, 
+                    and communicate your strengths to potential employers.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Additional Services Section */}
+          <Card className="mb-6" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold" data-testid="heading-additional-services">Additional Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
+                Take your career development to the next level with our premium services:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-career-fit">Career Fit Analysis</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-career-fit">
+                    Discover roles that align with your unique profile and maximize your potential
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-interview">Interview Preparation</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-interview">
+                    Personalized interview guide based on your assessment results and target roles
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-compatibility">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-compatibility">Work Style Compatibility</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-compatibility">
+                    Understand how your working preferences align with different team cultures
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-acceleration">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Rocket className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-acceleration">Career Acceleration</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-acceleration">
+                    Strategic roadmap to accelerate your professional growth based on your strengths
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold" data-testid="heading-service-strengths">Strengths & Growth Areas</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-strengths">
+                    Detailed analysis of your key strengths and targeted development recommendations
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
+                <Mail className="h-5 w-5 text-primary" />
+                <p className="text-sm" data-testid="text-contact-email">
+                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to learn more about our career development services.
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
       </main>
       
