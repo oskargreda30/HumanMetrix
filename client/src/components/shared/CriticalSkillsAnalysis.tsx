@@ -16,20 +16,25 @@ interface CriticalSkillsAnalysisProps {
 }
 
 const SKILL_DESCRIPTIONS: Record<string, string> = {
+  // FIT Skills
   "High Agency": "Enables proactive problem-solving and ownership of outcomes, reducing dependency on constant supervision in fast-moving AI environments.",
   "Intellectual Curiosity": "Drives continuous learning and exploration of new technologies, essential for staying current in rapidly evolving AI landscape.",
   "Resilience": "Supports persistence through setbacks and ambiguity, critical for navigating complex AI implementation challenges.",
   "Empathy & Ethics": "Ensures AI solutions consider human impact and ethical implications, vital for responsible AI deployment.",
   "Growth Mindset": "Facilitates adaptation to new tools and methodologies, enabling continuous improvement in AI capabilities.",
   "Interpersonal Agility": "Essential for effective collaboration across diverse teams and stakeholders in complex AI initiatives.",
-  "AI Literacy": "Foundational understanding of AI concepts and applications, required for effective AI-augmented work.",
+  // AI Readiness Skills (official names)
+  "AI Literacy & Prompt Engineering": "Foundational understanding of AI concepts and effective prompt engineering, required for AI-augmented work.",
   "Technical Fundamentals": "Core technical knowledge enabling effective interaction with AI systems and tools.",
   "Data Fluency": "Ability to work with and interpret data, essential for leveraging AI insights effectively.",
   "Critical Thinking & Problem-Solving": "Key for evaluating AI recommendations and identifying optimal solutions to complex challenges.",
   "Adaptability & Continuous Learning": "Enables quick adaptation to new AI tools and evolving best practices.",
-  "Collaboration": "Facilitates effective teamwork in AI-augmented environments and cross-functional projects.",
+  "Collaboration & Communication": "Facilitates effective teamwork in AI-augmented environments and cross-functional projects.",
   "Responsible AI & Ethical Awareness": "Ensures ethical considerations in AI usage and deployment decisions.",
   "Creativity & Innovation": "Drives novel applications of AI technology to solve business problems.",
+  // Legacy names for backwards compatibility
+  "AI Literacy": "Foundational understanding of AI concepts and applications, required for effective AI-augmented work.",
+  "Collaboration": "Facilitates effective teamwork in AI-augmented environments and cross-functional projects.",
   "Domain Expertise": "Deep knowledge in specific areas that enhances AI application and interpretation.",
 };
 
@@ -52,7 +57,7 @@ export function CriticalSkillsAnalysis({ skills, candidateName = "Candidate" }: 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-blue-600" />
-          CRITICAL SKILLS ANALYSIS
+          Critical Skills Analysis
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Deep analysis of the most critical skills required for this role

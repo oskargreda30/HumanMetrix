@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2 } from "lucide-react";
 import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
+import { CohortBenchmarking, type AssessmentBenchmark } from "@/components/shared/CohortBenchmarking";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -69,6 +70,13 @@ const ROLE_FLEXIBILITY = [
   { roleName: "Technical Product Manager", fitScore: 82, coverageLabel: "High" },
   { roleName: "Product Owner", fitScore: 78, coverageLabel: "Medium" },
   { roleName: "Program Manager", fitScore: 74, coverageLabel: "Medium" },
+];
+
+const COHORT_BENCHMARKS: AssessmentBenchmark[] = [
+  { assessmentType: "FIT Assessment (Behavioral)", skillsCompared: "6 skills", avgPercentile: 69, position: "above" },
+  { assessmentType: "AI Readiness Assessment", skillsCompared: "8 skills", avgPercentile: 73, position: "above" },
+  { assessmentType: "Prompt Architecture", skillsCompared: "1 composite score", avgPercentile: 90, position: "above" },
+  { assessmentType: "Artificial Intelligence Quotient (AIQ)", skillsCompared: "1 composite score", avgPercentile: 89, position: "above" },
 ];
 
 export default function SampleRoleFitReport() {
@@ -537,6 +545,14 @@ export default function SampleRoleFitReport() {
                 criticality: s.criticality,
               }))}
               candidateName={DEMO_CANDIDATE.name}
+            />
+          </div>
+
+          {/* Cohort Benchmarking - using shared component */}
+          <div className="mb-6">
+            <CohortBenchmarking
+              overallPosition={4}
+              assessments={COHORT_BENCHMARKS}
             />
           </div>
 
