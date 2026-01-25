@@ -1651,8 +1651,9 @@ export function registerPartnerRoutes(app: Express) {
       const bodySchema = z.object({
         candidates: z.array(z.object({
           externalUserId: z.string().transform(s => s.trim()).optional().nullable(),
-          email: z.string().transform(s => s.trim()).pipe(
-            z.union([z.literal(''), z.string().email("Invalid email format")])
+          email: z.string().transform(s => s.trim()).refine(
+            (val) => val === '' || isValidEmail(val),
+            { message: "Invalid email format" }
           ).optional().nullable(),
           name: z.string().optional().nullable(),
           metadata: z.record(z.any()).optional().nullable(),
