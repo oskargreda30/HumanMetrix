@@ -350,11 +350,11 @@ export default function PartnerAnalysisTab() {
     enabled: selectedCandidates.length >= 2,
   });
 
-  const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
+  const { data: alignment, isLoading: isLoadingAlignment, refetch: refetchAlignment } = useQuery<RoleAlignment>({
     queryKey: selectedCandidate && selectedRole
       ? [`/api/partner/me/role-alignment?candidateId=${selectedCandidate}&jobRoleId=${selectedRole}`]
       : undefined as any,
-    enabled: !!selectedCandidate && !!selectedRole && subTab === 'rolefit',
+    enabled: false,
   });
 
   const toggleCandidate = (candidateId: string) => {
@@ -1626,6 +1626,7 @@ export default function PartnerAnalysisTab() {
                 disabled={!selectedCandidate || !selectedRole || isLoadingAlignment}
                 className="w-full sm:w-auto"
                 data-testid="button-analyze-role-fit"
+                onClick={() => refetchAlignment()}
               >
                 {isLoadingAlignment ? (
                   <>
